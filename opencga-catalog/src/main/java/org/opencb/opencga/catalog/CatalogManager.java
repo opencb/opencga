@@ -971,6 +971,21 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
     }
 
+    public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId)
+            throws CatalogException {
+        return studyManager.addFieldToVariableSet(variableSetId, variable, sessionId);
+    }
+
+    public QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
+            throws CatalogException {
+        return studyManager.renameFieldFromVariableSet(variableSetId, oldName, newName, sessionId);
+    }
+
+    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String sessionId)
+            throws CatalogException {
+        return studyManager.removeFieldFromVariableSet(variableSetId, name, sessionId);
+    }
+
     /*
      * Cohort methods
      * ***************************

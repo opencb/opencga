@@ -173,6 +173,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
                 .openStream());
 
+        catalogConfiguration.getDatabase().setDatabase("opencga_server_test");
         clearCatalog(catalogConfiguration);
 
         catalogManager = new CatalogManager(catalogConfiguration);
