@@ -697,6 +697,13 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
+    @Override
+    public void close() throws StorageManagerException {
+        if (dbAdaptor != null) {
+            dbAdaptor.close();
+        }
+    }
+
     protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options)
             throws StorageManagerException;
 

@@ -100,6 +100,8 @@ public abstract class StorageManager<DBADAPTOR> {
                 loadFile(storageETL, etlResult, results, nextFileUri, outdirUri);
             }
 
+            storageETL.close();
+
             MemoryUsageMonitor.logMemory(logger);
         }
         monitor.interrupt();
