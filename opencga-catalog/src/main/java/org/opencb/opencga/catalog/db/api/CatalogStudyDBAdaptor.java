@@ -306,6 +306,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         }
     }
 
+    @Deprecated
     enum StudyFilterOptions implements AbstractCatalogDBAdaptor.FilterOption {
         id(Type.NUMERICAL, ""),
         projectId(Type.NUMERICAL, ""),
