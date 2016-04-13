@@ -3,7 +3,10 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
@@ -61,5 +64,11 @@ public interface IUserManager extends ResourceManager<String, User> {
     QueryResult logout(String userId, String sessionId) throws CatalogException;
 
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
+
+    void addQueryFilter(String sessionId, Filter filter) throws CatalogException;
+
+    QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException;
+
+    QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException;
 
 }

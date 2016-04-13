@@ -54,7 +54,6 @@ public class User {
     private List<Session> sessions;
 
     private Map<String, Object> configs;
-    //opencga-filters array de filtros
     private Map<String, Object> attributes;
 
     public User() {
