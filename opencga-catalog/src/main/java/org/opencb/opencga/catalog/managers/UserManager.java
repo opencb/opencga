@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -235,6 +236,21 @@ public class UserManager extends AbstractManager implements IUserManager {
         user.setId("deleteUser");
         auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, user, null, null);
         return user;
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
     }
 
     @Override
