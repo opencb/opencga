@@ -19,11 +19,8 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryParam;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
@@ -267,6 +264,17 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
     QueryResult updateAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
+
+    /**
+     * Update custom annotation for all the variants with in a given region.
+     *
+     * @param query       Region to update
+     * @param name        Custom annotation name.
+     * @param annotation  Custom annotation for the region
+     * @param options     Other options
+     * @return            Result of the insertion
+     */
+    QueryResult updateCustomAnnotations(Query query, String name, ObjectMap annotation, QueryOptions options);
 
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 

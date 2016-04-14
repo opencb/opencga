@@ -399,6 +399,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         if (annotateVariantsCommandOptions.assembly != null) {
             options.put(VariantAnnotationManager.ASSEMBLY, annotateVariantsCommandOptions.assembly);
         }
+        options.putAll(annotateVariantsCommandOptions.commonOptions.params);
 
         VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(configuration, storageEngine);
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
@@ -454,7 +455,8 @@ public class VariantCommandExecutor extends CommandExecutor {
 //                annotationFile = new URI(null, c.load, null);
                 annotationFile = Paths.get(annotateVariantsCommandOptions.load).toUri();
             }
-            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
+            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
+
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
     }

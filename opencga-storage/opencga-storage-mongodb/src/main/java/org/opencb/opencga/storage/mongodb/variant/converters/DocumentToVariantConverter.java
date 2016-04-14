@@ -47,6 +47,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 
     public static final String STUDIES_FIELD = "studies";
     public static final String ANNOTATION_FIELD = "annotation";
+    public static final String CUSTOM_ANNOTATION_FIELD = "customAnnotation";
     public static final String STATS_FIELD = "stats";
 
     public static final String AT_FIELD = "_at";

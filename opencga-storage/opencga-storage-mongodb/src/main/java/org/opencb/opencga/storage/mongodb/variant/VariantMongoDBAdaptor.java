@@ -23,6 +23,7 @@ import com.mongodb.*;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.FindIterable;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -721,6 +722,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         BulkWriteResult writeResult = variantsCollection.update(queries, updates, null).first();
 
         return new QueryResult<>("", ((int) (System.nanoTime() - start)), 1, 1, "", "", Collections.singletonList(writeResult));
+    }
+
+    @Override
+    public QueryResult updateCustomAnnotations(Query query, String name, ObjectMap annotation, QueryOptions options) {
+        Document queryDocument = parseQuery(query);
+        Document updateDocument = Document.parse(annotation.toJson());
+        return variantsCollection.update(queryDocument,
+                Updates.set(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD + "." + name, updateDocument),
+                new QueryOptions(MULTI, true));
     }
 
     @Override

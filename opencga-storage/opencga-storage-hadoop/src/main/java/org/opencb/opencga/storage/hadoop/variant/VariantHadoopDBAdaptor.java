@@ -464,6 +464,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 
+    @Override
+    public QueryResult updateCustomAnnotations(Query query, String name, ObjectMap annotation, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
+
 
     public <T> void addNotNull(Collection<T> collection, T value) {
         if (value != null) {

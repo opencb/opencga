@@ -16,16 +16,23 @@
 
 package org.opencb.opencga.storage.core.variant.annotation;
 
+import org.opencb.biodata.formats.feature.bed.Bed;
+import org.opencb.biodata.formats.feature.bed.io.BedReader;
+import org.opencb.biodata.formats.feature.gff.Gff;
+import org.opencb.biodata.formats.feature.gff.io.GffReader;
+import org.opencb.biodata.formats.io.FormatReaderWrapper;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.commons.io.DataReader;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataReader;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
 import org.opencb.opencga.storage.core.variant.io.avro.AvroDataReader;
@@ -43,6 +50,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -65,6 +73,7 @@ public class VariantAnnotationManager {
     public static final String BATCH_SIZE = "batchSize";
     public static final String NUM_WRITERS = "numWriters";
     public static final String NUM_THREADS = "numThreads";
+    public static final String CUSTOM_ANNOTATION_KEY = "custom_annotation_key";
     public static final String VARIANT_ANNOTATOR_CLASSNAME = "variant.annotator.classname";
 
     private VariantDBAdaptor dbAdaptor;
@@ -79,7 +88,7 @@ public class VariantAnnotationManager {
         this.variantAnnotator = variantAnnotator;
     }
 
-    public void annotate(Query query, QueryOptions options) throws IOException {
+    public void annotate(Query query, QueryOptions options) throws IOException, StorageManagerException {
 
         long start = System.currentTimeMillis();
         logger.info("Starting annotation creation ");
@@ -187,6 +196,17 @@ public class VariantAnnotationManager {
         return fileUri;
     }
 
+
+    public void loadAnnotation(URI uri, QueryOptions options) throws IOException, StorageManagerException {
+        Path path = Paths.get(uri);
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.endsWith("avro.gz") || fileName.endsWith("avro") || fileName.endsWith("json.gz") || fileName.endsWith("json")) {
+            loadVariantAnnotation(uri, options);
+        } else {
+            loadCustomAnnotation(uri, options);
+        }
+    }
+
     /**
      * Loads variant annotations from an specified file into the selected Variant DataBase.
      *
@@ -194,7 +214,7 @@ public class VariantAnnotationManager {
      * @param options Specific options.
      * @throws IOException IOException thrown
      */
-    public void loadAnnotation(URI uri, QueryOptions options) throws IOException {
+    public void loadVariantAnnotation(URI uri, QueryOptions options) throws IOException {
 
         final int batchSize = options.getInt(VariantAnnotationManager.BATCH_SIZE, 100);
         final int numConsumers = options.getInt(VariantAnnotationManager.NUM_WRITERS, 6);
@@ -212,16 +232,100 @@ public class VariantAnnotationManager {
             reader = new VariantAnnotationJsonDataReader(Paths.get(uri).toFile());
         }
         try {
-            ParallelTaskRunner<VariantAnnotation, Void> prt = new ParallelTaskRunner<>(reader, variantAnnotationList -> {
+            ParallelTaskRunner<VariantAnnotation, Void> ptr = new ParallelTaskRunner<>(reader, variantAnnotationList -> {
                 dbAdaptor.updateAnnotations(variantAnnotationList, new QueryOptions());
                 return Collections.emptyList();
             }, null, config);
-            prt.run();
+            ptr.run();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
 
+    }
+
+    /**
+     * Loads custom variant annotations from an specified file into the selected Variant DataBase.
+     *
+     * @param uri     URI of the annotation file
+     * @param options Specific options.
+     * @throws IOException IOException thrown
+     * @throws StorageManagerException if there is a problem creating or running the {@link ParallelTaskRunner}
+     */
+    public void loadCustomAnnotation(URI uri, QueryOptions options) throws IOException, StorageManagerException {
+
+        final int batchSize = options.getInt(BATCH_SIZE, 100);
+        final int numConsumers = options.getInt(NUM_WRITERS, 6);
+        final String key = options.getString(CUSTOM_ANNOTATION_KEY, "default");
+
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numConsumers, batchSize, numConsumers * 2, true, false);
+
+
+        Path path = Paths.get(uri);
+        String fileName = path.getFileName().toString().toLowerCase();
+        if (fileName.endsWith(".gff") || fileName.endsWith(".gff.gz")) {
+            try {
+                GffReader gffReader = new GffReader(path);
+                ParallelTaskRunner<Gff, Void> ptr;
+                try {
+                    ptr = new ParallelTaskRunner<>(
+                            new FormatReaderWrapper<>(gffReader),
+                            gffList -> {
+                                for (Gff gff : gffList) {
+                                    Region region = new Region(normalizeChromosome(gff.getSequenceName()), gff.getStart(), gff.getEnd());
+                                    Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                    dbAdaptor.updateCustomAnnotations(query, key,
+                                            new ObjectMap("feature", gff.getFeature()), new QueryOptions());
+                                }
+                                return Collections.emptyList();
+                            }, null, config);
+                } catch (Exception e) {
+                    throw new StorageManagerException("Unable to create ParallelTaskRunner", e);
+                }
+                try {
+                    ptr.run();
+                } catch (ExecutionException e) {
+                    throw new StorageManagerException("Error executing ParallelTaskRunner", e);
+                }
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e); // This should never happen!
+            }
+        } else if (fileName.endsWith(".bed") || fileName.endsWith(".bed.gz")) {
+            try {
+                BedReader bedReader = new BedReader(path);
+                ParallelTaskRunner<Bed, Void> ptr;
+                try {
+                    ptr = new ParallelTaskRunner<>(
+                            new FormatReaderWrapper<>(bedReader),
+                            bedList -> {
+                                for (Bed bed: bedList) {
+                                    Region region = new Region(normalizeChromosome(bed.getChromosome()), bed.getStart(), bed.getEnd());
+                                    Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                    ObjectMap annotation = new ObjectMap("name", bed.getName())
+                                                    .append("score", bed.getScore())
+                                                    .append("strand", bed.getStrand());
+                                    dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
+                                }
+                                return Collections.emptyList();
+                            }, null, config);
+                } catch (Exception e) {
+                    throw new StorageManagerException("Unable to create ParallelTaskRunner", e);
+                }
+                try {
+                    ptr.run();
+                } catch (ExecutionException e) {
+                    throw new StorageManagerException("Error executing ParallelTaskRunner", e);
+                }
+            } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e); // This should never happen!
+            }
+        } else {
+            throw new StorageManagerException("Unknown format file : " + path);
+        }
+    }
+
+    private String normalizeChromosome(String chromosome) {
+        return chromosome.replace("chrom", "").replace("chr", "");
     }
 
     public enum AnnotationSource {
