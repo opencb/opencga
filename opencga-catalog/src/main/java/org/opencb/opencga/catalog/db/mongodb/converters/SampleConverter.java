@@ -35,6 +35,7 @@ public class SampleConverter extends GenericConverter<Sample, Document> {
         Document document = null;
         try {
             document = Document.parse(sampleWriter.writeValueAsString(object));
+            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

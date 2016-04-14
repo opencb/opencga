@@ -36,6 +36,7 @@ public class ProjectConverter extends GenericConverter<Project, Document> {
         Document document = null;
         try {
             document = Document.parse(projectWriter.writeValueAsString(object));
+            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

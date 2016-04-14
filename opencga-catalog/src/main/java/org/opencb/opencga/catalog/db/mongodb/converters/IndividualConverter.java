@@ -35,6 +35,7 @@ public class IndividualConverter extends GenericConverter<Individual, Document> 
         Document document = null;
         try {
             document = Document.parse(individualWriter.writeValueAsString(object));
+            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

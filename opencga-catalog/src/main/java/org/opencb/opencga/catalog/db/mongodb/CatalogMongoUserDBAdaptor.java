@@ -365,7 +365,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
                 Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filterId)
         );
 
-        Bson update = Updates.pull(QueryParams.CONFIG_OPENCGA_FILTERS.key(), Filters.eq("id",filterId));
+        Bson update = Updates.pull(QueryParams.CONFIG_OPENCGA_FILTERS.key(), Filters.eq("id", filterId));
         QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
         return endQuery("Delete query filter", startTime, Collections.singletonList(queryResult.first().getModifiedCount()));
     }

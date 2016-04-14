@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.db.mongodb.converters;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.bson.Document;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.models.Filter;
 
 import java.io.IOException;
@@ -36,6 +35,7 @@ public class FilterConverter extends GenericConverter<Filter, Document> {
         Document document = null;
         try {
             document = Document.parse(fileWriter.writeValueAsString(object));
+            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

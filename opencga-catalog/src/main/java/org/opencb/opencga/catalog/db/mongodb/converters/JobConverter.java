@@ -35,6 +35,7 @@ public class JobConverter extends GenericConverter<Job, Document> {
         Document document = null;
         try {
             document = Document.parse(jobWriter.writeValueAsString(object));
+            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
