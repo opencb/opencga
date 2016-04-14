@@ -35,7 +35,6 @@ public class FilterConverter extends GenericConverter<Filter, Document> {
         Document document = null;
         try {
             document = Document.parse(fileWriter.writeValueAsString(object));
-            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
