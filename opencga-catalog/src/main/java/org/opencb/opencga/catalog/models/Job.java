@@ -413,7 +413,8 @@ public class Job {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status.equals(PREPARED) || status.equals(QUEUED) || status.equals(RUNNING) || status.equals(DONE) || status.equals(ERROR)) {
+            if (status != null && (status.equals(PREPARED) || status.equals(QUEUED) || status.equals(RUNNING) || status.equals(DONE)
+                    || status.equals(ERROR))) {
                 return true;
             }
             return false;

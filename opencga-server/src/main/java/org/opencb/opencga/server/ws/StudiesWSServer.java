@@ -21,6 +21,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
@@ -173,6 +174,22 @@ public class StudiesWSServer extends OpenCGAWSServer {
         try {
             QueryOptions qOptions = new QueryOptions(queryOptions);
             parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @POST
+    @Path("/search")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Search studies", position = 3, notes = "Campos aceptados: LALALALA")
+    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
+        try {
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+//            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

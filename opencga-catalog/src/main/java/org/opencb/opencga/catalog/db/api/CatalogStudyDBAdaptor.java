@@ -135,7 +135,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException;
 
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId) throws CatalogDBException;
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name) throws CatalogDBException;
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
@@ -306,6 +306,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         }
     }
 
+    @Deprecated
     enum StudyFilterOptions implements AbstractCatalogDBAdaptor.FilterOption {
         id(Type.NUMERICAL, ""),
         projectId(Type.NUMERICAL, ""),

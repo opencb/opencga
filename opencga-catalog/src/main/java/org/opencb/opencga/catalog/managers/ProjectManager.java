@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -51,10 +52,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
     @Override
     public long getProjectId(String projectId) throws CatalogException {
-        try {
-            return Integer.parseInt(projectId);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
+        if (StringUtils.isNumeric(projectId)) {
+            return Long.parseLong(projectId);
         }
 
         String[] split = projectId.split("@");
@@ -195,5 +194,20 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     @Override
     public QueryResult<Project> delete(Long id, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
     }
 }

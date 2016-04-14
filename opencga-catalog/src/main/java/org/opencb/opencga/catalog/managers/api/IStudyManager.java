@@ -71,7 +71,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
 
     QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId) throws CatalogException;
 
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId, String sessionId) throws CatalogException;
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String sessionId) throws CatalogException;
 
     QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
             throws CatalogException;
