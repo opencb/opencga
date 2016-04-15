@@ -532,12 +532,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
         List<Integer> studyIds = getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
         if (studyIds.isEmpty()) {
             studyIds = getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
         }
+        return studyIds;
+    }
+
+    @Override
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+
+        List<Integer> studyIds = getReturnedStudies(query, options);
 
         List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
                 .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());

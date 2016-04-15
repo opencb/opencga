@@ -23,14 +23,15 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
+import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
@@ -39,7 +40,6 @@ import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -150,6 +150,28 @@ public class OpenCGAWSServerTest {
             }
             assertNotNull("Must be annotated", variant.getAnnotation());
         }
+
+        //Create a new user with permissions just over 2 samples.
+        String userTest2 = OpenCGAWSServer.catalogManager.createUser("userTest2", "userTest2", "my@email.com", "1234", "ACME", new QueryOptions()).first().getId();
+        String sessionId2 = OpenCGAWSServer.catalogManager.login(userTest2, "1234", "127.0.0.1").first().getString("sessionId");
+        OpenCGAWSServer.catalogManager.addMemberToGroup(study.getId(), AuthorizationManager.MEMBERS_GROUP, userTest2, sessionId);
+
+        QueryResult<Sample> allSamples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(), new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.name.toString(), "NA19685,NA19661"), sessionId);
+        OpenCGAWSServer.catalogManager.shareSample(allSamples.getResult().get(0).getId(),
+                new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, false, false, false), sessionId);
+        OpenCGAWSServer.catalogManager.shareSample(allSamples.getResult().get(1).getId(),
+                new AclEntry(userTest2, true, false, false, false), sessionId);
+
+        variants = stTest.fetchVariants(study.getId(), sessionId2, queryOptions);
+        assertEquals(10, variants.size());
+        for (Variant variant : variants) {
+            for (StudyEntry sourceEntry : variant.getStudies()) {
+                assertEquals(2, sourceEntry.getSamplesData().size());
+                assertNotNull("Stats must be calculated", sourceEntry.getStats(StudyEntry.DEFAULT_COHORT));
+            }
+            assertNotNull("Must be annotated", variant.getAnnotation());
+        }
+
 
         Cohort myCohort = OpenCGAWSServer.catalogManager.createCohort(study.getId(), "MyCohort", Cohort.Type.FAMILY, "", samples.stream().map(Sample::getId).collect(Collectors.toList()), null, sessionId).first();
         assertEquals(Cohort.Status.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus());

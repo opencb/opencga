@@ -17,13 +17,17 @@
 package org.opencb.opencga.server.ws;
 
 import org.apache.commons.lang3.RandomStringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.datastore.core.ObjectMap;
+import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Study;
 
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
@@ -121,4 +125,36 @@ public class StudyWSServerTest {
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("Testing study modification finished");
     }
+
+
+    public List<Variant> fetchVariants(int studyId, String sessionId, QueryOptions queryOptions) throws IOException {
+        System.out.println("\nTesting file fetch variants...");
+        System.out.println("---------------------");
+        System.out.println("\nINPUT PARAMS");
+        System.out.println("\tsid: " + sessionId);
+        System.out.println("\tstudyId: " + studyId);
+
+        WebTarget webTarget = this.webTarget.path("studies").path(String.valueOf(studyId)).path("variants")
+                .queryParam("sid", sessionId);
+        for (Map.Entry<String, Object> entry : queryOptions.entrySet()) {
+            webTarget = webTarget.queryParam(entry.getKey(), entry.getValue());
+            System.out.println("\t" + entry.getKey() + ": " + entry.getValue());
+
+        }
+        System.out.println("webTarget = " + webTarget);
+        String json = webTarget.request().get(String.class);
+        System.out.println("json = " + json);
+
+
+        QueryResponse<QueryResult<Variant>> queryResponse = WSServerTestUtils.parseResult(json, Variant.class);
+        assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
+        System.out.println("\nOUTPUT PARAMS");
+        List<Variant> variants = queryResponse.getResponse().get(0).getResult();
+
+        System.out.println("\nJSON RESPONSE");
+        System.out.println(json);
+
+        return variants;
+    }
+
 }
