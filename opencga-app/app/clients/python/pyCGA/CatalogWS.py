@@ -359,7 +359,7 @@ class Samples(WS):
 
         return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, **options)
 
-    def update_post(self, sampleId, data, **options):
+    def update_post(self, sampleId, data=None, **options):
         """
 
         method to do simple update of sample via get method

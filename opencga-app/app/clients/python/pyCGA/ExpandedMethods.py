@@ -2,7 +2,7 @@ from pyCGA.CatalogWS import Studies, Samples, Individuals, Variables, Files
 __author__ = 'antonior'
 
 
-def share_samples(studyId, list_of_samples_file, folder_scope, user_id):
+def share_samples(studyId, list_of_samples_file, user_id):
     file_instance = Files()
     sample_instance = Samples()
     summary = {}
@@ -11,15 +11,19 @@ def share_samples(studyId, list_of_samples_file, folder_scope, user_id):
         aline = line.rstrip("\n").split("\t")
         if aline:
             sample_name = aline[0]
+            root_folder = aline[1]
+            print(sample_name)
             sample_objs = sample_instance.search(studyId=studyId, name=sample_name)
             for sample_obj in sample_objs:
-                folders_to_share = file_instance.search(studyId=studyId, path="~" + folder_scope,
-                                                        sampleIds=sample_obj["id"]
+                sample_id = str(sample_obj["id"])
+                folders_to_share = file_instance.search(studyId=studyId, path=root_folder,
+                                                        sampleIds=sample_id
                                                         )
                 for folder_to_share in folders_to_share:
-                    file_instance.share(userId=user_id, fileId=folder_to_share["id"])
+                    file_id = str(folder_to_share["id"])
+                    file_instance.share(userId=user_id, fileId=file_id)
 
-                sample_instance.share(userId=user_id, sampleId=sample_obj["id"])
+                sample_instance.share(userId=user_id, sampleId=sample_id)
                 summary[sample_name] = [folders_to_share]
 
 
@@ -110,14 +114,22 @@ def get_annotation(study_id, individual_id, variable_set_name):
     """
     variable = Variables()
     individual = Individuals()
-    variableSetId = variable.search(studyId=study_id, name=variable_set_name)[0]["id"]
+
     individuals_info = individual.search(studyId=study_id, id=individual_id)
+
     individual_annotations = []
+    variableSetId = variable.search(studyId=study_id, name=variable_set_name)[0]["id"]
     for individual_info in individuals_info:
-        if "annotationSets" in individual_info:
-            individual_annotations.append([r["annotations"] for r in individual_info["annotationSets"] if r["attributes"]["variableSetId"] == str(variableSetId)])
-        else:
-            individual_annotations.append([])
+        individual_annotations.append(extract_annotation(individual_info, variableSetId))
+    return individual_annotations
+
+
+def extract_annotation(individual_info, variableSetId):
+    individual_annotations = []
+    if "annotationSets" in individual_info:
+
+        individual_annotations = [r["annotations"] for r in individual_info["annotationSets"] if
+                                       str(r["variableSetId"]) == str(variableSetId)]
     return individual_annotations
 
 
