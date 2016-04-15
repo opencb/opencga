@@ -142,7 +142,7 @@ public class ArchiveDriver extends Configured implements Tool {
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
                 Compression.getCompressionAlgorithmByName(
-                        genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.GZ.getName())));
+                        genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
     }
 
     private void storeMetaData(VcfMeta meta, String tableName, Configuration conf) throws IOException {
