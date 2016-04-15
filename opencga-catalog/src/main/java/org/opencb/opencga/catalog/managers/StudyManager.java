@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -301,20 +302,71 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId)
+    public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
             throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(projectId, "projectId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = studyDBAdaptor.rank(query, field, numResults, asc);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long projectId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(projectId, "projectId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = studyDBAdaptor.groupBy(query, field, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId)
+    public QueryResult groupBy(long projectId, Query query, List<String> fields, QueryOptions options, String sessionId)
             throws CatalogException {
-        return null;
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(fields, "fields");
+        ParamUtils.checkObj(projectId, "projectId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = studyDBAdaptor.groupBy(query, fields, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
 
