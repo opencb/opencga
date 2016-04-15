@@ -184,6 +184,7 @@ public class Cohort {
     }
 
     //Represents the criteria of grouping samples in the cohort
+    @Deprecated
     public enum Type {
         CASE_CONTROL,
         CASE_SET,

@@ -30,7 +30,9 @@ import java.util.Map;
 public class File {
 
     /* Attributes known values */
+    @Deprecated
     public static final String DELETE_DATE = "deleteDate";      //Long
+
     private long id;
     /**
      * File name.
@@ -58,7 +60,7 @@ public class File {
     private String modificationDate;
     private String description;
     private FileStatus status;
-    @Deprecated
+//    @Deprecated
     //private FileStatusEnum fileStatusEnum;
     private long diskUsage;
     //private long studyId;
@@ -71,6 +73,7 @@ public class File {
     private List<AclEntry> acl;
     private Index index;
     private List<AnnotationSet> annotationSets;
+
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
@@ -357,6 +360,15 @@ public class File {
         FILE
     }
 
+
+    public enum Compression {
+        GZIP,
+        BGZIP,
+        ZIP,
+        SNAPPY,
+        NONE,
+    }
+
     /**
      * General format of the file, such as text, or binary, etc.
      */
@@ -382,14 +394,6 @@ public class File {
         EXECUTABLE,
         @Deprecated GZIP,
         UNKNOWN,
-    }
-
-    public enum Compression {
-        GZIP,
-        BGZIP,
-        ZIP,
-        SNAPPY,
-        NONE,
     }
 
     /**

@@ -20,10 +20,7 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.*;
 
 import java.util.Map;
 
@@ -85,6 +82,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     String getStudyOwnerId(long studyId) throws CatalogDBException;
 
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
+
+    QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Group> addMemberToGroup(long studyId, String groupId, String userId) throws CatalogDBException;
 
@@ -158,8 +157,14 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_ID("groups.id", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
+
+        ROLES("roles", TEXT_ARRAY, ""),
+        ROLES_ID("roles.id", TEXT, ""),
+        ROLES_USERS("roles.users", TEXT_ARRAY, ""),
+        ROLES_PERMISSIONS("roles.permissions", TEXT, ""),
 
         EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
         EXPERIMENT_NAME("experiments.name", TEXT_ARRAY, ""),

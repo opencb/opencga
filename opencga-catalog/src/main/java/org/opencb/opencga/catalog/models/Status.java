@@ -11,14 +11,17 @@ public class Status {
      * UNKNOWN status means that the status input was not valid when created so we don't know.
      */
     public static final String UNKNOWN = "UNKNOWN";
+
     /**
      * READY status means that the object is being used.
      */
     public static final String READY = "READY";
+
     /**
      * DELETED status means that the object is marked as deleted although is still available in the database.
      */
     public static final String DELETED = "DELETED";
+
     /**
      * REMOVED status means that the object is marked as removed, so it will get completely removed from the database ASAP.
      */

@@ -272,16 +272,48 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (groupId != null) {
             groupQuery.put("id", groupId);
         }
-        Bson projection = new Document("groups", new Document("$elemMatch", groupQuery));
+        Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
 
         QueryResult<Document> queryResult = studyCollection.find(query, projection,
-                filterOptions(options, FILTER_ROUTE_STUDIES + "groups."));
+                filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.GROUPS.key() + "."));
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>(1);
         studies.stream().filter(study -> study.getGroups() != null).forEach(study -> {
             groups.addAll(study.getGroups());
         });
         return endQuery("getGroup", startTime, groups);
+    }
+
+    @Override
+    public QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson query = new Document(PRIVATE_ID, studyId);
+        List<Bson> roleQuery = new ArrayList<>();
+        List<String> userIds = new ArrayList<>();
+        if (userId != null) {
+            userIds.add(userId);
+        }
+        if (groupId != null) {
+            userIds.add(groupId);
+        }
+        if (userIds.size() > 0) {
+            roleQuery.add(Filters.in("userIds", userIds));
+        }
+        if (roleId != null) {
+            roleQuery.add(Filters.eq("id", roleId));
+        }
+        Bson projection = new Document(QueryParams.ROLES.key(), new Document("$elemMatch", Filters.and(roleQuery)));
+
+        QueryResult<Document> queryResult = studyCollection.find(query, projection,
+                filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.ROLES.key() + "."));
+        List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
+        List<Role> roles = new ArrayList<>(1);
+        studies.stream().filter(study -> study.getRoles() != null).forEach(study -> {
+            roles.addAll(study.getRoles());
+        });
+        return endQuery("getRole", startTime, roles);
     }
 
     boolean groupExists(long studyId, String groupId) throws CatalogDBException {

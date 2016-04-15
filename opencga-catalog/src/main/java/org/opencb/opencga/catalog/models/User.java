@@ -38,6 +38,7 @@ public class User {
     /**
      * This specifies the role of this user in OpenCGA, possible values: admin, user, demo, ...
      */
+    @Deprecated
     private Role role;
     private Status status;
     private String lastActivity;
@@ -60,9 +61,8 @@ public class User {
     }
 
     public User(String id, String name, String email, String password, String organization, Role role, Status status) {
-        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
-                new ArrayList<Tool>(0), new ArrayList<Session>(0),
-                new HashMap<String, Object>(), new HashMap<String, Object>());
+        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0),
+                new ArrayList<>(0), new HashMap<>(), new HashMap<>());
     }
 
     public User(String id, String name, String email, String password, String organization, Role role, Status status,
@@ -232,7 +232,7 @@ public class User {
      * private List<Credential> credentials = new ArrayList<Credential>();
      * private List<Bucket> buckets = new ArrayList<Bucket>();
      */
-
+    @Deprecated
     public enum Role {
         ADMIN,  //= "admin";
         USER,  //= "user";

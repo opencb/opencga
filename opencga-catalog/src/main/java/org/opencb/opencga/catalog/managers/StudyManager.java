@@ -143,9 +143,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         files.add(rootFile);
 
         Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments,
-                files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), null, datastores, stats, attributes);
+                0, cipher, new LinkedList<>(), AuthorizationManager.getDefaultRoles(new HashSet<>(Arrays.asList(projectOwnerId, userId))),
+                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), null, datastores,
+                stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
