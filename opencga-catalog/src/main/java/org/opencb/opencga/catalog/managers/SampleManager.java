@@ -274,7 +274,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        //query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -297,7 +297,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        //query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
@@ -321,7 +321,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
-        query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        //query.append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         QueryResult queryResult = null;
         if (count) {
             // We do not need to check for permissions when we show the count of files
