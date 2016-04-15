@@ -165,21 +165,41 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         clearDB(DB_NAME);
         // each sample
         StudyConfiguration studyConfigurationMultiFile = new StudyConfiguration(1, "multi");
+        StudyConfiguration studyConfigurationBatchFile = new StudyConfiguration(2, "batch");
 
         ObjectMap options = new ObjectMap()
                 .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
 
+        StudyConfigurationManager studyConfigurationManager = getVariantStorageManager().getDBAdaptor(DB_NAME).getStudyConfigurationManager();
         for (int fileId = 77; fileId <= 93; fileId++) {
+            options.append(VariantStorageManager.Options.SAMPLE_IDS.key(), "NA128" + fileId + ":" + fileId);
             runDefaultETL(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"),
                     variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), fileId));
+            studyConfigurationMultiFile = studyConfigurationManager.getStudyConfiguration(studyConfigurationMultiFile.getStudyId(), null).first();
             assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId));
         }
 
 
-        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
-        checkLoadedVariants(dbAdaptor, studyConfigurationMultiFile, true, false, -1);
+        List<URI> uris = new LinkedList<>();
+        for (int fileId = 77; fileId <= 93; fileId++) {
+            uris.add(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"));
+        }
+
+        VariantStorageManager variantStorageManager = getVariantStorageManager();
+        variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
+                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfigurationBatchFile.getStudyName())
+                .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfigurationBatchFile.getStudyId())
+                .append(VariantStorageManager.Options.DB_NAME.key(), DB_NAME)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append("merge", false);
+
+        variantStorageManager.index(uris, outputUri, true, true, true);
+
+
+        VariantDBAdaptor dbAdaptor = this.variantStorageManager.getDBAdaptor(DB_NAME);
+        checkLoadedVariants(dbAdaptor, studyConfigurationBatchFile, true, false, -1);
 
 //
 //        //Load, in a new study, the same dataset in one single file

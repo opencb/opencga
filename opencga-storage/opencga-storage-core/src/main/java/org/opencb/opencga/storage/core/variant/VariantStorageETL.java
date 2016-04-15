@@ -613,9 +613,7 @@ public abstract class VariantStorageETL implements StorageETL {
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
-        for (Integer fileId : fileIds) {
-            checkLoadedVariants(input, fileId, studyConfiguration, options);
-        }
+        checkLoadedVariants(input, fileIds, studyConfiguration, options);
 
         if (annotate) {
 
@@ -706,6 +704,13 @@ public abstract class VariantStorageETL implements StorageETL {
 
     protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options)
             throws StorageManagerException;
+
+    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration, ObjectMap options)
+            throws StorageManagerException {
+        for (Integer fileId : fileIds) {
+            checkLoadedVariants(input, fileId, studyConfiguration, options);
+        }
+    }
 
 
     public static String buildFilename(String studyName, int fileId) {

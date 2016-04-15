@@ -2036,6 +2036,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     void createIndexes(QueryOptions options) {
+        createIndexes(options, variantsCollection);
+    }
+
+    public static void createIndexes(QueryOptions options, MongoDBCollection variantsCollection) {
         logger.info("Start creating indexes");
 
         Document onBackground = new Document("background", true);

@@ -1,8 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.collect.BiMap;
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCursor;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -13,7 +11,6 @@ import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
@@ -29,6 +26,7 @@ import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -213,9 +211,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 //        VariantSource variantSource = readVariantSource(input, null);
 //        new StudyInformation(variantSource.getStudyId())
 
-        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), 100);
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
-        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), 8);
+        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
 //        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty
 // (OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
@@ -383,8 +381,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
 
             int skippedVariants = (int) stageWriter.getWriteResult().getSkippedVariants();
-            MongoDBVariantWriteResult writeResult = merge(fileId, batchSize, loadThreads, capacity, numRecords, skippedVariants,
-                    stageCollection);
+            if (options.getBoolean("merge", true)) {
+                MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads, capacity,
+                        numRecords, skippedVariants, stageCollection);
+            }
 
             logger.info("Stage Write result: {}", skippedVariants);
 
@@ -400,7 +400,24 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     /**
      * Merge staged files into Variant collection.
      *
-     * @param fileId            FileID of the file to be merged
+     * @param fileIds           FileIDs of the files to be merged
+     * @return                  Write Result with times and count
+     * @throws StorageManagerException  If there is a problem executing the {@link ParallelTaskRunner}
+     */
+    public MongoDBVariantWriteResult merge(List<Integer> fileIds) throws StorageManagerException {
+        int batchSize = options.getInt(Options.LOAD_BATCH_SIZE.key(), Options.LOAD_BATCH_SIZE.defaultValue());
+        int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
+        int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
+        MongoDBCollection collection = dbAdaptor.getDB().getCollection(
+                options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+
+        return merge(fileIds, batchSize, loadThreads, capacity, 0, 0, collection);
+    }
+
+    /**
+     * Merge staged files into Variant collection.
+     *
+     * @param fileIds           FileIDs of the files to be merged
      * @param batchSize         Batch size
      * @param loadThreads       Number of load threads
      * @param capacity          Capacity of the intermedial queue
@@ -410,42 +427,25 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
      * @return                  Write Result with times and count
      * @throws StorageManagerException  If there is a problem executing the {@link ParallelTaskRunner}
      */
-    public MongoDBVariantWriteResult merge(int fileId, int batchSize, int loadThreads, int capacity,
+    protected MongoDBVariantWriteResult merge(List<Integer> fileIds, int batchSize, int loadThreads, int capacity,
                                            int numRecords, int skippedVariants, MongoDBCollection stageCollection)
             throws StorageManagerException {
 
+        long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration = getStudyConfiguration();
-        MongoDBVariantMerger variantWriter = new MongoDBVariantMerger(studyConfiguration, Collections.singletonList(fileId),
-                dbAdaptor.getVariantsCollection(), numRecords - skippedVariants);
+
+        MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId());
+        MongoDBVariantMerger variantWriter = new MongoDBVariantMerger(studyConfiguration, fileIds,
+                dbAdaptor.getVariantsCollection(), reader.countNumVariants());
+
         ParallelTaskRunner<Document, MongoDBVariantWriteResult> ptrMerge;
         try {
-            FindIterable<Document> iterable = stageCollection.nativeQuery().find(new Document(), new QueryOptions());
-            MongoCursor<Document> iterator = iterable.iterator();
-            ptrMerge = new ParallelTaskRunner<>(b -> {
-                List<Document> list = new ArrayList<>(b);
-                for (int i = 0; i < batchSize; i++) {
-                    if (iterator.hasNext()) {
-                        list.add(iterator.next());
-                    }
-                }
-                return list;
-            }, variantWriter, null, new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false));
+            ptrMerge = new ParallelTaskRunner<>(reader, variantWriter, null,
+                    new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false));
         } catch (Exception e) {
             e.printStackTrace();
             throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
         }
-
-        /*
-            List<Document> documents = new ArrayList<>(batchSize);
-            for (Document document : stageCollection.nativeQuery().find(new Document(), new QueryOptions())) {
-                documents.add(document);
-                if (documents.size() == batchSize) {
-                    variantWriter.load(documents.stream());
-                    documents.clear();
-                }
-            }
-            variantWriter.load(documents.stream());
-        */
 
         try {
             ptrMerge.run();
@@ -455,8 +455,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         }
 
         long startTime = System.currentTimeMillis();
-        MongoDBVariantStageLoader.deleteFiles(stageCollection, studyConfiguration.getStudyId(), fileId);
-        logger.info("Delete variants time: " + (System.currentTimeMillis() - startTime) / 1000 + "s");
+        logger.info("Deleting variant records from Stage collection");
+        long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds);
+        logger.info("Delete variants time: " + (System.currentTimeMillis() - startTime) / 1000 + "s , CleanDocuments: " + modifiedCount);
 
         MongoDBVariantWriteResult writeResult = variantWriter.getResult();
         writeResult.setSkippedVariants(skippedVariants);
@@ -465,12 +466,31 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         logger.info("Write result: {}", writeResult.toTSV());
         logger.info("Write result: {}", writeResult.toJson());
         options.put("writeResult", writeResult);
+
+        long end = System.currentTimeMillis();
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
+        logger.info("Variants merged!");
         return writeResult;
     }
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
-        return super.postLoad(input, output);
+        if (options.getBoolean("merge")) {
+            return super.postLoad(input, output);
+        } else {
+            return input;
+        }
+    }
+
+    @Override
+    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration, ObjectMap options)
+            throws StorageManagerException {
+        if (fileIds.size() == 1) {
+            checkLoadedVariants(input, fileIds.get(0), studyConfiguration, options);
+        } else {
+            // FIXME: Check variants in this situation!
+            logger.warn("Skip check loaded variants");
+        }
     }
 
     @Override
@@ -610,7 +630,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         return true; // This is a new batch of samples
     }
 
-//    @Override
+    //    @Override
 //    public void checkStudyConfiguration(StudyConfiguration studyConfiguration, VariantDBAdaptor dbAdaptor) throws
 // StorageManagerException {
 //        super.checkStudyConfiguration(studyConfiguration, dbAdaptor);

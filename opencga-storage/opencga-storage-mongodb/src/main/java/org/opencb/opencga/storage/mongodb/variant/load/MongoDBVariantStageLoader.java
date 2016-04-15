@@ -1,9 +1,11 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import com.google.protobuf.InvalidProtocolBufferException;
+import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteResult;
-import com.mongodb.client.result.UpdateResult;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
@@ -15,7 +17,6 @@ import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.commons.utils.CryptoUtils;
@@ -27,10 +28,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 import java.util.zip.DataFormatException;
@@ -215,8 +214,10 @@ public class MongoDBVariantStageLoader {
 //        List<Bson> queries = ((Supplier<List<Bson>>) (LinkedList::new)).get();
         List<Bson> queries = new LinkedList<>();
 //        List<Bson> updates = new LinkedList<>();
-        Map<String, Integer> ids = new HashMap<>();
-        List<List<Binary>> binaries = new LinkedList<>();
+//        Map<String, List<Binary>> ids = new HashMap<>();
+//        Map<String, List<Binary>> ids = new MultiValueMap();
+        ListMultimap<String, Binary> ids = LinkedListMultimap.create();
+//        List<List<Binary>> binaries = new LinkedList<>();
 
         stream.forEach(variant -> {
             variantsLocalCount[0]++;
@@ -226,23 +227,27 @@ public class MongoDBVariantStageLoader {
             }
             Binary binary = VARIANT_CONVERTER_DEFAULT.convertToStorageType(variant);
             String id = STRING_ID_CONVERTER.convertToStorageType(variant);
-            if (ids.containsKey(id)) {
-                Integer pos = ids.get(id);
-//                updates.set(pos, Updates.combine(updates.get(pos), Updates.push(fieldName, binary)));
-                binaries.get(pos).add(binary);
-            } else {
-                ids.put(id, ids.size());
-                queries.add(eq("_id", id));
-//            updates.add(Updates.combine(Updates.set(fieldName, binary), Updates.setOnInsert("id", variant.toString())));
-//                updates.add(Updates.combine(Updates.push(fieldName, binary)));
-                LinkedList<Binary> list = new LinkedList<>();
-                list.add(binary);
-                binaries.add(list);
-            }
+
+            ids.put(id, binary);
+//            if (ids.containsKey(id)) {
+//                ids.get(id).add(binary);
+////                updates.set(pos, Updates.combine(updates.get(pos), Updates.push(fieldName, binary)));
+//                binaries.get(pos).add(binary);
+//            } else {
+//                ids.put(id, ids.size());
+//                queries.add(eq("_id", id));
+////            updates.add(Updates.combine(Updates.set(fieldName, binary), Updates.setOnInsert("id", variant.toString())));
+////                updates.add(Updates.combine(Updates.push(fieldName, binary)));
+//                LinkedList<Binary> list = new LinkedList<>();
+//                list.add(binary);
+//                ids.put(id, list);
+//            }
         });
 
         List<Bson> updates = new LinkedList<>();
-        for (List<Binary> binaryList : binaries) {
+        for (String id : ids.keySet()) {
+            List<Binary> binaryList = ids.get(id);
+            queries.add(eq("_id", id));
             if (binaryList.size() == 1) {
                 updates.add(push(fieldName, binaryList.get(0)));
             } else {
@@ -252,9 +257,17 @@ public class MongoDBVariantStageLoader {
 
         MongoDBVariantWriteResult result = new MongoDBVariantWriteResult();
         if (!queries.isEmpty()) {
-            final BulkWriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS).first();
-            result.setNewDocuments(mongoResult.getInsertedCount())
-                    .setUpdatedObjects(mongoResult.getModifiedCount());
+            try {
+                final BulkWriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS).first();
+                result.setNewDocuments(mongoResult.getInsertedCount())
+                        .setUpdatedObjects(mongoResult.getModifiedCount());
+            } catch (MongoBulkWriteException e) {
+                for (String id : ids.keySet()) {
+                    List<Binary> binaryList = ids.get(id);
+                    logger.info("_id: " + id + " , binaryListSize:" + binaryList.size());
+                }
+                throw e;
+            }
         }
 
         int previousCount = variantsCount.getAndAdd(variantsLocalCount[0]);
@@ -273,21 +286,33 @@ public class MongoDBVariantStageLoader {
         return result;
     }
 
-    public static QueryResult<UpdateResult> deleteFiles(MongoDBCollection stageCollection, int studyId, int fileId) {
+    public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, int fileId) {
         //Delete those studies that had duplicated variants. Those are not inserted, so they are not new variants.
-        stageCollection.update(
+        long modifiedCount = stageCollection.update(
                 and(exists(studyId + "." + fileId + ".1"), exists(studyId + ".new", false)), unset(Integer.toString(studyId)),
-                new QueryOptions(MongoDBCollection.MULTI, true));
-        return stageCollection.update(
+                new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+        modifiedCount += stageCollection.update(
                 exists(studyId + "." + fileId),
                 combine(
 //                        unset(studyId + "." + fileId),
                         set(studyId + "." + fileId, null),
                         set(studyId + ".new", false)
-                ), new QueryOptions(MongoDBCollection.MULTI, true));
+                ), new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+        return modifiedCount;
     }
 
-    public static QueryResult<UpdateResult> deleteFiles(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds) {
+    public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds) {
+
+        List<Bson> exists = new LinkedList<>();
+        exists.add(exists(studyId + ".new", false));
+        for (Integer fileId : fileIds) {
+            exists.add(exists(studyId + "." + fileId + ".1"));
+        }
+        long modifiedCount = stageCollection.update(
+                and(exists), unset(Integer.toString(studyId)),
+                new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
+
+
         List<Bson> filters = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
         for (Integer fileId : fileIds) {
@@ -296,7 +321,10 @@ public class MongoDBVariantStageLoader {
             updates.add(set(studyId + "." + fileId, null));
         }
         updates.add(set(studyId + ".new", false));
-        return stageCollection.update(or(filters), combine(updates), new QueryOptions(MongoDBCollection.MULTI, true));
+        modifiedCount += stageCollection.update(or(filters), combine(updates), new QueryOptions(MongoDBCollection.MULTI, true))
+                .first().getModifiedCount();
+
+        return modifiedCount;
     }
 
 

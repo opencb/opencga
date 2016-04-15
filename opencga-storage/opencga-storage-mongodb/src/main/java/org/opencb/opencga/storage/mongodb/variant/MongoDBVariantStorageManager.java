@@ -19,6 +19,9 @@ package org.opencb.opencga.storage.mongodb.variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import org.opencb.opencga.core.common.MemoryUsageMonitor;
+import org.opencb.opencga.storage.core.StorageETL;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
@@ -26,8 +29,9 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
+import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Collections;
+import java.util.*;
 
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.*;
 
@@ -101,6 +105,74 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     public VariantMongoDBAdaptor getDBAdaptor() throws StorageManagerException {
         return getDBAdaptor(null);
+    }
+
+    @Override
+    public List<StorageETLResult> index(List<URI> inputFiles, URI outdirUri, boolean doExtract, boolean doTransform, boolean doLoad)
+            throws StorageManagerException {
+
+        Map<URI, MongoDBVariantStorageETL> storageETLMap = new LinkedHashMap<>();
+        Map<URI, StorageETLResult> resultsMap = new LinkedHashMap<>();
+        LinkedList<StorageETLResult> results = new LinkedList<>();
+
+        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
+        monitor.start();
+        try {
+            for (URI inputFile : inputFiles) {
+                StorageETLResult storageETLResult = new StorageETLResult();
+                MongoDBVariantStorageETL storageETL = newStorageETL(doLoad);
+                storageETL.getOptions().append(VariantStorageManager.Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
+                storageETLMap.put(inputFile, storageETL);
+                resultsMap.put(inputFile, storageETLResult);
+                results.add(storageETLResult);
+            }
+
+
+            if (doExtract) {
+                for (Map.Entry<URI, MongoDBVariantStorageETL> entry : storageETLMap.entrySet()) {
+                    URI uri = entry.getValue().extract(entry.getKey(), outdirUri);
+                    resultsMap.get(entry.getKey()).setExtractResult(uri);
+                }
+            }
+
+            if (doTransform) {
+                for (Map.Entry<URI, MongoDBVariantStorageETL> entry : storageETLMap.entrySet()) {
+                    StorageETLResult etlResult = resultsMap.get(entry.getKey());
+                    URI input = etlResult.getExtractResult() == null ? entry.getKey() : etlResult.getExtractResult();
+                    transformFile(entry.getValue(), etlResult, results, input, outdirUri);
+                }
+            }
+
+            if (doLoad) {
+                int batchLoad = getOptions().getInt(Options.MERGE_BATCH_SIZE.key(), Options.MERGE_BATCH_SIZE.defaultValue());
+                List<Integer> fileIds = new ArrayList<>(batchLoad);
+                Iterator<Map.Entry<URI, MongoDBVariantStorageETL>> iterator = storageETLMap.entrySet().iterator();
+                while (iterator.hasNext()) {
+                    Map.Entry<URI, MongoDBVariantStorageETL> entry = iterator.next();
+                    StorageETLResult etlResult = resultsMap.get(entry.getKey());
+                    URI input = etlResult.getPostTransformResult() == null ? entry.getKey() : etlResult.getPostTransformResult();
+                    MongoDBVariantStorageETL storageETL = entry.getValue();
+                    loadFile(storageETL, etlResult, results, input, outdirUri);
+
+                    fileIds.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                    if (fileIds.size() == batchLoad || !iterator.hasNext()) {
+                        storageETL.getOptions().put("merge", true);
+                        storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(fileIds));
+                        storageETL.merge(fileIds);
+                        storageETL.postLoad(input, outdirUri);
+                        fileIds.clear();
+                    }
+                }
+            }
+
+        } finally {
+            monitor.interrupt();
+            for (StorageETL storageETL : storageETLMap.values()) {
+                storageETL.close();
+            }
+        }
+
+        return results;
     }
 
     @Override
