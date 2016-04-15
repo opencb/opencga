@@ -72,7 +72,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        throw CatalogAuthorizationException.denny(userId, permission.toString(), "Project", projectId, null);
+        throw CatalogAuthorizationException.deny(userId, permission.toString(), "Project", projectId, null);
     }
 
     /*
@@ -94,7 +94,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         Group group = getGroupBelonging(studyId, userId);
         if (group == null) {
-            throw CatalogAuthorizationException.denny(userId, message, "Study", studyId, null);
+            throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
         }
 
         final boolean auth;
@@ -119,7 +119,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 break;
         }
         if (!auth) {
-            throw CatalogAuthorizationException.denny(userId, message, "Study", studyId, null);
+            throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
         }
     }
 
@@ -144,7 +144,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         AclEntry fileAcl = resolveFileAcl(fileId, userId, studyId, getGroupBelonging(studyId, userId), studyAuthenticationContext);
 
         if (!isAuth(permission, fileAcl)) {
-            throw CatalogAuthorizationException.denny(userId, permission.toString(), "File", fileId, null);
+            throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
         }
     }
 
@@ -158,7 +158,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         AclEntry sampleAcl = resolveSampleAcl(sampleId, userId, getGroupBelonging(studyId, userId));
 
         if (!isAuth(permission, sampleAcl)) {
-            throw CatalogAuthorizationException.denny(userId, permission.toString(), "Sample", sampleId, null);
+            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
         }
     }
 
@@ -189,7 +189,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
         if (!auth) {
-            throw CatalogAuthorizationException.denny(userId, permission.toString(), "Individual", individualId, null);
+            throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
         }
     }
 

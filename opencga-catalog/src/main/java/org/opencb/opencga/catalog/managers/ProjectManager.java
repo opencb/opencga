@@ -197,7 +197,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId)
+            throws CatalogException {
         return null;
     }
 
@@ -207,7 +208,8 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
         return null;
     }
 }

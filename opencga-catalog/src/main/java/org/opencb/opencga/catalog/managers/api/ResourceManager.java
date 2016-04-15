@@ -73,6 +73,7 @@ public interface ResourceManager<I, R> {
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
      *
+     *
      * @param query      Query object containing the query that will be executed.
      * @param field      A field or a comma separated list of fields by which the results will be grouped in.
      * @param numResults Maximum number of results to be reported.
@@ -85,6 +86,7 @@ public interface ResourceManager<I, R> {
 
     /**
      * Groups the elements queried by the field(s) given.
+     *
      *
      * @param query   Query object containing the query that will be executed.
      * @param field   Field by which the results will be grouped in.

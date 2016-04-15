@@ -17,22 +17,22 @@ public class CatalogAuthorizationException extends CatalogException {
     }
 
     public static CatalogAuthorizationException cantRead(String userId, String resource, long id, String name) {
-        return denny(userId, "read", resource, id, name);
+        return deny(userId, "read", resource, id, name);
     }
 
     public static CatalogAuthorizationException cantWrite(String userId, String resource, long id, String name) {
-        return denny(userId, "write", resource, id, name);
+        return deny(userId, "write", resource, id, name);
     }
 
     public static CatalogAuthorizationException cantModify(String userId, String resource, long id, String name) {
-        return denny(userId, "modify", resource, id, name);
+        return deny(userId, "modify", resource, id, name);
     }
 
     public static CatalogAuthorizationException cantExecute(String userId, String resource, long id, String name) {
-        return denny(userId, "execute", resource, id, name);
+        return deny(userId, "execute", resource, id, name);
     }
 
-    public static CatalogAuthorizationException denny(String userId, String permission, String resource, long id, String name) {
+    public static CatalogAuthorizationException deny(String userId, String permission, String resource, long id, String name) {
         return new CatalogAuthorizationException("Permission denied."
                 + (userId == null || userId.isEmpty() ? "" : "User \"" + userId + "\"")
                 + " Can't " + permission + " "
