@@ -126,8 +126,9 @@ public class VariantFetcher {
                         new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
                                 "projects.studies.samples.attributes"))
                         , sessionId);
+                samplesQueryResult.getResult().sort((o1, o2) -> Integer.compare(o1.getId(), o2.getId()));
                 samplesMap.put(study.getId(), samplesQueryResult.getResult());
-                samplesQueryResult.getResult().stream().map(Sample::getId).sorted().forEach(returnedSamples::add);
+                samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
             }
             query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
         }
