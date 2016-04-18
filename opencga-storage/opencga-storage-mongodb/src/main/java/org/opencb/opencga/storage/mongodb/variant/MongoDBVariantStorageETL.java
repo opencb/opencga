@@ -448,6 +448,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         }
 
         try {
+            logger.info("Merging files " + fileIds);
             ptrMerge.run();
         } catch (ExecutionException e) {
             e.printStackTrace();

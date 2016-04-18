@@ -43,7 +43,12 @@ import static com.mongodb.client.model.Updates.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class MongoDBVariantStageLoader {
-    public static final QueryOptions QUERY_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true);
+
+    public static final String NEW_STUDY_FIELD = "new";
+    public static final boolean NEW_STUDY_DEFAULT = true;
+
+    private static final QueryOptions QUERY_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true);
+
     private final MongoDBCollection collection;
     private final int studyId;
     private final int fileId;
@@ -52,7 +57,7 @@ public class MongoDBVariantStageLoader {
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
     private final AtomicInteger variantsCount;
-    public static final int DEFAULT_LOGING_BATCH_SIZE = 500;
+    public static final int DEFAULT_LOGING_BATCH_SIZE = 5000;
     private final int logingBatchSize;
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
@@ -211,13 +216,8 @@ public class MongoDBVariantStageLoader {
         final int[] variantsLocalCount = {0};
         final int[] skippedVariants = {0};
 
-//        List<Bson> queries = ((Supplier<List<Bson>>) (LinkedList::new)).get();
         List<Bson> queries = new LinkedList<>();
-//        List<Bson> updates = new LinkedList<>();
-//        Map<String, List<Binary>> ids = new HashMap<>();
-//        Map<String, List<Binary>> ids = new MultiValueMap();
         ListMultimap<String, Binary> ids = LinkedListMultimap.create();
-//        List<List<Binary>> binaries = new LinkedList<>();
 
         stream.forEach(variant -> {
             variantsLocalCount[0]++;
@@ -229,19 +229,6 @@ public class MongoDBVariantStageLoader {
             String id = STRING_ID_CONVERTER.convertToStorageType(variant);
 
             ids.put(id, binary);
-//            if (ids.containsKey(id)) {
-//                ids.get(id).add(binary);
-////                updates.set(pos, Updates.combine(updates.get(pos), Updates.push(fieldName, binary)));
-//                binaries.get(pos).add(binary);
-//            } else {
-//                ids.put(id, ids.size());
-//                queries.add(eq("_id", id));
-////            updates.add(Updates.combine(Updates.set(fieldName, binary), Updates.setOnInsert("id", variant.toString())));
-////                updates.add(Updates.combine(Updates.push(fieldName, binary)));
-//                LinkedList<Binary> list = new LinkedList<>();
-//                list.add(binary);
-//                ids.put(id, list);
-//            }
         });
 
         List<Bson> updates = new LinkedList<>();
@@ -287,40 +274,42 @@ public class MongoDBVariantStageLoader {
     }
 
     public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, int fileId) {
-        //Delete those studies that had duplicated variants. Those are not inserted, so they are not new variants.
+        //Delete those studies that have duplicated variants. Those are not inserted, so they are not new variants.
         long modifiedCount = stageCollection.update(
-                and(exists(studyId + "." + fileId + ".1"), exists(studyId + ".new", false)), unset(Integer.toString(studyId)),
+                and(exists(studyId + "." + fileId + ".1"), exists(studyId + "." + NEW_STUDY_FIELD, false)), unset(Integer.toString(studyId)),
                 new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
         modifiedCount += stageCollection.update(
                 exists(studyId + "." + fileId),
                 combine(
 //                        unset(studyId + "." + fileId),
                         set(studyId + "." + fileId, null),
-                        set(studyId + ".new", false)
+                        set(studyId + "." + NEW_STUDY_FIELD, false)
                 ), new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
         return modifiedCount;
     }
 
     public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, List<Integer> fileIds) {
-
-        List<Bson> exists = new LinkedList<>();
-        exists.add(exists(studyId + ".new", false));
+        // Delete those new studies that have duplicated variants. Those are not inserted, so they are not new variants.
+        // i.e: For each file, or the file has not been loaded (empty), or the file has more than one element.
+        //     { $or : [ { <study>.<file>.0 : {$exists:false} }, { <study>.<file>.1 : {$exists:true} } ] }
+        List<Bson> filters = new LinkedList<>();
+        filters.add(exists(studyId + "." + NEW_STUDY_FIELD, false));
         for (Integer fileId : fileIds) {
-            exists.add(exists(studyId + "." + fileId + ".1"));
+            filters.add(or(exists(studyId + "." + fileId + ".0", false), exists(studyId + "." + fileId + ".1")));
         }
         long modifiedCount = stageCollection.update(
-                and(exists), unset(Integer.toString(studyId)),
+                and(filters), unset(Integer.toString(studyId)),
                 new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
 
 
-        List<Bson> filters = new LinkedList<>();
+        filters.clear();
         List<Bson> updates = new LinkedList<>();
         for (Integer fileId : fileIds) {
             filters.add(exists(studyId + "." + fileId));
 //            updates.add(unset(studyId + "." + fileId));
             updates.add(set(studyId + "." + fileId, null));
         }
-        updates.add(set(studyId + ".new", false));
+        updates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
         modifiedCount += stageCollection.update(or(filters), combine(updates), new QueryOptions(MongoDBCollection.MULTI, true))
                 .first().getModifiedCount();
 

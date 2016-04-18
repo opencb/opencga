@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
+import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -53,7 +54,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private LinkedList<Integer> indexedSamples;
 
     private final AtomicInteger variantsCount;
-    public static final int DEFAULT_LOGING_BATCH_SIZE = 500;
+    public static final int DEFAULT_LOGING_BATCH_SIZE = 5000;
     private long loggingBatchSize;
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
@@ -128,19 +129,23 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         final AtomicInteger nonInserted = new AtomicInteger();
 
         variants.forEach(document -> {
-            int size = document.size();
             Variant emptyVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
             Document study = document.get(Integer.toString(studyId), Document.class);
             if (study != null) {
-                boolean newStudy = study.getBoolean("new", true);
-                boolean newVariant = newStudy && size == 2;
+                // New variant in the study.
+                boolean newStudy = study.getBoolean(MongoDBVariantStageLoader.NEW_STUDY_FIELD, MongoDBVariantStageLoader.NEW_STUDY_DEFAULT);
+                // New variant in the collection if new variant and document size is 2 {_id, study}
+                boolean newVariant = newStudy && document.size() == 2;
 
                 List<Document> fileDocuments = new LinkedList<>();
                 Document gts = new Document();
 
+                // Loop for each file that have to be merged
                 for (Integer fileId : fileIds) {
 
+                    // Different actions if the file is present or missing in the document.
                     if (study.containsKey(fileId.toString())) {
+                        //Duplicated documents are treated like missing. Increment the number of duplicated variants
                         List duplicatedVariants = study.get(fileId.toString(), List.class);
                         if (duplicatedVariants.size() > 1) {
                             nonInserted.addAndGet(duplicatedVariants.size());
@@ -174,36 +179,56 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
 
                 if (newVariant) {
-                    Document variantDocument = variantConverter.convertToStorageType(emptyVar);
-                    variantDocument.append(STUDIES_FIELD,
-                            Collections.singletonList(
-                                    new Document(STUDYID_FIELD, studyId)
-                                            .append(FILES_FIELD, fileDocuments)
-                                            .append(GENOTYPES_FIELD, gts)
-                            )
-                    );
+                    // If there where no files and the variant is new, do not insert the variant.
+                    // It may happen if all the files in the variant where duplicated variants.
+                    if (!fileDocuments.isEmpty()) {
+                        //If it is a new variant (so, new variant for the study), add the already loaded samples as UNKNOWN
+                        addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
 
-                    inserts.add(variantDocument);
+                        Document variantDocument = variantConverter.convertToStorageType(emptyVar);
+                        variantDocument.append(STUDIES_FIELD,
+                                Collections.singletonList(
+                                        new Document(STUDYID_FIELD, studyId)
+                                                .append(FILES_FIELD, fileDocuments)
+                                                .append(GENOTYPES_FIELD, gts)
+                                )
+                        );
+                        inserts.add(variantDocument);
+                    }
                 } else if (newStudy) {
+                    //If it is a new variant for the study, add the already loaded samples as UNKNOWN
+                    addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
+
                     Document studyDocument = new Document(STUDYID_FIELD, studyId)
                             .append(FILES_FIELD, fileDocuments)
                             .append(GENOTYPES_FIELD, gts);
 
-                    queriesExisting.add(Filters.eq("_id", variantConverter.buildStorageId(emptyVar)));
+                    String id = variantConverter.buildStorageId(emptyVar);
+                    queriesExistingId.add(id);
+                    queriesExisting.add(Filters.eq("_id", id));
                     updatesExisting.add(Updates.push(STUDIES_FIELD, studyDocument));
 
                 } else {
-                    queriesExisting.add(Filters.and(Filters.eq("_id", variantConverter.buildStorageId(emptyVar)),
-                            Filters.eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
-
+                    String id = variantConverter.buildStorageId(emptyVar);
                     List<Bson> mergeUpdates = new LinkedList<>();
 
                     for (String gt : gts.keySet()) {
                         mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
                                 gts.get(gt, List.class)));
                     }
-                    mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
-                    updatesExisting.add(Updates.combine(mergeUpdates));
+                    if (!fileDocuments.isEmpty()) {
+                        queriesExistingId.add(id);
+                        queriesExisting.add(Filters.and(Filters.eq("_id", id),
+                                Filters.eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
+
+                        mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + FILES_FIELD, fileDocuments));
+                        updatesExisting.add(Updates.combine(mergeUpdates));
+                    } else {
+                        queriesFillGapsId.add(id);
+                        queriesFillGaps.add(Filters.and(Filters.eq("_id", id),
+                                Filters.eq(STUDIES_FIELD + "." + STUDYID_FIELD, studyId)));
+                        updatesFillGaps.add(Updates.combine(mergeUpdates));
+                    }
                 }
             }
 
@@ -212,15 +237,22 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         long newVariants = -System.nanoTime();
         if (!inserts.isEmpty()) {
-            BulkWriteResult writeResult = collection.insert(inserts, QUERY_OPTIONS).first();
-            if (writeResult.getInsertedCount() != inserts.size()) {
-                logger.error("(Inserts = " + inserts.size() + ") != (InsertedCount = " + writeResult.getInsertedCount() + " )");
-                for (Document insert : inserts) {
-                    Long count = collection.count(Filters.eq("_id", insert.get("_id"))).first();
-                    if (count != 1) {
-                        logger.error("Missing insert " + insert.get("_id"));
+            try {
+                BulkWriteResult writeResult = collection.insert(inserts, QUERY_OPTIONS).first();
+                if (writeResult.getInsertedCount() != inserts.size()) {
+                    logger.error("(Inserts = " + inserts.size() + ") != (InsertedCount = " + writeResult.getInsertedCount() + ")");
+                    for (Document insert : inserts) {
+                        Long count = collection.count(Filters.eq("_id", insert.get("_id"))).first();
+                        if (count != 1) {
+                            logger.error("Missing insert " + insert.get("_id"));
+                        }
                     }
                 }
+            } catch (MongoBulkWriteException e) {
+                for (Document insert : inserts) {
+                    System.out.println(insert.get("_id"));
+                }
+                throw e;
             }
         }
         newVariants += System.nanoTime();
@@ -228,9 +260,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!queriesExisting.isEmpty()) {
             QueryResult<BulkWriteResult> update = collection.update(queriesExisting, updatesExisting, QUERY_OPTIONS);
             if (update.first().getModifiedCount() != queriesExisting.size()) {
-                logger.error("(Updated existing variants = " + queriesExisting.size() + " ) != "
-                        + " (UpdatedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
-                onError("", update, queriesExisting, queriesExistingId);
+                onError("existing variants", update, queriesExisting, queriesExistingId);
             }
         }
         existingVariants += System.nanoTime();
@@ -238,7 +268,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!queriesFillGaps.isEmpty()) {
             QueryResult<BulkWriteResult> update = collection.update(queriesFillGaps, updatesFillGaps, QUERY_OPTIONS);
             if (update.first().getModifiedCount() != queriesFillGaps.size()) {
-                onError("fillGaps", update, queriesFillGaps, queriesFillGapsId);
+                onError("fill gaps", update, queriesFillGaps, queriesFillGapsId);
             }
         }
         fillGapsVariants += System.nanoTime();
@@ -285,11 +315,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     public void onError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
                 + "(UpdatedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
+        logger.info("QueryIDs: {}", queryIds);
+        List<QueryResult<Document>> queryResults = collection.find(queries, null);
+        logger.info("Results: ", queryResults.size());
 
-        for (QueryResult<Document> r : collection.find(queries, null)) {
+        for (QueryResult<Document> r : queryResults) {
+            logger.info("result: ", r);
             if (!r.getResult().isEmpty()) {
                 String id = r.first().get("_id", String.class);
-                queryIds.remove(id);
+                boolean remove = queryIds.remove(id);
+                logger.info("remove({}): {}", id, remove);
             }
         }
         for (String id : queryIds) {

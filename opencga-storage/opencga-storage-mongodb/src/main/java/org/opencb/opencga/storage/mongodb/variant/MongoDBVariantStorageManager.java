@@ -116,6 +116,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         LinkedList<StorageETLResult> results = new LinkedList<>();
 
         MemoryUsageMonitor monitor = new MemoryUsageMonitor();
+        monitor.setDelay(5000);
         monitor.start();
         try {
             for (URI inputFile : inputFiles) {
@@ -152,6 +153,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     StorageETLResult etlResult = resultsMap.get(entry.getKey());
                     URI input = etlResult.getPostTransformResult() == null ? entry.getKey() : etlResult.getPostTransformResult();
                     MongoDBVariantStorageETL storageETL = entry.getValue();
+
+
+                    storageETL.getOptions().put("merge", false);
                     loadFile(storageETL, etlResult, results, input, outdirUri);
 
                     fileIds.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
