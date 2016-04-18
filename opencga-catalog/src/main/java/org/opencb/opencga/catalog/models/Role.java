@@ -19,12 +19,18 @@ package org.opencb.opencga.catalog.models;
 import java.util.List;
 
 /**
- * Created by imedina on 15/04/16.
+ * This class models a role and its users in one Study. At this moment one user can only be belong to one role.
+ *
+ * Created by pfurio on 15/04/16.
  */
 public class Role {
 
     private String id;
-    private List<String> users; // We could have userIds (xxx) and groupIds (@xxx)
+
+    /**
+     * A list of users or group of users belonging to this role. Group ids must be preceded by '@'.
+     */
+    private List<String> users;
     private StudyPermissions permissions;
 
     public Role() {
@@ -34,6 +40,16 @@ public class Role {
         this.id = id;
         this.users = users;
         this.permissions = permissions;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Role{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", users=").append(users);
+        sb.append(", permissions=").append(permissions);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
@@ -63,13 +79,4 @@ public class Role {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Role{");
-        sb.append("id='").append(id).append('\'');
-        sb.append(", users=").append(users);
-        sb.append(", permissions=").append(permissions);
-        sb.append('}');
-        return sb.toString();
-    }
 }

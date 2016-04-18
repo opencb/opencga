@@ -2,11 +2,27 @@
 logLevel: "INFO"
 logFile: null
 
+openRegister: true
+userDefaultDiskQuota: 0
+
 dataDir: ${OPENCGA.CATALOG.ROOTDIR}
 tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
+toolsDir: "tools"
 
-admin: "admin"
-password: "admin"
+admin:
+  paswword: ""
+  email: ""
+
+monitor:
+  daysToRemove: 30
+  executionSleepTime: 4000
+  fileSleepTime: 4000
+
+execution:
+  mode: "local"
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
 
 emailServer:
   host: ${OPENCGA.CATALOG.MAIL.HOST}
@@ -24,6 +40,3 @@ database:
   password: ${OPENCGA.CATALOG.DB.PASSWORD}
   options:
     authenticationDatabase: ${OPENCGA.CATALOG.DB.AUTHENTICATION_DATABASE}
-
-policies:
-  userCreation: "ALWAYS" ## This is the policy to create users. Can be: ONLY_ADMIN, ANY_LOGGED_USER or ALWAYS.

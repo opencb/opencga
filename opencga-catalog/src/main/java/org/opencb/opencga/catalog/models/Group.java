@@ -53,6 +53,5 @@ public class Group {
         this.userIds = userIds;
         return this;
     }
-
 }
 

@@ -93,7 +93,7 @@ public class User {
         sb.append(", email='").append(email).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", organization='").append(organization).append('\'');
-        sb.append(", role=").append(role);
+//        sb.append(", role=").append(role);
         sb.append(", status='").append(status).append('\'');
         sb.append(", lastActivity='").append(lastActivity).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
@@ -147,13 +147,13 @@ public class User {
         this.organization = organization;
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
+//    public Role getRole() {
+//        return role;
+//    }
+//
+//    public void setRole(Role role) {
+//        this.role = role;
+//    }
 
     public Status getStatus() {
         return status;
@@ -227,11 +227,20 @@ public class User {
         this.attributes = attributes;
     }
 
+    public Role getRole() {
+        return role;
+    }
+
+    public User setRole(Role role) {
+        this.role = role;
+        return this;
+    }
+
     /*
-     * Things to think about:
-     * private List<Credential> credentials = new ArrayList<Credential>();
-     * private List<Bucket> buckets = new ArrayList<Bucket>();
-     */
+         * Things to think about:
+         * private List<Credential> credentials = new ArrayList<Credential>();
+         * private List<Bucket> buckets = new ArrayList<Bucket>();
+         */
     @Deprecated
     public enum Role {
         ADMIN,  //= "admin";
