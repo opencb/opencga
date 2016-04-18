@@ -698,7 +698,11 @@ public abstract class VariantStorageETL implements StorageETL {
     @Override
     public void close() throws StorageManagerException {
         if (dbAdaptor != null) {
-            dbAdaptor.close();
+            try {
+                dbAdaptor.close();
+            } catch (IOException e) {
+                throw new StorageManagerException("Error closing DBAdaptor", e);
+            }
         }
     }
 

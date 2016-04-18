@@ -52,6 +52,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -740,9 +741,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public boolean close() {
-        mongoManager.close(db.getDatabaseName());
-        return true;
+    public void close() throws IOException {
+        mongoManager.close();
+        studyConfigurationManager.close();
     }
 
     private Document parseQuery(Query query) {
