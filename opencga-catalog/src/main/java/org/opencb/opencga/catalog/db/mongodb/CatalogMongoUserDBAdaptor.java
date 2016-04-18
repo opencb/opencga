@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
@@ -36,13 +37,11 @@ import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.FilterConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.UserConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -58,12 +57,14 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     private final MongoDBCollection userCollection;
     private UserConverter userConverter;
+    private FilterConverter filterConverter;
 
     public CatalogMongoUserDBAdaptor(MongoDBCollection userCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoUserDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.userCollection = userCollection;
         this.userConverter = new UserConverter();
+        this.filterConverter = new FilterConverter();
     }
 
     /*
@@ -319,6 +320,68 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         } else {
             return "";
         }
+    }
+
+    @Override
+    public void addQueryFilter(String userId, Filter filter) throws CatalogDBException {
+        // Check if there exists a filter for that user with the same id
+        Bson checkFilterExists = Filters.and(
+                Filters.eq(QueryParams.ID.key(), userId),
+                Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filter.getId())
+        );
+        QueryResult<Long> count = userCollection.count(checkFilterExists);
+        if (count.getResult().get(0) != 0) {
+            throw new CatalogDBException("There already exists a filter with name " + filter.getId() + " for user " + userId);
+        }
+
+        // Insert the filter
+        Bson query = Filters.and(
+                Filters.eq(QueryParams.ID.key(), userId),
+                Filters.ne(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filter.getId())
+        );
+
+        Bson filterDocument = getMongoDBDocument(filter, "Filter");
+        Bson update = Updates.push(QueryParams.CONFIG_OPENCGA_FILTERS.key(), filterDocument);
+
+        QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            if (queryResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("User: There was an error when trying to store the filter. It could not be stored.");
+            } else {
+                // This error should NEVER be raised.
+                throw new CatalogDBException("User: There was a critical error when storing the filter. Is has been inserted "
+                        + queryResult.first().getModifiedCount() + " times.");
+            }
+        }
+    }
+
+    @Override
+    public QueryResult<Long> deleteQueryFilter(String userId, String filterId) throws CatalogDBException {
+        long startTime = startQuery();
+        // Delete the filter from the database
+        Bson query = Filters.and(
+                Filters.eq(QueryParams.ID.key(), userId),
+                Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filterId)
+        );
+
+        Bson update = Updates.pull(QueryParams.CONFIG_OPENCGA_FILTERS.key(), Filters.eq("id", filterId));
+        QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
+        return endQuery("Delete query filter", startTime, Collections.singletonList(queryResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<Filter> getQueryFilter(String userId, String filterId) throws CatalogDBException {
+        List<Bson> aggregates = new ArrayList<>();
+        aggregates.add(Aggregates.unwind("$" + QueryParams.CONFIG_OPENCGA_FILTERS.key()));
+        aggregates.add(Aggregates.match(Filters.and(
+                Filters.eq(QueryParams.ID.key(), userId),
+                Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filterId))));
+        QueryResult<Filter> aggregate = userCollection.aggregate(aggregates, filterConverter, new QueryOptions());
+        if (aggregate.getNumResults() == 0) {
+            throw new CatalogDBException("The filter " + filterId + " could not be found in the database.");
+        }
+        return aggregate;
     }
 
     @Override
