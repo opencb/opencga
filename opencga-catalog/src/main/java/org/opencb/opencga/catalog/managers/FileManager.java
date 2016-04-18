@@ -572,6 +572,53 @@ public class FileManager extends AbstractManager implements IFileManager {
         return null;
     }
 
+    @Override
+    public QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException {
+        QueryResult<File> queryResult = read(fileId, null, sessionId);
+        File file = queryResult.first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not delete root folder");
+        }
+
+        if (!isExternal(file)) {
+            throw new CatalogException("Cannot unlink a file that does not have an URI.");
+        }
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.DELETE);
+
+        List<File> filesToDelete;
+        if (file.getType().equals(File.Type.FOLDER)) {
+            filesToDelete = fileDBAdaptor.get(
+                    new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath()),
+                    new QueryOptions("include", "projects.studies.files.id")).getResult();
+        } else {
+            filesToDelete = Collections.singletonList(file);
+        }
+
+        for (File f : filesToDelete) {
+            fileDBAdaptor.deleteFile(f.getId());
+        }
+
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
         authorizationManager.checkFilePermission(file.getId(), userId, CatalogPermission.DELETE);
 

@@ -17,9 +17,9 @@
 package org.opencb.opencga.server.ws;
 
 import org.codehaus.jackson.map.ObjectMapper;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 

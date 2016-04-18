@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
@@ -89,6 +90,12 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     String getUserIdBySessionId(String sessionId);
 
+    void addQueryFilter(String userId, Filter filter) throws CatalogDBException;
+
+    QueryResult<Long> deleteQueryFilter(String userId, String filterId) throws CatalogDBException;
+
+    QueryResult<Filter> getQueryFilter(String userId, String filterId) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
@@ -120,7 +127,9 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         SESSION_ID("sessions.id", TEXT_ARRAY, ""),
         SESSION_IP("sessions.ip", TEXT_ARRAY, ""),
         SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),
-        SESSION_LOGOUT("sessions.logout", TEXT_ARRAY, "");
+        SESSION_LOGOUT("sessions.logout", TEXT_ARRAY, ""),
+
+        CONFIG_OPENCGA_FILTERS("configs.opencga-filters", TEXT_ARRAY, "");
 
         private static Map<String, QueryParams> map;
         static {

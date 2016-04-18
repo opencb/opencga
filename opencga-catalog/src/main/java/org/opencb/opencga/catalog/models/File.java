@@ -345,7 +345,7 @@ public class File {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)) {
+            if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED))) {
                 return true;
             }
             return false;

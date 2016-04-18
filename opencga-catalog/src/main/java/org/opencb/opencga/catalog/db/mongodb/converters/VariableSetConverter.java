@@ -34,6 +34,7 @@ public class VariableSetConverter extends GenericConverter<VariableSet, Document
         Document document = null;
         try {
             document = Document.parse(variableSetWriter.writeValueAsString(object));
+            document.put("id", document.getInteger("id").longValue());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

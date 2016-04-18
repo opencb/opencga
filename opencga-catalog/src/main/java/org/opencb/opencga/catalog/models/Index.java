@@ -118,8 +118,8 @@ public class Index {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED) || status.equals(LOADING)
-                    || status.equals(INDEXING)) {
+            if (status != null && (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED)
+                    || status.equals(LOADING) || status.equals(INDEXING))) {
                 return true;
             }
             return false;

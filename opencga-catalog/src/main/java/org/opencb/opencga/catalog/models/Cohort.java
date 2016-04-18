@@ -176,7 +176,7 @@ public class Cohort {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID)) {
+            if (status != null && (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID))) {
                 return true;
             }
             return false;

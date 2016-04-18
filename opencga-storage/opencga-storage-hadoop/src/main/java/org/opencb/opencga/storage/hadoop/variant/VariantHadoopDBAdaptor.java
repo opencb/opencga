@@ -384,6 +384,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }

@@ -1,0 +1,139 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="opencga-shared-styles.html">
+
+<dom-module id="opencga-files-view">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles"></style>
+
+        <div style="width: 90%">
+            <!--<span>{{geneId}}</span>-->
+
+            <ul id="myTabs" class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#geneViewInfo" role="tab" data-toggle="tab">Study Info</a></li>
+                <li role="presentation"><a href="#geneViewGenomeContext" role="tab" data-toggle="tab">Files</a></li>
+                <li role="presentation"><a href="#geneViewTranscripts" role="tab" data-toggle="tab">Jobs</a></li>
+                <li role="presentation"><a href="#geneViewPDB" role="tab" data-toggle="tab">Samples</a></li>
+            </ul>
+
+            <div class="tab-content" style="width: 90%">
+                <div id="geneViewInfo" role="tabpanel" class="tab-pane active">
+
+                    Name: {{geneObj.name}}<br>
+                    ID:  <a href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g={{geneObj.id}}" target="_blank">{{geneObj.id}}</a><br>
+                    Biotype: {{geneObj.biotype}}<br>
+                    Region: {{geneObj.chromosome}}:{{geneObj.start}}-{{geneObj.end}}<br>
+                    Status: {{geneObj.status}}<br>
+                    Strand: {{geneObj.strand}}<br>
+                    Source: {{geneObj.source}}<br>
+                    Description: {{geneObj.description}}<br>
+                </div>
+
+                <div id="geneViewGenomeContext" role="tabpanel" class="tab-pane">
+                    <div id="genomeviewer"></div>
+                </div>
+
+                <div id="geneViewTranscripts" role="tabpanel" class="tab-pane">
+                    <table class="table table-hover">
+                        <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>ID</th>
+                            <th>Biotype</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <template is="dom-repeat" items="{{geneObj.transcripts}}">
+                            <tr>
+                                <td>{{item.name}}</td>
+                                <td>{{item.id}}</td>
+                                <td>{{item.biotype}}</td>
+                            </tr>
+                        </template>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div role="tabpanel" class="tab-pane" id="geneViewPDB">
+                    PDB
+                    <canvas class="ChemDoodleWebComponent" id="pdb_canvas" width="600" height="600" style="width: 800px; height: 800px; ">
+                        This browser does not support HTML5/Canvas.
+                    </canvas>
+                </div>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-files-view',
+
+            properties: {
+                cellbase: {
+                    type: Object
+                },
+                geneId: {
+                    type: String,
+                    notify: true,
+                    observer: '_geneIdChanged'
+                },
+                geneObj: {
+                    type: Object
+                },
+                variations: {
+                    type: Array
+                }
+            },
+            _geneIdChanged: function(newValue, oldValue) {
+                let _this = this;
+                if (typeof this.genomeViewer !== "undefined") {
+                    let success = function (response) {
+                        let firstGene = response.response[0].result[0];
+                        if (typeof firstGene !== "undefined") {
+                            let region = new Region({chromosome: firstGene.chromosome, start: firstGene.start, end: firstGene.end});
+                            _this.genomeViewer.setRegion(region);
+                        } else {
+                            alert("Gene ID not valid: " + _this.geneId);
+                        }
+                        _this.geneObj = firstGene;
+                        console.log(_this.geneObj)
+                        // testing 3D
+                        _this.display3D();
+                        _this.displayNetworkViewer();
+                    };
+                    let error = function (response) {
+                        alert("Gene ID not valid: " + _this.geneId)
+                    };
+                }
+
+                // Variation
+                let success = function (response) {
+                    let variations = response.response[0].result;
+                    console.log(variations)
+                    _this.variations = variations;
+                };
+                let error = function (response) {
+                    alert("Gene ID not valid: " + _this.geneId)
+                };
+            },
+            ready: function() {
+            }
+        });
+    </script>
+</dom-module>

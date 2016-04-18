@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
+import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -238,6 +240,21 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogException {
         return authenticationManager.resetPassword(userId, email);
     }
@@ -308,6 +325,27 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         catalogIOManagerFactory.getDefault().deleteAnonymousUser(userId);
         return userDBAdaptor.logoutAnonymous(sessionId);
+    }
+
+    @Override
+    public void addQueryFilter(String sessionId, Filter filter) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = getUserId(sessionId);
+        userDBAdaptor.addQueryFilter(userId, filter);
+    }
+
+    @Override
+    public QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = getUserId(sessionId);
+        return userDBAdaptor.deleteQueryFilter(userId, filterId);
+    }
+
+    @Override
+    public QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = getUserId(sessionId);
+        return userDBAdaptor.getQueryFilter(userId, filterId);
     }
 
     private void checkSessionId(String userId, String sessionId) throws CatalogException {

@@ -242,6 +242,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
+    List<Integer> getReturnedStudies(Query query, QueryOptions options);
     /**
      * Returns all the possible samples to be returned by an specific query.
      *
