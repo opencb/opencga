@@ -27,6 +27,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -279,6 +281,42 @@ public class CatalogFileUtilsTest {
         assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
     }
 
+    @Test
+    public void unlinkFileTest() throws CatalogException, IOException {
+        java.io.File createdFile;
+        URI sourceUri;
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
+        File file;
+        URI fileUri;
+
+        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
+
+        fileUri = catalogManager.getFileUri(file);
+        assertEquals(sourceUri, fileUri);
+        assertTrue(createdFile.exists());
+        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+
+        // Now we unlink it
+        catalogManager.unlink(file.getId(), userSessionId);
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not found");
+        List<File> result = catalogManager.getFile(file.getId(), userSessionId).getResult();
+
+    }
+
+    @Test
+    public void unlinkFileNoUriTest() throws CatalogException, IOException {
+        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+
+        // Now we try to unlink it
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("does not have an URI.");
+        catalogManager.unlink(file.getId(), userSessionId);
+    }
 
     @Test
     public void deleteFilesTest1() throws CatalogException, IOException {

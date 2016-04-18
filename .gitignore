@@ -2,6 +2,10 @@
 # OpenCGA folders
 build
 
+# Web
+bower_components
+node_modules
+
 # General
 *.jar
 *.war
