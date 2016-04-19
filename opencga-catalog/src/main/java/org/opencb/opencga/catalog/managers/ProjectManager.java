@@ -20,7 +20,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.util.List;
@@ -65,19 +64,17 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> create(String ownerId, String name, String alias, String description,
+    public QueryResult<Project> create(String name, String alias, String description,
                                        String organization, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkParameter(ownerId, "ownerId");
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)
-                && !userId.equals(ownerId)) {
-            throw new CatalogException("Only the user \"" + ownerId + "\" can create a project with himself as owner");
+        if (userId.isEmpty()) {
+            throw new CatalogException("The session id introduced does not correspond to any registered user.");
         }
 
         description = description != null ? description : "";
@@ -85,16 +82,16 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
         Project project = new Project(name, alias, description, new Status(), organization);
 
-        QueryResult<Project> queryResult = projectDBAdaptor.createProject(ownerId, project, options);
+        QueryResult<Project> queryResult = projectDBAdaptor.createProject(userId, project, options);
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(ownerId, Long.toString(project.getId()));
+            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
             projectDBAdaptor.delete(project.getId(), false);
         }
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastActivity(userId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -104,7 +101,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public QueryResult<Project> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                objectMap.getString("ownerId"),
                 objectMap.getString("name"),
                 objectMap.getString("alias"),
                 objectMap.getString("description"),

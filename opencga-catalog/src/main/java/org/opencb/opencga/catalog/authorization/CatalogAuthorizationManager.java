@@ -54,8 +54,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public void checkProjectPermission(long projectId, String userId, CatalogPermission permission) throws CatalogException {
-//        if (isAdmin(userId) || userDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
-        if (isAdmin(userId) || projectDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
+
+        if (projectDBAdaptor.getProjectOwnerId(projectId).equals(userId)) {
             return;
         }
 
@@ -88,9 +88,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (isStudyOwner(studyId, userId)) {
             return;
         }
-        if (isAdmin(userId)) {
-            return;
-        }
 
         Group group = getGroupBelonging(studyId, userId);
         String groupId = null;
@@ -117,7 +114,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                 auth = role.getPermissions().isStudyManager();
                 break;
             case READ_STUDY:
-                auth = true; //Authorize if belongs to any group
+                auth = true; //Authorize if belongs to any role
                 break;
             default:
                 auth = false;
@@ -135,9 +132,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private void checkFilePermission(long fileId, String userId, CatalogPermission permission,
                                      StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
-        if (isAdmin(userId)) {
-            return;
-        }
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         if (isStudyOwner(studyId, userId)) {
             return;
@@ -156,7 +150,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkSamplePermission(long sampleId, String userId, CatalogPermission permission) throws CatalogException {
         long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
-        if (isAdmin(userId) || isStudyOwner(studyId, userId)) {
+        if (isStudyOwner(studyId, userId)) {
             return;
         }
 
@@ -170,7 +164,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void checkIndividualPermission(long individualId, String userId, CatalogPermission permission) throws CatalogException {
         long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
-        if (isAdmin(userId) || isStudyOwner(studyId, userId)) {  //User admin or owner
+        if (isStudyOwner(studyId, userId)) {  //User admin or owner
             return;
         }
 

@@ -30,7 +30,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @param name         Study Name
      * @param alias        Study Alias. Must be unique in the project's studies
      * @param type         Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.models.Study.Type)
-     * @param creatorId    Creator user id. If null, user by sessionId
      * @param creationDate Creation date. If null, now
      * @param description  Study description. If null, empty string
      * @param status       Unused
@@ -45,7 +44,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @return Generated study
      * @throws CatalogException CatalogException
      */
-    QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creatorId, String creationDate,
+    QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creationDate,
                               String description, Status status, String cipher, String uriScheme, URI uri,
                               Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                               QueryOptions options, String sessionId) throws CatalogException;

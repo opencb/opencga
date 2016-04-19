@@ -423,7 +423,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, QueryOptions options, String sessionId)
             throws CatalogException {
-        return projectManager.create(ownerId, name, alias, description, organization, options, sessionId);
+        return projectManager.create(name, alias, description, organization, options, sessionId);
     }
 
     public QueryResult<Project> getProject(long projectId, QueryOptions options, String sessionId)
@@ -498,7 +498,7 @@ public class CatalogManager implements AutoCloseable {
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status,
+        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status,
                 cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);

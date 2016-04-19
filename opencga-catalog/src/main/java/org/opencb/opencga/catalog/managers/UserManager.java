@@ -111,10 +111,14 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkEmail(email);
         organization = organization != null ? organization : "";
 
+        if (userDBAdaptor.userExists(id)) {
+            throw new CatalogException("The user " + id + " is already in use in our database. Please, choose another one.");
+        }
+
         User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
 
-        String userId = null;
-
+        // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
+        String userId = id;
 
 //        switch (creationUserPolicy) {
 //            case ONLY_ADMIN: {
