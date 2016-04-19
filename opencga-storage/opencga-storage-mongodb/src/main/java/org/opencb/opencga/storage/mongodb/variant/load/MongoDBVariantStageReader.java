@@ -5,9 +5,12 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +31,9 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     private final MongoDBCollection stageCollection;
     private final int studyId;
     private MongoCursor<Document> iterator;
+    private Document next = null;   // Pending variant
 
+    private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageReader.class);
 
     public MongoDBVariantStageReader(MongoDBCollection stageCollection, int studyId) {
         this.stageCollection = stageCollection;
@@ -65,9 +70,42 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     @Override
     public List<Document> read(int b) {
         List<Document> list = new ArrayList<>(b);
-        for (int i = 0; i < b; i++) {
+
+        // If there were some pending variant, add to the list.
+        Document last = next;
+        if (next != null) {
+            list.add(next);
+            next = null;
+        }
+        for (int i = list.size(); i < b; i++) {
             if (iterator.hasNext()) {
-                list.add(iterator.next());
+                last = iterator.next();
+                list.add(last);
+            }
+        }
+
+        if (iterator.hasNext()) {
+            // Obtain the LastVariant from the read LastDocument
+            Variant lastVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(last.getString("_id"));
+            while (iterator.hasNext()) {
+                // Get the next document. Check if this should be in the current batch.
+                // If not, will be added as the first element of the next batch
+                next = iterator.next();
+                Variant nextVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(next.getString("_id"));
+
+                // If the last and next variants overlaps, add next to the batch.
+                if (lastVar.overlapWith(nextVar, true)) {
+                    list.add(next);
+                    logger.debug("Add overlapping variant last: {}, next: {}", lastVar, nextVar);
+
+                    // Adding next to the batch, next is the new last.
+                    last = next;
+                    lastVar = nextVar;
+                    next = null;
+                } else {
+                    // If they are not overlapped, stop looping.
+                    break;
+                }
             }
         }
         return list;
