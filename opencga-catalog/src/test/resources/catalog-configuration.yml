@@ -3,11 +3,11 @@ logLevel: "INFO"
 logFile: null
 openRegister: false
 userDefaultDiskQuota: 0
-dataDir: "/opt/opencga/sessions"
-tempJobsDir: "/opt/opencga/sessions/jobs"
-toolsDir: null
+dataDir: "file:///tmp/opencga/sessions"
+tempJobsDir: "file:///tmp/opencga/sessions/jobs"
+toolsDir: "tools"
 admin:
-  password: "password"
+  password: "admin"
   email: "admin@admin.com"
 monitor:
   daysToRemove: 0
@@ -29,6 +29,7 @@ database:
   hosts:
   - "localhost"
   database: "opencga_catalog"
-  user: "admin"
+  user: ""
   password: ""
-  options: {}
+  options:
+    authenticationDatabase: ""
