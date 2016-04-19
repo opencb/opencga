@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
@@ -108,11 +109,13 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(catalogConfiguration);
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            catalogDBAdaptorFactory.initializeCatalogDB();
-            User admin = new User("admin", catalogConfiguration.getAdmin().getPassword(),
-                    catalogConfiguration.getAdmin().getEmail(), "", "openCB", User.Role.ADMIN, new Status());
-            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
-            authenticationManager.newPassword("admin", catalogConfiguration.getAdmin().getPassword());
+            Admin admin = catalogConfiguration.getAdmin();
+            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+            catalogDBAdaptorFactory.initializeCatalogDB(admin);
+//            User admin = new User("admin", catalogConfiguration.getAdmin().getPassword(),
+//                    catalogConfiguration.getAdmin().getEmail(), "", "openCB", User.Role.ADMIN, new Status());
+//            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
+//            authenticationManager.newPassword("admin", catalogConfiguration.getAdmin().getPassword());
         }
     }
 
@@ -127,7 +130,7 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(properties);
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            catalogDBAdaptorFactory.initializeCatalogDB();
+            catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
             User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new Status());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");

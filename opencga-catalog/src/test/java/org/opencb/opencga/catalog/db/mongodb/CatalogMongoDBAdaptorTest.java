@@ -27,19 +27,16 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.Properties;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -104,7 +101,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void initDefaultCatalogDB() throws CatalogException {
 
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
-        catalogDBAdaptor.initializeCatalogDB();
+        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
         /**
          * Let's init the database with some basic data to perform each of the tests

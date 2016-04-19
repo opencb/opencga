@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Metadata;
@@ -77,7 +78,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public void initializeCatalogDB() throws CatalogDBException {
+    public void initializeCatalogDB(Admin admin) throws CatalogDBException {
         //If "metadata" document doesn't exist, create.
         if (!isCatalogDBReady()) {
 
@@ -93,6 +94,8 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 //                DBObject metadataObject = getDbObject(new Metadata(), "Metadata");
                 Document metadataObject = getMongoDBDocument(new Metadata(), "Metadata");
                 metadataObject.put("_id", METADATA_OBJECT_ID);
+                metadataObject.put("admin", getMongoDBDocument(admin, "Admin"));
+
                 metaCollection.insert(metadataObject, null);
 
             } catch (DuplicateKeyException e) {

@@ -28,7 +28,7 @@ emailServer:
 database:
   hosts:
   - "localhost"
-  database: "opencga_catalog"
+  database: "opencga_catalog_test"
   user: ""
   password: ""
   options:

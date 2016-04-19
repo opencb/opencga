@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db;
 
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoMetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -34,9 +35,10 @@ public interface CatalogDBAdaptorFactory {
     /**
      * Initializes de Database with the initial structure.
      *
+     * @param admin Administrator object containing the encrypted password and the email.
      * @throws CatalogDBException if there was any problem, or it was already initialized.
      */
-    void initializeCatalogDB() throws CatalogDBException;
+    void initializeCatalogDB(Admin admin) throws CatalogDBException;
 
     void close();
 
