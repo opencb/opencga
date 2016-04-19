@@ -436,7 +436,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId());
         MongoDBVariantMerger variantWriter = new MongoDBVariantMerger(studyConfiguration, fileIds,
-                dbAdaptor.getVariantsCollection(), reader.countNumVariants());
+                dbAdaptor.getVariantsCollection(), reader.countNumVariants(), reader.countAproxNumVariants());
 
         ParallelTaskRunner<Document, MongoDBVariantWriteResult> ptrMerge;
         try {

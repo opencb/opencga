@@ -9,6 +9,7 @@ import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -160,6 +161,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
         newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         newParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), FILE_ID);
         newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
@@ -168,8 +170,21 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
         newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
-        return runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
+        StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
                 newParams, newParams, newParams, newParams, true, true, true);
+
+        try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
+            StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            studyConfiguration.setFileIds(newStudyConfiguration.getFileIds());
+            studyConfiguration.setCohortIds(newStudyConfiguration.getCohortIds());
+            studyConfiguration.setCohorts(newStudyConfiguration.getCohorts());
+            studyConfiguration.setSampleIds(newStudyConfiguration.getSampleIds());
+            studyConfiguration.setSamplesInFiles(newStudyConfiguration.getSamplesInFiles());
+            studyConfiguration.setIndexedFiles(newStudyConfiguration.getIndexedFiles());
+            studyConfiguration.setHeaders(newStudyConfiguration.getHeaders());
+        }
+
+        return storageETLResult;
     }
 
     public static StorageETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,

@@ -155,7 +155,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             assertEquals(map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData(), map.get(studyConfigurationMultiFile
                     .getStudyName()).getSamplesData());
         }
-        assertEquals(expectedNumVariants - 4, numVariants);
+        assertEquals(expectedNumVariants - 8, numVariants);
 
     }
 

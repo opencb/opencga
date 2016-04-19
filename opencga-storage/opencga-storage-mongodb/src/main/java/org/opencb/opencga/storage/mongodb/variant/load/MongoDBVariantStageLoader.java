@@ -5,6 +5,7 @@ import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.MongoBulkWriteException;
+import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
@@ -28,9 +29,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import java.util.zip.DataFormatException;
 
@@ -48,6 +50,7 @@ public class MongoDBVariantStageLoader {
     public static final boolean NEW_STUDY_DEFAULT = true;
 
     private static final QueryOptions QUERY_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true);
+    private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
 
     private final MongoDBCollection collection;
     private final int studyId;
@@ -216,7 +219,6 @@ public class MongoDBVariantStageLoader {
         final int[] variantsLocalCount = {0};
         final int[] skippedVariants = {0};
 
-        List<Bson> queries = new LinkedList<>();
         ListMultimap<String, Binary> ids = LinkedListMultimap.create();
 
         stream.forEach(variant -> {
@@ -231,30 +233,10 @@ public class MongoDBVariantStageLoader {
             ids.put(id, binary);
         });
 
-        List<Bson> updates = new LinkedList<>();
-        for (String id : ids.keySet()) {
-            List<Binary> binaryList = ids.get(id);
-            queries.add(eq("_id", id));
-            if (binaryList.size() == 1) {
-                updates.add(push(fieldName, binaryList.get(0)));
-            } else {
-                updates.add(pushEach(fieldName, binaryList));
-            }
-        }
-
         MongoDBVariantWriteResult result = new MongoDBVariantWriteResult();
-        if (!queries.isEmpty()) {
-            try {
-                final BulkWriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS).first();
-                result.setNewDocuments(mongoResult.getInsertedCount())
-                        .setUpdatedObjects(mongoResult.getModifiedCount());
-            } catch (MongoBulkWriteException e) {
-                for (String id : ids.keySet()) {
-                    List<Binary> binaryList = ids.get(id);
-                    logger.info("_id: " + id + " , binaryListSize:" + binaryList.size());
-                }
-                throw e;
-            }
+        Set<String> retryKeys = updateMongo(ids, result, null);
+        if (!retryKeys.isEmpty()) {
+            updateMongo(ids, result, retryKeys);
         }
 
         int previousCount = variantsCount.getAndAdd(variantsLocalCount[0]);
@@ -273,10 +255,92 @@ public class MongoDBVariantStageLoader {
         return result;
     }
 
+    /**
+     * Given a map of id -> binary[], inserts the binary objects in the stage collection.
+     *
+     * {
+     *     <studyId> : {
+     *         <fileId> : [ BinData(), BinData() ]
+     *     }
+     * }
+     *
+     * The field <fileId> is an array to detect duplicated variants within the same file.
+     *
+     * It may happen that an update with upsert:true fail if two different threads try to
+     * update the same non existing document.
+     * See https://jira.mongodb.org/browse/SERVER-14322
+     *
+     * In that case, the non inserted values will be returned.
+     *
+     * @param values        Map with all the values to insert
+     * @param result        MongoDBVariantWriteResult to fill
+     * @param retryIds      List of IDs to retry. If not null, only will update those documents within this set
+     * @return              List of non updated documents.
+     * @throws MongoBulkWriteException if the exception was not a DuplicatedKeyException (e:11000)
+     */
+    private Set<String> updateMongo(ListMultimap<String, Binary> values, MongoDBVariantWriteResult result, Set<String> retryIds) {
+
+        Set<String> nonInsertedIds = Collections.emptySet();
+        if (values.isEmpty()) {
+            return nonInsertedIds;
+        }
+
+        List<Bson> queries = new LinkedList<>();
+        List<Bson> updates = new LinkedList<>();
+        for (String id : values.keySet()) {
+            if (retryIds == null || retryIds.contains(id)) {
+                List<Binary> binaryList = values.get(id);
+                queries.add(eq("_id", id));
+                if (binaryList.size() == 1) {
+                    updates.add(push(fieldName, binaryList.get(0)));
+                } else {
+                    updates.add(pushEach(fieldName, binaryList));
+                }
+            }
+        }
+
+        try {
+            final BulkWriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS).first();
+            result.setNewDocuments(mongoResult.getInsertedCount())
+                    .setUpdatedObjects(mongoResult.getModifiedCount());
+        } catch (MongoBulkWriteException e) {
+            result.setNewDocuments(e.getWriteResult().getInsertedCount())
+                    .setUpdatedObjects(e.getWriteResult().getModifiedCount());
+
+
+            if (retryIds != null) {
+                // If retryIds != null, means that this this was the second attempt to update. In this case, do fail.
+                logger.error("BulkWriteErrors when retrying the updates");
+                throw e;
+            }
+
+            nonInsertedIds = new HashSet<>();
+            for (BulkWriteError writeError : e.getWriteErrors()) {
+                if (writeError.getCode() == 11000) { //Dup Key error code
+                    Matcher matcher = writeResultErrorPattern.matcher(writeError.getMessage());
+                    if (matcher.find()) {
+                        String id = matcher.group(1);
+                        nonInsertedIds.add(id);
+                        logger.warn("Catch error : {}",  writeError.toString());
+                        logger.warn("DupKey exception inserting '{}'. Retry!", id);
+                    } else {
+                        logger.error("WriteError with code {} does not match with the pattern {}",
+                                writeError.getCode(), writeResultErrorPattern.pattern());
+                        throw e;
+                    }
+                } else {
+                    throw e;
+                }
+            }
+        }
+        return nonInsertedIds;
+    }
+
     public static long cleanStageCollection(MongoDBCollection stageCollection, int studyId, int fileId) {
         //Delete those studies that have duplicated variants. Those are not inserted, so they are not new variants.
         long modifiedCount = stageCollection.update(
-                and(exists(studyId + "." + fileId + ".1"), exists(studyId + "." + NEW_STUDY_FIELD, false)), unset(Integer.toString(studyId)),
+                and(exists(studyId + "." + fileId + ".1"), exists(studyId + "." + NEW_STUDY_FIELD, false)),
+                unset(Integer.toString(studyId)),
                 new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
         modifiedCount += stageCollection.update(
                 exists(studyId + "." + fileId),

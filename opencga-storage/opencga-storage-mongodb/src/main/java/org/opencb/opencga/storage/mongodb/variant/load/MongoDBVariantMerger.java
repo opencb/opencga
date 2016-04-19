@@ -79,7 +79,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     public MongoDBVariantMerger(StudyConfiguration sc, List<Integer> fileIds, MongoDBCollection collection,
-                                Future<Long> futureNumTotalVariants) {
+                                Future<Long> futureNumTotalVariants, long aproxNumVariants) {
         this.collection = collection;
         this.fileIds = fileIds;
         this.futureNumTotalVariants = futureNumTotalVariants;
@@ -94,7 +94,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         result = new MongoDBVariantWriteResult();
         samplesPositionMap = new HashMap<>();
         variantsCount = new AtomicInteger(0);
-        this.numTotalVariants = 0;
+        this.numTotalVariants = aproxNumVariants;
         loggingBatchSize = DEFAULT_LOGING_BATCH_SIZE;
     }
 
@@ -273,13 +273,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         }
         fillGapsVariants += System.nanoTime();
 
-        MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(inserts.size(), updatesExisting.size(), skipped.get(),
-                nonInserted.get(), newVariants, existingVariants, fillGapsVariants);
+        MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(inserts.size(),
+                updatesExisting.size() + updatesFillGaps.size(),
+                skipped.get(), nonInserted.get(), newVariants, existingVariants, fillGapsVariants);
         synchronized (result) {
             result.merge(writeResult);
         }
 
-        int processedVariants = queriesExisting.size() + inserts.size();
+        int processedVariants = queriesExisting.size() + queriesFillGaps.size() + inserts.size();
         logProgress(processedVariants);
 
         return writeResult;

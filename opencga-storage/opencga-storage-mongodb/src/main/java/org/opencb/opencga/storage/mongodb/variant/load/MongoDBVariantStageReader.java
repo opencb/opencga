@@ -45,6 +45,10 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         return future;
     }
 
+    public long countAproxNumVariants() {
+        return stageCollection.count().first();
+    }
+
     @Override
     public boolean open() {
         //Filter documents with the selected studyId
