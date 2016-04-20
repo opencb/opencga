@@ -1,0 +1,78 @@
+package org.opencb.opencga.storage.hadoop.variant.archive;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Table;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
+import org.opencb.commons.io.DataWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * @author Matthias Haimel mh719+git@cam.ac.uk
+ *
+ */
+public class VariantHbasePutTask implements DataWriter<VcfSlice> {
+    protected final Logger logger = LoggerFactory.getLogger(VariantHbasePutTask.class);
+    private final ArchiveHelper helper;
+    private final TableName tableName;
+    private Connection connection;
+
+    public VariantHbasePutTask(ArchiveHelper helper, String tableName) {
+        this.helper = helper;
+        this.tableName = TableName.valueOf(tableName);
+    }
+
+    private ArchiveHelper getHelper() {
+        return helper;
+    }
+
+    @Override
+    public boolean pre() {
+        try {
+            logger.info("Open connection using " + getHelper().getConf());
+            connection = ConnectionFactory.createConnection(getHelper().getConf());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to connect to Hbase", e);
+        }
+        return true;
+    }
+
+    @Override
+    public boolean write(List<VcfSlice> batch) {
+        if (batch.isEmpty()) {
+            return true;
+        }
+        // logger.info("Open to table " + this.tableName.getNameAsString());
+        try (Table table = connection.getTable(this.tableName)) {
+            List<Put> putLst = new ArrayList<>(batch.size());
+            for (VcfSlice slice : batch) {
+                Put put = getHelper().wrap(slice);
+                putLst.add(put);
+            }
+            table.put(putLst);
+            return true;
+        } catch (IOException e) {
+            throw new RuntimeException(String.format("Problems submitting %s data to hbase %s ", batch.size(),
+                    this.tableName.getNameAsString()), e);
+        }
+    }
+
+    @Override
+    public boolean close() {
+        if (connection != null) {
+            try {
+                connection.close();
+            } catch (IOException e) {
+                logger.error("Problems closing connection", e);
+            }
+        }
+        return true;
+    }
+}
