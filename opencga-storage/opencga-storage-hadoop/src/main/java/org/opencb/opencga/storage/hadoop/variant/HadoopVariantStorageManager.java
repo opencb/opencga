@@ -165,16 +165,23 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
+        boolean directLoad = options.getBoolean("hadoop.load.direct", false);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
         hadoopConfiguration.setIfUnset(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
 
         HBaseCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
-        return new HadoopDirectVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
-                hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
-//        return new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
-//                hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+
+        VariantStorageETL storageETL = null;
+        if (directLoad) {
+            storageETL = new HadoopDirectVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+        } else {
+            storageETL = new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options), hadoopConfiguration,
+                    archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+        }
+        return storageETL;
     }
 
     private HdfsVariantReaderUtils getVariantReaderUtils(Configuration config) {
