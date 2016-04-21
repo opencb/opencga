@@ -18,10 +18,21 @@
 
 <dom-module id="opencga-dashboard">
     <template>
-        <!--<style is="custom-style" include="opencga-shared-styles"></style>-->
+        <style is="custom-style" include="opencga-shared-styles"></style>
 
         User: <span>{{user}}</span>
         Session: <span>{{sessionId}}</span>
+        <!-- Single button -->
+        <div class="btn-group">
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Project <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <template is="dom-repeat" items="{{projects}}">
+                    <li><a href="#">{{item}}</a></li>
+                </template>
+            </ul>
+        </div>
     </template>
     <script>
         Polymer({
@@ -32,6 +43,10 @@
                 },
                 sessionId: {
                     type: String
+                },
+                projects : {
+                    type: Array,
+                    value: []
                 }
             },
 
@@ -42,27 +57,60 @@
             ready: function() {
 
                 console.log("Hello from dashboard");
-                console.log(user)
+//                console.log(user)
             },
 
             _getAvailableStudies: function() {
-                OpencgaManager.users.info({
-                    id: user,
-                    query: {
-                        sid: sessionId,
-                        include: "projects"
-                    },
-                    request: {
-                        success: function (response) {
-                            debugger
-                            // Set this.projecs
-                        },
-                        error: function (response) {
-                            debugger
-                            console.log("Could not retrieve the projects");
-                        }
+                console.log("Dashboard has been called.")
+                let me = this;
+                if (this.user != undefined && this.user != "" && this.sessionId != undefined && this.sessionId != "") {
+                    if (Cookies.get(this.user) != undefined && Cookies.get(this.sessionId) != undefined) {
+                        console.log("HELLO")
+                        console.log(Cookies.get(this.sessionId))
+                        let studies = [];
+                        OpencgaManager.users.projects({
+                            id: Cookies.get(this.user),
+                            query: {
+                                sid: Cookies.get(this.sessionId)
+                            },
+                            request: {
+                                success: function (response) {
+                                    debugger
+                                    console.log(response)
+                                    for ( let i in response.response) {
+                                        for (let j in response.response[i].result) {
+                                            let proj = response.response[i].result[j].name;
+                                            OpencgaManager.projects.studies({
+                                                id: response.response[i].result[j].id,
+                                                query: {
+                                                    sid: Cookies.get(me.sessionId)
+                                                },
+                                                request: {
+                                                    success: function (response) {
+                                                        debugger
+                                                        console.log(response)
+                                                        for(let i in response.response[0].result) {
+                                                            me.push('projects', proj + ":" + response.response[0].result[i].name);
+                                                        }
+                                                        console.log(me.projects)
+                                                    },
+                                                    error: function (response) {
+                                                        console.log("Could not retrieve the studies");
+                                                    }
+                                                }
+                                            });
+                                        }
+                                    }
+                                },
+                                error: function (response) {
+                                    debugger
+                                    console.log("Could not retrieve the projects");
+                                }
+                            }
+                        });
                     }
-                })
+                }
+
             }
         });
     </script>

@@ -92,7 +92,7 @@
                     <opencga-login></opencga-login>
                 </div>
                 <div class="collapse content" id="home">
-                    <opencga-dashboard user="{{this.cookieUserName}}" session-id="{{this.cookieSessionId}}"></opencga-dashboard>
+                    <opencga-dashboard user="{{cookieUserName}}" session-id="{{cookieSessionId}}"></opencga-dashboard>
                 </div>
             </div>
 
@@ -130,7 +130,14 @@
         Polymer({
             is: 'opencga-web',
             properties: {
-
+                cookieSessionId: {
+                    type: String,
+                    value: ""
+                },
+                cookieUserName: {
+                    type: String,
+                    value: ""
+                }
             },
 
             listeners: {
@@ -144,14 +151,14 @@
                 this.host = OPENCGA_HOST;
                 this.tmpHost = this.host;
                 this.version = OPENCGA_VERSION;
-                this.cookieSessionId = OPENCGA_COOKIE_SESSION_ID;
-                this.cookieUserName = OPENCGA_COOKIE_USER_NAME;
 
                 // Set the sessionId
-                if (Cookies.get(this.cookieSessionId) == null) {
+                if (Cookies.get(OPENCGA_COOKIE_SESSION_ID) == null) {
                     $('#login').show();
                     this.disableClick();
                 } else {
+                    this.cookieSessionId = OPENCGA_COOKIE_SESSION_ID;
+                    this.cookieUserName = OPENCGA_COOKIE_USER_NAME;
                     $('#home').show();
                     this.showLogout();
                 }
@@ -181,8 +188,10 @@
             },
 
             login: function(e) {
-                Cookies.set(this.cookieSessionId, e.detail.sessionId);
-                Cookies.set(this.cookieUserName, e.detail.userId);
+                Cookies.set(OPENCGA_COOKIE_SESSION_ID, e.detail.sessionId);
+                Cookies.set(OPENCGA_COOKIE_USER_NAME, e.detail.userId);
+                this.cookieSessionId = OPENCGA_COOKIE_SESSION_ID;
+                this.cookieUserName = OPENCGA_COOKIE_USER_NAME;
                 console.log(e.detail.sessionId);
                 this.enableClick();
                 $(".opencga-menu a[href='#home']").trigger("click");
@@ -213,7 +222,9 @@
                             Cookies.expire(me.cookieUserName);
                             $(".opencga-menu a[href='#login']").trigger("click");
                             me.disableClick();
-//                            alertify.success("You are successfully logged out.");
+                            me.cookieSessionId = "";
+                            me.cookieUserName = "";
+                            debugger
                         }
                     }
                 })
