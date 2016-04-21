@@ -38,11 +38,9 @@
         Polymer({
             is: 'opencga-dashboard',
             properties: {
-                user: {
-                    type: String
-                },
-                sessionId: {
-                    type: String
+                client: {
+                    type: Object,
+                    observer: "_getAvailableStudies"
                 },
                 projects : {
                     type: Array,
@@ -50,65 +48,37 @@
                 }
             },
 
-            observers: [
-                '_getAvailableStudies(user, sessionId)'
-            ],
-
             ready: function() {
-
                 console.log("Hello from dashboard");
-//                console.log(user)
             },
 
             _getAvailableStudies: function() {
                 console.log("Dashboard has been called.")
-                let me = this;
-                if (this.user != undefined && this.user != "" && this.sessionId != undefined && this.sessionId != "") {
-                    if (Cookies.get(this.user) != undefined && Cookies.get(this.sessionId) != undefined) {
-                        console.log("HELLO")
-                        console.log(Cookies.get(this.sessionId))
-                        let studies = [];
-                        OpencgaManager.users.projects({
-                            id: Cookies.get(this.user),
-                            query: {
-                                sid: Cookies.get(this.sessionId)
-                            },
-                            request: {
-                                success: function (response) {
+                let _this = this;
+
+                if (this.client instanceof OpenCGAClient) {
+                    console.log("The client is passed properly.");
+
+                    let studies = [];
+                    this.client.users().projects().then(function(response) {
+
+                        console.log(response)
+                        for (let i in response.response) {
+                            for (let j in response.response[i].result) {
+                                let proj = response.response[i].result[j];
+
+                                _this.client.projects().studies(proj.id).then(function(response) {
                                     debugger
                                     console.log(response)
-                                    for ( let i in response.response) {
-                                        for (let j in response.response[i].result) {
-                                            let proj = response.response[i].result[j].name;
-                                            OpencgaManager.projects.studies({
-                                                id: response.response[i].result[j].id,
-                                                query: {
-                                                    sid: Cookies.get(me.sessionId)
-                                                },
-                                                request: {
-                                                    success: function (response) {
-                                                        debugger
-                                                        console.log(response)
-                                                        for(let i in response.response[0].result) {
-                                                            me.push('projects', proj + ":" + response.response[0].result[i].name);
-                                                        }
-                                                        console.log(me.projects)
-                                                    },
-                                                    error: function (response) {
-                                                        console.log("Could not retrieve the studies");
-                                                    }
-                                                }
-                                            });
-                                        }
+                                    for (let i in response.response[0].result) {
+                                        _this.push('projects', proj.name + ":" + response.response[0].result[i].name);
                                     }
-                                },
-                                error: function (response) {
-                                    debugger
-                                    console.log("Could not retrieve the projects");
-                                }
+                                    console.log(_this.projects);
+                                });
+
                             }
-                        });
-                    }
+                        }
+                    });
                 }
 
             }
