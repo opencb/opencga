@@ -10,11 +10,9 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Index;
-import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
@@ -97,23 +95,45 @@ public class VariantFetcher {
         logger.debug("queryVariants = {}", query.toJson());
         VariantDBAdaptor dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 //        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));
-        Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
 
-        Map<Object, List<Sample>> samplesMap = new HashMap<>();
-        for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
-            if (!entry.getValue().isEmpty()) {
-                QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
-                        new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), entry.getValue())
-                                .append("exclude", Arrays.asList("projects.studies.samples.annotationSets",
-                                        "projects.studies.samples.attributes"))
-                        , sessionId);
-                if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
-                    throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserIdBySessionId(sessionId)
-                            + " can't read all the requested samples");
+        final Map<Object, List<Sample>> samplesMap;
+        if (query.containsKey(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())) {
+            Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
+            samplesMap = new HashMap<>();
+            for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
+                if (!entry.getValue().isEmpty()) {
+                    QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
+                            new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), entry.getValue())
+                                    .append("exclude", Arrays.asList("projects.studies.samples.annotationSets",
+                                            "projects.studies.samples.attributes"))
+                            , sessionId);
+                    if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
+                        throw new CatalogAuthorizationException("Permission denied. User " + catalogManager.getUserIdBySessionId(sessionId)
+                                + " can't read all the requested samples");
+                    }
+                    samplesMap.put(entry.getKey(), samplesQueryResult.getResult());
                 }
-                samplesMap.put(entry.getKey(), samplesQueryResult.getResult());
             }
+        } else {
+            logger.info("Missing returned samples! Obtaining returned samples from catalog.");
+            List<Integer> returnedStudies = dbAdaptor.getReturnedStudies(query, queryOptions);
+            List<Study> studies = catalogManager.getAllStudies(new QueryOptions(CatalogStudyDBAdaptor.StudyFilterOptions.id.toString(), returnedStudies)
+                    .append("include", "projects.studies.id"), sessionId).getResult();
+            samplesMap = new HashMap<>();
+            List<Integer> returnedSamples = new LinkedList<>();
+            for (Study study : studies) {
+                QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(study.getId(),
+                        new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
+                                "projects.studies.samples.attributes"))
+                        , sessionId);
+                samplesQueryResult.getResult().sort((o1, o2) -> Integer.compare(o1.getId(), o2.getId()));
+                samplesMap.put(study.getId(), samplesQueryResult.getResult());
+                samplesQueryResult.getResult().stream().map(Sample::getId).forEach(returnedSamples::add);
+            }
+            query.append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
         }
+
+        // TODO: Check returned files
 
         String[] regions;
         if (regionStr != null) {
