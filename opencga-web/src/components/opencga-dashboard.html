@@ -43,8 +43,7 @@
                     observer: "_getAvailableStudies"
                 },
                 projects : {
-                    type: Array,
-                    value: []
+                    type: Array
                 }
             },
 
@@ -53,6 +52,7 @@
             },
 
             _getAvailableStudies: function() {
+                this.projects = [];
                 console.log("Dashboard has been called.")
                 let _this = this;
 

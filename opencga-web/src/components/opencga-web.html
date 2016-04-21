@@ -89,7 +89,7 @@
             <!-- This is where main application is rendered -->
             <div class="center">
                 <div class="collapse content" id="login">
-                    <opencga-login on-login="login" opencga-client-config="{{opencgaClient._config}}"></opencga-login>
+                    <opencga-login on-login="login" opencga-client-config="{{config}}"></opencga-login>
                 </div>
                 <div class="collapse content" id="home">
                     <opencga-dashboard client="{{opencgaClient}}"></opencga-dashboard>
@@ -141,6 +141,8 @@
 
             ready: function() {
                 this.enableClick();
+                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
+                        OPENCGA_COOKIE_USER_NAME);
 
 //                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
 //                        OPENCGA_COOKIE_USER_NAME);
