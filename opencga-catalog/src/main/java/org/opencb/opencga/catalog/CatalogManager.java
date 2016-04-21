@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.client.CatalogClient;
 import org.opencb.opencga.catalog.client.CatalogDBClient;
+import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
@@ -108,11 +109,13 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(catalogConfiguration);
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            catalogDBAdaptorFactory.initializeCatalogDB();
-            User admin = new User("admin", catalogConfiguration.getAdmin().getPassword(),
-                    catalogConfiguration.getAdmin().getEmail(), "", "openCB", User.Role.ADMIN, new Status());
-            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
-            authenticationManager.newPassword("admin", catalogConfiguration.getAdmin().getPassword());
+            Admin admin = catalogConfiguration.getAdmin();
+            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+            catalogDBAdaptorFactory.initializeCatalogDB(admin);
+//            User admin = new User("admin", catalogConfiguration.getAdmin().getPassword(),
+//                    catalogConfiguration.getAdmin().getEmail(), "", "openCB", User.Role.ADMIN, new Status());
+//            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
+//            authenticationManager.newPassword("admin", catalogConfiguration.getAdmin().getPassword());
         }
     }
 
@@ -127,7 +130,7 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(properties);
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            catalogDBAdaptorFactory.initializeCatalogDB();
+            catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
             User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new Status());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
@@ -423,7 +426,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
                                               String organization, QueryOptions options, String sessionId)
             throws CatalogException {
-        return projectManager.create(ownerId, name, alias, description, organization, options, sessionId);
+        return projectManager.create(name, alias, description, organization, options, sessionId);
     }
 
     public QueryResult<Project> getProject(long projectId, QueryOptions options, String sessionId)
@@ -498,7 +501,7 @@ public class CatalogManager implements AutoCloseable {
                                           Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
                                           Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
-        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creatorId, creationDate, description, status,
+        QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status,
                 cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
         createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
