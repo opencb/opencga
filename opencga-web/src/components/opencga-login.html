@@ -58,10 +58,15 @@
         Polymer({
             is: 'opencga-login',
             properties: {
+                opencgaClientConfig: {
+                    type: Object
+                }
             },
 
             login: function() {
                 var me = this;
+                let opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+
                 OpencgaManager.users.login({
                     id: $("#opencgaUser")[0].value,
                     query: {
@@ -69,19 +74,19 @@
                     },
                     request: {
                         success: function (response) {
-                            Cookies.set('bioinfo_sid', response.response[0].result[0].sessionId);
-                            Cookies.set('bioinfo_user', response.response[0].result[0].userId);
+//                            Cookies.set('bioinfo_sid', response.response[0].result[0].sessionId);
+//                            Cookies.set('bioinfo_user', response.response[0].result[0].userId);
                             me.fire('login', {
                                 userId: $("#opencgaUser")[0].value,
                                 sessionId: response.response[0].result[0].sessionId
                             });
-                            $("#opencgaUser")[0].value = "";
-                            $("#opencgaPassword")[0].value = "";
+                            this.$.opencgaUser[0].value = "";
+                            this.$.opencgaPassword[0].value = "";
                         },
                         error: function (response) {
                             //Delete all cookies
-                            Cookies.expire('bioinfo_sid');
-                            Cookies.expire('bioinfo_user');
+//                            Cookies.expire('bioinfo_sid');
+//                            Cookies.expire('bioinfo_user');
                         }
                     }
                 });
