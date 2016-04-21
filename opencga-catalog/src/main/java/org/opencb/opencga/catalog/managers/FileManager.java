@@ -9,6 +9,8 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogParameterException;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
@@ -545,6 +547,38 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         return null;
+    }
+
+    @Override
+    public QueryResult<File> unlink(int fileId, String sessionId) throws CatalogException {
+        QueryResult<File> queryResult = read(fileId, null, sessionId);
+        File file = queryResult.first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not delete root folder");
+        }
+
+        if (!isExternal(file)) {
+            throw new CatalogException("Cannot unlink a file that does not have an URI.");
+        }
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.DELETE);
+
+        List<File> filesToDelete;
+        if (file.getType().equals(File.Type.FOLDER)) {
+            filesToDelete = fileDBAdaptor.getAllFiles(
+                    new QueryOptions(CatalogFileDBAdaptor.FileFilterOption.path.toString(), "~^" + file.getPath()),
+                    new QueryOptions("include", "projects.studies.files.id")).getResult();
+        } else {
+            filesToDelete = Collections.singletonList(file);
+        }
+
+        for (File f : filesToDelete) {
+            fileDBAdaptor.deleteFile(f.getId());
+        }
+
+        return queryResult;
     }
 
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {

@@ -89,10 +89,10 @@
             <!-- This is where main application is rendered -->
             <div class="center">
                 <div class="collapse content" id="login">
-                    <opencga-login></opencga-login>
+                    <opencga-login on-login="login"></opencga-login>
                 </div>
                 <div class="collapse content" id="home">
-                    <opencga-dashboard user="{{cookieUserName}}" session-id="{{cookieSessionId}}"></opencga-dashboard>
+                    <opencga-dashboard client={{opencgaClient}} user="{{cookieUserName}}" session-id="{{cookieSessionId}}"></opencga-dashboard>
                 </div>
             </div>
 
@@ -130,6 +130,9 @@
         Polymer({
             is: 'opencga-web',
             properties: {
+                opencgaClient: {
+                    type: Object
+                },
                 cookieSessionId: {
                     type: String,
                     value: ""
@@ -140,9 +143,9 @@
                 }
             },
 
-            listeners: {
-                'login': 'login'
-            },
+//            listeners: {
+//                'login': 'login'
+//            },
 
             ready: function() {
                 this.enableClick();
@@ -197,6 +200,7 @@
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
 //                alertify.success("You are successfully logged in.");
+                // this.opencgaClient = new OpenCGAClient()
             },
 
             saveHost: function(e) {

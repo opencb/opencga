@@ -5,11 +5,9 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.DataInputStream;
-import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -67,6 +65,8 @@ public interface IFileManager extends ResourceManager<Integer, File> {
 
     QueryResult<File> rename(int fileId, String newName, String sessionId)
             throws CatalogException;
+
+    QueryResult<File> unlink(int fileId, String sessionId) throws CatalogException;
 
     QueryResult move(int fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException;

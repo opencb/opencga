@@ -672,6 +672,11 @@ public class CatalogManager implements AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
+    public QueryResult<File> unlink(int fileId, String sessionId) throws CatalogException, IOException {
+        return fileManager.unlink(fileId, sessionId);
+    }
+
+
     /**
      * **************************
      * Job methods
