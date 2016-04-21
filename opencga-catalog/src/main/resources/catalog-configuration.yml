@@ -10,7 +10,7 @@ tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}
 toolsDir: "tools"
 
 admin:
-  paswword: ""
+  password: ""
   email: ""
 
 monitor:
