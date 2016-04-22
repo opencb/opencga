@@ -2,14 +2,14 @@ import json
 import os
 import requests
 import logging
-from pyCGA.Exceptions import LoginException, ServerResponseException
+from pyCGA.Exceptions import LoginException, ServerResponseException, WSErrorException
 from pathlib import Path
+from requests_toolbelt import threaded
 
 __author__ = 'antonior'
 
 
 class WS:
-
     def __init__(self, token=None, version="v1", instance="opencga"):
 
         home = Path(os.getenv("HOME"))
@@ -46,23 +46,83 @@ class WS:
         else:
             return False
 
-    def get_result(self, response):
+    @staticmethod
+    def get_result(response):
         if response["response"][0]["numResults"] == -1:
             logging.error(response["response"][0]["errorMsg"])
-            raise ServerResponseException(response["response"][0]["errorMsg"])
+            raise WSErrorException(response["response"][0]["errorMsg"])
         else:
-            return response["response"][0]["result"]
+            if "skip" in response["queryOptions"]:
+                skipped = int(response["queryOptions"]["skip"])
+            else:
+                skipped = 0
 
-    def run_ws(self, url):
+            num_results = response["response"][0]["numResults"]
+            total_results = response["response"][0]["numTotalResults"]
+
+            return total_results, skipped, num_results, response["response"][0]["result"]
+
+    def get_url_pool(self, url, skipped, result_limit, total_results, step=1000):
+        urls = []
+        skips = range(skipped + total_results, result_limit, step)
+        for skip in skips:
+            if skip + step <= result_limit:
+                def_url = url + "&limit=" + str(step) + "&skip=" + str(skip)
+                urls.append(def_url)
+            else:
+                def_url = url + "&limit=" + str(result_limit - skip) + "&skip=" + str(skip)
+                urls.append(def_url)
+        logging.info("Prepared pool of queries: \n" + "\n".join(urls))
+        return urls
+
+    def run_ws(self, url, skip=0, limit=-1, n_threads=8, step=1000):
         """
 
         :param url:
         :return: :raise StandardError:
         """
+        limit = int(limit)
+        if limit > 0:
+            result_limit = limit
+        else:
+            result_limit = -1
 
-        response = self.r_session.get(url)
+        if limit > step or limit == -1:
+            limit = step
+
+        all_results = []
+        if "variant" in url:
+            url_limits = url + "&limit=" + str(limit) + "&skip=" + str(skip) + "&skipCount=false"
+        else:
+            url_limits = url + "&limit=" + str(limit) + "&skip=" + str(skip)
+
+        logging.info("Sending the first query: " + url_limits)
+        response = self.r_session.get(url_limits)
+
         if self.check_server_response(response.status_code):
-            return self.get_result(response.json())
+            total_result, skipped, num_results, results = self.get_result(response.json())
+            yield results
+            remaining_total_results = total_result - (num_results + skipped)
+            remaining_limit_results = result_limit - (num_results + skipped)
+
+            if remaining_total_results != 0 and remaining_limit_results != 0:
+                if result_limit == -1 or (total_result < result_limit):
+                    urls = self.get_url_pool(url, skipped, total_result, num_results, step=step)
+                else:
+                    urls = self.get_url_pool(url, skipped, result_limit, num_results, step=step)
+
+                urls_to_get = [{'method': 'GET', 'url': url} for url in urls]
+                for url_chunck in [urls_to_get[i:i+n_threads] for i in xrange(0, len(urls_to_get), n_threads)]:
+                    try:
+                        responses, errors = threaded.map(url_chunck, num_processes=n_threads, session=self.r_session)
+                    except TypeError:
+                        responses, errors = threaded.map(url_chunck, num_processes=n_threads)
+
+                    for response in responses:
+
+                        if self.check_server_response(response.status_code):
+                            yield self.get_result(response.json())[3]
+
         else:
             logging.error("WS Failed, status: " + str(response.status_code))
             raise ServerResponseException("WS Failed, status: " + str(response.status_code))
@@ -78,9 +138,9 @@ class WS:
             return self.get_result(response.json())
         else:
             logging.error("WS Failed, status: " + str(response.status_code))
-            raise Exception("WS Failed, status: " + str(response.status_code))
+            raise ServerResponseException("WS Failed, status: " + str(response.status_code))
 
-    def general_method(self, ws_category, method_name, item_id=None, data=None, **options):
+    def general_method(self, ws_category, method_name, item_id=None, data=None, use_buffer=False, pag=1000, limit=-1, skip=0, **options):
         """
         This is a wildcard method, if some of the ws in catalog are not implemented in this python wrapper you can
         always use the general method of the corresponding class.
@@ -93,30 +153,33 @@ class WS:
         :return: list of results
         """
 
-        if self.debug:
-            fdw = open(self.debug_path, "a")
-
-        # TODO: Add pagination
-        if data is None and "limit" not in options:
-            options["limit"] = -1
-
         options_string = ""
         if options:
             options_string = "&".join([option_name + "=" + str(options[option_name]) for option_name in options])
 
         if item_id:
-            url = os.path.join(self.pre_url, ws_category, item_id, method_name, "?sid=" + self.session_id + "&" + options_string)
+            url = os.path.join(self.pre_url, ws_category, item_id, method_name,
+                               "?sid=" + self.session_id + "&" + options_string)
         else:
             url = os.path.join(self.pre_url, ws_category, method_name, "?sid=" + self.session_id + "&" + options_string)
 
         if self.debug:
+            fdw = open(self.debug_path, "a")
             fdw.write(url + "\n")
+            fdw.close()
 
-        if data:
-            return self.run_ws_post(url, data)
-        else:
-            result = self.run_ws(url)
+        try:
+            if data:
+                result = self.run_ws_post(url, data)
+            else:
+                result =[]
+                if use_buffer:
+                    return self.run_ws(url, skip=skip, limit=limit, step=pag)
+                for batch in self.run_ws(url, skip=skip, limit=limit, step=pag):
+                    result += batch
 
-        return result
+            return result
 
-
+        except ServerResponseException or WSErrorException:
+            logging.error(ServerResponseException.message)
+            print ServerResponseException.message

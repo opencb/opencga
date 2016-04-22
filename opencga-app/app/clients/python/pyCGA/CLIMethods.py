@@ -1,7 +1,9 @@
 from __future__ import print_function
+
+import getpass
 import json
 import sys
-
+from hashlib import sha1
 from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples
 from pyCGA.Exceptions import ServerResponseException
 from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample, AnnotationSet
@@ -24,7 +26,11 @@ class Methods:
         """
         user = Users({"host": args.host, "sid": ""}, instance=args.instance)
         try:
-            sid = user.login_method(args.user, args.pwd)[0].get("sessionId")
+            if args.pwd:
+                pwd = sha1(args.pwd).hexdigest()
+            else:
+                pwd = sha1(getpass.getpass()).hexdigest()
+            sid = user.login_method(args.user, pwd)[0].get("sessionId")
             print(sid)
             return sid
         except ServerResponseException as e:
@@ -376,7 +382,6 @@ class Methods:
             if args.format == "AVRO":
                 schema = AvroSchemaFile(args.json)
                 data = schema.convert_variable_set(schema.data)
-
                 variable_id = variable.create(args.studyId, args.name, data=data)[0]["id"]
 
             else:
