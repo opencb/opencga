@@ -398,6 +398,10 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
     public Document convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, Document otherFields) {
+        return convertToStorageType(studyEntry, studyId, fileId, otherFields, new HashSet<>());
+    }
+
+    public Document convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, Document otherFields, Set<String> samplesInFile) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
@@ -415,13 +419,17 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
         for (List<String> data : studyEntry.getSamplesData()) {
+            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+            sampleIdx++;
+            if (!samplesInFile.contains(sampleName)) {
+                continue;
+            }
             String genotype;
             if (gtIdx == null) {
                 genotype = UNKNOWN_GENOTYPE;
             } else {
                 genotype = data.get(gtIdx);
             }
-            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
             if (genotype == null) {
                 genotype = UNKNOWN_GENOTYPE;
             }
@@ -432,7 +440,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                 genotypeCodes.put(genotype, samplesWithGenotype);
             }
             samplesWithGenotype.add(sampleIds.get(sampleName));
-            sampleIdx++;
         }
 
         // In Mongo, samples are stored in a map, classified by their genotype.
@@ -481,7 +488,11 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
             if (studyEntry.getFormatPositions().containsKey(extraField)) {
                 Integer formatIdx = studyEntry.getFormatPositions().get(extraField);
                 for (List<String> sampleData : studyEntry.getSamplesData()) {
-//                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+                    sampleIdx++;
+                    if (!samplesInFile.contains(sampleName)) {
+                        continue;
+                    }
 //                    Integer index = samplesPosition.get(sampleName);
                     String stringValue = sampleData.get(formatIdx);
 //                    Object value;
@@ -512,7 +523,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                             builder.addStringValues(stringValue);
                             break;
                     }
-                    sampleIdx++;
                 }
             } // else { Don't set that field }
 

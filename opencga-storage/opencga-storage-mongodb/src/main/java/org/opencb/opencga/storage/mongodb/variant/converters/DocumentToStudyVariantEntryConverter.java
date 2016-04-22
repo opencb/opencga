@@ -242,6 +242,11 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
         }
         FileEntry file = object.getFiles().get(0);
 
+        return convertToStorageType(object, file, object.getSamplesName());
+    }
+
+    public Document convertToStorageType(StudyEntry object, FileEntry file, Set<String> sampleNames) {
+
         int fileId = Integer.parseInt(file.getFileId());
         Document fileObject = new Document(FILEID_FIELD, fileId);
 
@@ -333,7 +338,7 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
         if (samplesConverter != null) {
             Document otherFields = new Document();
             fileObject.append(SAMPLE_DATA_FIELD, otherFields);
-            mongoStudy.putAll(samplesConverter.convertToStorageType(object, studyId, fileId, otherFields));
+            mongoStudy.putAll(samplesConverter.convertToStorageType(object, studyId, fileId, otherFields, sampleNames));
 
         }
 

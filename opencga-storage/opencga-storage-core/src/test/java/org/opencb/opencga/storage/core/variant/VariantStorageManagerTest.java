@@ -173,12 +173,14 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
 
         StudyConfigurationManager studyConfigurationManager = getVariantStorageManager().getDBAdaptor(DB_NAME).getStudyConfigurationManager();
+        int i = 0;
         for (int fileId = 77; fileId <= 93; fileId++) {
-            options.append(VariantStorageManager.Options.SAMPLE_IDS.key(), "NA128" + fileId + ":" + fileId);
+            options.append(VariantStorageManager.Options.SAMPLE_IDS.key(), "NA128" + fileId + ":" + i);
             runDefaultETL(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"),
-                    variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), fileId));
+                    variantStorageManager, studyConfigurationMultiFile, options.append(VariantStorageManager.Options.FILE_ID.key(), i));
             studyConfigurationMultiFile = studyConfigurationManager.getStudyConfiguration(studyConfigurationMultiFile.getStudyId(), null).first();
-            assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(fileId));
+            assertTrue(studyConfigurationMultiFile.getIndexedFiles().contains(i));
+            i++;
         }
 
 
