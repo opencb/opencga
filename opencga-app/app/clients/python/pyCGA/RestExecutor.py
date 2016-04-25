@@ -12,6 +12,28 @@ __author__ = 'antonior'
 class WS:
     def __init__(self, token=None, version="v1", instance="opencga"):
 
+        """
+        WS class is initialize using the information in the file .opencga/openCGA.json created after the login,
+        but also a token object could be pass and it will be used.
+
+        :type instance: str
+        :type version: str
+        :type token: dict
+        :param token: contains the information to initialize a WS object
+        :param version: ws version
+        :param instance: instance to use
+
+        - Example:
+        .. code-block:: python
+
+            # This will use the information in the login file
+            ws = WS()
+
+            # This will use the token passed
+            token = {"host": "opencga_host", "user": "username", "sid": "XXXXXXXXXXXXXX"}
+            ws = WS(token=token, version="v2", instance="other_instance")
+
+        """
         home = Path(os.getenv("HOME"))
 
         if token is None:
@@ -79,7 +101,7 @@ class WS:
         """
 
         :param url:
-        :return: :raise StandardError:
+        :raise StandardError:
         """
         limit = int(limit)
         if limit > 0:
@@ -145,12 +167,46 @@ class WS:
         This is a wildcard method, if some of the ws in catalog are not implemented in this python wrapper you can
         always use the general method of the corresponding class.
 
-        :rtype : list of dict
+
+        :type options: dict
+        :type skip: int
+        :type limit: int
+        :type pag: int
+        :type use_buffer: bool
+        :type data: dict
+        :type item_id: str
+        :type method_name: str
+        :type ws_category: str
         :param ws_category: category of ws, i.e: Users, projects, studies...
-        :param method name: name of the method to be called
-        :param item_id: item_id
-        :param options: this argument is a dictionary with parameters to be used in the ws
-        :return: list of results
+        :param method_name: name of the method to be called, i.e: create, search. info...
+        :param item_id: Some of the webservice methods required a item id, if it is the case you need to provide it using this parameter
+        :param data: If this parameter is provided post method is assumed
+        :param skip: This parameter is used to skip result from the query
+        :param limit: This parameter is used to limit the number of results
+        :param pag: Size of each page
+        :param use_buffer: If false all result will be stored in the same array and retrieved at once. If true an iterator will be returned the size of the result each iteration is the size of the page
+        :param options: this argument is a dictionary with parameters to be used in the ws (see examples)
+
+        :return: This method can return a list of results or a iterator of list of results (see use_buffer)
+        :rtype: list of dict
+
+        - Examples:
+        .. code-block:: python
+
+            # This is an example of a query to search files in a specific path
+            ws = WS()
+            found_files = ws.general_method("files", "search", studyId="2", path="~path/to/files/")
+
+            # This is an example of a query using the item_id
+            file_info = ws.general_method("files", "info", item_id="6")
+
+            # This is an example using a post method
+            updated_files = ws.general_method("files", "update", data={"attributes": {"new_field": "new_value"}})
+
+            # This is an example using a custom pagination and the buffer, this example will show all the file names in the DB in batches of ten
+            for batch in ws.general_method("files", "search", studyId="2", pag=10, use_buffer=True, type="FILE"):
+                for file_result in batch:
+                    print file_result["name"]
         """
 
         options_string = ""
