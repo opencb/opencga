@@ -18,8 +18,8 @@ package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Project;
 
 import javax.ws.rs.client.WebTarget;

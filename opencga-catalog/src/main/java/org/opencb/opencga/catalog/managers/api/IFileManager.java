@@ -63,7 +63,10 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> rename(long fileId, String newName, String sessionId) throws CatalogException;
 
-    QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
+
+    QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     /**
      * Ranks the elements queried, groups them by the field(s) given and return it sorted.
