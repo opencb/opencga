@@ -19,7 +19,10 @@ package org.opencb.opencga.core.common;
 import java.lang.reflect.Array;
 import java.util.*;
 
-
+/**
+ * This class has been moved to java-common-libs.
+ */
+@Deprecated
 public class ListUtils {
 
     public static <E> List<E> unique(List<E> array) {

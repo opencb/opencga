@@ -24,8 +24,13 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.List;
 
+/**
+ * This class has been moved to java-common-libs.
+ */
+@Deprecated
 public class Command extends RunnableProcess {
 
     // protected String executable;
