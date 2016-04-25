@@ -57,6 +57,13 @@ public interface CatalogDBAdaptorFactory {
      */
     void createIndexes() throws CatalogDBException;
 
+    /**
+     * Removes the catalog database.
+     *
+     * @throws CatalogDBException if there is a problem during the removal.
+     */
+    void deleteCatalogDB() throws CatalogDBException;
+
     void close();
 
     CatalogMongoMetaDBAdaptor getCatalogMongoMetaDBAdaptor();

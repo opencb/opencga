@@ -106,12 +106,12 @@ public class CatalogManager implements AutoCloseable {
         logger.debug("CatalogManager configureManager");
         configureManagers(catalogConfiguration);
 
-        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
-//            Admin admin = catalogConfiguration.getAdmin();
-//            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
-//            catalogDBAdaptorFactory.initializeCatalogDB(admin);
-        }
+//        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
+//            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
+////            Admin admin = catalogConfiguration.getAdmin();
+////            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+////            catalogDBAdaptorFactory.initializeCatalogDB(admin);
+//        }
     }
 
     @Deprecated
@@ -184,12 +184,18 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
-    public void installDatabase() throws CatalogException {
+    public void installCatalogDB() throws CatalogException {
         catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
     }
 
-    public void installIndexes() throws CatalogDBException {
+    public void installIndexes() throws CatalogException {
+        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         catalogDBAdaptorFactory.createIndexes();
+    }
+
+    public void deleteCatalogDB() throws CatalogException {
+        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+        catalogDBAdaptorFactory.deleteCatalogDB();
     }
 
     public void testIndices() {

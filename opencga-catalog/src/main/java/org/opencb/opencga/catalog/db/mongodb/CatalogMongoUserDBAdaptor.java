@@ -133,7 +133,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
             QueryResult<Long> countSessions = count(query);
             if (countSessions.getResult().get(0) != 0) {
-                throw new CatalogDBException("Already logged");
+                throw new CatalogDBException("Already logged in");
             } else {
                 addSession(userId, session);
                 ObjectMap resultObjectMap = new ObjectMap();

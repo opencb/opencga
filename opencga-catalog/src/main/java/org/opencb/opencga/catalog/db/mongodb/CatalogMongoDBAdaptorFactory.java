@@ -159,6 +159,11 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
+    public void deleteCatalogDB() throws CatalogDBException {
+        mongoManager.drop(database);
+    }
+
+    @Override
     public boolean isCatalogDBReady() {
         QueryResult<Long> queryResult = metaCollection.count(new BasicDBObject("_id", METADATA_OBJECT_ID));
         return queryResult.getResult().get(0) == 1;

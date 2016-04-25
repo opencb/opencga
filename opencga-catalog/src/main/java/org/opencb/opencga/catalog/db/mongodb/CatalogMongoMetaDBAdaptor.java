@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
 import org.slf4j.LoggerFactory;
@@ -168,9 +169,18 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
         Document metadataObject = getMongoDBDocument(new Metadata(), "Metadata");
         metadataObject.put("_id", "METADATA");
-        metadataObject.put("admin", getMongoDBDocument(admin, "Admin"));
+        Document adminDocument = getMongoDBDocument(admin, "Admin");
+        adminDocument.put("sessions", new ArrayList<>());
+        metadataObject.put("admin", adminDocument);
 
         metaCollection.insert(metadataObject, null);
-
     }
+
+    public void checkAdmin(String password) throws CatalogException {
+        Bson query = Filters.eq("admin.password", CatalogAuthenticationManager.cipherPassword(password));
+        if (metaCollection.count(query).getResult().get(0) == 0) {
+            throw new CatalogDBException("The admin password is incorrect.");
+        }
+    }
+
 }
