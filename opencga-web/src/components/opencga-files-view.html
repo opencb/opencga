@@ -27,55 +27,78 @@
 
             <ul id="myTabs" class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a href="#geneViewInfo" role="tab" data-toggle="tab">Study Info</a></li>
-                <li role="presentation"><a href="#geneViewGenomeContext" role="tab" data-toggle="tab">Files</a></li>
-                <li role="presentation"><a href="#geneViewTranscripts" role="tab" data-toggle="tab">Jobs</a></li>
-                <li role="presentation"><a href="#geneViewPDB" role="tab" data-toggle="tab">Samples</a></li>
+                <!--<li role="presentation"><a href="#geneViewGenomeContext" role="tab" data-toggle="tab">Files</a></li>-->
+                <!--<li role="presentation"><a href="#geneViewTranscripts" role="tab" data-toggle="tab">Jobs</a></li>-->
+                <!--<li role="presentation"><a href="#geneViewPDB" role="tab" data-toggle="tab">Samples</a></li>-->
             </ul>
 
             <div class="tab-content" style="width: 90%">
                 <div id="geneViewInfo" role="tabpanel" class="tab-pane active">
 
-                    Name: {{geneObj.name}}<br>
-                    ID:  <a href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g={{geneObj.id}}" target="_blank">{{geneObj.id}}</a><br>
-                    Biotype: {{geneObj.biotype}}<br>
-                    Region: {{geneObj.chromosome}}:{{geneObj.start}}-{{geneObj.end}}<br>
-                    Status: {{geneObj.status}}<br>
-                    Strand: {{geneObj.strand}}<br>
-                    Source: {{geneObj.source}}<br>
-                    Description: {{geneObj.description}}<br>
-                </div>
+                    <!--Name: {{geneObj.name}}<br>-->
+                    <!--ID:  <a href="http://www.ensembl.org/Homo_sapiens/Gene/Summary?db=core;g={{geneObj.id}}" target="_blank">{{geneObj.id}}</a><br>-->
+                    <!--Biotype: {{geneObj.biotype}}<br>-->
+                    <!--Region: {{geneObj.chromosome}}:{{geneObj.start}}-{{geneObj.end}}<br>-->
+                    <!--Status: {{geneObj.status}}<br>-->
+                    <!--Strand: {{geneObj.strand}}<br>-->
+                    <!--Source: {{geneObj.source}}<br>-->
+                    <!--Description: {{geneObj.description}}<br>-->
 
-                <div id="geneViewGenomeContext" role="tabpanel" class="tab-pane">
-                    <div id="genomeviewer"></div>
-                </div>
-
-                <div id="geneViewTranscripts" role="tabpanel" class="tab-pane">
-                    <table class="table table-hover">
-                        <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>ID</th>
-                            <th>Biotype</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <template is="dom-repeat" items="{{geneObj.transcripts}}">
+                    <template is="dom-if" if="{{data}}">
+                        <table class="table table-hover">
+                            <thead>
                             <tr>
-                                <td>{{item.name}}</td>
-                                <td>{{item.id}}</td>
-                                <td>{{item.biotype}}</td>
+                                <th>TfName</th>
+                                <th>Pwm</th>
+                                <!--<th>Region</th>-->
+                                <!--<th>Strand</th>-->
+                                <!--<th>Score</th>-->
                             </tr>
-                        </template>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                            <template is="dom-repeat" items="{{data}}" as="tfbs">
+                                <tr>
+                                    <td>{{tfbs.name}}</td>
+                                    <td>{{tfbs.type}}</td>
+                                </tr>
+                            </template>
+                            </tbody>
+                        </table>
+                    </template>
+
                 </div>
 
-                <div role="tabpanel" class="tab-pane" id="geneViewPDB">
-                    PDB
-                    <canvas class="ChemDoodleWebComponent" id="pdb_canvas" width="600" height="600" style="width: 800px; height: 800px; ">
-                        This browser does not support HTML5/Canvas.
-                    </canvas>
-                </div>
+                <!--<div id="geneViewGenomeContext" role="tabpanel" class="tab-pane">-->
+                    <!--<div id="genomeviewer"></div>-->
+                <!--</div>-->
+
+                <!--<div id="geneViewTranscripts" role="tabpanel" class="tab-pane">-->
+                    <!--<table class="table table-hover">-->
+                        <!--<thead>-->
+                        <!--<tr>-->
+                            <!--<th>Name</th>-->
+                            <!--<th>ID</th>-->
+                            <!--<th>Biotype</th>-->
+                        <!--</tr>-->
+                        <!--</thead>-->
+                        <!--<tbody>-->
+                        <!--<template is="dom-repeat" items="{{geneObj.transcripts}}">-->
+                            <!--<tr>-->
+                                <!--<td>{{item.name}}</td>-->
+                                <!--<td>{{item.id}}</td>-->
+                                <!--<td>{{item.biotype}}</td>-->
+                            <!--</tr>-->
+                        <!--</template>-->
+                        <!--</tbody>-->
+                    <!--</table>-->
+                <!--</div>-->
+
+                <!--<div role="tabpanel" class="tab-pane" id="geneViewPDB">-->
+                    <!--PDB-->
+                    <!--<canvas class="ChemDoodleWebComponent" id="pdb_canvas" width="600" height="600" style="width: 800px; height: 800px; ">-->
+                        <!--This browser does not support HTML5/Canvas.-->
+                    <!--</canvas>-->
+                <!--</div>-->
             </div>
         </div>
 
@@ -98,7 +121,35 @@
                 },
                 variations: {
                     type: Array
+                },
+                data: {
+                    type: Array,
+                    value: []
                 }
+            },
+            ready: function() {
+//                6JnNLsibYDakZW37QDWy
+                console.log("asddddddddddddddfsdfsdfs")
+                var _this = this;
+                OpencgaManager.files.search({
+//                        sid: "6JnNLsibYDakZW37QDWy",
+                    query: {
+                        sid: "wMR3oN1Rr3eaRic7ILBd"
+                    },
+                    request: {
+                        success: function (response) {
+                            console.log("toma ya!!!!!!!!!!")
+                            console.log(response)
+                            _this.data = response.response[0].result;
+                        },
+                        error: function (response) {
+                            console.log("mierda!!!!!!!!!!")
+                            //Delete all cookies
+                            Cookies.expire('bioinfo_sid');
+                            Cookies.expire('bioinfo_user');
+                        }
+                    }
+                });
             },
             _geneIdChanged: function(newValue, oldValue) {
                 let _this = this;
@@ -131,8 +182,6 @@
                 let error = function (response) {
                     alert("Gene ID not valid: " + _this.geneId)
                 };
-            },
-            ready: function() {
             }
         });
     </script>

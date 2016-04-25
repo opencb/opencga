@@ -20,11 +20,67 @@
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
 
+        User: <span>{{user}}</span>
+        Session: <span>{{sessionId}}</span>
+        <!-- Single button -->
+        <div class="btn-group">
+            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                Project <span class="caret"></span>
+            </button>
+            <ul class="dropdown-menu">
+                <template is="dom-repeat" items="{{projects}}">
+                    <li><a href="#">{{item}}</a></li>
+                </template>
+            </ul>
+        </div>
     </template>
     <script>
         Polymer({
             is: 'opencga-dashboard',
             properties: {
+                client: {
+                    type: Object,
+                    observer: "_getAvailableStudies"
+                },
+                projects : {
+                    type: Array,
+                    value: []
+                }
+            },
+
+            ready: function() {
+                console.log("Hello from dashboard");
+            },
+
+            _getAvailableStudies: function() {
+                console.log("Dashboard has been called.")
+                let _this = this;
+
+                if (this.client instanceof OpenCGAClient) {
+                    console.log("The client is passed properly.");
+
+                    let studies = [];
+                    this.client.users().projects().then(function(response) {
+
+                        console.log(response)
+                        for (let i in response.response) {
+                            for (let j in response.response[i].result) {
+                                let proj = response.response[i].result[j];
+
+                                _this.client.projects().studies(proj.id).then(function(response) {
+                                    debugger
+                                    console.log(response)
+                                    for (let i in response.response[0].result) {
+                                        _this.push('projects', proj.name + ":" + response.response[0].result[i].name);
+                                    }
+                                    console.log(_this.projects);
+                                });
+
+                            }
+                        }
+                    });
+                }
+
             }
         });
     </script>
