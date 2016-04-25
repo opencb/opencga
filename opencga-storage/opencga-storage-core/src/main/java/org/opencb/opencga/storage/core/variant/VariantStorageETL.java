@@ -785,7 +785,7 @@ public abstract class VariantStorageETL implements StorageETL {
             if (studyConfiguration.getFileIds().containsKey(fileName)) {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {
-                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(-1) + 1;
             }
             //throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
         }

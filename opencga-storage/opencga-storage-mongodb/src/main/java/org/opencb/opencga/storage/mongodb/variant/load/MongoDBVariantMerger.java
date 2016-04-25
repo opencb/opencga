@@ -149,13 +149,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         Variant previousVariant = null;
         Document previousDocument = null;
+        int start = 0;
+        int end = 0;
+        String chromosome = null;
         List<Document> overlappedVariants = null;
 
         for (Document document : variants) {
-            Variant emptyVar = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
             Document study = document.get(Integer.toString(studyId), Document.class);
             if (study != null) {
-                if (previousVariant != null && previousVariant.overlapWith(emptyVar, true)) {
+                if (previousVariant != null && variant.overlapWith(chromosome, start, end, true)) {
                     // If the variant overlaps with the last one, add to the overlappedVariants list.
                     // Do not process any variant!
                     if (overlappedVariants == null) {
@@ -163,8 +166,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                         overlappedVariants.add(previousDocument);
                     }
                     overlappedVariants.add(document);
+                    start = Math.min(start, variant.getStart());
+                    end = Math.max(end, variant.getEnd());
                     previousDocument = document;
-                    previousVariant = emptyVar;
+                    previousVariant = variant;
+
                     continue;
                 } else {
                     // If the current variant does not overlap with the last one, we can load the previous variant (or region)
@@ -177,7 +183,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 }
 
                 previousDocument = document;
-                previousVariant = emptyVar;
+                previousVariant = variant;
+                chromosome = variant.getChromosome();
+                start = variant.getStart();
+                end = variant.getEnd();
             }
 
         }
@@ -215,6 +224,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
 
         List<Document> fileDocuments = new LinkedList<>();
+        List<Document> alternateDocuments = new LinkedList<>();
         Document gts = new Document();
 
         // Loop for each file that have to be merged
@@ -241,6 +251,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 Document newDocument = studyConverter.convertToStorageType(variant.getStudies().get(0));
 
                 fileDocuments.add((Document) newDocument.get(FILES_FIELD, List.class).get(0));
+                alternateDocuments = newDocument.get(ALTERNATES_FIELD, List.class);
 
                 for (Map.Entry<String, Object> entry : newDocument.get(GENOTYPES_FIELD, Document.class).entrySet()) {
                     addSampleIdsGenotypes(gts, entry.getKey(), (List<Integer>) entry.getValue());
@@ -257,7 +268,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
         }
 
-        updateMongoDBOperations(emptyVar, fileDocuments, gts, newStudy, newVariant, mongoDBOps);
+        updateMongoDBOperations(emptyVar, fileDocuments, null, gts, newStudy, newVariant, mongoDBOps);
     }
 
     /**
@@ -289,6 +300,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
             Document gts = new Document();
             List<Document> fileDocuments = new LinkedList<>();
+            List<Document> alternateDocuments = null;
             StudyEntry studyEntry = variant.getStudies().get(0);
             // For all the files that are being indexed
             for (Integer fileId : fileIds) {
@@ -298,6 +310,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     studyDocument.get(GENOTYPES_FIELD, Document.class)
                             .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection) sampleIds));
                     fileDocuments.addAll(studyDocument.get(FILES_FIELD, List.class));
+                    alternateDocuments = studyDocument.get(ALTERNATES_FIELD, List.class);
                 } else {
                     addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
                 }
@@ -317,9 +330,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     }
                 }
             }
-
-
-            updateMongoDBOperations(emptyVar, fileDocuments, gts, newStudy, newVariant, mongoDBOps);
+            updateMongoDBOperations(emptyVar, fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
         }
     }
     /**
@@ -469,26 +480,30 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      *
      * @param emptyVar          Parsed empty variant of the document. Only chr, pos, ref, alt
      * @param fileDocuments     List of files to be updated
+     * @param alternateDocuments
      * @param gts               Set of genotypes to be updates
      * @param newStudy          If the variant is new for this study
      * @param newVariant        If the variant was never seen in the database
      * @param mongoDBOperations Set of MongoBD operations to update
      */
-    public void updateMongoDBOperations(Variant emptyVar, List<Document> fileDocuments, Document gts, boolean newStudy, boolean newVariant,
+    public void updateMongoDBOperations(Variant emptyVar, List<Document> fileDocuments, List<Document> alternateDocuments, Document gts, boolean newStudy, boolean newVariant,
                                         MongoDBOperations mongoDBOperations) {
 
         if (newVariant) {
             // If there where no files and the variant is new, do not insert the variant.
             // It may happen if all the files in the variant where duplicated for this variant.
             if (!fileDocuments.isEmpty()) {
+                Document studyDocument = new Document(STUDYID_FIELD, studyId)
+                        .append(FILES_FIELD, fileDocuments)
+                        .append(GENOTYPES_FIELD, gts);
+
+                if (alternateDocuments != null && !alternateDocuments.isEmpty()) {
+                    studyDocument.append(ALTERNATES_FIELD, alternateDocuments);
+                }
 
                 Document variantDocument = variantConverter.convertToStorageType(emptyVar);
                 variantDocument.append(STUDIES_FIELD,
-                        Collections.singletonList(
-                                new Document(STUDYID_FIELD, studyId)
-                                        .append(FILES_FIELD, fileDocuments)
-                                        .append(GENOTYPES_FIELD, gts)
-                        )
+                        Collections.singletonList(studyDocument)
                 );
                 mongoDBOperations.inserts.add(variantDocument);
             }
@@ -497,6 +512,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             Document studyDocument = new Document(STUDYID_FIELD, studyId)
                     .append(FILES_FIELD, fileDocuments)
                     .append(GENOTYPES_FIELD, gts);
+
+            if (alternateDocuments != null && !alternateDocuments.isEmpty()) {
+                studyDocument.append(ALTERNATES_FIELD, alternateDocuments);
+            }
 
             String id = variantConverter.buildStorageId(emptyVar);
             mongoDBOperations.queriesExistingId.add(id);
@@ -511,6 +530,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 List sampleIds = gts.get(gt, List.class);
                 mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
                         sampleIds));
+            }
+            if (alternateDocuments != null && !alternateDocuments.isEmpty()) {
+                mergeUpdates.add(Updates.addEachToSet(STUDIES_FIELD + ".$." + ALTERNATES_FIELD, alternateDocuments));
             }
             if (!fileDocuments.isEmpty()) {
                 mongoDBOperations.queriesExistingId.add(id);

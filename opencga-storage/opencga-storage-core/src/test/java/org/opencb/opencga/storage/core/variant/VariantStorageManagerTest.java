@@ -172,7 +172,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
 
-        StudyConfigurationManager studyConfigurationManager = getVariantStorageManager().getDBAdaptor(DB_NAME).getStudyConfigurationManager();
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
         int i = 0;
         for (int fileId = 77; fileId <= 93; fileId++) {
             options.append(VariantStorageManager.Options.SAMPLE_IDS.key(), "NA128" + fileId + ":" + i);
@@ -200,8 +201,12 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         variantStorageManager.index(uris, outputUri, true, true, true);
 
 
-        VariantDBAdaptor dbAdaptor = this.variantStorageManager.getDBAdaptor(DB_NAME);
+        studyConfigurationBatchFile = studyConfigurationManager.getStudyConfiguration(studyConfigurationBatchFile.getStudyId(), null).first();
         checkLoadedVariants(dbAdaptor, studyConfigurationBatchFile, true, false, -1);
+
+
+        dbAdaptor.close();
+        studyConfigurationManager.close();
 
 //
 //        //Load, in a new study, the same dataset in one single file
@@ -749,6 +754,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         }
         for (Variant variant : dbAdaptor) {
             for (Map.Entry<String, StudyEntry> entry : variant.getStudiesMap().entrySet()) {
+                if (!entry.getValue().getStudyId().equals(expectedStudyId)) {
+                    continue;
+                } else {
+                    numVariants++;
+                }
                 assertEquals(expectedStudyId, entry.getValue().getStudyId());
                 if (includeSamples) {
                     assertNotNull(entry.getValue().getSamplesData());
@@ -773,7 +783,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                                     .orElse(0).intValue());
                 }
             }
-            numVariants++;
         }
         if (expectedNumVariants >= 0) {
             assertEquals(expectedNumVariants, numVariants);
