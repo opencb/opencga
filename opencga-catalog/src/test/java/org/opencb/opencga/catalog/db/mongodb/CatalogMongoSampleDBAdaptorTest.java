@@ -6,6 +6,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -328,9 +329,10 @@ public class CatalogMongoSampleDBAdaptorTest {
 
 
         assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
-        Study study = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudy(studyId, null).first();
-        assertEquals(numCohorts, study.getCohorts().size());
-        Set<String> names = study.getCohorts().stream().map(Cohort::getName).collect(Collectors.toSet());
+        List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
+                new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId), null).getResult();
+        assertEquals(numCohorts, cohorts.size());
+        Set<String> names = cohorts.stream().map(Cohort::getName).collect(Collectors.toSet());
         for (int c = 0; c < numCohorts; c++) {
             String cohortName = getCohortName.apply(c);
             names.contains(cohortName);

@@ -10,12 +10,15 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +29,18 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongo
  * Created by pfurio on 08/01/16.
  */
 public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
+
+    private final List<String> COLLECTIONS_LIST = Arrays.asList(
+            "user",
+            "study",
+            "file",
+            "job",
+            "sample",
+            "individual",
+            "cohort",
+            "metadata",
+            "audit"
+    );
 
     protected static final String USER_COLLECTION = "user";
     protected static final String STUDY_COLLECTION = "study";
@@ -103,12 +118,44 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
             }
             //Set indexes
 //            BasicDBObject unique = new BasicDBObject("unique", true);
-//            nativeUserCollection.createIndex(new BasicDBObject("id", 1), unique);
-//            nativeFileCollection.createIndex(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
-//            nativeJobCollection.createIndex(new BasicDBObject("id", 1), unique);
+//            nativeUserCollection.createIndexes(new BasicDBObject("id", 1), unique);
+//            nativeFileCollection.createIndexes(BasicDBObjectBuilder.start("studyId", 1).append("path", 1).get(), unique);
+//            nativeJobCollection.createIndexes(new BasicDBObject("id", 1), unique);
         } else {
             throw new CatalogDBException("Catalog already initialized");
         }
+    }
+
+    @Override
+    public void installCatalogDB(CatalogConfiguration catalogConfiguration) throws CatalogException {
+        MongoDataStore mongoDataStore = mongoManager.get(database, configuration);
+        COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
+        metaDBAdaptor.createIndexes();
+        metaDBAdaptor.initializeMetaCollection(catalogConfiguration);
+    }
+
+    @Override
+    public void createIndexes() throws CatalogDBException {
+        metaDBAdaptor.createIndexes();
+//        InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
+//        ObjectMapper objectMapper = new ObjectMapper();
+//        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
+//        bufferedReader.lines().filter(s -> !s.trim().isEmpty()).forEach(s -> {
+//            try {
+//                System.out.println(s);
+//                HashMap hashMap = objectMapper.readValue(s, HashMap.class);
+//                System.out.println(hashMap);
+//                QueryResult<Document> index = getCatalogUserDBAdaptor().getUserCollection().getIndex();
+//                System.out.println(index);
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
+//        });
+//        try {
+//            bufferedReader.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override

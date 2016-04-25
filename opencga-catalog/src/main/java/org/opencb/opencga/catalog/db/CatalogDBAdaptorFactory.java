@@ -17,9 +17,11 @@
 package org.opencb.opencga.catalog.db;
 
 import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoMetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -39,6 +41,21 @@ public interface CatalogDBAdaptorFactory {
      * @throws CatalogDBException if there was any problem, or it was already initialized.
      */
     void initializeCatalogDB(Admin admin) throws CatalogDBException;
+
+    /**
+     * Installs the catalog database with their corresponding indexes.
+     *
+     * @param catalogConfiguration Configuration of catalog.
+     * @throws CatalogException if there is any problem with the installation.
+     */
+    void installCatalogDB(CatalogConfiguration catalogConfiguration) throws CatalogException;
+
+    /**
+     * Creates the indexes needed to make queries faster.
+     *
+      * @throws CatalogDBException if there is any problem creating the indexes.
+     */
+    void createIndexes() throws CatalogDBException;
 
     void close();
 

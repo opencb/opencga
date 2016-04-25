@@ -154,7 +154,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
         public boolean help;
 
-        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
+        @Parameter(names = {"-l", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
         public String logLevel = "info";
 
         @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
@@ -163,8 +163,11 @@ public class CliOptionsParser {
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration file path.")
+        @Parameter(names = {"-c", "--conf"}, description = "Configuration file path.")
         public String configFile;
+
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
+        public String password;
 
         @Deprecated
         @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed in storage-configuration.yml")
@@ -267,14 +270,17 @@ public class CliOptionsParser {
      */
     class CatalogDatabaseCommandOptions {
 
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data, eg. opencga_catalog")
+        @Parameter(names = {"--database-name"}, description = "DataBase name to load the data, eg. opencga_catalog")
         public String database;
 
-        @Parameter(names = {"-H", "--host"}, description = "DataBase host and port, eg. localhost:27017")
-        public String host;
+        @Parameter(names = {"--database-hosts"}, description = "DataBase hosts and port, eg. localhost:27017")
+        public String hosts;
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
-        public String password;
+        @Parameter(names = {"--database-user"}, description = "DataBase user name")
+        public String databaseUser;
+
+        @Parameter(names = {"--database-password"}, description = "DataBase password", password = true, arity = 0)
+        public String databasePassword;
     }
 
 

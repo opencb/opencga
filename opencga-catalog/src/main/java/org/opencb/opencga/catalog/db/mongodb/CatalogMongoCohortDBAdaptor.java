@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
@@ -55,6 +56,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         try {
             cohortCollection.insert(cohortObject, null);
         } catch (DuplicateKeyException e) {
+            throw CatalogDBException.alreadyExists("Cohort from study { id:" + studyId + "}", newId);
+        } catch (MongoWriteException e) {
             throw CatalogDBException.alreadyExists("Cohort from study { id:" + studyId + "}", newId);
         }
 
@@ -300,5 +303,9 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         } else {
             return new Document();
         }
+    }
+
+    public MongoDBCollection getCohortCollection() {
+        return cohortCollection;
     }
 }

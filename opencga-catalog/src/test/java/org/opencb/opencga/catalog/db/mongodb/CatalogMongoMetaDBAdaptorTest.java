@@ -18,15 +18,16 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
 /**
  * Created by imedina on 07/04/16.
  */
-public class CatalogMongoMetaDBAdaptorTest {
+public class CatalogMongoMetaDBAdaptorTest extends CatalogMongoDBAdaptorTest {
+
     @Test
     public void createIndex() throws Exception {
+        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
 
+        catalogDBAdaptor.getCatalogMetaDBAdaptor().createIndexes();
     }
 
 }

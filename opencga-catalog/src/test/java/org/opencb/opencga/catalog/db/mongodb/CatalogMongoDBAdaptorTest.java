@@ -59,6 +59,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     CatalogStudyDBAdaptor catalogStudyDBAdaptor;
     CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
 
+    private CatalogConfiguration catalogConfiguration;
+
     @AfterClass
     public static void afterClass() {
         catalogDBAdaptor.close();
@@ -66,7 +68,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Before
     public void before() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
@@ -101,7 +103,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void initDefaultCatalogDB() throws CatalogException {
 
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
-        catalogDBAdaptor.initializeCatalogDB(new Admin());
+        catalogDBAdaptor.installCatalogDB(catalogConfiguration);
+//        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
         /**
          * Let's init the database with some basic data to perform each of the tests

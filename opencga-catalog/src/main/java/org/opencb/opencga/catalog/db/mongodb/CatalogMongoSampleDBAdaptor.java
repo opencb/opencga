@@ -941,4 +941,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             return new Document();
         }
     }
+
+    public MongoDBCollection getSampleCollection() {
+        return sampleCollection;
+    }
 }

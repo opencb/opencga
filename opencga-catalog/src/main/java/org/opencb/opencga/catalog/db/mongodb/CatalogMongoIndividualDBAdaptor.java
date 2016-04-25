@@ -688,4 +688,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
     }
 
+    public MongoDBCollection getIndividualCollection() {
+        return individualCollection;
+    }
+
 }

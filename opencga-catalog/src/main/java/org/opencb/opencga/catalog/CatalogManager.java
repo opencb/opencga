@@ -23,8 +23,6 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
-import org.opencb.opencga.catalog.client.CatalogClient;
-import org.opencb.opencga.catalog.client.CatalogDBClient;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
@@ -73,7 +71,7 @@ public class CatalogManager implements AutoCloseable {
 
     private CatalogDBAdaptorFactory catalogDBAdaptorFactory;
     private CatalogIOManagerFactory catalogIOManagerFactory;
-    private CatalogClient catalogClient;
+//    private CatalogClient catalogClient;
 
     private IUserManager userManager;
     private IProjectManager projectManager;
@@ -109,13 +107,10 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(catalogConfiguration);
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
-            Admin admin = catalogConfiguration.getAdmin();
-            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
-            catalogDBAdaptorFactory.initializeCatalogDB(admin);
-//            User admin = new User("admin", catalogConfiguration.getAdmin().getPassword(),
-//                    catalogConfiguration.getAdmin().getEmail(), "", "openCB", User.Role.ADMIN, new Status());
-//            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
-//            authenticationManager.newPassword("admin", catalogConfiguration.getAdmin().getPassword());
+            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
+//            Admin admin = catalogConfiguration.getAdmin();
+//            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+//            catalogDBAdaptorFactory.initializeCatalogDB(admin);
         }
     }
 
@@ -140,7 +135,7 @@ public class CatalogManager implements AutoCloseable {
 
     @Deprecated
     private void configureManagers(Properties properties) {
-        catalogClient = new CatalogDBClient(this);
+//        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
@@ -165,7 +160,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     private void configureManagers(CatalogConfiguration catalogConfiguration) {
-        catalogClient = new CatalogDBClient(this);
+//        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
 
@@ -189,19 +184,27 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
+    public void installDatabase() throws CatalogException {
+        catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
+    }
+
+    public void installIndexes() throws CatalogDBException {
+        catalogDBAdaptorFactory.createIndexes();
+    }
+
     public void testIndices() {
         System.out.println("vamos bien");
-        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndex();
+        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndexes();
     }
-
-    public CatalogClient client() {
-        return client("");
-    }
-
-    public CatalogClient client(String sessionId) {
-        catalogClient.setSessionId(sessionId);
-        return catalogClient;
-    }
+//
+//    public CatalogClient client() {
+//        return client("");
+//    }
+//
+//    public CatalogClient client(String sessionId) {
+//        catalogClient.setSessionId(sessionId);
+//        return catalogClient;
+//    }
 
     public CatalogIOManagerFactory getCatalogIOManagerFactory() {
         return catalogIOManagerFactory;

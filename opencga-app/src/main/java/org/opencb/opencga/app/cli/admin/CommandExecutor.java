@@ -40,6 +40,7 @@ public abstract class CommandExecutor {
     protected String logFile;
     protected boolean verbose;
     protected String configFile;
+    protected String adminPassword;
 
     protected String appHome;
 
@@ -53,14 +54,15 @@ public abstract class CommandExecutor {
     }
 
     protected void init(CliOptionsParser.CommonCommandOptions options) {
-        init(options.logLevel, options.verbose, options.configFile, options.storageEngine);
+        init(options.logLevel, options.verbose, options.configFile, options.storageEngine, options.password);
     }
 
-    protected void init(String logLevel, boolean verbose, String configFile, String storageEngine) {
+    protected void init(String logLevel, boolean verbose, String configFile, String storageEngine, String password) {
         this.logLevel = logLevel;
         this.verbose = verbose;
         this.configFile = configFile;
         this.storageEngine = storageEngine;
+        this.adminPassword = password;
 
         /**
          * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason
@@ -232,4 +234,12 @@ public abstract class CommandExecutor {
         this.configuration = configuration;
     }
 
+    public String getAdminPassword() {
+        return adminPassword;
+    }
+
+    public CommandExecutor setAdminPassword(String adminPassword) {
+        this.adminPassword = adminPassword;
+        return this;
+    }
 }
