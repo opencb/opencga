@@ -29,6 +29,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * This class has been moved to java-common-libs.
+ */
+@Deprecated
 public class Command extends RunnableProcess {
 
     // protected String executable;
