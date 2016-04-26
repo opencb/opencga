@@ -72,6 +72,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         CatalogManagerTest.clearCatalog(catalogConfiguration);
 
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
 
         catalogManager.createUser(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null);
         catalogManager.createUser(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null);

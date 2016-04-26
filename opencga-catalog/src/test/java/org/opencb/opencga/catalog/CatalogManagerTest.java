@@ -177,6 +177,7 @@ public class CatalogManagerTest extends GenericTest {
         clearCatalog(catalogConfiguration);
 
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);

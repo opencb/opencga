@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -23,6 +24,9 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
+import org.bson.codecs.DocumentCodec;
+import org.bson.codecs.configuration.CodecRegistries;
+import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -659,7 +663,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ",!=" + Status.REMOVED);
         Bson bson = parseQuery(query);
+        System.out.println("bson = " + bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -921,7 +927,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     case ANNOTATION_SET_ID:
                         addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
-
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;

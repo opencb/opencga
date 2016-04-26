@@ -197,11 +197,11 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         catalogDBAdaptorFactory.deleteCatalogDB();
     }
-
-    public void testIndices() {
-        System.out.println("vamos bien");
-        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndexes();
-    }
+//
+//    public void testIndices() {
+//        System.out.println("vamos bien");
+//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().createIndexes();
+//    }
 //
 //    public CatalogClient client() {
 //        return client("");

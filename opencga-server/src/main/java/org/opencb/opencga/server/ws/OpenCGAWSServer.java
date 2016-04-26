@@ -435,10 +435,10 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-    @GET
-    @Path("/testIndices")
-    public Response testIndices() {
-        catalogManager.testIndices();
-        return Response.ok("mira el log").build();
-    }
+//    @GET
+//    @Path("/testIndices")
+//    public Response testIndices() {
+//        catalogManager.testIndices();
+//        return Response.ok("mira el log").build();
+//    }
 }

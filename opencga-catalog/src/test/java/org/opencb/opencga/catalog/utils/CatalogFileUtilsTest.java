@@ -81,6 +81,7 @@ public class CatalogFileUtilsTest {
 
         CatalogManagerTest.clearCatalog(catalogConfiguration);
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
 
         //Create USER
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);

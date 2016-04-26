@@ -50,6 +50,7 @@ public class CatalogDBClientTest {
         catalogProperties.load(CatalogDBClientTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
         */
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
         QueryResult<ObjectMap> result = catalogManager.loginAsAnonymous("test-ip");
         userId = result.getResult().get(0).getString("userId");
         sessionId = result.getResult().get(0).getString("sessionId");
