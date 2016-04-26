@@ -161,6 +161,13 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
+                            <name>opencga-analysis.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
 
                     <!--<daemons>-->

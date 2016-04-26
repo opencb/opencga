@@ -22,7 +22,10 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
+/**
+ * This class has been moved to java-common-libs.
+ */
+@Deprecated
 public class SingleProcess {
 
     private Logger logger;
