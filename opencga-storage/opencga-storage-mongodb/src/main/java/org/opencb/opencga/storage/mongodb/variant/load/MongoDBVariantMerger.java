@@ -80,8 +80,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         private List<String> queriesFillGapsId = new LinkedList<>();
         private List<Bson> updatesFillGaps = new LinkedList<>();
 
-        private final AtomicInteger skipped = new AtomicInteger();
-        private final AtomicInteger nonInserted = new AtomicInteger();
+        private int skipped = 0;
+        private int nonInserted = 0;
+        private int overlappedVariants = 0;
 
     }
 
@@ -107,7 +108,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration sc, List<Integer> fileIds, MongoDBCollection collection,
-                                Future<Long> futureNumTotalVariants, long aproxNumVariants) {
+                                Future<Long> futureNumTotalVariants, long aproximatedNumVariants) {
         this.dbAdaptor = dbAdaptor;
         this.collection = collection;
         this.fileIds = fileIds;
@@ -123,7 +124,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         result = new MongoDBVariantWriteResult();
         samplesPositionMap = new HashMap<>();
         variantsCount = new AtomicInteger(0);
-        this.numTotalVariants = aproxNumVariants;
+        this.numTotalVariants = aproximatedNumVariants;
         loggingBatchSize = DEFAULT_LOGING_BATCH_SIZE;
         variantMerger = new VariantMerger();
     }
@@ -199,10 +200,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         }
 
         // Execute MongoDB Operations
-        MongoDBVariantWriteResult writeResult = executeMongoDBOperations(mongoDBOps);
-
-        return writeResult;
-
+        return executeMongoDBOperations(mongoDBOps);
     }
 
     /**
@@ -235,7 +233,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 //Duplicated documents are treated like missing. Increment the number of duplicated variants
                 List<Binary> duplicatedVariants = study.get(fileId.toString(), List.class);
                 if (duplicatedVariants.size() > 1) {
-                    mongoDBOps.nonInserted.addAndGet(duplicatedVariants.size());
+                    mongoDBOps.nonInserted += duplicatedVariants.size();
                     addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
                     System.out.println("duplicatedVariants = " + emptyVar);
                     continue;
@@ -244,7 +242,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 Binary file = duplicatedVariants.get(0);
                 Variant variant = VARIANT_CONVERTER_DEFAULT.convertToDataModelType(file);
                 if (variant.getType().equals(VariantType.NO_VARIATION) || variant.getType().equals(VariantType.SYMBOLIC)) {
-                    mongoDBOps.skipped.incrementAndGet();
+                    mongoDBOps.skipped++;
                     continue;
                 }
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
@@ -268,7 +266,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
         }
 
-        updateMongoDBOperations(emptyVar, fileDocuments, null, gts, newStudy, newVariant, mongoDBOps);
+        updateMongoDBOperations(emptyVar, fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
     }
 
     /**
@@ -284,7 +282,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     public void processOverlappedVariants(List<Document> overlappedVariants, MongoDBOperations mongoDBOps) {
 
         // Merge documents
-        Map<Document, Variant> mergedVariants = mergeOverlappedVariants(overlappedVariants);
+        Map<Document, Variant> mergedVariants = mergeOverlappedVariants(overlappedVariants, mongoDBOps);
+
+        int missingVariants = 0;
 
         for (Map.Entry<Document, Variant> entry : mergedVariants.entrySet()) {
             Document document = entry.getKey();
@@ -292,6 +292,18 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
             Variant emptyVar = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
             Document study = document.get(studyId.toString(), Document.class);
+
+            // An overlapping variant will be considered missing if is missing for all the files
+            boolean missingOverlappingVariant = true;
+            for (Integer fileId : fileIds) {
+                if (study.containsKey(fileId.toString())) {
+                    missingOverlappingVariant = false;
+                }
+            }
+            if (missingOverlappingVariant) {
+                missingVariants++;
+                logger.debug("missingOverlappingVariant = {} for files {}. Variant {}", missingVariants, fileIds, variant);
+            }
 
             // New variant in the study.
             boolean newStudy = isNewStudy(study);
@@ -332,6 +344,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             }
             updateMongoDBOperations(emptyVar, fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
         }
+        // If at least one variant is not missing for this set of overlapped variants, there will be new overlapped variants.
+        // If all are missing, only "?/?" information will be written in this region.
+        if(missingVariants != mergedVariants.size()) {
+            mongoDBOps.overlappedVariants += missingVariants;
+        }
     }
     /**
      * Given a list of overlapped documents from the stage collection, merge resolving the overlapping positions.
@@ -340,7 +357,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * @param overlappedVariants    Overlapping documents from Stage collection.
      * @return  For each document, its corresponding merged variant
      */
-    public Map<Document, Variant> mergeOverlappedVariants(List<Document> overlappedVariants) {
+    public Map<Document, Variant> mergeOverlappedVariants(List<Document> overlappedVariants, MongoDBOperations mongoDBOps) {
 //        System.out.println("--------------------------------");
 //        System.out.println("Overlapped region = " + overlappedVariants
 //                .stream()
@@ -404,8 +421,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     break;
                 default:
                     logger.warn("Overlapping variants in file {} : {}", fileId, variantList);
-//                                    skipped.addAndGet(variantList.size() - 1);
-                    variantsToMerge.add(variantList.get(0));
+                    Variant var = variantList.get(0);
+                    variantsToMerge.add(var);
+                    for (int i = 1; i < variantList.size(); i++) {
+                        // Those variants that do not overlap with the selected variant won't be inserted
+                        if (!variantList.get(i).overlapWith(var, true)) {
+                            mongoDBOps.nonInserted++;
+                        }
+                    }
                     break;
             }
         }
@@ -562,14 +585,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             try {
                 BulkWriteResult writeResult = collection.insert(mongoDBOps.inserts, QUERY_OPTIONS).first();
                 if (writeResult.getInsertedCount() != mongoDBOps.inserts.size()) {
-                    logger.error("(Inserts = " + mongoDBOps.inserts.size() + ") "
-                            + "!= (InsertedCount = " + writeResult.getInsertedCount() + ")");
-                    for (Document insert : mongoDBOps.inserts) {
-                        Long count = collection.count(Filters.eq("_id", insert.get("_id"))).first();
-                        if (count != 1) {
-                            logger.error("Missing insert " + insert.get("_id"));
-                        }
-                    }
+                    onInsertError(mongoDBOps, writeResult);
                 }
             } catch (MongoBulkWriteException e) {
                 for (Document insert : mongoDBOps.inserts) {
@@ -583,7 +599,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!mongoDBOps.queriesExisting.isEmpty()) {
             QueryResult<BulkWriteResult> update = collection.update(mongoDBOps.queriesExisting, mongoDBOps.updatesExisting, QUERY_OPTIONS);
             if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
-                onError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
+                onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
             }
         }
         existingVariants += System.nanoTime();
@@ -591,14 +607,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (!mongoDBOps.queriesFillGaps.isEmpty()) {
             QueryResult<BulkWriteResult> update = collection.update(mongoDBOps.queriesFillGaps, mongoDBOps.updatesFillGaps, QUERY_OPTIONS);
             if (update.first().getModifiedCount() != mongoDBOps.queriesFillGaps.size()) {
-                onError("fill gaps", update, mongoDBOps.queriesFillGaps, mongoDBOps.queriesFillGapsId);
+                onUpdateError("fill gaps", update, mongoDBOps.queriesFillGaps, mongoDBOps.queriesFillGapsId);
             }
         }
         fillGapsVariants += System.nanoTime();
 
         MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult(mongoDBOps.inserts.size(),
-                mongoDBOps.updatesExisting.size() + mongoDBOps.updatesFillGaps.size(),
-                mongoDBOps.skipped.get(), mongoDBOps.nonInserted.get(), newVariants, existingVariants, fillGapsVariants);
+                mongoDBOps.updatesExisting.size(), mongoDBOps.updatesFillGaps.size(),
+                mongoDBOps.overlappedVariants, mongoDBOps.skipped, mongoDBOps.nonInserted, newVariants, existingVariants, fillGapsVariants);
         synchronized (result) {
             result.merge(writeResult);
         }
@@ -651,9 +667,24 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         }
     }
 
-    protected void onError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
+    private void onInsertError(MongoDBOperations mongoDBOps, BulkWriteResult writeResult) {
+        logger.error("(Inserts = " + mongoDBOps.inserts.size() + ") "
+                + "!= (InsertedCount = " + writeResult.getInsertedCount() + ")");
+
+        StringBuilder sb = new StringBuilder("Missing Variant for insert : ");
+        for (Document insert : mongoDBOps.inserts) {
+            Long count = collection.count(Filters.eq("_id", insert.get("_id"))).first();
+            if (count != 1) {
+                logger.error("Missing insert " + insert.get("_id"));
+                sb.append(insert.get("_id")).append(", ");
+            }
+        }
+        throw new RuntimeException(sb.toString());
+    }
+
+    protected void onUpdateError(String updateName, QueryResult<BulkWriteResult> update, List<Bson> queries, List<String> queryIds) {
         logger.error("(Updated " + updateName + " variants = " + queries.size() + " ) != "
-                + "(UpdatedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
+                + "(ModifiedCount = " + update.first().getModifiedCount() + "). MatchedCount:" + update.first().getMatchedCount());
         logger.info("QueryIDs: {}", queryIds);
         List<QueryResult<Document>> queryResults = collection.find(queries, null);
         logger.info("Results: ", queryResults.size());
@@ -666,9 +697,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 logger.info("remove({}): {}", id, remove);
             }
         }
+        StringBuilder sb = new StringBuilder("Missing Variant for update : ");
         for (String id : queryIds) {
             logger.error("Missing Variant " + id);
+            sb.append(id).append(", ");
         }
+        throw new RuntimeException(sb.toString());
     }
 
     protected LinkedList<Integer> getIndexedSamples() {

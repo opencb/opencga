@@ -301,11 +301,11 @@ public class MongoDBVariantStageLoader {
 
         try {
             final BulkWriteResult mongoResult = collection.update(queries, updates, QUERY_OPTIONS).first();
-            result.setNewDocuments(mongoResult.getInsertedCount())
-                    .setUpdatedObjects(mongoResult.getModifiedCount());
+            result.setNewVariants(mongoResult.getInsertedCount())
+                    .setUpdatedVariants(mongoResult.getModifiedCount());
         } catch (MongoBulkWriteException e) {
-            result.setNewDocuments(e.getWriteResult().getInsertedCount())
-                    .setUpdatedObjects(e.getWriteResult().getModifiedCount());
+            result.setNewVariants(e.getWriteResult().getInsertedCount())
+                    .setUpdatedVariants(e.getWriteResult().getModifiedCount());
 
 
             if (retryIds != null) {

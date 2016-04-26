@@ -1370,8 +1370,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            writeResult.setNewDocuments(newDocuments);
-            writeResult.setUpdatedObjects(updatedObjects);
+            writeResult.setNewVariants(newDocuments);
+            writeResult.setUpdatedVariants(updatedObjects);
 //                writeResult.setNewDocuments(data.size() - nonInsertedVariants.size() - writeResult.getSkippedVariants());
             queries.clear();
             updates.clear();
@@ -1436,7 +1436,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // Can happen that nonInsertedVariantsNum != queries.size() != nonInsertedVariants.size() if there was
             // a duplicated variant.
             writeResult.setNonInsertedVariants(nonInsertedVariants.size() - update.first().getMatchedCount());
-            writeResult.setUpdatedObjects(writeResult.getUpdatedObjects() + update.first().getModifiedCount());
+            writeResult.setUpdatedVariants(writeResult.getUpdatedVariants() + update.first().getModifiedCount());
         }
 
         return new QueryResult<>("insertVariants", ((int) (System.currentTimeMillis() - startTime)), 1, 1, "", "",

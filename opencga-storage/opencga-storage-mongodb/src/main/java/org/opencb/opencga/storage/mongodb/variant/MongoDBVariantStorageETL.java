@@ -385,6 +385,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads, capacity,
                         numRecords, skippedVariants, stageCollection);
             }
+            options.put("skippedVariants", skippedVariants);
 
             logger.info("Stage Write result: {}", skippedVariants);
 
@@ -411,7 +412,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         MongoDBCollection collection = dbAdaptor.getDB().getCollection(
                 options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
 
-        return merge(fileIds, batchSize, loadThreads, capacity, 0, 0, collection);
+        return merge(fileIds, batchSize, loadThreads, capacity, 0, options.getInt("skippedVariants", 0), collection);
     }
 
     /**
@@ -528,6 +529,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         if (writeResult.getNonInsertedVariants() != 0) {
             expectedCount -= writeResult.getNonInsertedVariants();
         }
+        if (writeResult.getOverlappedVariants() != 0) {
+            // Expect to find this file in all the overlapped variants
+            expectedCount += writeResult.getOverlappedVariants();
+        }
 
         logger.info("============================================================");
         if (expectedSkippedVariants != writeResult.getSkippedVariants()) {
@@ -555,7 +560,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         if (expectedCount != count) {
             String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count;
             logger.error(message);
-            exception = new StorageManagerException(message);
+//            exception = new StorageManagerException(message);
         } else {
             logger.info("Final number of loaded variants: " + count);
         }
