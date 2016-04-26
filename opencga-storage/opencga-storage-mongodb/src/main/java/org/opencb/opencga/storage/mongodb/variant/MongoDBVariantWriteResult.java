@@ -27,13 +27,13 @@ package org.opencb.opencga.storage.mongodb.variant;
  */
 public class MongoDBVariantWriteResult {
 
-    /** Number of new variants inserted in the Database */
+    /** Number of new variants inserted in the Database. */
     private long newVariants;
-    /** Number of existing variants, updated with new information */
+    /** Number of existing variants, updated with new information. */
     private long updatedVariants;
-    /** Number of existing variants that were not present in the loaded variants. Missing variants */
+    /** Number of existing variants that were not present in the loaded variants. Missing variants. */
     private long updatedMissingVariants;
-    /** New overlapped variants, not in the input file */
+    /** New overlapped variants, not in the input file. */
     private long overlappedVariants;
     /**
      * Ignored variants.
@@ -41,20 +41,21 @@ public class MongoDBVariantWriteResult {
      * @see org.opencb.biodata.models.variant.avro.VariantType#NO_VARIATION
      * */
     private long skippedVariants;
-    /** Non inserted variants, due to duplicated or overlapped variants in the same file*/
+    /** Non inserted variants, due to duplicated or overlapped variants in the same file. */
     private long nonInsertedVariants;
 
-    /** Time in nanoseconds into inserting the new variants */
+    /** Time in nanoseconds into inserting the new variants. */
     private long newVariantsNanoTime;
-    /** Time in nanoseconds into updating the existing variants */
+    /** Time in nanoseconds into updating the existing variants. */
     private long existingVariantsNanoTime;
-    /** Time in nanoseconds into updating the missing variants */
+    /** Time in nanoseconds into updating the missing variants. */
     private long fillGapsNanoTime;
 
     public MongoDBVariantWriteResult() {
     }
 
-    public MongoDBVariantWriteResult(long newVariants, long updatedVariants, long updatedMissingVariants, long overlappedVariants, long skippedVariants, long nonInsertedVariants) {
+    public MongoDBVariantWriteResult(long newVariants, long updatedVariants, long updatedMissingVariants, long overlappedVariants,
+                                     long skippedVariants, long nonInsertedVariants) {
         this.newVariants = newVariants;
         this.updatedVariants = updatedVariants;
         this.updatedMissingVariants = updatedMissingVariants;
@@ -64,7 +65,8 @@ public class MongoDBVariantWriteResult {
     }
 
 
-    public MongoDBVariantWriteResult(long newVariants, long updatedVariants, long updatedMissingVariants, long overlappedVariants, long skippedVariants, long nonInsertedVariants,
+    public MongoDBVariantWriteResult(long newVariants, long updatedVariants, long updatedMissingVariants, long overlappedVariants,
+                                     long skippedVariants, long nonInsertedVariants,
                                      long newVariantsNanoTime, long existingVariantsNanoTime, long fillGapsNanoTime) {
         this.newVariants = newVariants;
         this.updatedVariants = updatedVariants;
@@ -175,19 +177,39 @@ public class MongoDBVariantWriteResult {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof MongoDBVariantWriteResult)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof MongoDBVariantWriteResult)) {
+            return false;
+        }
 
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
 
-        if (newVariants != that.newVariants) return false;
-        if (updatedVariants != that.updatedVariants) return false;
-        if (updatedMissingVariants != that.updatedMissingVariants) return false;
-        if (overlappedVariants != that.overlappedVariants) return false;
-        if (skippedVariants != that.skippedVariants) return false;
-        if (nonInsertedVariants != that.nonInsertedVariants) return false;
-        if (newVariantsNanoTime != that.newVariantsNanoTime) return false;
-        if (existingVariantsNanoTime != that.existingVariantsNanoTime) return false;
+        if (newVariants != that.newVariants) {
+            return false;
+        }
+        if (updatedVariants != that.updatedVariants) {
+            return false;
+        }
+        if (updatedMissingVariants != that.updatedMissingVariants) {
+            return false;
+        }
+        if (overlappedVariants != that.overlappedVariants) {
+            return false;
+        }
+        if (skippedVariants != that.skippedVariants) {
+            return false;
+        }
+        if (nonInsertedVariants != that.nonInsertedVariants) {
+            return false;
+        }
+        if (newVariantsNanoTime != that.newVariantsNanoTime) {
+            return false;
+        }
+        if (existingVariantsNanoTime != that.existingVariantsNanoTime) {
+            return false;
+        }
         return fillGapsNanoTime == that.fillGapsNanoTime;
 
     }
@@ -237,7 +259,8 @@ public class MongoDBVariantWriteResult {
     }
 
     public String toTSV() {
-        return "#newVariants\tupdatedVariants\tupdatedFillGaps\toverlappedVariants\tskippedVariants\tnonInsertedVariants\tnewVariantsTime\texistingVariantsTime\tfillGapsTime\t"
+        return "#newVariants\tupdatedVariants\tupdatedFillGaps\toverlappedVariants\tskippedVariants\tnonInsertedVariants\tnewVariantsTime"
+                + "\texistingVariantsTime\tfillGapsTime\t"
                 + "\n"
                 + newVariants + '\t'
                 + updatedVariants + '\t'

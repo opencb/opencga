@@ -28,7 +28,6 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +54,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
     private final Map<Integer, LinkedHashMap<String, Integer>> __returnedSamplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private LinkedHashSet<String> returnedSamples;
-    private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
     private String returnedUnknownGenotype;
 
@@ -145,9 +143,8 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
-    public DocumentToSamplesConverter(StudyConfigurationManager studyConfigurationManager, VariantSourceDBAdaptor variantSourceDBAdaptor) {
+    public DocumentToSamplesConverter(StudyConfigurationManager studyConfigurationManager) {
         this();
-        this.sourceDbAdaptor = variantSourceDBAdaptor;
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
@@ -179,15 +176,15 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                 logger.warn("DocumentToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for "
                         + "VariantSource", studyId);
 
-                if (sourceDbAdaptor != null) {
-                    QueryResult samplesBySource = sourceDbAdaptor
-                            .getSamplesBySource(object.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD).toString(), null);
-                    if (samplesBySource.getResult().isEmpty()) {
-                        logger.warn("DocumentToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
-                    } else {
-                        setSamples(studyId, null, (List<String>) samplesBySource.getResult().get(0));
-                    }
-                }
+//                if (sourceDbAdaptor != null) {
+//                    QueryResult samplesBySource = sourceDbAdaptor
+//                            .getSamplesBySource(object.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD).toString(), null);
+//                    if (samplesBySource.getResult().isEmpty()) {
+//                        logger.warn("DocumentToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
+//                    } else {
+//                        setSamples(studyId, null, (List<String>) samplesBySource.getResult().get(0));
+//                    }
+//                }
             } else {
                 addStudyConfiguration(queryResult.first());
             }

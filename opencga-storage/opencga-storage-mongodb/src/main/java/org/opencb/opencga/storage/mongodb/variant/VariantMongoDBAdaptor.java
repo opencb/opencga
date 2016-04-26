@@ -101,7 +101,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // MongoDB configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
+        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -1543,7 +1543,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         DocumentToSamplesConverter samplesConverter;
         if (studyIds.isEmpty()) {
-            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager, null);
+            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         } else {
             List<StudyConfiguration> studyConfigurations = new LinkedList<>();
             for (Integer studyId : studyIds) {
@@ -2150,6 +2150,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceMongoDBAdaptor;
+    }
+
+    @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
     }
@@ -2167,10 +2172,4 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return loadedSampleIds;
     }
 
-    /* OLD METHODS*/
-    @Override
-    @Deprecated
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return variantSourceMongoDBAdaptor;
-    }
 }

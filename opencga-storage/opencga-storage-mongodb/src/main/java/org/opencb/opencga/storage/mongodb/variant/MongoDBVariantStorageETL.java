@@ -477,6 +477,13 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
+
+
+        VariantSource variantSource = readVariantSource(input, options);
+        variantSource.setFileId(options.getString(Options.FILE_ID.key()));
+        variantSource.setStudyId(options.getString(Options.STUDY_ID.key()));
+        dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(variantSource);
+
         if (options.getBoolean("merge")) {
             return super.postLoad(input, output);
         } else {

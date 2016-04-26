@@ -326,7 +326,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
         throw new UnsupportedOperationException();
     }
