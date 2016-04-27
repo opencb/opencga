@@ -187,6 +187,14 @@ class Files(WS):
         """
         return self.general_method(ws_category="files", method_name="delete", item_id=fileId, **options)
 
+    def unlink(self, fileId, **options):
+        """
+        Method to unlink a particular file/foler
+
+        :param fileId: file Id
+        """
+        return self.general_method(ws_category="files", method_name="unlink", item_id=fileId, **options)
+
     def update_file_post(self, fileId, json_file=None, data=None, **options):
         """
         Method to update the sampleId of a file
