@@ -1,9 +1,11 @@
 import json
+import logging
 import os
 import datetime
 from pyCGA.RestExecutor import WS
 
 __author__ = 'antonior, mparker'
+
 
 # HOST EXAMPLE
 # host = 'http://XX.XX.XX.XXX:XXXX/'
@@ -177,6 +179,14 @@ class Files(WS):
         """
         return self.general_method(ws_category="files", method_name="info", item_id=fileId, **options)
 
+    def delete(self, fileId, **options):
+        """
+        Method to delete a particular file/foler
+
+        :param fileId: file Id
+        """
+        return self.general_method(ws_category="files", method_name="delete", item_id=fileId, **options)
+
     def update_file_post(self, fileId, json_file=None, data=None, **options):
         """
         Method to update the sampleId of a file
@@ -258,7 +268,6 @@ class Files(WS):
 
         return self.general_method(ws_category="files", method_name="list", item_id=fileId, **options)
 
-
     def set_header(self, fileId, header, **options):
         """
 
@@ -287,9 +296,11 @@ class Files(WS):
                                    )
 
 
-
 class Variables(WS):
+    """
 
+    Class to query variables
+    """
     def create(self, studyId, name, json_file=None, data=None, **options):
         """
 
@@ -358,7 +369,7 @@ class Samples(WS):
 
         return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, **options)
 
-    def update_post(self, sampleId, data, **options):
+    def update_post(self, sampleId, data=None, **options):
         """
 
         method to do simple update of sample via get method
@@ -394,7 +405,8 @@ class Samples(WS):
 
         return self.search(studyId=studyId, variableSetId=str(v_id), annotation=";".join(queries))
 
-    def annotate(self, sample_id, variableSetName, annotationSetName, studyId, json_file=None, data=None, update=True, **options):
+    def annotate(self, sample_id, variableSetName, annotationSetName, studyId, json_file=None, data=None, update=True,
+                 **options):
         """
         This annotate a sample using a json file (this is a post method)
 
@@ -413,7 +425,6 @@ class Samples(WS):
         variable = Variables()
         variableSetId = str(variable.search(studyId=studyId, name=variableSetName)[0]["id"])
 
-
         if update:
             for annt_set in self.info(str(sample_id))[0]["annotationSets"]:
                 if annt_set["variableSetId"] == int(variableSetId):
@@ -423,7 +434,6 @@ class Samples(WS):
                                                item_id=str(sample_id), annotateSetName=annotationSetName,
                                                variableSetId=variableSetId, update="true", data=data
                                                )
-
 
         annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
@@ -450,22 +460,23 @@ class Samples(WS):
 
         return self.general_method(ws_category="samples", method_name="delete", item_id=sampleId, **options)
 
-    def share(self, userId, fileId, read=True, write=False, delete=False, unshare=False, **options):
+    def share(self, userId, sampleId, read=True, write=False, delete=False, unshare=False, **options):
 
         """
 
         Method to share files
 
         :param userId: id of the user this file will be shared
-        :param fileId: File id - Notice this is the internal id in Catalog
+        :param sampleId: File id - Notice this is the internal id in Catalog
         :param read: True/False - If True the user could read the file
         :param write: True/False - If True the user could write the file
         :param delete: True/False - If True the user could delete the file
         :param unshare: True/False - If True the file will be unshared for this user
         """
-        return self.general_method("samples", "share", item_id=fileId, unshare=str(unshare).lower(), userId=userId,
+        return self.general_method("samples", "share", item_id=sampleId, unshare=str(unshare).lower(), userId=userId,
                                    read=str(read).lower(), write=str(write).lower(), delete=str(delete).lower(),
                                    **options)
+
 
 class Individuals(WS):
     def create(self, studyId, name, family, fatherId, motherId, gender, **options):
@@ -488,7 +499,8 @@ class Individuals(WS):
         if gender != "MALE" and gender != "FEMALE":
             gender = "UNKNOWN"
 
-        return self.general_method(ws_category="individuals", method_name="create", name=name, family=family, fatherId=fatherId,
+        return self.general_method(ws_category="individuals", method_name="create", name=name, family=family,
+                                   fatherId=fatherId,
                                    motherId=motherId, gender=gender, studyId=studyId, **options)
 
     def search(self, studyId, **options):
@@ -530,6 +542,7 @@ class Individuals(WS):
         :param json_file:
         """
         if data is None and json_file is None:
+            logging.error("please provide a json file or a data")
             raise Exception("please provide a json file or a data")
 
         if data is None:
@@ -571,8 +584,6 @@ class Individuals(WS):
         return self.search(studyId=studyId, variableSetId=str(v_id), annotation=";".join(queries), **options)
 
 
-
-
 class Projects(WS):
     """
     This class contains method for projects ws (i.e, create, files, info)
@@ -588,7 +599,7 @@ class Projects(WS):
         :param organization:
         """
 
-        return self.general_method(ws_category="projects", method_name="create", userId=userId,  name=name, alias=alias,
+        return self.general_method(ws_category="projects", method_name="create", userId=userId, name=name, alias=alias,
                                    description=description, organization=organization, **options
                                    )
 
@@ -633,6 +644,7 @@ class Projects(WS):
         """
 
         return self.general_method(ws_category="projects", method_name="studies", item_id=projectId, **options)
+
 
 class Studies(WS):
     """
@@ -753,7 +765,6 @@ class Studies(WS):
         return self.general_method(ws_category="studies", method_name="delete", item_id=studyId, **options)
 
 
-
 class Jobs(WS):
     """
     This class contains method for jobs ws (i.e, create, info)
@@ -812,7 +823,6 @@ class Jobs(WS):
             fd.close()
 
         return self.general_method(ws_category="jobs", method_name="create", studyId=studyId, data=data, **options)
-
 
 # class Cohorts(WS):
 #     """
@@ -884,4 +894,3 @@ class Jobs(WS):
 #         url = os.path.join(self.pre_url, "cohorts", cohortId, "delete?sid=" + self.session_id)
 #         result = self.run_ws(url)
 #         return result
-

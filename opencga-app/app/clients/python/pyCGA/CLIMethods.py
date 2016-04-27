@@ -1,7 +1,9 @@
 from __future__ import print_function
+
+import getpass
 import json
 import sys
-
+from hashlib import sha1
 from pyCGA.CatalogWS import Users, Variables, Files, Individuals, Samples
 from pyCGA.Exceptions import ServerResponseException
 from pyCGA.ExpandedMethods import check_user_acls, link_file_and_update_sample, AnnotationSet
@@ -24,7 +26,11 @@ class Methods:
         """
         user = Users({"host": args.host, "sid": ""}, instance=args.instance)
         try:
-            sid = user.login_method(args.user, args.pwd)[0].get("sessionId")
+            if args.pwd:
+                pwd = sha1(args.pwd).hexdigest()
+            else:
+                pwd = sha1(getpass.getpass()).hexdigest()
+            sid = user.login_method(args.user, pwd)[0].get("sessionId")
             print(sid)
             return sid
         except ServerResponseException as e:
@@ -44,7 +50,6 @@ class Methods:
             for sample in acls[acl]["samples"]:
                 print("\t" + str(sample))
 
-
     @staticmethod
     def user_logout(args):
         """
@@ -55,8 +60,6 @@ class Methods:
         user = Users()
         user.logout_method(args.user)
         print("Successfully Log out")
-
-
 
     @staticmethod
     def users_create(args):
@@ -113,7 +116,6 @@ class Methods:
         except ServerResponseException as e:
             print(e, file=sys.stderr)
 
-
     @staticmethod
     def files_query_stats(args):
         """
@@ -124,8 +126,9 @@ class Methods:
         :param args:
         """
         file_instance = Files()
-        # TODO: Test this ---big change--
+        # TODO: move to expanded methods
         try:
+
             results = file_instance.search(studyId=str(args.studyId), bioformat=args.fileType,
                                                 include="projects.studies.files.name,projects.studies.files.stats." +args.query)
             # print(json.dumps(result, indent=4))
@@ -263,21 +266,22 @@ class Methods:
         """
         individual = Individuals()
         sample = Samples()
-        try:
-            individual_result = individual.search(args.studyId, args.name)[0]
+
+        individual_results = individual.search(studyId=args.studyId, name=args.name)
+        for individual_result in individual_results:
             gender = individual_result["gender"]
             individualId = individual_result["id"]
             print("ParticipantId in Catalog: "+ str(individualId))
             try:
-                sample_result = sample.search(args.studyId, individualId=str(individualId))
+                sample_result = sample.search(studyId=args.studyId, individualId=str(individualId))
 
                 for sample in sample_result:
                         print("Sample Name: " + sample["name"])
 
             except ServerResponseException as e:
                 print(str(e), file=sys.stderr)
-        except ServerResponseException as e:
-            print(str(e), file=sys.stderr)
+
+
 
     @staticmethod
     def individuals_search_by_annotation(args):
@@ -378,7 +382,6 @@ class Methods:
             if args.format == "AVRO":
                 schema = AvroSchemaFile(args.json)
                 data = schema.convert_variable_set(schema.data)
-
                 variable_id = variable.create(args.studyId, args.name, data=data)[0]["id"]
 
             else:
@@ -419,7 +422,6 @@ class Methods:
                     for info in sample_info:
                         yield [id, str(info["id"])]
 
-
             if inputIDType == "IndividualName":
                 if outputIDType == "CatalogIndividualId":
                     individual = Individuals()
@@ -442,7 +444,6 @@ class Methods:
 
                     for info in sample_info:
                         yield [id, str(info["id"])]
-
 
             if inputIDType == "CatalogSampleId":
                 if outputIDType == "CatalogIndividualId":
