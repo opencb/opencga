@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -405,6 +406,7 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
 
         try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(table, conf, null);) {
             manager.updateVcfMetaData(source);
+            manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
         } catch (IOException e) {
             throw new RuntimeException("Not able to store Variant Source for file!!!", e);
         }

@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -36,6 +37,8 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
     private final Set<String> lookup;
     private final Map<String, List<Variant>> buffer;
     private final LinkedList<String> lookupOrder;
+    private final AtomicLong proto_convert = new AtomicLong(0);
+    private final AtomicLong index_convert = new AtomicLong(0);
 //    private Connection connection;
 //    private final TableName tableName;
 
@@ -62,9 +65,11 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
 
     @Override
     protected List<VcfSlice> encodeVariants(List<Variant> variants) {
+        long curr = System.currentTimeMillis();
         for (Variant var : variants) {
             addVariant(var);
         }
+        this.index_convert.addAndGet(System.currentTimeMillis() - curr);
         List<VcfSlice> data = checkSlices(1000);
 //        submit(data);
         return data;
@@ -109,7 +114,10 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
                 long sliceStart = getHelper().extractPositionFromBlockId(key);
                 // List<Variant> varLst = data.stream().map(v -> new
                 // Variant(v)).collect(Collectors.toList());
+
+                long curr = System.currentTimeMillis();
                  VcfSlice slice = converter.convert(data, (int) sliceStart);
+                 this.proto_convert.addAndGet(System.currentTimeMillis() - curr);
                  retPut.add(slice);
 //                 Put put = getHelper().wrap(slice);
 //                 retPut.add(put);
@@ -215,6 +223,9 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
 //                }
 //            }
 //        }
+        logger.info(String.format("\nTime txt2hts: %s\nTime hts2avro: %s\nTime avro2norm: %s\nTime norm2proto: %s\nTime idx: %s",
+                this.hts_convert.get(), this.avro_convert.get(), this.norm_convert.get(),
+                this.proto_convert.get(), this.index_convert.get()));
     }
 
     private ArchiveHelper getHelper() {
