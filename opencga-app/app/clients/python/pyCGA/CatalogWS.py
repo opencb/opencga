@@ -6,6 +6,7 @@ from pyCGA.RestExecutor import WS
 
 __author__ = 'antonior, mparker'
 
+
 # HOST EXAMPLE
 # host = 'http://XX.XX.XX.XXX:XXXX/'
 
@@ -259,7 +260,6 @@ class Files(WS):
 
         return self.general_method(ws_category="files", method_name="list", item_id=fileId, **options)
 
-
     def set_header(self, fileId, header, **options):
         """
 
@@ -288,9 +288,11 @@ class Files(WS):
                                    )
 
 
-
 class Variables(WS):
+    """
 
+    Class to query variables
+    """
     def create(self, studyId, name, json_file=None, data=None, **options):
         """
 
@@ -395,7 +397,8 @@ class Samples(WS):
 
         return self.search(studyId=studyId, variableSetId=str(v_id), annotation=";".join(queries))
 
-    def annotate(self, sample_id, variableSetName, annotationSetName, studyId, json_file=None, data=None, update=True, **options):
+    def annotate(self, sample_id, variableSetName, annotationSetName, studyId, json_file=None, data=None, update=True,
+                 **options):
         """
         This annotate a sample using a json file (this is a post method)
 
@@ -414,7 +417,6 @@ class Samples(WS):
         variable = Variables()
         variableSetId = str(variable.search(studyId=studyId, name=variableSetName)[0]["id"])
 
-
         if update:
             for annt_set in self.info(str(sample_id))[0]["annotationSets"]:
                 if annt_set["variableSetId"] == int(variableSetId):
@@ -424,7 +426,6 @@ class Samples(WS):
                                                item_id=str(sample_id), annotateSetName=annotationSetName,
                                                variableSetId=variableSetId, update="true", data=data
                                                )
-
 
         annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
@@ -468,6 +469,7 @@ class Samples(WS):
                                    read=str(read).lower(), write=str(write).lower(), delete=str(delete).lower(),
                                    **options)
 
+
 class Individuals(WS):
     def create(self, studyId, name, family, fatherId, motherId, gender, **options):
         """
@@ -489,7 +491,8 @@ class Individuals(WS):
         if gender != "MALE" and gender != "FEMALE":
             gender = "UNKNOWN"
 
-        return self.general_method(ws_category="individuals", method_name="create", name=name, family=family, fatherId=fatherId,
+        return self.general_method(ws_category="individuals", method_name="create", name=name, family=family,
+                                   fatherId=fatherId,
                                    motherId=motherId, gender=gender, studyId=studyId, **options)
 
     def search(self, studyId, **options):
@@ -573,8 +576,6 @@ class Individuals(WS):
         return self.search(studyId=studyId, variableSetId=str(v_id), annotation=";".join(queries), **options)
 
 
-
-
 class Projects(WS):
     """
     This class contains method for projects ws (i.e, create, files, info)
@@ -590,7 +591,7 @@ class Projects(WS):
         :param organization:
         """
 
-        return self.general_method(ws_category="projects", method_name="create", userId=userId,  name=name, alias=alias,
+        return self.general_method(ws_category="projects", method_name="create", userId=userId, name=name, alias=alias,
                                    description=description, organization=organization, **options
                                    )
 
@@ -635,6 +636,7 @@ class Projects(WS):
         """
 
         return self.general_method(ws_category="projects", method_name="studies", item_id=projectId, **options)
+
 
 class Studies(WS):
     """
@@ -755,7 +757,6 @@ class Studies(WS):
         return self.general_method(ws_category="studies", method_name="delete", item_id=studyId, **options)
 
 
-
 class Jobs(WS):
     """
     This class contains method for jobs ws (i.e, create, info)
@@ -814,7 +815,6 @@ class Jobs(WS):
             fd.close()
 
         return self.general_method(ws_category="jobs", method_name="create", studyId=studyId, data=data, **options)
-
 
 # class Cohorts(WS):
 #     """
@@ -886,4 +886,3 @@ class Jobs(WS):
 #         url = os.path.join(self.pre_url, "cohorts", cohortId, "delete?sid=" + self.session_id)
 #         result = self.run_ws(url)
 #         return result
-
