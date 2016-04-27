@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -24,9 +23,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
-import org.bson.codecs.DocumentCodec;
-import org.bson.codecs.configuration.CodecRegistries;
-import org.bson.codecs.configuration.CodecRegistry;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -45,8 +41,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static java.lang.Math.toIntExact;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -663,9 +659,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ",!=" + Status.REMOVED);
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
-        System.out.println("bson = " + bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -681,6 +678,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -751,8 +751,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Sample> delete(long id, boolean force) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(id);
+        QueryResult<Sample> sample = getSample(id, null);
         delete(new Query(QueryParams.ID.key(), id), force);
-        return endQuery("Delete sample", startTime, getSample(id, null));
+        return endQuery("Delete sample", startTime, sample);
         /*
 
         Query query = new Query(QueryParams.ID.key(), id);

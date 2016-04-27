@@ -228,7 +228,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public QueryResult<Sample> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(query, "query");
-        return readAll(query.getInt(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
+        QueryResult<Sample> result =
+                readAll(query.getInt(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), -1), query, options, sessionId);
+//        auditManager.recordRead(AuditRecord.Resource.sample, , userId, parameters, null, null);
+        return result;
     }
 
     @Override

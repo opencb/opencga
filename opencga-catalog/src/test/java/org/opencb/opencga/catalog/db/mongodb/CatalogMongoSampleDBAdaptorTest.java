@@ -259,7 +259,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         assertEquals(createResult.first().getId(), deleteResult.first().getId());
         assertEquals(1, deleteResult.getNumResults());
 
-//        thrown.expect(CatalogDBException.class);
+        thrown.expect(CatalogDBException.class);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().getSample(deleteResult.first().getId(), null);
     }
 
