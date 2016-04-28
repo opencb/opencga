@@ -100,6 +100,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return credentials;
     }
 
+    public Configuration getConfiguration() {
+        return configuration;
+    }
+
     static Configuration getHbaseConfiguration(Configuration configuration, HBaseCredentials credentials) {
         configuration = HBaseConfiguration.create(configuration);
 

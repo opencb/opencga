@@ -246,9 +246,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     @Override
     protected void cleanup(Context context) throws IOException,
             InterruptedException {
-        for (Entry<String, Long> entry : this.timeSum.entrySet()) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
-        }
         if (null != this.dbConnection) {
             dbConnection.close();
         }
@@ -303,6 +300,11 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         doMap(ctx);
         /* *********************************** */
 
+        // Clean up of this slice
+        for (Entry<String, Long> entry : this.timeSum.entrySet()) {
+            context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
+        }
+        this.timeSum.clear();
     }
 
     abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;

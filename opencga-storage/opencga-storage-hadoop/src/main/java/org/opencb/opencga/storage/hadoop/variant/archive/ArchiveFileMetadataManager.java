@@ -1,9 +1,23 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Append;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
@@ -15,8 +29,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.*;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Created on 16/11/15.
@@ -45,8 +59,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         this(ConnectionFactory.createConnection(configuration), tableName, configuration, options);
     }
 
-    public ArchiveFileMetadataManager(Connection con, String tableName, Configuration configuration, ObjectMap options)
-            throws IOException {
+    public ArchiveFileMetadataManager(Connection con, String tableName, Configuration configuration, ObjectMap options) {
         this.tableName = tableName;
         this.configuration = configuration;
         this.options = options == null ? new ObjectMap() : options;
@@ -111,12 +124,17 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, connection)) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
-        Put put = new Put(genomeHelper.getMetaRowKey());
-        put.addColumn(genomeHelper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()),
-                variantSource.getImpl().toString().getBytes());
+        Put put = wrapVcfMetaAsPut(variantSource, this.genomeHelper);
         hBaseManager.act(connection, tableName, table -> {
             table.put(put);
         });
+    }
+
+    public static Put wrapVcfMetaAsPut(VariantSource variantSource, GenomeHelper helper) {
+        Put put = new Put(helper.getMetaRowKey());
+        put.addColumn(helper.getColumnFamily(), Bytes.toBytes(variantSource.getFileId()),
+                variantSource.getImpl().toString().getBytes());
+        return put;
     }
 
     public void updateLoadedFilesSummary(List<Integer> newLoadedFiles) throws IOException {
@@ -154,6 +172,12 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
                     set = new LinkedHashSet<Integer>();
                     for (String s : Bytes.toString(value).split(",")) {
                         if (!s.isEmpty()) {
+                            if (s.startsWith("[")) {
+                                s = s.replaceFirst("\\[", "");
+                            }
+                            if (s.endsWith("]")) {
+                                s = s.replaceAll("\\]", "");
+                            }
                             set.add(Integer.parseInt(s));
                         }
                     }

@@ -3,7 +3,13 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
@@ -18,12 +24,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
+import com.google.protobuf.InvalidProtocolBufferException;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -39,14 +40,13 @@ public class ArchiveHelper extends GenomeHelper {
 
 
     public ArchiveHelper(Configuration conf) throws IOException {
-        super(conf);
+        this(conf, null);
         int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
         String archiveTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
         try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(archiveTable, conf, new ObjectMap())) {
             VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
             this.meta.set(meta);
         }
-        column = Bytes.toBytes(getColumnName(fileId));
     }
 
 //    public ArchiveHelper(GenomeHelper helper, byte[] meta) throws IOException {
@@ -61,7 +61,7 @@ public class ArchiveHelper extends GenomeHelper {
         column = Bytes.toBytes(getColumnName(meta.getVariantSource()));
     }
 
-    public ArchiveHelper(Configuration conf, VcfMeta meta) throws IOException {
+    public ArchiveHelper(Configuration conf, VcfMeta meta) {
         super(conf);
         this.meta.set(meta);
         VariantSource variantSource = getMeta().getVariantSource();

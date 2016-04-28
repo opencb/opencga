@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapreduce.AvroJob;
@@ -15,6 +16,7 @@ import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.apache.hadoop.hbase.mapreduce.TableMapReduceUtil;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
@@ -140,9 +142,10 @@ public class ArchiveDriver extends Configured implements Tool {
     }
 
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
+        Algorithm compression = Compression.getCompressionAlgorithmByName(
+                genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
         return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
-                Compression.getCompressionAlgorithmByName(
-                        genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.GZ.getName())));
+                compression);
     }
 
     private void storeMetaData(VcfMeta meta, String tableName, Configuration conf) throws IOException {

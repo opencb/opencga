@@ -1,11 +1,29 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.HdfsConfiguration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageETLResult;
@@ -15,23 +33,13 @@ import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -51,10 +59,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
-    private final HdfsVariantReaderUtils variantReaderUtils;
+    private HdfsVariantReaderUtils variantReaderUtils;
 
     public HadoopVariantStorageManager() {
-        variantReaderUtils = new HdfsVariantReaderUtils(conf);
+//        variantReaderUtils = new HdfsVariantReaderUtils(conf);
     }
 
     @Override
@@ -83,7 +91,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             ObjectMap extraOptions = new ObjectMap()
                     .append(HADOOP_LOAD_ARCHIVE, true)
                     .append(HADOOP_LOAD_VARIANT, false);
-            HadoopVariantStorageETL storageETL = newStorageETL(doLoad, extraOptions);
+            VariantStorageETL storageETL = newStorageETL(doLoad, extraOptions);
             StorageETLResult storageETLResult = new StorageETLResult();
             results.add(storageETLResult);
             futures.add(executorService.submit(() -> {
@@ -138,7 +146,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
                 storageETL.getOptions().put(HADOOP_LOAD_ARCHIVE, false);
                 storageETL.getOptions().put(HADOOP_LOAD_VARIANT, true);
-                storageETL.merge(studyId, indexedFiles);
+//                storageETL.merge(studyId, indexedFiles); // TODO enable again
                 storageETL.postLoad(inputFile, outdirUri);
 
                 indexedFiles.clear();
@@ -148,21 +156,41 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     @Override
-    public HadoopVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
+    public VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         return newStorageETL(connected, null);
     }
 
-    public HadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions) throws StorageManagerException {
+    public VariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions) throws StorageManagerException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
+        boolean directLoad = options.getBoolean("hadoop.load.direct", false);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
-        Configuration hadoopConfiguration = getHadoopConfiguration(options);
+        Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
+        hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
+        hadoopConfiguration.setIfUnset(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Algorithm.SNAPPY.getName());
+
         HBaseCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
 
-        return new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
-                hadoopConfiguration, archiveCredentials, variantReaderUtils, options);
+        VariantStorageETL storageETL = null;
+        if (directLoad) {
+            storageETL = new HadoopDirectVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
+                    hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+        } else {
+            storageETL = new HadoopVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options), hadoopConfiguration,
+                    archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
+        }
+        return storageETL;
+    }
+
+    private HdfsVariantReaderUtils getVariantReaderUtils(Configuration config) {
+        if (null == variantReaderUtils) {
+            variantReaderUtils = new HdfsVariantReaderUtils(config);
+        } else if (this.variantReaderUtils.conf == null && config != null) {
+            variantReaderUtils = new HdfsVariantReaderUtils(config);
+        }
+        return variantReaderUtils;
     }
 
     @Override
@@ -290,7 +318,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     private Configuration getHadoopConfiguration(ObjectMap options) throws StorageManagerException {
-        Configuration conf = this.conf == null ? new HdfsConfiguration() : this.conf;
+        Configuration conf = this.conf == null ? HBaseConfiguration.create() : this.conf;
         // This is the only key needed to connect to HDFS:
         //   CommonConfigurationKeysPublic.FS_DEFAULT_NAME_KEY = fs.defaultFS
         //
@@ -325,7 +353,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     public VariantSource readVariantSource(URI input) throws StorageManagerException {
-        return variantReaderUtils.readVariantSource(input);
+        return getVariantReaderUtils(null).readVariantSource(input);
     }
 
     private static class HdfsVariantReaderUtils extends VariantReaderUtils {

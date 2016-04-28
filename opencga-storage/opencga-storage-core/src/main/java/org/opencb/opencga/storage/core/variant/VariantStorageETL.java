@@ -3,6 +3,27 @@ package org.opencb.opencga.storage.core.variant;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
+
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
+
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
@@ -11,22 +32,27 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
+import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
+import org.opencb.biodata.models.variant.VariantVcfFactory;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.commons.run.Task;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
@@ -40,16 +66,6 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.slf4j.Logger;
-
-import java.io.*;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.*;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
-import java.util.zip.GZIPInputStream;
 
 /**
  * Created on 30/03/16.
@@ -132,32 +148,7 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
-    /**
-     * Transform raw variant files into biodata model.
-     *
-     * @param inputUri Input file. Accepted formats: *.vcf, *.vcf.gz
-     * @param pedigreeUri Pedigree input file. Accepted formats: *.ped
-     * @param outputUri The destination folder
-     * @throws StorageManagerException If any IO problem
-     */
-    @Override
-    public final URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageManagerException {
-        // input: VcfReader
-        // output: JsonWriter
-
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
-        Path input = Paths.get(inputUri.getPath());
-        Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
-        Path output = Paths.get(outputUri.getPath());
-
-//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
-        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
-//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
-        boolean includeSrc = false;
-        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
-        String parser = options.getString("transform.parser", "htsjdk");
-
+    protected VariantSource buildVariantSource(Path input, ObjectMap options) throws StorageManagerException {
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId;
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION
@@ -176,7 +167,37 @@ public abstract class VariantStorageETL implements StorageETL {
                 fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), type, aggregation);
+        return source;
+    }
 
+    /**
+     * Transform raw variant files into biodata model.
+     *
+     * @param inputUri Input file. Accepted formats: *.vcf, *.vcf.gz
+     * @param pedigreeUri Pedigree input file. Accepted formats: *.ped
+     * @param outputUri The destination folder
+     * @throws StorageManagerException If any IO problem
+     */
+    @Override
+    public URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageManagerException {
+        // input: VcfReader
+        // output: JsonWriter
+
+//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+
+        Path input = Paths.get(inputUri.getPath());
+        Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
+        Path output = Paths.get(outputUri.getPath());
+
+//        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), false);
+        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
+//        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
+        boolean includeSrc = false;
+        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
+        String parser = options.getString("transform.parser", "htsjdk");
+
+        VariantSource source = buildVariantSource(input, options);
+        String fileName = source.getFileName();
         boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
 
         int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key(), Options.TRANSFORM_BATCH_SIZE.defaultValue());
@@ -197,7 +218,7 @@ public abstract class VariantStorageETL implements StorageETL {
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory;
         if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
-            if (VariantSource.Aggregation.NONE.equals(aggregation)) {
+            if (VariantSource.Aggregation.NONE.equals(source.getAggregation())) {
                 factory = new VariantVcfFactory();
             } else {
                 factory = new VariantAggregatedVcfFactory();
