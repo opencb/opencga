@@ -101,7 +101,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
     private void index() throws URISyntaxException, StorageManagerException, IOException, FileFormatException {
         CliOptionsParser.IndexAlignmentsCommandOptions indexAlignmentsCommandOptions = commandOptions.indexAlignmentsCommandOptions;
 
-        URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input);
+        URI inputUri = UriUtils.createUri(indexAlignmentsCommandOptions.input.get(0));
 //        FileUtils.checkFile(Paths.get(inputUri.getPath()));
 
         URI outdirUri = (indexAlignmentsCommandOptions.outdir != null && !indexAlignmentsCommandOptions.outdir.isEmpty())

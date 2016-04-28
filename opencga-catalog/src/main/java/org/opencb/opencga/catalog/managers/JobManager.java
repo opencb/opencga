@@ -63,6 +63,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         return jobDBAdaptor.incJobVisits(jobId);
     }
 
+    @Deprecated
     @Override
     public QueryResult<Job> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
@@ -225,6 +226,21 @@ public class JobManager extends AbstractManager implements IJobManager {
 
         auditManager.recordDeletion(AuditRecord.Resource.job, jobId, userId, queryResult.first(), null, null);
         return queryResult;
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
     }
 
     @Override

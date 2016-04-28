@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -68,20 +69,19 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Before
     public void before() throws IOException, CatalogException {
-        InputStream is = CatalogMongoDBAdaptorTest.class.getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0], 27017);
+                catalogConfiguration.getDatabase().getHosts().get(0).split(":")[0], 27017);
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", properties.getProperty(CatalogManager.CATALOG_DB_USER, ""))
-                .add("password", properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, ""))
-                .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
+                .add("username", catalogConfiguration.getDatabase().getUser())
+                .add("password", catalogConfiguration.getDatabase().getPassword())
+                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String database = properties.getProperty(CatalogManager.CATALOG_DB_DATABASE);
+        String database = catalogConfiguration.getDatabase().getDatabase();
         /**
          * Database is cleared before each execution
          */

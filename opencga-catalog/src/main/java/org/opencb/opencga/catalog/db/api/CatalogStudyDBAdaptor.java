@@ -135,7 +135,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<VariableSet> renameFieldVariableSet(long variableSetId, String oldName, String newName) throws CatalogDBException;
 
-    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId) throws CatalogDBException;
+    QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name) throws CatalogDBException;
 
     QueryResult<VariableSet> getVariableSet(long variableSetId, QueryOptions options) throws CatalogDBException;
 
@@ -258,7 +258,11 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         UNIQUE("unique", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
         VARIABLE("variables", TEXT_ARRAY, ""),
-        VARIABLE_ID("variables.id", TEXT, "");
+        VARIABLE_ID("variables.id", TEXT, ""),
+        ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
+        BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
+        STUDY_ID("studyId", DECIMAL, "");
 
         private static Map<String, VariableSetParams> map;
         static {
@@ -302,6 +306,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         }
     }
 
+    @Deprecated
     enum StudyFilterOptions implements AbstractCatalogDBAdaptor.FilterOption {
         id(Type.NUMERICAL, ""),
         projectId(Type.NUMERICAL, ""),

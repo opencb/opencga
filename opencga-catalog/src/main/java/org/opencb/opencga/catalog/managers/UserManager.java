@@ -4,18 +4,20 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
+import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
@@ -25,6 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
@@ -38,14 +41,27 @@ public class UserManager extends AbstractManager implements IUserManager {
     //    private final SessionManager sessionManager;
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-    protected final String creationUserPolicy;
+    protected final Policies.UserCreation creationUserPolicy;
 
+    @Deprecated
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                        AuditManager auditManager,
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-        creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER, "always");
+        creationUserPolicy = Policies.UserCreation.ALWAYS;
+        //creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER,
+        // Policies.UserCreation.ALWAYS);
+//        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
+    }
+
+    public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                       AuditManager auditManager,
+                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                       CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+
+        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
@@ -72,6 +88,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
+    @Deprecated
     @Override
     public QueryResult<User> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
@@ -98,8 +115,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
 
         String userId;
+
         switch (creationUserPolicy) {
-            case "onlyAdmin": {
+            case ONLY_ADMIN: {
                 userId = getUserId(sessionId);
                 if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                     user.getAttributes().put("creatorUserId", userId);
@@ -108,7 +126,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 }
                 break;
             }
-            case "anyLoggedUser": {
+            case ANY_LOGGED_USER: {
                 ParamUtils.checkParameter(sessionId, "sessionId");
                 userId = getUserId(sessionId);
                 if (userId.isEmpty()) {
@@ -117,7 +135,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 user.getAttributes().put("creatorUserId", userId);
                 break;
             }
-            case "always":
+            case ALWAYS:
             default:
                 userId = id;
                 break;
@@ -222,6 +240,21 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
     public QueryResult resetPassword(String userId, String email) throws CatalogException {
         return authenticationManager.resetPassword(userId, email);
     }
@@ -292,6 +325,27 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         catalogIOManagerFactory.getDefault().deleteAnonymousUser(userId);
         return userDBAdaptor.logoutAnonymous(sessionId);
+    }
+
+    @Override
+    public void addQueryFilter(String sessionId, Filter filter) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = getUserId(sessionId);
+        userDBAdaptor.addQueryFilter(userId, filter);
+    }
+
+    @Override
+    public QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = getUserId(sessionId);
+        return userDBAdaptor.deleteQueryFilter(userId, filterId);
+    }
+
+    @Override
+    public QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = getUserId(sessionId);
+        return userDBAdaptor.getQueryFilter(userId, filterId);
     }
 
     private void checkSessionId(String userId, String sessionId) throws CatalogException {

@@ -85,16 +85,7 @@ public class CatalogManager implements AutoCloseable {
 
     private CatalogConfiguration catalogConfiguration;
 
-    public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogConfiguration catalogConfiguration)
-            throws IOException, CatalogIOException {
-        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
-//        this.properties = catalogProperties;
-        this.catalogConfiguration = catalogConfiguration;
-
-        configureIOManager(properties);
-        configureManagers(properties);
-    }
-
+    @Deprecated
     public CatalogManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, Properties catalogProperties)
             throws IOException, CatalogIOException {
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
@@ -104,8 +95,26 @@ public class CatalogManager implements AutoCloseable {
         configureManagers(properties);
     }
 
-    public CatalogManager(Properties catalogProperties)
-            throws CatalogException {
+    public CatalogManager(CatalogConfiguration catalogConfiguration) throws CatalogException {
+        this.catalogConfiguration = catalogConfiguration;
+        logger.debug("CatalogManager configureDBAdaptor");
+        configureDBAdaptor(catalogConfiguration);
+        logger.debug("CatalogManager configureIOManager");
+        configureIOManager(catalogConfiguration);
+        logger.debug("CatalogManager configureManager");
+        configureManagers(catalogConfiguration);
+
+        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
+            catalogDBAdaptorFactory.initializeCatalogDB();
+            User admin = new User(catalogConfiguration.getAdmin(), catalogConfiguration.getPassword(), catalogConfiguration.getAdminEmail(),
+                    "", "openCB", User.Role.ADMIN, new Status());
+            catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
+            authenticationManager.newPassword(catalogConfiguration.getAdmin(), catalogConfiguration.getPassword());
+        }
+    }
+
+    @Deprecated
+    public CatalogManager(Properties catalogProperties) throws CatalogException {
         this.properties = catalogProperties;
         logger.debug("CatalogManager configureDBAdaptor");
         configureDBAdaptor(properties);
@@ -122,6 +131,8 @@ public class CatalogManager implements AutoCloseable {
         }
     }
 
+
+    @Deprecated
     private void configureManagers(Properties properties) {
         catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
@@ -147,6 +158,31 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, properties);
     }
 
+    private void configureManagers(CatalogConfiguration catalogConfiguration) {
+        catalogClient = new CatalogDBClient(this);
+        //TODO: Check if catalog is empty
+        //TODO: Setup catalog if it's empty.
+
+        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
+                .getCatalogUserDBAdaptor(), authorizationManager, catalogConfiguration);
+        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), catalogConfiguration);
+        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
+        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, this.catalogConfiguration);
+        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+    }
+
     public CatalogClient client() {
         return client("");
     }
@@ -160,11 +196,17 @@ public class CatalogManager implements AutoCloseable {
         return catalogIOManagerFactory;
     }
 
+    @Deprecated
     private void configureIOManager(Properties properties)
             throws CatalogIOException {
         catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
     }
 
+    private void configureIOManager(CatalogConfiguration properties) throws CatalogIOException {
+        catalogIOManagerFactory = new CatalogIOManagerFactory(properties);
+    }
+
+    @Deprecated
     private void configureDBAdaptor(Properties properties)
             throws CatalogDBException {
 
@@ -188,6 +230,31 @@ public class CatalogManager implements AutoCloseable {
 //                properties.getProperty(CATALOG_DB_DATABASE, ""));
         catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
                 properties.getProperty(CATALOG_DB_DATABASE, "")) {
+        };
+    }
+
+    private void configureDBAdaptor(CatalogConfiguration properties) throws CatalogDBException {
+
+        MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
+                .add("username", properties.getDatabase().getUser())
+                .add("password", properties.getDatabase().getPassword())
+                .add("authenticationDatabase", properties.getDatabase().getOptions().get("authenticationDatabase"))
+                .build();
+
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : properties.getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+//        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
+//                properties.getProperty(CATALOG_DB_DATABASE, ""));
+        catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
+                properties.getDatabase().getDatabase()) {
         };
     }
 
@@ -694,6 +761,11 @@ public class CatalogManager implements AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
+    public QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException, IOException {
+        return fileManager.unlink(fileId, sessionId);
+    }
+
+
     /*
      * **************************
      * Job methods
@@ -902,6 +974,21 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<VariableSet> deleteVariableSet(long variableSetId, QueryOptions queryOptions, String sessionId)
             throws CatalogException {
         return studyManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
+    }
+
+    public QueryResult<VariableSet> addFieldToVariableSet(long variableSetId, Variable variable, String sessionId)
+            throws CatalogException {
+        return studyManager.addFieldToVariableSet(variableSetId, variable, sessionId);
+    }
+
+    public QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
+            throws CatalogException {
+        return studyManager.renameFieldFromVariableSet(variableSetId, oldName, newName, sessionId);
+    }
+
+    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name, String sessionId)
+            throws CatalogException {
+        return studyManager.removeFieldFromVariableSet(variableSetId, name, sessionId);
     }
 
     /*

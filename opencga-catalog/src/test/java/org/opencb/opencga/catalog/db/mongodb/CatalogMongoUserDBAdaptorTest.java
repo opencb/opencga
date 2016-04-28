@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
@@ -180,5 +181,39 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         System.out.println(user);
     }
 
+    @Test
+    public void addAndGetQueryFilterTest() throws CatalogDBException {
+        Filter filter = new Filter("myFilter",
+                new Query("key1", "value1").append("key2", "value2").append("key3", "value3"),
+                new QueryOptions("key1", "value1").append("key2", "value2").append("key3", "value3")
+        );
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+        Filter filterResult = catalogUserDBAdaptor.getQueryFilter(user4.getId(), filter.getId()).first();
+        assertEquals(filter.getId(), filterResult.getId());
+        assertEquals(filter.getQuery().size(), filterResult.getQuery().size());
+        assertEquals(filter.getQueryOptions().size(), filterResult.getQueryOptions().size());
+        filter.setId("newId");
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("There already exists a filter with name");
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+    }
+
+    @Test
+    public void deleteQueryFilterTest() throws CatalogDBException {
+        Filter filter = new Filter("myFilter",
+                new Query("key1", "value1").append("key2", "value2").append("key3", "value3"),
+                new QueryOptions("key1", "value1").append("key2", "value2").append("key3", "value3")
+        );
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+        filter.setId("newId");
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+
+        catalogUserDBAdaptor.getQueryFilter(user4.getId(), filter.getId());
+        catalogUserDBAdaptor.deleteQueryFilter(user4.getId(), filter.getId());
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("could not be found in the database");
+        catalogUserDBAdaptor.getQueryFilter(user4.getId(), filter.getId());
+    }
 
 }

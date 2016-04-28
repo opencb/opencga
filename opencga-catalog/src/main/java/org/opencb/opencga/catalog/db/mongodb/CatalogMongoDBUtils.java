@@ -149,8 +149,7 @@ class CatalogMongoDBUtils {
             for (Document document : result.getResult()) {
                 document.remove("_id");
                 document.remove("_projectId");
-//                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document).toString()));
-                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document.toJson())));
+                objects.add(objectReader.<T>readValue(restoreDotsInKeys(jsonObjectWriter.writeValueAsString(document))));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -582,6 +581,7 @@ class CatalogMongoDBUtils {
             }
             switch (type) {
                 case DECIMAL:
+                case DOUBLE:
                 case DECIMAL_ARRAY:
                     try {
                         double doubleValue = Double.parseDouble(filter);

@@ -429,26 +429,26 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String fieldId) throws CatalogDBException {
+    public QueryResult<VariableSet> removeFieldFromVariableSet(long variableSetId, String name) throws CatalogDBException {
         long startTime = startQuery();
 
         try {
-            checkVariableInVariableSet(variableSetId, fieldId);
+            checkVariableInVariableSet(variableSetId, name);
         } catch (CatalogDBException e) {
             checkVariableSetExists(variableSetId);
             throw e;
         }
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
-                Filters.eq("id", fieldId));
+                Filters.eq("id", name));
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
         if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + fieldId
+            throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
                     + " from the variableSet id " +  variableSetId);
         }
 
         // Remove all the annotations from that field
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, fieldId);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, name);
 
         return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
     }
@@ -564,9 +564,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 if (isDataStoreOption(key) || isOtherKnownOption(key)) {
                     continue;   //Exclude DataStore options
                 }
-                CatalogSampleDBAdaptor.VariableSetParams option = CatalogSampleDBAdaptor.VariableSetParams.getParam(key) != null
-                        ? CatalogSampleDBAdaptor.VariableSetParams.getParam(key)
-                        : CatalogSampleDBAdaptor.VariableSetParams.getParam(entry.getKey());
+                CatalogStudyDBAdaptor.VariableSetParams option = CatalogStudyDBAdaptor.VariableSetParams.getParam(key) != null
+                        ? CatalogStudyDBAdaptor.VariableSetParams.getParam(key)
+                        : CatalogStudyDBAdaptor.VariableSetParams.getParam(entry.getKey());
                 switch (option) {
                     case STUDY_ID:
                         addCompQueryFilter(option, option.name(), PRIVATE_ID, options, mongoQueryList);
@@ -594,7 +594,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
         aggregation.add(Aggregates.project(Projections.include("variableSets")));
         aggregation.add(Aggregates.unwind("$variableSets"));
-        aggregation.add(Aggregates.match(Filters.and(mongoQueryList)));
+        if (mongoQueryList.size() > 0) {
+            aggregation.add(Aggregates.match(Filters.and(mongoQueryList)));
+        }
 
         QueryResult<Document> queryResult = studyCollection.aggregate(aggregation,
                 filterOptions(options, FILTER_ROUTE_STUDIES));

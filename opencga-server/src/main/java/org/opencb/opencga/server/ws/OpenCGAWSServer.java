@@ -35,6 +35,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
@@ -172,10 +173,12 @@ public class OpenCGAWSServer {
         }
 
         try {
+            logger.info("|  * Reading CatalogConfiguration");
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "catalog-configuration.yml").toFile()));
             logger.info("|  * Initializing CatalogManager");
+            catalogManager = new CatalogManager(catalogConfiguration);
             logger.info("========================================================================");
-            catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogException e) {
+        } catch (IOException | CatalogException e) {
             logger.error("Error while creating CatalogManager", e);
         }
 

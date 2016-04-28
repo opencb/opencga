@@ -1,0 +1,3 @@
+[submodule "opencga-web/lib/jsorolla"]
+	path = opencga-web/lib/jsorolla
+	url = https://github.com/opencb/jsorolla

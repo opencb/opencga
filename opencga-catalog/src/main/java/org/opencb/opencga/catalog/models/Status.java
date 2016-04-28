@@ -79,7 +79,7 @@ public class Status {
     }
 
     public static boolean isValid(String status) {
-        if (status.equals(READY) || status.equals(DELETED) || status.equals(REMOVED)) {
+        if (status != null && (status.equals(READY) || status.equals(DELETED) || status.equals(REMOVED))) {
             return true;
         }
         return false;

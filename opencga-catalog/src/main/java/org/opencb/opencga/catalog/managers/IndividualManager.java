@@ -10,6 +10,7 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -36,6 +37,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
     protected static Logger logger = LoggerFactory.getLogger(IndividualManager.class);
 
+    @Deprecated
     public IndividualManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                              AuditManager auditManager,
                              CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -43,7 +45,14 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
     }
 
+    public IndividualManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                             AuditManager auditManager,
+                             CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                             CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+    }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
@@ -243,5 +252,20 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         QueryResult<Individual> queryResult = individualDBAdaptor.deleteIndividual(individualId, options);
         auditManager.recordCreation(AuditRecord.Resource.individual, individualId, userId, queryResult.first(), null, null);
         return queryResult;
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
     }
 }

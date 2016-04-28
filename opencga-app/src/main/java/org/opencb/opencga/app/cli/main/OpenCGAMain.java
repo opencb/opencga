@@ -38,6 +38,7 @@ import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -195,8 +196,9 @@ public class OpenCGAMain {
     private int runCommand(OptionsParser optionsParser) throws Exception {
         int returnValue = 0;
         if(catalogManager == null && !optionsParser.getSubCommand().isEmpty() ) {
-            Properties catalogProperties = Config.getCatalogProperties();
-            catalogManager = new CatalogManager(catalogProperties);
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "catalog-configuration.yml").toFile()));
+            catalogManager = new CatalogManager(catalogConfiguration);
         }
 
         String sessionId = login(optionsParser.getUserAndPasswordOptions());
@@ -614,11 +616,11 @@ public class OpenCGAMain {
 
                         long studyId = catalogManager.getStudyId(c.studyId);
                         Query query = new Query();
-                        if (c.name != null) query.put("like", c.name);
-                        if (c.directory != null) query.put("directory", c.directory);
-                        if (c.bioformats != null) query.put("bioformat", c.bioformats);
-                        if (c.types != null) query.put("type", c.types);
-                        if (c.status != null) query.put("status", c.status);
+                        if (c.name != null) query.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + c.name);
+                        if (c.directory != null) query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), c.directory);
+                        if (c.bioformats != null) query.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), c.bioformats);
+                        if (c.types != null) query.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), c.types);
+                        if (c.status != null) query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), c.status);
 
                         QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), fileQueryResult, null));
