@@ -34,7 +34,7 @@ public class Configuration {
     private String logLevel;
     private String logFile;
 
-    ServerConfiguration server;
+    private ServerConfiguration server;
 
     protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
