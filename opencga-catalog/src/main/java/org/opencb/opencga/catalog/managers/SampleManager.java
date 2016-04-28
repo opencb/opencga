@@ -259,7 +259,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         authorizationManager.checkSamplePermission(sampleId, userId, CatalogPermission.DELETE);
 
-        QueryResult<Sample> queryResult = sampleDBAdaptor.delete(sampleId, false);
+        QueryResult<Sample> queryResult = sampleDBAdaptor.delete(sampleId, new QueryOptions());
         auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, queryResult.first(), null, null);
         return queryResult;
     }

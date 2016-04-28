@@ -63,7 +63,11 @@ public class CatalogDBException extends CatalogException {
     }
 
     public static CatalogDBException deleteError(String name) {
-        return new CatalogDBException(name + ": It has been impossible to delete the object from the database.");
+        return new CatalogDBException(name + ": It has been impossible to delete the object(s) from the database.");
+    }
+
+    public static CatalogDBException removeError(String name) {
+        return new CatalogDBException(name + ": It has been impossible to remove the object(s) from the database.");
     }
 
     public static CatalogDBException alreadyDeletedOrRemoved(String name) {

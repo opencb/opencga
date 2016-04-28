@@ -57,7 +57,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     @Deprecated
     default QueryResult<Job> deleteJob(long jobId) throws CatalogDBException {
-        return delete(jobId, false);
+        return delete(jobId, new QueryOptions());
     }
 
     default QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {

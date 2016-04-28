@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -144,6 +145,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
+    QueryResult<Long> removeCohortDependencies(List<Long> cohortIds) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
@@ -208,6 +211,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
         DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
 
+        COHORTS("cohorts", TEXT_ARRAY, ""),
         COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
         COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
         COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),

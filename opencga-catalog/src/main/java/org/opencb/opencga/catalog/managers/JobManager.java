@@ -213,13 +213,13 @@ public class JobManager extends AbstractManager implements IJobManager {
         long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, false);
+        QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, new QueryOptions());
         // Delete the output files of the job if they are not in use.
         // TODO: Add an if clause to do this only when the user does not want to keep the output files.
         // 2. Check the output files that were created with the deleted jobs.
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), queryResult.first().getOutput());
         try {
-            fileDBAdaptor.delete(query, false);
+            fileDBAdaptor.delete(query, new QueryOptions());
         } catch (CatalogDBException e) {
             logger.info("Delete job { Job: " + queryResult.first() + " }:" + e.getMessage());
         }

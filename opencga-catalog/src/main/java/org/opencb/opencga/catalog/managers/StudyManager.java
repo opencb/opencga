@@ -169,7 +169,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getId()));
             } catch (CatalogIOException e) {
                 e.printStackTrace();
-                studyDBAdaptor.delete(study.getId(), false);
+                studyDBAdaptor.delete(study.getId(), new QueryOptions());
                 throw e;
             }
         }

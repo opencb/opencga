@@ -91,7 +91,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         try {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
         } catch (CatalogDBException e) {
-            delete(newFileId, false);
+            delete(newFileId, options);
             throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
                     + "with the study collection.");
         }
@@ -285,12 +285,13 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterStringParams(parameters, fileParameters, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
-        acceptedEnums.put("type", File.Type.class);
-        acceptedEnums.put("format", File.Format.class);
-        acceptedEnums.put("bioformat", File.Bioformat.class);
+        acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
+        acceptedEnums.put(QueryParams.FORMAT.key(), File.Format.class);
+        acceptedEnums.put(QueryParams.BIOFORMAT.key(), File.Bioformat.class);
        // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
@@ -386,47 +387,69 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> delete(long id, boolean force) throws CatalogDBException {
+    public QueryResult<File> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        delete(new Query(QueryParams.ID.key(), id), force);
-        return endQuery("Delete file", startTime, getFile(id, null));
+
+        checkFileNotInUse(id);
+
+        Query query = new Query(QueryParams.ID.key(), id)
+                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        QueryResult<UpdateResult> deleted = fileCollection.update(parseQuery(query),
+                Updates.combine(
+                        Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+                        Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
+                , new QueryOptions());
+
+        if (deleted.first().getModifiedCount() != 1) {
+            throw CatalogDBException.deleteError("File {" + id + "}");
+        }
+
+        Query deletedFileQuery = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED);
+        return endQuery("Delete file", startTime, get(deletedFileQuery, new QueryOptions()));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
-        List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
-        List<Long> fileIdsToRemove = new ArrayList<>();
-        for (File file : files) {
-            try {
-                checkFileNotInUse(file.getId());
-                fileIdsToRemove.add(file.getId());
-            } catch (CatalogDBException e) {
-                logger.info(e.getMessage());
-            }
-        }
-        QueryResult<UpdateResult> deleted;
-        if (fileIdsToRemove.size() > 0) {
-            Query query1 = new Query(QueryParams.ID.key(), fileIdsToRemove)
-                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-            deleted = fileCollection.update(parseQuery(query1), Updates.combine(
-                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-                    new QueryOptions());
-        } else {
-            throw CatalogDBException.deleteError("File");
-        }
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Delete not yet implemented.");
+//        long startTime = startQuery();
+//        List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
+//        List<Long> fileIdsToRemove = new ArrayList<>();
+//        for (File file : files) {
+//            try {
+//                checkFileNotInUse(file.getId());
+//                fileIdsToRemove.add(file.getId());
+//            } catch (CatalogDBException e) {
+//                logger.info(e.getMessage());
+//            }
+//        }
+//        QueryResult<UpdateResult> deleted;
+//        if (fileIdsToRemove.size() > 0) {
+//            Query query1 = new Query(QueryParams.ID.key(), fileIdsToRemove)
+//                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+//            deleted = fileCollection.update(parseQuery(query1), Updates.combine(
+//                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+//                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                    new QueryOptions());
+//        } else {
+//            throw CatalogDBException.deleteError("File");
+//        }
+//
+//        return endQuery("Delete file", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    }
 
-        return endQuery("Delete file", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    @Override
+    public QueryResult<File> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
     public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Long> updateStatus(Query query, File.FileStatus status) throws CatalogDBException {
         return null;
     }
 

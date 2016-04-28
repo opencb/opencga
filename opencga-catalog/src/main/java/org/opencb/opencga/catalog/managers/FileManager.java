@@ -530,9 +530,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         userDBAdaptor.updateUserLastActivity(ownerId);
+
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("status.status", File.FileStatus.TRASHED);
-        objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED);
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_DATE.key(), System.currentTimeMillis());
 
         switch (file.getType()) {
             case FOLDER: {
@@ -620,7 +621,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         for (File f : filesToDelete) {
-            fileDBAdaptor.deleteFile(f.getId());
+            fileDBAdaptor.delete(f.getId(), new QueryOptions());
         }
 
         return queryResult;
@@ -682,7 +683,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         authorizationManager.checkFilePermission(file.getId(), userId, CatalogPermission.DELETE);
 
         switch (file.getStatus().getStatus()) {
-            case File.FileStatus.TRASHED:
             case File.FileStatus.DELETED:
                 //Send warning message
                 String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}";

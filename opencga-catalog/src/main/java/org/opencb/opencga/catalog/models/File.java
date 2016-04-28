@@ -332,7 +332,7 @@ public class File {
             if (isValid(status)) {
                 init(status, message);
             } else {
-                init(UNKNOWN, message);
+                throw new IllegalArgumentException("Unknown status " + status);
             }
         }
 
@@ -348,7 +348,7 @@ public class File {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED))) {
+            if (status != null && (status.equals(STAGE) || status.equals(MISSING))) {
                 return true;
             }
             return false;

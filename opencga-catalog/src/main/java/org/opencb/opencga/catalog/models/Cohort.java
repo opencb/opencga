@@ -160,7 +160,7 @@ public class Cohort {
             if (isValid(status)) {
                 init(status, message);
             } else {
-                init(UNKNOWN, message);
+                throw new IllegalArgumentException("Unknown status " + status);
             }
         }
 

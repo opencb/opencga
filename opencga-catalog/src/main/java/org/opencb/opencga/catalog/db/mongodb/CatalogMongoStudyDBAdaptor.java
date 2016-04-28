@@ -28,7 +28,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -39,7 +42,6 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
@@ -698,6 +700,26 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
+    @Override
+    public QueryResult<Long> removeCohortDependencies(List<Long> cohortIds) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson query = new Document(QueryParams.COHORT_ID.key(), cohortIds);
+        Bson update = Updates.pull(QueryParams.COHORTS.key(), Filters.eq("id", cohortIds));
+
+        QueryResult<UpdateResult> updateResult = studyCollection.update(query, update, null);
+        return endQuery("Remove cohort dependencies", startTime, Collections.singletonList(updateResult.first().getModifiedCount()));
+
+
+                /*
+                * DBObject query = new BasicDBObject("projects.id", projectId);
+//        DBObject pull = new BasicDBObject("$pull",
+//                new BasicDBObject("projects",
+//                        new BasicDBObject("id", projectId)));
+//
+//        QueryResult<WriteResult> update = userCollection.update(query, pull, null);
+                * */
+    }
+
 
 
     /*
@@ -886,92 +908,144 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Study> delete(long id, boolean force) throws CatalogDBException {
+    public QueryResult<Study> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        checkStudyId(id);
-        delete(new Query(QueryParams.ID.key(), id), force);
-        return endQuery("Delete study", startTime, getStudy(id, null));
+        delete(new Query(QueryParams.ID.key(), id), queryOptions);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Delete study", startTime, get(query, null));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Delete not yet implemented.");
+//        long startTime = startQuery();
+//        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+//
+//        if (queryOptions == null) {
+//            queryOptions = new QueryOptions();
+//        }
+//
+//        List<Study> studies = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())).getResult();
+//        for (Study study : studies) {
+//            try {
+//                if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+//                    checkEmptyStudy(study.getId());
+//                }
+//            } catch ()
+//
+//            boolean success = true;
+//
+//            // Try to remove all the samples
+//            if (study.getSamples().size() > 0) {
+//                List<Long> sampleIds = new ArrayList<>(study.getSamples().size());
+//                sampleIds.addAll(study.getSamples().stream().map(Sample::getId).collect(Collectors.toList()));
+//                try {
+//                    Long nDeleted = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(
+//                            new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), , force).first();
+//                    if (nDeleted != sampleIds.size()) {
+//                        success = false;
+//                    }
+//                } catch (CatalogDBException e) {
+//                    logger.info("Delete Study: " + e.getMessage());
+//                }
+//            }
+//
+//            // Try to remove all the jobs.
+//            if (study.getJobs().size() > 0) {
+//                List<Long> jobIds = new ArrayList<>(study.getJobs().size());
+//                jobIds.addAll(study.getJobs().stream().map(Job::getId).collect(Collectors.toList()));
+//                try {
+//                    Long nDeleted = dbAdaptorFactory.getCatalogJobDBAdaptor().delete(
+//                            new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), jobIds), , force).first();
+//                    if (nDeleted != jobIds.size()) {
+//                        success = false;
+//                    }
+//                } catch (CatalogDBException e) {
+//                    logger.info("Delete Study: " + e.getMessage());
+//                }
+//            }
+//
+//            // Try to remove all the files.
+//            if (study.getFiles().size() > 0) {
+//                List<Long> fileIds = new ArrayList<>(study.getFiles().size());
+//                fileIds.addAll(study.getFiles().stream().map((Function<File, Long>) File::getId).collect(Collectors.toList()));
+//                try {
+//                    Long nDeleted = dbAdaptorFactory.getCatalogFileDBAdaptor().delete(
+//                            new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), fileIds), , force).first();
+//                    if (nDeleted != fileIds.size()) {
+//                        success = false;
+//                    }
+//                } catch (CatalogDBException e) {
+//                    logger.info("Delete Study: " + e.getMessage());
+//                }
+//            }
+//
+//            if (success || force) {
+//                if (!success && force) {
+//                    logger.error("Delete study: Force was true and success was false. This should not be happening.");
+//                }
+//                studiesToRemove.add(study.getId());
+//            }
+//        }
+//
+//        if (studiesToRemove.size() == 0) {
+//            throw CatalogDBException.deleteError("Study");
+//        }
+//
+//        Query queryDelete = new Query(QueryParams.ID.key(), studiesToRemove)
+//                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//        QueryResult<UpdateResult> deleted = studyCollection.update(parseQuery(queryDelete), Updates.combine(
+//                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.DELETED),
+//                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                new QueryOptions());
+//
+//        if (deleted.first().getModifiedCount() == 0) {
+//            throw CatalogDBException.deleteError("Delete");
+//        } else {
+//            return endQuery("Delete study", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+//        }
 
-        List<Long> studiesToRemove = new ArrayList<>();
-        List<Study> studies = get(query, new QueryOptions()).getResult();
-        for (Study study : studies) {
-            boolean success = true;
+    }
 
-            // Try to remove all the samples
-            if (study.getSamples().size() > 0) {
-                List<Long> sampleIds = new ArrayList<>(study.getSamples().size());
-                sampleIds.addAll(study.getSamples().stream().map((Function<Sample, Long>) Sample::getId).collect(Collectors.toList()));
-                try {
-                    Long nDeleted = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(
-                            new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), force).first();
-                    if (nDeleted != sampleIds.size()) {
-                        success = false;
-                    }
-                } catch (CatalogDBException e) {
-                    logger.info("Delete Study: " + e.getMessage());
-                }
-            }
+    /**
+     * Checks if the study is empty or has more active information.
+     *
+     * @param studyId Id of the study.
+     * @throws CatalogDBException when there exists active files, samples, cohorts...
+     */
+    private void checkEmptyStudy(long studyId) throws CatalogDBException {
+        Query query = new Query(PRIVATE_STUDY_ID, studyId)
+                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
 
-            // Try to remove all the jobs.
-            if (study.getJobs().size() > 0) {
-                List<Long> jobIds = new ArrayList<>(study.getJobs().size());
-                jobIds.addAll(study.getJobs().stream().map((Function<Job, Long>) Job::getId).collect(Collectors.toList()));
-                try {
-                    Long nDeleted = dbAdaptorFactory.getCatalogJobDBAdaptor().delete(
-                            new Query(CatalogJobDBAdaptor.QueryParams.ID.key(), jobIds), force).first();
-                    if (nDeleted != jobIds.size()) {
-                        success = false;
-                    }
-                } catch (CatalogDBException e) {
-                    logger.info("Delete Study: " + e.getMessage());
-                }
-            }
-
-            // Try to remove all the files.
-            if (study.getFiles().size() > 0) {
-                List<Long> fileIds = new ArrayList<>(study.getFiles().size());
-                fileIds.addAll(study.getFiles().stream().map((Function<File, Long>) File::getId).collect(Collectors.toList()));
-                try {
-                    Long nDeleted = dbAdaptorFactory.getCatalogFileDBAdaptor().delete(
-                            new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), fileIds), force).first();
-                    if (nDeleted != fileIds.size()) {
-                        success = false;
-                    }
-                } catch (CatalogDBException e) {
-                    logger.info("Delete Study: " + e.getMessage());
-                }
-            }
-
-            if (success || force) {
-                if (!success && force) {
-                    logger.error("Delete study: Force was true and success was false. This should not be happening.");
-                }
-                studiesToRemove.add(study.getId());
-            }
+        // Check files
+        if (dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first() > 0) {
+            throw new CatalogDBException("Cannot delete study " + studyId + ". There are files being used.");
         }
 
-        if (studiesToRemove.size() == 0) {
-            throw CatalogDBException.deleteError("Study");
+        // Check samples
+        if (dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first() > 0) {
+            throw new CatalogDBException("Cannot delete study " + studyId + ". There are samples being used.");
         }
 
-        Query queryDelete = new Query(QueryParams.ID.key(), studiesToRemove)
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-        QueryResult<UpdateResult> deleted = studyCollection.update(parseQuery(queryDelete), Updates.combine(
-                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.DELETED),
-                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-                new QueryOptions());
-
-        if (deleted.first().getModifiedCount() == 0) {
-            throw CatalogDBException.deleteError("Delete");
-        } else {
-            return endQuery("Delete study", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+        // Check individuals
+        if (dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first() > 0) {
+            throw new CatalogDBException("Cannot delete study " + studyId + ". There are individuals being used.");
         }
 
+        // Check cohorts
+        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
+            throw new CatalogDBException("Cannot delete study " + studyId + ". There are cohorts being used.");
+        }
+    }
+
+    @Override
+    public QueryResult<Study> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        return null;
+    }
+
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        return null;
     }
 
     @Override

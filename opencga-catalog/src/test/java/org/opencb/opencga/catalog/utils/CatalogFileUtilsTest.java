@@ -62,7 +62,7 @@ public class CatalogFileUtilsTest {
     CatalogFileUtils catalogFileUtils;
     private long studyId;
     private String userSessionId;
-    private String adminSessionId;
+//    private String adminSessionId;
     private CatalogManager catalogManager;
 
     @Before
@@ -86,7 +86,7 @@ public class CatalogFileUtilsTest {
         //Create USER
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
-        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
+//        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
 
@@ -103,19 +103,19 @@ public class CatalogFileUtilsTest {
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
                 userSessionId);
-        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, false, 1000);
+        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, false, 1000);
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
                 userSessionId);
-        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, false, 100000000);
+        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, false, 100000000);
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
                 userSessionId);
-        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, true);
+        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, true);
     }
 
     @Test

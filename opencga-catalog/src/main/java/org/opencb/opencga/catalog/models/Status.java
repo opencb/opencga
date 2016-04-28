@@ -8,11 +8,6 @@ import org.opencb.opencga.core.common.TimeUtils;
 public class Status {
 
     /**
-     * UNKNOWN status means that the status input was not valid when created so we don't know.
-     */
-    public static final String UNKNOWN = "UNKNOWN";
-
-    /**
      * READY status means that the object is being used.
      */
     public static final String READY = "READY";
@@ -43,7 +38,7 @@ public class Status {
         if (isValid(status)) {
             init(status, message);
         } else {
-            init(UNKNOWN, message);
+            throw new IllegalArgumentException("Unknown status " + status);
         }
     }
 

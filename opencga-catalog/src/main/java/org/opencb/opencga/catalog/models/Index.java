@@ -96,13 +96,14 @@ public class Index {
 
     public static class IndexStatus extends Status {
 
-     /*
-     * States.
-     * <p>
-     * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
-     * \                                              /
-     * ------------------> INDEXING ----------------/
-     */
+        /*
+         * States
+         *
+         * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
+         *      \                                              /
+         *       ------------------> INDEXING ----------------/
+         *
+         */
         public static final String NONE = "NONE";
         public static final String TRANSFORMING = "TRANSFORMING";
         public static final String TRANSFORMED = "TRANSFORMED";
@@ -113,7 +114,7 @@ public class Index {
             if (isValid(status)) {
                 init(status, message);
             } else {
-                init(UNKNOWN, message);
+                throw new IllegalArgumentException("Unknown status " + status);
             }
         }
 
