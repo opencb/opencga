@@ -1,6 +1,8 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.google.common.collect.BiMap;
+import com.google.common.collect.LinkedListMultimap;
+import com.google.common.collect.ListMultimap;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -22,6 +24,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
@@ -395,6 +398,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants loaded!");
 
+        source.setFileId(options.getString(Options.FILE_ID.key()));
+        source.setStudyId(options.getString(Options.STUDY_ID.key()));
+        dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(source);
+
         return inputUri; //TODO: Return something like this: mongo://<host>/<dbName>/<collectionName>
     }
 
@@ -418,6 +425,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     /**
      * Merge staged files into Variant collection.
      *
+     * 1- Find if the files are in different chromosomes.
+     * 2- If splitted, call once per chromosome. Else, call only once.
+     *
+     * @see MongoDBVariantMerger
+     *
      * @param fileIds           FileIDs of the files to be merged
      * @param batchSize         Batch size
      * @param loadThreads       Number of load threads
@@ -435,25 +447,56 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration = getStudyConfiguration();
 
-        MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId());
-        MongoDBVariantMerger variantWriter = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                dbAdaptor.getVariantsCollection(), reader.countNumVariants(), reader.countAproxNumVariants());
 
-        ParallelTaskRunner<Document, MongoDBVariantWriteResult> ptrMerge;
-        try {
-            ptrMerge = new ParallelTaskRunner<>(reader, variantWriter, null,
-                    new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false));
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
+        //Iterate over all the files
+        Query query = new Query(VariantSourceDBAdaptor.VariantSourceQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
+        Iterator<VariantSource> iterator = dbAdaptor.getVariantSourceDBAdaptor().iterator(query, null);
+
+        // List of chromosomes to be loaded
+        Set<String> chromosomesToLoad = new HashSet<>();
+        // List of all the indexed files that cover each chromosome
+        ListMultimap<String, Integer> chromosomeInLoadedFiles = LinkedListMultimap.create();
+        // List of all the indexed files that cover each chromosome
+        ListMultimap<String, Integer> chromosomeInFilesToLoad = LinkedListMultimap.create();
+
+        while (iterator.hasNext()) {
+            VariantSource variantSource = iterator.next();
+            int fileId = Integer.parseInt(variantSource.getFileId());
+
+            // If the file is going to be loaded, check if covers just one chromosome
+            if (fileIds.contains(fileId)) {
+                if (variantSource.getStats().getChromosomeCounts().size() == 1) {
+                    chromosomesToLoad.addAll(variantSource.getStats().getChromosomeCounts().keySet());
+                } else {
+                    String message = "Impossible to merge files splitted and not splitted by chromosome at the same time!";
+                    logger.error(message);
+                    throw new StorageManagerException(message);
+                }
+            }
+            // If the file is indexed, add to the map of chromosome->fileId
+            for (String chromosome : variantSource.getStats().getChromosomeCounts().keySet()) {
+                if (studyConfiguration.getIndexedFiles().contains(fileId)) {
+                    chromosomeInLoadedFiles.put(chromosome, fileId);
+                } else {
+                    chromosomeInFilesToLoad.put(chromosome, fileId);
+                }
+            }
         }
 
-        try {
-            logger.info("Merging files " + fileIds);
-            ptrMerge.run();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
+
+        final MongoDBVariantWriteResult writeResult;
+        if (chromosomesToLoad.isEmpty()) {
+            writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, capacity, stageCollection,
+                    studyConfiguration, null, studyConfiguration.getIndexedFiles());
+        } else {
+            writeResult = new MongoDBVariantWriteResult();
+            for (String chromosome : chromosomesToLoad) {
+                List<Integer> filesToLoad = chromosomeInFilesToLoad.get(chromosome);
+                Set<Integer> indexedFiles = new HashSet<>(chromosomeInLoadedFiles.get(chromosome));
+                MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads, capacity, stageCollection,
+                        studyConfiguration, chromosome, indexedFiles);
+                writeResult.merge(aux);
+            }
         }
 
         long startTime = System.currentTimeMillis();
@@ -461,7 +504,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds);
         logger.info("Delete variants time: " + (System.currentTimeMillis() - startTime) / 1000 + "s , CleanDocuments: " + modifiedCount);
 
-        MongoDBVariantWriteResult writeResult = variantWriter.getResult();
         writeResult.setSkippedVariants(skippedVariants);
 
         logger.info("Write result: {}", writeResult.toString());
@@ -475,14 +517,42 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         return writeResult;
     }
 
+    private MongoDBVariantWriteResult mergeByChromosome(
+            List<Integer> fileIds, int batchSize, int loadThreads, int capacity, MongoDBCollection stageCollection,
+            StudyConfiguration studyConfiguration, String chromosomeToLoad, Set<Integer> indexedFiles)
+            throws StorageManagerException {
+
+        MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stageCollection, studyConfiguration.getStudyId(),
+                chromosomeToLoad == null ? Collections.emptyList() : Collections.singletonList(chromosomeToLoad));
+        MongoDBVariantMerger variantWriter = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
+                dbAdaptor.getVariantsCollection(), reader.countNumVariants(), reader.countAproxNumVariants(), indexedFiles);
+
+        ParallelTaskRunner<Document, MongoDBVariantWriteResult> ptrMerge;
+        try {
+            ptrMerge = new ParallelTaskRunner<>(reader, variantWriter, null,
+                    new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false));
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
+        }
+
+        try {
+            if (chromosomeToLoad != null) {
+                logger.info("Merging files {} in the the chromosomes: {}. IndexedFiles in this chromosome: {}",
+                        fileIds, chromosomeToLoad, indexedFiles);
+            } else {
+                logger.info("Merging files " + fileIds);
+            }
+            ptrMerge.run();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
+        }
+        return variantWriter.getResult();
+    }
+
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
-
-
-        VariantSource variantSource = readVariantSource(input, options);
-        variantSource.setFileId(options.getString(Options.FILE_ID.key()));
-        variantSource.setStudyId(options.getString(Options.STUDY_ID.key()));
-        dbAdaptor.getVariantSourceDBAdaptor().updateVariantSource(variantSource);
 
         if (options.getBoolean("merge")) {
             return super.postLoad(input, output);

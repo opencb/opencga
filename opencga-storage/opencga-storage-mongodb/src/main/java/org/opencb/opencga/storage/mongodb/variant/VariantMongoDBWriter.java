@@ -50,7 +50,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     private DocumentToVariantConverter variantConverter;
     private DocumentToVariantStatsConverter statsConverter;
-    private DocumentToVariantSourceConverter sourceConverter;
     private DocumentToStudyVariantEntryConverter sourceEntryConverter;
     private DocumentToSamplesConverter sampleConverter;
 
@@ -222,7 +221,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
     private void setConverters() {
 
-        sourceConverter = new DocumentToVariantSourceConverter();
         statsConverter = includeStats ? new DocumentToVariantStatsConverter(dbAdaptor.getStudyConfigurationManager()) : null;
         sampleConverter = includeSamples ? new DocumentToSamplesConverter(studyConfiguration) : null;
 

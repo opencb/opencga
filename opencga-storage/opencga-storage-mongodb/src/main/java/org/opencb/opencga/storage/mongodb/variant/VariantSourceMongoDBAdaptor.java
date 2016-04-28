@@ -171,11 +171,11 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     protected Bson parseQuery(Query query) {
         LinkedList<Bson> filters = new LinkedList<>();
         if (query.containsKey(VariantSourceQueryParam.STUDY_ID.key())) {
-            List<Integer> studyIds = query.getAsIntegerList(VariantSourceQueryParam.STUDY_ID.key());
+            List<String> studyIds = query.getAsStringList(VariantSourceQueryParam.STUDY_ID.key());
             filters.add(Filters.in(VariantSourceQueryParam.STUDY_ID.key(), studyIds));
         }
         if (query.containsKey(VariantSourceQueryParam.FILE_ID.key())) {
-            List<Integer> studyIds = query.getAsIntegerList(VariantSourceQueryParam.FILE_ID.key());
+            List<String> studyIds = query.getAsStringList(VariantSourceQueryParam.FILE_ID.key());
             filters.add(Filters.in(VariantSourceQueryParam.FILE_ID.key(), studyIds));
         }
 

@@ -24,10 +24,11 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
-import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
@@ -154,8 +155,48 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
                 //Order is very important!
                 assertEquals(id, studies.get(0).get(ALTERNATES_FIELD), studies.get(1).get(ALTERNATES_FIELD));
 
-                // Order is not important. Compare using a set
-                assertEquals(id, new HashSet<>(studies.get(0).get(FILES_FIELD, List.class)), new HashSet<>(studies.get(1).get(FILES_FIELD, List.class)));
+                //Order is not important.
+                Map<String, Document> files1 = ((List<Document>) studies.get(0).get(FILES_FIELD))
+                        .stream()
+                        .collect(Collectors.toMap(d -> d.get(FILEID_FIELD).toString(), Function.identity()));
+                Map<String, Document> files2 = ((List<Document>) studies.get(1).get(FILES_FIELD))
+                        .stream()
+                        .collect(Collectors.toMap(d -> d.get(FILEID_FIELD).toString(), Function.identity()));
+                assertEquals(id, studies.get(0).get(FILES_FIELD, List.class).size(), studies.get(1).get(FILES_FIELD, List.class).size());
+                assertEquals(id, files1.size(), files2.size());
+                for (Map.Entry<String, Document> entry : files1.entrySet()) {
+                    assertEquals(id, entry.getValue(), files2.get(entry.getKey()));
+                }
+
+            }
+        }
+    }
+
+    @Override
+    public void multiRegionIndex() throws Exception {
+        super.multiRegionIndex();
+
+        try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME)) {
+            MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
+
+            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+                String id = document.getString("_id");
+                List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
+
+//                assertEquals(id, 2, studies.size());
+                for (Document study : studies) {
+                    Document gts = study.get(GENOTYPES_FIELD, Document.class);
+                    Set<Integer> samples = new HashSet<>();
+
+                    for (Map.Entry<String, Object> entry : gts.entrySet()) {
+                        List<Integer> sampleIds = (List<Integer>) entry.getValue();
+                        for (Integer sampleId : sampleIds) {
+                            String message = "var: " + id + " Duplicated sampleId " + sampleId + " in gt " + entry.getKey() + " : " + sampleIds;
+                            assertFalse(message, samples.contains(sampleId));
+                            assertTrue(message, samples.add(sampleId));
+                        }
+                    }
+                }
             }
         }
     }
@@ -164,13 +205,14 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     public void indexWithOtherFieldsExcludeGT() throws Exception {
         super.indexWithOtherFieldsExcludeGT();
 
-        VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-        MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
+        try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME)) {
+            MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
-        for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
-            assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
-                    .containsKey(GENOTYPES_FIELD));
-            System.out.println("dbObject = " + document);
+            for (Document document : variantsCollection.nativeQuery().find(new Document(), new QueryOptions())) {
+                assertFalse(((Document) document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class).get(0))
+                        .containsKey(GENOTYPES_FIELD));
+                System.out.println("dbObject = " + document);
+            }
         }
 
     }

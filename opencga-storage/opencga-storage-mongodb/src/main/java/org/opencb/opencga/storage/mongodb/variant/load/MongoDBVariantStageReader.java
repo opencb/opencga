@@ -1,10 +1,11 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
+import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
-import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -13,10 +14,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import static com.mongodb.client.model.Filters.*;
 
 /**
  * DataReader for Variant stage collection.
@@ -30,6 +35,7 @@ import java.util.concurrent.Future;
 public class MongoDBVariantStageReader implements DataReader<Document> {
     private final MongoDBCollection stageCollection;
     private final int studyId;
+    private final Collection<String> chromosomes;
     private MongoCursor<Document> iterator;
     private Document next = null;   // Pending variant
 
@@ -38,13 +44,18 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     public MongoDBVariantStageReader(MongoDBCollection stageCollection, int studyId) {
         this.stageCollection = stageCollection;
         this.studyId = studyId;
+        this.chromosomes = Collections.emptyList();
+    }
+
+    public MongoDBVariantStageReader(MongoDBCollection stageCollection, int studyId, Collection<String> chromosomes) {
+        this.stageCollection = stageCollection;
+        this.studyId = studyId;
+        this.chromosomes = chromosomes == null ? Collections.emptyList() : chromosomes;
     }
 
     public Future<Long> countNumVariants() {
         ExecutorService threadPool = Executors.newFixedThreadPool(1);
-        Future<Long> future = threadPool.submit(() -> stageCollection.nativeQuery().count(
-                Filters.exists(Integer.toString(studyId))
-        ));
+        Future<Long> future = threadPool.submit(() -> stageCollection.nativeQuery().count(getQuery()));
 
         threadPool.shutdown();
         return future;
@@ -58,13 +69,27 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     public boolean open() {
         //Filter documents with the selected studyId
         //Sorting by _id
-        FindIterable<Document> iterable = stageCollection.nativeQuery().find(
-                Filters.exists(Integer.toString(studyId)),
+        Bson query = getQuery();
+        System.out.println("query = " + query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
+        FindIterable<Document> iterable = stageCollection.nativeQuery().find(query,
                 new QueryOptions(MongoDBCollection.SORT, Sorts.ascending("_id"))
         );
         iterable.batchSize(20);
         this.iterator = iterable.iterator();
         return true;
+    }
+
+    protected Bson getQuery() {
+        ArrayList<Bson> chrFilters = new ArrayList<>(chromosomes.size());
+
+        for (String chromosome : chromosomes) {
+            chrFilters.add(regex("_id", (chromosome.length() == 1 ? "^ " : "^") + chromosome + ":"));
+        }
+        if (chrFilters.isEmpty()) {
+            return exists(Integer.toString(studyId));
+        } else {
+            return and(exists(Integer.toString(studyId)), or(chrFilters));
+        }
     }
 
     @Override

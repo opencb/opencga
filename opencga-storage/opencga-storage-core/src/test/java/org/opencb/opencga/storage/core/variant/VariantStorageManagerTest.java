@@ -261,22 +261,22 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         runDefaultETL(getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), variantStorageManager,
 //        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
                 studyConfiguration, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
-        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
+
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkLoadedVariants(getVariantStorageManager().getDBAdaptor(DB_NAME), studyConfiguration, true, false, -1);
 
         assertEquals(studyConfiguration.getSamplesInFiles().get(5), studyConfiguration.getSamplesInFiles().get(6));
 
         //Check generated stats files
+        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
         File[] statsFile1 = getTmpRootDir().toFile().listFiles((dir, name1) ->
                 name1.startsWith(VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), 5))
                         && name1.contains("variants"));
         File[] statsFile2 = getTmpRootDir().toFile().listFiles((dir, name1) ->
                 name1.startsWith(VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), 6))
                         && name1.contains("variants"));
-        assertEquals(statsFile1.length, 1);
-        assertEquals(statsFile2.length, 1);
-
+        assertEquals(1, statsFile1.length);
+        assertEquals(1, statsFile2.length);
 
         JsonFactory jsonFactory = new JsonFactory();
         ObjectMapper jsonObjectMapper = new ObjectMapper(jsonFactory);
