@@ -33,11 +33,11 @@ import java.util.Properties;
  */
 public class CatalogIOManagerFactory {
 
-    private String defaultCatalogScheme = "file";
-    private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
+    protected static Logger logger = LoggerFactory.getLogger(CatalogIOManagerFactory.class);
     private final Properties properties;
     private final URI mainRootdir;
-    protected static Logger logger = LoggerFactory.getLogger(CatalogIOManagerFactory.class);
+    private String defaultCatalogScheme = "file";
+    private Map<String, CatalogIOManager> catalogIOManagers = new HashMap<>();
 
     public CatalogIOManagerFactory(Properties properties) throws CatalogIOException {
         this.properties = properties;
@@ -62,12 +62,12 @@ public class CatalogIOManagerFactory {
     }
 
     public CatalogIOManager get(String io) throws CatalogIOException {
-        if(io == null) {
+        if (io == null) {
             io = defaultCatalogScheme;
         }
 
-        if(!catalogIOManagers.containsKey(io)) {
-            switch(io) {
+        if (!catalogIOManagers.containsKey(io)) {
+            switch (io) {
                 case "file":
                     catalogIOManagers.put("file", new PosixCatalogIOManager(properties));
                     break;
@@ -81,12 +81,12 @@ public class CatalogIOManagerFactory {
         return catalogIOManagers.get(io);
     }
 
-    public void setDefaultCatalogScheme(String defaultCatalogScheme) {
-        this.defaultCatalogScheme = defaultCatalogScheme;
-    }
-
     public String getDefaultCatalogScheme() {
         return defaultCatalogScheme;
+    }
+
+    public void setDefaultCatalogScheme(String defaultCatalogScheme) {
+        this.defaultCatalogScheme = defaultCatalogScheme;
     }
 
 }

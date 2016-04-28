@@ -26,8 +26,8 @@ import org.junit.Test;
 
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
@@ -130,17 +130,18 @@ public class OpenCGAWSServerTest {
         FileWSServerTest fileTest = new FileWSServerTest();
         fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
-        assertEquals(File.Status.READY, fileVcf.getStatus());
+        assertEquals(File.FileStatus.READY, fileVcf.getStatus().getStatus());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
         Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobVcf = runStorageJob(sessionId, indexJobVcf);
-        assertEquals(Job.Status.READY, indexJobVcf.getStatus());
+        assertEquals(Job.JobStatus.READY, indexJobVcf.getStatus().getStatus());
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
-        List<Sample> samples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(), new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), fileVcf.getSampleIds()), sessionId).getResult();
+        List<Sample> samples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(),
+                new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), fileVcf.getSampleIds()), new QueryOptions(), sessionId).getResult();
         List<String> sampleNames = samples.stream().map(Sample::getName).collect(Collectors.toList());
         List<Variant> variants = fileTest.fetchVariants(fileVcf.getId(), sessionId, queryOptions);
         assertEquals(10, variants.size());
@@ -153,31 +154,31 @@ public class OpenCGAWSServerTest {
         }
 
         Cohort myCohort = OpenCGAWSServer.catalogManager.createCohort(study.getId(), "MyCohort", Cohort.Type.FAMILY, "", samples.stream().map(Sample::getId).collect(Collectors.toList()), null, sessionId).first();
-        assertEquals(Cohort.Status.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus());
+        assertEquals(Cohort.CohortStatus.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getCohortStatus());
 
-        int outputId = OpenCGAWSServer.catalogManager.getFileParent(fileVcf.getId(), null, sessionId).first().getId();
+        long outputId = OpenCGAWSServer.catalogManager.getFileParent(fileVcf.getId(), null, sessionId).first().getId();
         Job calculateVariantStatsJob = fileTest.calculateVariantStats(myCohort.getId(), outputId, sessionId);
 
         /* Emulate DAEMON working */
         calculateVariantStatsJob = runStorageJob(sessionId, calculateVariantStatsJob);
-        assertEquals(Job.Status.READY, calculateVariantStatsJob.getStatus());
-        assertEquals(Cohort.Status.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus());
+        assertEquals(Job.JobStatus.READY, calculateVariantStatsJob.getStatus().getStatus());
+        assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getCohortStatus());
 
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);
-        assertEquals(File.Status.READY, fileBam.getStatus());
+        assertEquals(File.FileStatus.READY, fileBam.getStatus().getStatus());
         assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
         Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobBam = runStorageJob(sessionId, indexJobBam);
-        assertEquals(Job.Status.READY, indexJobBam.getStatus());
+        assertEquals(Job.JobStatus.READY, indexJobBam.getStatus().getStatus());
 
         queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "20:60000-60200");
         queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, false);
-        List<ObjectMap> alignments = fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
+        fileTest.fetchAlignments(fileBam.getId(), sessionId, queryOptions);
 //        assertEquals(10, alignments.size());
 
     }

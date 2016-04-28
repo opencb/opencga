@@ -23,29 +23,33 @@ import java.util.*;
  */
 public class Sample {
 
-    private int id;
+    private long id;
     private String name;
     private String source;
-    private int individualId;
+    private long individualId;
     private String description;
 
     private List<AclEntry> acl;
     private List<AnnotationSet> annotationSets;
+
+    private Status status;
 
     private Map<String, Object> attributes;
 
     public Sample() {
     }
 
-    public Sample(int id, String name, String source, int individualId, String description) {
-        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new HashMap<String, Object>());
+    public Sample(long id, String name, String source, long individualId, String description) {
+        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new
+                HashMap<String, Object>());
     }
 
-    public Sample(int id, String name, String source, int individualId, String description,
+    public Sample(long id, String name, String source, long individualId, String description,
                   List<AclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
+        this.status = new Status();
         this.individualId = individualId;
         this.description = description;
         this.acl = acl;
@@ -55,23 +59,25 @@ public class Sample {
 
     @Override
     public String toString() {
-        return "Sample{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", source='" + source + '\'' +
-                ", individualId=" + individualId +
-                ", description='" + description + '\'' +
-                ", acl=" + acl +
-                ", annotationSets=" + annotationSets +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Sample{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", source='").append(source).append('\'');
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", individualId=").append(individualId);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", acl=").append(acl);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public Sample setId(int id) {
+    public Sample setId(long id) {
         this.id = id;
         return this;
     }
@@ -94,11 +100,19 @@ public class Sample {
         return this;
     }
 
-    public int getIndividualId() {
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public long getIndividualId() {
         return individualId;
     }
 
-    public Sample setIndividualId(int individualId) {
+    public Sample setIndividualId(long individualId) {
         this.individualId = individualId;
         return this;
     }

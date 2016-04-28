@@ -4,7 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.QueryUtil;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
@@ -135,7 +135,7 @@ public class VariantPhoenixHelper {
         this.genomeHelper = genomeHelper;
     }
 
-    public Connection newJdbcConnection(HadoopCredentials credentials) throws SQLException {
+    public Connection newJdbcConnection(HBaseCredentials credentials) throws SQLException {
 //        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost(), credentials.getUser(), credentials.getPass());
         return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost());
     }
@@ -160,7 +160,7 @@ public class VariantPhoenixHelper {
                 VariantTableStudyRow.CALL_CNT);
         addView(con, table, studyId, PUnsignedIntArray.INSTANCE, VariantTableStudyRow.HET_REF, VariantTableStudyRow.HOM_VAR,
                 VariantTableStudyRow.OTHER, VariantTableStudyRow.NOCALL);
-        addView(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX);
+        addView(con, table, studyId, PVarbinary.INSTANCE, VariantTableStudyRow.COMPLEX, VariantTableStudyRow.FILTER_OTHER);
         con.commit();
     }
 

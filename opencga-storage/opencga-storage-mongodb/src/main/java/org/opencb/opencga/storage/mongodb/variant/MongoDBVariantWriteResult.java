@@ -11,6 +11,9 @@ public class MongoDBVariantWriteResult {
     private long updatedObjects;
     private long skippedVariants;
     private long nonInsertedVariants;
+    private long newVariantsNanoTime;
+    private long existingVariantsNanoTime;
+    private long fillGapsNanoTime;
 
     public MongoDBVariantWriteResult() {
     }
@@ -28,6 +31,9 @@ public class MongoDBVariantWriteResult {
             updatedObjects += other.updatedObjects;
             skippedVariants += other.skippedVariants;
             nonInsertedVariants += other.nonInsertedVariants;
+            newVariantsNanoTime += other.newVariantsNanoTime;
+            existingVariantsNanoTime += other.existingVariantsNanoTime;
+            fillGapsNanoTime += other.fillGapsNanoTime;
         }
     }
 
@@ -67,15 +73,31 @@ public class MongoDBVariantWriteResult {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("MongoDBVariantWriteResult{");
-        sb.append("newDocuments=").append(newDocuments);
-        sb.append(", updatedObjects=").append(updatedObjects);
-        sb.append(", skippedVariants=").append(skippedVariants);
-        sb.append(", nonInsertedVariants=").append(nonInsertedVariants);
-        sb.append('}');
-        return sb.toString();
+    public long getNewVariantsNanoTime() {
+        return newVariantsNanoTime;
+    }
+
+    public MongoDBVariantWriteResult setNewVariantsNanoTime(long newVariantsNanoTime) {
+        this.newVariantsNanoTime = newVariantsNanoTime;
+        return this;
+    }
+
+    public long getExistingVariantsNanoTime() {
+        return existingVariantsNanoTime;
+    }
+
+    public MongoDBVariantWriteResult setExistingVariantsNanoTime(long existingVariantsNanoTime) {
+        this.existingVariantsNanoTime = existingVariantsNanoTime;
+        return this;
+    }
+
+    public long getFillGapsNanoTime() {
+        return fillGapsNanoTime;
+    }
+
+    public MongoDBVariantWriteResult setFillGapsNanoTime(long fillGapsNanoTime) {
+        this.fillGapsNanoTime = fillGapsNanoTime;
+        return this;
     }
 
     @Override
@@ -88,6 +110,7 @@ public class MongoDBVariantWriteResult {
         }
 
         MongoDBVariantWriteResult that = (MongoDBVariantWriteResult) o;
+
         if (newDocuments != that.newDocuments) {
             return false;
         }
@@ -97,7 +120,17 @@ public class MongoDBVariantWriteResult {
         if (skippedVariants != that.skippedVariants) {
             return false;
         }
-        return nonInsertedVariants == that.nonInsertedVariants;
+        if (nonInsertedVariants != that.nonInsertedVariants) {
+            return false;
+        }
+        if (newVariantsNanoTime != that.newVariantsNanoTime) {
+            return false;
+        }
+        if (existingVariantsNanoTime != that.existingVariantsNanoTime) {
+            return false;
+        }
+        return fillGapsNanoTime == that.fillGapsNanoTime;
+
     }
 
     @Override
@@ -106,7 +139,23 @@ public class MongoDBVariantWriteResult {
         result = 31 * result + (int) (updatedObjects ^ (updatedObjects >>> 32));
         result = 31 * result + (int) (skippedVariants ^ (skippedVariants >>> 32));
         result = 31 * result + (int) (nonInsertedVariants ^ (nonInsertedVariants >>> 32));
+        result = 31 * result + (int) (newVariantsNanoTime ^ (newVariantsNanoTime >>> 32));
+        result = 31 * result + (int) (existingVariantsNanoTime ^ (existingVariantsNanoTime >>> 32));
+        result = 31 * result + (int) (fillGapsNanoTime ^ (fillGapsNanoTime >>> 32));
         return result;
+    }
+
+    @Override
+    public String toString() {
+        return "MongoDBVariantWriteResult{"
+                + "newDocuments=" + newDocuments
+                + ", updatedObjects=" + updatedObjects
+                + ", skippedVariants=" + skippedVariants
+                + ", nonInsertedVariants=" + nonInsertedVariants
+                + ", newVariantsTime=" + newVariantsNanoTime / 1000000000.0 + "s"
+                + ", existingVariantsTime=" + existingVariantsNanoTime / 1000000000.0 + "s"
+                + ", fillGapsTime=" + fillGapsNanoTime / 1000000000.0 + "s"
+                + '}';
     }
 
 }

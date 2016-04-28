@@ -30,8 +30,9 @@ import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataWriter;
@@ -55,7 +56,7 @@ import java.util.List;
 /**
  * Created by jacobo on 14/08/14.
  */
-public abstract class AlignmentStorageManager extends StorageManager<DataWriter<AlignmentRegion>, AlignmentDBAdaptor> {
+public abstract class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> implements StorageETL {
 
     private StorageEtlConfiguration storageEtlConfiguration;
 
@@ -178,7 +179,7 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
 
         //2 Index (bai)
         if (createBai) {
-            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output);
+            Path bamIndexPath = AlignmentFileUtils.createIndex(input, output.resolve(input.getFileName().toString() + ".bai"));
         }
 
         //3 Calculate Coverage and transform
@@ -250,8 +251,12 @@ public abstract class AlignmentStorageManager extends StorageManager<DataWriter<
     }
 
     @Override
-    public boolean testConnection(String dbName) {
-        return true;
+    public void testConnection() throws StorageManagerException {
+    }
+
+    @Override
+    public StorageETL newStorageETL(boolean connected) {
+        return this;
     }
 
     protected Path encrypt(String encrypt, Path bamFile, String fileName, Path outdir, boolean copy) throws IOException {

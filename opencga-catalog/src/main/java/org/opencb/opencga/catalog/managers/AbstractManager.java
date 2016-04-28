@@ -1,9 +1,10 @@
 package org.opencb.opencga.catalog.managers;
 
 import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.slf4j.Logger;
@@ -16,23 +17,48 @@ import java.util.Properties;
  */
 public abstract class AbstractManager {
 
-    final protected AuthenticationManager authenticationManager;
-    final protected AuthorizationManager authorizationManager;
-    final protected AuditManager auditManager;
-    final protected CatalogIOManagerFactory catalogIOManagerFactory;
-    final protected Properties catalogProperties;
-
-    final protected CatalogUserDBAdaptor userDBAdaptor;
-    final protected CatalogStudyDBAdaptor studyDBAdaptor;
-    final protected CatalogFileDBAdaptor fileDBAdaptor;
-    final protected CatalogIndividualDBAdaptor individualDBAdaptor;
-    final protected CatalogSampleDBAdaptor sampleDBAdaptor;
-    final protected CatalogJobDBAdaptor jobDBAdaptor;
-
     protected static Logger logger = LoggerFactory.getLogger(AbstractManager.class);
+    protected final AuthenticationManager authenticationManager;
+    protected final AuthorizationManager authorizationManager;
+    protected final AuditManager auditManager;
+    protected final CatalogIOManagerFactory catalogIOManagerFactory;
+
+    protected CatalogConfiguration catalogConfiguration;
+    @Deprecated
+    protected Properties catalogProperties;
+
+    protected final CatalogUserDBAdaptor userDBAdaptor;
+    protected final CatalogProjectDBAdaptor projectDBAdaptor;
+    protected final CatalogStudyDBAdaptor studyDBAdaptor;
+    protected final CatalogFileDBAdaptor fileDBAdaptor;
+    protected final CatalogIndividualDBAdaptor individualDBAdaptor;
+    protected final CatalogSampleDBAdaptor sampleDBAdaptor;
+    protected final CatalogCohortDBAdaptor cohortDBAdaptor;
+    protected final CatalogJobDBAdaptor jobDBAdaptor;
 
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
+                                   ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        this.authorizationManager = authorizationManager;
+        this.authenticationManager = authenticationManager;
+        this.auditManager = auditManager;
+        this.catalogConfiguration = catalogConfiguration;
+        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
+        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
+        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
+        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
+        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.catalogIOManagerFactory = ioManagerFactory;
+
+        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
+    }
+
+    @Deprecated
+    public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                           AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
+                                   ioManagerFactory,
                            Properties catalogProperties) {
         this.authorizationManager = authorizationManager;
         this.authenticationManager = authenticationManager;
@@ -44,7 +70,10 @@ public abstract class AbstractManager {
         this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
+        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
+
+        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
 
 }

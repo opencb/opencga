@@ -19,13 +19,14 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.adaptors.StudyDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantSourceConverter;
 
 import java.net.UnknownHostException;
 import java.util.Arrays;
@@ -52,13 +53,13 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 //                    { $group : { _id : { studyId : "$sid", studyName : "$sname"} }},
 //                    { $project : { "studyId" : "$_id.studyId", "studyName" : "$_id.studyName", "_id" : 0 }} )
         MongoDBCollection coll = db.getCollection(collectionName);
-        DBObject project1 = new BasicDBObject("$project", new BasicDBObject("_id", 0)
-                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, 1));
-        DBObject group = new BasicDBObject("$group",
-                new BasicDBObject("_id", new BasicDBObject("studyId", "$" + DBObjectToVariantSourceConverter.STUDYID_FIELD)
-                        .append("studyName", "$" + DBObjectToVariantSourceConverter.STUDYNAME_FIELD)));
-        DBObject project2 = new BasicDBObject("$project", new BasicDBObject("studyId", "$_id.studyId")
+        BasicDBObject project1 = new BasicDBObject("$project", new BasicDBObject("_id", 0)
+                .append(DocumentToVariantSourceConverter.STUDYID_FIELD, 1)
+                .append(DocumentToVariantSourceConverter.STUDYNAME_FIELD, 1));
+        BasicDBObject group = new BasicDBObject("$group",
+                new BasicDBObject("_id", new BasicDBObject("studyId", "$" + DocumentToVariantSourceConverter.STUDYID_FIELD)
+                        .append("studyName", "$" + DocumentToVariantSourceConverter.STUDYNAME_FIELD)));
+        BasicDBObject project2 = new BasicDBObject("$project", new BasicDBObject("studyId", "$_id.studyId")
                 .append("studyName", "$_id.studyName")
                 .append("_id", 0));
 
@@ -74,15 +75,15 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     public QueryResult findStudyNameOrStudyId(String study, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
         QueryBuilder qb = QueryBuilder.start();
-        qb.or(new BasicDBObject(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, study),
-                new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, study));
+        qb.or(new BasicDBObject(DocumentToVariantSourceConverter.STUDYNAME_FIELD, study),
+                new BasicDBObject(DocumentToVariantSourceConverter.STUDYID_FIELD, study));
 //        parseQueryOptions(options, qb);
 
-        DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1).append("_id", 0);
+        BasicDBObject projection = new BasicDBObject(DocumentToVariantSourceConverter.STUDYID_FIELD, 1).append("_id", 0);
 
         options.add("limit", 1);
 
-        return coll.find(qb.get(), projection, options);
+        return coll.find(new BasicDBObject(qb.get().toMap()), projection, options);
     }
 
     @Override
@@ -98,13 +99,13 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
         QueryBuilder qb = QueryBuilder.start();
         getStudyIdFilter(studyId, qb);
 
-        DBObject match = new BasicDBObject("$match", qb.get());
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("_id", 0)
-                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, 1)
-                .append(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, 1));
-        DBObject group = new BasicDBObject("$group",
-                new BasicDBObject("_id", new BasicDBObject("studyId", "$" + DBObjectToVariantSourceConverter.STUDYID_FIELD)
-                        .append("studyName", "$" + DBObjectToVariantSourceConverter.STUDYNAME_FIELD))
+        BasicDBObject match = new BasicDBObject("$match", qb.get());
+        BasicDBObject project = new BasicDBObject("$project", new BasicDBObject("_id", 0)
+                .append(DocumentToVariantSourceConverter.STUDYID_FIELD, 1)
+                .append(DocumentToVariantSourceConverter.STUDYNAME_FIELD, 1));
+        BasicDBObject group = new BasicDBObject("$group",
+                new BasicDBObject("_id", new BasicDBObject("studyId", "$" + DocumentToVariantSourceConverter.STUDYID_FIELD)
+                        .append("studyName", "$" + DocumentToVariantSourceConverter.STUDYNAME_FIELD))
                         .append("numFiles", new BasicDBObject("$sum", 1)));
 
 
@@ -128,11 +129,11 @@ public class StudyMongoDBAdaptor implements StudyDBAdaptor {
     }
 
     private QueryBuilder getStudyFilter(String name, QueryBuilder builder) {
-        return builder.and(DBObjectToVariantSourceConverter.STUDYNAME_FIELD).is(name);
+        return builder.and(DocumentToVariantSourceConverter.STUDYNAME_FIELD).is(name);
     }
 
     private QueryBuilder getStudyIdFilter(String id, QueryBuilder builder) {
-        return builder.and(DBObjectToVariantSourceConverter.STUDYID_FIELD).is(id);
+        return builder.and(DocumentToVariantSourceConverter.STUDYID_FIELD).is(id);
     }
 
 }

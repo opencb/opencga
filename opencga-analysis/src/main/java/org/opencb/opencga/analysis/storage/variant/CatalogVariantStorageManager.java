@@ -16,24 +16,20 @@
 
 package org.opencb.opencga.analysis.storage.variant;
 
-import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.variant.io.VariantWriter;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.Config;
+import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageManager;
-import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,7 +39,7 @@ import java.util.Properties;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Deprecated
-public abstract class CatalogVariantStorageManager extends StorageManager<VariantWriter, VariantDBAdaptor> {
+public abstract class CatalogVariantStorageManager extends StorageManager<VariantDBAdaptor> implements StorageETL {
 //public class CatalogVariantStorageManager extends VariantStorageManager {
 
 
@@ -68,49 +64,49 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     public void setConfiguration(StorageConfiguration configuration, String s) {
 
     }
+//
+//    @Override
+//    public URI extract(URI input, URI ouput) throws StorageManagerException {
+//        return getStorageManager(params).extract(input, ouput);
+//    }
+//
+//    @Override
+//    public URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException {
+//        return getStorageManager(params).preTransform(input);
+//    }
+//
+//    @Override
+//    public URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException {
+//        return getStorageManager(params).transform(input, pedigree, output);
+//    }
+//
+//    @Override
+//    public URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException {
+//        return getStorageManager(params).postTransform(input);
+//    }
+//
+//    @Override
+//    public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
+//        return getStorageManager(params).preLoad(input, output);
+//    }
+//
+//    @Override
+//    public URI load(URI input) throws IOException, StorageManagerException {
+//        return getStorageManager(params).load(input);
+//    }
+//
+//    @Override
+//    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
+//        return getStorageManager(params).postLoad(input, output);
+//    }
 
-    @Override
-    public URI extract(URI input, URI ouput) throws StorageManagerException {
-        return getStorageManager(params).extract(input, ouput);
-    }
-
-    @Override
-    public URI preTransform(URI input) throws IOException, FileFormatException, StorageManagerException {
-        return getStorageManager(params).preTransform(input);
-    }
-
-    @Override
-    public URI transform(URI input, URI pedigree, URI output) throws IOException, FileFormatException, StorageManagerException {
-        return getStorageManager(params).transform(input, pedigree, output);
-    }
-
-    @Override
-    public URI postTransform(URI input) throws IOException, FileFormatException, StorageManagerException {
-        return getStorageManager(params).postTransform(input);
-    }
-
-    @Override
-    public URI preLoad(URI input, URI output) throws IOException, StorageManagerException {
-        return getStorageManager(params).preLoad(input, output);
-    }
-
-    @Override
-    public URI load(URI input) throws IOException, StorageManagerException {
-        return getStorageManager(params).load(input);
-    }
-
-    @Override
-    public URI postLoad(URI input, URI output) throws IOException, StorageManagerException {
-        return getStorageManager(params).postLoad(input, output);
-    }
-
-    @Override
-    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
-        if (dbName == null) {
-            dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
-        }
-        return getStorageManager(params).getDBWriter(dbName);
-    }
+//    @Override
+//    public VariantWriter getDBWriter(String dbName) throws StorageManagerException {
+//        if (dbName == null) {
+//            dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
+//        }
+//        return getStorageManager(params).getDBWriter(dbName);
+//    }
 
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {

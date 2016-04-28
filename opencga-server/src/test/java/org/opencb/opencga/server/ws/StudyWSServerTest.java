@@ -35,7 +35,7 @@ public class StudyWSServerTest {
         this.webTarget = webTarget;
     }
 
-    public Study createStudy(int projectId, String sessionId) throws IOException {
+    public Study createStudy(long projectId, String sessionId) throws IOException {
         String stName = "st_" + RandomStringUtils.random(8, String.valueOf(System.currentTimeMillis()));
         System.out.println("\nTesting study creation...");
         System.out.println("---------------------");
@@ -66,7 +66,7 @@ public class StudyWSServerTest {
         return queryResponse.getResponse().get(0).first();
     }
 
-    public Study info(int studyId, String sessionId) throws IOException {
+    public Study info(long studyId, String sessionId) throws IOException {
         System.out.println("\nTesting study info...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
@@ -86,7 +86,7 @@ public class StudyWSServerTest {
         return study;
     }
 
-    public void modifyStudy(int studyId, String sessionId) throws IOException {
+    public void modifyStudy(long studyId, String sessionId) throws IOException {
         String name = studyId + "-mod";
         Study.Type type = Study.Type.CASE_SET;
         String description = "desc-mod";

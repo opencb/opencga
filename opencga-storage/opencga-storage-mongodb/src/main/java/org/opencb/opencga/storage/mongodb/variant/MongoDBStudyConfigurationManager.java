@@ -16,24 +16,25 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
-import com.mongodb.BasicDBObject;
-import com.mongodb.DBObject;
-import com.mongodb.WriteResult;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
+import com.mongodb.client.result.UpdateResult;
+import org.bson.Document;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.REPLACE;
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -44,18 +45,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     private final MongoDataStore db;
     private final String collectionName;
 
-    private final DBObjectToStudyConfigurationConverter studyConfigurationConverter = new DBObjectToStudyConfigurationConverter();
-
-    public MongoDBStudyConfigurationManager(ObjectMap objectMap) throws IllegalOpenCGACredentialsException, UnknownHostException {
-        this(new MongoCredentials(
-                        objectMap.getString("mongoHost"),
-                        objectMap.getInt("mongoPort"),
-                        objectMap.getString("mongoDbName"),
-                        objectMap.getString("mongoUser"),
-                        objectMap.getString("mongoPassword", null)
-                ),
-                objectMap.getString("mongoStudyConfigurationCollectionName", "files"));
-    }
+    private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
 
     public MongoDBStudyConfigurationManager(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         super(null);
@@ -82,15 +72,15 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
 
         MongoDBCollection coll = db.getCollection(collectionName);
 
-        BasicDBObject query = new BasicDBObject();
+        Document query = new Document();
         if (studyId != null) {
-            query.append("studyId", studyId);
+            query.append("_id", studyId);
         }
         if (studyName != null) {
             query.append("studyName", studyName);
         }
         if (timeStamp != null) {
-            query.append("timeStamp", new BasicDBObject("$ne", timeStamp));
+            query.append("timeStamp", new Document("$ne", timeStamp));
         }
 
         QueryResult<StudyConfiguration> queryResult = coll.find(query, null, studyConfigurationConverter, null);
@@ -111,10 +101,10 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     @Override
     public QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
-        DBObject studyMongo = new DBObjectToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
+        Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
-        DBObject query = new BasicDBObject("studyId", studyConfiguration.getStudyId());
-        QueryResult<WriteResult> queryResult = coll.update(query, studyMongo, new QueryOptions("upsert", true));
+        Document query = new Document("_id", studyConfiguration.getStudyId());
+        QueryResult<UpdateResult> queryResult = coll.update(query, studyMongo, new QueryOptions(UPSERT, true).append(REPLACE, true));
 //        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
 
         return queryResult;
@@ -123,7 +113,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     @Override
     public List<String> getStudyNames(QueryOptions options) {
         MongoDBCollection coll = db.getCollection(collectionName);
-        List<Object> studyNames = coll.distinct("studyName", new BasicDBObject()).getResult();
+        List<String> studyNames = coll.distinct("studyName", null).getResult();
 
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }

@@ -11,24 +11,28 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.tools.ant.types.Commandline;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.opencb.datastore.core.ObjectMap;
+import org.junit.Assert;
+import org.junit.rules.ExternalResource;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -36,77 +40,79 @@ import java.util.concurrent.atomic.AtomicReference;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerTestUtils implements VariantStorageTest {
+public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageManagerTestUtils */ extends VariantStorageTest {
 
-    public static AtomicReference<HBaseTestingUtility> utility = new AtomicReference<>(null);
-    public static AtomicReference<Configuration> configuration = new AtomicReference<>(null);
+    AtomicReference<HBaseTestingUtility> utility = new AtomicReference<>(null);
+    AtomicReference<Configuration> configuration = new AtomicReference<>(null);
 
+    class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageManagerTestUtils {
 
+        @Override
+        protected void before() throws Throwable {
+            if (utility.get() == null) {
+                utility.set(new HBaseTestingUtility());
+                utility.get().startMiniCluster(1);
+                configuration.set(utility.get().getConfiguration());
 
-    @BeforeClass
-    public static void initializeMiniCluster() throws Exception {
-//        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-//        stderr.setThreshold(Level.toLevel("debug"));
+    //            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
+    //            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);
+    //            miniMRClientCluster.start();
 
-        if (utility.get() == null) {
-            utility.set(new HBaseTestingUtility());
-            utility.get().startMiniCluster(1);
-            configuration.set(utility.get().getConfiguration());
+//                checkHBaseMiniCluster();
 
-//            MiniMRCluster miniMRCluster = utility.startMiniMapReduceCluster();
-//            MiniMRClientCluster miniMRClientCluster = MiniMRClientClusterFactory.create(HadoopVariantStorageManagerTestUtils.class, 1, configuration);
-//            miniMRClientCluster.start();
-
-            checkHBaseMiniCluster();
-
+            }
         }
-    }
 
-    public static void checkHBaseMiniCluster() throws IOException {
-        HBaseManager hBaseManager = new HBaseManager(configuration.get());
-        Connection con = ConnectionFactory.createConnection(configuration.get());
-
-        String tableName = "table";
-        byte[] columnFamily = Bytes.toBytes("0");
-        hBaseManager.createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.NONE);
-        hBaseManager.act(con, tableName, table -> {
-            table.put(Arrays.asList(new Put(Bytes.toBytes("r1")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 1")),
-                    new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 2")),
-                    new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c2"), Bytes.toBytes("value 3"))));
-        });
-
-        hBaseManager.act(con, tableName, table -> {
-            table.getScanner(columnFamily).forEach(result -> {
-                System.out.println("Row: " + Bytes.toString(result.getRow()));
-                for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
-                    System.out.println(Bytes.toString(entry.getKey()) + " = " + Bytes.toString(entry.getValue()));
+        @Override
+        protected void after() {
+            try {
+                try {
+                    if (utility.get() != null) {
+                        utility.get().shutdownMiniCluster();
+                    }
+                } finally {
+                    utility.set(null);
                 }
-            });
-        });
-
-        TableName tname = TableName.valueOf(tableName);
-        try (Admin admin = con.getAdmin()) {
-            if (admin.tableExists(tname)) {
-                utility.get().deleteTable(tableName);
+            } catch (Exception e) {
+                Assert.fail(e.getMessage());
             }
         }
 
-        con.close();
-    }
+        private void checkHBaseMiniCluster() throws IOException {
+            HBaseManager hBaseManager = new HBaseManager(configuration.get());
+            Connection con = ConnectionFactory.createConnection(configuration.get());
 
-    @AfterClass
-    public static void shutdownMiniCluster() throws Exception {
-        try {
-            if (utility.get() != null) {
-                utility.get().shutdownMiniCluster();
+            String tableName = "table";
+            byte[] columnFamily = Bytes.toBytes("0");
+            hBaseManager.createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.NONE);
+            hBaseManager.act(con, tableName, table -> {
+                table.put(Arrays.asList(new Put(Bytes.toBytes("r1")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 1")),
+                        new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 2")),
+                        new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c2"), Bytes.toBytes("value 3"))));
+            });
+
+            hBaseManager.act(con, tableName, table -> {
+                table.getScanner(columnFamily).forEach(result -> {
+                    System.out.println("Row: " + Bytes.toString(result.getRow()));
+                    for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {
+                        System.out.println(Bytes.toString(entry.getKey()) + " = " + Bytes.toString(entry.getValue()));
+                    }
+                });
+            });
+
+            TableName tname = TableName.valueOf(tableName);
+            try (Admin admin = con.getAdmin()) {
+                if (admin.tableExists(tname)) {
+                    utility.get().deleteTable(tableName);
+                }
             }
-        } finally {
-            utility.set(null);
+
+            con.close();
         }
     }
 
     @Override
-    public HadoopVariantStorageManager getVariantStorageManager() throws Exception {
+    default HadoopVariantStorageManager getVariantStorageManager() throws Exception {
 
         HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
 
@@ -121,8 +127,14 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
         HadoopVariantStorageManagerTestUtils.configuration.get().forEach(e -> conf.set(e.getKey(), e.getValue()));
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
-        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.NONE.getName());
-        options.put(VariantTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.NONE.getName());
+        EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
+
+        options.put(ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.GZ)
+                ? Compression.Algorithm.GZ.getName()
+                : Compression.Algorithm.NONE.getName());
+        options.put(VariantTableDriver.CONFIG_VARIANT_TABLE_COMPRESSION, supportedAlgorithms.contains(Compression.Algorithm.SNAPPY)
+                ? Compression.Algorithm.SNAPPY.getName()
+                : Compression.Algorithm.NONE.getName());
 
         FileSystem fs = FileSystem.get(HadoopVariantStorageManagerTestUtils.configuration.get());
         String intermediateDirectory = fs.getHomeDirectory().toUri().resolve("opencga_test/").toString();
@@ -139,7 +151,7 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
     }
 
     @Override
-    public void clearDB(String tableName) throws Exception {
+    default void clearDB(String tableName) throws Exception {
         TableName tname = TableName.valueOf(tableName);
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
             if (admin.tableExists(tname)) {
@@ -156,19 +168,57 @@ public class HadoopVariantStorageManagerTestUtils extends VariantStorageManagerT
             this.configuration = configuration;
         }
 
+        public static class VariantTableMapperFail extends VariantTableMapper {
+
+            public static final String SLICE_TO_FAIL = "slice.to.fail";
+            private String sliceToFail = "";
+            private AtomicBoolean hadFail = new AtomicBoolean();
+
+            @Override
+            protected void setup(Context context) throws IOException, InterruptedException {
+                super.setup(context);
+
+                hadFail.set(false);
+                sliceToFail = context.getConfiguration().get(SLICE_TO_FAIL, sliceToFail);
+
+            }
+
+            @Override
+            protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+                if (ctx.getSliceKey().equals(sliceToFail)) {
+                    if (!hadFail.getAndSet(true)) {
+                        System.out.println("DO FAIL!!");
+                        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
+                        throw new RuntimeException();
+                    }
+                }
+                super.doMap(ctx);
+            }
+        }
+
         @Override
         public int run(String executable, String args) {
             try {
                 if (executable.endsWith(ArchiveDriver.class.getName())) {
                     System.out.println("Executing ArchiveDriver");
-                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), configuration);
+                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration));
                     System.out.println("Finish execution ArchiveDriver");
 
                     return r;
                 } else if (executable.endsWith(VariantTableDriver.class.getName())) {
                     System.out.println("Executing VariantTableDriver");
-                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), configuration);
+                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration), new VariantTableDriver(){
+                        @Override
+                        protected Class<? extends TableMapper> getMapperClass() {
+                            return VariantTableMapperFail.class;
+                        }
+                    });
                     System.out.println("Finish execution VariantTableDriver");
+                    return r;
+                } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
+                    System.out.println("Executing VariantTableDeletionDriver");
+                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration));
+                    System.out.println("Finish execution VariantTableDeletionDriver");
                     return r;
                 }
             } catch (Exception e) {

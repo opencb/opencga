@@ -15,7 +15,7 @@ cellbase:
   database:   ## 'local' connection to CellBase MongoDB
     hosts:
     - ""
-    user: ""
+    admin: ""
     password: ""
   preferred: "remote"    ## This accept two values: 'local' and 'remote' to fetch data
 ## Storage Query Server configuration. When CLI is launched in 'server' mode a RESTful web server
@@ -40,7 +40,7 @@ defaultStorageEngine:
     database:
       hosts:
       - "${OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS}"
-      user: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
+      admin: "${OPENCGA.STORAGE.ALIGNMENT.DB.USER}"
       password: "${OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD}"
   variant:
     manager: "org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager"
@@ -58,7 +58,6 @@ defaultStorageEngine:
       load.bulk_size: 100
       load.compress_genotypes: true
       load.threads: 4
-      authentication.db: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
       ## To delete:
       include.genotypes: true
       include.src: false
@@ -66,8 +65,10 @@ defaultStorageEngine:
     database:
       hosts:
       - "${OPENCGA.STORAGE.VARIANT.DB.HOSTS}"
-      user: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
+      admin: "${OPENCGA.STORAGE.VARIANT.DB.USER}"
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
+      options:    ## This is intended for database specific options such as --authenticationDatabase in MongoDB
+        authenticationDatabase: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
 
 ## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
 - id: "hadoop"
@@ -78,7 +79,7 @@ defaultStorageEngine:
     database:
       hosts:
       - "who-master:60000"
-      user: "user"
+      admin: "admin"
       password: "password"
   variant:
     manager: "org.opencb.opencga.storage.hadoop.variant.MongoDBVariantStorageManager"
@@ -86,5 +87,5 @@ defaultStorageEngine:
     database:
       hosts:
       - "who-master:60000"
-      user: "user"
+      admin: "admin"
       password: "password"

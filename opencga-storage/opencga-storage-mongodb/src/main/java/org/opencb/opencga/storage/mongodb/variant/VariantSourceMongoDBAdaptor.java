@@ -19,18 +19,20 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.QueryBuilder;
+import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDBCollection;
-import org.opencb.datastore.mongodb.MongoDBConfiguration;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantSourceConverter;
 
 import java.net.UnknownHostException;
 import java.util.*;
@@ -44,7 +46,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
-    private final DBObjectToVariantSourceConverter variantSourceConverter;
+    private final DocumentToVariantSourceConverter variantSourceConverter;
     private final String collectionName;
 
     public VariantSourceMongoDBAdaptor(MongoCredentials credentials, String collectionName) throws UnknownHostException {
@@ -53,7 +55,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         MongoDBConfiguration mongoDBConfiguration = credentials.getMongoDBConfiguration();
         db = mongoManager.get(credentials.getMongoDbName(), mongoDBConfiguration);
         this.collectionName = collectionName;
-        variantSourceConverter = new DBObjectToVariantSourceConverter();
+        variantSourceConverter = new DocumentToVariantSourceConverter();
     }
 
     @Override
@@ -68,7 +70,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         QueryBuilder qb = QueryBuilder.start();
         parseQueryOptions(options, qb);
 
-        return coll.find(qb.get(), null, variantSourceConverter, options);
+        return coll.find((BasicDBObject) qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -78,7 +80,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         options.put("studyId", studyId);
         parseQueryOptions(options, qb);
 
-        return coll.find(qb.get(), null, variantSourceConverter, options);
+        return coll.find((BasicDBObject) qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -89,7 +91,7 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         options.put("studyId", studyIds);
         parseQueryOptions(options, qb);
 
-        return coll.find(qb.get(), null, variantSourceConverter, options);
+        return coll.find((BasicDBObject) qb.get(), null, variantSourceConverter, options);
     }
 
     @Override
@@ -150,16 +152,16 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
     private void parseQueryOptions(QueryOptions options, QueryBuilder builder) {
 
         if (options.containsKey("studyId")) {
-            andIs(DBObjectToVariantSourceConverter.STUDYID_FIELD, options.get("studyId"), builder);
+            andIs(DocumentToVariantSourceConverter.STUDYID_FIELD, options.get("studyId"), builder);
         }
         if (options.containsKey("studyName")) {
-            andIs(DBObjectToVariantSourceConverter.STUDYNAME_FIELD, options.get("studyId"), builder);
+            andIs(DocumentToVariantSourceConverter.STUDYNAME_FIELD, options.get("studyId"), builder);
         }
         if (options.containsKey("fileId")) {
-            andIs(DBObjectToVariantSourceConverter.FILEID_FIELD, options.get("fileId"), builder);
+            andIs(DocumentToVariantSourceConverter.FILEID_FIELD, options.get("fileId"), builder);
         }
         if (options.containsKey("fileName")) {
-            andIs(DBObjectToVariantSourceConverter.FILENAME_FIELD, options.get("fileName"), builder);
+            andIs(DocumentToVariantSourceConverter.FILENAME_FIELD, options.get("fileName"), builder);
         }
     }
 
@@ -188,17 +190,17 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
      */
     private QueryResult populateSamplesInSources() {
         MongoDBCollection coll = db.getCollection(collectionName);
-        DBObject projection = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, true)
-                .append(DBObjectToVariantSourceConverter.SAMPLES_FIELD, true);
-        QueryResult queryResult = coll.find((DBObject) null, projection, null);
+        BasicDBObject projection = new BasicDBObject(DocumentToVariantSourceConverter.FILEID_FIELD, true)
+                .append(DocumentToVariantSourceConverter.SAMPLES_FIELD, true);
+        QueryResult queryResult = coll.find((Bson) null, projection, null);
 
         List<DBObject> result = queryResult.getResult();
         for (DBObject dbo : result) {
-            if (!dbo.containsField(DBObjectToVariantSourceConverter.FILEID_FIELD)) {
+            if (!dbo.containsField(DocumentToVariantSourceConverter.FILEID_FIELD)) {
                 continue;
             }
-            String key = dbo.get(DBObjectToVariantSourceConverter.FILEID_FIELD).toString();
-            DBObject value = (DBObject) dbo.get(DBObjectToVariantSourceConverter.SAMPLES_FIELD);
+            String key = dbo.get(DocumentToVariantSourceConverter.FILEID_FIELD).toString();
+            DBObject value = (DBObject) dbo.get(DocumentToVariantSourceConverter.SAMPLES_FIELD);
             SAMPLES_IN_SOURCES.put(key, new ArrayList(value.toMap().keySet()));
         }
 
@@ -252,18 +254,18 @@ public class VariantSourceMongoDBAdaptor implements VariantSourceDBAdaptor {
         MongoDBCollection coll = db.getCollection(collectionName);
 
         VariantGlobalStats global = variantSourceStats.getFileStats();
-        DBObject globalStats = new BasicDBObject(DBObjectToVariantSourceConverter.NUMSAMPLES_FIELD, global.getSamplesCount())
-                .append(DBObjectToVariantSourceConverter.NUMVARIANTS_FIELD, global.getVariantsCount())
-                .append(DBObjectToVariantSourceConverter.NUMSNPS_FIELD, global.getSnpsCount())
-                .append(DBObjectToVariantSourceConverter.NUMINDELS_FIELD, global.getIndelsCount())
-                .append(DBObjectToVariantSourceConverter.NUMPASSFILTERS_FIELD, global.getPassCount())
-                .append(DBObjectToVariantSourceConverter.NUMTRANSITIONS_FIELD, global.getTransitionsCount())
-                .append(DBObjectToVariantSourceConverter.NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
-                .append(DBObjectToVariantSourceConverter.MEANQUALITY_FIELD, global.getMeanQuality());
+        BasicDBObject globalStats = new BasicDBObject(DocumentToVariantSourceConverter.NUMSAMPLES_FIELD, global.getSamplesCount())
+                .append(DocumentToVariantSourceConverter.NUMVARIANTS_FIELD, global.getVariantsCount())
+                .append(DocumentToVariantSourceConverter.NUMSNPS_FIELD, global.getSnpsCount())
+                .append(DocumentToVariantSourceConverter.NUMINDELS_FIELD, global.getIndelsCount())
+                .append(DocumentToVariantSourceConverter.NUMPASSFILTERS_FIELD, global.getPassCount())
+                .append(DocumentToVariantSourceConverter.NUMTRANSITIONS_FIELD, global.getTransitionsCount())
+                .append(DocumentToVariantSourceConverter.NUMTRANSVERSIONS_FIELD, global.getTransversionsCount())
+                .append(DocumentToVariantSourceConverter.MEANQUALITY_FIELD, global.getMeanQuality());
 
-        DBObject find = new BasicDBObject(DBObjectToVariantSourceConverter.FILEID_FIELD, variantSourceStats.getFileId())
-                .append(DBObjectToVariantSourceConverter.STUDYID_FIELD, variantSourceStats.getStudyId());
-        DBObject update = new BasicDBObject("$set", new BasicDBObject(DBObjectToVariantSourceConverter.STATS_FIELD, globalStats));
+        BasicDBObject find = new BasicDBObject(DocumentToVariantSourceConverter.FILEID_FIELD, variantSourceStats.getFileId())
+                .append(DocumentToVariantSourceConverter.STUDYID_FIELD, variantSourceStats.getStudyId());
+        BasicDBObject update = new BasicDBObject("$set", new BasicDBObject(DocumentToVariantSourceConverter.STATS_FIELD, globalStats));
 
         return coll.update(find, update, null);
     }

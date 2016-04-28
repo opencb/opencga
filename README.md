@@ -122,7 +122,7 @@ If the build process has gone well you should get an integrated help by executin
 You can find more detailed documentation and tutorials at: https://github.com/opencb/opencga/wiki.
 
 ### Other Dependencies
-We try to improve the user experience by making the installation and build as simple as possible. Unfortunately, for some OpenCGA components and functionalities other dependencies are required.
+We try to improve the admin experience by making the installation and build as simple as possible. Unfortunately, for some OpenCGA components and functionalities other dependencies are required.
 
 ##### Loading data
 At this moment the only fully developed storage engine plugin is [MongoDB](https://www.mongodb.org/). MongoDB is free and open-source and can be downloaded from [here](https://www.mongodb.org/downloads). Currently Apache HBase plugin is under heavy development and will be ready soon.

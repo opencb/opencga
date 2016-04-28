@@ -93,7 +93,7 @@
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="">PyCGA</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#pycgalogin">PyCGALogin</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#user-tools">User Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#admin-tools">User Tools</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#file-tools">File Tools</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#use-case-example">Use case example</a></li>
 </ul>
@@ -163,7 +163,7 @@ usage: pyCGALogin [-h] {login,logout} ...
 <dt><strong>login</strong></dt>
 <dd><p class="first">Use this command to log in the system and get a Session Id</p>
 <pre class="literal-block">
-usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --user
+usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --admin
                         User --pwd Password
 </pre>
 <dl class="last docutils">
@@ -180,7 +180,7 @@ usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --user
 </tr>
 <tr><td>&nbsp;</td><td>Optional</td></tr>
 <tr><td class="option-group">
-<kbd><span class="option">--user</span></kbd></td>
+<kbd><span class="option">--admin</span></kbd></td>
 <td>Required. User name</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--pwd</span></kbd></td>
@@ -193,7 +193,7 @@ usage: pyCGALogin login [-h] --host OpenCGA Host [--instance instance] --user
 <dt><strong>logout</strong></dt>
 <dd><p class="first">Use this command to log out, using your current Session Id</p>
 <pre class="literal-block">
-usage: pyCGALogin logout [-h] --user User
+usage: pyCGALogin logout [-h] --admin User
 </pre>
 <dl class="last docutils">
 <dt>Options:</dt>
@@ -202,7 +202,7 @@ usage: pyCGALogin logout [-h] --user User
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">--user</span></kbd></td>
+<kbd><span class="option">--admin</span></kbd></td>
 <td>Required. User name</td></tr>
 </tbody>
 </table>
@@ -223,8 +223,8 @@ terminal and several example to use cases. PyCGA application it is compounded of
 <li><a class="reference internal" href="#variablesets-docs"><span>Variable Sets Tools</span></a></li>
 </ul>
 </div>
-<div class="section" id="user-tools">
-<span id="users-docs"></span><h2>User Tools<a class="headerlink" href="#user-tools" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="admin-tools">
+<span id="users-docs"></span><h2>User Tools<a class="headerlink" href="#admin-tools" title="Permalink to this headline">¶</a></h2>
 <pre class="literal-block">
 usage: pyCGA users [-h] {create,delete,acl} ...
 </pre>
@@ -232,9 +232,9 @@ usage: pyCGA users [-h] {create,delete,acl} ...
 <dt>Sub-commands:</dt>
 <dd><dl class="first last docutils">
 <dt><strong>create</strong></dt>
-<dd><p class="first">Use this command to create a new user, only administrators are allowed to perform this action</p>
+<dd><p class="first">Use this command to create a new admin, only administrators are allowed to perform this action</p>
 <pre class="literal-block">
-usage: pyCGA users create [-h] --user user --name name --email email --pwd
+usage: pyCGA users create [-h] --admin admin --name name --email email --pwd
                           password --org organization
 </pre>
 <dl class="last docutils">
@@ -244,7 +244,7 @@ usage: pyCGA users create [-h] --user user --name name --email email --pwd
 <col class="description" />
 <tbody valign="top">
 <tr><td class="option-group">
-<kbd><span class="option">--user</span></kbd></td>
+<kbd><span class="option">--admin</span></kbd></td>
 <td>Required. User name</td></tr>
 <tr><td class="option-group">
 <kbd><span class="option">--name</span></kbd></td>
@@ -264,7 +264,7 @@ usage: pyCGA users create [-h] --user user --name name --email email --pwd
 </dl>
 </dd>
 <dt><strong>delete</strong></dt>
-<dd><p class="first">Use this command to delete a existing user, only administrators are allowed to perform this action</p>
+<dd><p class="first">Use this command to delete a existing admin, only administrators are allowed to perform this action</p>
 <pre class="literal-block">
 usage: pyCGA users delete [-h] --userId UserId
 </pre>
@@ -283,7 +283,7 @@ usage: pyCGA users delete [-h] --userId UserId
 </dl>
 </dd>
 <dt><strong>acl</strong></dt>
-<dd><p class="first">Use this command to check the permission of an existing user</p>
+<dd><p class="first">Use this command to check the permission of an existing admin</p>
 <pre class="literal-block">
 usage: pyCGA users acl [-h] --userId UserId
 </pre>

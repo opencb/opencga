@@ -24,7 +24,7 @@ import java.util.Map;
  */
 public class Experiment {
 
-    private int id;
+    private long id;
     private String name;
     private String type;
     private String platform;
@@ -64,25 +64,27 @@ public class Experiment {
 
     @Override
     public String toString() {
-        return "Experiment{" +
-                "id='" + id + '\'' +
-                ", type='" + type + '\'' +
-                ", platform='" + platform + '\'' +
-                ", manufacturer='" + manufacturer + '\'' +
-                ", date='" + date + '\'' +
-                ", lab='" + lab + '\'' +
-                ", center='" + center + '\'' +
-                ", responsible='" + responsible + '\'' +
-                ", description='" + description + '\'' +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Experiment{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type='").append(type).append('\'');
+        sb.append(", platform='").append(platform).append('\'');
+        sb.append(", manufacturer='").append(manufacturer).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", lab='").append(lab).append('\'');
+        sb.append(", center='").append(center).append('\'');
+        sb.append(", responsible='").append(responsible).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

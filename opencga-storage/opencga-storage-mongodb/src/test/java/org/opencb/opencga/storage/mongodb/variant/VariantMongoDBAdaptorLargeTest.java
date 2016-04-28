@@ -6,4 +6,9 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorLargeTes
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantMongoDBAdaptorLargeTest extends VariantDBAdaptorLargeTest implements MongoVariantStorageManagerTestUtils {
+
+    @Override
+    protected int skippedVariants() {
+        return 4;
+    }
 }

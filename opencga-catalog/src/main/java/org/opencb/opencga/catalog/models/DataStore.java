@@ -18,8 +18,6 @@ package org.opencb.opencga.catalog.models;
 
 /**
  * Created by jacobo on 14/04/15.
- *
- *
  */
 public class DataStore {
     private String storageEngine;
@@ -35,10 +33,11 @@ public class DataStore {
 
     @Override
     public String toString() {
-        return "DataStore{" +
-                "storageEngine='" + storageEngine + '\'' +
-                ", dbName='" + dbName + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("DataStore{");
+        sb.append("storageEngine='").append(storageEngine).append('\'');
+        sb.append(", dbName='").append(dbName).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getStorageEngine() {

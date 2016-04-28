@@ -19,8 +19,8 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.core.exception.VersionException;
@@ -74,7 +74,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             String[] projectIdArray = projectIdsStr.split(",");
             List<QueryResult<Project>> queryResults = new LinkedList<>();
             for (String projectIdStr : projectIdArray) {
-                int projectId = catalogManager.getProjectId(projectIdStr);
+                long projectId = catalogManager.getProjectId(projectIdStr);
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
@@ -116,7 +116,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
             objectMap.put("status", status);
             objectMap.put("attributes", attributes);
 
-            int projectId = catalogManager.getProjectId(projectIdStr);
+            long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -132,7 +132,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap(params);
-            int projectId = catalogManager.getProjectId(projectIdStr);
+            long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult result = catalogManager.modifyProject(projectId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {

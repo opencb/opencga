@@ -2,29 +2,22 @@ package org.opencb.opencga.analysis;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Properties;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
 /**
  * Created by hpccoll1 on 21/07/15.
@@ -33,8 +26,8 @@ public class AnalysisJobExecutorTest {
     private CatalogManager catalogManager;
     private String sessionId;
     private final String userId = "user";
-    private int projectId;
-    private int studyId;
+    private long projectId;
+    private long studyId;
     private File output;
     private URI temporalOutDirUri;
 
@@ -60,12 +53,12 @@ public class AnalysisJobExecutorTest {
     @Test
     public void executeLocalSuccess() throws Exception {
         String helloWorld = "Hello World!";
-        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "echo " + helloWorld, true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
-        assertEquals(Job.Status.READY, job.getStatus());
+        assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
         assertEquals(2, job.getOutput().size());
-        for (Integer fileId : job.getOutput()) {
+        for (Long fileId : job.getOutput()) {
             File file = catalogManager.getFile(fileId, sessionId).first();
             if (file.getName().contains("out")) {
                 String contentFile = new BufferedReader(new InputStreamReader(catalogManager.downloadFile(fileId, sessionId))).readLine();
@@ -77,20 +70,20 @@ public class AnalysisJobExecutorTest {
 
     @Test
     public void executeLocalError1() throws Exception {
-        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "unexisting_tool ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
-        assertEquals(Job.Status.ERROR, job.getStatus());
+        assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
         assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
 
     @Test
     public void executeLocalError2() throws Exception {
-        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "false ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
-        assertEquals(Job.Status.ERROR, job.getStatus());
+        assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
         assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 
@@ -98,7 +91,7 @@ public class AnalysisJobExecutorTest {
     public void executeLocalInterrupt() throws Exception {
         Thread thread = new Thread(() -> {
             try {
-                AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+                AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                         StringUtils.randomString(5), temporalOutDirUri, "sleep 20 ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
             } catch (Exception e) {
                 e.printStackTrace();
@@ -111,7 +104,7 @@ public class AnalysisJobExecutorTest {
         QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
         assertEquals(1, allJobs.getNumResults());
         Job job = allJobs.first();
-        assertEquals(Job.Status.ERROR, job.getStatus());
+        assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
         assertFalse(catalogManager.getCatalogIOManagerFactory().get(temporalOutDirUri).exists(temporalOutDirUri));
     }
 

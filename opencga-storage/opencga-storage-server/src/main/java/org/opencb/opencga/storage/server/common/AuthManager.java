@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.server.common;
 
-import org.opencb.datastore.core.Query;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
 
 /**

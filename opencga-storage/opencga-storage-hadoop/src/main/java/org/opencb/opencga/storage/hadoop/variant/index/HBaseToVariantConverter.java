@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.feature.Genotype;
@@ -13,15 +14,16 @@ import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,6 +83,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         }
     }
 
+    public Variant convert(VariantTableStudyRow row) {
+        return convert(new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt()),
+                Collections.singletonList(row), null);
+
+    }
+
     protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
         if (annotation == null) {
             annotation = new VariantAnnotation();
@@ -102,9 +110,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
             LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
 
-            if (returnedSamplesPosition.isEmpty()) {
-                throw new IllegalStateException("No samples found for study!!!");
-            }
+//            Do not throw any exception. It may happen that the study is not loaded yet or no samples are required!
+//            if (returnedSamplesPosition.isEmpty()) {
+//                throw new IllegalStateException("No samples found for study!!!");
+//            }
+
             Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
@@ -143,19 +153,18 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (secondaryAlternatesCount > 0) {
                 for (VariantProto.AlternateCoordinate altcoord : s2cgt) {
                     VariantType vart = VariantType.valueOf(altcoord.getType().name());
-                    String chr = StringUtils.isEmpty(altcoord.getChromosome()) ? null : altcoord.getChromosome();
-                    Integer start = altcoord.getStart() == 0 ? null : altcoord.getStart();
-                    Integer end = altcoord.getEnd() == 0 ? null : altcoord.getEnd();
-                    String reference = StringUtils.isEmpty(altcoord.getReference()) ? null : altcoord.getReference();
-                    String alternate = StringUtils.isEmpty(altcoord.getAlternate()) ? null : altcoord.getAlternate();
+                    String chr = StringUtils.isEmpty(altcoord.getChromosome()) ? variant.getChromosome() : altcoord.getChromosome();
+                    Integer start = altcoord.getStart() == 0 ? variant.getStart() : altcoord.getStart();
+                    Integer end = altcoord.getEnd() == 0 ? variant.getEnd() : altcoord.getEnd();
+                    String reference = StringUtils.isEmpty(altcoord.getReference()) ? "" : altcoord.getReference();
+                    String alternate = StringUtils.isEmpty(altcoord.getAlternate()) ? "" : altcoord.getAlternate();
                     AlternateCoordinate alt = new AlternateCoordinate(chr, start, end, reference, alternate, vart);
                     secAltArr.add(alt);
                 }
             }
             // Load complex genotypes
             for (Entry<Integer, VariantProto.Genotype> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
-                String sampleName = mapSampleIds.get(entry.getKey());
-                Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, entry.getKey());
                 if (samplePosition == null) {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
@@ -167,16 +176,51 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             int homRef = 0;
             for (int i = 0; i < samplesDataArray.length; i++) {
                 if (samplesDataArray[i] == null) {
-                    ArrayList<String> data = new ArrayList<>(1);
+                    ArrayList<String> data = new ArrayList<>(2);
                     data.add(VariantTableStudyRow.HOM_REF);
+                    data.add(StringUtils.EMPTY);
                     samplesDataArray[i] = data;
                     homRef++;
+                }
+            }
+            for (Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
+                String filterString = entry.getKey();
+                for (Integer id : entry.getValue().getSampleIdsList()) {
+                    Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, id);
+                    if (samplePosition == null) {
+                        continue; // Sample may not be required. Ignore this
+                                  // sample.
+                    }
+                    samplesDataArray[samplePosition].set(1, filterString);
+                }
+                String sampleName = mapSampleIds.get(entry.getKey());
+                Integer samplePosition = returnedSamplesPosition.get(sampleName);
+                if (samplePosition == null) {
+                    continue; // Sample may not be required. Ignore this sample.
+                }
+            }
+            // Fill gaps (with PASS)
+            int fillCnt = 0;
+            for (int i = 0; i < samplesDataArray.length; i++) {
+                if (StringUtils.isBlank(samplesDataArray[i].get(1))) {
+                    samplesDataArray[i].set(1, "PASS");
+                    ++fillCnt;
+                }
+            }
+            if (fillCnt != row.getPassCount()) {
+                String message = String.format("Error parsing variant %s. Pass count %s does not match filter fill count: %s",
+                        row.toString(), row.getPassCount(), fillCnt);
+                if (failOnWrongVariants) {
+                    throw new RuntimeException(message);
+                } else {
+                    logger.warn(message);
                 }
             }
             if (homRef != row.getHomRefCount()) {
                 String message = "Wrong number of HomRef samples for variant " + variant + ". Got " + homRef + ", expect "
                         + row.getHomRefCount() + ". Samples number: " + samplesDataArray.length + " , ";
-                for (String studyColumn : VariantTableStudyRow.STUDY_COLUMNS) {
+                message += "'" + VariantTableStudyRow.HOM_REF + "':" + row.getHomRefCount() + " , ";
+                for (String studyColumn : VariantTableStudyRow.GENOTYPE_COLUMNS) {
                     message += "'" + studyColumn + "':" + row.getSampleIds(studyColumn) + " , ";
                 }
 
@@ -191,7 +235,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
             studyEntry.setSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
-            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.PASS_KEY));
+            studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));
             studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
             studyEntry.setSecondaryAlternates(secAltArr);
             variant.addStudyEntry(studyEntry);
@@ -201,6 +245,13 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;
+    }
+
+    private Integer getSamplePosition(LinkedHashMap<String, Integer> returnedSamplesPosition, BiMap<Integer, String> mapSampleIds,
+            Integer id) {
+        String sampleName = mapSampleIds.get(id);
+        Integer samplePosition = returnedSamplesPosition.get(sampleName);
+        return samplePosition;
     }
 
     /**

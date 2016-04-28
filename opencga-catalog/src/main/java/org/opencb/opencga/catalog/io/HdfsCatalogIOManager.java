@@ -33,34 +33,36 @@ import java.util.Properties;
 public class HdfsCatalogIOManager extends CatalogIOManager {
 
 
-    /**
-     * This class implements all the operations for Hadoop HDFS. Useful links:
-     *   http://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html
-     *   http://linuxjunkies.wordpress.com/2011/11/21/a-hdfsclient-for-hadoop-using-the-native-java-api-a-tutorial/
-     */
-
-    public void HdfsCatalogIOManager() throws IOException {
-        /**
-         * Hadoop XML need to be loaded:
-         Configuration conf = new Configuration();
-         conf.addResource(new Path("/home/hadoop/hadoop/conf/core-site.xml"));
-         conf.addResource(new Path("/home/hadoop/hadoop/conf/hdfs-site.xml"));
-         conf.addResource(new Path("/home/hadoop/hadoop/conf/mapred-site.xml"));
-
-         FileSystem fileSystem = FileSystem.get(conf);
-         */
-
-    }
-
-
     public HdfsCatalogIOManager(String propertiesFile) throws CatalogIOException {
         super(propertiesFile);
     }
+
 
     public HdfsCatalogIOManager(Properties properties) throws CatalogIOException {
         super(properties);
     }
 
+    /**
+     * This class implements all the operations for Hadoop HDFS.
+     * Useful links: http://hadoop.apache.org/docs/current/api/org/apache/hadoop/fs/FileSystem.html
+     * http://linuxjunkies.wordpress.com/2011/11/21/a-hdfsclient-for-hadoop-using-the-native-java-api-a-tutorial/
+     *
+     * @throws IOException IOException
+     */
+
+    // TODO Jacobo: review this empty method
+//    public void HdfsCatalogIOManager() throws IOException {
+//        /**
+//         * Hadoop XML need to be loaded.
+//         Configuration conf = new Configuration();
+//         conf.addResource(new Path("/home/hadoop/hadoop/conf/core-site.xml"));
+//         conf.addResource(new Path("/home/hadoop/hadoop/conf/hdfs-site.xml"));
+//         conf.addResource(new Path("/home/hadoop/hadoop/conf/mapred-site.xml"));
+//
+//         FileSystem fileSystem = FileSystem.get(conf);
+//         */
+//
+//    }
     @Override
     protected void setProperties(Properties properties) throws CatalogIOException {
 
@@ -92,7 +94,7 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void deleteDirectory(URI uri)   {
+    public void deleteDirectory(URI uri) {
 
     }
 
@@ -112,7 +114,8 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
-    public void copyFile(URI source, URI destination) { }
+    public void copyFile(URI source, URI destination) {
+    }
 
     @Override
     public void moveFile(URI source, URI target) throws IOException, CatalogIOException {
@@ -168,7 +171,6 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
     public Date getModificationDate(URI file) throws CatalogIOException {
         return null;
     }
-
 
 
 }

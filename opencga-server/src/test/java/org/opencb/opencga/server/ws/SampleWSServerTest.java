@@ -6,6 +6,7 @@ import org.opencb.datastore.core.QueryResponse;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
@@ -15,6 +16,7 @@ import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -26,9 +28,9 @@ public class SampleWSServerTest {
     private static WSServerTestUtils serverTestUtils;
     private WebTarget webTarget;
     private String sessionId;
-    private int studyId;
-    private int in1;
-    private int s1, s2, s3, s4;
+    private long studyId;
+    private long in1;
+    private long s1, s2, s3, s4;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -72,7 +74,7 @@ public class SampleWSServerTest {
 
     @Test
     public void updateGet() throws IOException {
-        String json = webTarget.path("samples").path(Integer.toString(s1)).path("update")
+        String json = webTarget.path("samples").path(Long.toString(s1)).path("update")
                 .queryParam("individualId", in1).queryParam("sid", sessionId)
                 .request().get(String.class);
 
@@ -85,7 +87,7 @@ public class SampleWSServerTest {
         SampleWSServer.UpdateSample entity = new SampleWSServer.UpdateSample();
         entity.individualId = in1;
         entity.attributes = Collections.singletonMap("key", "value");
-        String json = webTarget.path("samples").path(Integer.toString(s1)).path("update").queryParam("sid", sessionId)
+        String json = webTarget.path("samples").path(Long.toString(s1)).path("update").queryParam("sid", sessionId)
                 .request().post(Entity.json(entity), String.class);
 
         Sample sample = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0).first();
@@ -106,11 +108,25 @@ public class SampleWSServerTest {
     @Test
     public void createCohort() throws IOException {
         String json = webTarget.path("cohorts").path("create")
-                .queryParam("sid", sessionId).queryParam("studyId", studyId).queryParam("name", "Name").queryParam("type", Cohort.Type.FAMILY).queryParam("sampleIds", s1 + "," + s2 + "," + s3 + "," + s4)
+                .queryParam("sid", sessionId).queryParam("studyId", studyId).queryParam("name", "Name")
+                .queryParam("type", Cohort.Type.FAMILY).queryParam("sampleIds", s1 + "," + s2 + "," + s3 + "," + s4)
                 .request().get(String.class);
         Cohort c = WSServerTestUtils.parseResult(json, Cohort.class).getResponse().get(0).first();
         assertEquals(4, c.getSamples().size());
         assertEquals(Cohort.Type.FAMILY, c.getType());
     }
 
+    @Test
+    public void shareMultipleSamplesWithMultipleUsers () throws IOException {
+
+        String shareWith = "user2,user3";
+        String sampleIds = "34,35,36,37";
+
+        String json = webTarget.path("samples").path(sampleIds).path("share")
+                .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
+                .queryParam("write", true).request().get(String.class);
+        List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
+        assertEquals(8, response.get(0).getNumResults());
+
+    }
 }

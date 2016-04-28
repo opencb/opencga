@@ -3,10 +3,10 @@ package org.opencb.opencga.server.utils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.tools.variant.converter.ga4gh.GAVariantFactory;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -46,12 +46,12 @@ public class VariantFetcher {
     public QueryResult variantsFile(String region, boolean histogram, String groupBy, int interval, String fileId, String sessionId, QueryOptions queryOptions)
             throws Exception {
         QueryResult result;
-        int fileIdNum;
+        long fileIdNum;
 
         fileIdNum = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
-        if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
+        if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
             throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                     " is not an indexed file.");
         }
@@ -60,17 +60,18 @@ public class VariantFetcher {
                     " is not a Variant file.");
         }
 
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getStudyIdByFileId(file.getId());
         result = variantsStudy(studyId, region, histogram, groupBy, interval, fileIdNum, sessionId, queryOptions);
         return result;
     }
 
-    public QueryResult variantsStudy(int studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
+    public QueryResult variantsStudy(long studyId, String region, boolean histogram, String groupBy, int interval, String sessionId, QueryOptions queryOptions) throws Exception {
         return variantsStudy(studyId, region, histogram, groupBy, interval, null, sessionId, queryOptions);
     }
 
-    public QueryResult variantsStudy(int studyId, String regionStr, boolean histogram, String groupBy, int interval, Integer fileIdNum, String sessionId, QueryOptions queryOptions)
+    public QueryResult variantsStudy(long studyId, String regionStr, boolean histogram, String groupBy, int interval, Long fileIdNum, String sessionId, QueryOptions queryOptions)
             throws Exception {
+//        QueryResult result;
         QueryResult result;
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
@@ -92,17 +93,19 @@ public class VariantFetcher {
             query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyId);
         }
 
+        //TODO: Check files and studies exists
+
         logger.debug("queryVariants = {}", query.toJson());
         VariantDBAdaptor dbAdaptor = storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
 //        dbAdaptor.setStudyConfigurationManager(new CatalogStudyConfigurationManager(catalogManager, sessionId));
-        Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(query, queryOptions);
+        Map<Integer, List<Integer>> samplesToReturn = dbAdaptor.getReturnedSamples(new Query(query), new QueryOptions(queryOptions));
 
         Map<Object, List<Sample>> samplesMap = new HashMap<>();
         for (Map.Entry<Integer, List<Integer>> entry : samplesToReturn.entrySet()) {
             if (!entry.getValue().isEmpty()) {
                 QueryResult<Sample> samplesQueryResult = catalogManager.getAllSamples(entry.getKey(),
-                        new QueryOptions(CatalogSampleDBAdaptor.SampleFilterOption.id.toString(), entry.getValue())
-                                .append("exclude", Arrays.asList("projects.studies.samples.annotationSets",
+                        new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), entry.getValue()),
+                        new QueryOptions("exclude", Arrays.asList("projects.studies.samples.annotationSets",
                                         "projects.studies.samples.attributes"))
                         , sessionId);
                 if (samplesQueryResult.getNumResults() != entry.getValue().size()) {
@@ -124,9 +127,9 @@ public class VariantFetcher {
             if (regions.length != 1) {
                 throw new IllegalArgumentException("Unable to calculate histogram with " + regions.length + " regions.");
             }
-            result = dbAdaptor.getFrequency(query, Region.parseRegion(regions[0]), interval);
+            result = dbAdaptor.getFrequency(new Query(query), Region.parseRegion(regions[0]), interval);
         } else if (groupBy != null && !groupBy.isEmpty()) {
-            result = dbAdaptor.groupBy(query, groupBy, queryOptions);
+            result = dbAdaptor.groupBy(new Query(query), groupBy, new QueryOptions(queryOptions));
         } else if (queryOptions.getBoolean("samplesMetadata")) {
             List<ObjectMap> list = samplesMap.entrySet().stream()
                     .map(entry -> new ObjectMap("id", entry.getKey()).append("samples", entry.getValue()))
@@ -134,7 +137,7 @@ public class VariantFetcher {
             result = new QueryResult("getVariantSamples", 0, list.size(), list.size(), "", "", list);
         } else {
             logger.debug("getVariants {}, {}", query, queryOptions);
-            result = dbAdaptor.get(query, queryOptions);
+            result = dbAdaptor.get(new Query(query), new QueryOptions(queryOptions));
             logger.debug("gotVariants {}, {}, in {}ms", result.getNumResults(), result.getNumTotalResults(), result.getDbTime());
             if (queryOptions.getString("model", "opencb").equalsIgnoreCase("ga4gh")) {
                 result = convertToGA4GH(result);

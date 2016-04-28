@@ -12,10 +12,10 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -23,7 +23,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
@@ -49,6 +49,8 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 
 /**
  * Created by mh719 on 16/06/15.
+ *
+ * TODO Implement {@link AutoCloseable}
  */
 public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantHadoopDBAdaptor.class);
@@ -56,6 +58,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final Connection hbaseCon;
     private final String variantTable;
     private final VariantPhoenixHelper phoenixHelper;
+    private final HBaseCredentials credentials;
     private StudyConfigurationManager studyConfigurationManager;
     private final Configuration configuration;
     private GenomeHelper genomeHelper;
@@ -63,8 +66,9 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final VariantSqlQueryParser queryParser;
 //    private final PhoenixConnection phoenixCon;
 
-    public VariantHadoopDBAdaptor(HadoopCredentials credentials, StorageEngineConfiguration configuration,
+    public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageEngineConfiguration configuration,
                                   Configuration conf) throws IOException {
+        this.credentials = credentials;
         conf = getHbaseConfiguration(conf, credentials);
 
         this.configuration = conf;
@@ -92,7 +96,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return genomeHelper;
     }
 
-    static Configuration getHbaseConfiguration(Configuration configuration, HadoopCredentials credentials) {
+    public HBaseCredentials getCredentials() {
+        return credentials;
+    }
+
+    static Configuration getHbaseConfiguration(Configuration configuration, HBaseCredentials credentials) {
         configuration = HBaseConfiguration.create(configuration);
 
         // HBase configuration

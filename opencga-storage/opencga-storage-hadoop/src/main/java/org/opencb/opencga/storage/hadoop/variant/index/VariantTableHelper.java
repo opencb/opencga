@@ -7,8 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -48,22 +48,14 @@ public class VariantTableHelper extends GenomeHelper {
     }
 
     public StudyConfiguration loadMeta() throws IOException {
-        HBaseStudyConfigurationManager scm =
-                new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null);
-        QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
-        if (query.getResult().size() != 1) {
-            throw new NotSupportedException("Only one study configuration expected for study");
+        try (HBaseStudyConfigurationManager scm =
+                new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null)) {
+            QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
+            if (query.getResult().size() != 1) {
+                throw new NotSupportedException("Only one study configuration expected for study");
+            }
+            return query.first();
         }
-        return query.first();
-    }
-
-    // TODO for the future:
-    // Table locking
-    // http://grokbase.com/t/hbase/user/1169nsvfcx/does-put-support-dont-put-if-row-exists
-    public void storeMeta(StudyConfiguration studyConf) throws IOException {
-        HBaseStudyConfigurationManager scm =
-                new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null);
-        scm.updateStudyConfiguration(studyConf, new QueryOptions());
     }
 
     public byte[] getOutputTable() {

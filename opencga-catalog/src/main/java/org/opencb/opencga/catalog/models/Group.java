@@ -3,24 +3,24 @@ package org.opencb.opencga.catalog.models;
 import java.util.List;
 
 /**
- * Created on 21/08/15
+ * Created on 21/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class Group {
 
     /**
-     * Group name, unique in the belonging study
+     * Group name, unique in the belonging study.
      */
     private String id;
 
     /**
-     * Set of users belonging to this group
+     * Set of users belonging to this group.
      */
     private List<String> userIds;
 
     /**
-     * Group permissions over one study
+     * Group permissions over one study.
      */
     private StudyPermissions permissions;
 
@@ -35,11 +35,12 @@ public class Group {
 
     @Override
     public String toString() {
-        return "Group{" +
-                "name='" + id + '\'' +
-                ", userIds='" + userIds + '\'' +
-                ", permissions=" + permissions +
-                '}';
+        final StringBuilder sb = new StringBuilder("Group{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", userIds=").append(userIds);
+        sb.append(", permissions=").append(permissions);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {

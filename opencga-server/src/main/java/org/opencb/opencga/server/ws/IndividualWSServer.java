@@ -3,9 +3,13 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -16,7 +20,6 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -41,11 +44,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response createIndividual(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                 @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") int fatherId,
-                                 @ApiParam(value = "motherId", required = false) @QueryParam("motherId") int motherId,
+                                 @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
+                                 @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                  @ApiParam(value = "gender", required = false) @QueryParam("gender") @DefaultValue("UNKNOWN") Individual.Gender gender) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, gender, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -56,7 +59,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individualId}/info")
     @ApiOperation(value = "Get individual information", position = 2)
-    public Response infoIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId) {
+    public Response infoIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
         try {
             QueryResult<Individual> queryResult = catalogManager.getIndividual(individualId, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -78,12 +81,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "race", required = false) @QueryParam("race") String race,
                                       @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                                       @ApiParam(value = "population", required = false) @QueryParam("population") String population,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, queryOptions, sessionId);
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -94,9 +99,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual", position = 4)
-    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
+    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
                                        @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                       @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                        @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
                                        @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
                                        Map<String, Object> annotations) {
@@ -122,9 +127,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
+    public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
                                       @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") int variableSetId,
+                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
         try {
@@ -166,11 +171,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individualId}/update")
     @ApiOperation(value = "Update individual information", position = 6)
-    public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
+    public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
                                      @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") int fatherId,
-                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") int motherId,
+                                     @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
+                                     @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                      @ApiParam(value = "gender", required = false) @QueryParam("gender") String gender,
                                      @ApiParam(value = "race", required = false) @QueryParam("race") String race
@@ -199,7 +204,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some individual attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId,
+    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
                                  @ApiParam(value = "params", required = true) UpdateIndividual updateParams) {
         try {
             QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
@@ -212,7 +217,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individualId}/delete")
     @ApiOperation(value = "Delete individual information", position = 7)
-    public Response deleteIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") int individualId) {
+    public Response deleteIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
         try {
             QueryResult<Individual> queryResult = catalogManager.deleteIndividual(individualId, queryOptions, sessionId);
             return createOkResponse(queryResult);

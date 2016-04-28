@@ -21,14 +21,16 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
@@ -36,9 +38,8 @@ import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.slf4j.LoggerFactory;
-
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Properties;
@@ -124,43 +125,43 @@ public class DaemonLoop implements Runnable {
                     } catch (Exception e) {
                         logger.warn(e.getMessage());
                     }
-                    Job.Status jobStatus = job.getStatus();
+                    String jobStatusEnum = job.getStatus().getStatus();
 //                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
 //                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
-                    logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
+                    logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus().getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
 
                     //Track SGEManager
                     if (status != null) {
                         switch (status) {
                             case SgeManager.FINISHED:
-                                if (!Job.Status.DONE.equals(job.getStatus())) {
-                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.DONE), sessionId);
-                                    jobStatus = Job.Status.DONE;
+                                if (!Job.JobStatus.DONE.equals(job.getStatus().getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.DONE), sessionId);
+                                    jobStatusEnum = Job.JobStatus.DONE;
                                 }
                                 break;
                             case SgeManager.ERROR:
                             case SgeManager.EXECUTION_ERROR:
-                                if (!Job.Status.DONE.equals(job.getStatus())) {
+                                if (!Job.JobStatus.DONE.equals(job.getStatus().getStatus())) {
                                     ObjectMap parameters = new ObjectMap();
-                                    parameters.put("status", Job.Status.DONE);
+                                    parameters.put("status", Job.JobStatus.DONE);
                                     String error = Job.ERRNO_FINISH_ERROR;
                                     parameters.put("error", error);
-                                    parameters.put("errorDescription", Job.errorDescriptions.get(error));
+                                    parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
                                     catalogManager.modifyJob(job.getId(), parameters, sessionId);
-                                    jobStatus = Job.Status.DONE;
+                                    jobStatusEnum = Job.JobStatus.DONE;
                                     job.setError(error);
                                 }
                                 break;
                             case SgeManager.QUEUED:
-                                if (!Job.Status.QUEUED.equals(job.getStatus())) {
-                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
-                                    jobStatus = Job.Status.QUEUED;
+                                if (!Job.JobStatus.QUEUED.equals(job.getStatus().getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.QUEUED), sessionId);
+                                    jobStatusEnum = Job.JobStatus.QUEUED;
                                 }
                                 break;
                             case SgeManager.RUNNING:
-                                if (!Job.Status.RUNNING.equals(job.getStatus())) {
-                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.RUNNING), sessionId);
-                                    jobStatus = Job.Status.RUNNING;
+                                if (!Job.JobStatus.RUNNING.equals(job.getStatus().getStatus())) {
+                                    catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.RUNNING), sessionId);
+                                    jobStatusEnum = Job.JobStatus.RUNNING;
                                 }
                                 break;
                             case SgeManager.TRANSFERRED:
@@ -171,33 +172,33 @@ public class DaemonLoop implements Runnable {
                     }
 
                     //Track Catalog Job status
-                    switch (jobStatus) {
-                        case DONE:
+                    switch (jobStatusEnum) {
+                        case Job.JobStatus.DONE:
                             boolean jobOk = job.getError() == null || (job.getError() != null && job.getError().isEmpty());
                             analysisOutputRecorder.recordJobOutputAndPostProcess(job, !jobOk);
                             if (jobOk) {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.READY), sessionId);
                             } else {
-                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.ERROR), sessionId);
+                                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.ERROR), sessionId);
                             }
                             break;
-                        case PREPARED:
+                        case Job.JobStatus.PREPARED:
                             try {
                                 AnalysisJobExecutor.execute(catalogManager, job, sessionId);
                             } catch (AnalysisExecutionException e) {
-                                ObjectMap params = new ObjectMap("status", Job.Status.ERROR);
+                                ObjectMap params = new ObjectMap("status", Job.JobStatus.ERROR);
                                 String error = Job.ERRNO_NO_QUEUE;
                                 params.put("error", error);
-                                params.put("errorDescription", Job.errorDescriptions.get(error));
+                                params.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
                                 catalogManager.modifyJob(job.getId(), params, sessionId);
                             }
                             break;
-                        case QUEUED:
+                        case Job.JobStatus.QUEUED:
                             break;
-                        case RUNNING:
+                        case Job.JobStatus.RUNNING:
                             break;
-                        case ERROR:
-                        case READY:
+                        case Job.JobStatus.ERROR:
+                        case Job.JobStatus.READY:
                             //Never expected!
                             break;
                     }
@@ -208,7 +209,8 @@ public class DaemonLoop implements Runnable {
 
             logger.info("----- Pending deletions -----");
             try {
-                QueryResult<File> files = catalogManager.searchFile(-1, new QueryOptions("status", File.Status.TRASHED), sessionId);
+                QueryResult<File> files = catalogManager.searchFile(-1, new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
+                        File.FileStatus.TRASHED), new QueryOptions(), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
                     try {       //TODO: skip if the file is a non-empty folder

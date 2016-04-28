@@ -20,8 +20,9 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
@@ -69,8 +70,8 @@ public class JobWSServer extends OpenCGAWSServer {
         public InputJob() {
         }
 
-        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status, int outDirId,
-                        List<Integer> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status, long outDirId,
+                        List<Long> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
             this.name = name;
             this.toolName = toolName;
             this.description = description;
@@ -97,26 +98,38 @@ public class JobWSServer extends OpenCGAWSServer {
         @ApiModelProperty(required = true)
         public String commandLine;
         public Status status = Status.READY;
+        public String statusMessage;
         @ApiModelProperty(required = true)
-        public int outDirId;
-        public List<Integer> input;
-        public List<Integer> output;
+        public long outDirId;
+        public List<Long> input;
+        public List<Long> output;
         public Map<String, Object> attributes;
         public Map<String, Object> resourceManagerAttributes;
 
     }
 
+    // TODO: Change the name for register. We are not "creating" a job, meaning that it will be put into execution, we are just registering
+    // TODO: it, so it would be necessary changing the path name "create" per "register"
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create job with POST method", position = 1, notes = "Required values: [name, toolName, commandLine]")
+    @ApiOperation(value = "Register an executed job with POST method", position = 1,
+            notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
+                    + "Required values: [name, toolName, commandLine]")
     public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "studies", required = true) InputJob job) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description,
-                    job.execution, job.params, job.commandLine, null, job.outDirId, job.input, job.output, job.attributes,
-                    job.resourceManagerAttributes, Job.Status.valueOf(job.status.toString()), job.startTime, job.endTime, queryOptions, sessionId);
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            Job.JobStatus jobStatus;
+            if (Job.JobStatus.isValid(job.status.toString())) {
+                jobStatus = new Job.JobStatus(job.status.toString(), job.statusMessage);
+            } else {
+                jobStatus = new Job.JobStatus();
+                jobStatus.setMessage(job.statusMessage);
+            }
+            QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description, job.execution, job.params,
+                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
+                    job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -137,10 +150,10 @@ public class JobWSServer extends OpenCGAWSServer {
     ) {
         QueryResult<Job> jobResult;
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             AnalysisJobExecutor analysisJobExecutor;
             String toolName;
-            int toolId = catalogManager.getToolId(toolIdStr);
+            long toolId = catalogManager.getToolId(toolIdStr);
             if (toolId < 0) {
                 analysisJobExecutor = new AnalysisJobExecutor(toolIdStr, execution);    //LEGACY MODE, AVOID USING
                 toolName = toolIdStr;
@@ -150,7 +163,7 @@ public class JobWSServer extends OpenCGAWSServer {
                 toolName = tool.getName();
             }
 
-            List<Integer> inputFiles = new LinkedList<>();
+            List<Long> inputFiles = new LinkedList<>();
             Map<String, List<String>> localParams = new HashMap<>(params);
 
             Execution ex = analysisJobExecutor.getExecution();
@@ -189,12 +202,12 @@ public class JobWSServer extends OpenCGAWSServer {
                 return createErrorResponse("", "Missing output param '" + outputParam + "'");
             }
 
-            int outDirId;
+            long outDirId;
 //            System.out.println("outputParam = " + outputParam);
             if(params.get(outputParam).get(0).equalsIgnoreCase("analysis")){
                 QueryOptions query = new QueryOptions();
                 query.put("name", params.get(outputParam).get(0));
-                QueryResult<File> result = catalogManager.searchFile(studyId, query, queryOptions, sessionId);
+                QueryResult<File> result = catalogManager.searchFile(studyId, new Query(query), queryOptions, sessionId);
                 outDirId = result.getResult().get(0).getId();
             }
             else
@@ -248,8 +261,8 @@ public class JobWSServer extends OpenCGAWSServer {
 //                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
 //            Job job = jobResult.getResult().get(0);
 
-            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(
-                    localParams, catalogManager, studyId, name, description, jobOutDir, inputFiles, sessionId);
+            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId, name, description,
+                    jobOutDir, inputFiles, sessionId);
 
             // Execute job
 //            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
@@ -266,7 +279,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobId}/info")
     @ApiOperation(value = "Get job information", position = 2)
-    public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+    public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
@@ -277,7 +290,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobId}/visit")
     @ApiOperation(value = "Increment job visits", position = 3)
-    public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
+    public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
         try {
             return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
         } catch (CatalogException e) {
@@ -288,13 +301,13 @@ public class JobWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{jobId}/delete")
     @ApiOperation(value = "Delete job", position = 4)
-    public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
+    public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId,
                            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
             List<QueryResult> results = new LinkedList<>();
             if (deleteFiles) {
                 QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
-                for (Integer fileId : jobQueryResult.getResult().get(0).getOutput()) {
+                for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
                     QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
                     results.add(queryResult);
                 }

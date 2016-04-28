@@ -19,157 +19,63 @@ package org.opencb.opencga.catalog.models;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
 public class File {
 
-    private int id;
-
+    /* Attributes known values */
+    public static final String DELETE_DATE = "deleteDate";      //Long
+    private long id;
     /**
      * File name.
      */
     private String name;
-
     /**
-     * Formats: file, folder, index
+     * Formats: file, folder, index.
      */
     private Type type;
-
     /**
      * Formats: txt, executable, image, ...
      */
     private Format format;
-
     /**
      * BAM, VCF, ...
      */
     private Bioformat bioformat;
-
     /**
      * Optional external file location. If null, file is inside its study.
      */
     private URI uri;
-
     private String path;
     private String ownerId;
     private String creationDate;
     private String modificationDate;
     private String description;
-
-    private Status status;
+    private FileStatus status;
+    @Deprecated
+    //private FileStatusEnum fileStatusEnum;
     private long diskUsage;
-
-    //private int studyId;
-    private int experimentId;
-    private List<Integer> sampleIds;
-
+    //private long studyId;
+    private long experimentId;
+    private List<Long> sampleIds;
     /**
      * This field values -1 when file has been uploaded.
      */
-    private int jobId;
+    private long jobId;
     private List<AclEntry> acl;
-
     private Index index;
-
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    /* Status */
-    public enum Status {
-        STAGE,
-        READY,
-        MISSING,
-        TRASHED,
-        DELETED
-    }
-
-    public enum Type {
-        FOLDER,
-        FILE
-    }
-
-    /**
-     * General format of the file, such as text, or binary, etc.
-     */
-    public enum Format {
-
-        VCF,
-        BCF,
-        GVCF,
-        TBI,
-
-        SAM,
-        BAM,
-        BAI,
-        CRAM,
-        FASTQ,
-        PED,
-
-        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
-
-        IMAGE,
-        PLAIN,
-        BINARY,
-        EXECUTABLE,
-        @Deprecated GZIP,
-        UNKNOWN,
-    }
-
-    public enum Compression {
-        GZIP,
-        BGZIP,
-        ZIP,
-        SNAPPY,
-        NONE,
-    }
-
-    /**
-     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
-     */
-    public enum Bioformat {
-        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
-        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
-        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
-        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
-        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
-        DATAMATRIX_EXPRESSION,
-//        DATAMATRIX_SNP,
-//        IDLIST_GENE,
-//        IDLIST_TRANSCRIPT,
-//        IDLIST_PROTEIN,
-//        IDLIST_SNP,
-//        IDLIST_FUNCTIONALTERMS,
-//        IDLIST_RANKED,
-        IDLIST,
-        IDLIST_RANKED,
-        ANNOTATION_GENEVSANNOTATION,
-
-        OTHER_NEWICK,
-        OTHER_BLAST,
-        OTHER_INTERACTION,
-        OTHER_GENOTYPE,
-        OTHER_PLINK,
-        OTHER_VCF,
-        OTHER_PED,
-
-        @Deprecated VCF4,
-
-        VARIANT,
-        ALIGNMENT,
-        SEQUENCE,
-        PEDIGREE,
-        NONE
-        }
-
-    /* Attributes known values */
-    public static final String DELETE_DATE = "deleteDate";      //Long
-
-    /**
-     * To think:
+    /*
+     * To think
      * ACL, url,  responsible,  extended source ??
      */
 
@@ -177,22 +83,22 @@ public class File {
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String description, Status status, long diskUsage) {
+                String description, FileStatus status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
+                -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                new HashMap<>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, Status status, long diskUsage) {
+                String creationDate, String description, FileStatus status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<Integer>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
-                new HashMap<String, Object>());
+                -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                new HashMap<>());
     }
 
-    public File(int id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, Status status, long diskUsage, int experimentId,
-                List<Integer> sampleIds, int jobId, List<AclEntry> acl, Map<String, Object> stats,
+    public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
+                String creationDate, String description, FileStatus status, long diskUsage, long experimentId,
+                List<Long> sampleIds, long jobId, List<AclEntry> acl, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -219,35 +125,37 @@ public class File {
 
     @Override
     public String toString() {
-        return "File {" + "\n\t" +
-                "id:" + id + "\n\t" +
-                ", name:'" + name + '\'' + "\n\t" +
-                ", type:'" + type + '\'' + "\n\t" +
-                ", format:'" + format + '\'' + "\n\t" +
-                ", bioformat:'" + bioformat + '\'' + "\n\t" +
-//                ", uriScheme:'" + uriScheme + '\'' + "\n\t" +
-                ", path:'" + path + '\'' + "\n\t" +
-                ", ownerId:'" + ownerId + '\'' + "\n\t" +
-                ", creationDate:'" + creationDate + '\'' + "\n\t" +
-                ", modificationDate:'" + modificationDate + '\'' + "\n\t" +
-                ", description:'" + description + '\'' + "\n\t" +
-                ", status:'" + status + '\'' + "\n\t" +
-                ", diskUsage:" + diskUsage + "\n\t" +
-                ", experimentId:" + experimentId + "\n\t" +
-                ", sampleIds:" + sampleIds + "\n\t" +
-                ", jobId:" + jobId + "\n\t" +
-                ", acl:" + acl + "\n\t" +
-                ", stats:" + stats + "\n\t" +
-                ", attributes:" + attributes + "\n\t" +
-//                ", indices:" + indices + "\n" +
-                '}';
+        final StringBuilder sb = new StringBuilder("File{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", format=").append(format);
+        sb.append(", bioformat=").append(bioformat);
+        sb.append(", uri=").append(uri);
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", ownerId='").append(ownerId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", experimentId=").append(experimentId);
+        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", jobId=").append(jobId);
+        sb.append(", acl=").append(acl);
+        sb.append(", index=").append(index);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -331,11 +239,19 @@ public class File {
         this.description = description;
     }
 
-    public Status getStatus() {
+    /*public FileStatusEnum getFileStatusEnum() {
+        return fileStatusEnum;
+    }
+
+    public void setFileStatusEnum(FileStatusEnum fileStatusEnum) {
+        this.fileStatusEnum = fileStatusEnum;
+    }
+*/
+    public FileStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(FileStatus status) {
         this.status = status;
     }
 
@@ -347,27 +263,27 @@ public class File {
         this.diskUsage = diskUsage;
     }
 
-    public int getExperimentId() {
+    public long getExperimentId() {
         return experimentId;
     }
 
-    public void setExperimentId(int experimentId) {
+    public void setExperimentId(long experimentId) {
         this.experimentId = experimentId;
     }
 
-    public List<Integer> getSampleIds() {
+    public List<Long> getSampleIds() {
         return sampleIds;
     }
 
-    public void setSampleIds(List<Integer> sampleIds) {
+    public void setSampleIds(List<Long> sampleIds) {
         this.sampleIds = sampleIds;
     }
 
-    public int getJobId() {
+    public long getJobId() {
         return jobId;
     }
 
-    public void setJobId(int jobId) {
+    public void setJobId(long jobId) {
         this.jobId = jobId;
     }
 
@@ -401,5 +317,137 @@ public class File {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public static class FileStatus extends Status {
+
+        /**
+         * STAGE.
+         */
+        public static final String STAGE = "STAGE";
+        /**
+         * MISSING.
+         */
+        public static final String MISSING = "MISSING";
+        /**
+         * TRASHED.
+         */
+        public static final String TRASHED = "TRASHED";
+
+        public FileStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                init(UNKNOWN, message);
+            }
+        }
+
+        public FileStatus(String status) {
+            this(status, "");
+        }
+
+        public FileStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+
+    /* Status */
+    /*
+    public enum FileStatusEnum {
+        STAGE,
+        READY,
+        MISSING,
+        TRASHED,
+        DELETED
+    }
+*/
+
+    public enum Type {
+        FOLDER,
+        FILE
+    }
+
+    /**
+     * General format of the file, such as text, or binary, etc.
+     */
+    public enum Format {
+
+        VCF,
+        BCF,
+        GVCF,
+        TBI,
+
+        SAM,
+        BAM,
+        BAI,
+        CRAM,
+        FASTQ,
+        PED,
+
+        TAB_SEPARATED_VALUES, COMMA_SEPARATED_VALUES, XML, PROTOCOL_BUFFER, JSON, AVRO, PARQUET, //Serialization formats
+
+        IMAGE,
+        PLAIN,
+        BINARY,
+        EXECUTABLE,
+        @Deprecated GZIP,
+        UNKNOWN,
+    }
+
+    public enum Compression {
+        GZIP,
+        BGZIP,
+        ZIP,
+        SNAPPY,
+        NONE,
+    }
+
+    /**
+     * Specific format of the biological file, such as variant, alignment, pedigree, etc.
+     */
+    public enum Bioformat {
+        MICROARRAY_EXPRESSION_ONECHANNEL_AGILENT,
+        MICROARRAY_EXPRESSION_ONECHANNEL_AFFYMETRIX,
+        MICROARRAY_EXPRESSION_ONECHANNEL_GENEPIX,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_AGILENT,
+        MICROARRAY_EXPRESSION_TWOCHANNELS_GENEPIX,
+        DATAMATRIX_EXPRESSION,
+        //        DATAMATRIX_SNP,
+//        IDLIST_GENE,
+//        IDLIST_TRANSCRIPT,
+//        IDLIST_PROTEIN,
+//        IDLIST_SNP,
+//        IDLIST_FUNCTIONALTERMS,
+//        IDLIST_RANKED,
+        IDLIST,
+        IDLIST_RANKED,
+        ANNOTATION_GENEVSANNOTATION,
+
+        OTHER_NEWICK,
+        OTHER_BLAST,
+        OTHER_INTERACTION,
+        OTHER_GENOTYPE,
+        OTHER_PLINK,
+        OTHER_VCF,
+        OTHER_PED,
+
+        @Deprecated VCF4,
+
+        VARIANT,
+        ALIGNMENT,
+        SEQUENCE,
+        PEDIGREE,
+        NONE
     }
 }

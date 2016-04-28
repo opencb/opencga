@@ -18,9 +18,9 @@ package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tools.ant.types.Commandline;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -140,7 +140,7 @@ public class AnalysisJobExecutor {
             try {
                 SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
                         -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
-                catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
+                catalogManager.modifyJob(job.getId(), new ObjectMap("jobStatus", Job.JobStatus.QUEUED), sessionId);
             } catch (Exception e) {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
@@ -222,14 +222,15 @@ public class AnalysisJobExecutor {
     }
 
     public QueryResult<Job> createJob(Map<String, List<String>> params,
-                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir, List<Integer> inputFiles, String sessionId)
+                                      CatalogManager catalogManager, long studyId, String jobName, String description, File outDir,
+                                      List<Long> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
         return createJob(execution.getExecutable(), params, catalogManager, studyId, jobName, description, outDir, inputFiles, sessionId);
     }
 
     public QueryResult<Job> createJob(String executable, Map<String, List<String>> params,
-                                      CatalogManager catalogManager, int studyId, String jobName, String description, File outDir,
-                                      List<Integer> inputFiles, String sessionId)
+                                      CatalogManager catalogManager, long studyId, String jobName, String description, File outDir,
+                                      List<Long> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
 
         // Create temporal Outdir
@@ -251,8 +252,8 @@ public class AnalysisJobExecutor {
     }
 
     @Deprecated
-    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, final String sessionId,
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, long studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Long> inputFiles, final String sessionId,
                                              String randomString, URI temporalOutDirUri, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
                                              Map<String, Object> resourceManagerAttributes)
@@ -276,8 +277,8 @@ public class AnalysisJobExecutor {
                 randomString, temporalOutDirUri, "", params, commandLine, execute, simulate, attributes, resourceManagerAttributes);
     }
 
-    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
-                                             File outDir, List<Integer> inputFiles, final String sessionId,
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, long studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Long> inputFiles, final String sessionId,
                                              String randomString, URI temporalOutDirUri,
                                              String executor, Map<String, String> params, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
@@ -295,13 +296,13 @@ public class AnalysisJobExecutor {
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
-                            Job.Status.PREPARED, -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.<Integer>emptyList(),
+                            new Job.JobStatus(Job.JobStatus.PREPARED), -1, outDir.getId(), temporalOutDirUri, inputFiles, Collections.emptyList(),
                             null, attributes, resourceManagerAttributes)));
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
                 jobQueryResult = executeLocal(catalogManager, job, sessionId);
@@ -310,7 +311,7 @@ public class AnalysisJobExecutor {
                 /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
-                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.PREPARED, 0, 0, null, sessionId);
+                        outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.PREPARED), 0, 0, null, sessionId);
             }
         }
         return jobQueryResult;
@@ -325,7 +326,7 @@ public class AnalysisJobExecutor {
         URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
         com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
 
-        final int jobId = job.getId();
+        final long jobId = job.getId();
         Thread hook = new Thread(() -> {
             try {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
@@ -381,7 +382,7 @@ public class AnalysisJobExecutor {
 //                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
         ObjectMap parameters = new ObjectMap();
         parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
-        parameters.put("status", Job.Status.DONE);
+        parameters.put("status.status", Job.JobStatus.DONE);
         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
         /** Record output **/
@@ -390,12 +391,12 @@ public class AnalysisJobExecutor {
 
         /** Change status to READY or ERROR **/
         if (com.getExitValue() == 0) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
+            catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.READY), sessionId);
         } else {
             parameters = new ObjectMap();
-            parameters.put("status", Job.Status.ERROR);
+            parameters.put("status.status", Job.JobStatus.ERROR);
             parameters.put("error", Job.ERRNO_FINISH_ERROR);
-            parameters.put("errorDescription", Job.errorDescriptions.get(Job.ERRNO_FINISH_ERROR));
+            parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_FINISH_ERROR));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
         }
 

@@ -16,27 +16,33 @@
 
 package org.opencb.opencga.server.ws;
 
-import com.wordnik.swagger.annotations.*;
+import com.wordnik.swagger.annotations.Api;
+import com.wordnik.swagger.annotations.ApiOperation;
+import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.core.*;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.net.URI;
 import java.util.*;
@@ -67,9 +73,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
                                 @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
         try {
-            int projectId = catalogManager.getProjectId(projectIdStr);
+            long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, status, cipher, null, null, null, null, null, queryOptions, sessionId);
+                    creationDate, description, new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -94,7 +100,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                     @ApiParam(value="studies", required = true) List<Study> studies) {
 //        List<Study> catalogStudies = new LinkedList<>();
         List<QueryResult<Study>> queryResults = new LinkedList<>();
-        int projectId;
+        long projectId;
         try {
             projectId = catalogManager.getProjectId(projectIdStr);
         } catch (CatalogException e) {
@@ -138,7 +144,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             String[] studyIdArray = studyIdsStr.split(",");
             List<QueryResult<Study>> queryResults = new LinkedList<>();
             for (String studyIdStr : studyIdArray) {
-                int studyId = catalogManager.getStudyId(studyIdStr);
+                long studyId = catalogManager.getStudyId(studyIdStr);
                 queryResults.add(catalogManager.getStudy(studyId, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
@@ -165,7 +171,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "Users in group") @QueryParam("groups.users") String groups_users
                                   ) {
         try {
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(queryOptions, sessionId);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -177,8 +185,10 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Study files information", position = 3)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult queryResult = catalogManager.getAllFiles(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -190,7 +200,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Get all jobs", position = 4)
     public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -202,8 +212,10 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Study samples information", position = 5)
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult queryResult = catalogManager.getAllSamples(studyId, queryOptions, sessionId);
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+            parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -246,7 +258,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
                                 @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
-                                @ApiParam(value = "", required = false) @QueryParam("sort") boolean sort,
+                                @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
@@ -257,7 +269,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             List<QueryResult> queryResults = new LinkedList<>();
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
-                int studyId = catalogManager.getStudyId(studyIdStr);
+                long studyId = catalogManager.getStudyId(studyIdStr);
                 queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
@@ -279,28 +291,30 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "histogram", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                   @ApiParam(value = "interval", required = false) @DefaultValue("2000") @QueryParam("interval") int interval) {
 
-        Query query = new Query();
         query.put(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyIdStr);
         List<Region> regions = Region.parseRegions(region);
 
         List<QueryResult> results = new ArrayList<>();
+//        QueryResult alignmentsByRegion;
         QueryResult alignmentsByRegion;
 
         // TODO if SampleIds are passed we need to get the BAM files for them and execute the code below
 
+        long studyId = 4;
+        long sampleId = 33;
+        QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
-            int studyId = 4;
-            int sampleId = 33;
-            File file = catalogManager.getAllFiles(studyId, new QueryOptions()
-                    .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.ALIGNMENT)
-                    .append(CatalogFileDBAdaptor.FileFilterOption.sampleIds.toString(), sampleId)
-                    .append(CatalogFileDBAdaptor.FileFilterOption.index.toString() + ".status", Index.Status.READY), sessionId).first();
+            File file = catalogManager.getAllFiles(studyId, query
+                    .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
+                    .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
+                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), Index.IndexStatus.READY),
+                    qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
         }
 
         for (String fileId : fileIds.split(",")) {
-            int fileIdNum;
+            long fileIdNum;
             File file;
             URI fileUri;
             try {
@@ -314,7 +328,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             }
 
 //            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || file.getIndex().getStatus() != Index.Status.READY) {
+            if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
                 return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }
@@ -331,7 +345,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
             int chunkSize = indexAttributes.getInt("coverageChunkSize", 200);
             QueryOptions queryOptions = new QueryOptions();
-            queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Integer.toString(fileIdNum));
+            queryOptions.put(AlignmentDBAdaptor.QO_FILE_ID, Long.toString(fileIdNum));
             queryOptions.put(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());     //TODO: Make uri-compatible
             queryOptions.put(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, view_as_pairs);
             queryOptions.put(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, include_coverage);
@@ -364,9 +378,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 if (regions.size() != 1) {
                     return createErrorResponse("", "Histogram fetch only accepts one region.");
                 }
-                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), queryOptions);
+                alignmentsByRegion = dbAdaptor.getAllIntervalFrequencies(regions.get(0), new QueryOptions(queryOptions));
             } else {
-                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, queryOptions);
+                alignmentsByRegion = dbAdaptor.getAllAlignmentsByRegion(regions, new QueryOptions(queryOptions));
             }
             results.add(alignmentsByRegion);
         }
@@ -379,19 +393,20 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 8)
     public Response status(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             Study study = catalogManager.getStudy(studyId, sessionId).first();
             FileScanner fileScanner = new FileScanner(catalogManager);
 
             /** First, run CheckStudyFiles to find new missing files **/
             List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().equals(File.Status.READY)).collect(Collectors.toList());
+            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().getStatus().equals(File.FileStatus.READY)).collect(Collectors.toList());
 
             /** Get untracked files **/
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
 
             /** Get missing files **/
-            List<File> missingFiles = catalogManager.getAllFiles(studyId, new QueryOptions("status", File.Status.MISSING), sessionId).getResult();
+            List<File> missingFiles = catalogManager.getAllFiles(studyId, query.append(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
+                    File.FileStatus.MISSING), queryOptions, sessionId).getResult();
 
             ObjectMap fileStatus = new ObjectMap("untracked", untrackedFiles).append("found", found).append("missing", missingFiles);
 
@@ -440,7 +455,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 //            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
             throws IOException {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             ObjectMap objectMap = new ObjectMap();
             if(!name.isEmpty()) {
                 objectMap.put("name", name);
@@ -487,7 +502,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.modifyStudy(studyId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -503,7 +518,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "User to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUser") String addUser,
                            @ApiParam(value = "User to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUser") String removeUser) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             List<QueryResult> queryResults = new LinkedList<>();
             if (!addUser.isEmpty() && !removeUser.isEmpty()) {
                 return createErrorResponse("groups", "Must specify only one user to add or remove from one group");

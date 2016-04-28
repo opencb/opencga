@@ -66,7 +66,7 @@ public class ProjectWSServerTest {
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         Project project = queryResponse.getResponse().get(0).first();
-        int projectId = project.getId();
+        long projectId = project.getId();
         System.out.println("\tprojectId: "+ projectId);
 
         System.out.println("\nJSON RESPONSE");
@@ -74,7 +74,7 @@ public class ProjectWSServerTest {
 
         return project;
     }
-    public Project info(int projectId, String sessionId) throws IOException {
+    public Project info(long projectId, String sessionId) throws IOException {
         System.out.println("\nTesting project info...");
         System.out.println("---------------------");
         System.out.println("\nINPUT PARAMS");
@@ -95,7 +95,7 @@ public class ProjectWSServerTest {
         return project;
     }
 
-    public void getAllStudies(int projectId, String sessionId){
+    public void getAllStudies(long projectId, String sessionId){
         ObjectMapper objectMapper = new ObjectMapper();
         System.out.println("\nTesting all studies info...");
         System.out.println("---------------------");
@@ -120,7 +120,7 @@ public class ProjectWSServerTest {
         System.out.println(s);
 
     }
-    public void modifyProject(int projectId, String sessionId) {
+    public void modifyProject(long projectId, String sessionId) {
         String name = projectId + "-mod";
         String description = "desc-mod";
         String organization = "org-mod";

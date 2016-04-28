@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.config;
 
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 /**
  * Created by imedina on 01/05/15.
@@ -30,6 +30,7 @@ public class StorageEngineConfiguration {
      * options parameter defines database-specific parameters
      */
 //    private Map<String, String> options;
+    @Deprecated
     private ObjectMap options;
 
     private StorageEtlConfiguration alignment;

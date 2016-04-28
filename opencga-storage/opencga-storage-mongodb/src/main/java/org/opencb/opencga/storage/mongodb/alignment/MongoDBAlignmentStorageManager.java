@@ -21,10 +21,10 @@ import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAda
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.commons.run.Runner;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentCoverageJsonDataReader;
@@ -65,7 +65,6 @@ public class MongoDBAlignmentStorageManager extends AlignmentStorageManager {
         logger = LoggerFactory.getLogger(MongoDBAlignmentStorageManager.class);
     }
 
-    @Override
     public CoverageMongoDBWriter getDBWriter(String dbName) {
         String fileId = configuration.getStorageEngine(STORAGE_ENGINE_ID).getAlignment().getOptions().getString(Options.FILE_ID.key());
         return new CoverageMongoDBWriter(getMongoCredentials(dbName), fileId);

@@ -18,24 +18,26 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
 public class Project {
 
-    private int id;
+    private long id;
     private String name;
     private String alias;
     private String creationDate;
     private String description;
     private String organization;
-    private String status;
+    private Status status;
     private String lastActivity;
     private long diskUsage;
 
-    private List<AclEntry> acl;
     private List<Study> studies;
 
     private Map<File.Bioformat, DataStore> dataStores;
@@ -44,19 +46,19 @@ public class Project {
     public Project() {
     }
 
-    public Project(String name, String alias, String description, String status, String organization) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0,
-                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
-    }
-    public Project(String name, String alias, String creationDate, String description, String status,
-                   String lastActivity, long diskUsage, String organization) {
-        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage,
-                new LinkedList<AclEntry>(), new LinkedList<Study>(), new HashMap<String, Object>());
+    public Project(String name, String alias, String description, Status status, String organization) {
+        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<Study>(),
+                new HashMap<String, Object>());
     }
 
-    public Project(int id, String name, String alias, String creationDate, String description, String organization,
-                   String status, String lastActivity, long diskUsage, List<AclEntry> acl, List<Study> studies,
-                   Map<String, Object> attributes) {
+    public Project(String name, String alias, String creationDate, String description, Status status,
+                   String lastActivity, long diskUsage, String organization) {
+        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<Study>(),
+                new HashMap<String, Object>());
+    }
+
+    public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,
+                   String lastActivity, long diskUsage, List<Study> studies, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -66,7 +68,6 @@ public class Project {
         this.status = status;
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
-        this.acl = acl;
         this.studies = studies;
         this.dataStores = new HashMap<>();
         this.attributes = attributes;
@@ -74,32 +75,37 @@ public class Project {
 
     @Override
     public String toString() {
-        return "Project{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", alias='" + alias + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", organization='" + organization + '\'' +
-                ", status='" + status + '\'' +
-                ", lastActivity='" + lastActivity + '\'' +
-                ", diskUsage=" + diskUsage +
-                ", acl=" + acl +
-                ", studies=" + studies +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Project{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", organization='").append(organization).append('\'');
+        sb.append(", status='").append(status).append('\'');
+        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", studies=").append(studies);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
     public String getName() {
         return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getAlias() {
@@ -108,10 +114,6 @@ public class Project {
 
     public void setAlias(String alias) {
         this.alias = alias;
-    }
-
-    public void setName(String name) {
-        this.name = name;
     }
 
     public String getCreationDate() {
@@ -130,11 +132,11 @@ public class Project {
         this.description = description;
     }
 
-    public String getStatus() {
+    public Status getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(Status status) {
         this.status = status;
     }
 
@@ -152,14 +154,6 @@ public class Project {
 
     public void setDiskUsage(long diskUsage) {
         this.diskUsage = diskUsage;
-    }
-
-    public List<AclEntry> getAcl() {
-        return acl;
-    }
-
-    public void setAcl(List<AclEntry> acl) {
-        this.acl = acl;
     }
 
     public List<Study> getStudies() {

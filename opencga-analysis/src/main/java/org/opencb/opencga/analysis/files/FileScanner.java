@@ -1,15 +1,15 @@
 package org.opencb.opencga.analysis.files;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,12 +52,10 @@ public class FileScanner {
      * @return found and lost files
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(CatalogFileDBAdaptor.FileFilterOption.status.toString(), Arrays.asList(
-                File.Status.READY, File.Status.MISSING, File.Status.TRASHED));
-        QueryResult<File> files = catalogManager.getAllFiles(study.getId(),
-                queryOptions,
-                sessionId);
+        Query query = new Query();
+        query.put(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), Arrays.asList(
+                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
+        QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
         for (File file : files.getResult()) {
@@ -80,9 +78,9 @@ public class FileScanner {
      */
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
-        int studyId = study.getId();
+        long studyId = study.getId();
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
-        QueryOptions query = new QueryOptions();
+        Query query = new Query();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
         query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
@@ -105,15 +103,15 @@ public class FileScanner {
      */
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
-        int studyId = study.getId();
+        long studyId = study.getId();
         URI studyUri = catalogManager.getStudyUri(studyId);
 
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(studyUri);
         Map<String, URI> linkedFolders = new HashMap<>();
         linkedFolders.put("", studyUri);
-        QueryOptions query = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
-        catalogManager.getAllFiles(studyId, query, sessionId).getResult().forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
+        QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
+        catalogManager.getAllFiles(studyId, query, queryOptions, sessionId).getResult().forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
         for (Map.Entry<String, URI> entry : linkedFolders.entrySet()) {
@@ -128,7 +126,7 @@ public class FileScanner {
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
                 QueryResult<File> searchFile = catalogManager.searchFile(studyId,
-                        new QueryOptions("path", filePath),
+                        new Query("path", filePath),
                         new QueryOptions("include", "projects.studies.files.id"), sessionId);
                 if (searchFile.getResult().isEmpty()) {
                     untrackedFiles.put(filePath, uri);
@@ -164,7 +162,7 @@ public class FileScanner {
      * @return found and new files.
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
-                           boolean calculateChecksum, boolean deleteSource, int jobId, String sessionId)
+                           boolean calculateChecksum, boolean deleteSource, long jobId, String sessionId)
             throws IOException, CatalogException {
         if (directoryToScan == null) {
             directoryToScan = catalogManager.getFileUri(directory);
@@ -175,7 +173,7 @@ public class FileScanner {
         if (!directory.getType().equals(File.Type.FOLDER)) {
             throw new CatalogException("Expected folder where place the found files.");
         }
-        int studyId = catalogManager.getStudyIdByFileId(directory.getId());
+        long studyId = catalogManager.getStudyIdByFileId(directory.getId());
 
         long createFilesTime = 0, uploadFilesTime = 0, metadataReadTime = 0;
         Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
@@ -187,7 +185,7 @@ public class FileScanner {
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
 
-            QueryResult<File> searchFile = catalogManager.searchFile(studyId, new QueryOptions("path", filePath), sessionId);
+            QueryResult<File> searchFile = catalogManager.searchFile(studyId, new Query("path", filePath), sessionId);
 
             File file = null;
             boolean returnFile = false;
@@ -229,9 +227,9 @@ public class FileScanner {
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
-                if (file.getStatus().equals(File.Status.MISSING)) {
+                if (file.getStatus().getStatus().equals(File.FileStatus.MISSING)) {
                     logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
-                    logger.debug("Set status to " + File.Status.READY);
+                    logger.debug("Set status to " + File.FileStatus.READY);
                     returnFile = true;      //Return file because was missing
                 }
                 long start = System.currentTimeMillis();

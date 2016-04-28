@@ -8,15 +8,18 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
-import org.opencb.opencga.storage.hadoop.auth.HadoopCredentials;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 
@@ -25,7 +28,7 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
+public class HBaseStudyConfigurationManager extends StudyConfigurationManager implements Closeable {
 
     private final byte[] studiesRow;
     private final byte[] studiesSummaryColumn;
@@ -39,7 +42,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private final HBaseManager hBaseManager;
     private final String tableName;
 
-    public HBaseStudyConfigurationManager(HadoopCredentials credentials, Configuration configuration, ObjectMap options)
+    public HBaseStudyConfigurationManager(HBaseCredentials credentials, Configuration configuration, ObjectMap options)
             throws IOException {
         this(credentials.getTable(), configuration, options);
     }
@@ -60,6 +63,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     @Override
     protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
+        logger.info("Get StudyConfiguration " + studyId + " from DB " + tableName);
         return internalGetStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
     }
 
@@ -80,7 +84,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
             try {
                 get.setTimeRange(timeStamp + 1, Long.MAX_VALUE);
             } catch (IOException e) {
-                //This should not happen never.
+                //This should not happen ever.
                 throw new IllegalArgumentException(e);
             }
         }
@@ -139,11 +143,13 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
             if (!hBaseManager.act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+                logger.info("Get StudyConfiguration summary TABLE_NO_EXISTS");
                 return HashBiMap.create();
             }
             return hBaseManager.act(getConnection(), tableName, table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
+                    logger.info("Get StudyConfiguration summary EMPTY");
                     return HashBiMap.create();
                 } else {
                     byte[] value = result.getValue(genomeHelper.getColumnFamily(), studiesSummaryColumn);
@@ -155,13 +161,14 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
             });
         } catch (IOException e) {
             e.printStackTrace();
+            logger.info("Get StudyConfiguration summary ERROR");
             return HashBiMap.create();
         }
     }
 
     private void updateStudiesSummary(String study, Integer studyId, QueryOptions options) {
         BiMap<String, Integer> studiesSummary = getStudiesSummary(options);
-        if (studiesSummary.getOrDefault(study, -1).equals(studyId)) {
+        if (studiesSummary.getOrDefault(study, Integer.MIN_VALUE).equals(studyId)) {
             //Nothing to update
             return;
         } else {
@@ -193,4 +200,29 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         return connection;
     }
 
+    public HBaseVariantStudyConfiguration toHBaseStudyConfiguration(StudyConfiguration studyConfiguration) throws IOException {
+        if (studyConfiguration instanceof HBaseVariantStudyConfiguration) {
+            return ((HBaseVariantStudyConfiguration) studyConfiguration);
+        } else {
+            List<BatchFileOperation> batches = new ArrayList<>();
+
+            if (studyConfiguration.getAttributes() != null) {
+                List<Object> batchesObj = studyConfiguration.getAttributes().getList(HBaseVariantStudyConfiguration.BATCHES_FIELD,
+                        Collections.emptyList());
+                for (Object o : batchesObj) {
+                    batches.add(objectMapper.readValue(objectMapper.writeValueAsString(o), BatchFileOperation.class));
+                }
+                studyConfiguration.getAttributes().remove(HBaseVariantStudyConfiguration.BATCHES_FIELD);
+            }
+
+            return new HBaseVariantStudyConfiguration(studyConfiguration).setBatches(batches);
+        }
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (null != connection) {
+            connection.close();
+        }
+    }
 }

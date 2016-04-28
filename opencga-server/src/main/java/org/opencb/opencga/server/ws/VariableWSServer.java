@@ -19,8 +19,7 @@ package org.opencb.opencga.server.ws;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.core.exception.VersionException;
@@ -59,7 +58,7 @@ public class VariableWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                               @ApiParam(value = "variables", required = true) List<Variable> variables) {
         try {
-            int studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId,
                     name, unique, description, null, variables, sessionId);
             return createOkResponse(queryResult);
@@ -72,7 +71,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @Path("/{variableSetId}/info")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2)
-    public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") int variableSetId) {
+    public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -85,7 +84,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2)
-    public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") int studyId,
+    public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") long studyId,
                            @ApiParam(value = "CSV list of variableSetIds", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
@@ -117,7 +116,7 @@ public class VariableWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableSetId}/delete")
     @ApiOperation(value = "Delete an unused variable Set", position = 4)
-    public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") int variableSetId) {
+    public Response delete(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.deleteVariableSet(variableSetId, queryOptions, sessionId);
             return createOkResponse(queryResult);

@@ -200,6 +200,12 @@
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
+
+                                <echo>Coping configuration file</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>
+                                    <arg value="${build.dir}/conf"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>

@@ -16,177 +16,35 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+
 import java.util.List;
 import java.util.Map;
 
+import static java.lang.Math.toIntExact;
 /**
  * Created by jacobo on 11/09/14.
  */
 public class Individual {
 
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
-    }
-
-    public enum Gender {
-        MALE, FEMALE, UNKNOWN
-    }
-
-    private int id;
+    private long id;
     private String name;
-    private int fatherId;
-    private int motherId;
+    private long fatherId;
+    private long motherId;
     private String family;
     private Gender gender;
-
-
     private String race;
     private Species species;
     private Population population;
-
+    private Status status;
     private List<AnnotationSet> annotationSets;
-
-    // internal class
-    public static class Species {
-        private String taxonomyCode;
-        private String scientificName;
-        private String commonName;
-
-        public Species() {
-        }
-
-        @Override
-        public String toString() {
-            return "Species {" +
-                    "\"taxonomyCode\": " + '\"' + taxonomyCode + '\"' +
-                    ", \"scientificName\": " + '\"' + scientificName + '\"' +
-                    ", \"commonName\": " + '\"' + commonName + '\"' +
-                    '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Species)) return false;
-
-            Species species = (Species) o;
-
-            if (taxonomyCode != null ? !taxonomyCode.equals(species.taxonomyCode) : species.taxonomyCode != null)
-                return false;
-            if (scientificName != null ? !scientificName.equals(species.scientificName) : species.scientificName != null)
-                return false;
-            return !(commonName != null ? !commonName.equals(species.commonName) : species.commonName != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = taxonomyCode != null ? taxonomyCode.hashCode() : 0;
-            result = 31 * result + (scientificName != null ? scientificName.hashCode() : 0);
-            result = 31 * result + (commonName != null ? commonName.hashCode() : 0);
-            return result;
-        }
-
-        public String getTaxonomyCode() {
-            return taxonomyCode;
-        }
-
-        public void setTaxonomyCode(String taxonomyCode) {
-            this.taxonomyCode = taxonomyCode;
-        }
-
-        public String getScientificName() {
-            return scientificName;
-        }
-
-        public void setScientificName(String scientificName) {
-            this.scientificName = scientificName;
-        }
-
-        public String getCommonName() {
-            return commonName;
-        }
-
-        public void setCommonName(String commonName) {
-            this.commonName = commonName;
-        }
-    }
-
-    public static class Population {
-        private String name;
-        private String subpopulation;
-        private String description;
-
-        public Population() {
-        }
-
-        @Override
-        public String toString() {
-            return "Population {" +
-                    "\"name\": " + '\"' + name + '\"' +
-                    ", \"subpopulation\": " + '\"' + subpopulation + '\"' +
-                    ", \"description\": " + '\"' + description + '\"' +
-                    '}';
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (!(o instanceof Population)) return false;
-
-            Population that = (Population) o;
-
-            if (name != null ? !name.equals(that.name) : that.name != null) return false;
-            if (subpopulation != null ? !subpopulation.equals(that.subpopulation) : that.subpopulation != null)
-                return false;
-            return !(description != null ? !description.equals(that.description) : that.description != null);
-
-        }
-
-        @Override
-        public int hashCode() {
-            int result = name != null ? name.hashCode() : 0;
-            result = 31 * result + (subpopulation != null ? subpopulation.hashCode() : 0);
-            result = 31 * result + (description != null ? description.hashCode() : 0);
-            return result;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public String getSubpopulation() {
-            return subpopulation;
-        }
-
-        public void setSubpopulation(String subpopulation) {
-            this.subpopulation = subpopulation;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public void setDescription(String description) {
-            this.description = description;
-        }
-    }
-
     private Map<String, Object> attributes;
 
     public Individual() {
     }
 
-    public Individual(int id, String name, int fatherId, int motherId, String family, Gender gender, String race, Species species, Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
+                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) throws CatalogException {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -197,31 +55,33 @@ public class Individual {
         this.species = species;
         this.population = population;
         this.annotationSets = annotationSets;
+        this.status = new Status();
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Individual{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", fatherId=" + fatherId +
-                ", motherId=" + motherId +
-                ", family='" + family + '\'' +
-                ", gender=" + gender +
-                ", race='" + race + '\'' +
-                ", species=" + species +
-                ", population=" + population +
-                ", annotationSets=" + annotationSets +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Individual{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", fatherId=").append(fatherId);
+        sb.append(", motherId=").append(motherId);
+        sb.append(", family='").append(family).append('\'');
+        sb.append(", gender=").append(gender);
+        sb.append(", race='").append(race).append('\'');
+        sb.append(", species=").append(species);
+        sb.append(", population=").append(population);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public Individual setId(int id) {
+    public Individual setId(long id) {
         this.id = id;
         return this;
     }
@@ -230,30 +90,69 @@ public class Individual {
         return name;
     }
 
+    public Individual setName(String name) {
+        this.name = name;
+        return this;
+
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
+
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Individual)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Individual)) {
+            return false;
+        }
 
         Individual that = (Individual) o;
 
-        if (id != that.id) return false;
-        if (fatherId != that.fatherId) return false;
-        if (motherId != that.motherId) return false;
-        if (name != null ? !name.equals(that.name) : that.name != null) return false;
-        if (family != null ? !family.equals(that.family) : that.family != null) return false;
-        if (gender != that.gender) return false;
-        if (race != null ? !race.equals(that.race) : that.race != null) return false;
-        if (species != null ? !species.equals(that.species) : that.species != null) return false;
-        if (population != null ? !population.equals(that.population) : that.population != null) return false;
-        if (attributes != null ? !attributes.equals(that.attributes) : that.attributes != null) return false;
+        if (id != that.id) {
+            return false;
+        }
+        if (fatherId != that.fatherId) {
+            return false;
+        }
+        if (motherId != that.motherId) {
+            return false;
+        }
+        if (name != null ? !name.equals(that.name) : that.name != null) {
+            return false;
+        }
+        if (family != null ? !family.equals(that.family) : that.family != null) {
+            return false;
+        }
+        if (gender != that.gender) {
+            return false;
+        }
+        if (race != null ? !race.equals(that.race) : that.race != null) {
+            return false;
+        }
+        if (species != null ? !species.equals(that.species) : that.species != null) {
+            return false;
+        }
+        if (population != null ? !population.equals(that.population) : that.population != null) {
+            return false;
+        }
+        if (attributes != null ? !attributes.equals(that.attributes) : that.attributes != null) {
+            return false;
+        }
 
         return true;
     }
 
     @Override
     public int hashCode() {
-        int result = id;
+        long result = id;
         result = 31 * result + (name != null ? name.hashCode() : 0);
         result = 31 * result + fatherId;
         result = 31 * result + motherId;
@@ -263,29 +162,23 @@ public class Individual {
         result = 31 * result + (species != null ? species.hashCode() : 0);
         result = 31 * result + (population != null ? population.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
-        return result;
+        return toIntExact(result);
     }
 
-    public Individual setName(String name) {
-        this.name = name;
-        return this;
-
-    }
-
-    public int getFatherId() {
+    public long getFatherId() {
         return fatherId;
     }
 
-    public Individual setFatherId(int fatherId) {
+    public Individual setFatherId(long fatherId) {
         this.fatherId = fatherId;
         return this;
     }
 
-    public int getMotherId() {
+    public long getMotherId() {
         return motherId;
     }
 
-    public Individual setMotherId(int motherId) {
+    public Individual setMotherId(long motherId) {
         this.motherId = motherId;
         return this;
     }
@@ -342,5 +235,162 @@ public class Individual {
     public Individual setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public enum Gender {
+        MALE, FEMALE, UNKNOWN
+    }
+
+    // internal class
+    public static class Species {
+        private String taxonomyCode;
+        private String scientificName;
+        private String commonName;
+
+        public Species() {
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Species{");
+            sb.append("taxonomyCode='").append(taxonomyCode).append('\'');
+            sb.append(", scientificName='").append(scientificName).append('\'');
+            sb.append(", commonName='").append(commonName).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Species)) {
+                return false;
+            }
+
+            Species species = (Species) o;
+
+            if (taxonomyCode != null ? !taxonomyCode.equals(species.taxonomyCode) : species.taxonomyCode != null) {
+                return false;
+            }
+            if (scientificName != null ? !scientificName.equals(species.scientificName) : species.scientificName != null) {
+                return false;
+            }
+            return !(commonName != null ? !commonName.equals(species.commonName) : species.commonName != null);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = taxonomyCode != null ? taxonomyCode.hashCode() : 0;
+            result = 31 * result + (scientificName != null ? scientificName.hashCode() : 0);
+            result = 31 * result + (commonName != null ? commonName.hashCode() : 0);
+            return result;
+        }
+
+        public String getTaxonomyCode() {
+            return taxonomyCode;
+        }
+
+        public void setTaxonomyCode(String taxonomyCode) {
+            this.taxonomyCode = taxonomyCode;
+        }
+
+        public String getScientificName() {
+            return scientificName;
+        }
+
+        public void setScientificName(String scientificName) {
+            this.scientificName = scientificName;
+        }
+
+        public String getCommonName() {
+            return commonName;
+        }
+
+        public void setCommonName(String commonName) {
+            this.commonName = commonName;
+        }
+    }
+
+    public static class Population {
+        private String name;
+        private String subpopulation;
+        private String description;
+
+        public Population() {
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Population{");
+            sb.append("name='").append(name).append('\'');
+            sb.append(", subpopulation='").append(subpopulation).append('\'');
+            sb.append(", description='").append(description).append('\'');
+            sb.append('}');
+            return sb.toString();
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (!(o instanceof Population)) {
+                return false;
+            }
+
+            Population that = (Population) o;
+
+            if (name != null ? !name.equals(that.name) : that.name != null) {
+                return false;
+            }
+            if (subpopulation != null ? !subpopulation.equals(that.subpopulation) : that.subpopulation != null) {
+                return false;
+            }
+            return !(description != null ? !description.equals(that.description) : that.description != null);
+
+        }
+
+        @Override
+        public int hashCode() {
+            int result = name != null ? name.hashCode() : 0;
+            result = 31 * result + (subpopulation != null ? subpopulation.hashCode() : 0);
+            result = 31 * result + (description != null ? description.hashCode() : 0);
+            return result;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public void setName(String name) {
+            this.name = name;
+        }
+
+        public String getSubpopulation() {
+            return subpopulation;
+        }
+
+        public void setSubpopulation(String subpopulation) {
+            this.subpopulation = subpopulation;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        public void setDescription(String description) {
+            this.description = description;
+        }
     }
 }

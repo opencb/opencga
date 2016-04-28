@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.storage.core.variant;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +61,7 @@ public abstract class StudyConfigurationManager {
             if (cached) {
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
@@ -69,7 +69,7 @@ public abstract class StudyConfigurationManager {
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = stringStudyConfigurationMap.get(studyName);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyName, 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
@@ -85,7 +85,7 @@ public abstract class StudyConfigurationManager {
                 stringStudyConfigurationMap.put(studyName, studyConfiguration);
             }
             if (!readOnly) {
-                result.setResult(Collections.singletonList(studyConfiguration.clone()));
+                result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
             }
         }
         return result;
@@ -100,7 +100,7 @@ public abstract class StudyConfigurationManager {
             if (cached) {
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
@@ -108,7 +108,7 @@ public abstract class StudyConfigurationManager {
             if (result.getNumTotalResults() == 0) { //No changes. Return old value
                 StudyConfiguration studyConfiguration = intStudyConfigurationMap.get(studyId);
                 if (!readOnly) {
-                    studyConfiguration = studyConfiguration.clone();
+                    studyConfiguration = studyConfiguration.newInstance();
                 }
                 return new QueryResult<>(studyConfiguration.getStudyName(), 0, 1, 1, "", "", Collections.singletonList(studyConfiguration));
             }
@@ -121,7 +121,7 @@ public abstract class StudyConfigurationManager {
             intStudyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
             stringStudyConfigurationMap.put(studyConfiguration.getStudyName(), studyConfiguration);
             if (!readOnly) {
-                result.setResult(Collections.singletonList(studyConfiguration.clone()));
+                result.setResult(Collections.singletonList(studyConfiguration.newInstance()));
             }
         }
         return result;

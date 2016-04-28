@@ -25,15 +25,15 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.OptionsParser;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
@@ -214,49 +214,20 @@ public class VariantCommandExecutor extends CommandExecutor {
 
 
         /** Execute ETL steps **/
-        URI nextFileUri = variantsUri;
-        boolean extract, transform, load;
+        boolean doExtract, doTransform, doLoad;
 
         if (!indexVariantsCommandOptions.load && !indexVariantsCommandOptions.transform) {
-            extract = true;
-            transform = true;
-            load = true;
+            doExtract = true;
+            doTransform = true;
+            doLoad = true;
         } else {
-            extract = indexVariantsCommandOptions.transform;
-            transform = indexVariantsCommandOptions.transform;
-            load = indexVariantsCommandOptions.load;
+            doExtract = indexVariantsCommandOptions.transform;
+            doTransform = indexVariantsCommandOptions.transform;
+            doLoad = indexVariantsCommandOptions.load;
         }
 
-        // Check the database connection before we start
-        if (load) {
-            if (!variantStorageManager.testConnection(variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()))) {
-                logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
-                throw new ParameterException("Database connection test failed");
-            }
-        }
+        variantStorageManager.index(Collections.singletonList(variantsUri), outdirUri, doExtract, doTransform, doLoad);
 
-        if (extract) {
-            logger.info("Extract variants '{}'", variantsUri);
-            nextFileUri = variantStorageManager.extract(variantsUri, outdirUri);
-        }
-
-        if (transform) {
-            logger.info("PreTransform variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.preTransform(nextFileUri);
-            logger.info("Transform variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.transform(nextFileUri, pedigreeUri, outdirUri);
-            logger.info("PostTransform variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.postTransform(nextFileUri);
-        }
-
-        if (load) {
-            logger.info("PreLoad variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.preLoad(nextFileUri, outdirUri);
-            logger.info("Load variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.load(nextFileUri);
-            logger.info("PostLoad variants '{}'", nextFileUri);
-            nextFileUri = variantStorageManager.postLoad(nextFileUri, outdirUri);
-        }
     }
 
     private void query() throws Exception {
@@ -537,7 +508,8 @@ public class VariantCommandExecutor extends CommandExecutor {
         VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(options.getString(VariantStorageManager.Options.DB_NAME.key()));
 //        dbAdaptor.setConstantSamples(Integer.toString(statsVariantsCommandOptions.fileId));    // TODO jmmut: change to studyId when we
 // remove fileId
-        StudyConfiguration studyConfiguration = variantStorageManager.getStudyConfiguration(options);
+        StudyConfiguration studyConfiguration = dbAdaptor.getStudyConfigurationManager()
+                .getStudyConfiguration(statsVariantsCommandOptions.studyId, new QueryOptions(options)).first();
         if (studyConfiguration == null) {
             studyConfiguration = new StudyConfiguration(statsVariantsCommandOptions.studyId, statsVariantsCommandOptions.dbName);
         }

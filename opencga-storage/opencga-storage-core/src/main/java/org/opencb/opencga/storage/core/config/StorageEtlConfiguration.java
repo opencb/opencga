@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.storage.core.config;
 
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 
 /**
  * Created by imedina on 09/05/15.

@@ -5,18 +5,19 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -29,12 +30,10 @@ import static org.junit.Assert.*;
  */
 public class CatalogMongoSampleDBAdaptorTest {
 
-    private CatalogDBAdaptorFactory dbAdaptorFactory;
-    private CatalogSampleDBAdaptor catalogSampleDBAdaptor;
-
     @Rule
     public ExpectedException thrown = ExpectedException.none();
-
+    private CatalogDBAdaptorFactory dbAdaptorFactory;
+    private CatalogSampleDBAdaptor catalogSampleDBAdaptor;
     private User user1;
     private User user2;
     private User user3;
@@ -45,8 +44,13 @@ public class CatalogMongoSampleDBAdaptorTest {
     private AclEntry acl_s2_user1;
     private AclEntry acl_s2_user2;
 
+    @AfterClass
+    public static void afterClass() {
+        CatalogMongoDBAdaptorTest.afterClass();
+    }
+
     @Before
-    public void before () throws IOException, CatalogDBException {
+    public void before() throws IOException, CatalogException {
         CatalogMongoDBAdaptorTest dbAdaptorTest = new CatalogMongoDBAdaptorTest();
         dbAdaptorTest.before();
 
@@ -56,7 +60,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
-        int studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         acl_s1_user1 = new AclEntry(user1.getId(), false, false, false, false);
         acl_s1_user2 = new AclEntry(user2.getId(), true, true, true, true);
         s1 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s1", "", -1, "", Arrays.asList(
@@ -72,17 +76,12 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     }
 
-    @AfterClass
-    public static void afterClass() {
-        CatalogMongoDBAdaptorTest.afterClass();
-    }
-
-
     @Test
     public void testAnnotateSample() throws Exception {
-        int sampleId = s1.getId();
+        long sampleId = s1.getId();
 
-        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
+                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
@@ -90,7 +89,8 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
 
         Sample sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
-        Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream()
+                .collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
         assertEquals(2, annotationSets.size());
         assertEquals(annot1, annotationSets.get(annot1.getId()));
         assertEquals(annot2, annotationSets.get(annot2.getId()));
@@ -106,8 +106,63 @@ public class CatalogMongoSampleDBAdaptorTest {
     }
 
     @Test
+    public void testAddVariableToAnnotations() throws Exception {
+        createAnnotationExample();
+        Variable variable = new Variable("ANOTHER_KEY", "", Variable.VariableType.BOOLEAN, false, true, false, null, -1, null, null, null,
+                null);
+
+        assertEquals(3, catalogSampleDBAdaptor.addVariableToAnnotations(3, variable).first().longValue());
+
+    }
+
+    @Test
+    public void testRenameFieldFromAnnotation() throws Exception {
+        createAnnotationExample();
+        // Rename
+        QueryResult<Long> longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "newKey4");
+        assertEquals(3, longQueryResult.first().longValue());
+
+        longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(1, "key4", "newKey4");
+        assertEquals(0, longQueryResult.first().longValue());
+
+        longQueryResult = catalogSampleDBAdaptor.renameAnnotationField(3, "key4", "renewkey4");
+        assertEquals(0, longQueryResult.first().longValue());
+
+    }
+
+    private void createAnnotationExample() throws CatalogDBException {
+        long sampleId = s1.getId();
+
+        Set<Annotation> annotationSet = Arrays.asList(new Annotation("key", "value"), new Annotation("key2", "value2"), new Annotation
+                ("key3", 3), new Annotation("key4", true)).stream().collect(Collectors.toSet());
+
+        AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
+        AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot3, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
+        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
+
+        AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
+        catalogSampleDBAdaptor.annotateSample(s2.getId(), annot4, false);
+    }
+
+    @Test
+    public void testRemoveFieldFromAnnotations() throws Exception {
+        createAnnotationExample();
+        QueryResult<Long> longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(3, "key4");
+        assertEquals(3, longQueryResult.first().longValue());
+
+        longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(1, "key3");
+        assertEquals(0, longQueryResult.first().longValue());
+
+        longQueryResult = catalogSampleDBAdaptor.removeAnnotationField(3, "nonExistentKey");
+        assertEquals(0, longQueryResult.first().longValue());
+    }
+
+    @Test
     public void testOverwriteAnnotateSample() throws Exception {
-        int sampleId = s1.getId();
+        long sampleId = s1.getId();
 
         Set<Annotation> annotationSet = Arrays.asList(
                 new Annotation("key", "value"),
@@ -134,7 +189,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     }
 
-        @Test
+    @Test
     public void getSampleAcl() throws Exception {
         AclEntry acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId()).first();
         assertNotNull(acl);
@@ -178,6 +233,108 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), newAcl);
 
         assertEquals(newAcl, catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first());
+
+    }
+
+    @Test
+    public void createSampleTest() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> result = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+
+        assertEquals(hg0097.getName(), result.first().getName());
+        assertEquals(hg0097.getDescription(), result.first().getDescription());
+        assertTrue(result.first().getId() > 0);
+    }
+
+    @Test
+    public void deleteSampleTest() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        QueryResult<Sample> deleteResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), false);
+        assertEquals(createResult.first().getId(), deleteResult.first().getId());
+        assertEquals(1, deleteResult.getNumResults());
+
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().getSample(deleteResult.first().getId(), null);
+    }
+
+    @Test
+    public void deleteSampleFail1Test() throws Exception {
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(55555555, false);
+    }
+
+    @Test
+    public void deleteSampleFail2Test() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+        long fileId = dbAdaptorFactory.getCatalogFileDBAdaptor().getFileId(user3.getProjects().get(0).getStudies().get(0).getId(),
+                "data/file.vcf");
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().update(fileId, new ObjectMap("sampleIds", createResult.first().getId()));
+
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), false);
+    }
+
+    @Test
+    public void deleteSampleFail3Test() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
+        QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "",
+                Collections.singletonList(createResult.first().getId()), null), null);
+
+        thrown.expect(CatalogDBException.class);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), false);
+    }
+
+    @Test
+    public void createMultipleCohorts() throws Exception {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        AtomicInteger numFailures = new AtomicInteger();
+        Function<Integer, String> getCohortName = c -> "Cohort_" + c;
+        int numThreads = 10;
+        int numCohorts = 10;
+        for (int c = 0; c < numCohorts; c++) {
+            List<Thread> threads = new LinkedList<>();
+            String cohortName = getCohortName.apply(c);
+            for (int i = 0; i < numThreads; i++) {
+                threads.add(new Thread(() -> {
+                    try {
+                        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION,
+                                "", "", Collections.emptyList(), null), null);
+                    } catch (CatalogException ignore) {
+                        numFailures.incrementAndGet();
+                    }
+                }));
+            }
+            threads.parallelStream().forEach(Thread::run);
+            threads.parallelStream().forEach((thread) -> {
+                try {
+                    thread.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
+        }
+
+
+        assertEquals(numCohorts * numThreads - numCohorts, numFailures.intValue());
+        Study study = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudy(studyId, null).first();
+        assertEquals(numCohorts, study.getCohorts().size());
+        Set<String> names = study.getCohorts().stream().map(Cohort::getName).collect(Collectors.toSet());
+        for (int c = 0; c < numCohorts; c++) {
+            String cohortName = getCohortName.apply(c);
+            names.contains(cohortName);
+        }
 
     }
 

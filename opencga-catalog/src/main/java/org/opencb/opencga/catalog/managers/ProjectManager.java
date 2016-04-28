@@ -1,23 +1,24 @@
 package org.opencb.opencga.catalog.managers;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.utils.ParamUtils;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.util.List;
 import java.util.Properties;
@@ -25,7 +26,7 @@ import java.util.Properties;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class ProjectManager extends AbstractManager implements IProjectManager{
+public class ProjectManager extends AbstractManager implements IProjectManager {
 
     public ProjectManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                           AuditManager auditManager,
@@ -35,22 +36,23 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
     }
 
     @Override
-    public String getUserId(int projectId) throws CatalogException {
-        return userDBAdaptor.getProjectOwnerId(projectId);
+    public String getUserId(long projectId) throws CatalogException {
+        return projectDBAdaptor.getProjectOwnerId(projectId);
     }
 
     @Override
-    public int getProjectId(String projectId) throws CatalogException {
+    public long getProjectId(String projectId) throws CatalogException {
         try {
             return Integer.parseInt(projectId);
-        } catch (NumberFormatException ignore) {
+        } catch (NumberFormatException e) {
+            e.printStackTrace();
         }
 
         String[] split = projectId.split("@");
         if (split.length != 2) {
             return -1;
         }
-        return userDBAdaptor.getProjectId(split[0], split[1]);
+        return projectDBAdaptor.getProjectId(split[0], split[1]);
     }
 
     @Override
@@ -72,44 +74,43 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
         description = description != null ? description : "";
         organization = organization != null ? organization : "";
 
-        Project project = new Project(name, alias, description, "", organization);
+        Project project = new Project(name, alias, description, new Status(), organization);
 
-        /* Add default ACL */
-        //Add generic permissions to the project.
-        project.getAcl().add(new AclEntry(AclEntry.USER_OTHERS_ID, false, false, false, false));
-
-        QueryResult<Project> queryResult = userDBAdaptor.createProject(ownerId, project, options);
+        QueryResult<Project> queryResult = projectDBAdaptor.createProject(ownerId, project, options);
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(ownerId, Integer.toString(project.getId()));
+            catalogIOManagerFactory.getDefault().createProject(ownerId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
-            userDBAdaptor.deleteProject(project.getId());
+            projectDBAdaptor.delete(project.getId(), false);
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
-        return queryResult;    }
+        return queryResult;
+    }
 
     @Override
-    public QueryResult<Project> create(QueryOptions params, String sessionId) throws CatalogException {
-        return create(params.getString("ownerId"),
-                params.getString("name"),
-                params.getString("alias"),
-                params.getString("description"),
-                params.getString("organization"),
-                params, sessionId
+    public QueryResult<Project> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
+        return create(
+                objectMap.getString("ownerId"),
+                objectMap.getString("name"),
+                objectMap.getString("alias"),
+                objectMap.getString("description"),
+                objectMap.getString("organization"),
+                options, sessionId
         );
     }
 
     @Override
-    public QueryResult<Project> read(Integer projectId, QueryOptions options, String sessionId)
+    public QueryResult<Project> read(Long projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
-        QueryResult<Project> projectResult = userDBAdaptor.getProject(projectId, options);
+        QueryResult<Project> projectResult = projectDBAdaptor.getProject(projectId, options);
         if (!projectResult.getResult().isEmpty()) {
             authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
         }
@@ -117,15 +118,16 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
     }
 
     @Override
-    public QueryResult<Project> readAll(QueryOptions query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Project> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
 
         ParamUtils.checkParameter(ownerId, "ownerId");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
-        QueryResult<Project> allProjects = userDBAdaptor.getAllProjects(ownerId, options);
+        QueryResult<Project> allProjects = projectDBAdaptor.getAllProjects(ownerId, options);
 
         List<Project> projects = allProjects.getResult();
         authorizationManager.filterProjects(userId, projects);
@@ -136,12 +138,12 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
     }
 
     @Override
-    public QueryResult<Project> update(Integer projectId, ObjectMap parameters, QueryOptions options, String sessionId)
+    public QueryResult<Project> update(Long projectId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkObj(parameters, "Parameters");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
 
         if (parameters.containsKey("alias")) {
@@ -157,28 +159,31 @@ public class ProjectManager extends AbstractManager implements IProjectManager{
             }
         }
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult<Project> queryResult = userDBAdaptor.modifyProject(projectId, parameters);
+        QueryResult<Project> queryResult = new QueryResult<>();
+        if (parameters.size() > 0) {
+            queryResult = projectDBAdaptor.update(projectId, parameters);
+        }
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, parameters, null, null);
         return queryResult;
     }
 
-    public QueryResult rename(int projectId, String newProjectAlias, String sessionId)
+    public QueryResult rename(long projectId, String newProjectAlias, String sessionId)
             throws CatalogException {
         ParamUtils.checkAlias(newProjectAlias, "newProjectAlias");
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        String ownerId = userDBAdaptor.getProjectOwnerId(projectId);
+        String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
 
         userDBAdaptor.updateUserLastActivity(ownerId);
-        QueryResult queryResult = userDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
+        QueryResult queryResult = projectDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
         return queryResult;
     }
 
     @Override
-    public QueryResult<Project> delete(Integer id, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<Project> delete(Long id, QueryOptions options, String sessionId) throws CatalogException {
         throw new UnsupportedOperationException();
     }
 }

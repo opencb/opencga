@@ -50,12 +50,13 @@ public class Session {
 
     @Override
     public String toString() {
-        return "Session{" +
-                "id='" + id + '\'' +
-                ", ip='" + ip + '\'' +
-                ", login='" + login + '\'' +
-                ", logout='" + logout + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Session{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", ip='").append(ip).append('\'');
+        sb.append(", login='").append(login).append('\'');
+        sb.append(", logout='").append(logout).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {
