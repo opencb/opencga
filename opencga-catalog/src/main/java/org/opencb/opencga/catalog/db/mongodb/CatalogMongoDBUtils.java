@@ -335,8 +335,12 @@ class CatalogMongoDBUtils {
                 }
                 try {
                     DBObject dbObject = getDbObject(map, s);
-                    for (Map.Entry<String, Object> entry : map.entrySet()) {
-                        filteredParams.put(s + "." + entry.getKey(), dbObject.get(entry.getKey()));
+                    if (map.size() > 0) {
+                        for (Map.Entry<String, Object> entry : map.entrySet()) {
+                            filteredParams.put(s + "." + entry.getKey(), dbObject.get(entry.getKey()));
+                        }
+                    } else {
+                        filteredParams.put(s, dbObject);
                     }
                 } catch (CatalogDBException e) {
                     e.printStackTrace();

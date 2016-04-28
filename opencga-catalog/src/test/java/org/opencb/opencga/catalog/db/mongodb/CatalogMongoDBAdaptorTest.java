@@ -669,6 +669,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         assertEquals(file.getStatus(), File.Status.READY);
         assertEquals(file.getStats(), stats);
 
+        parameters = new ObjectMap();
+        parameters.put("stats", "{}");
+        System.out.println(catalogDBAdaptor.modifyFile(fileId, parameters));
+
+        file = catalogDBAdaptor.getFile(fileId, null).first();
+        assertEquals(file.getStats(), new LinkedHashMap<String, Object>());
+
     }
 
     @Test
