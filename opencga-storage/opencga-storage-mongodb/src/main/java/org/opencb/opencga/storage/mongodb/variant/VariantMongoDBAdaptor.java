@@ -61,8 +61,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 
 /**
@@ -2038,9 +2037,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     void createIndexes(QueryOptions options) {
         logger.info("Start creating indexes");
-
-        Document onBackground = new Document("background", true);
-        Document backgroundAndSparse = new Document("background", true).append("sparse", true);
+        ObjectMap onBackground = new ObjectMap().append(BACKGROUND, true);
+        ObjectMap onBackgroundSparse = new ObjectMap().append(BACKGROUND, true).append(SPARSE, true);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.AT_FIELD + '.'
                 + DocumentToVariantConverter.CHUNK_IDS_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1)
@@ -2067,10 +2065,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
-                backgroundAndSparse);
+                onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD + ".clinvar.clinicalSignificance", 1),
-                backgroundAndSparse);
+                onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
                 .MAF_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
