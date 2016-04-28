@@ -35,7 +35,7 @@
                 <span class="input-group-addon" id="username">
                     <i class="fa fa-user fa-lg"></i>
                 </span>
-                <input id="opencgaUser" type="text" class="form-control" placeholder="Username" aria-describedby="username"
+                <input type="text" id="opencgaUser" class="form-control" placeholder="Username" aria-describedby="username"
                        on-keyup="checkEnterKey">
             </div>
 
@@ -58,33 +58,30 @@
         Polymer({
             is: 'opencga-login',
             properties: {
+                opencgaClientConfig: {
+                    type: Object
+                }
+            },
+
+            ready: function() {
+                console.log(this.opencgaClientConfig);
             },
 
             login: function() {
-                var me = this;
-                OpencgaManager.users.login({
-                    id: $("#opencgaUser")[0].value,
-                    query: {
-                        password: CryptoJS.SHA1($("#opencgaPassword")[0].value).toString()
-                    },
-                    request: {
-                        success: function (response) {
-                            Cookies.set('bioinfo_sid', response.response[0].result[0].sessionId);
-                            Cookies.set('bioinfo_user', response.response[0].result[0].userId);
-                            me.fire('login', {
-                                userId: $("#opencgaUser")[0].value,
-                                sessionId: response.response[0].result[0].sessionId
-                            });
-                            $("#opencgaUser")[0].value = "";
-                            $("#opencgaPassword")[0].value = "";
-                        },
-                        error: function (response) {
-                            //Delete all cookies
-                            Cookies.expire('bioinfo_sid');
-                            Cookies.expire('bioinfo_user');
-                        }
-                    }
+                var _this = this;
+                let opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+                let user = this.$.opencgaUser.value;
+                let pass = this.$.opencgaPassword.value;
+
+                opencgaClient.users().login(user, {password: pass}).then(function(response) {
+                    _this.$.opencgaUser.value = "";
+                    _this.$.opencgaPassword.value = "";
+                    _this.fire('login', {
+                        userId: user,
+                        sessionId: response.response[0].result[0].sessionId
+                    });
                 });
+
             },
 
             checkEnterKey: function(e) {

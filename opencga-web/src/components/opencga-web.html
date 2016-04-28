@@ -16,10 +16,11 @@
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
+<link rel="import" href="../../bower_components/iron-input/iron-input.html">
+
 
 <link rel="import" href="opencga-login.html">
 <link rel="import" href="opencga-dashboard.html">
-<link rel="import" href="opencga-files-panel.html">
 
 <dom-module id="opencga-web">
     <template>
@@ -74,7 +75,6 @@
                                     <a href="#login">
                                         <i class="fa fa-sign-in fa-lg"></i> Login
                                     </a>
-
                                     <a href="#logout" on-click="logout" style="display: none;">
                                         <i class="fa fa-sign-out fa-lg"></i> Logout
                                     </a>
@@ -89,10 +89,10 @@
             <!-- This is where main application is rendered -->
             <div class="center">
                 <div class="collapse content" id="login">
-                    <opencga-login></opencga-login>
+                    <opencga-login on-login="login" opencga-client-config="{{opencgaClient._config}}"></opencga-login>
                 </div>
                 <div class="collapse content" id="home">
-                    <opencga-files-panel></opencga-files-panel>
+                    <opencga-dashboard client="{{opencgaClient}}"></opencga-dashboard>
                 </div>
             </div>
 
@@ -110,12 +110,12 @@
                         <p></p>
                         <div class="input-group">
                             <span class="input-group-addon" id="basic-addon1">Host</span>
-                            <input type="text" class="form-control" placeholder="Host" aria-describedby="basic-addon1" value="{{host}}">
+                            <input is="iron-input" class="form-control" bind-value="{{tmpHost}}">
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary">OK</button>
+                        <button on-click="closeSettings" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                        <button on-click="saveHost" type="button" class="btn btn-primary">OK</button>
                     </div>
                 </div>
             </div>
@@ -130,27 +130,36 @@
         Polymer({
             is: 'opencga-web',
             properties: {
-
+                opencgaClient: {
+                    type: Object
+                }
             },
 
-            listeners: {
-                'login': 'login'
-            },
+//            listeners: {
+//                'login': 'login'
+//            },
 
             ready: function() {
                 this.enableClick();
 
+//                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
+//                        OPENCGA_COOKIE_USER_NAME);
+//                this.opencgaClient = undefined;
+
                 // Read config file
-                this.host = OPENCGA_HOST;
-                this.version = OPENCGA_VERSION;
-                this.cookieSessionId = OPENCGA_COOKIE_SESSION_ID;
-                this.cookieUserName = OPENCGA_COOKIE_USER_NAME;
+//                this.host = OPENCGA_HOST;
+//                this.tmpHost = this.host;
+//                this.version = OPENCGA_VERSION;
 
                 // Set the sessionId
-                if (Cookies.get(this.cookieSessionId) == null) {
+                if (Cookies.get(OPENCGA_COOKIE_SESSION_ID) == null) {
                     $('#login').show();
                     this.disableClick();
                 } else {
+                    debugger
+                    let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
+                            OPENCGA_COOKIE_USER_NAME);
+                    this.opencgaClient = new OpenCGAClient(config);
                     $('#home').show();
                     this.showLogout();
                 }
@@ -171,41 +180,46 @@
 
             showLogin: function() {
                 $(".opencga-menu a[href='#logout']").hide();
-                $(".opencga-menu a[href='#login']").show();
+                $(".opencga-menu a[href='#login']").removeAttr("style");
             },
 
             showLogout: function() {
                 $(".opencga-menu a[href='#login']").hide();
-                $(".opencga-menu a[href='#logout']").show();
+                $(".opencga-menu a[href='#logout']").removeAttr("style");
             },
 
             login: function(e) {
-                Cookies.set(this.cookieSessionId, e.detail.sessionId);
-                Cookies.set(this.cookieUserName, e.detail.userId);
+                Cookies.set(OPENCGA_COOKIE_SESSION_ID, e.detail.sessionId);
+                Cookies.set(OPENCGA_COOKIE_USER_NAME, e.detail.userId);
+
                 this.enableClick();
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
+
+                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
+                        OPENCGA_COOKIE_USER_NAME);
+                this.opencgaClient = new OpenCGAClient(config);
             },
 
+            saveHost: function(e) {
+                this.host = this.tmpHost;
+                OpencgaManager.host = this.host;
+            },
+
+            closeSettings: function(e) {
+                this.tmpHost = this.host;
+            },
 
             logout: function() {
-                var me = this;
-                OpencgaManager.users.logout({
-                    id: Cookies.get(this.cookieUserName),
-                    query: {
-                        sid: Cookies.get(this.cookieSessionId)
-                    },
-                    request: {
-                        success: function(response) {
-                            me.showLogin();
-                            Cookies.expire(me.cookieSessionId);
-                            Cookies.expire(me.cookieUserName);
-                            console.log("You are successfully logged out.");
-                            $(".opencga-menu a[href='#login']").trigger("click");
-                            me.disableClick();
-                        }
-                    }
-                })
+                var _this = this;
+                this.opencgaClient.users().logout().then(function() {
+                    _this.showLogin();
+                    Cookies.expire(OPENCGA_COOKIE_SESSION_ID);
+                    Cookies.expire(OPENCGA_COOKIE_USER_NAME);
+                    $(".opencga-menu a[href='#login']").trigger("click");
+                    _this.disableClick();
+                    _this.opencgaClient = undefined;
+                });
             }
         });
     </script>
