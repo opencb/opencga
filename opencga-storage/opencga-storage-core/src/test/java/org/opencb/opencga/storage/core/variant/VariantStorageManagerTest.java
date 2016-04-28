@@ -150,10 +150,10 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 // (VariantSourceEntry::getStudyId, Function.<VariantSourceEntry>identity()));
             Map<String, StudyEntry> map = variant.getStudiesMap();
 
-            assertTrue(map.containsKey(studyConfigurationMultiFile.getStudyName()));
-            assertTrue(map.containsKey(studyConfigurationSingleFile.getStudyName()));
-            assertEquals(map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData(), map.get(studyConfigurationMultiFile
-                    .getStudyName()).getSamplesData());
+            assertTrue(variant.toString(), map.containsKey(studyConfigurationMultiFile.getStudyName()));
+            assertTrue(variant.toString(), map.containsKey(studyConfigurationSingleFile.getStudyName()));
+            assertEquals(variant.toString(), map.get(studyConfigurationSingleFile.getStudyName()).getSamplesData().toString(), map.get(studyConfigurationMultiFile
+                    .getStudyName()).getSamplesData().toString());
         }
         assertEquals(expectedNumVariants - 8, numVariants);
 
@@ -308,7 +308,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         params.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
         params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "gZiP");
@@ -318,6 +319,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 //        params.put(VariantStorageManager.Options.INCLUDE_SRC.key(), true);
         params.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         StorageETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
@@ -339,7 +342,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         clearDB(DB_NAME);
         ObjectMap params = new ObjectMap();
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        params.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        params.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        params.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         params.put(VariantStorageManager.Options.FILE_ID.key(), 6);
         params.put(VariantStorageManager.Options.COMPRESS_METHOD.key(), "snappy");
         params.put(VariantStorageManager.Options.TRANSFORM_THREADS.key(), 8);
@@ -350,6 +354,9 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
         StorageETLResult etlResult = runETL(variantStorageManager, params, true, true, true);
 
         System.out.println("etlResult = " + etlResult);
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.avro.snappy'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.avro.snappy"));
 
@@ -414,6 +421,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             }
             StudyEntry studyEntry = variant.getStudies().get(0);
             studyEntry.setStudyId(STUDY_NAME);
+            studyEntry.getFiles().get(0).setFileId("2");
             variant.setStudies(Collections.singletonList(studyEntry));
 
             Variant loadedVariant = dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(),
@@ -424,7 +432,6 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             loadedVariant.getStudy(STUDY_NAME).getSamplesData().forEach(values -> {
                 values.set(0, values.get(0).replace("0/0", "0|0"));
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
-
             });
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
@@ -479,11 +486,12 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                         .append(VariantStorageManager.Options.FILE_ID.key(), 3)
                         .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
-
+        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         assertEquals(true, studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), false));
         assertEquals(extraFields, studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
 
-        for (Variant variant : getVariantStorageManager().getDBAdaptor(DB_NAME)) {
+        for (Variant variant : dbAdaptor) {
             System.out.println(variant.toJson());
             assertNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "GT"));
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "DP"));
@@ -494,8 +502,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             assertNotNull(variant.getStudy(STUDY_NAME).getSampleData("SAMPLE_1", "TU"));
         }
 
-        VariantDBIterator iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
-                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
+        VariantDBIterator iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_1"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_1"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -504,8 +511,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         });
 
-        iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
-                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
+        iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2"), new QueryOptions());
         iterator.forEachRemaining(variant -> {
             assertEquals(1, variant.getStudy(STUDY_NAME).getSamplesData().size());
             assertEquals(Collections.singleton("SAMPLE_2"), variant.getStudy(STUDY_NAME).getSamplesName());
@@ -514,8 +520,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
         });
 
-        iterator = getVariantStorageManager().getDBAdaptor(DB_NAME)
-                .iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2")
+        iterator = dbAdaptor.iterator(new Query(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), "SAMPLE_2")
                         .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 3)
                         .append(VariantDBAdaptor.VariantQueryParams.RETURNED_FILES.key(), 3), new QueryOptions());
         iterator.forEachRemaining(variant -> {

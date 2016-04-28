@@ -19,6 +19,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBAdaptor;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.IDS_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter.STUDIES_FIELD;
 import static org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader.STRING_ID_CONVERTER;
 import static org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader.VARIANT_CONVERTER_DEFAULT;
@@ -192,6 +194,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final DocumentToVariantConverter variantConverter;
     private final DocumentToStudyVariantEntryConverter studyConverter;
     private final StudyConfiguration studyConfiguration;
+    private final boolean excludeGenotypes;
 
     // Variables that must be aware of concurrent modification
     private final MongoDBVariantWriteResult result;
@@ -203,6 +206,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private long loggingBatchSize;
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
     private final VariantMerger variantMerger;
+    private final List<String> format;
 
     private class MongoDBOperations {
 
@@ -233,7 +237,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         this.numTotalVariants = numTotalVariants;
         this.indexedFiles = indexedFiles;
 
-        this.indexedSamples = Collections.unmodifiableList(createIndexedSamplesList(fileIds));
+        excludeGenotypes = getExcludeGenotypes(studyConfiguration);
+        format = buildFormat(studyConfiguration);
+        indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
         studyId = studyConfiguration.getStudyId();
 
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
@@ -260,10 +266,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         this.fileIds = fileIds;
         this.futureNumTotalVariants = futureNumTotalVariants;
         this.indexedFiles = indexedFiles;
-        studyId = studyConfiguration.getStudyId();
         this.studyConfiguration = studyConfiguration;
-        this.indexedSamples = Collections.unmodifiableList(createIndexedSamplesList(fileIds));
 
+        excludeGenotypes = getExcludeGenotypes(studyConfiguration);
+        format = buildFormat(studyConfiguration);
+        indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
+        studyId = studyConfiguration.getStudyId();
 
         DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
         studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
@@ -369,6 +377,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         boolean newVariant = isNewVariant(document, newStudy);
 
 
+        Set<String> ids = new HashSet<>();
         List<Document> fileDocuments = new LinkedList<>();
         List<Document> alternateDocuments = new LinkedList<>();
         Document gts = new Document();
@@ -393,14 +402,18 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     mongoDBOps.skipped++;
                     continue;
                 }
+                ids.addAll(variant.getIds());
+                emptyVar.setType(variant.getType());
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
                 Document newDocument = studyConverter.convertToStorageType(variant.getStudies().get(0));
 
                 fileDocuments.add((Document) getListFromDocument(newDocument, FILES_FIELD).get(0));
                 alternateDocuments = getListFromDocument(newDocument, ALTERNATES_FIELD);
 
-                for (Map.Entry<String, Object> entry : newDocument.get(GENOTYPES_FIELD, Document.class).entrySet()) {
-                    addSampleIdsGenotypes(gts, entry.getKey(), (List<Integer>) entry.getValue());
+                if (newDocument.containsKey(GENOTYPES_FIELD)) {
+                    for (Map.Entry<String, Object> entry : newDocument.get(GENOTYPES_FIELD, Document.class).entrySet()) {
+                        addSampleIdsGenotypes(gts, entry.getKey(), (List<Integer>) entry.getValue());
+                    }
                 }
 
             } else {
@@ -415,7 +428,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getIndexedSamples());
         }
 
-        updateMongoDBOperations(emptyVar, fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
+        updateMongoDBOperations(emptyVar, new ArrayList<>(ids), fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
     }
 
     /**
@@ -468,8 +481,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 FileEntry file = studyEntry.getFile(fileId.toString());
                 if (file != null) {
                     Document studyDocument = studyConverter.convertToStorageType(studyEntry, file, getSampleNamesInFile(fileId));
-                    studyDocument.get(GENOTYPES_FIELD, Document.class)
-                            .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
+                    if (studyDocument.containsKey(GENOTYPES_FIELD)) {
+                        studyDocument.get(GENOTYPES_FIELD, Document.class)
+                                .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
+                    }
                     fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
                     alternateDocuments = getListFromDocument(studyDocument, ALTERNATES_FIELD);
                 } else {
@@ -483,15 +498,17 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     FileEntry file = studyEntry.getFile(fileId.toString());
                     if (file != null) {
                         Document studyDocument = studyConverter.convertToStorageType(studyEntry, file, getSampleNamesInFile(fileId));
-                        studyDocument.get(GENOTYPES_FIELD, Document.class)
-                                .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
+                        if (studyDocument.containsKey(GENOTYPES_FIELD)) {
+                            studyDocument.get(GENOTYPES_FIELD, Document.class)
+                                    .forEach((gt, sampleIds) -> addSampleIdsGenotypes(gts, gt, (Collection<Integer>) sampleIds));
+                        }
                         fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
                     } else {
                         addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
                     }
                 }
             }
-            updateMongoDBOperations(emptyVar, fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
+            updateMongoDBOperations(emptyVar, variant.getIds(), fileDocuments, alternateDocuments, gts, newStudy, newVariant, mongoDBOps);
         }
         // If at least one variant is not missing for this set of overlapped variants, there will be new overlapped variants.
         // If all are missing, only "?/?" information will be written in this region.
@@ -542,8 +559,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             completelyNewOverlappingRegion &= newStudy;
 
             Variant var = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
-            // FIXME: Use real format!
-            List<String> format = Collections.singletonList("GT");
+            HashSet<String> ids = new HashSet<>();
             StudyEntry se = new StudyEntry(studyId.toString(), new LinkedList<>(), format);
             se.setSamplesPosition(new HashMap<>());
             var.addStudyEntry(se);
@@ -557,8 +573,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
 //                    variantsToMerge.add(variant);
                     variantsPerFile.get(fileId).add(variant);
+                    ids.addAll(variant.getIds());
                 }
             }
+            var.setIds(new ArrayList<>(ids));
         }
 
         List<Variant> variantsToMerge = new LinkedList<>();
@@ -576,8 +594,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     variantsToMerge.add(var);
                     for (int i = 1; i < variantList.size(); i++) {
                         // Those variants that do not overlap with the selected variant won't be inserted
-                        if (!variantList.get(i).overlapWith(var, true)) {
+                        Variant auxVar = variantList.get(i);
+                        if (!auxVar.overlapWith(var, true)) {
                             mongoDBOps.nonInserted++;
+                            logger.warn("Skipping variant " + auxVar);
                         }
                     }
                     break;
@@ -660,22 +680,27 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * @param newVariant          If the variant was never seen in the database
      * @param mongoDBOperations   Set of MongoBD operations to update
      */
-    protected void updateMongoDBOperations(Variant emptyVar, List<Document> fileDocuments, List<Document> secondaryAlternates, Document gts,
-                                        boolean newStudy, boolean newVariant, MongoDBOperations mongoDBOperations) {
+    protected void updateMongoDBOperations(Variant emptyVar, List<String> ids, List<Document> fileDocuments,
+                                           List<Document> secondaryAlternates, Document gts, boolean newStudy, boolean newVariant,
+                                           MongoDBOperations mongoDBOperations) {
 
         if (newVariant) {
             // If there where no files and the variant is new, do not insert the variant.
             // It may happen if all the files in the variant where duplicated for this variant.
             if (!fileDocuments.isEmpty()) {
                 Document studyDocument = new Document(STUDYID_FIELD, studyId)
-                        .append(FILES_FIELD, fileDocuments)
-                        .append(GENOTYPES_FIELD, gts);
+                        .append(FILES_FIELD, fileDocuments);
+
+                if (!excludeGenotypes) {
+                    studyDocument.append(GENOTYPES_FIELD, gts);
+                }
 
                 if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
                     studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
                 }
 
                 Document variantDocument = variantConverter.convertToStorageType(emptyVar);
+                variantDocument.append(IDS_FIELD, ids);
                 variantDocument.append(STUDIES_FIELD,
                         Collections.singletonList(studyDocument)
                 );
@@ -684,8 +709,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         } else if (newStudy) {
 
             Document studyDocument = new Document(STUDYID_FIELD, studyId)
-                    .append(FILES_FIELD, fileDocuments)
-                    .append(GENOTYPES_FIELD, gts);
+                    .append(FILES_FIELD, fileDocuments);
+
+            if (!excludeGenotypes) {
+                studyDocument.append(GENOTYPES_FIELD, gts);
+            }
 
             if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
                 studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
@@ -694,16 +722,21 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             String id = variantConverter.buildStorageId(emptyVar);
             mongoDBOperations.queriesExistingId.add(id);
             mongoDBOperations.queriesExisting.add(Filters.eq("_id", id));
-            mongoDBOperations.updatesExisting.add(Updates.push(STUDIES_FIELD, studyDocument));
+            mongoDBOperations.updatesExisting.add(Updates.combine(
+                    Updates.push(STUDIES_FIELD, studyDocument),
+                    Updates.addEachToSet(IDS_FIELD, ids)));
 
         } else {
             String id = variantConverter.buildStorageId(emptyVar);
             List<Bson> mergeUpdates = new LinkedList<>();
+            mergeUpdates.add(Updates.addEachToSet(IDS_FIELD, ids));
 
-            for (String gt : gts.keySet()) {
-                List sampleIds = getListFromDocument(gts, gt);
-                mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
-                        sampleIds));
+            if (!excludeGenotypes) {
+                for (String gt : gts.keySet()) {
+                    List sampleIds = getListFromDocument(gts, gt);
+                    mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                            sampleIds));
+                }
             }
             if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
                 mergeUpdates.add(Updates.addEachToSet(STUDIES_FIELD + ".$." + ALTERNATES_FIELD, secondaryAlternates));
@@ -739,9 +772,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     onInsertError(mongoDBOps, writeResult);
                 }
             } catch (MongoBulkWriteException e) {
-                for (Document insert : mongoDBOps.inserts) {
-                    System.out.println(insert.get("_id"));
-                }
+                logger.error("Error inserting variants with _id: " + mongoDBOps.inserts.stream()
+                        .map(d -> d.get("_id"))
+                        .collect(Collectors.toList()));
                 throw e;
             }
         }
@@ -865,7 +898,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return indexedSamples;
     }
 
-    private List<Integer> createIndexedSamplesList(List<Integer> fileIds) {
+    private List<Integer> buildIndexedSamplesList(List<Integer> fileIds) {
         List<Integer> indexedSamples = new LinkedList<>(StudyConfiguration.getIndexedSamples(studyConfiguration).values());
         for (Integer fileId : fileIds) {
             indexedSamples.removeAll(getSamplesInFile(fileId));
@@ -900,4 +933,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return samplesPositionMap.get(fileId);
     }
 
+    public List<String> buildFormat(StudyConfiguration studyConfiguration) {
+        List<String> format = new LinkedList<>();
+        if (!excludeGenotypes) {
+            format.add(VariantMerger.GT_KEY);
+        }
+        format.addAll(studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
+        return format;
+    }
+
+    public boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
+        return studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+    }
 }

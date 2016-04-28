@@ -37,7 +37,12 @@ public interface MongoVariantStorageManagerTestUtils extends VariantStorageTest 
     }
 
     default int getExpectedNumLoadedVariants(VariantSource source) {
-        return source.getStats().getNumRecords()
+        int numRecords = source.getStats().getNumRecords();
+        if (source.getFileName().equals("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz")) {
+            logger.info("Non inserted variant 22_16080426_A_G in this file. Overlapped variant!");
+            numRecords--;
+        }
+        return numRecords
                 - source.getStats().getVariantTypeCount(VariantType.SYMBOLIC)
                 - source.getStats().getVariantTypeCount(VariantType.NO_VARIATION);
     }

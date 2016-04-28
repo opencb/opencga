@@ -9,7 +9,6 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -272,127 +271,53 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         long start = System.currentTimeMillis();
 
         //Runner
-        if (loadThreads == 1) {
-            logger.info("Single thread load...");
-            List<Task<Variant>> ts = Collections.singletonList(remapIdsTask);
-            VariantRunner vr = new VariantRunner(source, (VariantReader) variantReader, null, (List) writers, taskList, batchSize);
-            vr.run();
-        } else {
-            logger.info("Multi thread load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
-//            ThreadRunner runner = new ThreadRunner(Executors.newFixedThreadPool(loadThreads), batchSize);
-//            ThreadRunner.ReadNode<Variant> variantReadNode = runner.newReaderNode(variantJsonReader, 1);
-//            ThreadRunner.WriterNode<Variant> variantWriterNode = runner.newWriterNode(writerList);
-//
-//            variantReadNode.append(variantWriterNode);
-//            runner.run();
+        logger.info("Multi thread load... [{} readerThreads, {} writerThreads]", numReaders, numWriters);
 
-/*
-            ParallelTaskRunner<Variant, Variant> ptr;
-            try {
-                class TaskWriter implements ParallelTaskRunner.Task<Variant, Variant> {
-                    private DataWriter<Variant> writer;
-
-                    public TaskWriter(DataWriter<Variant> writer) {
-                        this.writer = writer;
+        MongoDBCollection stageCollection = dbAdaptor.getDB().getCollection(
+                options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
+        ParallelTaskRunner<Variant, Variant> ptr;
+        MongoDBVariantStageLoader stageWriter;
+        int numRecords = readVariantSource(inputUri, null).getStats().getNumRecords();
+        try {
+            stageWriter = new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, numRecords);
+            class TaskWriter implements ParallelTaskRunner.Task<Variant, Variant> {
+                public List<Variant> apply(List<Variant> batch) {
+                    try {
+                        remapIdsTask.apply(batch);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e); // IMPOSSIBLE
                     }
-
-                    @Override
-                    public void pre() {
-                        writer.pre();
-                    }
-
-                    @Override
-                    public List<Variant> apply(List<Variant> batch) {
-                        try {
-                            remapIdsTask.apply(batch);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e); // IMPOSSIBLE
-                        }
-                        writer.write(batch);
-                        return batch;
-                    }
-
-                    @Override
-                    public void post() {
-//                        writer.post();
-                    }
+                    stageWriter.insert(batch);
+                    return batch;
                 }
-
-                List<ParallelTaskRunner.Task<Variant, Variant>> tasks = new LinkedList<>();
-                for (VariantWriter writer : writers) {
-                    tasks.add(new TaskWriter(writer));
-                }
-
-                ptr = new ParallelTaskRunner<>(
-                        variantReader,
-                        tasks,
-                        null,
-                        new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
             }
 
-            try {
-                writers.forEach(DataWriter::open);
-                ptr.run();
-                writers.forEach(DataWriter::post);
-                writers.forEach(DataWriter::close);
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-                throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
-            }
-*/
-
-
-            MongoDBCollection stageCollection = dbAdaptor.getDB().getCollection(
-                    options.getString(COLLECTION_STAGE.key(), COLLECTION_STAGE.defaultValue()));
-            ParallelTaskRunner<Variant, Variant> ptr;
-            MongoDBVariantStageLoader stageWriter;
-            int numRecords = readVariantSource(inputUri, null).getStats().getNumRecords();
-            try {
-                stageWriter = new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, numRecords);
-                class TaskWriter implements ParallelTaskRunner.Task<Variant, Variant> {
-                    public List<Variant> apply(List<Variant> batch) {
-                        try {
-                            remapIdsTask.apply(batch);
-                        } catch (IOException e) {
-                            throw new UncheckedIOException(e); // IMPOSSIBLE
-                        }
-                        stageWriter.insert(batch);
-                        return batch;
-                    }
-                }
-
-                ptr = new ParallelTaskRunner<>(
-                        variantReader,
-                        new TaskWriter(),
-                        null,
-                        new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
-            }
-
-            try {
-                ptr.run();
-            } catch (ExecutionException e) {
-                e.printStackTrace();
-                throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
-            }
-
-            int skippedVariants = (int) stageWriter.getWriteResult().getSkippedVariants();
-            if (options.getBoolean("merge", true)) {
-                MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads, capacity,
-                        numRecords, skippedVariants, stageCollection);
-            }
-            options.put("skippedVariants", skippedVariants);
-
-            logger.info("Stage Write result: {}", skippedVariants);
-
+            ptr = new ParallelTaskRunner<>(
+                    variantReader,
+                    new TaskWriter(),
+                    null,
+                    new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
         }
+
+        try {
+            ptr.run();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+            throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
+        }
+
+        int skippedVariants = (int) stageWriter.getWriteResult().getSkippedVariants();
+        if (options.getBoolean("merge", true)) {
+            MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads, capacity,
+                    numRecords, skippedVariants, stageCollection);
+        }
+        options.put("skippedVariants", skippedVariants);
+
+        logger.info("Stage Write result: {}", skippedVariants);
 
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -459,6 +384,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         // List of all the indexed files that cover each chromosome
         ListMultimap<String, Integer> chromosomeInFilesToLoad = LinkedListMultimap.create();
 
+        boolean wholeGenomeFiles = false;
         while (iterator.hasNext()) {
             VariantSource variantSource = iterator.next();
             int fileId = Integer.parseInt(variantSource.getFileId());
@@ -468,9 +394,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 if (variantSource.getStats().getChromosomeCounts().size() == 1) {
                     chromosomesToLoad.addAll(variantSource.getStats().getChromosomeCounts().keySet());
                 } else {
-                    String message = "Impossible to merge files splitted and not splitted by chromosome at the same time!";
-                    logger.error(message);
-                    throw new StorageManagerException(message);
+                    wholeGenomeFiles = true;
                 }
             }
             // If the file is indexed, add to the map of chromosome->fileId
@@ -483,6 +407,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
         }
 
+        if (wholeGenomeFiles && !chromosomesToLoad.isEmpty()) {
+            String message = "Impossible to merge files splitted and not splitted by chromosome at the same time!";
+            logger.error(message);
+            throw new StorageManagerException(message);
+        }
 
         final MongoDBVariantWriteResult writeResult;
         if (chromosomesToLoad.isEmpty()) {

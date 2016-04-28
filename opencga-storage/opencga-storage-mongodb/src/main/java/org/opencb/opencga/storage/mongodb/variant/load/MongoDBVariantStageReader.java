@@ -67,11 +67,9 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
 
     @Override
     public boolean open() {
-        //Filter documents with the selected studyId
+        //Filter documents with the selected studyId and chromosomes
         //Sorting by _id
-        Bson query = getQuery();
-        System.out.println("query = " + query.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()));
-        FindIterable<Document> iterable = stageCollection.nativeQuery().find(query,
+        FindIterable<Document> iterable = stageCollection.nativeQuery().find(getQuery(),
                 new QueryOptions(MongoDBCollection.SORT, Sorts.ascending("_id"))
         );
         iterable.batchSize(20);
