@@ -169,7 +169,8 @@ public class OpenCGAWSServer {
 
         try {
             logger.info("|  * Reading StorageConfiguration");
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "storage-configuration.yml").toFile()));
+            StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "storage-configuration.yml").toFile()));
             logger.info("|  * Initializing StorageManagerFactory");
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
@@ -178,9 +179,14 @@ public class OpenCGAWSServer {
 
         try {
             logger.info("|  * Reading CatalogConfiguration");
-            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "catalog-configuration.yml").toFile()));
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "catalog-configuration.yml").toFile()));
             logger.info("|  * Initializing CatalogManager");
             catalogManager = new CatalogManager(catalogConfiguration);
+            if (!catalogManager.existsCatalogDB()) {
+                catalogManager.installCatalogDB();
+            }
+            logger.info("|  * Database name: " + catalogConfiguration.getDatabase().getDatabase());
             logger.info("========================================================================");
         } catch (IOException | CatalogException e) {
             logger.error("Error while creating CatalogManager", e);

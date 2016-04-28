@@ -184,6 +184,15 @@ public class CatalogManager implements AutoCloseable {
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
+    /**
+     * Checks if the database exists.
+     *
+     * @return true if the database exists.
+     */
+    public boolean existsCatalogDB() {
+        return catalogDBAdaptorFactory.isCatalogDBReady();
+    }
+
     public void installCatalogDB() throws CatalogException {
         catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
     }
