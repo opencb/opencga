@@ -15,6 +15,8 @@
   -->
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="opencga-study-summary.html">
+
 <link rel="import" href="opencga-shared-styles.html">
 
 <dom-module id="opencga-dashboard">
@@ -34,7 +36,7 @@
                             <a href="#">{{project.name}}</a>
                             <ul class="dropdown-menu">
                                 <template is="dom-repeat" items="{{project.studies}}" as="study">
-                                    <li on-click="updateProjectName"><a href="#">{{study}}</a></li>
+                                    <li on-click="updateProjectName"><a href="#">{{study.alias}}</a></li>
                                 </template>
                             </ul>
                         </li>
@@ -52,7 +54,7 @@
 
                 <div class="tab-content" style="width: 90%">
                     <div id="dashboardInfo" role="tabpanel" class="tab-pane active">
-                        <h4>Summary</h4>
+                        <opencga-study-summary client="{{client}}" ></opencga-study-summary>
                     </div>
 
                     <div id="dashboardFiles" role="tabpanel" class="tab-pane">
@@ -115,7 +117,12 @@
                 return this.client.projects().studies(projectId).then(function (response) {
                     let studies = [];
                     for (let i in response.response[0].result) {
-                        studies.push(response.response[0].result[i].name);
+                        studies.push({
+                            'name': response.response[0].result[i].name,
+                            'id': response.response[0].result[i].id,
+                            'alias': response.response[0].result[i].alias
+                        })
+//                        response.response[0].result[i].name);
                     }
                     _this.push("projects", { 'name': projectName, 'id': projectId, 'studies': studies});
                 });
