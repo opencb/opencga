@@ -125,6 +125,13 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertEquals(file.getStatus().getStatus(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
+        parameters = new ObjectMap();
+        parameters.put("stats", "{}");
+        System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
+
+        file = catalogFileDBAdaptor.getFile(fileId, null).first();
+        assertEquals(file.getStats(), new LinkedHashMap<String, Object>());
+
     }
 
     @Test

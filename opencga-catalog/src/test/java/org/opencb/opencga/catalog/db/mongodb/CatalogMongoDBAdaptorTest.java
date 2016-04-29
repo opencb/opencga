@@ -198,5 +198,6 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         thrown.expect(CatalogDBException.class);
         catalogDBAdaptor.initializeCatalogDB();
     }
+<<<<<<< HEAD
 */
 }
