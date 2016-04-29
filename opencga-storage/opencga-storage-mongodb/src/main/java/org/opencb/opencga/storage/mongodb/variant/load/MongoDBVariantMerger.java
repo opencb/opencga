@@ -10,6 +10,7 @@ import org.bson.types.Binary;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
@@ -589,15 +590,30 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     variantsToMerge.add(variantList.get(0));
                     break;
                 default:
-                    logger.warn("Overlapping variants in file {} : {}", fileId, variantList);
                     Variant var = variantList.get(0);
                     variantsToMerge.add(var);
+
+                    String call = var.getStudies().get(0).getFiles().get(0).getCall();
+                    if (call != null) {
+                        if (call.isEmpty()) {
+                            call = null;
+                        } else {
+                            call = call.substring(0, call.lastIndexOf(':'));
+                        }
+                    }
+
+                    boolean prompted = false;
                     for (int i = 1; i < variantList.size(); i++) {
-                        // Those variants that do not overlap with the selected variant won't be inserted
                         Variant auxVar = variantList.get(i);
+                        String auxCall = var.getStudies().get(0).getFiles().get(0).getCall();
+                        if (!prompted && (auxCall == null || call == null || !auxCall.startsWith(call))) {
+                            logger.warn("Missing overlapping variants in file {} : {}", fileId, variantList);
+                            prompted = true;
+                        }
+                        // Those variants that do not overlap with the selected variant won't be inserted
                         if (!auxVar.overlapWith(var, true)) {
                             mongoDBOps.nonInserted++;
-                            logger.warn("Skipping variant " + auxVar);
+                            logger.warn("Skipping overlapped variant " + auxVar);
                         }
                     }
                     break;
