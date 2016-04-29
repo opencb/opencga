@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
+import org.bson.Document;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -31,14 +32,18 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.containers.list.SortedList;
-import org.opencb.commons.run.Task;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
 
 import java.io.IOException;
 import java.util.*;
@@ -51,8 +56,7 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSa
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter.UNKNOWN_GENOTYPE;
 
 /**
- * @author Alejandro Aleman Ramos <aaleman@cipf.es>
- * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
+ * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestUtils {
 
@@ -138,20 +142,18 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
     /**
      * Insert some variants.
-     * <p>
-     * |---------|-------|---------------|
-     * |         | Study1|    Study2     |
-     * | Variant |-------|---------------|
-     * |         | File1 | File2 | File3 |
-     * |---------|-------|-------|-------|
-     * | 999     |   x   |       |       |
-     * | 1000    |   x   |   x   |   x   |
-     * | 1002    |   x   |       |   x   |
-     * | 1004    |       |   x   |       |
-     * | 1006    |       |       |   x   |
-     * |---------|-------|-------|-------|
+     *             +-------+---------------+
+     *             | Study1|    Study2     |
+     * +-----------|-------+---------------+
+     * | Variant   | File1 | File2 | File3 |
+     * +-----------+-------+-------+-------+  // Check merging having other loaded studies
+     * | 999       |   x   |       |       |
+     * | 1000      |   x   |   x   |   x   |
+     * | 1002      |   x   |       |   x   |
+     * | 1004      |       |   x   |       |
+     * | 1006      |       |       |   x   |
+     * +-----------+-------+-------+-------+
      *
-     * @throws StorageManagerException
      */
     @Test
     public void testInsertMultiFiles() throws StorageManagerException {
@@ -169,10 +171,39 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
         assertEquals(4, allVariants.size());
 
-        assertEquals(new MongoDBVariantWriteResult(1, 2, 0, 0, 0, 0), clearTime(loadFile3()));
+        assertEquals(new MongoDBVariantWriteResult(1, 2, 1, 0, 0, 0), clearTime(loadFile3()));
         allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
         assertEquals(5, allVariants.size());
 
+        checkLoadedVariants(allVariants);
+
+    }
+
+    @Test
+    public void testInsertMultiFilesMultiMerge() throws StorageManagerException {
+        List<Variant> allVariants;
+        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("GQX", "DP"));
+        studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Float", "Integer"));
+        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Arrays.asList("DP", "GQX"));
+        studyConfiguration2.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), Arrays.asList("Integer", "Float"));
+
+        assertEquals(new MongoDBVariantWriteResult(3, 0, 0, 0, 0, 0), clearTime(loadFile1()));
+        allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
+        assertEquals(3, allVariants.size());
+
+        MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
+        writeResult.merge(stageVariants(studyConfiguration2, createFile2Variants(), fileId2));
+        writeResult.merge(stageVariants(studyConfiguration2, createFile3Variants(), fileId3));
+        writeResult = mergeVariants(studyConfiguration2, Arrays.asList(fileId2, fileId3), writeResult);
+        assertEquals(new MongoDBVariantWriteResult(2, 2, 0, 0, 0, 0), clearTime(writeResult));
+        allVariants = dbAdaptor.get(new Query(), new QueryOptions("sort", true)).getResult();
+        assertEquals(5, allVariants.size());
+
+        checkLoadedVariants(allVariants);
+
+    }
+
+    public void checkLoadedVariants(List<Variant> allVariants) {
         Variant variant;
         variant = allVariants.get(0);
         assertEquals(999, variant.getStart().longValue());
@@ -208,8 +239,8 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         checkSampleData(variant, studyConfiguration2, fileId2, (sampleId) -> UNKNOWN_GENOTYPE, "GT");
         checkSampleData(variant, studyConfiguration2, fileId3, Object::toString, "DP");
         checkSampleData(variant, studyConfiguration2, fileId3, (sampleId) -> "0.7", "GQX");
-
     }
+
 
     public void checkSampleData(Variant variant, StudyConfiguration studyConfiguration, Integer fileId, Function<Integer, String>
             valueProvider, String field) {
@@ -221,16 +252,98 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         );
     }
 
-    @SuppressWarnings("unchecked")
     public MongoDBVariantWriteResult loadFile1() throws StorageManagerException {
+        return loadFile(studyConfiguration, createFile1Variants(source1), Integer.parseInt(source1.getFileId()));
+    }
+
+    public MongoDBVariantWriteResult loadFile2() throws StorageManagerException {
+        return loadFile(studyConfiguration2, createFile2Variants(source2), Integer.parseInt(source2.getFileId()));
+    }
+
+    public MongoDBVariantWriteResult loadFile3() throws StorageManagerException {
+        return loadFile(studyConfiguration2, createFile3Variants(source3), Integer.parseInt(source3.getFileId()));
+    }
+
+    public MongoDBVariantWriteResult loadFile(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId)
+            throws StorageManagerException {
+//        return loadFileOld(studyConfiguration, variants, fileId);
+        MongoDBVariantWriteResult stageWriteResult = stageVariants(studyConfiguration, variants, fileId);
+        return mergeVariants(studyConfiguration, fileId, stageWriteResult);
+    }
+
+    public MongoDBVariantWriteResult loadFileOld(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId)
+            throws StorageManagerException {
         VariantMongoDBWriter mongoDBWriter;
-        Variant variant;
-        StudyEntry sourceEntry;
-        mongoDBWriter = new VariantMongoDBWriter(fileId1, studyConfiguration, dbAdaptor, true, false);
+        mongoDBWriter = new VariantMongoDBWriter(fileId, studyConfiguration, dbAdaptor, true, false);
         mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
         mongoDBWriter.open();
         mongoDBWriter.pre();
 
+        variants.forEach(mongoDBWriter::write);
+
+        mongoDBWriter.post();
+        mongoDBWriter.close();
+        studyConfiguration.getIndexedFiles().add(fileId);
+
+        return mongoDBWriter.getWriteResult();
+    }
+
+    public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
+        MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
+        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, variants.size());
+
+        variantStageLoader.insert(variants);
+
+        return variantStageLoader.getWriteResult();
+    }
+
+    public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, int fileId,
+                                                   MongoDBVariantWriteResult stageWriteResult) {
+
+        return mergeVariants(studyConfiguration, Collections.singletonList(fileId), stageWriteResult);
+    }
+    public MongoDBVariantWriteResult mergeVariants(StudyConfiguration studyConfiguration, List<Integer> fileIds,
+                                                   MongoDBVariantWriteResult stageWriteResult) {
+        MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
+        MongoDBCollection variantsCollection = dbAdaptor.getDB().getCollection("variants");
+        MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId());
+        MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
+                variantsCollection, reader.countAproxNumVariants(), studyConfiguration.getIndexedFiles());
+
+        reader.open();
+        reader.pre();
+
+        List<Document> batch = reader.read(100);
+        while (batch != null && !batch.isEmpty()) {
+            dbMerger.apply(batch);
+            batch = reader.read(100);
+        }
+
+        reader.post();
+        reader.close();
+
+        MongoDBVariantStageLoader.cleanStageCollection(stage, studyConfiguration.getStudyId(), fileIds);
+        studyConfiguration.getIndexedFiles().addAll(fileIds);
+        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        return dbMerger.getResult().setSkippedVariants(stageWriteResult.getSkippedVariants());
+    }
+
+    public List<Variant> createFile1Variants() {
+        return createFile1Variants(source1);
+    }
+    public List<Variant> createFile2Variants() {
+        return createFile2Variants(source2);
+    }
+    public List<Variant> createFile3Variants() {
+        return createFile3Variants(source3);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static List<Variant> createFile1Variants(VariantSource source1) {
+
+        Variant variant;
+        StudyEntry sourceEntry;
+        List<Variant> variants = new LinkedList<>();
         variant = new Variant("X", 999, 999, "A", "C");
         sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
         sourceEntry.addSampleData("NA19600", ((Map) new ObjectMap("GT", "./.").append("DP", "11").append("GQX", "0.7")));
@@ -238,7 +351,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "13").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "14").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
         variant = new Variant("X", 1000, 1000, "A", "C");
         sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
@@ -247,7 +360,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "13").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "14").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
         variant = new Variant("X", 1002, 1002, "A", "C");
         sourceEntry = new StudyEntry(source1.getFileId(), source1.getStudyId());
@@ -256,24 +369,16 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "13").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "14").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
-        mongoDBWriter.post();
-        mongoDBWriter.close();
-        studyConfiguration.getIndexedFiles().add(fileId1);
-
-        return mongoDBWriter.getWriteResult();
+        return variants;
     }
 
     @SuppressWarnings("unchecked")
-    public MongoDBVariantWriteResult loadFile2() throws StorageManagerException {
-        VariantMongoDBWriter mongoDBWriter;
+    public static List<Variant> createFile2Variants(VariantSource source2) {
         Variant variant;
         StudyEntry sourceEntry;
-        mongoDBWriter = new VariantMongoDBWriter(fileId2, studyConfiguration2, dbAdaptor, true, false);
-        mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
-        mongoDBWriter.open();
-        mongoDBWriter.pre();
+        List<Variant> variants = new LinkedList<>();
 
         variant = new Variant("X", 1000, 1000, "A", "C");
         sourceEntry = new StudyEntry(source2.getFileId(), source2.getStudyId());
@@ -282,7 +387,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "0/0").append("DP", "3").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "1/0").append("DP", "4").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
         variant = new Variant("X", 1004, 1004, "A", "C");
         sourceEntry = new StudyEntry(source2.getFileId(), source2.getStudyId());
@@ -291,25 +396,17 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA19661", ((Map) new ObjectMap("GT", "1/0").append("DP", "3").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA19685", ((Map) new ObjectMap("GT", "0/0").append("DP", "4").append("GQX", "..")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
-        mongoDBWriter.post();
-        mongoDBWriter.close();
-        studyConfiguration2.getIndexedFiles().add(fileId2);
-
-        return mongoDBWriter.getWriteResult();
+        return variants;
     }
 
     @SuppressWarnings("unchecked")
-    public MongoDBVariantWriteResult loadFile3() throws StorageManagerException {
-        VariantMongoDBWriter mongoDBWriter;
+    public static List<Variant> createFile3Variants(VariantSource source3) {
+
         Variant variant;
         StudyEntry sourceEntry;
-        mongoDBWriter = new VariantMongoDBWriter(fileId3, studyConfiguration2, dbAdaptor, true, false);
-        mongoDBWriter.setThreadSynchronizationBoolean(new AtomicBoolean(false));
-        mongoDBWriter.open();
-        mongoDBWriter.pre();
-
+        List<Variant> variants = new LinkedList<>();
 
         variant = new Variant("X", 1000, 1000, "A", "C");
         sourceEntry = new StudyEntry(source3.getFileId(), source3.getStudyId());
@@ -318,7 +415,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
         variant = new Variant("X", 1002, 1002, "A", "C");
         sourceEntry = new StudyEntry(source3.getFileId(), source3.getStudyId());
@@ -327,7 +424,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
         variant = new Variant("X", 1006, 1006, "A", "C");
         sourceEntry = new StudyEntry(source3.getFileId(), source3.getStudyId());
@@ -336,13 +433,9 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         sourceEntry.addSampleData("NA00003.X", ((Map) new ObjectMap("GT", "1/0").append("DP", "7").append("GQX", "0.7")));
         sourceEntry.addSampleData("NA00004.X", ((Map) new ObjectMap("GT", "0/0").append("DP", "8").append("GQX", "0.7")));
         variant.addStudyEntry(sourceEntry);
-        mongoDBWriter.write(variant);
+        variants.add(variant);
 
-        mongoDBWriter.post();
-        mongoDBWriter.close();
-        studyConfiguration2.getIndexedFiles().add(fileId3);
-
-        return mongoDBWriter.getWriteResult();
+        return variants;
     }
 
     @Test

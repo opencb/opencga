@@ -1,6 +1,5 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
-import com.mongodb.MongoClient;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Sorts;

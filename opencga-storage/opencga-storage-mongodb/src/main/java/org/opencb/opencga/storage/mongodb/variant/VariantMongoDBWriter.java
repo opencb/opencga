@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.client.result.UpdateResult;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -132,30 +133,6 @@ public class VariantMongoDBWriter extends VariantDBWriter {
     }
 
 
-    @Override
-    @Deprecated
-    protected boolean buildBatchRaw(List<Variant> data) {
-        return true;
-    }
-
-    @Override
-    @Deprecated
-    protected boolean buildEffectRaw(List<Variant> variants) {
-        return false;
-    }
-
-    @Override
-    @Deprecated
-    protected boolean buildBatchIndex(List<Variant> data) {
-        return false;
-    }
-
-    @Override
-    @Deprecated
-    protected boolean writeBatch(List<Variant> batch) {
-        return true;
-    }
-
     private boolean writeStudyConfiguration() {
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
         return true;
@@ -177,7 +154,11 @@ public class VariantMongoDBWriter extends VariantDBWriter {
 
             List<Region> regions = coveredChromosomes.stream().map(Region::new).collect(Collectors.toList());
             long nanoTime = System.nanoTime();
-            dbAdaptor.fillFileGaps(fileId, new LinkedList<>(coveredChromosomes), fileSampleIds, studyConfiguration);
+            UpdateResult updateResult =
+                    dbAdaptor.fillFileGaps(fileId, new LinkedList<>(coveredChromosomes), fileSampleIds, studyConfiguration).first();
+            if (updateResult != null) {
+                writeResult.setUpdatedMissingVariants(writeResult.getUpdatedMissingVariants() + updateResult.getModifiedCount());
+            }
             writeResult.setFillGapsNanoTime(System.nanoTime() - nanoTime);
             dbAdaptor.createIndexes(new QueryOptions());
 

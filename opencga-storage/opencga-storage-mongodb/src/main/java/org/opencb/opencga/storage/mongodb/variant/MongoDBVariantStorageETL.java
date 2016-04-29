@@ -9,12 +9,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.containers.list.SortedList;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.run.Task;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -38,7 +36,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.*;
 import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.Options;
@@ -164,9 +161,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     @Override
     public URI load(URI inputUri) throws IOException, StorageManagerException {
-        // input: getDBSchemaReader
-        // output: getDBWriter()
-//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
 
         Path input = Paths.get(inputUri.getPath());
@@ -174,6 +168,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 //        boolean includeSamples = options.getBoolean(Options.INCLUDE_GENOTYPES.key(), Options.INCLUDE_GENOTYPES.defaultValue());
         boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), Options.INCLUDE_STATS.defaultValue());
 //        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
+//        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
+//        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
 
         Set<String> defaultGenotype;
         if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE.key())) {
@@ -202,13 +198,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
         }
 
-//        boolean compressGenotypes = options.getBoolean(Options.COMPRESS_GENOTYPES.key(), false);
-//        boolean compressGenotypes = defaultGenotype != null && !defaultGenotype.isEmpty();
-
-        VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");       //Create a new VariantSource. This object will be
+        //Create a new VariantSource. This object will be
         // filled at the VariantJsonReader in the pre()
-//        params.put(VARIANT_SOURCE, source);
-        String dbName = options.getString(Options.DB_NAME.key(), null);
+        VariantSource source = new VariantSource(inputUri.getPath(), "", "", "");
+        final int fileId = options.getInt(Options.FILE_ID.key());
+
 
 //        VariantSource variantSource = readVariantSource(input, null);
 //        new StudyInformation(variantSource.getStudyId())
@@ -217,8 +211,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         int bulkSize = options.getInt(BULK_SIZE.key(), batchSize);
         int loadThreads = options.getInt(Options.LOAD_THREADS.key(), Options.LOAD_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", loadThreads * 2);
-//        int numWriters = params.getInt(WRITE_MONGO_THREADS, Integer.parseInt(properties.getProperty
-// (OPENCGA_STORAGE_MONGODB_VARIANT_LOAD_WRITE_THREADS, "8")));
         final int numReaders = 1;
         final int numWriters = loadThreads == 1 ? 1 : loadThreads - numReaders; //Subtract the reader thread
 
@@ -227,34 +219,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         VariantReader variantReader;
         variantReader = VariantReaderUtils.getVariantReader(input, source);
 
-        //Tasks
-        List<Task<Variant>> taskList = new SortedList<>();
 
-
-        //Writers
-        List<VariantMongoDBWriter> writers = new LinkedList<>();
-        List<DataWriter> writerList = new LinkedList<>();
-        AtomicBoolean atomicBoolean = new AtomicBoolean();
-        for (int i = 0; i < numWriters; i++) {
-            VariantMongoDBWriter variantDBWriter = this.getDBWriter(dbName, options.getInt(VariantStorageManager.Options.FILE_ID.key()),
-                    studyConfiguration);
-//            variantDBWriter.setBulkSize(bulkSize);
-//            variantDBWriter.includeSrc(includeSrc);
-//            variantDBWriter.includeSamples(includeSamples);
-            variantDBWriter.includeStats(includeStats);
-//            variantDBWriter.setCompressDefaultGenotype(compressGenotypes);
-//            variantDBWriter.setDefaultGenotype(defaultGenotype);
-//            variantDBWriter.setVariantSource(source);
-//            variantDBWriter.setSamplesIds(samplesIds);
-            variantDBWriter.setThreadSynchronizationBoolean(atomicBoolean);
-            writerList.add(variantDBWriter);
-            writers.add(variantDBWriter);
-        }
-
-
-        final int fileId = options.getInt(Options.FILE_ID.key());
-        final String fileIdStr = options.getString(Options.FILE_ID.key());
         Task<Variant> remapIdsTask = new Task<Variant>() {
+            private final String fileIdStr = options.getString(Options.FILE_ID.key());
             @Override
             public boolean apply(List<Variant> variants) {
                 variants.forEach(variant -> variant.getStudies()
@@ -265,7 +232,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 return true;
             }
         };
-        taskList.add(remapIdsTask);
 
         logger.info("Loading variants...");
         long start = System.currentTimeMillis();

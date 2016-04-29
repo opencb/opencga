@@ -19,14 +19,13 @@ import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
@@ -44,7 +43,7 @@ import static com.mongodb.client.model.Updates.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class MongoDBVariantStageLoader {
+public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 
     public static final String NEW_STUDY_FIELD = "new";
     public static final boolean NEW_STUDY_DEFAULT = true;
@@ -122,59 +121,6 @@ public class MongoDBVariantStageLoader {
 
     public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = VARIANT_CONVERTER_JSON;
 
-    public static final ComplexTypeConverter<Variant, Binary> BINARY_ID_CONVERTER = new ComplexTypeConverter<Variant, Binary>() {
-        // Just so we don't have to copy the buffer
-        final class ExposedByteArrayOutputStream extends ByteArrayOutputStream {
-            public ExposedByteArrayOutputStream(int size) {
-                super(size);
-            }
-
-            public synchronized byte[] getInternalByteArray() {
-                return buf;
-            }
-        }
-        @Override
-        public Variant convertToDataModelType(Binary object) {
-            return null;
-        }
-
-        @Override
-        public Binary convertToStorageType(Variant variant) {
-
-
-            int size = Math.max(variant.getChromosome().length(), 2) * Character.BYTES
-                    + 1
-                    + Integer.BYTES
-                    + Integer.BYTES
-                    + Integer.BYTES;
-
-
-            ExposedByteArrayOutputStream out = new ExposedByteArrayOutputStream(size);
-            DataOutputStream dataOutputStream = new DataOutputStream(out);
-
-            try {
-                if (variant.getChromosome().length() == 0) {
-                    //Throw exception?
-                    dataOutputStream.writeChars("  ");
-                } else if (variant.getChromosome().length() == 1) {
-                    dataOutputStream.writeChars(" ");
-                }
-                dataOutputStream.writeChars(variant.getChromosome());
-                dataOutputStream.write(0);
-                dataOutputStream.writeInt(variant.getStart());
-                dataOutputStream.writeInt(variant.getReference().hashCode());
-                dataOutputStream.writeInt(variant.getAlternate().hashCode());
-//                dataOutputStream.writeChars(variant.getReference());
-//                dataOutputStream.write(0);
-//                dataOutputStream.writeChars(variant.getAlternate());
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-
-            return new Binary(out.getInternalByteArray());
-        }
-    };
-
     public static final ComplexTypeConverter<Variant, String> STRING_ID_CONVERTER = new ComplexTypeConverter<Variant, String>() {
 
         @Override
@@ -208,6 +154,12 @@ public class MongoDBVariantStageLoader {
         fieldName = studyId + "." + fileId;
         variantsCount = new AtomicInteger(0);
         logingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
+    }
+
+    @Override
+    public boolean write(List<Variant> batch) {
+        insert(batch);
+        return true;
     }
 
     public MongoDBVariantWriteResult insert(List<Variant> variants) {

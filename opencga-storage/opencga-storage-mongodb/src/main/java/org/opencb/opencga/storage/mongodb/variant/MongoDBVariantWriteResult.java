@@ -233,7 +233,7 @@ public class MongoDBVariantWriteResult {
         return "MongoDBVariantWriteResult{"
                 + "newVariants:" + newVariants
                 + ", updatedVariants:" + updatedVariants
-                + ", updatedFillGaps:" + updatedMissingVariants
+                + ", updatedMissingVariants:" + updatedMissingVariants
                 + ", overlappedVariants:" + overlappedVariants
                 + ", skippedVariants:" + skippedVariants
                 + ", nonInsertedVariants:" + nonInsertedVariants
@@ -248,7 +248,7 @@ public class MongoDBVariantWriteResult {
         return "{\n"
                 + "\tnewVariants:" + newVariants + ",\n"
                 + "\tupdatedVariants:" + updatedVariants + ",\n"
-                + "\tupdatedFillGaps:" + updatedMissingVariants + ",\n"
+                + "\tupdatedMissingVariants:" + updatedMissingVariants + ",\n"
                 + "\toverlappedVariants:" + overlappedVariants + ",\n"
                 + "\tskippedVariants:" + skippedVariants + ",\n"
                 + "\tnonInsertedVariants:" + nonInsertedVariants + ",\n"
@@ -259,8 +259,8 @@ public class MongoDBVariantWriteResult {
     }
 
     public String toTSV() {
-        return "#newVariants\tupdatedVariants\tupdatedFillGaps\toverlappedVariants\tskippedVariants\tnonInsertedVariants\tnewVariantsTime"
-                + "\texistingVariantsTime\tfillGapsTime\t"
+        return "#newVariants\tupdatedVariants\tupdatedMissingVariants\toverlappedVariants\tskippedVariants\tnonInsertedVariants"
+                + "\tnewVariantsTime\texistingVariantsTime\tfillGapsTime\t"
                 + "\n"
                 + newVariants + '\t'
                 + updatedVariants + '\t'

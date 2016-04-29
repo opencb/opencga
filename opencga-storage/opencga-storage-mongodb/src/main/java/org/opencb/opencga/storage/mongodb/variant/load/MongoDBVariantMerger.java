@@ -10,7 +10,6 @@ import org.bson.types.Binary;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
@@ -689,6 +688,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
      * Transform the set of genotypes and file objects into a set of mongodb operations.
      *
      * @param emptyVar            Parsed empty variant of the document. Only chr, pos, ref, alt
+     * @param ids                 Variant identifiers seen for this variant
      * @param fileDocuments       List of files to be updated
      * @param secondaryAlternates SecondaryAlternates documents.
      * @param gts                 Set of genotypes to be updates
@@ -959,6 +959,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     public boolean getExcludeGenotypes(StudyConfiguration studyConfiguration) {
-        return studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
+        return studyConfiguration.getAttributes().getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(),
+                VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue());
     }
 }
