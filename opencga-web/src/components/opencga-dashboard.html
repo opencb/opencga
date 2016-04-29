@@ -15,6 +15,7 @@
   -->
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
+
 <link rel="import" href="opencga-study-summary.html">
 
 <link rel="import" href="opencga-shared-styles.html">
@@ -46,7 +47,7 @@
             <br>
             <div>
                 <ul id="myTabs" class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="active"><a href="#dashboardInfo" role="tab" data-toggle="tab">Information</a></li>
+                    <li role="presentation" class="active"><a href="#dashboardInfo" role="tab" data-toggle="tab">Study Summary</a></li>
                     <li role="presentation"><a href="#dashboardFiles" role="tab" data-toggle="tab">Files</a></li>
                     <li role="presentation"><a href="#dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
                     <li role="presentation"><a href="#dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
@@ -54,7 +55,7 @@
 
                 <div class="tab-content" style="width: 90%">
                     <div id="dashboardInfo" role="tabpanel" class="tab-pane active">
-                        <opencga-study-summary client="{{client}}" ></opencga-study-summary>
+                        <opencga-study-summary opencga-client="{{opencgaClient}}" ></opencga-study-summary>
                     </div>
 
                     <div id="dashboardFiles" role="tabpanel" class="tab-pane">
@@ -76,7 +77,7 @@
         Polymer({
             is: 'opencga-dashboard',
             properties: {
-                client: {
+                opencgaClient: {
                     type: Object,
                     observer: "_getProjects"
                 },
@@ -102,9 +103,9 @@
                 console.log("Dashboard has been called.")
                 let _this = this;
 
-                if (this.client instanceof OpenCGAClient) {
-                    console.log("The client is passed properly.");
-                    this.client.users().projects().then(function(response) {
+                if (this.opencgaClient instanceof OpenCGAClient) {
+                    console.log("The OpenCGA client is passed properly.");
+                    this.opencgaClient.users().projects().then(function(response) {
                         return Promise.all(response.response[0].result.map(_this._getStudiesByProject.bind(_this)))
                     });
                 }
@@ -114,7 +115,7 @@
                 let projectId = project.id;
                 let projectName = project.name;
                 let _this = this;
-                return this.client.projects().studies(projectId).then(function (response) {
+                return this.opencgaClient.projects().studies(projectId).then(function (response) {
                     let studies = [];
                     for (let i in response.response[0].result) {
                         studies.push({

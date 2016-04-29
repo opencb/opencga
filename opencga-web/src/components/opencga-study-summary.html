@@ -28,7 +28,7 @@
             is: 'opencga-study-summary',
 
             properties: {
-                client: {
+                opencgaClient: {
                     type: Object,
                     observer: "_getStudyInfo"
                 },
@@ -42,8 +42,8 @@
             },
 
             _getStudyInfo: function() {
-                if (this.client instanceof OpenCGAClient && this.studyId > 0) {
-                    this.client.studies().info(this.studyId, "", "").then(this._parseStudyInfo);
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this.opencgaClient.studies().info(this.studyId, "", "").then(this._parseStudyInfo);
                 }
             },
 

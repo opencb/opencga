@@ -14,13 +14,12 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../bower_components/iron-input/iron-input.html">
+<link rel="import" href="../bower_components/iron-input/iron-input.html">
 
-
-<link rel="import" href="opencga-login.html">
-<link rel="import" href="opencga-dashboard.html">
+<link rel="import" href="components/shared/opencga-login.html">
+<link rel="import" href="components/opencga-dashboard.html">
 
 <dom-module id="opencga-web">
     <template>
@@ -31,7 +30,6 @@
                 width: 98%;
             }
         </style>
-
 
         <div>
             <div style="height: 60px;">
@@ -72,7 +70,7 @@
                                 </li>
 
                                 <li class="opencga-menu">
-                                    <a href="#login">
+                                    <a href="#login" data-toggle="modal" role="button" data-placement="bottom" data-target="#ModalLogin" title="Login ...">
                                         <i class="fa fa-sign-in fa-lg"></i> Login
                                     </a>
                                     <a href="#logout" on-click="logout" style="display: none;">
@@ -89,10 +87,22 @@
             <!-- This is where main application is rendered -->
             <div class="center">
                 <div class="collapse content" id="login">
-                    <opencga-login on-login="login" opencga-client-config="{{config}}"></opencga-login>
+                    <div class="modal fade" id="ModalLogin" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                    <h4 class="modal-title" id="myModalLogin">Login</h4>
+                                </div>
+                                <div class="modal-body">
+                                    <opencga-login on-login="login" opencga-client="{{opencgaClient}}" opencga-client-config="{{config}}" login-text="Sign in"></opencga-login>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="collapse content" id="home">
-                    <opencga-dashboard client="{{opencgaClient}}"></opencga-dashboard>
+                    <opencga-dashboard opencga-client="{{opencgaClient}}"></opencga-dashboard>
                 </div>
             </div>
 
@@ -121,10 +131,6 @@
             </div>
         </div>
 
-
-
-
-
     </template>
     <script>
         Polymer({
@@ -143,19 +149,22 @@
                 this.enableClick();
                 this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
                         OPENCGA_COOKIE_USER_NAME);
-                let tmpClient = new OpenCGAClient(this.config);
-                tmpClient.users().info("", "", "").then(function() {
-                    // We are logged in. Show home.
-                    console.log("We are logged in.");
-                    this.opencgaClient = new OpenCGAClient(this.config);
-                    $('#home').show();
-                    this.showLogout();
-                }.bind(this)).catch(function() {
-                    // We are not logged in. Show login.
-                    console.log("We are not logged in.");
-                    $('#login').show();
-                    this.disableClick();
-                }.bind(this));
+//                let tmpClient = new OpenCGAClient(this.config);
+                this.opencgaClient = new OpenCGAClient(this.config);
+                this.opencgaClient.users().info("", "", "")
+                        .then(function() {
+                            // We are logged in. Show home.
+                            console.log("We are logged in.");
+                            this.opencgaClient = new OpenCGAClient(this.config);
+                            $('#home').show();
+                            this.showLogout();
+                        }.bind(this))
+                        .catch(function() {
+                            // We are not logged in. Show login.
+                            console.log("We are not logged in.");
+                            $('#login').show();
+                            this.disableClick();
+                        }.bind(this));
 //                debugger
 //
 ////                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
