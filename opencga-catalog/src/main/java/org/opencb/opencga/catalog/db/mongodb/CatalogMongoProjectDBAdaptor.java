@@ -23,7 +23,6 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.BsonDocument;
 import org.bson.BsonString;
 import org.bson.Document;
@@ -40,7 +39,6 @@ import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -484,6 +482,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> aggregates = new ArrayList<>();
 
         aggregates.add(Aggregates.unwind("$projects"));
@@ -507,7 +508,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         List<Bson> aggregates = new ArrayList<>();
-
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         aggregates.add(Aggregates.match(parseQuery(query)));
         aggregates.add(Aggregates.unwind("$projects"));
 
@@ -595,47 +598,59 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Project> delete(long id, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
-        Query query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id);
-        delete(query, force);
-        return endQuery("Delete project", startTime, get(query, new QueryOptions()));
+    public QueryResult<Project> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Delete not yet implemented.");
+//        long startTime = startQuery();
+//        Query query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id);
+//        delete(query, force);
+//        return endQuery("Delete project", startTime, get(query, new QueryOptions()));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Delete not yet implemented.");
+//        long startTime = startQuery();
+//
+//        List<Project> projectList = get(query, new QueryOptions()).getResult();
+//        List<Long> projectListIds = new ArrayList<>();
+//        List<Long> studyIds = new ArrayList<>();
+//        for (Project project : projectList) {
+//            projectListIds.add(project.getId());
+//            for (Study study : project.getStudies()) {
+//                studyIds.add(study.getId());
+//            }
+//        }
+//
+//        if (studyIds.size() > 0) {
+//            Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
+//            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(studyIdsQuery, queryOptions);
+//        }
+//
+//        if (projectListIds.size() > 0) {
+//            QueryResult<UpdateResult> deleted = userCollection.update(Filters.and(
+//                    Filters.all("projects.id", projectListIds),
+//                    Filters.nin("projects." + QueryParams.STATUS_STATUS.key(), Arrays.asList(Status.DELETED, Status.REMOVED))),
+//                    new Document("$set", new Document("projects.$." + QueryParams.STATUS_STATUS.key(), Status.DELETED)
+//                            .append("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
+//
+//            if (deleted.first().getModifiedCount() == 0) {
+//                throw CatalogDBException.alreadyDeletedOrRemoved("Project");
+//            } else {
+//                return endQuery("Delete project", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+//            }
+//        }
+//
+//        throw CatalogDBException.deleteError("Project");
+    }
 
-        List<Project> projectList = get(query, new QueryOptions()).getResult();
-        List<Long> projectListIds = new ArrayList<>();
-        List<Long> studyIds = new ArrayList<>();
-        for (Project project : projectList) {
-            projectListIds.add(project.getId());
-            for (Study study : project.getStudies()) {
-                studyIds.add(study.getId());
-            }
-        }
+    @Override
+    public QueryResult<Project> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
 
-        if (studyIds.size() > 0) {
-            Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
-            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(studyIdsQuery, force);
-        }
-
-        if (projectListIds.size() > 0) {
-            QueryResult<UpdateResult> deleted = userCollection.update(Filters.and(
-                    Filters.all("projects.id", projectListIds),
-                    Filters.nin("projects." + QueryParams.STATUS_STATUS.key(), Arrays.asList(Status.DELETED, Status.REMOVED))),
-                    new Document("$set", new Document("projects.$." + QueryParams.STATUS_STATUS.key(), Status.DELETED)
-                            .append("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
-
-            if (deleted.first().getModifiedCount() == 0) {
-                throw CatalogDBException.alreadyDeletedOrRemoved("Project");
-            } else {
-                return endQuery("Delete project", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-            }
-        }
-
-        throw CatalogDBException.deleteError("Project");
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override

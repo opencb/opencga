@@ -20,11 +20,9 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.*;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -86,6 +84,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
 
+    QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options) throws CatalogDBException;
+
     QueryResult<Group> addMemberToGroup(long studyId, String groupId, String userId) throws CatalogDBException;
 
     QueryResult<Group> removeMemberFromGroup(long studyId, String groupId, String userId) throws CatalogDBException;
@@ -145,12 +145,16 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
+    QueryResult<Long> removeCohortDependencies(List<Long> cohortIds) throws CatalogDBException;
+
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         CREATOR_ID("creatorId", TEXT_ARRAY, ""),
-        STATUS("status", TEXT_ARRAY, ""),
+        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_MSG("status.msg", TEXT, ""),
+        STATUS_DATE("status.date", TEXT, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
@@ -158,8 +162,14 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_ID("groups.id", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
+
+        ROLES("roles", TEXT_ARRAY, ""),
+        ROLES_ID("roles.id", TEXT, ""),
+        ROLES_USERS("roles.users", TEXT_ARRAY, ""),
+        ROLES_PERMISSIONS("roles.permissions", TEXT, ""),
 
         EXPERIMENT_ID("experiments.id", INTEGER_ARRAY, ""),
         EXPERIMENT_NAME("experiments.name", TEXT_ARRAY, ""),
@@ -201,6 +211,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
         DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
 
+        COHORTS("cohorts", TEXT_ARRAY, ""),
         COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
         COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
         COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),

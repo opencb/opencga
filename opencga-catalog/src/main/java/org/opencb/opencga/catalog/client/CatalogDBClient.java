@@ -28,6 +28,7 @@ import java.io.IOException;
 /**
  * Created by jacobo on 10/02/15.
  */
+@Deprecated
 public class CatalogDBClient implements org.opencb.opencga.catalog.client.CatalogClient {
 
     private final CatalogManager catalogManager;

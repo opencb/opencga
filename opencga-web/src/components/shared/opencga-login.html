@@ -14,7 +14,9 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../opencga-shared-styles.html">
 
 <dom-module id="opencga-login">
     <template>
@@ -48,9 +50,8 @@
             </div>
 
             <div class="fields">
-                <button type="button" on-click="login" class="btn btn-primary" style="text-align: center;">Login</button>
+                <button type="button" on-click="login" class="btn btn-primary" style="text-align: center;">{{loginText}}</button>
             </div>
-
         </div>
 
     </template>
@@ -58,22 +59,29 @@
         Polymer({
             is: 'opencga-login',
             properties: {
+                opencgaClient: {
+                    type: Object
+                },
                 opencgaClientConfig: {
                     type: Object
+                },
+                loginText: {
+                    type: String,
+                    value: "Login"
                 }
-            },
-
-            ready: function() {
-                console.log(this.opencgaClientConfig);
             },
 
             login: function() {
                 var _this = this;
-                let opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+
+                if ((this.opencgaClient instanceof OpenCGAClient) === false) {
+                    this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+                }
+
                 let user = this.$.opencgaUser.value;
                 let pass = this.$.opencgaPassword.value;
 
-                opencgaClient.users().login(user, {password: pass}).then(function(response) {
+                this.opencgaClient.users().login(user, {password: pass}).then(function(response) {
                     _this.$.opencgaUser.value = "";
                     _this.$.opencgaPassword.value = "";
                     _this.fire('login', {

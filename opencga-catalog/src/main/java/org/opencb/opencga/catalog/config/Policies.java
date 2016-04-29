@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.config;
 /**
  * Created by pfurio on 07/04/16.
  */
+@Deprecated
 public class Policies {
 
     private UserCreation userCreation;

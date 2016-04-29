@@ -125,6 +125,13 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertEquals(file.getStatus().getStatus(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
+        parameters = new ObjectMap();
+        parameters.put("stats", "{}");
+        System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
+
+        file = catalogFileDBAdaptor.getFile(fileId, null).first();
+        assertEquals(file.getStats(), new LinkedHashMap<String, Object>());
+
     }
 
     @Test
@@ -155,12 +162,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void deleteFileTest() throws CatalogDBException, IOException {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, false);
+        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
         System.out.println(delete);
         assertTrue(delete.getNumResults() == 1);
         try {
             System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
-                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), false));
+                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
             fail("error: Expected \"FileId not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

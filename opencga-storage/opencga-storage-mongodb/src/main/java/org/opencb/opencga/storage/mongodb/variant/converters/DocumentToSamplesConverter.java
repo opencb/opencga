@@ -28,8 +28,6 @@ import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
-import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +37,8 @@ import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.DataFormatException;
+
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
@@ -54,7 +54,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
     private final Map<Integer, LinkedHashMap<String, Integer>> __returnedSamplesPosition;
     private final Map<Integer, Set<String>> studyDefaultGenotypeSet;
     private LinkedHashSet<String> returnedSamples;
-    private VariantSourceDBAdaptor sourceDbAdaptor;
     private StudyConfigurationManager studyConfigurationManager;
     private String returnedUnknownGenotype;
 
@@ -140,13 +139,12 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         this();
         setSamples(studyId, fileId, samples);
         studyConfigurations.get(studyId).getAttributes()
-                .put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Collections.singleton(defaultGenotype));
+                .put(DEFAULT_GENOTYPE.key(), Collections.singleton(defaultGenotype));
         studyDefaultGenotypeSet.put(studyId, Collections.singleton(defaultGenotype));
     }
 
-    public DocumentToSamplesConverter(StudyConfigurationManager studyConfigurationManager, VariantSourceDBAdaptor variantSourceDBAdaptor) {
+    public DocumentToSamplesConverter(StudyConfigurationManager studyConfigurationManager) {
         this();
-        this.sourceDbAdaptor = variantSourceDBAdaptor;
         this.studyConfigurationManager = studyConfigurationManager;
     }
 
@@ -178,15 +176,15 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                 logger.warn("DocumentToSamplesConverter.convertToDataModelType StudyConfiguration {studyId: {}} not found! Looking for "
                         + "VariantSource", studyId);
 
-                if (sourceDbAdaptor != null) {
-                    QueryResult samplesBySource = sourceDbAdaptor
-                            .getSamplesBySource(object.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD).toString(), null);
-                    if (samplesBySource.getResult().isEmpty()) {
-                        logger.warn("DocumentToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
-                    } else {
-                        setSamples(studyId, null, (List<String>) samplesBySource.getResult().get(0));
-                    }
-                }
+//                if (sourceDbAdaptor != null) {
+//                    QueryResult samplesBySource = sourceDbAdaptor
+//                            .getSamplesBySource(object.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD).toString(), null);
+//                    if (samplesBySource.getResult().isEmpty()) {
+//                        logger.warn("DocumentToSamplesConverter.convertToDataModelType VariantSource not found! Can't read sample names");
+//                    } else {
+//                        setSamples(studyId, null, (List<String>) samplesBySource.getResult().get(0));
+//                    }
+//                }
             } else {
                 addStudyConfiguration(queryResult.first());
             }
@@ -397,6 +395,10 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
     }
 
     public Document convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, Document otherFields) {
+        return convertToStorageType(studyEntry, studyId, fileId, otherFields, new HashSet<>());
+    }
+
+    public Document convertToStorageType(StudyEntry studyEntry, int studyId, int fileId, Document otherFields, Set<String> samplesInFile) {
         Map<String, List<Integer>> genotypeCodes = new HashMap<>();
 
         final StudyConfiguration studyConfiguration = studyConfigurations.get(studyId);
@@ -414,13 +416,17 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         Integer gtIdx = studyEntry.getFormatPositions().get("GT");
         List<String> studyEntryOrderedSamplesName = studyEntry.getOrderedSamplesName();
         for (List<String> data : studyEntry.getSamplesData()) {
+            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+            sampleIdx++;
+            if (!samplesInFile.contains(sampleName)) {
+                continue;
+            }
             String genotype;
             if (gtIdx == null) {
                 genotype = UNKNOWN_GENOTYPE;
             } else {
                 genotype = data.get(gtIdx);
             }
-            String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
             if (genotype == null) {
                 genotype = UNKNOWN_GENOTYPE;
             }
@@ -431,7 +437,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                 genotypeCodes.put(genotype, samplesWithGenotype);
             }
             samplesWithGenotype.add(sampleIds.get(sampleName));
-            sampleIdx++;
         }
 
         // In Mongo, samples are stored in a map, classified by their genotype.
@@ -480,7 +485,11 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
             if (studyEntry.getFormatPositions().containsKey(extraField)) {
                 Integer formatIdx = studyEntry.getFormatPositions().get(extraField);
                 for (List<String> sampleData : studyEntry.getSamplesData()) {
-//                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+                    String sampleName = studyEntryOrderedSamplesName.get(sampleIdx);
+                    sampleIdx++;
+                    if (!samplesInFile.contains(sampleName)) {
+                        continue;
+                    }
 //                    Integer index = samplesPosition.get(sampleName);
                     String stringValue = sampleData.get(formatIdx);
 //                    Object value;
@@ -511,7 +520,6 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                             builder.addStringValues(stringValue);
                             break;
                     }
-                    sampleIdx++;
                 }
             } // else { Don't set that field }
 
@@ -561,9 +569,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
         this.studyConfigurations.put(studyConfiguration.getStudyId(), studyConfiguration);
         this.__studySamplesId.put(studyConfiguration.getStudyId(), null);
 
-        Set defGenotypeSet = studyConfiguration.getAttributes().get(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, Set.class);
+        Set defGenotypeSet = studyConfiguration.getAttributes().get(DEFAULT_GENOTYPE.key(), Set.class);
         if (defGenotypeSet == null) {
-            List<String> defGenotype = studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE);
+            List<String> defGenotype = studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key());
             if (defGenotype.size() == 0) {
                 defGenotypeSet = Collections.<String>emptySet();
             } else if (defGenotype.size() == 1) {

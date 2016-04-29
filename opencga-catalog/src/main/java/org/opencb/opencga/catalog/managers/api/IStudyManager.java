@@ -1,9 +1,12 @@
 package org.opencb.opencga.catalog.managers.api;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 
 import java.net.URI;
 import java.util.List;
@@ -28,7 +31,6 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @param name         Study Name
      * @param alias        Study Alias. Must be unique in the project's studies
      * @param type         Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.models.Study.Type)
-     * @param creatorId    Creator user id. If null, user by sessionId
      * @param creationDate Creation date. If null, now
      * @param description  Study description. If null, empty string
      * @param status       Unused
@@ -43,7 +45,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @return Generated study
      * @throws CatalogException CatalogException
      */
-    QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creatorId, String creationDate,
+    QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creationDate,
                               String description, Status status, String cipher, String uriScheme, URI uri,
                               Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                               QueryOptions options, String sessionId) throws CatalogException;
@@ -76,4 +78,78 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     QueryResult<VariableSet> renameFieldFromVariableSet(long variableSetId, String oldName, String newName, String sessionId)
             throws CatalogException;
 
+    /**
+     * Ranks the elements queried, groups them by the field(s) given and return it sorted.
+     *
+     * @param projectId  Project id.
+     * @param query      Query object containing the query that will be executed.
+     * @param field      A field or a comma separated list of fields by which the results will be grouped in.
+     * @param numResults Maximum number of results to be reported.
+     * @param asc        Order in which the results will be reported.
+     * @param sessionId  sessionId.
+     * @return           A QueryResult object containing each of the fields in field and the count of them matching the query.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
+
+    default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        long projectId = query.getLong(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key());
+        if (projectId == 0L) {
+            throw new CatalogException("Study[rank]: Study id not found in the query");
+        }
+        return rank(projectId, query, field, numResults, asc, sessionId);
+    }
+
+    /**
+     * Groups the elements queried by the field(s) given.
+     *
+     * @param projectId  Project id.
+     * @param query   Query object containing the query that will be executed.
+     * @param field   Field by which the results will be grouped in.
+     * @param options QueryOptions object.
+     * @param sessionId  sessionId.
+     * @return        A QueryResult object containing the results of the query grouped by the field.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult groupBy(long projectId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
+
+    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        long projectId = query.getLong(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key());
+        if (projectId == 0L) {
+            throw new CatalogException("Study[groupBy]: Study id not found in the query");
+        }
+        return groupBy(projectId, query, field, options, sessionId);
+    }
+
+    /**
+     * Groups the elements queried by the field(s) given.
+     *
+     * @param projectId  Project id.
+     * @param query   Query object containing the query that will be executed.
+     * @param fields  List of fields by which the results will be grouped in.
+     * @param options QueryOptions object.
+     * @param sessionId  sessionId.
+     * @return        A QueryResult object containing the results of the query grouped by the fields.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult groupBy(long projectId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
+
+    default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
+        long projectId = query.getLong(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key());
+        if (projectId == 0L) {
+            throw new CatalogException("Study[groupBy]: Study id not found in the query");
+        }
+        return groupBy(projectId, query, field, options, sessionId);
+    }
+
+    /**
+     * Gets the general stats of a study.
+     *
+     * @param studyId Study id.
+     * @param sessionId Session id.
+     * @param queryOptions QueryOptions object.
+     * @return a QueryResult object containing a summary with the general stats of the study.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException;
 }

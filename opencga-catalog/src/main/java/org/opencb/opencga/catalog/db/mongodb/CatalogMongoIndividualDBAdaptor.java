@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -348,6 +347,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -362,6 +364,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -449,113 +454,124 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+//        long startTime = startQuery();
+//
+//        // This will be the query that will be updated.
+//        Query updateQuery = new Query();
+//
+//        if (!force) {
+//            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//            List<Individual> individuals = get(subQuery, null).getResult();
+//            List<Long> individualIdsToDelete = new ArrayList<>();
+//
+//            if (individuals.size() == 0) {
+//                // Check if we do not get any results because they are already deleted.
+//                if (count(query).first() > 0) {
+//                    throw CatalogDBException.alreadyDeletedOrRemoved("Individual");
+//                } else {
+//                    throw CatalogDBException.queryNotFound("Individual");
+//                }
+//            }
+//
+//            // Check that the individualIds could be deleted because there is no dependency between them.
+//            // The map will contain a map family -> list of ids of the family
+//            Map<String, List<Individual>> familyIndividuals = new HashMap<>();
+//            for (Individual individual : individuals) {
+//                if (!familyIndividuals.containsKey(individual.getFamily())) {
+//                    List<Individual> individualList = new ArrayList<>();
+//                    familyIndividuals.put(individual.getFamily(), individualList);
+//                }
+//                familyIndividuals.get(individual.getFamily()).add(individual);
+//            }
+//
+//            // Check family by family
+//            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//            for (Map.Entry<String, List<Individual>> indFamily : familyIndividuals.entrySet()) {
+//                Query tmpQuery = new Query(queryNoDeletedNoRemoved).append(QueryParams.FAMILY.key(), indFamily.getKey());
+//                List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
+//                if (individualListDatabase.size() == indFamily.getValue().size()) {
+//                    individualIdsToDelete.addAll(indFamily.getValue().stream()
+//                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toList()));
+//                } else {
+//                    // Remove in order from children to parents
+//                    List<Individual> indCopyDatabase = new ArrayList<>(individualListDatabase);
+//                    Set<Long> desiredIdsToDelete = indFamily.getValue().stream()
+//                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toSet());
+//                    boolean changed = true;
+//                    // While we still have some individuals to remove
+//                    while (indCopyDatabase.size() > 0 && changed) {
+//                        changed = false;
+//                        Set<Long> parents = new HashSet<>();
+//                        Set<Long> children = new HashSet<>();
+//                        for (Individual individual : indCopyDatabase) {
+//                            // Add to parents
+//                            parents.add(individual.getFatherId());
+//                            parents.add(individual.getMotherId());
+//
+//                            // Add child
+//                            if (!parents.contains(individual.getId())) {
+//                                children.add(individual.getId());
+//                            }
+//
+//                            // Check whether any of the new parents were already inserted in children
+//                            if (children.contains(individual.getFatherId())) {
+//                                children.remove(individual.getFatherId());
+//                            }
+//                            if (children.contains(individual.getMotherId())) {
+//                                children.remove(individual.getMotherId());
+//                            }
+//                        }
+//
+//                        Set<Long> newIdsToDelete = new HashSet<>();
+//                        Iterator<Long> iterator = children.iterator();
+//                        while (iterator.hasNext()) {
+//                            Long individualId = iterator.next();
+//                            if (desiredIdsToDelete.contains(individualId)) {
+//                                individualIdsToDelete.add(individualId);
+//                                newIdsToDelete.add(individualId);
+//                                changed = true;
+//                            }
+//                        }
+//
+//                        if (changed) {
+//                            // Update indCopyDatabase removing the ids that have been marked to be deleted.
+//                            List<Individual> temporalIndCopyDatabase = new ArrayList<>(indCopyDatabase);
+//                            for (Individual individual : temporalIndCopyDatabase) {
+//                                if (newIdsToDelete.contains(individual.getId())) {
+//                                    indCopyDatabase.remove(individual);
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            }
+//
+//            updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
+//                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//
+//        } else {
+//            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//        }
+//
+//        QueryResult<UpdateResult> deleted = individualCollection.update(parseQuery(updateQuery), Updates.combine(
+//                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+//                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
+//                , new QueryOptions());
+//
+//        return endQuery("Delete individual", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+        throw new UnsupportedOperationException("Delete not yet implemented.");
 
-        // This will be the query that will be updated.
-        Query updateQuery = new Query();
+    }
 
-        if (!force) {
-            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-            List<Individual> individuals = get(subQuery, null).getResult();
-            List<Long> individualIdsToDelete = new ArrayList<>();
+    @Override
+    public QueryResult<Individual> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
 
-            if (individuals.size() == 0) {
-                // Check if we do not get any results because they are already deleted.
-                if (count(query).first() > 0) {
-                    throw CatalogDBException.alreadyDeletedOrRemoved("Individual");
-                } else {
-                    throw CatalogDBException.queryNotFound("Individual");
-                }
-            }
-
-            // Check that the individualIds could be deleted because there is no dependency between them.
-            // The map will contain a map family -> list of ids of the family
-            Map<String, List<Individual>> familyIndividuals = new HashMap<>();
-            for (Individual individual : individuals) {
-                if (!familyIndividuals.containsKey(individual.getFamily())) {
-                    List<Individual> individualList = new ArrayList<>();
-                    familyIndividuals.put(individual.getFamily(), individualList);
-                }
-                familyIndividuals.get(individual.getFamily()).add(individual);
-            }
-
-            // Check family by family
-            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-            for (Map.Entry<String, List<Individual>> indFamily : familyIndividuals.entrySet()) {
-                Query tmpQuery = new Query(queryNoDeletedNoRemoved).append(QueryParams.FAMILY.key(), indFamily.getKey());
-                List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
-                if (individualListDatabase.size() == indFamily.getValue().size()) {
-                    individualIdsToDelete.addAll(indFamily.getValue().stream()
-                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toList()));
-                } else {
-                    // Remove in order from children to parents
-                    List<Individual> indCopyDatabase = new ArrayList<>(individualListDatabase);
-                    Set<Long> desiredIdsToDelete = indFamily.getValue().stream()
-                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toSet());
-                    boolean changed = true;
-                    // While we still have some individuals to remove
-                    while (indCopyDatabase.size() > 0 && changed) {
-                        changed = false;
-                        Set<Long> parents = new HashSet<>();
-                        Set<Long> children = new HashSet<>();
-                        for (Individual individual : indCopyDatabase) {
-                            // Add to parents
-                            parents.add(individual.getFatherId());
-                            parents.add(individual.getMotherId());
-
-                            // Add child
-                            if (!parents.contains(individual.getId())) {
-                                children.add(individual.getId());
-                            }
-
-                            // Check whether any of the new parents were already inserted in children
-                            if (children.contains(individual.getFatherId())) {
-                                children.remove(individual.getFatherId());
-                            }
-                            if (children.contains(individual.getMotherId())) {
-                                children.remove(individual.getMotherId());
-                            }
-                        }
-
-                        Set<Long> newIdsToDelete = new HashSet<>();
-                        Iterator<Long> iterator = children.iterator();
-                        while (iterator.hasNext()) {
-                            Long individualId = iterator.next();
-                            if (desiredIdsToDelete.contains(individualId)) {
-                                individualIdsToDelete.add(individualId);
-                                newIdsToDelete.add(individualId);
-                                changed = true;
-                            }
-                        }
-
-                        if (changed) {
-                            // Update indCopyDatabase removing the ids that have been marked to be deleted.
-                            List<Individual> temporalIndCopyDatabase = new ArrayList<>(indCopyDatabase);
-                            for (Individual individual : temporalIndCopyDatabase) {
-                                if (newIdsToDelete.contains(individual.getId())) {
-                                    indCopyDatabase.remove(individual);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
-                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-
-        } else {
-            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-        }
-
-        QueryResult<UpdateResult> deleted = individualCollection.update(parseQuery(updateQuery), Updates.combine(
-                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
-                , new QueryOptions());
-
-        return endQuery("Delete individual", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
@@ -564,11 +580,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Individual> delete(long id, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
-        checkIndividualId(id);
-        delete(new Query(QueryParams.ID.key(), id), force);
-        return endQuery("Delete individual", startTime, getIndividual(id, null));
+    public QueryResult<Individual> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Delete not yet implemented.");
+//        long startTime = startQuery();
+//        checkIndividualId(id);
+//        delete(new Query(QueryParams.ID.key(), id), force);
+//        return endQuery("Delete individual", startTime, getIndividual(id, null));
         /*
         Query query = new Query(QueryParams.ID.key(), id);
         QueryResult<Individual> individualQueryResult = get(query, null);
@@ -686,6 +703,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         } else {
             return new Document();
         }
+    }
+
+    public MongoDBCollection getIndividualCollection() {
+        return individualCollection;
     }
 
 }

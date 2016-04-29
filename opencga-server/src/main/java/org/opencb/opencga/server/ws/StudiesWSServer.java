@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -155,8 +156,25 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{studyId}/summary")
+    @ApiOperation(value = "Summary with the general stats of a study", position = 3)
+    public Response summary(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
+        try {
+            String[] studyIdArray = studyIdsStr.split(",");
+            List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
+            for (String studyIdStr : studyIdArray) {
+                long studyId = catalogManager.getStudyId(studyIdStr);
+                queryResults.add(catalogManager.getStudySummary(studyId, sessionId, queryOptions));
+            }
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/search")
-    @ApiOperation(value = "Search studies", position = 3)
+    @ApiOperation(value = "Search studies", position = 4)
     public Response getAllStudies(@ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
@@ -185,7 +203,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @POST
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 3, notes = "Campos aceptados: LALALALA")
+    @ApiOperation(value = "Search studies", position = 5, notes = "Campos aceptados: LALALALA")
     public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
         try {
             QueryOptions qOptions = new QueryOptions(queryOptions);

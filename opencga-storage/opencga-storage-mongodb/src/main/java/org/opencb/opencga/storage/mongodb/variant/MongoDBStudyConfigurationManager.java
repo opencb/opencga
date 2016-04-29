@@ -117,4 +117,9 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
 
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
     }
+
+    @Override
+    public void close() {
+        mongoManager.close();
+    }
 }

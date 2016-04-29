@@ -29,6 +29,7 @@ import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedHostExce
 import org.opencb.opencga.storage.server.common.exceptions.NotAuthorizedUserException;
 import org.opencb.opencga.storage.server.grpc.VariantProto.Variant;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import static org.opencb.opencga.storage.server.grpc.GenericServiceModel.*;
@@ -65,6 +66,8 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
             e.printStackTrace();
         } catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
             e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -96,6 +99,8 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
         } catch (NotAuthorizedHostException e) {
             e.printStackTrace();
         } catch (NotAuthorizedUserException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
