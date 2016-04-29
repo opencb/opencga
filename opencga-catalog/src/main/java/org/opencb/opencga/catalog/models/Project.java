@@ -47,14 +47,13 @@ public class Project {
     }
 
     public Project(String name, String alias, String description, Status status, String organization) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<Study>(),
-                new HashMap<String, Object>());
+        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<>(), new HashMap<>());
     }
 
-    public Project(String name, String alias, String creationDate, String description, Status status,
-                   String lastActivity, long diskUsage, String organization) {
-        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<Study>(),
-                new HashMap<String, Object>());
+    public Project(String name, String alias, String creationDate, String description, Status status, String lastActivity,
+                   long diskUsage, String organization) {
+        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<>(),
+                new HashMap<>());
     }
 
     public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,

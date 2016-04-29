@@ -54,6 +54,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
                 .getClass().getResource("/catalog-configuration.yml").openStream());
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
 

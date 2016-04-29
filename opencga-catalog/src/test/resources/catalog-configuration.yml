@@ -1,21 +1,30 @@
 ---
 logLevel: "INFO"
 logFile: null
-
-dataDir: file:///tmp/opencga_catalog_test/
-tempJobsDir: file:///tmp/opencga_catalog_test_jobs/
-
-admin: "admin"
-password: "admin"
-
+openRegister: false
+userDefaultDiskQuota: 0
+dataDir: "file:///tmp/opencga/sessions"
+tempJobsDir: "file:///tmp/opencga/sessions/jobs"
+toolsDir: "tools"
+admin:
+  password: "admin"
+  email: "admin@admin.com"
+monitor:
+  daysToRemove: 0
+  executionSleepTime: 0
+  fileSleepTime: 0
+execution:
+  mode: null
+  defaultQueue: null
+  availableQueues: null
+  toolsPerQueue: null
 emailServer:
-  host: ""
-  port: 123
+  host: "localhost"
+  port: ""
   user: ""
   password: ""
   from: ""
   ssl: false
-
 database:
   hosts:
   - "localhost:27017"
@@ -24,6 +33,3 @@ database:
   password: ""
   options:
     authenticationDatabase: ""
-
-policies:
-  userCreation: "ALWAYS" ## This is the policy to create users. Can be: ONLY_ADMIN, ANY_LOGGED_USER or ALWAYS.

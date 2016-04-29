@@ -10,7 +10,6 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -41,7 +40,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     //    private final SessionManager sessionManager;
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-    protected final Policies.UserCreation creationUserPolicy;
+//    protected final Policies.UserCreation creationUserPolicy;
 
     @Deprecated
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
@@ -49,7 +48,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-        creationUserPolicy = Policies.UserCreation.ALWAYS;
+//        creationUserPolicy = Policies.UserCreation.ALWAYS;
         //creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER,
         // Policies.UserCreation.ALWAYS);
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
@@ -61,7 +60,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                        CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
 
-        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
+//        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
@@ -112,34 +111,39 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkEmail(email);
         organization = organization != null ? organization : "";
 
+        if (userDBAdaptor.userExists(id)) {
+            throw new CatalogException("The user " + id + " is already in use in our database. Please, choose another one.");
+        }
+
         User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
 
-        String userId;
+        // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
+        String userId = id;
 
-        switch (creationUserPolicy) {
-            case ONLY_ADMIN: {
-                userId = getUserId(sessionId);
-                if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                    user.getAttributes().put("creatorUserId", userId);
-                } else {
-                    throw new CatalogException("CreateUser Fail. Required Admin role");
-                }
-                break;
-            }
-            case ANY_LOGGED_USER: {
-                ParamUtils.checkParameter(sessionId, "sessionId");
-                userId = getUserId(sessionId);
-                if (userId.isEmpty()) {
-                    throw new CatalogException("CreateUser Fail. Required existing account");
-                }
-                user.getAttributes().put("creatorUserId", userId);
-                break;
-            }
-            case ALWAYS:
-            default:
-                userId = id;
-                break;
-        }
+//        switch (creationUserPolicy) {
+//            case ONLY_ADMIN: {
+//                userId = getUserId(sessionId);
+//                if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
+//                    user.getAttributes().put("creatorUserId", userId);
+//                } else {
+//                    throw new CatalogException("CreateUser Fail. Required Admin role");
+//                }
+//                break;
+//            }
+//            case ANY_LOGGED_USER: {
+//                ParamUtils.checkParameter(sessionId, "sessionId");
+//                userId = getUserId(sessionId);
+//                if (userId.isEmpty()) {
+//                    throw new CatalogException("CreateUser Fail. Required existing account");
+//                }
+//                user.getAttributes().put("creatorUserId", userId);
+//                break;
+//            }
+//            case ALWAYS:
+//            default:
+//                userId = id;
+//                break;
+//        }
 
 
         try {
@@ -241,17 +245,17 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException("User: Operation not supported.");
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException("User: Operation not supported.");
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException("User: Operation not supported.");
     }
 
     @Override

@@ -27,6 +27,7 @@ import java.util.Map;
 /**
  * Created by jacobo on 10/02/15.
  */
+@Deprecated
 public interface CatalogClient {
 
     String getSessionId();

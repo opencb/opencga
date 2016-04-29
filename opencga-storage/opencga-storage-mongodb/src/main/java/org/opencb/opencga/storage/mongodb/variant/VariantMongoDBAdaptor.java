@@ -2037,8 +2037,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     void createIndexes(QueryOptions options) {
         logger.info("Start creating indexes");
-        ObjectMap onBackground = new ObjectMap().append(BACKGROUND, true);
-        ObjectMap onBackgroundSparse = new ObjectMap().append(BACKGROUND, true).append(SPARSE, true);
+        ObjectMap onBackground = new ObjectMap(MongoDBCollection.BACKGROUND, true);
+        ObjectMap onBackgroundSparse = new ObjectMap(MongoDBCollection.BACKGROUND, true).append(MongoDBCollection.SPARSE, true);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.AT_FIELD + '.'
                 + DocumentToVariantConverter.CHUNK_IDS_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1)

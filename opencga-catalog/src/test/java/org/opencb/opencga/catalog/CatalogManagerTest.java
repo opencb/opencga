@@ -177,6 +177,7 @@ public class CatalogManagerTest extends GenericTest {
         clearCatalog(catalogConfiguration);
 
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
@@ -574,7 +575,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_GROUP, "user2", sessionIdUser);
+        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_ROLE, "user2", sessionIdUser);
         catalogManager.shareFile(Long.toString(testFolder.getId()), "user2", new AclEntry("user2", false, true, false, false), sessionIdUser);
         catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
                 sessionIdUser2);

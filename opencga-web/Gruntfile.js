@@ -41,9 +41,13 @@ module.exports = function(grunt) {
             vendors: {
                 src: [
                     './bower_components/webcomponentsjs/webcomponents-lite.js',
-                    './bower_components/jquery/dist/jquery.js',
                     './bower_components/underscore/underscore.js',
-                    './bower_components/backbone/backbone.js'
+                    './bower_components/backbone/backbone.js',
+                    './bower_components/jquery/dist/jquery.js',
+                    './bower_components/uri.js/src/URI.js',
+                    './bower_components/cookies-js/dist/cookies.js',
+                    './bower_components/crypto-js/crypto-js.js',
+                    './lib/jsorolla/src/lib/utils.js'
                 ],
                 dest: '<%= build.path %>/vendors.js'
             }
@@ -61,20 +65,14 @@ module.exports = function(grunt) {
         copy: {
             dist: {
                 files: [
-                    // {   expand: true, cwd: './bower_components', src: ['backbone/backbone-min.js'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['underscore/underscore-min.js'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['fontawesome/**'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['jquery/dist/jquery.min.js'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['qtip2/jquery.qtip.min.css'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['qtip2/jquery.qtip.min.js'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['uri.js/src/URI.min.js'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['polymer/polymer.html'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['iron-*/**'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['paper-*/**'], dest: '<%= build.vendor %>' },
-                    // {   expand: true, cwd: './bower_components', src: ['webcomponentsjs/webcomponents-lite.min.js'], dest: '<%= build.vendor %>' },
                     {   expand: true, cwd: 'src', src: ['index.html'], dest: '<%= build.path %>/' },
                     {   expand: true, cwd: 'src', src: ['config.js'], dest: '<%= build.path %>/' },
                     {   expand: true, cwd: './', src: ['LICENSE'], dest: '<%= build.path %>/' },
+                    {   expand: true, cwd: './', src: [
+                        'lib/jsorolla/src/lib/clients/opencga-client-config.js',
+                        'lib/jsorolla/src/lib/clients/opencga-client.js',
+                        'lib/jsorolla/src/lib/clients/rest-client.js'],
+                        dest: '<%= build.path %>/..' },
                 ]
             }
         },
@@ -96,7 +94,7 @@ module.exports = function(grunt) {
                 },
                 files: {
                     // Target-specific file lists and/or options go here.
-                    '<%= build.path %>/cellbase-web.html': 'src/cellbase-web.html'
+                    '<%= build.path %>/opencga-web.html': 'src/opencga-web.html'
                 }
             }
         },
