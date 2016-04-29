@@ -37,7 +37,7 @@
                             <a href="#">{{project.name}}</a>
                             <ul class="dropdown-menu">
                                 <template is="dom-repeat" items="{{project.studies}}" as="study">
-                                    <li on-click="updateProjectName"><a href="#">{{study.alias}}</a></li>
+                                    <li on-click="updateProjectName"><a href="#" data-id="{{study.id}}">{{study.name}}</a></li>
                                 </template>
                             </ul>
                         </li>
@@ -55,7 +55,7 @@
 
                 <div class="tab-content" style="width: 90%">
                     <div id="dashboardInfo" role="tabpanel" class="tab-pane active">
-                        <opencga-study-summary opencga-client="{{opencgaClient}}" ></opencga-study-summary>
+                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}" ></opencga-study-summary>
                     </div>
 
                     <div id="dashboardFiles" role="tabpanel" class="tab-pane">
@@ -87,6 +87,10 @@
                 },
                 projects: {
                     type: Array
+                },
+                _selectedStudy: {
+                    type: Number,
+                    value: 0
                 }
             },
 
@@ -96,6 +100,7 @@
 
             updateProjectName: function (e) {
                 this.projectTitle = e.target.innerHTML;
+                this._selectedStudy = e.target.dataId;
             },
 
             _getProjects: function () {
@@ -123,7 +128,6 @@
                             'id': response.response[0].result[i].id,
                             'alias': response.response[0].result[i].alias
                         })
-//                        response.response[0].result[i].name);
                     }
                     _this.push("projects", { 'name': projectName, 'id': projectId, 'studies': studies});
                 });

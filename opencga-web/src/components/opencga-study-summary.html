@@ -22,6 +22,13 @@
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
 
+        <h3>Study information:</h3>
+
+
+
+
+
+
     </template>
     <script>
         Polymer({
@@ -29,11 +36,15 @@
 
             properties: {
                 opencgaClient: {
-                    type: Object,
-                    observer: "_getStudyInfo"
+                    type: Object
                 },
                 studyId: {
-                    type: Number
+                    type: Number,
+                    observer: "_getStudyInfo"
+                },
+
+                _study: {
+                    type: Object
                 }
             },
 
@@ -43,12 +54,15 @@
 
             _getStudyInfo: function() {
                 if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
-                    this.opencgaClient.studies().info(this.studyId, "", "").then(this._parseStudyInfo);
+                    this.opencgaClient.studies().summary(this.studyId).then(this._parseStudySummary.bind(this));
                 }
             },
 
-            _parseStudyInfo: function(response) {
-                debugger
+            _parseStudySummary: function(response) {
+                if (response.response[0].numResults === 1) {
+                    this._study = response.response[0].result[0];
+                    console.log(this._study);
+                }
             }
 
 

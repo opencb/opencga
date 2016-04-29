@@ -71,13 +71,13 @@
                 }
             },
 
-            ready: function() {
-                console.log(this.opencgaClientConfig);
-            },
-
             login: function() {
                 var _this = this;
-//                let opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+
+                if ((this.opencgaClient instanceof OpenCGAClient) === false) {
+                    this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+                }
+
                 let user = this.$.opencgaUser.value;
                 let pass = this.$.opencgaPassword.value;
 

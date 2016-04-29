@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -535,6 +536,10 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Study> getStudy(long studyId, String sessionId, QueryOptions options)
             throws CatalogException {
         return studyManager.read(studyId, options, sessionId);
+    }
+
+    public QueryResult<StudySummary> getStudySummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException {
+        return studyManager.getSummary(studyId, sessionId, queryOptions);
     }
 
     public QueryResult<Study> getAllStudiesInProject(long projectId, QueryOptions options, String sessionId)
