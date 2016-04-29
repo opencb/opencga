@@ -113,8 +113,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         File file = user3.getProjects().get(0).getStudies().get(0).getFiles().get(0);
         long fileId = file.getId();
 
-        Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils
-                .randomString(20));
+        Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20));
 
         ObjectMap parameters = new ObjectMap();
         parameters.put("status.status", File.FileStatus.READY);
@@ -125,6 +124,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertEquals(file.getStatus().getStatus(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
+        parameters = new ObjectMap();
+        parameters.put("stats", "{}");
+        System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
+
+        file = catalogFileDBAdaptor.getFile(fileId, null).first();
+        assertEquals(file.getStats(), new LinkedHashMap<String, Object>());
     }
 
     @Test

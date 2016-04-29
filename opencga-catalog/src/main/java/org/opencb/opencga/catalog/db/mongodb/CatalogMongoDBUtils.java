@@ -360,8 +360,12 @@ class CatalogMongoDBUtils {
                 }
                 try {
                     Document document = getMongoDBDocument(map, s);
-                    for (Map.Entry<String, Object> entry : map.entrySet()) {
-                        filteredParams.put(s + "." + entry.getKey(), document.get(entry.getKey()));
+                    if (map.size() > 0) {
+                        for (Map.Entry<String, Object> entry : map.entrySet()) {
+                            filteredParams.put(s + "." + entry.getKey(), document.get(entry.getKey()));
+                        }
+                    } else {
+                        filteredParams.put(s, document);
                     }
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
