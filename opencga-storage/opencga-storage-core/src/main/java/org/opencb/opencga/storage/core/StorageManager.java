@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core;
 
+import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -72,6 +73,9 @@ public abstract class StorageManager<DBADAPTOR> {
             testConnection();
         }
 
+        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
+        monitor.start();
+
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
             StorageETL storageETL = newStorageETL(doLoad);
@@ -95,7 +99,12 @@ public abstract class StorageManager<DBADAPTOR> {
             if (doLoad) {
                 loadFile(storageETL, etlResult, results, nextFileUri, outdirUri);
             }
+
+            storageETL.close();
+
+            MemoryUsageMonitor.logMemory(logger);
         }
+        monitor.interrupt();
 
         return results;
     }

@@ -24,6 +24,8 @@ import java.util.List;
 
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
+ *
+ *     TODO: Implement {@link AutoCloseable}
  */
 public interface AlignmentDBAdaptor {
 

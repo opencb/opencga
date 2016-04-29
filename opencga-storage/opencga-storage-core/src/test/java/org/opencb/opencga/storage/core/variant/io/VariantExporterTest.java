@@ -54,11 +54,11 @@ import static org.junit.Assert.assertNotNull;
 public abstract class VariantExporterTest extends VariantStorageManagerTestUtils {
 
     public static final String[] VCF_TEST_FILE_NAMES = {
-            "1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
-            "2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
+            "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz",
     };
 
     public static final String EXPORTED_FILE_NAME = "exported-variant-test-file.vcf.gz";
@@ -98,7 +98,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
     }
 
     @After
-    public void after() {
+    public void after() throws IOException {
         dbAdaptor.close();
     }
 
@@ -124,7 +124,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
 
         assertEquals(0, failedVariants);
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
-        checkExportedVCF(Paths.get(getResourceUri("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf" +
+        checkExportedVCF(Paths.get(getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf" +
                 ".gz")), outputVcf, new Region("22"));
     }
 

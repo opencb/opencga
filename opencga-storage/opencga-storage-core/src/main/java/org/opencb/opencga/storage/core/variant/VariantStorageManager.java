@@ -66,7 +66,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         TRANSFORM_THREADS("transform.threads", 4),
         TRANSFORM_FORMAT("transform.format", "avro"),
         LOAD_BATCH_SIZE("load.batch.size", 100),
-        LOAD_THREADS("load.threads", 4),
+        LOAD_THREADS("load.threads", 6),
+        MERGE_BATCH_SIZE("merge.batch.size", 10),          //Number of files to merge directly from first to second table
 
         CALCULATE_STATS("calculateStats", false),          //Calculate stats on the postLoad step
         OVERWRITE_STATS("overwriteStats", false),          //Overwrite stats already present
@@ -101,6 +102,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
     public VariantStorageManager(StorageConfiguration configuration) {
         super(configuration);
         logger = LoggerFactory.getLogger(VariantStorageManager.class);
+
     }
 
     public VariantStorageManager(String storageEngineId, StorageConfiguration configuration) {
@@ -127,6 +129,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
 //        ObjectMap variantOptions = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 //        logger.error("Connection to database '{}' failed", variantOptions.getString(VariantStorageManager.Options.DB_NAME.key()));
 //        throw new StorageManagerException("Database connection test failed");
+    }
+
+    public ObjectMap getOptions() {
+        return configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
     }
 
     /**

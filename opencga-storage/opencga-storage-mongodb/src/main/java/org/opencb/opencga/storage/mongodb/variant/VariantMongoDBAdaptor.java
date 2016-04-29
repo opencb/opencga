@@ -52,6 +52,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -63,6 +64,7 @@ import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -98,7 +100,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // MongoDB configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
+        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -111,6 +113,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected MongoDBCollection getVariantsCollection() {
         return variantsCollection;
+    }
+
+    protected MongoDataStore getDB() {
+        return db;
     }
 
     protected MongoCredentials getCredentials() {
@@ -740,9 +746,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public boolean close() {
-        mongoManager.close(db.getDatabaseName());
-        return true;
+    public void close() throws IOException {
+        mongoManager.close();
+        studyConfigurationManager.close();
     }
 
     private Document parseQuery(Query query) {
@@ -1276,7 +1282,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         long nanoTime = System.nanoTime();
         Map missingSamples = Collections.emptyMap();
-        String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
+        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
         if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
         } else if (excludeGenotypes) {
@@ -1363,8 +1369,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            writeResult.setNewDocuments(newDocuments);
-            writeResult.setUpdatedObjects(updatedObjects);
+            writeResult.setNewVariants(newDocuments);
+            writeResult.setUpdatedVariants(updatedObjects);
 //                writeResult.setNewDocuments(data.size() - nonInsertedVariants.size() - writeResult.getSkippedVariants());
             queries.clear();
             updates.clear();
@@ -1429,7 +1435,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // Can happen that nonInsertedVariantsNum != queries.size() != nonInsertedVariants.size() if there was
             // a duplicated variant.
             writeResult.setNonInsertedVariants(nonInsertedVariants.size() - update.first().getMatchedCount());
-            writeResult.setUpdatedObjects(writeResult.getUpdatedObjects() + update.first().getModifiedCount());
+            writeResult.setUpdatedVariants(writeResult.getUpdatedVariants() + update.first().getModifiedCount());
         }
 
         return new QueryResult<>("insertVariants", ((int) (System.currentTimeMillis() - startTime)), 1, 1, "", "",
@@ -1465,7 +1471,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { $push : {
         //      "studies.$.gt.?/?" : {$each : [ <fileSampleIds> ] }
         // } }
-        if (studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "")
+        if (studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key(), "")
                 .equals(Collections.singletonList(DocumentToSamplesConverter.UNKNOWN_GENOTYPE))
 //                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
                 ) {
@@ -1536,7 +1542,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         DocumentToSamplesConverter samplesConverter;
         if (studyIds.isEmpty()) {
-            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager, null);
+            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         } else {
             List<StudyConfiguration> studyConfigurations = new LinkedList<>();
             for (Integer studyId : studyIds) {
@@ -2036,6 +2042,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     void createIndexes(QueryOptions options) {
+        createIndexes(options, variantsCollection);
+    }
+
+    public static void createIndexes(QueryOptions options, MongoDBCollection variantsCollection) {
         logger.info("Start creating indexes");
         ObjectMap onBackground = new ObjectMap().append(BACKGROUND, true);
         ObjectMap onBackgroundSparse = new ObjectMap().append(BACKGROUND, true).append(SPARSE, true);
@@ -2138,6 +2148,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceMongoDBAdaptor;
+    }
+
+    @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
     }
@@ -2155,10 +2170,4 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return loadedSampleIds;
     }
 
-    /* OLD METHODS*/
-    @Override
-    @Deprecated
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return variantSourceMongoDBAdaptor;
-    }
 }
