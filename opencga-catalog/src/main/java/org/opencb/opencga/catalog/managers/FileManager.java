@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -10,6 +11,7 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -55,10 +57,17 @@ public class FileManager extends AbstractManager implements IFileManager {
         logger = LoggerFactory.getLogger(FileManager.class);
     }
 
+    @Deprecated
     public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+    }
+
+    public FileManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
+                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                       CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
     }
 
     public static List<String> getParentPaths(String filePath) {
@@ -155,10 +164,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Override
     public Long getFileId(String id) throws CatalogException {
-        try {
+        if (StringUtils.isNumeric(id)) {
             return Long.parseLong(id);
-        } catch (NumberFormatException e) {
-            e.printStackTrace();
         }
 
         String[] split = id.split("@", 2);
@@ -221,6 +228,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         return result;
     }
 
+    @Deprecated
     @Override
     public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
@@ -561,6 +569,53 @@ public class FileManager extends AbstractManager implements IFileManager {
             default:
                 break;
         }
+        return null;
+    }
+
+    @Override
+    public QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException {
+        QueryResult<File> queryResult = read(fileId, null, sessionId);
+        File file = queryResult.first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not delete root folder");
+        }
+
+        if (!isExternal(file)) {
+            throw new CatalogException("Cannot unlink a file that does not have an URI.");
+        }
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.DELETE);
+
+        List<File> filesToDelete;
+        if (file.getType().equals(File.Type.FOLDER)) {
+            filesToDelete = fileDBAdaptor.get(
+                    new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath()),
+                    new QueryOptions("include", "projects.studies.files.id")).getResult();
+        } else {
+            filesToDelete = Collections.singletonList(file);
+        }
+
+        for (File f : filesToDelete) {
+            fileDBAdaptor.deleteFile(f.getId());
+        }
+
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        return null;
+    }
+
+    @Override
+    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
         return null;
     }
 

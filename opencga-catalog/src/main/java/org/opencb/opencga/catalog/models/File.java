@@ -321,17 +321,8 @@ public class File {
 
     public static class FileStatus extends Status {
 
-        /**
-         * STAGE.
-         */
         public static final String STAGE = "STAGE";
-        /**
-         * MISSING.
-         */
         public static final String MISSING = "MISSING";
-        /**
-         * TRASHED.
-         */
         public static final String TRASHED = "TRASHED";
 
         public FileStatus(String status, String message) {
@@ -354,24 +345,12 @@ public class File {
             if (Status.isValid(status)) {
                 return true;
             }
-            if (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED)) {
+            if (status != null && (status.equals(STAGE) || status.equals(MISSING) || status.equals(TRASHED))) {
                 return true;
             }
             return false;
         }
     }
-
-
-    /* Status */
-    /*
-    public enum FileStatusEnum {
-        STAGE,
-        READY,
-        MISSING,
-        TRASHED,
-        DELETED
-    }
-*/
 
     public enum Type {
         FOLDER,

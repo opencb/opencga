@@ -1,0 +1,287 @@
+<!doctype html>
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<html class="no-js" lang="">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title></title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!--<link rel="apple-touch-icon" href="apple-touch-icon.png">-->
+    <!-- Place favicon.ico in the root directory -->
+
+    <script type="text/javascript" src="config.js"></script>
+
+    <link rel="stylesheet" href="../bower_components/fontawesome/css/font-awesome.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.1/bootstrap-table.css">
+
+    <!-- build:js vendors.min.js -->
+    <script type="text/javascript" src="../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+    <script type="text/javascript" src="../bower_components/underscore/underscore.js"></script>
+    <script type="text/javascript" src="../bower_components/backbone/backbone.js"></script>
+    <script type="text/javascript" src="../bower_components/jquery/dist/jquery.js"></script>
+    <script type="text/javascript" src="../bower_components/uri.js/src/URI.js"></script>
+    <script type="text/javascript" src="../bower_components/cookies-js/dist/cookies.js"></script>
+    <script src="../bower_components/crypto-js/crypto-js.js"></script>
+    <script src="../lib/jsorolla/src/lib/utils.js"></script>
+    <!--<script src="../lib/jsorolla/src/lib/opencga-manager.js"></script>-->
+    <script src="../lib/jsorolla/src/lib/clients/opencga-client-config.js"></script>
+    <script src="../lib/jsorolla/src/lib/clients/opencga-client.js"></script>
+    <script src="../lib/jsorolla/src/lib/clients/rest-client.js"></script>
+    <!-- /build -->
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-table/1.10.1/bootstrap-table.js"></script>
+
+
+        <!-- These dependencies must go AFTER jquery -->
+    <!--<script type="text/javascript" src="../bower_components/vendor/bootstrap-scoped-dist/js/bootstrap.min.js"></script>-->
+    <!--<script type="text/javascript" src="../bower_components/vendor/typeahead.min.js"></script>-->
+    <!--<script type="text/javascript" src="../bower_components/vendor/jquery.qtip.min.js"></script>-->
+    <!--<script type="text/javascript" src="../bower_components/vendor/jquery.cookie.js"></script>-->
+    <!--<script type="text/javascript" src="../bower_components/vendor/jquery.sha1.js"></script>-->
+    <!--<script type="text/javascript" src="../bower_components/vendor/purl.min.js"></script>-->
+    <!--<script type="text/javascript" src="../bower_components/vendor/jquery.mousewheel.min.js"></script>-->
+
+
+    <!--custom-elements-->
+    <link rel="import" href="components/opencga-web.html">
+
+    <style>
+        .center {
+            margin: auto;
+            width: 98%;
+        }
+    </style>
+</head>
+    <body>
+
+    <opencga-web></opencga-web>
+        <!--[if lt IE 8]>
+        <!--<p class="browserupgrade">-->
+            <!--You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.-->
+        <!--</p>-->
+        <!--<![endif]&ndash;&gt;-->
+
+        <!--<script>-->
+            <!--function init() {-->
+
+                <!--$(".opencga-menu a").on('click', function (e) {-->
+                    <!--e.preventDefault(); // stops link form loading-->
+                    <!--$('.content').hide(); // hides all content divs-->
+                    <!--$( $(this).attr('href') ).show(); //get the href and use it find which div to show-->
+                <!--});-->
+
+
+                <!--// Set the sessionId-->
+                <!--if (Cookies.get('bioinfo_sid') != "") {-->
+                    <!--if (OPENCGA_SESSION_ID != "") {-->
+                        <!--Cookies.set('bioinfo_sid', OPENCGA_SESSION_ID);-->
+                        <!--Cookies.set('bioinfo_user', OPENCGA_USER_ID);-->
+                        <!--$('#home').show();-->
+                    <!--} else {-->
+                        <!--$('#login').show();-->
+                        <!--$(".opencga-menu a").off('click');-->
+                    <!--}-->
+                <!--} else {-->
+                    <!--$('#login').show();-->
+                    <!--$(".opencga-menu a").off('click');-->
+                <!--}-->
+
+                <!--// Set the host according to the configuration file-->
+                <!--$("#opencgaHost").ready(function() {-->
+                    <!--$("#opencgaHost")[0].value = OPENCGA_HOST;-->
+                <!--});-->
+
+                <!--$("opencga-login").on('login', function(e) {-->
+                    <!--OPENCGA_USER_ID = e.detail.userId;-->
+                    <!--OPENCGA_SESSION_ID = e.detail.sessionId;-->
+                    <!--// Change the icon to sign out-->
+                    <!--$(".opencga-menu a[href='#login']").hide();-->
+                    <!--$(".opencga-menu a[href='#logout']").show();-->
+
+                    <!--// Change the method that will be called on click-->
+
+
+                    <!--showHome(e.detail.sessionId);-->
+                <!--})-->
+
+            <!--}-->
+
+            <!--function showHome(sessionId) {-->
+                <!--// Load everything-->
+                <!--var opencgaPanel = $("opencga-files-panel")[0];-->
+                <!--opencgaPanel.setAttribute("session", OPENCGA_SESSION_ID);-->
+                <!--opencgaPanel.setAttribute("username", OPENCGA_USER_ID);-->
+
+
+                <!--// Move to the home window-->
+                <!--$(".opencga-menu a").on('click', prueba);-->
+                <!--$(".opencga-menu a[href='#home']").trigger("click");-->
+            <!--}-->
+
+            <!--function logout() {-->
+
+                <!--OpencgaManager.users.logout({-->
+                    <!--id: OPENCGA_USER_ID,-->
+                    <!--query: {-->
+                        <!--sid: OPENCGA_SESSION_ID-->
+                    <!--},-->
+                    <!--request: {-->
+                        <!--success: function(response) {-->
+                            <!--//Delete all cookies-->
+                            <!--Cookies.expire('bioinfo_sid');-->
+                            <!--Cookies.expire('bioinfo_user');-->
+                            <!--OPENCGA_USER_ID = "";-->
+                            <!--OPENCGA_SESSION_ID = "";-->
+                            <!--console.log("You are successfully logged out.");-->
+
+                            <!--$(".opencga-menu a[href='#login']").show();-->
+                            <!--$(".opencga-menu a[href='#logout']").hide();-->
+                            <!--$(".opencga-menu a[href='#login']").trigger("click");-->
+
+                            <!--$(".opencga-menu a").off('click');-->
+                        <!--}-->
+                    <!--}-->
+                <!--})-->
+            <!--}-->
+
+            <!--window.addEventListener("load", init());-->
+        <!--</script>-->
+
+        <!--<div>-->
+            <!--<div style="height: 60px;">-->
+                <!--<nav class="navbar navbar-inverse navbar-fixed-top">-->
+                    <!--<div class="container-fluid">-->
+                        <!--&lt;!&ndash; Brand and toggle get grouped for better mobile display &ndash;&gt;-->
+                        <!--<div class="navbar-header">-->
+                            <!--<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">-->
+                                <!--<span class="sr-only">Toggle navigation</span>-->
+                                <!--<span class="icon-bar"></span>-->
+                                <!--<span class="icon-bar"></span>-->
+                                <!--<span class="icon-bar"></span>-->
+                            <!--</button>-->
+                            <!--<a class="navbar-brand" href="#">OpenCGA Dashboard</a>-->
+                        <!--</div>-->
+
+                        <!--&lt;!&ndash; Collect the nav links, forms, and other content for toggling &ndash;&gt;-->
+                        <!--<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">-->
+                            <!--<ul class="nav navbar-nav">-->
+                                <!--<li class="dropdown opencga-menu">-->
+                                    <!--<a href="#home"><i class="fa fa-home fa-lg"></i></a>-->
+                                <!--</li>-->
+
+                                <!--<li class="dropdown">-->
+                                    <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Study <span class="caret"></span></a>-->
+                                    <!--<ul class="dropdown-menu">-->
+                                        <!--<li><a href="#">v3</a></li>-->
+                                        <!--<li><a href="#">v4</a></li>-->
+                                    <!--</ul>-->
+                                <!--</li>-->
+                            <!--</ul>-->
+
+                            <!--&lt;!&ndash; Controls aligned to the right: version, species, search, settings and about&ndash;&gt;-->
+                            <!--<ul class="nav navbar-nav navbar-right">-->
+                                <!--<form class="navbar-form navbar-left" role="search">-->
+                                    <!--<div class="form-group">-->
+                                        <!--<input type="text" class="form-control" placeholder="NA00001,...">-->
+                                        <!--<a href="#">-->
+                                            <!--<i class="fa fa-search"></i>-->
+                                        <!--</a>-->
+                                    <!--</div>-->
+                                <!--</form>-->
+
+                                <!--<li>-->
+                                    <!--<a href="#" data-toggle="modal" role="button" data-placement="bottom" data-target="#myModal" title="Settings ...">-->
+                                        <!--<i class="fa fa-cog fa-lg"></i>-->
+                                    <!--</a>-->
+                                <!--</li>-->
+
+                                <!--<li class="dropdown">-->
+                                    <!--<a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">About <span class="caret"></span></a>-->
+                                    <!--<ul class="dropdown-menu">-->
+                                        <!--<li><a href="https://github.com/opencb/cellbase/wiki/About" target="_blank">About</a></li>-->
+                                        <!--<li><a href="https://github.com/opencb/cellbase" target="_blank">GitHub</a></li>-->
+                                        <!--<li><a href="https://github.com/opencb/cellbase/wiki" target="_blank">Documentation</a></li>-->
+                                        <!--<li><a href="#">Contact</a></li>-->
+                                        <!--<li><a href="#">FAQ</a></li>-->
+                                    <!--</ul>-->
+                                <!--</li>-->
+
+                                <!--<li class="opencga-menu">-->
+                                    <!--<a href="#login">-->
+                                        <!--<i class="fa fa-sign-in fa-lg"></i> Login-->
+                                    <!--</a>-->
+
+                                    <!--<a href="#logout" onclick="logout()"  style="display: none;">-->
+                                        <!--<i class="fa fa-sign-out fa-lg"></i> Logout-->
+                                    <!--</a>-->
+                                <!--</li>-->
+
+                            <!--</ul>-->
+                        <!--</div>&lt;!&ndash; /.navbar-collapse &ndash;&gt;-->
+                    <!--</div>&lt;!&ndash; /.container-fluid &ndash;&gt;-->
+                <!--</nav>-->
+            <!--</div>-->
+
+            <!--&lt;!&ndash; This is where main application is rendered &ndash;&gt;-->
+            <!--<div class="center">-->
+                <!--<div class="collapse content" id="login">-->
+                    <!--<opencga-login></opencga-login>-->
+                    <!--&lt;!&ndash;<opencga-test></opencga-test>&ndash;&gt;-->
+                <!--</div>-->
+                <!--<div class="collapse content" id="home">-->
+                    <!--<opencga-files-panel></opencga-files-panel>-->
+                <!--</div>-->
+            <!--</div>-->
+
+        <!--</div>-->
+
+
+
+        <!--&lt;!&ndash; Modal dialog for Settings &ndash;&gt;-->
+        <!--<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">-->
+            <!--<div class="modal-dialog" role="document">-->
+                <!--<div class="modal-content">-->
+                    <!--<div class="modal-header">-->
+                        <!--<button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>-->
+                        <!--<h4 class="modal-title" id="myModalLabel">Settings</h4>-->
+                    <!--</div>-->
+                    <!--<div class="modal-body">-->
+                        <!--&lt;!&ndash;<div class="input-group">&ndash;&gt;-->
+                        <!--&lt;!&ndash;<span class="input-group-addon" id="basic-addon">Select Species</span>&ndash;&gt;-->
+                        <!--&lt;!&ndash;<cellbase-species-menu class="btn btn-default"></cellbase-species-menu>&ndash;&gt;-->
+                        <!--&lt;!&ndash;</div>&ndash;&gt;-->
+                        <!--<p></p>-->
+                        <!--<div class="input-group">-->
+                            <!--<span class="input-group-addon" id="basic-addon1">Host</span>-->
+                            <!--<input type="text" class="form-control" placeholder="Host" aria-describedby="basic-addon1"-->
+                                   <!--id="opencgaHost" value="">-->
+                        <!--</div>-->
+                    <!--</div>-->
+                    <!--<div class="modal-footer">-->
+                        <!--<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>-->
+                        <!--<button type="button" class="btn btn-primary">OK</button>-->
+                    <!--</div>-->
+                <!--</div>-->
+            <!--</div>-->
+        <!--</div>-->
+    </body>
+</html>

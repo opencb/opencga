@@ -25,15 +25,18 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.FileOutputStream;
@@ -64,25 +67,20 @@ public class CatalogFileUtilsTest {
 
     @Before
     public void before() throws CatalogException, IOException {
-
-        InputStream is = this.getClass().getClassLoader().getResourceAsStream("catalog.properties");
-        Properties properties = new Properties();
-        properties.load(is);
-
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", properties.getProperty(CatalogManager.CATALOG_DB_USER, ""))
-                .add("password", properties.getProperty(CatalogManager.CATALOG_DB_PASSWORD, ""))
-                .add("authenticationDatabase", properties.getProperty(CatalogManager.CATALOG_DB_AUTHENTICATION_DB, ""))
+                .add("username", catalogConfiguration.getDatabase().getUser())
+                .add("password", catalogConfiguration.getDatabase().getPassword())
+                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
-        String[] split = properties.getProperty(CatalogManager.CATALOG_DB_HOSTS).split(",")[0].split(":");
-        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
-                split[0], 27017);
+        String[] split = catalogConfiguration.getDatabase().getHosts().get(0).split(":");
+        DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
-
-        CatalogManagerTest.clearCatalog(properties);
-        catalogManager = new CatalogManager(properties);
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         //Create USER
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
@@ -283,6 +281,42 @@ public class CatalogFileUtilsTest {
         assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
     }
 
+    @Test
+    public void unlinkFileTest() throws CatalogException, IOException {
+        java.io.File createdFile;
+        URI sourceUri;
+        createdFile = CatalogManagerTest.createDebugFile();
+        sourceUri = createdFile.toURI();
+        File file;
+        URI fileUri;
+
+        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
+
+        fileUri = catalogManager.getFileUri(file);
+        assertEquals(sourceUri, fileUri);
+        assertTrue(createdFile.exists());
+        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+
+        // Now we unlink it
+        catalogManager.unlink(file.getId(), userSessionId);
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not found");
+        List<File> result = catalogManager.getFile(file.getId(), userSessionId).getResult();
+
+    }
+
+    @Test
+    public void unlinkFileNoUriTest() throws CatalogException, IOException {
+        File file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+
+        // Now we try to unlink it
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("does not have an URI.");
+        catalogManager.unlink(file.getId(), userSessionId);
+    }
 
     @Test
     public void deleteFilesTest1() throws CatalogException, IOException {

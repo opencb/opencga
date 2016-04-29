@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 
 import java.io.DataInputStream;
@@ -37,9 +38,13 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
         super(propertiesFile);
     }
 
-
+    @Deprecated
     public HdfsCatalogIOManager(Properties properties) throws CatalogIOException {
         super(properties);
+    }
+
+    public HdfsCatalogIOManager(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+        super(catalogConfiguration);
     }
 
     /**
@@ -63,8 +68,14 @@ public class HdfsCatalogIOManager extends CatalogIOManager {
 //         */
 //
 //    }
+    @Deprecated
     @Override
     protected void setProperties(Properties properties) throws CatalogIOException {
+
+    }
+
+    @Override
+    protected void setProperties(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
 
     }
 

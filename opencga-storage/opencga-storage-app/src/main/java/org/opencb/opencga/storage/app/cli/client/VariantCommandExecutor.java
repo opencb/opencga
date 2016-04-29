@@ -145,9 +145,13 @@ public class VariantCommandExecutor extends CommandExecutor {
 
     private void index() throws URISyntaxException, IOException, StorageManagerException, FileFormatException {
         CliOptionsParser.IndexVariantsCommandOptions indexVariantsCommandOptions = variantCommandOptions.indexVariantsCommandOptions;
-        URI variantsUri = UriUtils.createUri(indexVariantsCommandOptions.input);
-        if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
-            FileUtils.checkFile(Paths.get(variantsUri));
+        List<URI> inputUris = new LinkedList<>();
+        for (String uri : indexVariantsCommandOptions.input) {
+            URI variantsUri = UriUtils.createUri(uri);
+            if (variantsUri.getScheme().startsWith("file") || variantsUri.getScheme().isEmpty()) {
+                FileUtils.checkFile(Paths.get(variantsUri));
+            }
+            inputUris.add(variantsUri);
         }
 
         URI pedigreeUri = (indexVariantsCommandOptions.pedigree != null && !indexVariantsCommandOptions.pedigree.isEmpty())
@@ -160,7 +164,7 @@ public class VariantCommandExecutor extends CommandExecutor {
         URI outdirUri = (indexVariantsCommandOptions.outdir != null && !indexVariantsCommandOptions.outdir.isEmpty())
                 ? UriUtils.createDirectoryUri(indexVariantsCommandOptions.outdir)
                 // Get parent folder from input file
-                : variantsUri.resolve(".");
+                : inputUris.get(0).resolve(".");
         if (outdirUri.getScheme().startsWith("file") || outdirUri.getScheme().isEmpty()) {
             FileUtils.checkDirectory(Paths.get(outdirUri), true);
         }
@@ -226,7 +230,7 @@ public class VariantCommandExecutor extends CommandExecutor {
             doLoad = indexVariantsCommandOptions.load;
         }
 
-        variantStorageManager.index(Collections.singletonList(variantsUri), outdirUri, doExtract, doTransform, doLoad);
+        variantStorageManager.index(inputUris, outdirUri, doExtract, doTransform, doLoad);
 
     }
 

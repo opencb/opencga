@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.BufferedReader;
@@ -34,12 +35,14 @@ public class AnalysisJobExecutorTest {
 
     @Before
     public void before() throws Exception {
-        Properties properties = new Properties();
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+                .openStream());
+        /*Properties properties = new Properties();
         properties.load(CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
+*/
+        CatalogManagerTest.clearCatalog(catalogConfiguration);
 
-        CatalogManagerTest.clearCatalog(properties);
-
-        catalogManager = new CatalogManager(properties);
+        catalogManager = new CatalogManager(catalogConfiguration);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");

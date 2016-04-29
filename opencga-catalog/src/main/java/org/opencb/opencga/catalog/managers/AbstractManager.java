@@ -58,8 +58,7 @@ public abstract class AbstractManager {
     @Deprecated
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                            AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
-                                   ioManagerFactory,
-                           Properties catalogProperties) {
+                                   ioManagerFactory, Properties catalogProperties) {
         this.authorizationManager = authorizationManager;
         this.authenticationManager = authenticationManager;
         this.auditManager = auditManager;

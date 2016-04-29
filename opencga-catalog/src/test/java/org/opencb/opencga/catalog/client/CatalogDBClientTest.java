@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
@@ -42,9 +43,13 @@ public class CatalogDBClientTest {
 
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException {
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogDBClientTest.class.getClassLoader().getClass()
+                .getResource("/catalog-configuration.yml").openStream());
+        /*
         Properties catalogProperties = new Properties();
         catalogProperties.load(CatalogDBClientTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
-        catalogManager = new CatalogManager(catalogProperties);
+        */
+        catalogManager = new CatalogManager(catalogConfiguration);
         QueryResult<ObjectMap> result = catalogManager.loginAsAnonymous("test-ip");
         userId = result.getResult().get(0).getString("userId");
         sessionId = result.getResult().get(0).getString("sessionId");

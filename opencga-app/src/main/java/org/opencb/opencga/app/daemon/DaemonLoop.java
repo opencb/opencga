@@ -29,6 +29,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -41,7 +42,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 /**
@@ -69,8 +73,10 @@ public class DaemonLoop implements Runnable {
     public DaemonLoop(Properties properties) {
         this.properties = properties;
         try {
-            catalogManager = new CatalogManager(Config.getCatalogProperties());
-        } catch (CatalogException e) {
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "catalog-configuration.yml").toFile()));
+            catalogManager = new CatalogManager(catalogConfiguration);
+        } catch (CatalogException | IOException e) {
             e.printStackTrace();
         }
 

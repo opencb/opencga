@@ -33,8 +33,7 @@ public class Cohort {
     private String name;
     private Type type;
     private String creationDate;
-    private Status status;
-    private CohortStatus cohortStatus;
+    private CohortStatus status;
     private String description;
 
     private List<Long> samples;
@@ -47,7 +46,7 @@ public class Cohort {
 
     public Cohort(String name, Type type, String creationDate, String description, List<Long> samples,
                   Map<String, Object> attributes) throws CatalogException {
-        this(-1, name, type, creationDate, CohortStatus.NONE, description, samples, Collections.emptyMap(), attributes);
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, Collections.emptyMap(), attributes);
     }
 
     public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Long> samples,
@@ -56,8 +55,7 @@ public class Cohort {
         this.name = name;
         this.type = type;
         this.creationDate = creationDate;
-        this.cohortStatus = cohortStatus;
-        this.status = new Status();
+        this.status = cohortStatus;
         this.description = description;
         this.samples = samples;
         this.stats = stats;
@@ -71,7 +69,6 @@ public class Cohort {
         sb.append(", name='").append(name).append('\'');
         sb.append(", type=").append(type);
         sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", cohortStatus=").append(cohortStatus);
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
@@ -113,19 +110,11 @@ public class Cohort {
         this.creationDate = creationDate;
     }
 
-    public CohortStatus getCohortStatus() {
-        return cohortStatus;
-    }
-
-    public void setCohortStatus(CohortStatus cohortStatus) {
-        this.cohortStatus = cohortStatus;
-    }
-
-    public Status getStatus() {
+    public CohortStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(CohortStatus status) {
         this.status = status;
     }
 
@@ -161,11 +150,37 @@ public class Cohort {
         this.attributes = attributes;
     }
 
-    public enum CohortStatus {
-        NONE,
-        CALCULATING,
-        READY,
-        INVALID
+    public static class CohortStatus extends Status {
+
+        public static final String NONE = "NONE";
+        public static final String CALCULATING = "CALCULATING";
+        public static final String INVALID = "INVALID";
+
+        public CohortStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                init(UNKNOWN, message);
+            }
+        }
+
+        public CohortStatus(String status) {
+            this(status, "");
+        }
+
+        public CohortStatus() {
+            this(NONE, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID))) {
+                return true;
+            }
+            return false;
+        }
     }
 
     //Represents the criteria of grouping samples in the cohort

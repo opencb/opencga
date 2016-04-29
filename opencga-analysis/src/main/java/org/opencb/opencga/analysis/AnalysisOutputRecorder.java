@@ -177,14 +177,14 @@ public class AnalysisOutputRecorder {
                         logger.debug("Default cohort status set to READY");
                         Cohort defaultCohort = queryResult.first();
                         catalogManager.modifyCohort(defaultCohort.getId(),
-                                new ObjectMap(CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key(), Cohort.CohortStatus.READY),
+                                new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.READY),
                                 new QueryOptions(), sessionId);
                     }
                 }
                 break;
             case COHORT_STATS:
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");
-                ObjectMap updateParams = new ObjectMap(CatalogCohortDBAdaptor.QueryParams.COHORT_STATUS.key(), jobFailed? Cohort.CohortStatus.INVALID : Cohort.CohortStatus.READY);
+                ObjectMap updateParams = new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), jobFailed? Cohort.CohortStatus.INVALID : Cohort.CohortStatus.READY);
                 for (Integer cohortId : cohortIds) {
                     catalogManager.modifyCohort(cohortId, updateParams, new QueryOptions(), sessionId);
                 }
