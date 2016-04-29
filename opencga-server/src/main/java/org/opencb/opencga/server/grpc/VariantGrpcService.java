@@ -28,6 +28,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
+import java.io.IOException;
 import java.util.Iterator;
 
 import static org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantService;
@@ -59,7 +60,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
             responseObserver.onNext(ServiceTypesModel.LongResponse.newBuilder().setValue(queryResult.getResult().get(0)).build());
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException | IOException e) {
             e.printStackTrace();
         }
 //        catch (NotAuthorizedHostException | NotAuthorizedUserException e) {
@@ -92,7 +93,7 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
             }
             responseObserver.onCompleted();
             variantDBAdaptor.close();
-        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException e) {
+        } catch (IllegalAccessException | InstantiationException | ClassNotFoundException | StorageManagerException | IOException e) {
             e.printStackTrace();
         }
 //        catch (NotAuthorizedHostException e) {
