@@ -135,7 +135,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         List<URI> inputFiles = new LinkedList<>();
 
         for (int fileId = 12877; fileId <= 12893; fileId++) {
-            String fileName = "1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+            String fileName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             inputFiles.add(getResourceUri(fileName));
 //            int fileId = studyConfiguration.getFileIds().size() + 1;
             studyConfiguration.getFileIds().put(fileName, fileId);
@@ -316,7 +316,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
 
         for (int fileId = 12877; fileId <= 12893; fileId++) {
-            VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
+            VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration);
 
             studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first();
             System.out.println(studyConfiguration);
@@ -354,7 +354,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         int fileId;
         String pending = "";
         for (fileId = 12877; fileId < 12893; fileId++) {
-            VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
+            VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                     new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false));
             sources.add(source);
             expectedVariants.addAll(checkArchiveTableLoadedVariants(studyConfiguration, dbAdaptor, source));
@@ -362,7 +362,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             assertFalse(studyConfiguration.getIndexedFiles().contains(fileId));
         }
         pending += fileId + ",";
-        VariantSource source = loadFile("1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
+        VariantSource source = loadFile("platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz", fileId, studyConfiguration,
                 new ObjectMap(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, pending)
         );

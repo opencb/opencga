@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
-public abstract class StudyConfigurationManager {
+public abstract class StudyConfigurationManager implements AutoCloseable {
     public static final String CACHED = "cached";
     public static final String READ_ONLY = "ro";
     protected static Logger logger = LoggerFactory.getLogger(StudyConfigurationManager.class);
@@ -156,4 +157,7 @@ public abstract class StudyConfigurationManager {
             throw e;
         }
     }
+
+    @Override
+    public void close() throws IOException { }
 }

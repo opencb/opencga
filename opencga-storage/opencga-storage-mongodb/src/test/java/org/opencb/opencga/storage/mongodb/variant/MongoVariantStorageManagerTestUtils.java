@@ -30,13 +30,19 @@ public interface MongoVariantStorageManagerTestUtils extends VariantStorageTest 
     default void clearDB(String dbName) throws Exception {
         MongoCredentials credentials = getVariantStorageManager().getMongoCredentials(dbName);
         logger.info("Cleaning MongoDB {}", credentials.getMongoDbName());
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
-        MongoDataStore mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        mongoManager.drop(credentials.getMongoDbName());
+        try (MongoDataStoreManager mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses())) {
+            MongoDataStore mongoDataStore = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+            mongoManager.drop(credentials.getMongoDbName());
+        }
     }
 
     default int getExpectedNumLoadedVariants(VariantSource source) {
-        return source.getStats().getNumRecords()
+        int numRecords = source.getStats().getNumRecords();
+        if (source.getFileName().equals("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz")) {
+            logger.info("Non inserted variant 22_16080426_A_G in this file. Overlapped variant!");
+            numRecords--;
+        }
+        return numRecords
                 - source.getStats().getVariantTypeCount(VariantType.SYMBOLIC)
                 - source.getStats().getVariantTypeCount(VariantType.NO_VARIATION);
     }

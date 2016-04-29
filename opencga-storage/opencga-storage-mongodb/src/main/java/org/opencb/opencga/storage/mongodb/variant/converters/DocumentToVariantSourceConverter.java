@@ -34,6 +34,7 @@ import java.util.logging.Logger;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public class DocumentToVariantSourceConverter implements ComplexTypeConverter<VariantSource, Document> {
 
     public static final String FILEID_FIELD = "fid";

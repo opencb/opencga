@@ -121,7 +121,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @After
-    public void after() {
+    public void after() throws IOException {
         dbAdaptor.close();
     }
 
