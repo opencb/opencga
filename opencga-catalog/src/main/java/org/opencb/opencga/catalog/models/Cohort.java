@@ -160,7 +160,7 @@ public class Cohort {
             if (isValid(status)) {
                 init(status, message);
             } else {
-                init(UNKNOWN, message);
+                throw new IllegalArgumentException("Unknown status " + status);
             }
         }
 
@@ -184,6 +184,7 @@ public class Cohort {
     }
 
     //Represents the criteria of grouping samples in the cohort
+    @Deprecated
     public enum Type {
         CASE_CONTROL,
         CASE_SET,

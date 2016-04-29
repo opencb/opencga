@@ -2037,8 +2037,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     void createIndexes(QueryOptions options) {
         logger.info("Start creating indexes");
-        ObjectMap onBackground = new ObjectMap().append(BACKGROUND, true);
-        ObjectMap onBackgroundSparse = new ObjectMap().append(BACKGROUND, true).append(SPARSE, true);
+
+        ObjectMap onBackground = new ObjectMap(MongoDBCollection.BACKGROUND, true);
+        ObjectMap backgroundAndSparse = new ObjectMap(MongoDBCollection.BACKGROUND, true).append(MongoDBCollection.SPARSE, true);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.AT_FIELD + '.'
                 + DocumentToVariantConverter.CHUNK_IDS_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1)
@@ -2065,10 +2066,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
-                onBackgroundSparse);
+                backgroundAndSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD + ".clinvar.clinicalSignificance", 1),
-                onBackgroundSparse);
+                backgroundAndSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
                 .MAF_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter

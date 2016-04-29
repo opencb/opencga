@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.managers.api;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
@@ -66,6 +67,70 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException;
+
+    /**
+     * Ranks the elements queried, groups them by the field(s) given and return it sorted.
+     *
+     * @param studyId    Study id.
+     * @param query      Query object containing the query that will be executed.
+     * @param field      A field or a comma separated list of fields by which the results will be grouped in.
+     * @param numResults Maximum number of results to be reported.
+     * @param asc        Order in which the results will be reported.
+     * @param sessionId  sessionId.
+     * @return           A QueryResult object containing each of the fields in field and the count of them matching the query.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException;
+
+    default QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
+        long studyId = query.getLong(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key());
+        if (studyId == 0L) {
+            throw new CatalogException("File[rank]: Study id not found in the query");
+        }
+        return rank(studyId, query, field, numResults, asc, sessionId);
+    }
+
+    /**
+     * Groups the elements queried by the field(s) given.
+     *
+     * @param studyId Study id.
+     * @param query   Query object containing the query that will be executed.
+     * @param field   Field by which the results will be grouped in.
+     * @param options QueryOptions object.
+     * @param sessionId  sessionId.
+     * @return        A QueryResult object containing the results of the query grouped by the field.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException;
+
+    default QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        long studyId = query.getLong(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key());
+        if (studyId == 0L) {
+            throw new CatalogException("File[groupBy]: Study id not found in the query");
+        }
+        return groupBy(studyId, query, field, options, sessionId);
+    }
+
+    /**
+     * Groups the elements queried by the field(s) given.
+     *
+     * @param studyId Study id.
+     * @param query   Query object containing the query that will be executed.
+     * @param fields  List of fields by which the results will be grouped in.
+     * @param options QueryOptions object.
+     * @param sessionId  sessionId.
+     * @return        A QueryResult object containing the results of the query grouped by the fields.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException;
+
+    default QueryResult groupBy(Query query, List<String> field, QueryOptions options, String sessionId) throws CatalogException {
+        long studyId = query.getLong(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key());
+        if (studyId == 0L) {
+            throw new CatalogException("File[groupBy]: Study id not found in the query");
+        }
+        return groupBy(studyId, query, field, options, sessionId);
+    }
 
     QueryResult<Dataset> createDataset(long studyId, String name, String description, List<Long> files, Map<String, Object> attributes,
                                        QueryOptions options, String sessionId) throws CatalogException;

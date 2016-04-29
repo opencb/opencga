@@ -77,8 +77,31 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return studyDBAdaptor.getStudyId(projectId, projectStudy[1]);
     }
 
+    @Deprecated
     @Override
-    public QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creatorId, String creationDate,
+    public QueryResult<Study> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(objectMap, "objectMap");
+        // FIXME: Change the projectId, name... per CatalogStudyDBAdaptor.QueryParams...
+        return create(
+                objectMap.getInt("projectId", -1),
+                objectMap.getString("name"),
+                objectMap.getString("alias"),
+                Study.Type.valueOf(objectMap.getString("type", Study.Type.CASE_CONTROL.toString())),
+                objectMap.getString("creationDate"),
+                objectMap.getString("description"),
+                objectMap.get("status", Status.class, null),
+                objectMap.getString("cipher"),
+                objectMap.getString("uriScheme"),
+                objectMap.get("uri", URI.class, null),
+                objectMap.get("datastores", Map.class, null),
+                objectMap.getMap("stats"),
+                objectMap.getMap("attributes"),
+                options, sessionId
+        );
+    }
+
+    @Override
+    public QueryResult<Study> create(long projectId, String name, String alias, Study.Type type, String creationDate,
                                      String description, Status status, String cipher, String uriScheme, URI uri,
                                      Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                                      QueryOptions options, String sessionId) throws CatalogException {
@@ -91,9 +114,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         description = ParamUtils.defaultString(description, "");
-        creatorId = ParamUtils.defaultString(creatorId, userId);
+//        creatorId = ParamUtils.defaultString(creatorId, userId);
         creationDate = ParamUtils.defaultString(creationDate, TimeUtils.getTime());
-        status = ParamUtils.defaultObject(status, new Status());
+        status = ParamUtils.defaultObject(status, Status::new);
         cipher = ParamUtils.defaultString(cipher, "none");
         if (uri != null) {
             if (uri.getScheme() == null) {
@@ -116,36 +139,25 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         CatalogIOManager catalogIOManager = catalogIOManagerFactory.get(uriScheme);
 
-        String projectOwnerId = projectDBAdaptor.getProjectOwnerId(projectId);
+//        String projectOwnerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
 
         /* Check project permissions */
         authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
 
-        if (!creatorId.equals(userId)) {
-            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a study with creatorId != userId");
-            } else {
-                if (!userDBAdaptor.userExists(creatorId)) {
-                    throw new CatalogException("ERROR: CreatorId does not exist.");
-                }
-            }
-        }
-
-//        URI projectUri = catalogIOManager.getProjectUri(projectOwnerId, Integer.toString(projectId));
         LinkedList<File> files = new LinkedList<>();
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-        File rootFile = new File(".", File.Type.FOLDER, null, null, "", creatorId, "study root folder",
+        File rootFile = new File(".", File.Type.FOLDER, null, null, "", userId, "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0);
         rootFile.setUri(uri);
         files.add(rootFile);
 
-        Study study = new Study(-1, name, alias, type, creatorId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, AuthorizationManager.getDefaultGroups(new HashSet<>(Arrays.asList(projectOwnerId, userId))), experiments,
-                files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), null, datastores, stats, attributes);
+        Study study = new Study(-1, name, alias, type, userId, creationDate, description, status, TimeUtils.getTime(),
+                0, cipher, new LinkedList<>(), AuthorizationManager.getDefaultRoles(new HashSet<>(Arrays.asList(userId))),
+                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), null, datastores,
+                stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -154,10 +166,10 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         //URI studyUri;
         if (uri == null) {
             try {
-                uri = catalogIOManager.createStudy(projectOwnerId, Long.toString(projectId), Long.toString(study.getId()));
+                uri = catalogIOManager.createStudy(userId, Long.toString(projectId), Long.toString(study.getId()));
             } catch (CatalogIOException e) {
                 e.printStackTrace();
-                studyDBAdaptor.delete(study.getId(), false);
+                studyDBAdaptor.delete(study.getId(), new QueryOptions());
                 throw e;
             }
         }
@@ -168,37 +180,13 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
         auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
 
-        userDBAdaptor.updateUserLastActivity(projectOwnerId);
+        userDBAdaptor.updateUserLastActivity(userId);
         return result;
     }
 
     @Override
     public QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
-    }
-
-    @Deprecated
-    @Override
-    public QueryResult<Study> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        // FIXME: Change the projectId, name... per CatalogStudyDBAdaptor.QueryParams...
-        return create(
-                objectMap.getInt("projectId", -1),
-                objectMap.getString("name"),
-                objectMap.getString("alias"),
-                Study.Type.valueOf(objectMap.getString("type", Study.Type.CASE_CONTROL.toString())),
-                objectMap.getString("creatorId"),
-                objectMap.getString("creationDate"),
-                objectMap.getString("description"),
-                objectMap.get("status", Status.class, null),
-                objectMap.getString("cipher"),
-                objectMap.getString("uriScheme"),
-                objectMap.get("uri", URI.class, null),
-                objectMap.get("datastores", Map.class, null),
-                objectMap.getMap("stats"),
-                objectMap.getMap("attributes"),
-                options, sessionId
-        );
     }
 
     @Override
@@ -208,10 +196,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-
-        if (!options.containsKey("include") || options.get("include") == null || options.getAsStringList("include").isEmpty()) {
-            options.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
-        }
 
         QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
         if (!studyResult.getResult().isEmpty()) {
@@ -301,18 +285,71 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult rank(long projectId, Query query, String field, int numResults, boolean asc, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(projectId, "projectId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = studyDBAdaptor.rank(query, field, numResults, asc);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long projectId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(projectId, "projectId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = studyDBAdaptor.groupBy(query, field, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long projectId, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(fields, "fields");
+        ParamUtils.checkObj(projectId, "projectId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = studyDBAdaptor.groupBy(query, fields, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
 

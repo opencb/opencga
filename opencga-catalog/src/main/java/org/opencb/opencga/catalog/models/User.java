@@ -38,6 +38,7 @@ public class User {
     /**
      * This specifies the role of this user in OpenCGA, possible values: admin, user, demo, ...
      */
+    @Deprecated
     private Role role;
     private Status status;
     private String lastActivity;
@@ -60,9 +61,8 @@ public class User {
     }
 
     public User(String id, String name, String email, String password, String organization, Role role, Status status) {
-        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<Project>(),
-                new ArrayList<Tool>(0), new ArrayList<Session>(0),
-                new HashMap<String, Object>(), new HashMap<String, Object>());
+        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0),
+                new ArrayList<>(0), new HashMap<>(), new HashMap<>());
     }
 
     public User(String id, String name, String email, String password, String organization, Role role, Status status,
@@ -93,7 +93,7 @@ public class User {
         sb.append(", email='").append(email).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", organization='").append(organization).append('\'');
-        sb.append(", role=").append(role);
+//        sb.append(", role=").append(role);
         sb.append(", status='").append(status).append('\'');
         sb.append(", lastActivity='").append(lastActivity).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
@@ -147,13 +147,13 @@ public class User {
         this.organization = organization;
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
+//    public Role getRole() {
+//        return role;
+//    }
+//
+//    public void setRole(Role role) {
+//        this.role = role;
+//    }
 
     public Status getStatus() {
         return status;
@@ -227,12 +227,21 @@ public class User {
         this.attributes = attributes;
     }
 
-    /*
-     * Things to think about:
-     * private List<Credential> credentials = new ArrayList<Credential>();
-     * private List<Bucket> buckets = new ArrayList<Bucket>();
-     */
+    public Role getRole() {
+        return role;
+    }
 
+    public User setRole(Role role) {
+        this.role = role;
+        return this;
+    }
+
+    /*
+         * Things to think about:
+         * private List<Credential> credentials = new ArrayList<Credential>();
+         * private List<Bucket> buckets = new ArrayList<Bucket>();
+         */
+    @Deprecated
     public enum Role {
         ADMIN,  //= "admin";
         USER,  //= "user";

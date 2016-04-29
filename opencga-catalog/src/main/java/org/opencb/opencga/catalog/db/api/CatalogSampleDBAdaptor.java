@@ -76,7 +76,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     @Deprecated
     default QueryResult<Sample> deleteSample(long sampleId) throws CatalogDBException {
-        return delete(sampleId, false);
+        return delete(sampleId, new QueryOptions());
         /*
         // TODO check that the sample is not in use!
 

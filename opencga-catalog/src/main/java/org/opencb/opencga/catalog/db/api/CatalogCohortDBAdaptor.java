@@ -108,5 +108,4 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
     QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException;
 
     long getStudyIdByCohortId(long cohortId) throws CatalogDBException;
-
 }

@@ -12,24 +12,24 @@ import java.util.*;
  */
 public interface AuthorizationManager {
 
-    String ADMINS_GROUP = "admins";
-    String DATA_MANAGERS_GROUP = "dataManagers";
-    String MEMBERS_GROUP = "members";
+    String ADMINS_ROLE = "admins";
+    String DATA_MANAGERS_ROLE = "dataManagers";
+    String MEMBERS_ROLE = "members";
 
     /**
-     * Get tree default groups.
+     * Get tree default roles.
      * admins : Full permissions
      * dataManagers: Full data permissions. No study permissions
      * members: Just launch jobs permission.
      *
      * @param adminUsers Users to add to the admin group by default.
-     * @return List<Group>
+     * @return List<Role>
      */
-    static List<Group> getDefaultGroups(Collection<String> adminUsers) {
+    static List<Role> getDefaultRoles(Collection<String> adminUsers) {
         return Arrays.asList(
-                new Group(ADMINS_GROUP, new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true, true)),
-                new Group(DATA_MANAGERS_GROUP, Collections.emptyList(), new StudyPermissions(true, true, true, true, true, true, false)),
-                new Group(MEMBERS_GROUP, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false, false)));
+                new Role(ADMINS_ROLE, new ArrayList<>(adminUsers), new StudyPermissions(true, true, true, true, true, true, true)),
+                new Role(DATA_MANAGERS_ROLE, Collections.emptyList(), new StudyPermissions(true, true, true, true, true, true, false)),
+                new Role(MEMBERS_ROLE, Collections.emptyList(), new StudyPermissions(false, false, false, true, false, false, false)));
     }
 
     void checkProjectPermission(long projectId, String userId, CatalogPermission permission) throws CatalogException;
@@ -162,6 +162,8 @@ public interface AuthorizationManager {
     void filterIndividuals(String userId, long studyId, List<Individual> individuals) throws CatalogException;
 
     Group getGroupBelonging(long studyId, String userId) throws CatalogException;
+
+    Role getRoleBelonging(long studyId, String userId, String groupId) throws CatalogException;
 
 //    Group createGroup(int studyId, String groupId, GroupPermissions groupPermissions, String sessionId) throws CatalogException;
 
