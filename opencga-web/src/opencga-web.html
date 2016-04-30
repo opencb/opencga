@@ -25,10 +25,10 @@
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
         <style>
-            /*.center {*/
-                /*margin: auto;*/
-                /*width: 98%;*/
-            /*}*/
+            .center {
+                margin: auto;
+                width: 98%;
+            }
         </style>
 
         <div>
@@ -145,8 +145,7 @@
 
             ready: function() {
                 this.enableClick();
-                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-                        OPENCGA_COOKIE_USER_NAME);
+                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID, OPENCGA_COOKIE_USER_NAME);
                 let tmpClient = new OpenCGAClient(this.config);
 //                this.opencgaClient = new OpenCGAClient(this.config);
                 tmpClient.users().info()
