@@ -22,11 +22,15 @@
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
 
-        <h3>Study information</h3>
+        <div style="padding: 10px;">
+            <h3>Study information</h3>
 
-
-
-
+            <div style="padding: 20px;">
+                <p><span style="color:#000080;"><strong>Name: </strong></span>{{_study.name}}</p>
+                <p><span style="color:#000080;"><strong>Alias: </strong></span>{{_study.alias}}</p>
+                <p><span style="color:#000080;"><strong>Description: </strong></span>{{_study.description}}</p>
+            </div>
+        </div>
 
 
     </template>
