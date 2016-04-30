@@ -34,27 +34,36 @@
                 <opencga-files-grid on-selected="showInfo" files="{{files}}"></opencga-files-grid>
             </div>
 
-            <div class="row" style="height: 530px">
+            <template is="dom-if" if="{{existsSelectedFile(selectedFile)}}">
+                <div class="row" style="height: 530px">
 
-                <ul id="myTabs" class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="active"><a href="#fileViewInfo" role="tab" data-toggle="tab">File Info</a></li>
-                    <li role="presentation" class="active"><a href="#samplesViewInfo" role="tab" data-toggle="tab">Samples</a></li>
-                    <li role="presentation" class="active"><a href="#jobsViewInfo" role="tab" data-toggle="tab">Jobs</a></li>
-                    <li role="presentation" class="active"><a href="#statsViewInfo" role="tab" data-toggle="tab">Stats</a></li>
-                    <!--<li role="presentation"><a href="#geneViewGenomeContext" role="tab" data-toggle="tab">Files</a></li>-->
-                    <!--<li role="presentation"><a href="#geneViewTranscripts" role="tab" data-toggle="tab">Jobs</a></li>-->
-                    <!--<li role="presentation"><a href="#geneViewPDB" role="tab" data-toggle="tab">Samples</a></li>-->
-                </ul>
+                    <ul id="myTabs" class="nav nav-tabs" role="tablist">
+                        <li role="presentation" class="active"><a href="#fileViewInfo" role="tab" data-toggle="tab">File Info</a></li>
+                        <li role="presentation"><a href="#samplesViewInfo" role="tab" data-toggle="tab">Samples</a></li>
+                        <li role="presentation"><a href="#jobsViewInfo" role="tab" data-toggle="tab">Jobs</a></li>
+                        <li role="presentation"><a href="#statsViewInfo" role="tab" data-toggle="tab">Stats</a></li>
+                    </ul>
 
-                <template is="dom-if" if="{{selectedFile.id}}">
-                    <div class="tab-content" style="width: 90%">
-                        <opencga-files-info-file id="fileViewInfo"></opencga-files-info-file>
-                        <opencga-files-info-samples id="samplesViewInfo"></opencga-files-info-samples>
-                        <opencga-files-info-jobs id="jobsViewInfo"></opencga-files-info-jobs>
-                        <opencga-files-info-stats id="statsViewInfo"></opencga-files-info-stats>
+                    <div class="tab-content">
+                        <div id="fileViewInfo" role="tabpanel" class="tab-pane active">
+                            <opencga-files-info-file file="{{selectedFile}}"></opencga-files-info-file>
+                        </div>
+
+                        <div id="samplesViewInfo" role="tabpanel" class="tab-pane">
+                            <opencga-files-info-samples opencga-client="{{opencgaClient}}" sample-ids="{{selectedFile.sampleIds}}"></opencga-files-info-samples>
+                        </div>
+
+                        <div id="jobsViewInfo" role="tabpanel" class="tab-pane">
+                            <opencga-files-info-jobs></opencga-files-info-jobs>
+                        </div>
+
+                        <div id="statsViewInfo" role="tabpanel" class="tab-pane">
+                            <opencga-files-info-stats></opencga-files-info-stats>
+                        </div>
                     </div>
-                </template>
-            </div>
+                </div>
+            </template>
+
         </div>
 
     </template>
@@ -63,6 +72,9 @@
             is: 'opencga-files-view',
 
             properties: {
+                opencgaClient: {
+                    type: Object
+                },
                 files: {
                     type: Array
                 },
@@ -73,6 +85,13 @@
 
             showInfo: function(e) {
                 this.selectedFile = e.detail;
+            },
+
+            existsSelectedFile: function(selectedFile) {
+                if (selectedFile !== undefined && selectedFile.hasOwnProperty("id")) {
+                    return true;
+                }
+                return false;
             }
 
         });
