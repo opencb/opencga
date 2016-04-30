@@ -23,43 +23,48 @@
         <style is="custom-style" include="opencga-shared-styles"></style>
 
         <div style="padding: 10px;">
-
-            <table id="sampletable" data-search="true" data-show-columns="true" data-pagination="true" data-height="520" data-page-list="[10, 25, 50]"
+            <table id="samplestable" data-search="true" data-show-columns="true" data-pagination="true" data-height="520" data-page-list="[10, 25, 50]"
                    data-show-pagination-switch="true" data-show-export="true">
             </table>
-            <!--<ul id="myTabs" class="nav nav-tabs" role="tablist">-->
-            <!--<li role="presentation" class="active"><a href="#geneViewInfo" role="tab" data-toggle="tab">Study Info</a></li>-->
-            <!--&lt;!&ndash;<li role="presentation"><a href="#geneViewGenomeContext" role="tab" data-toggle="tab">Files</a></li>&ndash;&gt;-->
-            <!--&lt;!&ndash;<li role="presentation"><a href="#geneViewTranscripts" role="tab" data-toggle="tab">Jobs</a></li>&ndash;&gt;-->
-            <!--&lt;!&ndash;<li role="presentation"><a href="#geneViewPDB" role="tab" data-toggle="tab">Samples</a></li>&ndash;&gt;-->
-            <!--</ul>-->
+        </div>
 
-            <!--<div class="tab-content" style="width: 90%">-->
-            <!--<div id="geneViewInfo" role="tabpanel" class="tab-pane active">-->
+        <div class="row" style="height: 530px">
 
-            <!--<table class="table table-hover">-->
-            <!--<thead>-->
-            <!--<tr>-->
-            <!--<th>TfName</th>-->
-            <!--<th>Pwm</th>-->
-            <!--&lt;!&ndash;<th>Region</th>&ndash;&gt;-->
-            <!--&lt;!&ndash;<th>Strand</th>&ndash;&gt;-->
-            <!--&lt;!&ndash;<th>Score</th>&ndash;&gt;-->
-            <!--</tr>-->
-            <!--</thead>-->
-            <!--<tbody>-->
-            <!--<template is="dom-repeat" items="{{samples}}" as="tfbs">-->
-            <!--<tr>-->
-            <!--<td>{{tfbs.name}}</td>-->
-            <!--<td>{{tfbs.type}}</td>-->
-            <!--</tr>-->
-            <!--</template>-->
-            <!--</tbody>-->
-            <!--</table>-->
+            <ul id="sampleViewTabs" class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#sampleViewAnnotation" role="tab" data-toggle="tab">Sample Annotations</a></li>
+                <li role="presentation"><a href="#sampleViewAcl" role="tab" data-toggle="tab">ACL</a></li>
+            </ul>
 
-            <!--</div>-->
+            <div class="tab-content">
+                <div id="sampleViewAnnotation" role="tabpanel" class="tab-pane active">
+                    <template is="dom-repeat" items="{{sample.annotationSets}}" as="annotationSet">
 
-            <!--</div>-->
+                        <h3>{{annotationSet.id}} ({{annotationSet.date}})</h3>
+
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Value</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <template is="dom-repeat" items="{{annotationSet.annotations}}" as="annotation">
+                                <tr>
+                                    <td>{{annotation.id}}</td>
+                                    <td>{{annotation.value}}</td>
+                                </tr>
+                            </template>
+                            </tbody>
+                        </table>
+
+                    </template>
+                </div>
+
+                <div id="sampleViewAcl" role="tabpanel" class="tab-pane">
+
+                </div>
+            </div>
         </div>
 
     </template>
@@ -75,12 +80,16 @@
                     type: Array,
                     value: [],
                     observer: 'render'
+                },
+                sample: {
+                    type: Object
                 }
             },
+
             render: function() {
                 let _this = this;
-                $('#sampletable').bootstrapTable('destroy');
-                $('#sampletable').bootstrapTable({
+                $('#samplestable').bootstrapTable('destroy');
+                $('#samplestable').bootstrapTable({
                     data: this.samples,
                     columns: [
                         [
@@ -90,26 +99,20 @@
                                 sortable: true
                             },
                             {
-                                title: 'Path',
-                                field: 'path'
-                            },
-                            {
-                                title: 'Format',
-                                field: 'bioformat'
-                            },
-                            {
-                                title: 'Type',
-                                field: 'type'
-                            },
-                            {
-                                title: 'Size',
-                                field: 'diskUsage',
+                                title: 'Source',
+                                field: 'source',
                                 sortable: true
+                            },
+                            {
+                                title: 'Description',
+                                field: 'description'
                             }
                         ]
                     ],
                     onClickRow: function (row, $element) {
                         _this.fire('selected', {variant: row.chromosome + ":" + row.start + ":" + row.reference + ":" + row.alternate});
+                        console.log(row)
+                        _this.sample = row;
                     }
                 });
             }
