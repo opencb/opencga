@@ -43,27 +43,12 @@
                 },
                 studyId: {
                     type: Number
-//                    ,
-//                    observer: "_getFiles"
                 },
                 samples: {
-                    type: Object
+                    type: Array
                 }
             },
 
-//            _getFiles: function() {
-//                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
-//                    this.opencgaClient.samples().search({studyId: this.studyId})
-//                            .then(function(response) {
-//                                debugger
-//                                if (response.response[0].numResults > 0) {
-//                                    this._files = response.response[0].result;
-//                                    console.log("Files");
-//                                    console.log(this._files);
-//                                }
-//                            }.bind(this));
-//                }
-//            }
         });
     </script>
 </dom-module>

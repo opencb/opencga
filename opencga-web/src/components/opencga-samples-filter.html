@@ -20,7 +20,14 @@
 
 <dom-module id="opencga-samples-filter">
     <template>
-        <style is="custom-style" include="opencga-shared-styles"></style>
+        <style is="custom-style" include="opencga-shared-styles">
+            .border-padding {
+                padding-top: 5px;
+                padding-right: 3px;
+                padding-bottom: 5px;
+                padding-left: 8px;
+            }
+        </style>
 
         <div>
             <ul class="nav nav-tabs" role="tablist">
@@ -76,23 +83,23 @@
                                     </a>
                                 </h4>
                             </div>
-                            <div id="sampleFilterDate" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+                            <div id="sampleFilterDate" class="panel-collapse collapse border-padding" role="tabpanel" aria-labelledby="headingTwo">
                                 From:
                                 <div class='input-group date' id='datetimePickerFrom'>
                                     <input type='text' class="form-control" />
-                                                        <span class="input-group-addon">
-                                                            <span class="glyphicon glyphicon-calendar"></span>
-                                                        </span>
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
                                 </div>
+                                <br>
                                 To:
                                 <div class='input-group date' id='datetimePickerTo'>
                                     <input type='text' class="form-control" />
-                                                        <span class="input-group-addon">
-                                                            <span class="glyphicon glyphicon-calendar"></span>
-                                                        </span>
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
                                 </div>
                                 <script type="text/javascript">
-//                                    });
                                     $('#datetimePickerFrom').datetimepicker();
                                     $('#datetimePickerTo').datetimepicker({
                                         useCurrent: false //Important! See issue #1075
@@ -107,21 +114,6 @@
                             </div>
                         </div>
 
-                        <!-- Type filter menu-->
-                        <div class="panel panel-default">
-                            <div class="panel-heading" role="tab" id="headingThree">
-                                <h4 class="panel-title">
-                                    <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
-                                       href="#biotype" aria-expanded="false" aria-controls="biotype">
-                                        Type
-                                    </a>
-                                </h4>
-                            </div>
-                            <div id="biotype" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
-                                <div class="panel-body biotype-scroll">
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -135,25 +127,10 @@
                 opencgaClient: {
                     type: Object
                 },
-                allIds: {
+                samples: {
                     type: Array,
-                    value: []
-                },
-                biotype: {
-                    type: Array,
+                    value: [],
                     notify: true
-                },
-                geneId: {
-                    type: String,
-                    notify: true
-                },
-                cellBaseClient: {
-                    type: Object,
-                    notify: true
-                },
-                result: {
-                    type: Array,
-                    value: []
                 },
                 autocompleteData: {
                     type:Array,
@@ -163,8 +140,6 @@
             clear: function (e) {
                 // we empty the textareas
                 this.$.geneFilterIdsTextarea.value = "";
-                this.$.geneFilterRegionTextarea.value = "";
-                this.$.geneFilterDrugsTextarea.value = "";
             },
             executeQuery: function (e) {
                 // activate the GIF
@@ -172,46 +147,23 @@
 
                 // We first build the query params object
                 let queryParams = {include: "id,name,biotype,chromosome,start,end"};
-                if (this.biotype.length > 0) {
-                    queryParams.biotype = this.biotype.join(",");
-                }
-                if (this.$.geneFilterDrugsTextarea.value != "") {
-                    queryParams.drugs = this.$.geneFilterDrugsTextarea.value;
-                }
 
-                //
-                this.result= [];
                 let _this = this;
                 let success = function (response) {
-                    for(let i in response.response) {
-                        for(let j in response.response[i].result) {
-                            _this.push('result',response.response[i].result[j]);
-                        }
-                    }
+                    _this.samples = response.response[0].result;
                     // remove the GIF
                     $('#spinImg').hide();
                 };
 
-                // Now we execute the query. Note that ID are preferred
-                if (this.$.geneFilterIdsTextarea.value !== "") {
-                    this.opencgaClient.get('feature','gene', this.$.geneFilterIdsTextarea.value, 'info', queryParams, {success: success, async: true});
-                } else {
-                    if (this.$.geneFilterRegionTextarea.value !== "") {
-                        this.opencgaClient.get('genomic','region', this.$.geneFilterRegionTextarea.value, 'gene', queryParams, {success: success, async: true});
-                    }
-                }
-//                $('.nav-tabs a[href="#result1"]').tab('show');
-            },
-            _updateGeneView: function(e) {
-                this.geneId = e.srcElement.id;
+                this.opencgaClient.samples().search({"studyId": 2}).then(success);
             },
             addSampleName: function(e) {
-                var temp = this.$.geneIDText.value;
-                if (this.allIds.indexOf(temp) == -1){
-                    this.push('allIds', temp);
-                }
-                this.$.geneIDText.value = '';
-                this.$.geneFilterIdsTextarea.value = this.allIds;
+//                var temp = this.$.geneIDText.value;
+//                if (this.allIds.indexOf(temp) == -1){
+//                    this.push('allIds', temp);
+//                }
+//                this.$.geneIDText.value = '';
+//                this.$.geneFilterIdsTextarea.value = this.allIds;
             },
             callAutocomplete: function(e) {
                 if (this.$.geneIDText.value.length > 2) {
@@ -219,7 +171,7 @@
                     let success = function (response) {
                         _this.autocompleteData = response.response[0].result;
                     };
-                    _this.cellBaseClient.get('feature', 'id', this.$.geneIDText.value, 'starts_with', {}, {success: success, async: true});
+//                    _this.cellBaseClient.get('feature', 'id', this.$.geneIDText.value, 'starts_with', {}, {success: success, async: true});
                 }
 
             }
