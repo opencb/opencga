@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="opencga-files-filter.html">
 <link rel="import" href="opencga-files-view.html">
@@ -25,11 +25,11 @@
 
         <div class="panel">
             <div class="col-md-2">
-                <opencga-files-filter></opencga-files-filter>
+                <opencga-files-filter opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{_files}}"></opencga-files-filter>
             </div>
 
             <div class="col-md-10">
-                <opencga-files-view files="{{_files}}"></opencga-files-view>
+                <opencga-files-view opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{_files}}"></opencga-files-view>
             </div>
         </div>
 
@@ -42,25 +42,10 @@
                     type: Object
                 },
                 studyId: {
-                    type: Number,
-                    observer: "_getFiles"
+                    type: Number
                 },
                 _files: {
-                    type: Object
-                }
-            },
-
-            _getFiles: function() {
-                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
-                    this.opencgaClient.files().search({studyId: this.studyId, type: "FILE"})
-                            .then(function(response) {
-                                debugger
-                                if (response.response[0].numResults > 0) {
-                                    this._files = response.response[0].result;
-                                    console.log("Files");
-                                    console.log(this._files);
-                                }
-                            }.bind(this));
+                    type: Array
                 }
             }
         });
