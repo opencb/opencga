@@ -17,6 +17,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="opencga-study-summary.html">
+<link rel="import" href="opencga-files-panel.html">
 
 <link rel="import" href="opencga-shared-styles.html">
 
@@ -55,11 +56,11 @@
 
                 <div class="tab-content" style="width: 90%">
                     <div id="dashboardInfo" role="tabpanel" class="tab-pane active">
-                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}" ></opencga-study-summary>
+                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}"></opencga-study-summary>
                     </div>
 
                     <div id="dashboardFiles" role="tabpanel" class="tab-pane">
-                        <h4>Files</h4>
+                        <opencga-files-panel opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}"></opencga-files-panel>
                     </div>
 
                     <div id="dashboardSamples" role="tabpanel" class="tab-pane">

@@ -17,21 +17,19 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <!--<link rel="import" href="opencga-files-filter.html">-->
-<!--<link rel="import" href="opencga-files-view.html">-->
+<link rel="import" href="opencga-files-view.html">
 
 <dom-module id="opencga-files-panel">
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
 
-        <div>User name: <span>{{username}}</span></div>
-        <div>Session id: <span>{{session}}</span></div>
         <div class="panel">
             <div class="col-md-2">
-                <opencga-files-filter></opencga-files-filter>
+                <!--<opencga-files-filter></opencga-files-filter>-->
             </div>
 
             <div class="col-md-10">
-                <opencga-files-view></opencga-files-view>
+                <opencga-files-view files="{{_files}}"></opencga-files-view>
             </div>
         </div>
 
@@ -40,15 +38,31 @@
         Polymer({
             is: 'opencga-files-panel',
             properties: {
-                username: {
-                    type: String
+                opencgaClient: {
+                    type: Object
                 },
-                session: {
-                    type: String
+                studyId: {
+                    type: Number,
+                    observer: "_getFiles"
+                },
+
+                _files: {
+                    type: Object
                 }
             },
-            ready: function() {
-                console.log("panel")
+
+            _getFiles: function() {
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this.opencgaClient.files().search({studyId: this.studyId, type: "FILE"})
+                            .then(function(response) {
+                                debugger
+                                if (response.response[0].numResults > 0) {
+                                    this._files = response.response[0].result;
+                                    console.log("Files");
+                                    console.log(this._files);
+                                }
+                            }.bind(this));
+                }
             }
         });
     </script>
