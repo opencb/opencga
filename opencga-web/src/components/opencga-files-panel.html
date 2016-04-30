@@ -16,7 +16,7 @@
 
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<!--<link rel="import" href="opencga-files-filter.html">-->
+<link rel="import" href="opencga-files-filter.html">
 <link rel="import" href="opencga-files-view.html">
 
 <dom-module id="opencga-files-panel">
@@ -25,7 +25,7 @@
 
         <div class="panel">
             <div class="col-md-2">
-                <!--<opencga-files-filter></opencga-files-filter>-->
+                <opencga-files-filter></opencga-files-filter>
             </div>
 
             <div class="col-md-10">
@@ -45,7 +45,6 @@
                     type: Number,
                     observer: "_getFiles"
                 },
-
                 _files: {
                     type: Object
                 }

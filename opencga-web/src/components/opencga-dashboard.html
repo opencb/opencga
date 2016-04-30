@@ -56,11 +56,11 @@
 
                 <div class="tab-content" style="width: 90%">
                     <div id="dashboardInfo" role="tabpanel" class="tab-pane active">
-                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}"></opencga-study-summary>
+                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-study-summary>
                     </div>
 
                     <div id="dashboardFiles" role="tabpanel" class="tab-pane">
-                        <opencga-files-panel opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}"></opencga-files-panel>
+                        <opencga-files-panel opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-files-panel>
                     </div>
 
                     <div id="dashboardSamples" role="tabpanel" class="tab-pane">
@@ -82,6 +82,9 @@
                     type: Object,
                     observer: "_getProjects"
                 },
+                opencgaClientConfig: {
+                    type: Object
+                },
                 projectTitle: {
                     type: String,
                     value: "Projects"
@@ -89,19 +92,28 @@
                 projects: {
                     type: Array
                 },
-                _selectedStudy: {
+                userId: {
+                    type: String
+                },
+                studyId: {
                     type: Number,
                     value: 0
+                },
+                studyAlias: {
+                    type: String
                 }
             },
 
             ready: function () {
                 console.log("Hello from dashboard");
+//                if (typeof opencgaClient === 'undefined') {
+//                    this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+//                }
             },
 
             updateProjectName: function (e) {
                 this.projectTitle = e.target.innerHTML;
-                this._selectedStudy = e.target.dataId;
+                this.studyId = e.target.dataId;
             },
 
             _getProjects: function () {

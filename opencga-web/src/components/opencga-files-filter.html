@@ -34,16 +34,14 @@
         <div>
             <ul class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a href="#filter1" role="tab" data-toggle="tab">Filter</a></li>
-                <li role="presentation"><a href="#result1" role="tab" data-toggle="tab">Result</a></li>
+                <!--<li role="presentation"><a href="#result1" role="tab" data-toggle="tab">Result</a></li>-->
             </ul>
 
             <!--Filter tab content-->
             <div class="tab-content">
                 <div role="tabpanel" class="tab-pane active" id="filter1">
                     <button type="button" class="btn btn-default" on-click="clear">Clear</button>
-                    <button type="button" class="btn btn-default" on-click="loadExample">Example</button>
-                    <button type="button" id="submitButton" class="btn btn-default" on-click="executeQuery">
-                        Submit</button>
+                    <button type="button" id="submitButton" class="btn btn-default" on-click="executeQuery">Submit</button>
                     <br>
 
                     <!--GeneID filter menu-->
@@ -53,7 +51,7 @@
                                 <h4 class="panel-title">
                                     <a role="button" data-toggle="collapse" data-parent="#accordion" href="#geneId"
                                        aria-expanded="true" aria-controls="geneId">
-                                        Gene IDs
+                                        File name
                                     </a>
                                 </h4>
                             </div>
@@ -78,13 +76,13 @@
                             </div>
                         </div>
 
-                        <!--Region filter menu-->
+                        <!-- Date filter menu-->
                         <div class="panel panel-default">
                             <div class="panel-heading" role="tab" id="headingTwo">
                                 <h4 class="panel-title">
                                     <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
                                        href="#region" aria-expanded="false" aria-controls="region">
-                                        Region
+                                        Date
                                     </a>
                                 </h4>
                             </div>
@@ -95,13 +93,13 @@
                             </div>
                         </div>
 
-                        <!--Biotype filter menu-->
+                        <!-- Type filter menu-->
                         <div class="panel panel-default">
                             <div class="panel-heading" role="tab" id="headingThree">
                                 <h4 class="panel-title">
                                     <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
                                        href="#biotype" aria-expanded="false" aria-controls="biotype">
-                                        Biotypes
+                                        Type
                                     </a>
                                 </h4>
                             </div>
@@ -110,74 +108,7 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Drug filter menu-->
-                        <div class="panel panel-default">
-                            <div class="panel-heading" role="tab" id="headingFour">
-                                <h4 class="panel-title">
-                                    <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
-                                       href="#drug" aria-expanded="false" aria-controls="drug">
-                                        Drugs
-                                    </a>
-                                </h4>
-                            </div>
-                            <div id="drug" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingFour">
-                                <div class="panel-body">
-                                    <textarea id="geneFilterDrugsTextarea" class="form-control clearable" rows="3"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!--Expression filter menu-->
-                        <div class="panel panel-default">
-                            <div class="panel-heading" role="tab" id="headingSix">
-                                <h4 class="panel-title">
-                                    <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
-                                       href="#expression" aria-expanded="false" aria-controls="expression">
-                                        Expression
-                                    </a>
-                                </h4>
-                            </div>
-                            <div id="expression" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingSix">
-                                <div class="panel-body">
-                                    <textarea class="form-control" rows="3"></textarea>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-                </div>
-
-                <!--Result tab content-->
-                <div role="tabpanel" class="tab-pane" id="result1">
-                    <div class="gene-names-display">
-                        <i id="spinImg" class="fa fa-circle-o-notch fa-spin" style="display:none"></i>
-                        <br>
-                        <template is="dom-repeat" items="{{result}}">
-                            <div>
-                                <b on-click="_updateGeneView" id="{{item.name}}" style="cursor: pointer">{{item.name}}</b>
-                                <i>{{item.biotype}}</i><br>
-                                {{item.chromosome}}:{{item.start}}-{{item.end}}
-                                <hr>
-                            </div>
-                        </template>
-                    </div>
-
-
-
-                    <!--<table>-->
-                    <!--<tr>-->
-                    <!--<th>Region</th>-->
-                    <!--<th>ID</th>-->
-                    <!--<th>biotype</th>-->
-                    <!--</tr>-->
-                    <!--<template is="dom-repeat" items="{{result}}">-->
-                    <!--<tr>-->
-                    <!--<td>{{item.chromosome}}</td>-->
-                    <!--<td on-click="_updateGeneView" id="{{item.name}}" style="cursor: pointer">{{item.name}}</td>-->
-                    <!--<td>{{item.biotype}}</td>-->
-                    <!--</tr>-->
-                    <!--</template>-->
-                    <!--</table>-->
                 </div>
             </div>
         </div>
