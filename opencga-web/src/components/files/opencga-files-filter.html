@@ -14,14 +14,14 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="opencga-shared-styles.html">
+<link rel="import" href="../opencga-shared-styles.html">
 
 <dom-module id="opencga-files-filter">
     <template>
         <style is="custom-style" include="opencga-shared-styles">
-            .biotype-scroll{
+            .type-scroll{
                 max-height: 300px;
                 overflow-y: scroll;
             }
@@ -49,18 +49,19 @@
                         <div class="panel panel-default">
                             <div class="panel-heading" role="tab" id="headingOne">
                                 <h4 class="panel-title">
-                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#geneId"
-                                       aria-expanded="true" aria-controls="geneId">
+                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#fileName"
+                                       aria-expanded="true" aria-controls="fileName">
                                         File name
                                     </a>
                                 </h4>
                             </div>
-                            <div id="geneId" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                            <div id="fileName" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
                                 <div class="panel-body">
                                     <form class="form-inline">
                                         Search:
                                         <div style="float: right">
-                                            <input id="geneIDText" type="text" class="form-control" list="json-datalist" value="" on-keyup="callAutocomplete">
+                                            <input id="fileNameText" type="text" class="form-control" list="json-datalist" value=""
+                                                   on-keyup="callAutocomplete">
                                             <datalist id="json-datalist">
                                                 <template is="dom-repeat" items="{{autocompleteData}}">
                                                     <option value="{{item.name}}">
@@ -71,7 +72,7 @@
                                             </button>
                                         </div>
                                     </form>
-                                    <textarea id="geneFilterIdsTextarea" class="form-control" rows="3"></textarea>
+                                    <textarea id="fileNameFilterTextArea" class="form-control" rows="3"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -102,7 +103,6 @@
                                                         </span>
                                 </div>
                                 <script type="text/javascript">
-                                    //                                    });
                                     $('#datetimePickerFrom').datetimepicker();
                                     $('#datetimePickerTo').datetimepicker({
                                         useCurrent: false //Important! See issue #1075
@@ -122,13 +122,13 @@
                             <div class="panel-heading" role="tab" id="headingThree">
                                 <h4 class="panel-title">
                                     <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
-                                       href="#biotype" aria-expanded="false" aria-controls="biotype">
+                                       href="#type" aria-expanded="false" aria-controls="type">
                                         Type
                                     </a>
                                 </h4>
                             </div>
-                            <div id="biotype" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
-                                <div class="panel-body biotype-scroll">
+                            <div id="type" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+                                <div class="panel-body type-scroll">
                                 </div>
                             </div>
                         </div>
@@ -142,98 +142,29 @@
         Polymer({
             is: 'opencga-files-filter',
             properties: {
-                allIds: {
+                opencgaClient: {
+                    type: Object
+                },
+                studyId: {
+                    type: Number,
+                    observer: "_getFiles"
+                },
+                files: {
                     type: Array,
-                    value: []
-                },
-                biotype: {
-                    type: Array,
+                    value: [],
                     notify: true
-                },
-                geneId: {
-                    type: String,
-                    notify: true
-                },
-                cellBaseClient: {
-                    type: Object,
-                    notify: true
-                },
-                result: {
-                    type: Array,
-                    value: []
-                },
-                autocompleteData: {
-                    type:Array,
-                    value: []
                 }
             },
-            clear: function (e) {
-                // we empty the textareas
-                this.$.geneFilterIdsTextarea.value = "";
-                this.$.geneFilterRegionTextarea.value = "";
-                this.$.geneFilterDrugsTextarea.value = "";
-            },
-            loadExample: function (e) {
-                this.$.geneFilterIdsTextarea.value = "BRCA2";
-            },
-            executeQuery: function (e) {
-                // activate the GIF
-                $('#spinImg').show();
-
-                // We first build the query params object
-                let queryParams = {include: "id,name,biotype,chromosome,start,end"};
-                if (this.biotype.length > 0) {
-                    queryParams.biotype = this.biotype.join(",");
+            _getFiles: function() {
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this.opencgaClient.files().search({studyId: this.studyId, type: "FILE"})
+                            .then(function(response) {
+                                if (response.response[0].numResults > 0) {
+                                    this.files = response.response[0].result;
+                                    console.log(this.files);
+                                }
+                            }.bind(this));
                 }
-                if (this.$.geneFilterDrugsTextarea.value != "") {
-                    queryParams.drugs = this.$.geneFilterDrugsTextarea.value;
-                }
-
-                //
-                this.result= [];
-                let _this = this;
-                let success = function (response) {
-                    for(let i in response.response) {
-                        for(let j in response.response[i].result) {
-                            _this.push('result',response.response[i].result[j]);
-                        }
-                    }
-                    // remove the GIF
-                    $('#spinImg').hide();
-                };
-
-                // Now we execute the query. Note that ID are preferred
-                if (this.$.geneFilterIdsTextarea.value !== "") {
-                    this.cellBaseClient.get('feature','gene', this.$.geneFilterIdsTextarea.value, 'info', queryParams, {success: success, async: true});
-                } else {
-                    if (this.$.geneFilterRegionTextarea.value !== "") {
-                        this.cellBaseClient.get('genomic','region', this.$.geneFilterRegionTextarea.value, 'gene', queryParams, {success: success, async: true});
-                    }
-                }
-                $('.nav-tabs a[href="#result1"]').tab('show');
-            },
-            ready: function() {
-            },
-            _updateGeneView: function(e) {
-                this.geneId = e.srcElement.id;
-            },
-            addGeneId: function(e) {
-                var temp = this.$.geneIDText.value;
-                if (this.allIds.indexOf(temp) == -1){
-                    this.push('allIds', temp);
-                }
-                this.$.geneIDText.value = '';
-                this.$.geneFilterIdsTextarea.value = this.allIds;
-            },
-            callAutocomplete: function(e) {
-                if (this.$.geneIDText.value.length > 2) {
-                    let _this = this;
-                    let success = function (response) {
-                        _this.autocompleteData = response.response[0].result;
-                    };
-                    _this.cellBaseClient.get('feature', 'id', this.$.geneIDText.value, 'starts_with', {}, {success: success, async: true});
-                }
-
             }
         });
     </script>
