@@ -18,6 +18,7 @@
 
 <link rel="import" href="opencga-study-summary.html">
 <link rel="import" href="opencga-files-panel.html">
+<link rel="import" href="opencga-samples-panel.html">
 
 <link rel="import" href="opencga-shared-styles.html">
 
@@ -30,7 +31,6 @@
                 <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     {{projectTitle}} <span class="caret"></span>
                 </button>
-
 
                 <ul class="dropdown-menu">
                     <template is="dom-repeat" items="{{projects}}" as="project">
@@ -64,7 +64,7 @@
                     </div>
 
                     <div id="dashboardSamples" role="tabpanel" class="tab-pane">
-                        <h4>Samples</h4>
+                        <opencga-samples-panel opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-samples-panel>
                     </div>
 
                     <div role="tabpanel" class="tab-pane" id="dashboardJobs">
@@ -87,7 +87,7 @@
                 },
                 projectTitle: {
                     type: String,
-                    value: "Projects"
+                    value: "Select one study"
                 },
                 projects: {
                     type: Array
@@ -100,7 +100,8 @@
                     value: 0
                 },
                 studyAlias: {
-                    type: String
+                    type: String,
+                    value: "Test"
                 }
             },
 

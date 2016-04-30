@@ -18,23 +18,13 @@
 
 <link rel="import" href="opencga-shared-styles.html">
 
-<dom-module id="opencga-files-filter">
+<dom-module id="opencga-samples-filter">
     <template>
-        <style is="custom-style" include="opencga-shared-styles">
-            .biotype-scroll{
-                max-height: 300px;
-                overflow-y: scroll;
-            }
-            .gene-names-display{
-                max-height: 800px;
-                overflow: auto;
-            }
-        </style>
+        <style is="custom-style" include="opencga-shared-styles"></style>
 
         <div>
             <ul class="nav nav-tabs" role="tablist">
                 <li role="presentation" class="active"><a href="#filter1" role="tab" data-toggle="tab">Filter</a></li>
-                <!--<li role="presentation"><a href="#result1" role="tab" data-toggle="tab">Result</a></li>-->
             </ul>
 
             <!--Filter tab content-->
@@ -49,13 +39,13 @@
                         <div class="panel panel-default">
                             <div class="panel-heading" role="tab" id="headingOne">
                                 <h4 class="panel-title">
-                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#geneId"
-                                       aria-expanded="true" aria-controls="geneId">
-                                        File name
+                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#sampleFilterName"
+                                       aria-expanded="true" aria-controls="sampleFilterName">
+                                        Sample name
                                     </a>
                                 </h4>
                             </div>
-                            <div id="geneId" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                            <div id="sampleFilterName" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
                                 <div class="panel-body">
                                     <form class="form-inline">
                                         Search:
@@ -66,7 +56,7 @@
                                                     <option value="{{item.name}}">
                                                 </template>
                                             </datalist>
-                                            <button type="button" class="btn btn-default btn-sm form-control" on-click="addGeneId">
+                                            <button type="button" class="btn btn-default btn-sm form-control" on-click="addSampleName">
                                                 <i class="fa fa-plus"></i>
                                             </button>
                                         </div>
@@ -81,12 +71,12 @@
                             <div class="panel-heading" role="tab" id="headingTwo">
                                 <h4 class="panel-title">
                                     <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
-                                       href="#region" aria-expanded="false" aria-controls="region">
+                                       href="#sampleFilterDate" aria-expanded="false" aria-controls="region">
                                         Date range
                                     </a>
                                 </h4>
                             </div>
-                            <div id="region" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+                            <div id="sampleFilterDate" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
                                 From:
                                 <div class='input-group date' id='datetimePickerFrom'>
                                     <input type='text' class="form-control" />
@@ -102,7 +92,7 @@
                                                         </span>
                                 </div>
                                 <script type="text/javascript">
-                                    //                                    });
+//                                    });
                                     $('#datetimePickerFrom').datetimepicker();
                                     $('#datetimePickerTo').datetimepicker({
                                         useCurrent: false //Important! See issue #1075
@@ -140,8 +130,11 @@
     </template>
     <script>
         Polymer({
-            is: 'opencga-files-filter',
+            is: 'opencga-samples-filter',
             properties: {
+                opencgaClient: {
+                    type: Object
+                },
                 allIds: {
                     type: Array,
                     value: []
@@ -173,9 +166,6 @@
                 this.$.geneFilterRegionTextarea.value = "";
                 this.$.geneFilterDrugsTextarea.value = "";
             },
-            loadExample: function (e) {
-                this.$.geneFilterIdsTextarea.value = "BRCA2";
-            },
             executeQuery: function (e) {
                 // activate the GIF
                 $('#spinImg').show();
@@ -204,20 +194,18 @@
 
                 // Now we execute the query. Note that ID are preferred
                 if (this.$.geneFilterIdsTextarea.value !== "") {
-                    this.cellBaseClient.get('feature','gene', this.$.geneFilterIdsTextarea.value, 'info', queryParams, {success: success, async: true});
+                    this.opencgaClient.get('feature','gene', this.$.geneFilterIdsTextarea.value, 'info', queryParams, {success: success, async: true});
                 } else {
                     if (this.$.geneFilterRegionTextarea.value !== "") {
-                        this.cellBaseClient.get('genomic','region', this.$.geneFilterRegionTextarea.value, 'gene', queryParams, {success: success, async: true});
+                        this.opencgaClient.get('genomic','region', this.$.geneFilterRegionTextarea.value, 'gene', queryParams, {success: success, async: true});
                     }
                 }
-                $('.nav-tabs a[href="#result1"]').tab('show');
-            },
-            ready: function() {
+//                $('.nav-tabs a[href="#result1"]').tab('show');
             },
             _updateGeneView: function(e) {
                 this.geneId = e.srcElement.id;
             },
-            addGeneId: function(e) {
+            addSampleName: function(e) {
                 var temp = this.$.geneIDText.value;
                 if (this.allIds.indexOf(temp) == -1){
                     this.push('allIds', temp);
