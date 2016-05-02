@@ -145,11 +145,10 @@
 
             ready: function() {
                 this.enableClick();
-                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-                        OPENCGA_COOKIE_USER_NAME);
+                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID, OPENCGA_COOKIE_USER_NAME);
                 let tmpClient = new OpenCGAClient(this.config);
 //                this.opencgaClient = new OpenCGAClient(this.config);
-                tmpClient.users().info("", "", "")
+                tmpClient.users().info()
                         .then(function() {
                             // We are logged in. Show home.
                             console.log("We are logged in.");
@@ -192,8 +191,7 @@
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
 
-                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-                        OPENCGA_COOKIE_USER_NAME);
+                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID, OPENCGA_COOKIE_USER_NAME);
                 this.opencgaClient = new OpenCGAClient(config);
             },
 

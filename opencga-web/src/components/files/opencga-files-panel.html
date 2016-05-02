@@ -14,58 +14,40 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="opencga-shared-styles.html">
+<link rel="import" href="opencga-files-filter.html">
+<link rel="import" href="opencga-files-view.html">
 
-<dom-module id="opencga-study-summary">
+<dom-module id="opencga-files-panel">
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
 
-        <h3>Study information</h3>
+        <div class="panel">
+            <div class="col-md-2">
+                <opencga-files-filter opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{_files}}"></opencga-files-filter>
+            </div>
 
-
-
-
-
+            <div class="col-md-10">
+                <opencga-files-view opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{_files}}"></opencga-files-view>
+            </div>
+        </div>
 
     </template>
     <script>
         Polymer({
-            is: 'opencga-study-summary',
-
+            is: 'opencga-files-panel',
             properties: {
                 opencgaClient: {
                     type: Object
                 },
                 studyId: {
-                    type: Number,
-                    observer: "_getStudyInfo"
+                    type: Number
                 },
-
-                _study: {
-                    type: Object
-                }
-            },
-
-            ready: function() {
-
-            },
-
-            _getStudyInfo: function() {
-                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
-                    this.opencgaClient.studies().summary(this.studyId).then(this._parseStudySummary.bind(this));
-                }
-            },
-
-            _parseStudySummary: function(response) {
-                if (response.response[0].numResults === 1) {
-                    this._study = response.response[0].result[0];
-                    console.log(this._study);
+                _files: {
+                    type: Array
                 }
             }
-
-
         });
     </script>
 </dom-module>

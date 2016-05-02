@@ -17,6 +17,8 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="opencga-study-summary.html">
+<link rel="import" href="files/opencga-files-panel.html">
+<link rel="import" href="opencga-samples-panel.html">
 
 <link rel="import" href="opencga-shared-styles.html">
 
@@ -26,8 +28,7 @@
 
         <div>
             <div class="dropdown">
-                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown"
-                        aria-haspopup="true" aria-expanded="false">
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     {{projectTitle}} <span class="caret"></span>
                 </button>
 
@@ -47,23 +48,23 @@
             <br>
             <div>
                 <ul id="myTabs" class="nav nav-tabs" role="tablist">
-                    <li role="presentation" class="active"><a href="#dashboardInfo" role="tab" data-toggle="tab">Study Summary</a></li>
+                    <li role="presentation" class="active"><a href="#dashboardInfo" role="tab" data-toggle="tab">Summary</a></li>
                     <li role="presentation"><a href="#dashboardFiles" role="tab" data-toggle="tab">Files</a></li>
                     <li role="presentation"><a href="#dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
                     <li role="presentation"><a href="#dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
                 </ul>
 
-                <div class="tab-content" style="width: 90%">
+                <div class="tab-content">
                     <div id="dashboardInfo" role="tabpanel" class="tab-pane active">
-                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{_selectedStudy}}" ></opencga-study-summary>
+                        <opencga-study-summary opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-study-summary>
                     </div>
 
                     <div id="dashboardFiles" role="tabpanel" class="tab-pane">
-                        <h4>Files</h4>
+                        <opencga-files-panel opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-files-panel>
                     </div>
 
                     <div id="dashboardSamples" role="tabpanel" class="tab-pane">
-                        <h4>Samples</h4>
+                        <opencga-samples-panel opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-samples-panel>
                     </div>
 
                     <div role="tabpanel" class="tab-pane" id="dashboardJobs">
@@ -81,26 +82,39 @@
                     type: Object,
                     observer: "_getProjects"
                 },
+                opencgaClientConfig: {
+                    type: Object
+                },
                 projectTitle: {
                     type: String,
-                    value: "Projects"
+                    value: "Select one study"
                 },
                 projects: {
                     type: Array
                 },
-                _selectedStudy: {
+                userId: {
+                    type: String
+                },
+                studyId: {
                     type: Number,
                     value: 0
+                },
+                studyAlias: {
+                    type: String,
+                    value: "Test"
                 }
             },
 
             ready: function () {
                 console.log("Hello from dashboard");
+//                if (typeof opencgaClient === 'undefined') {
+//                    this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+//                }
             },
 
             updateProjectName: function (e) {
                 this.projectTitle = e.target.innerHTML;
-                this._selectedStudy = e.target.dataId;
+                this.studyId = e.target.dataId;
             },
 
             _getProjects: function () {

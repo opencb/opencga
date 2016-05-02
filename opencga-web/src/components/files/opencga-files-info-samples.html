@@ -14,57 +14,45 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="opencga-shared-styles.html">
+<link rel="import" href="../opencga-shared-styles.html">
 
-<dom-module id="opencga-study-summary">
+<dom-module id="opencga-files-info-samples">
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
-
-        <h3>Study information</h3>
-
-
-
-
-
 
     </template>
     <script>
         Polymer({
-            is: 'opencga-study-summary',
+            is: 'opencga-files-info-samples',
 
             properties: {
                 opencgaClient: {
                     type: Object
                 },
-                studyId: {
-                    type: Number,
-                    observer: "_getStudyInfo"
+                sampleIds: {
+                    type: Array,
+                    observer: '_querySamples'
                 },
-
-                _study: {
-                    type: Object
+                _samples: {
+                    type: Array
                 }
             },
 
-            ready: function() {
-
+            _querySamples: function() {
+//                this._samples = [];
+//                debugger
+//                Promise.all(this.sampleIds.map(this.opencgaClient.samples().info.bind(this)))
+//                        .then(function(responses) {
+//                            this._samples = responses;
+//                            console.log(this._samples);
+//                        }.bind(this));
             },
 
-            _getStudyInfo: function() {
-                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
-                    this.opencgaClient.studies().summary(this.studyId).then(this._parseStudySummary.bind(this));
-                }
-            },
-
-            _parseStudySummary: function(response) {
-                if (response.response[0].numResults === 1) {
-                    this._study = response.response[0].result[0];
-                    console.log(this._study);
-                }
+            _getSampleInfo: function(sampleId) {
+                return this.opencgaClient.samples().info(sampleId);
             }
-
 
         });
     </script>

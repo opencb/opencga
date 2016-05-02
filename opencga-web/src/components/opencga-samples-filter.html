@@ -1,0 +1,180 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="opencga-shared-styles.html">
+
+<dom-module id="opencga-samples-filter">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles">
+            .border-padding {
+                padding-top: 5px;
+                padding-right: 3px;
+                padding-bottom: 5px;
+                padding-left: 8px;
+            }
+        </style>
+
+        <div>
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#filter1" role="tab" data-toggle="tab">Filter</a></li>
+            </ul>
+
+            <!--Filter tab content-->
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane active" id="filter1">
+                    <button type="button" class="btn btn-default" on-click="clear">Clear</button>
+                    <button type="button" id="submitButton" class="btn btn-default" on-click="executeQuery">Submit</button>
+                    <br>
+
+                    <!--GeneID filter menu-->
+                    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingOne">
+                                <h4 class="panel-title">
+                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#sampleFilterName"
+                                       aria-expanded="true" aria-controls="sampleFilterName">
+                                        Sample name
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="sampleFilterName" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                                <div class="panel-body">
+                                    <form class="form-inline">
+                                        Search:
+                                        <div style="float: right">
+                                            <input id="geneIDText" type="text" class="form-control" list="json-datalist" value="" on-keyup="callAutocomplete">
+                                            <datalist id="json-datalist">
+                                                <template is="dom-repeat" items="{{autocompleteData}}">
+                                                    <option value="{{item.name}}">
+                                                </template>
+                                            </datalist>
+                                            <button type="button" class="btn btn-default btn-sm form-control" on-click="addSampleName">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <textarea id="geneFilterIdsTextarea" class="form-control" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date filter menu-->
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingTwo">
+                                <h4 class="panel-title">
+                                    <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
+                                       href="#sampleFilterDate" aria-expanded="false" aria-controls="region">
+                                        Date range
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="sampleFilterDate" class="panel-collapse collapse border-padding" role="tabpanel" aria-labelledby="headingTwo">
+                                From:
+                                <div class='input-group date' id='datetimePickerFrom'>
+                                    <input type='text' class="form-control" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                                <br>
+                                To:
+                                <div class='input-group date' id='datetimePickerTo'>
+                                    <input type='text' class="form-control" />
+                                    <span class="input-group-addon">
+                                        <span class="glyphicon glyphicon-calendar"></span>
+                                    </span>
+                                </div>
+                                <script type="text/javascript">
+                                    $('#datetimePickerFrom').datetimepicker();
+                                    $('#datetimePickerTo').datetimepicker({
+                                        useCurrent: false //Important! See issue #1075
+                                    });
+                                    $("#datetimePickerFrom").on("dp.change", function (e) {
+                                        $('#datetimePickerTo').data("DateTimePicker").minDate(e.date);
+                                    });
+                                    $("#datetimePickerTo").on("dp.change", function (e) {
+                                        $('#datetimePickerFrom').data("DateTimePicker").maxDate(e.date);
+                                    });
+                                </script>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-samples-filter',
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                samples: {
+                    type: Array,
+                    value: [],
+                    notify: true
+                },
+                autocompleteData: {
+                    type:Array,
+                    value: []
+                }
+            },
+            clear: function (e) {
+                // we empty the textareas
+                this.$.geneFilterIdsTextarea.value = "";
+            },
+            executeQuery: function (e) {
+                // activate the GIF
+                $('#spinImg').show();
+
+                // We first build the query params object
+                let queryParams = {include: "id,name,biotype,chromosome,start,end"};
+
+                let _this = this;
+                let success = function (response) {
+                    _this.samples = response.response[0].result;
+                    // remove the GIF
+                    $('#spinImg').hide();
+                };
+
+                this.opencgaClient.samples().search({"studyId": 2}).then(success);
+            },
+            addSampleName: function(e) {
+//                var temp = this.$.geneIDText.value;
+//                if (this.allIds.indexOf(temp) == -1){
+//                    this.push('allIds', temp);
+//                }
+//                this.$.geneIDText.value = '';
+//                this.$.geneFilterIdsTextarea.value = this.allIds;
+            },
+            callAutocomplete: function(e) {
+                if (this.$.geneIDText.value.length > 2) {
+                    let _this = this;
+                    let success = function (response) {
+                        _this.autocompleteData = response.response[0].result;
+                    };
+//                    _this.cellBaseClient.get('feature', 'id', this.$.geneIDText.value, 'starts_with', {}, {success: success, async: true});
+                }
+
+            }
+        });
+    </script>
+</dom-module>

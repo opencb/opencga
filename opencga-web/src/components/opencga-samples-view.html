@@ -1,0 +1,121 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="opencga-shared-styles.html">
+
+<dom-module id="opencga-samples-view">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles"></style>
+
+        <div style="padding: 10px;">
+            <table id="samplestable" data-search="true" data-show-columns="true" data-pagination="true" data-height="520" data-page-list="[10, 25, 50]"
+                   data-show-pagination-switch="true" data-show-export="true">
+            </table>
+        </div>
+
+        <div class="row" style="height: 530px">
+
+            <ul id="sampleViewTabs" class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#sampleViewAnnotation" role="tab" data-toggle="tab">Sample Annotations</a></li>
+                <li role="presentation"><a href="#sampleViewAcl" role="tab" data-toggle="tab">ACL</a></li>
+            </ul>
+
+            <div class="tab-content">
+                <div id="sampleViewAnnotation" role="tabpanel" class="tab-pane active">
+                    <template is="dom-repeat" items="{{sample.annotationSets}}" as="annotationSet">
+
+                        <h3>{{annotationSet.id}} ({{annotationSet.date}})</h3>
+
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Value</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <template is="dom-repeat" items="{{annotationSet.annotations}}" as="annotation">
+                                <tr>
+                                    <td>{{annotation.id}}</td>
+                                    <td>{{annotation.value}}</td>
+                                </tr>
+                            </template>
+                            </tbody>
+                        </table>
+
+                    </template>
+                </div>
+
+                <div id="sampleViewAcl" role="tabpanel" class="tab-pane">
+
+                </div>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-samples-view',
+
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                samples: {
+                    type: Array,
+                    value: [],
+                    observer: 'render'
+                },
+                sample: {
+                    type: Object
+                }
+            },
+
+            render: function() {
+                let _this = this;
+                $('#samplestable').bootstrapTable('destroy');
+                $('#samplestable').bootstrapTable({
+                    data: this.samples,
+                    columns: [
+                        [
+                            {
+                                title: 'Name',
+                                field: 'name',
+                                sortable: true
+                            },
+                            {
+                                title: 'Source',
+                                field: 'source',
+                                sortable: true
+                            },
+                            {
+                                title: 'Description',
+                                field: 'description'
+                            }
+                        ]
+                    ],
+                    onClickRow: function (row, $element) {
+                        _this.fire('selected', {variant: row.chromosome + ":" + row.start + ":" + row.reference + ":" + row.alternate});
+                        console.log(row)
+                        _this.sample = row;
+                    }
+                });
+            }
+        });
+    </script>
+</dom-module>
