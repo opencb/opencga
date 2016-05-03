@@ -44,6 +44,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final String collectionName;
+    private final boolean closeConnection;
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
 
@@ -51,6 +52,17 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         super(null);
         // Mongo configuration
         mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        closeConnection = true;
+        db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        this.collectionName = collectionName;
+    }
+
+    public MongoDBStudyConfigurationManager(MongoDataStoreManager mongoManager, MongoCredentials credentials, String collectionName)
+            throws UnknownHostException {
+        super(null);
+        // Mongo configuration
+        this.mongoManager = mongoManager;
+        closeConnection = false;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         this.collectionName = collectionName;
     }
@@ -120,6 +132,8 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
 
     @Override
     public void close() {
-        mongoManager.close();
+        if (closeConnection) {
+            mongoManager.close();
+        }
     }
 }

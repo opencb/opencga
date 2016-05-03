@@ -75,6 +75,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public static final String DEFAULT_TIMEOUT = "dbadaptor.default_timeout";
     public static final String MAX_TIMEOUT = "dbadaptor.max_timeout";
+    private boolean closeConnection;
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final String collectionName;
@@ -96,9 +97,19 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
             throws UnknownHostException {
-        this.credentials = credentials;
+        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName, filesCollectionName,
+                studyConfigurationManager, storageEngineConfiguration);
+        this.closeConnection = true;
+    }
+
+    public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials,
+                                 String variantsCollectionName, String filesCollectionName,
+                                 StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
+            throws UnknownHostException {
         // MongoDB configuration
-        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        this.closeConnection = false;
+        this.credentials = credentials;
+        this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
@@ -747,7 +758,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public void close() throws IOException {
-        mongoManager.close();
+        if (closeConnection) {
+            mongoManager.close();
+        }
         studyConfigurationManager.close();
     }
 

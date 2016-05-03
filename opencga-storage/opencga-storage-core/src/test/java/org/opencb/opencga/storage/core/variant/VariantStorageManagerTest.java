@@ -172,7 +172,8 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false);
 
-        VariantDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        VariantStorageManager variantStorageManager = getVariantStorageManager();
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager();
         int i = 0;
         for (int fileId = 77; fileId <= 93; fileId++) {
@@ -190,7 +191,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
             uris.add(getResourceUri("platinum/1K.end.platinum-genomes-vcf-NA128" + fileId + "_S1.genome.vcf.gz"));
         }
 
-        VariantStorageManager variantStorageManager = getVariantStorageManager();
+        variantStorageManager = getVariantStorageManager();
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfigurationBatchFile.getStudyName())
                 .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfigurationBatchFile.getStudyId())

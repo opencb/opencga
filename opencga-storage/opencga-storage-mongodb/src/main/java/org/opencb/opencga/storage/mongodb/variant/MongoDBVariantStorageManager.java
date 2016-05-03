@@ -18,11 +18,13 @@ package org.opencb.opencga.storage.mongodb.variant;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.core.auth.IllegalOpenCGACredentialsException;
 import org.opencb.opencga.core.common.MemoryUsageMonitor;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -44,6 +46,9 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
      * This field defaultValue must be the same that the one at storage-configuration.yml
      */
     public static final String STORAGE_ENGINE_ID = "mongodb";
+
+    // Connection to MongoDB.
+    private MongoDataStoreManager mongoDataStoreManager = null;
 
     public enum MongoDBVariantOptions {
         COLLECTION_VARIANTS("collection.variants", "variants"),
@@ -160,11 +165,19 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
                     fileIds.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
                     if (fileIds.size() == batchLoad || !iterator.hasNext()) {
-                        storageETL.getOptions().put("merge", true);
-                        storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(fileIds));
-                        storageETL.merge(fileIds);
-                        storageETL.postLoad(input, outdirUri);
-                        fileIds.clear();
+                        long millis = System.currentTimeMillis();
+                        try {
+                            storageETL.getOptions().put("merge", true);
+                            storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(fileIds));
+                            storageETL.merge(fileIds);
+                            storageETL.postLoad(input, outdirUri);
+                            fileIds.clear();
+                        } catch (Exception e) {
+                            etlResult.setLoadError(e);
+                            throw new StorageETLException("Exception executing merge.", e, results);
+                        } finally {
+                            etlResult.setLoadTimeMillis(etlResult.getLoadTimeMillis() + System.currentTimeMillis() - millis);
+                        }
                     }
                 }
             }
@@ -190,9 +203,10 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         String variantsCollection = options.getString(COLLECTION_VARIANTS.key(), COLLECTION_VARIANTS.defaultValue());
         String filesCollection = options.getString(COLLECTION_FILES.key(), COLLECTION_FILES.defaultValue());
+        MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager();
         try {
             StudyConfigurationManager studyConfigurationManager = getStudyConfigurationManager(options);
-            variantMongoDBAdaptor = new VariantMongoDBAdaptor(credentials, variantsCollection, filesCollection,
+            variantMongoDBAdaptor = new VariantMongoDBAdaptor(mongoDataStoreManager, credentials, variantsCollection, filesCollection,
                     studyConfigurationManager, configuration.getStorageEngine(STORAGE_ENGINE_ID));
         } catch (UnknownHostException e) {
             e.printStackTrace();
@@ -202,7 +216,6 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         logger.debug("getting DBAdaptor to db: {}", credentials.getMongoDbName());
         return variantMongoDBAdaptor;
     }
-
     MongoCredentials getMongoCredentials(String dbName) {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 
@@ -229,11 +242,19 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             String dbName = options == null ? null : options.getString(VariantStorageManager.Options.DB_NAME.key());
             String collectionName = options == null ? null : options.getString(COLLECTION_STUDIES.key(), COLLECTION_STUDIES.defaultValue());
             try {
-                return new MongoDBStudyConfigurationManager(getMongoCredentials(dbName), collectionName);
+                return new MongoDBStudyConfigurationManager(getMongoDataStoreManager(), getMongoCredentials(dbName), collectionName);
 //                return getDBAdaptor(dbName).getStudyConfigurationManager();
             } catch (UnknownHostException e) {
                 throw new StorageManagerException("Unable to build MongoStorageConfigurationManager", e);
             }
         }
     }
+
+    private synchronized MongoDataStoreManager getMongoDataStoreManager() {
+        if (mongoDataStoreManager == null) {
+            mongoDataStoreManager = new MongoDataStoreManager(getMongoCredentials(null).getDataStoreServerAddresses());
+        }
+        return mongoDataStoreManager;
+    }
+
 }
