@@ -465,8 +465,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
         filterEnumParams(parameters, userParameters, acceptedEnums);
 
-        final String[] acceptedIntParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
-        filterIntParams(parameters, userParameters, acceptedIntParams);
+        final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
+        filterLongParams(parameters, userParameters, acceptedLongParams);
 
         final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), "configs"};
         filterMapParams(parameters, userParameters, acceptedMapParams);
@@ -511,6 +511,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         checkUserExists(id);
         if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
             checkCanDelete(id);
+        }
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            Query query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), id)
+                    .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(query, queryOptions);
         }
 
         // Check the current status is not deleted or removed.

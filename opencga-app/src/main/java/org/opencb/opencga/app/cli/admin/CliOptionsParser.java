@@ -458,7 +458,7 @@ public class CliOptionsParser {
         public String userId;
 
         @Parameter(names = {"--quota"}, description = "Disk quota in GB", required = true, arity = 1)
-        public int diskQupta;
+        public long diskQuota;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Print summary stats for an user")

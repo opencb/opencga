@@ -215,14 +215,24 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
-        checkSessionId(userId, sessionId);
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|email|organization|attributes|configs")) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+
+        if (sessionId != null && !sessionId.isEmpty()) {
+            ParamUtils.checkParameter(sessionId, "sessionId");
+            checkSessionId(userId, sessionId);
+            for (String s : parameters.keySet()) {
+                if (!s.matches("name|email|organization|attributes|configs")) {
+                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                }
             }
+        } else {
+            if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                        + "deleted.");
+            }
+            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         }
+
         if (parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
@@ -238,11 +248,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         if (sessionId != null && !sessionId.isEmpty()) {
             ParamUtils.checkParameter(sessionId, "sessionId");
-            String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-            if (!userIdBySessionId.equals(userId)) {
-                throw new CatalogException("The sessionId inserted does not correspond to the user {" + userId + "}. You do not have "
-                        + "permissions to delete the user {" + userId + "}.");
-            }
+            checkSessionId(userId, sessionId);
         } else {
             if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
                 throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "

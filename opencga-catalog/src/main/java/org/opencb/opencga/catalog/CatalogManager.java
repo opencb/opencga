@@ -431,7 +431,7 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.getUserId(projectId);
     }
 
-    public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
+    public QueryResult<User> modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
     }

@@ -17,8 +17,10 @@
 package org.opencb.opencga.app.cli.admin;
 
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.User;
 
@@ -49,6 +51,9 @@ public class UsersCommandExecutor extends CommandExecutor {
                 break;
             case "delete":
                 delete();
+                break;
+            case "disk-quota":
+                setDiskQuota();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -119,6 +124,34 @@ public class UsersCommandExecutor extends CommandExecutor {
         User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
                 new QueryOptions("force", true), null).first();
         System.out.println("The user has been successfully deleted from the database: " + user.toString());
+    }
+
+    private void setDiskQuota() throws CatalogException {
+        if (usersCommandOptions.diskQuotaUserCommandOptions.databaseUser != null) {
+            configuration.getDatabase().setUser(usersCommandOptions.diskQuotaUserCommandOptions.databaseUser);
+        }
+        if (usersCommandOptions.diskQuotaUserCommandOptions.databasePassword != null) {
+            configuration.getDatabase().setPassword(usersCommandOptions.diskQuotaUserCommandOptions.databasePassword);
+        }
+        if (usersCommandOptions.diskQuotaUserCommandOptions.database != null) {
+            configuration.getDatabase().setDatabase(usersCommandOptions.diskQuotaUserCommandOptions.database);
+        }
+        if (usersCommandOptions.diskQuotaUserCommandOptions.hosts != null) {
+            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.hosts));
+        }
+        if (usersCommandOptions.commonOptions.password != null) {
+            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        }
+
+        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert your password.");
+        }
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
+                new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),
+                        usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();
+        System.out.println("The disk quota has been properly updated: " + user.toString());
     }
 
 }
