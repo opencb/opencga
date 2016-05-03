@@ -32,7 +32,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
@@ -41,14 +40,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -84,7 +81,7 @@ public class CatalogFileUtilsTest {
         catalogManager.installCatalogDB();
 
         //Create USER
-        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
+        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();

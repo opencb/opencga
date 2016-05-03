@@ -23,7 +23,6 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
@@ -57,7 +56,7 @@ public class FileMetadataReaderTest extends TestCase {
 
         catalogManager = new CatalogManager(catalogConfiguration);
 
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
         project = catalogManager.createProject("user", "Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();

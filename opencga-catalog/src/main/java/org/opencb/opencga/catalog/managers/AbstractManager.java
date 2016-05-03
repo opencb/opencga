@@ -27,6 +27,7 @@ public abstract class AbstractManager {
     @Deprecated
     protected Properties catalogProperties;
 
+    protected final CatalogDBAdaptorFactory catalogDBAdaptorFactory;
     protected final CatalogUserDBAdaptor userDBAdaptor;
     protected final CatalogProjectDBAdaptor projectDBAdaptor;
     protected final CatalogStudyDBAdaptor studyDBAdaptor;
@@ -51,6 +52,7 @@ public abstract class AbstractManager {
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
@@ -71,6 +73,7 @@ public abstract class AbstractManager {
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }

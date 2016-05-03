@@ -166,7 +166,7 @@ public class CliOptionsParser {
         @Parameter(names = {"-c", "--conf"}, description = "Configuration file path.")
         public String configFile;
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = true, password = true, arity = 0)
         public String password;
 
         @Deprecated
@@ -414,9 +414,23 @@ public class CliOptionsParser {
         @ParametersDelegate
         public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
 
-
-        @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"--user-id"}, description = "User id", required = true, arity = 1)
         public String userId;
+
+        @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
+        public String userName;
+
+        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+        public String userPassword;
+
+        @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
+        public String userEmail;
+
+        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
+        public String userOrganization;
+
+        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
+        public Long userDiskQuota;
 
     }
 

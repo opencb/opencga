@@ -14,7 +14,6 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.Properties;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,7 +43,7 @@ public class AnalysisJobExecutorTest {
 
         catalogManager = new CatalogManager(catalogConfiguration);
 
-        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
+        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();

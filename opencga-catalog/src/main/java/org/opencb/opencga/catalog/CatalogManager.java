@@ -364,15 +364,18 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options)
-            throws CatalogException {
-        return createUser(id, name, email, password, organization, options, null);
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+                                        QueryOptions options) throws CatalogException {
+//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+        return userManager.create(id, name, email, password, organization, diskQuota, options,
+                catalogConfiguration.getAdmin().getPassword());
     }
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options,
-                                        String sessionId)
+    @Deprecated
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+                                        QueryOptions options, String sessionId)
             throws CatalogException {
-        return userManager.create(id, name, email, password, organization, options, sessionId);
+        return userManager.create(id, name, email, password, organization, diskQuota, options, sessionId);
     }
 
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
@@ -433,8 +436,8 @@ public class CatalogManager implements AutoCloseable {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
     }
 
-    public void deleteUser(String userId, String sessionId) throws CatalogException {
-        userManager.delete(userId, null, sessionId);
+    public QueryResult<User> deleteUser(String userId, String sessionId) throws CatalogException {
+        return userManager.delete(userId, null, sessionId);
     }
 
     /*

@@ -55,8 +55,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                       AuditManager auditManager,
-                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                       AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
 
@@ -96,14 +95,21 @@ public class UserManager extends AbstractManager implements IUserManager {
                 objectMap.getString("name"),
                 objectMap.getString("email"),
                 objectMap.getString("password"),
-                objectMap.getString("organization"),
-                options, sessionId
-        );
+                objectMap.getString("organization"), objectMap.getLong("diskQuota"), options, sessionId);
     }
 
     @Override
-    public QueryResult<User> create(String id, String name, String email, String password, String organization,
-                                    QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long diskQuota,
+                                    QueryOptions options, String adminPassword) throws CatalogException {
+
+        // Check if the users can be registered publicly or just the admin.
+        if (!catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().isRegisterOpen()) {
+            if (adminPassword != null && !adminPassword.isEmpty()) {
+                catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(adminPassword);
+            } else {
+                throw new CatalogException("The registration is closed to the public: Please talk to your administrator.");
+            }
+        }
 
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(password, "password");
@@ -116,6 +122,10 @@ public class UserManager extends AbstractManager implements IUserManager {
         }
 
         User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
+
+        if (diskQuota != null && diskQuota > 0L) {
+            user.setDiskQuota(diskQuota);
+        }
 
         // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
         String userId = id;

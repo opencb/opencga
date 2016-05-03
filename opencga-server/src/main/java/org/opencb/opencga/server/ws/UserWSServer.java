@@ -54,7 +54,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         try {
             queryOptions.remove("password");
-            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
+            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -74,11 +74,11 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         catalogManager = new CatalogManager(catalogConfiguration);
         catalogManager.installCatalogDB();
 
-        catalogManager.createUser(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null);
-        catalogManager.createUser(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null);
-        catalogManager.createUser(studyAdminUser2, studyAdminUser2, "email@ccc.ccc", password, "ASDF", null);
-        catalogManager.createUser(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null);
-        catalogManager.createUser(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null);
+        catalogManager.createUser(ownerUser, ownerUser, "email@ccc.ccc", password, "ASDF", null, null);
+        catalogManager.createUser(studyAdminUser1, studyAdminUser1, "email@ccc.ccc", password, "ASDF", null, null);
+        catalogManager.createUser(studyAdminUser2, studyAdminUser2, "email@ccc.ccc", password, "ASDF", null, null);
+        catalogManager.createUser(memberUser, memberUser, "email@ccc.ccc", password, "ASDF", null, null);
+        catalogManager.createUser(externalUser, externalUser, "email@ccc.ccc", password, "ASDF", null, null);
 
         ownerSessionId = catalogManager.login(ownerUser, password, "localhost").first().get("sessionId").toString();
         studyAdmin1SessionId = catalogManager.login(studyAdminUser1, password, "localhost").first().get("sessionId").toString();
