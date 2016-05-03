@@ -127,7 +127,7 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new Status());
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new User.UserStatus());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }
@@ -436,8 +436,8 @@ public class CatalogManager implements AutoCloseable {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
     }
 
-    public QueryResult<User> deleteUser(String userId, String sessionId) throws CatalogException {
-        return userManager.delete(userId, null, sessionId);
+    public QueryResult<User> deleteUser(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return userManager.delete(userId, queryOptions, sessionId);
     }
 
     /*

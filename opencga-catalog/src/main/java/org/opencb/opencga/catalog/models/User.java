@@ -40,7 +40,7 @@ public class User {
      */
     @Deprecated
     private Role role;
-    private Status status;
+    private UserStatus status;
     private String lastActivity;
     private long diskUsage;
     private long diskQuota;
@@ -60,12 +60,12 @@ public class User {
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, Status status) {
+    public User(String id, String name, String email, String password, String organization, Role role, UserStatus status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0),
                 new ArrayList<>(0), new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, Status status,
+    public User(String id, String name, String email, String password, String organization, Role role, UserStatus status,
                 String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
                 List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
@@ -161,11 +161,11 @@ public class User {
         return this;
     }
 
-    public Status getStatus() {
+    public UserStatus getStatus() {
         return status;
     }
 
-    public User setStatus(Status status) {
+    public User setStatus(UserStatus status) {
         this.status = status;
         return this;
     }
@@ -241,6 +241,38 @@ public class User {
         this.attributes = attributes;
         return this;
     }
+
+    public static class UserStatus extends Status {
+
+        public static final String BANNED = "BANNED";
+
+        public UserStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public UserStatus(String status) {
+            this(status, "");
+        }
+
+        public UserStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(BANNED))) {
+                return true;
+            }
+            return false;
+        }
+    }
+
 
     /*
          * Things to think about:

@@ -18,7 +18,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -121,7 +120,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             throw new CatalogException("The user " + id + " is already in use in our database. Please, choose another one.");
         }
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
+        User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);
@@ -234,23 +233,36 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> delete(String userId, QueryOptions options, String sessionId)
-            throws CatalogException {
-        QueryResult<User> user = read(userId, options, sessionId);
+    public QueryResult<User> delete(String userId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
-            try {
-                catalogIOManagerFactory.getDefault().deleteUser(userId);
-            } catch (CatalogIOException e) {
-                e.printStackTrace();
+
+        if (sessionId != null && !sessionId.isEmpty()) {
+            ParamUtils.checkParameter(sessionId, "sessionId");
+            String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+            if (!userIdBySessionId.equals(userId)) {
+                throw new CatalogException("The sessionId inserted does not correspond to the user {" + userId + "}. You do not have "
+                        + "permissions to delete the user {" + userId + "}.");
             }
-            userDBAdaptor.delete(userId, false);
+        } else {
+            if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                        + "deleted.");
+            }
+            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         }
-        user.setId("deleteUser");
-        auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, user, null, null);
-        return user;
+
+        QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
+//
+//        if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
+//            try {
+//                catalogIOManagerFactory.getDefault().deleteUser(userId);
+//            } catch (CatalogIOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        user.setId("deleteUser");
+        auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, deletedUser.first(), null, null);
+        return deletedUser;
     }
 
     @Override

@@ -178,13 +178,13 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
 
         @Override
         public QueryResult<User> delete() throws CatalogException {
-            catalogManager.deleteUser(userId, sessionId);
+            catalogManager.deleteUser(userId, null, sessionId);
             return new QueryResult<>("deleteUser");
         }
 
         @Override
         public QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-            catalogManager.deleteUser(userId, sessionId);
+            catalogManager.deleteUser(userId, null, sessionId);
             return new QueryResult<>("changePassword");
         }
     }
