@@ -20,11 +20,11 @@ package org.opencb.opencga.app.cli.analysis;
 /**
  * Created by imedina on 02/03/15.
  */
-public class FunctionalCommandExecutor extends CommandExecutor {
+public class FunctionalCommandExecutor extends AnalysisCommandExecutor {
 
-    private CliOptionsParser.FunctionalCommandOptions functionalCommandOptions;
+    private AnalysisCliOptionsParser.FunctionalCommandOptions functionalCommandOptions;
 
-    public FunctionalCommandExecutor(CliOptionsParser.FunctionalCommandOptions functionalCommandOptions) {
+    public FunctionalCommandExecutor(AnalysisCliOptionsParser.FunctionalCommandOptions functionalCommandOptions) {
         super(functionalCommandOptions.commonOptions);
         this.functionalCommandOptions = functionalCommandOptions;
     }

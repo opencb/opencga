@@ -19,11 +19,11 @@ package org.opencb.opencga.app.cli.analysis;
 /**
  * Created by imedina on 21/04/16.
  */
-public class ExpressionCommandExecutor extends CommandExecutor {
+public class ExpressionCommandExecutor extends AnalysisCommandExecutor {
 
-    private CliOptionsParser.ExpressionCommandOptions expressionCommandOptions;
+    private AnalysisCliOptionsParser.ExpressionCommandOptions expressionCommandOptions;
 
-    public ExpressionCommandExecutor(CliOptionsParser.ExpressionCommandOptions expressionCommandOptions) {
+    public ExpressionCommandExecutor(AnalysisCliOptionsParser.ExpressionCommandOptions expressionCommandOptions) {
         super(expressionCommandOptions.commonOptions);
         this.expressionCommandOptions = expressionCommandOptions;
     }

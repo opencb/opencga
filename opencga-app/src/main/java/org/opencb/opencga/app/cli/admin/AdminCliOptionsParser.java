@@ -18,20 +18,23 @@ package org.opencb.opencga.app.cli.admin;
 
 import com.beust.jcommander.*;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.app.cli.GeneralCliOptions.GeneralOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.List;
 import java.util.Map;
 
+
 /**
  * Created by imedina on 02/03/15.
  */
-public class CliOptionsParser {
+public class AdminCliOptionsParser {
 
     private final JCommander jCommander;
 
     private final GeneralOptions generalOptions;
-    private final CommonCommandOptions commonCommandOptions;
+    private final AdminCommonCommandOptions commonCommandOptions;
 
     private CatalogCommandOptions catalogCommandOptions;
     private UsersCommandOptions usersCommandOptions;
@@ -39,13 +42,13 @@ public class CliOptionsParser {
     private ToolsCommandOptions toolsCommandOptions;
 
 
-    public CliOptionsParser() {
+    public AdminCliOptionsParser() {
         generalOptions = new GeneralOptions();
 
         jCommander = new JCommander(generalOptions);
         jCommander.setProgramName("opencga-admin.sh");
 
-        commonCommandOptions = new CommonCommandOptions();
+        commonCommandOptions = new AdminCommonCommandOptions();
 
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
@@ -106,22 +109,13 @@ public class CliOptionsParser {
         if (parsedCommand != null) {
             JCommander jCommander2 = jCommander.getCommands().get(parsedCommand);
             List<Object> objects = jCommander2.getObjects();
-            if (!objects.isEmpty() && objects.get(0) instanceof CliOptionsParser.CommonCommandOptions) {
-                return ((CliOptionsParser.CommonCommandOptions) objects.get(0)).help;
+            if (!objects.isEmpty() && objects.get(0) instanceof AdminCommonCommandOptions) {
+                return ((AdminCommonCommandOptions) objects.get(0)).help;
             }
         }
         return commonCommandOptions.help;
     }
 
-
-    public class GeneralOptions {
-
-        @Parameter(names = {"-h", "--help"}, help = true)
-        public boolean help;
-
-        @Parameter(names = {"--version"})
-        public boolean version;
-    }
 
     /**
      * This class contains all those parameters available for all 'commands'
@@ -149,29 +143,11 @@ public class CliOptionsParser {
     /**
      * This class contains all those common parameters available for all 'subcommands'
      */
-    public class CommonCommandOptions {
-
-        @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
-        public boolean help;
-
-        @Parameter(names = {"-l", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel = "info";
-
-        @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logFile;
-
-        @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
-        public boolean verbose = false;
-
-        @Parameter(names = {"-c", "--conf"}, description = "Configuration file path.")
-        public String configFile;
+    public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
         public String password;
 
-        @Deprecated
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed in storage-configuration.yml")
-        public String storageEngine;
     }
 
 
@@ -191,7 +167,7 @@ public class CliOptionsParser {
         DumpCatalogCommandOptions dumpCatalogCommandOptions;
         ImportCatalogCommandOptions importCatalogCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public CatalogCommandOptions() {
             this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
@@ -217,7 +193,7 @@ public class CliOptionsParser {
         StatsUserCommandOptions statsUserCommandOptions;
         DiskQuotaUserCommandOptions diskQuotaUserCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public UsersCommandOptions() {
             this.createUserCommandOptions = new CreateUserCommandOptions();
@@ -236,7 +212,7 @@ public class CliOptionsParser {
         QueryAuditCommandOptions queryAuditCommandOptions;
         StatsAuditCommandOptions statsAuditCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public AuditCommandOptions() {
             this.queryAuditCommandOptions= new QueryAuditCommandOptions();
@@ -255,7 +231,7 @@ public class CliOptionsParser {
         ListToolCommandOptions listToolCommandOptions;
         ShowToolCommandOptions showToolCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public ToolsCommandOptions() {
             this.installToolCommandOptions = new InstallToolCommandOptions();
@@ -293,7 +269,7 @@ public class CliOptionsParser {
     public class InstallCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
         public boolean overwrite;
@@ -304,7 +280,7 @@ public class CliOptionsParser {
     public class DeleteCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
     }
 
@@ -322,7 +298,7 @@ public class CliOptionsParser {
     public class IndexCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--reset"}, description = "Remove existing indexes before creting the new one")
         public boolean reset;
@@ -342,7 +318,7 @@ public class CliOptionsParser {
     public class CleanCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to clean up")
         public String filter = "ALL";
@@ -353,7 +329,7 @@ public class CliOptionsParser {
     public class StatsCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--collections"}, description = "A comma-separated list of collections for the stats")
         public String collections = "ALL";
@@ -363,7 +339,7 @@ public class CliOptionsParser {
     public class DumpCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to be dumped", arity = 1)
         public String collections = "ALL";
@@ -373,7 +349,7 @@ public class CliOptionsParser {
     public class ImportCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--collections"}, description = "A comma-separated list of collections to be imported", arity = 1)
         public String collections = "ALL";
@@ -390,7 +366,7 @@ public class CliOptionsParser {
     public class QueryAuditCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--filter"}, description = "Query filter for data")
         public String filter;
@@ -400,7 +376,7 @@ public class CliOptionsParser {
     public class StatsAuditCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
     }
 
 
@@ -412,7 +388,7 @@ public class CliOptionsParser {
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -424,7 +400,7 @@ public class CliOptionsParser {
     public class DeleteUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -437,7 +413,7 @@ public class CliOptionsParser {
     public class DiskQuotaUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "User id to get stats from", required = true, arity = 1)
@@ -451,7 +427,7 @@ public class CliOptionsParser {
     public class StatsUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "User id to get stats from", required = true, arity = 1)
@@ -466,7 +442,7 @@ public class CliOptionsParser {
     public class InstallToolCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"-i", "--input"}, description = "File with the new tool to be installed", required = true, arity = 1)
@@ -478,7 +454,7 @@ public class CliOptionsParser {
     public class ListToolCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--filter"}, description = "Some kind of filter", arity = 1)
@@ -490,7 +466,7 @@ public class CliOptionsParser {
     public class ShowToolCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--tool-id"}, description = "Full name of the study where the file is classified", arity = 1)
@@ -551,7 +527,7 @@ public class CliOptionsParser {
         return generalOptions;
     }
 
-    public CommonCommandOptions getCommonOptions() {
+    public AdminCommonCommandOptions getCommonOptions() {
         return commonCommandOptions;
     }
 

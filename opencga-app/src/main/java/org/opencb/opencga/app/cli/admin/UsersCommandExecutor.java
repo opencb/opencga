@@ -20,11 +20,11 @@ package org.opencb.opencga.app.cli.admin;
 /**
  * Created by imedina on 02/03/15.
  */
-public class UsersCommandExecutor extends CommandExecutor {
+public class UsersCommandExecutor extends AdminCommandExecutor {
 
-    private CliOptionsParser.UsersCommandOptions usersCommandOptions;
+    private AdminCliOptionsParser.UsersCommandOptions usersCommandOptions;
 
-    public UsersCommandExecutor(CliOptionsParser.UsersCommandOptions usersCommandOptions) {
+    public UsersCommandExecutor(AdminCliOptionsParser.UsersCommandOptions usersCommandOptions) {
         super(usersCommandOptions.commonOptions);
         this.usersCommandOptions = usersCommandOptions;
     }

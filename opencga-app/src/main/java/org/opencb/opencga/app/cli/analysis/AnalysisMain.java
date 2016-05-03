@@ -17,20 +17,19 @@
 package org.opencb.opencga.app.cli.analysis;
 
 import com.beust.jcommander.ParameterException;
+import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.core.common.GitRepositoryState;
-
-import java.io.IOException;
 
 /**
  * Created by imedina on 03/02/15.
  */
 public class AnalysisMain {
 
-    public static final String VERSION = "0.8.0-dev";
+    public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
 
-        CliOptionsParser cliOptionsParser = new CliOptionsParser();
+        AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
         try {
             cliOptionsParser.parse(args);
         } catch (ParameterException e) {
@@ -79,14 +78,8 @@ public class AnalysisMain {
                     }
 
                     if (commandExecutor != null) {
-                        try {
-                            commandExecutor.loadCatalogConfiguration();
-                        } catch (IOException ex) {
-                            if (commandExecutor.getLogger() == null) {
-                                ex.printStackTrace();
-                            } else {
-                                commandExecutor.getLogger().error("Error reading OpenCGA configuration: " + ex.getMessage());
-                            }
+                        if (!commandExecutor.loadConfigurations()) {
+                            System.exit(1);
                         }
                         try {
                             commandExecutor.execute();

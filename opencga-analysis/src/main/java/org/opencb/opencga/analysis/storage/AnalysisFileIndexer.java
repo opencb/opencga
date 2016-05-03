@@ -76,7 +76,9 @@ public class AnalysisFileIndexer {
 
 
     //Other
+    @Deprecated
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
+    public static final String OPENCGA_ANALYSIS_BIN_NAME = "opencga-analyis.sh";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -378,9 +380,9 @@ public class AnalysisFileIndexer {
         String name = originalFile.getName();
         String commandLine;
 
-        String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
 
         if(originalFile.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
+            String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
             int chunkSize = 200;    //TODO: Read from properties.
             StringBuilder sb = new StringBuilder(opencgaStorageBin)
                     .append(" alignment index ")
@@ -402,6 +404,7 @@ public class AnalysisFileIndexer {
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
         } else if (originalFile.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
+            String opencgaAnalysisBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_ANALYSIS_BIN_NAME).toString();
 
 //            StringBuilder sampleIdsString = new StringBuilder();
 //            for (Sample sample : sampleList) {
@@ -412,7 +415,7 @@ public class AnalysisFileIndexer {
             String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
             String userId = catalogManager.getUserIdByProjectId(projectId);
 
-            StringBuilder sb = new StringBuilder(opencgaStorageBin)
+            StringBuilder sb = new StringBuilder(opencgaAnalysisBin)
                     .append(" variant index ")
                     .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
