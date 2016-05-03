@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.admin;
 
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.User;
@@ -94,29 +95,30 @@ public class UsersCommandExecutor extends CommandExecutor {
     }
 
     private void delete() throws CatalogException {
-//        if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
-//            configuration.getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
-//        }
-//        if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
-//            configuration.getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
-//        }
-//        if (usersCommandOptions.deleteUserCommandOptions.database != null) {
-//            configuration.getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
-//        }
-//        if (usersCommandOptions.deleteUserCommandOptions.hosts != null) {
-//            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.hosts));
-//        }
-//        if (usersCommandOptions.commonOptions.password != null) {
-//            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
-//        }
-//
-//        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
-//            throw new CatalogException("No admin password found. Please, insert your password.");
-//        }
-//
-//        CatalogManager catalogManager = new CatalogManager(configuration);
-//        User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId, null).first();
-//        System.out.println("The user has been successfully deleted from the database: " + user.toString());
+        if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
+            configuration.getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
+        }
+        if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
+            configuration.getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
+        }
+        if (usersCommandOptions.deleteUserCommandOptions.database != null) {
+            configuration.getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
+        }
+        if (usersCommandOptions.deleteUserCommandOptions.hosts != null) {
+            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.hosts));
+        }
+        if (usersCommandOptions.commonOptions.password != null) {
+            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        }
+
+        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert your password.");
+        }
+
+        CatalogManager catalogManager = new CatalogManager(configuration);
+        User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
+                new QueryOptions("force", true), null).first();
+        System.out.println("The user has been successfully deleted from the database: " + user.toString());
     }
 
 }
