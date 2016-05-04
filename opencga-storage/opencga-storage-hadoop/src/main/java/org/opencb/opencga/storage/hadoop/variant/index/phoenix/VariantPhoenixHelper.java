@@ -136,8 +136,8 @@ public class VariantPhoenixHelper {
     }
 
     public Connection newJdbcConnection(HBaseCredentials credentials) throws SQLException {
+      return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost()); // this one was working before hbase version
 //        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost(), credentials.getUser(), credentials.getPass());
-        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost());
     }
 
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {

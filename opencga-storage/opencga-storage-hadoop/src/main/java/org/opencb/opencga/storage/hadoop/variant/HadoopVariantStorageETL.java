@@ -8,16 +8,16 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
-import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.LoggerFactory;
@@ -72,7 +72,6 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
-        super.preLoad(input, output);
 
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
@@ -87,6 +86,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
         }
 
         if (loadArch) {
+            super.preLoad(input, output);
 
             //TODO: CopyFromLocal input to HDFS
             if (!input.getScheme().equals("hdfs")) {
@@ -130,7 +130,6 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
             int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
             int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
-//            HadoopCredentials archiveTable = buildCredentials(getTableName(studyId));
             boolean missingFilesDetected = false;
 
             Set<Integer> files = null;
@@ -141,7 +140,8 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
             } catch (IOException e) {
                 throw new StorageHadoopException("Unable to read loaded files", e);
             }
-            StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+
+            StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
             List<Integer> pendingFiles = new LinkedList<>();
 
             for (Integer loadedFileId : files) {
@@ -166,7 +166,6 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
                 }
             }
             if (missingFilesDetected) {
-//                getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration, null);
                 dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
             }
 

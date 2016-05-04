@@ -420,15 +420,7 @@ public abstract class VariantStorageETL implements StorageETL {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
-            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
-            checkStudyId(studyId);
-            studyConfiguration = new StudyConfiguration(studyId, studyName);
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        }
+        StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
 
         VariantSource source = readVariantSource(input, options);
 
@@ -494,6 +486,19 @@ public abstract class VariantStorageETL implements StorageETL {
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
         return input;
+    }
+
+    protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        if (studyConfiguration == null) {
+            logger.info("Creating a new StudyConfiguration");
+            int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
+            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
+            checkStudyId(studyId);
+            studyConfiguration = new StudyConfiguration(studyId, studyName);
+            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        }
+        return studyConfiguration;
     }
 
     /*

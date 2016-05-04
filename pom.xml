@@ -44,11 +44,11 @@
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
         <jackson.version>2.5.4</jackson.version>
         <jersey.version>2.19</jersey.version>
-        <hadoop.version>2.6.3</hadoop.version>
-        <hbase.version>1.2.0</hbase.version>
+        <hadoop.version>2.6.0</hadoop.version>
+        <hbase.version>1.0.0</hbase.version><!-- -cdh5.7.0 -->
+        <phoenix.version>4.5.2-HBase-1.0</phoenix.version>
         <avro.version>1.7.7</avro.version>
     </properties>
-
     <scm>
         <url>https://github.com/opencb/opencga</url>
         <connection>scm:git:git://github.com/opencb/opencga.git</connection>
@@ -114,6 +114,10 @@
     </mailingLists>
 
     <repositories>
+        <repository>
+            <id>cloudera</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
         <repository>
             <id>ossrh</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -401,6 +405,21 @@
                 <version>${hbase.version}</version>
                 <scope>test</scope>
                 <optional>true</optional>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.phoenix</groupId>
+                <artifactId>phoenix-spark</artifactId>
+                <version>${phoenix.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>hadoop-mapreduce-client-core</artifactId>
+                        <groupId>org.apache.hadoop</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>hbase-server</artifactId>
+                        <groupId>org.apache.hbase</groupId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.apache.avro</groupId>
