@@ -18,20 +18,19 @@ package org.opencb.opencga.app.cli.analysis;
 
 
 import org.apache.commons.lang.StringUtils;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
@@ -42,7 +41,8 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by imedina on 02/03/15.
@@ -123,25 +123,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * Index a variant file.
-     *
-     * steps:
-     * 1) Create, if not provided, an indexation job
-     * 2) Initialize VariantStorageManager
-     * 3) Read and validate cli args. Configure options
-     * 4) Execute indexation
-     * 5) Post process job. Update indexation status
-     * 6) Record job output. (Only if the job was not provided)
-     *
-     * @throws CatalogException
-     * @throws IllegalAccessException
-     * @throws ClassNotFoundException
-     * @throws InstantiationException
-     * @throws StorageManagerException
-     * @throws AnalysisExecutionException
-     * @throws IOException
-     */
     private void index() throws CatalogException, AnalysisExecutionException, IOException, ClassNotFoundException,
             StorageManagerException, InstantiationException, IllegalAccessException {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
@@ -151,23 +132,67 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Create, if not provided, an indexation job
-        final Job job;
         if (cliOptions.jobId < 0) {
+            Job job;
             long outDirId = catalogManager.getFileId(cliOptions.outdirId);
-            job = createIndexationJob(cliOptions, inputFileId, outDirId, sessionId);
-            try {
-                index(job);
-            } finally {
-                // 6) Record job output. (Only if the job was not provided)
-                AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-                outputRecorder.recordJobOutput(job);
-            }
+
+            AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+
+            List<String> extraParams = cliOptions.commonOptions.params.entrySet()
+                    .stream()
+                    .map(entry -> "-D" + entry.getKey() + "=" + entry.getValue())
+                    .collect(Collectors.toList());
+
+            QueryOptions options = new QueryOptions()
+                    .append(AnalysisJobExecutor.EXECUTE, false)
+                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
+                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
+                    .append(AnalysisFileIndexer.PARAMETERS, extraParams)
+                    .append(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats)
+                    .append(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate)
+                    .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated)
+                    .append(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields)
+                    .append(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype)
+                    .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel);
+
+            QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
+
+            job = result.first();
+            ObjectMap update = new ObjectMap("commandLine", job.getCommandLine() + " --job-id " + job.getId());
+            job = (Job) catalogManager.modifyJob(job.getId(), update, sessionId).first();
+
+            //Execute locally in a new process. This call will also record the job output files.
+            AnalysisJobExecutor.executeLocal(catalogManager, job, sessionId);
+
+//            // Execute in the same thread. Then, record the job output files.
+//            try {
+//                index(job);
+//            } finally {
+//                // Record job output
+//                AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
+//                outputRecorder.recordJobOutput(job);
+//            }
         } else {
-            job = catalogManager.getJob(cliOptions.jobId, null, sessionId).first();
-            index(job);
+            index(catalogManager.getJob(cliOptions.jobId, null, sessionId).first());
         }
     }
 
+    /**
+     * Index a variant file.
+     *
+     * steps:
+     * 1) Initialize VariantStorageManager
+     * 2) Read and validate cli args. Configure options
+     * 3) Execute indexation
+     * 4) Post process job. Update indexation status
+     *
+     * @throws CatalogException
+     * @throws IllegalAccessException
+     * @throws ClassNotFoundException
+     * @throws InstantiationException
+     * @throws StorageManagerException
+     */
     private void index(Job job)
             throws CatalogException, IllegalAccessException, ClassNotFoundException,
             InstantiationException, StorageManagerException {
@@ -179,7 +204,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
 
 
-        // 2) Initialize VariantStorageManager
+        // 1) Initialize VariantStorageManager
         long studyId = catalogManager.getStudyIdByFileId(inputFileId);
         Study study = catalogManager.getStudy(studyId, sessionId).first();
 
@@ -190,7 +215,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
 
-        // 3) Read and validate cli args. Configure options
+        // 2) Read and validate cli args. Configure options
         ObjectMap options = storageConfiguration.getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_NAME.key(), study.getAlias());
@@ -198,6 +223,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         options.put(VariantStorageManager.Options.FILE_ID.key(), inputFileId);
         options.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
         options.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
+        options.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
         options.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
 
         options.put(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate);
@@ -238,7 +264,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             doLoad = cliOptions.load;
         }
 
-        // 4) Execute indexation
+        // 3) Execute indexation
         try {
             File file = catalogManager.getFile(inputFileId, sessionId).first();
             URI fileUri = catalogManager.getFileUri(file);
@@ -254,107 +280,10 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             e.printStackTrace();
             throw e;
         } finally {
-            // 5) Post process job. Update indexation status
-            postProcessJob(job, storageETLResult, exception, sessionId);
+            // 4) Post process job. Update indexation status
+//            new AnalysisOutputRecorder(catalogManager, sessionId).postProcessIndexJob(job, storageETLResult, e, sessionId);
+            new AnalysisOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
         }
-    }
-
-
-    private void postProcessJob(Job job, StorageETLResult storageETLResult, Exception e, String sessionId) throws CatalogException {
-        boolean jobFailed = e != null;
-
-        Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
-        File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
-        final Index index;
-
-        boolean transformedSuccess = storageETLResult != null && storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() == null;
-        boolean loadedSuccess = storageETLResult != null && storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() == null;
-
-        if (indexedFile.getIndex() != null) {
-            index = indexedFile.getIndex();
-            switch (index.getStatus().getStatus()) {
-                case Index.IndexStatus.NONE:
-                case Index.IndexStatus.TRANSFORMED:
-                    logger.warn("Unexpected index status. Expected "
-                            + Index.IndexStatus.TRANSFORMING + ", "
-                            + Index.IndexStatus.LOADING + " or "
-                            + Index.IndexStatus.INDEXING
-                            + " and got " + index.getStatus());
-                case Index.IndexStatus.READY: //Do not show warn message when index status is READY.
-                    break;
-                case Index.IndexStatus.TRANSFORMING:
-                    if (jobFailed) {
-                        logger.warn("Job failed. Restoring status from " +
-                                Index.IndexStatus.TRANSFORMING + " to " + Index.IndexStatus.NONE);
-                        index.getStatus().setStatus(Index.IndexStatus.NONE);
-                    } else {
-                        index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
-                    }
-                    break;
-                case Index.IndexStatus.LOADING:
-                    if (jobFailed) {
-                        logger.warn("Job failed. Restoring status from " +
-                                Index.IndexStatus.LOADING + " to " + Index.IndexStatus.TRANSFORMED);
-                        index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
-                    } else {
-                        index.getStatus().setStatus(Index.IndexStatus.READY);
-                    }
-                    break;
-                case Index.IndexStatus.INDEXING:
-                    if (jobFailed) {
-                        String newStatus;
-                        // If transform was executed, restore status to Transformed.
-                        if (transformedSuccess) {
-                            newStatus = Index.IndexStatus.TRANSFORMED;
-                        } else {
-                            newStatus = Index.IndexStatus.NONE;
-                        }
-                        logger.warn("Job failed. Restoring status from " +
-                                Index.IndexStatus.INDEXING + " to " + newStatus);
-                        index.getStatus().setStatus(newStatus);
-                    } else {
-                        index.getStatus().setStatus(Index.IndexStatus.READY);
-                    }
-                    break;
-            }
-        } else {
-            index = new Index(job.getUserId(), job.getDate(), new Index.IndexStatus(Index.IndexStatus.READY), job.getId(),
-                    new HashMap<>());
-            logger.warn("Expected INDEX object on the indexed file " +
-                    "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");
-        }
-
-        if (transformedSuccess) {
-            FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
-        }
-
-        catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
-        if (index.getStatus().getStatus().equals(Index.IndexStatus.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
-            QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
-            if (queryResult.getNumResults() != 0) {
-                logger.debug("Default cohort status set to READY");
-                Cohort defaultCohort = queryResult.first();
-                catalogManager.modifyCohort(defaultCohort.getId(),
-                        new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.READY),
-                        new QueryOptions(), sessionId);
-            }
-        }
-    }
-
-    private Job createIndexationJob(AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions, long fileId, long outdirId, String sessionId) throws CatalogException, AnalysisExecutionException, IOException {
-
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
-
-        QueryOptions options = new QueryOptions()
-                .append(AnalysisJobExecutor.EXECUTE, false)
-                .append(AnalysisJobExecutor.SIMULATE, false)
-                .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
-                .append(AnalysisFileIndexer.LOAD, cliOptions.load)
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
-
-        QueryResult<Job> result = analysisFileIndexer.index(fileId, outdirId, sessionId, options);
-
-        return result.first();
     }
 
 }

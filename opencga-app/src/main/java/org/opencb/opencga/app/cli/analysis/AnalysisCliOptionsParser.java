@@ -341,11 +341,11 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"-o", "--outdir"}, description = "Unique ID for the file", required = false, arity = 1)
         public String outdirId = null;
 
-        @Parameter(names = {"--include-genotypes"}, description = "Index including the genotypes")
-        public boolean includeGenotype = false;
+        @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
+        public boolean excludeGenotype = false;
 
         @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
-        public String extraFields;
+        public String extraFields = "";
 
         @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
         public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
@@ -361,10 +361,10 @@ public class AnalysisCliOptionsParser {
         public boolean bgzip;
 
         @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
-        public boolean calculateStats;
+        public boolean calculateStats = false;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
-        public boolean annotate;
+        public boolean annotate = false;
 
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;

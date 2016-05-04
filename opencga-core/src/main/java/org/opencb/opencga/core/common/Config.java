@@ -36,21 +36,26 @@ public class Config {
     public static final String STORAGE_PROPERTIES = "storage.properties";
     protected static Logger logger = LoggerFactory.getLogger(Config.class);
 
-    private static String opencgaHome = System.getenv("OPENCGA_HOME");
+    private static String opencgaHome;
 //    private static String opencgaLightHome;
     private static boolean log4jReady = false;
 
-    private static Map<String, Properties> propertiesMap = new HashMap<>();
+    private static Map<String, Properties> propertiesMap;
 
     private static Properties storageProperties = null;
 
     private static long lastPropertyLoad = System.currentTimeMillis();
 
+    static {
+        propertiesMap = new HashMap<>();
+        opencgaHome = setOpenCGAHome();
+    }
+
     public static String getOpenCGAHome() {
         return opencgaHome;
     }
 
-    public static void setOpenCGAHome() {
+    public static String setOpenCGAHome() {
         // Finds the installation directory (opencgaHome).
         // Searches first in System Property "app.home" set by the shell script.
         // If not found, then in the environment variable "OPENCGA_HOME".
@@ -68,6 +73,7 @@ public class Config {
             }
         }
         Config.setOpenCGAHome(opencgaHome);
+        return opencgaHome;
     }
 
     public static void setOpenCGAHome(String opencgaHome) {

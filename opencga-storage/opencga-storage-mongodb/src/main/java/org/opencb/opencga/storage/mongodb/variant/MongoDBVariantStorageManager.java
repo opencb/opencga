@@ -125,7 +125,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         monitor.start();
         try {
             for (URI inputFile : inputFiles) {
-                StorageETLResult storageETLResult = new StorageETLResult();
+                StorageETLResult storageETLResult = new StorageETLResult(inputFile);
                 MongoDBVariantStorageETL storageETL = newStorageETL(doLoad);
                 storageETL.getOptions().append(VariantStorageManager.Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
                 storageETLMap.put(inputFile, storageETL);

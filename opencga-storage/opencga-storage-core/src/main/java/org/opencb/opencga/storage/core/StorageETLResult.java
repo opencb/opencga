@@ -62,6 +62,11 @@ public class StorageETLResult {
     protected Exception loadError;
 
     public StorageETLResult() {
+        this(null);
+    }
+
+    public StorageETLResult(URI input) {
+        this.input = input;
         loadStats = new ObjectMap();
         loadExecuted = false;
         transformStats = new ObjectMap();

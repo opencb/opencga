@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.analysis.storage;
 
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -24,15 +26,14 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -78,7 +79,7 @@ public class AnalysisFileIndexer {
     //Other
     @Deprecated
     public static final String OPENCGA_STORAGE_BIN_NAME = "opencga-storage.sh";
-    public static final String OPENCGA_ANALYSIS_BIN_NAME = "opencga-analyis.sh";
+    public static final String OPENCGA_ANALYSIS_BIN_NAME = "opencga-analysis.sh";
 
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexer.class);
@@ -195,7 +196,7 @@ public class AnalysisFileIndexer {
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
-        final String randomString = "I_" + StringUtils.randomString(10);
+        final String randomString = "I_" + RandomStringUtils.randomAlphanumeric(10);
         if (simulate) {
             temporalOutDirUri = createSimulatedOutDirUri(randomString);
         } else {
@@ -237,7 +238,7 @@ public class AnalysisFileIndexer {
 
         /** Create commandLine **/
         String commandLine = createCommandLine(study, originalFile, inputFile, sampleList,
-                temporalOutDirUri, indexAttributes, dataStore, sessionId, options);
+                outDirId, temporalOutDirUri, indexAttributes, dataStore, sessionId, options);
         if (options.containsKey(PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
@@ -306,7 +307,7 @@ public class AnalysisFileIndexer {
                 break;
         }
         final Job job = AnalysisJobExecutor.createJob(catalogManager, studyIdByOutDirId, jobName,
-                OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
+                OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 
 
@@ -361,6 +362,7 @@ public class AnalysisFileIndexer {
      * @param study                     Study where file is located
      * @param inputFile                 File to be indexed
      * @param sampleList
+     * @param outDirId
      * @param outDirUri                 Index outdir
      * @param indexAttributes           Attributes of the index object
      * @param dataStore
@@ -371,7 +373,7 @@ public class AnalysisFileIndexer {
      */
 
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
-                                     URI outDirUri, final ObjectMap indexAttributes, final DataStore dataStore,
+                                     long outDirId, URI outDirUri, final ObjectMap indexAttributes, final DataStore dataStore,
                                      String sessionId, QueryOptions options)
             throws CatalogException {
 
@@ -406,53 +408,30 @@ public class AnalysisFileIndexer {
         } else if (originalFile.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
             String opencgaAnalysisBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_ANALYSIS_BIN_NAME).toString();
 
-//            StringBuilder sampleIdsString = new StringBuilder();
-//            for (Sample sample : sampleList) {
-//                sampleIdsString.append(sample.getName()).append(":").append(sample.getId()).append(",");
-//            }
-
-            long projectId = catalogManager.getProjectIdByStudyId(study.getId());
-            String projectAlias = catalogManager.getProject(projectId, null, sessionId).first().getAlias();
-            String userId = catalogManager.getUserIdByProjectId(projectId);
-
             StringBuilder sb = new StringBuilder(opencgaAnalysisBin)
                     .append(" variant index ")
-                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
-                    .append(" --file-id ").append(originalFile.getId())
-//                    .append(" --study-name \'").append(study.getName()).append("\'")
-                    .append(" --study-name \'").append(userId).append("@").append(projectAlias).append(":").append(study.getAlias()).append("\'")
-                    .append(" --study-id ").append(study.getId())
-//                    .append(" --study-type ").append(study.getType())
-                    .append(" --database ").append(dataStore.getDbName())
-                    .append(" --input ").append(catalogManager.getFileUri(inputFile))
-                    .append(" --outdir ").append(outDirUri)
-//                    .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
-//                    .append(" -D").append("sessionId").append("=").append(sessionId)
-//                    .append(" --sample-ids ").append(sampleIdsString)
-//                    .append(" --credentials ")
-                    ;
+                    .append(" --file-id ").append(inputFile.getId())
+                    .append(" --outdir ").append(outDirId)
+                    .append(" --session-id ").append(sessionId);
             if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), VariantStorageManager.Options.ANNOTATE.defaultValue())) {
                 sb.append(" --annotate ");
             }
             if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue())) {
                 sb.append(" --calculate-stats ");
             }
-//            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_SRC.key(), false)) {
-//                sb.append(" --include-src ");
-//            }
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
             }
-//            if (options.getBoolean(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), VariantStorageManager.Options.INCLUDE_GENOTYPES.defaultValue())) {
-//                sb.append(" --include-genotypes ");
-//            }
-            if (!options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), "").isEmpty()) {
+            if (StringUtils.isNotEmpty(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), ""))) {
                 sb.append(" --include-extra-fields ").append(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
+            }
+            if (options.getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
+                sb.append(" --exclude-genotypes ");
             }
             if (options.getBoolean(LOAD, false)) {
                 sb.append(" --load ");
             }
-            if (options.containsKey(LOG_LEVEL)) {
+            if (StringUtils.isNotEmpty(options.getString(LOG_LEVEL))) {
                 sb.append(" --log-level ").append(options.getString(LOG_LEVEL));
             }
             if (options.containsKey(VariantStorageManager.Options.AGGREGATED_TYPE.key())) {
@@ -474,7 +453,7 @@ public class AnalysisFileIndexer {
 
 
     public static URI createSimulatedOutDirUri() {
-        return createSimulatedOutDirUri("J_" + StringUtils.randomString(10));
+        return createSimulatedOutDirUri("J_" + RandomStringUtils.randomAlphanumeric(10));
     }
 
     public static URI createSimulatedOutDirUri(String randomString) {

@@ -48,6 +48,7 @@ import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageMa
 public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     private final VariantMongoDBAdaptor dbAdaptor;
+    private final ObjectMap loadStats = new ObjectMap();
 
     public MongoDBVariantStorageETL(StorageConfiguration configuration, String storageEngineId,
                                     VariantMongoDBAdaptor dbAdaptor) {
@@ -276,7 +277,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
         }
 
-        int skippedVariants = (int) stageWriter.getWriteResult().getSkippedVariants();
+        long skippedVariants = stageWriter.getWriteResult().getSkippedVariants();
+        loadStats.append("merge", false);
+        loadStats.append("stageWriteResult", stageWriter.getWriteResult());
         if (options.getBoolean("merge", true)) {
             MongoDBVariantWriteResult writeResult = merge(Collections.singletonList(fileId), batchSize, loadThreads, capacity,
                     numRecords, skippedVariants, stageCollection);
@@ -284,7 +287,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         options.put("skippedVariants", skippedVariants);
 
         logger.info("Stage Write result: {}", skippedVariants);
-
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants loaded!");
@@ -332,7 +334,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
      * @throws StorageManagerException  If there is a problem executing the {@link ParallelTaskRunner}
      */
     protected MongoDBVariantWriteResult merge(List<Integer> fileIds, int batchSize, int loadThreads, int capacity,
-                                           int numRecords, int skippedVariants, MongoDBCollection stageCollection)
+                                           int numRecords, long skippedVariants, MongoDBCollection stageCollection)
             throws StorageManagerException {
 
         long start = System.currentTimeMillis();
@@ -405,6 +407,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         logger.info("Write result: {}", writeResult.toTSV());
         logger.info("Write result: {}", writeResult.toJson());
         options.put("writeResult", writeResult);
+        loadStats.append("merge", true);
+        loadStats.append("mergeWriteResult", writeResult);
 
         long end = System.currentTimeMillis();
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
@@ -454,6 +458,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         } else {
             return input;
         }
+    }
+
+    @Override
+    public ObjectMap getLoadStats() {
+        return loadStats;
     }
 
     @Override

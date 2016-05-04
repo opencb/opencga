@@ -80,7 +80,7 @@ public abstract class StorageManager<DBADAPTOR> {
             //Provide a connected storageETL if load is required.
             StorageETL storageETL = newStorageETL(doLoad);
 
-            StorageETLResult etlResult = new StorageETLResult();
+            StorageETLResult etlResult = new StorageETLResult(inputFile);
             results.add(etlResult);
 
             URI nextFileUri = inputFile;
