@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
 
@@ -100,5 +101,7 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
     QueryResult<Dataset> createDataset(long studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException;
+
+    MongoDBCollection getDatasetCollection();
 
 }
