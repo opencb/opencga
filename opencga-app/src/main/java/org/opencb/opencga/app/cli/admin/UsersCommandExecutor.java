@@ -22,8 +22,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
+import java.io.IOException;
 import java.util.Collections;
 
 /**
@@ -62,7 +64,7 @@ public class UsersCommandExecutor extends CommandExecutor {
 
     }
 
-    private void create() throws CatalogException {
+    private void create() throws CatalogException, IOException {
         if (usersCommandOptions.createUserCommandOptions.databaseUser != null) {
             configuration.getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
         }
@@ -95,8 +97,41 @@ public class UsersCommandExecutor extends CommandExecutor {
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
                 userDiskQuota, null).first();
-        System.out.println("The user has been successfully created: " + user.toString());
+        System.out.println("The user has been successfully created: " + user.toString() + "\n");
 
+        // Login the user
+        ObjectMap login = catalogManager.login(usersCommandOptions.createUserCommandOptions.userId,
+                usersCommandOptions.createUserCommandOptions.userPassword, "localhost").first();
+
+        String projectName = "Default";
+        if (usersCommandOptions.createUserCommandOptions.projectName != null
+                && !usersCommandOptions.createUserCommandOptions.projectName.isEmpty()) {
+            projectName = usersCommandOptions.createUserCommandOptions.projectName;
+        }
+
+        String projectAlias = "default";
+        if (usersCommandOptions.createUserCommandOptions.projectAlias != null
+                && !usersCommandOptions.createUserCommandOptions.projectAlias.isEmpty()) {
+            projectAlias = usersCommandOptions.createUserCommandOptions.projectAlias;
+        }
+
+        String projectDescription = "";
+        if (usersCommandOptions.createUserCommandOptions.projectDescription != null
+                && !usersCommandOptions.createUserCommandOptions.projectDescription.isEmpty()) {
+            projectDescription = usersCommandOptions.createUserCommandOptions.projectDescription;
+        }
+
+        String projectOrganization = "";
+        if (usersCommandOptions.createUserCommandOptions.projectOrganization != null
+                && !usersCommandOptions.createUserCommandOptions.projectOrganization.isEmpty()) {
+            projectOrganization = usersCommandOptions.createUserCommandOptions.projectOrganization;
+        }
+
+        Project project = catalogManager.createProject(usersCommandOptions.createUserCommandOptions.userId, projectName, projectAlias,
+                projectDescription, projectOrganization, null, login.getString("sessionId")).first();
+        System.out.println("A default project has been created for the user: " + project.toString() + "\n");
+
+        catalogManager.logout(usersCommandOptions.createUserCommandOptions.userId, login.getString("sessionId"));
     }
 
     private void delete() throws CatalogException {

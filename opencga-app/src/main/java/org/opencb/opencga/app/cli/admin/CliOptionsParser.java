@@ -408,7 +408,7 @@ public class CliOptionsParser {
      * USER SUB-COMMANDS
      */
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user in Catalog database and the workspace")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user with a default project in Catalog database and the workspace")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
@@ -431,6 +431,18 @@ public class CliOptionsParser {
 
         @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
         public Long userDiskQuota;
+
+        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
+        public String projectName;
+
+        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
+        public String projectAlias;
+
+        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
+        public String projectDescription;
+
+        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
+        public String projectOrganization;
 
     }
 
