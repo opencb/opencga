@@ -33,6 +33,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FilterConverter;
@@ -184,7 +185,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new Status());
+        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new User.UserStatus());
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");
@@ -452,16 +453,22 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
-        final String[] acceptedParams = {"name", "email", "organization", "lastActivity", "status"};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key(),
+                QueryParams.LAST_ACTIVITY.key(), };
         filterStringParams(parameters, userParameters, acceptedParams);
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
         filterEnumParams(parameters, userParameters, acceptedEnums);
 
-        final String[] acceptedIntParams = {"diskQuota", "diskUsage"};
-        filterIntParams(parameters, userParameters, acceptedIntParams);
+        final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
+        filterLongParams(parameters, userParameters, acceptedLongParams);
 
-        final String[] acceptedMapParams = {"attributes", "configs"};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), "configs"};
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
@@ -489,8 +496,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("Update user", startTime, get(query, null));
     }
 
-    public QueryResult<User> setStatus(String userId, Status status) throws CatalogDBException {
-        return update(userId, new ObjectMap("status", status));
+    public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
+        return update(userId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
@@ -498,12 +505,52 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         throw new NotImplementedException("Delete user by int id. The id should be a string.");
     }
 
-    public QueryResult<User> delete(String id, boolean force) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long startTime = startQuery();
-//        Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id);
-//        delete(query, , force);
-//        return endQuery("Delete user", startTime, get(query, new QueryOptions()));
+    public QueryResult<User> delete(String id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkUserExists(id);
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            Query query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), id)
+                    .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(query, queryOptions);
+        }
+
+        // Check the current status is not deleted or removed.
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), "!=" + User.UserStatus.DELETED + ";!=" + User.UserStatus.REMOVED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The user {" + id + "} could not be deleted. It was already deleted/removed.");
+        }
+        setStatus(id, User.UserStatus.DELETED);
+
+        query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED);
+
+        return endQuery("Delete user", startTime, get(query, queryOptions));
+    }
+
+    /**
+     * Checks whether the userId has any active project.
+     *
+     * @param userId user id.
+     * @throws CatalogDBException when the user has active projects. Projects must be deleted first.
+     */
+    private void checkCanDelete(String userId) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), userId);
+        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.PROJECTS.key());
+
+        User user = get(query, options).first();
+
+        for (Project project : user.getProjects()) {
+            if (project.getStatus().getStatus() == Status.READY) {
+                throw new CatalogDBException("User {" + userId + "} cannot be deleted. The project {" + project.getName() + " - "
+                        + project.getId() + "} is still in use. You must delete it first.");
+            }
+        }
+
     }
 
     @Override

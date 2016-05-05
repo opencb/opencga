@@ -30,13 +30,14 @@ public interface IUserManager extends ResourceManager<String, User> {
      * @param email        Email
      * @param password     Encrypted Password
      * @param organization Optional organization
+     * @param diskQuota    Maximum user disk quota
      * @param options      Optional options
-     * @param sessionId    Optional sessionId.
+     * @param adminPassword    Optional admin password.
      * @return The created user
      * @throws CatalogException If user already exists, or unable to create a new user.
      */
-    QueryResult<User> create(String userId, String name, String email, String password, String organization, QueryOptions options,
-                             String sessionId) throws CatalogException;
+    QueryResult<User> create(String userId, String name, String email, String password, String organization, Long diskQuota,
+                             QueryOptions options, String adminPassword) throws CatalogException;
 
     /**
      * Gets the user information.

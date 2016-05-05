@@ -54,7 +54,7 @@ public class UserWSServer extends OpenCGAWSServer {
                                @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         try {
             queryOptions.remove("password");
-            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, queryOptions);
+            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -220,7 +220,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete an user [NO TESTED]", position = 10)
     public Response delete(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
-            catalogManager.deleteUser(userId, sessionId);
+            catalogManager.deleteUser(userId, null, sessionId);
             return createOkResponse("User '" + userId + "' deleted");
         } catch (Exception e) {
             return createErrorResponse(e);

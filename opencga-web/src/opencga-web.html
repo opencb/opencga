@@ -127,7 +127,7 @@
                     </div>
                     <div class="modal-footer">
                         <button on-click="closeSettings" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button on-click="saveHost" type="button" class="btn btn-primary">OK</button>
+                        <button on-click="saveHost" type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
                     </div>
                 </div>
             </div>
@@ -146,6 +146,7 @@
             ready: function() {
                 this.enableClick();
                 this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID, OPENCGA_COOKIE_USER_NAME);
+                this.tmpHost = OPENCGA_HOST;
                 let tmpClient = new OpenCGAClient(this.config);
 //                this.opencgaClient = new OpenCGAClient(this.config);
                 tmpClient.users().info()
@@ -196,12 +197,17 @@
             },
 
             saveHost: function(e) {
-                this.host = this.tmpHost;
-                OpencgaManager.host = this.host;
+                if (this.opencgaClient instanceof OpenCGAClient) {
+                    this.logout();
+                }
+                this.config.host = this.tmpHost;
+//                this.host = this.tmpHost;
+//                OpencgaManager.host = this.host;
             },
 
             closeSettings: function(e) {
-                this.tmpHost = this.host;
+                this.tmpHost = this.config.host;
+//                this.tmpHost = this.host;
             },
 
             logout: function() {

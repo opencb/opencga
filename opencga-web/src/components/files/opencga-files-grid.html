@@ -23,7 +23,7 @@
         <style is="custom-style" include="opencga-shared-styles"></style>
 
         <table id="filetable" data-search="true" data-show-columns="true" data-pagination="true" data-height="520" data-page-list="[10, 25, 50]"
-               data-show-pagination-switch="true" data-show-export="true">
+               data-show-pagination-switch="true" data-show-export="true" data-striped="true" data-side-pagination="server">
         </table>
 
     </template>
@@ -32,10 +32,18 @@
             is: 'opencga-files-grid',
 
             properties: {
+                opencgaClient: {
+                    type: Object,
+                    observer: 'render'
+                },
+                studyId: {
+                    type: Number,
+//                    observer: "_getFiles"
+                },
                 files: {
                     type: Array,
                     value: [],
-                    observer: 'render'
+//                    observer: 'render'
                 }
             },
 
@@ -43,7 +51,24 @@
                 let _this = this;
                 $('#filetable').bootstrapTable('destroy');
                 $('#filetable').bootstrapTable({
-                    data: this.files,
+//                    data: this.files,
+                    url: 'http://squalet.hpc.cam.ac.uk:8080/opencga/webservices/rest/v1/samples/search?studyId=2&sid=jvKDjt1Z4ths3ds4sVWb',
+                    queryParams: function(params) {
+                        return {
+                            order: params.order,
+                            sort: params.sort,
+                            limit: params.limit,
+                            skip: params.offset
+                        }
+                    },
+                    responseHandler: function(response) {
+                        return {
+                            total: 2000,
+//                            response.response[0].numTotalResults,
+                            rows: response.response[0].result
+                        }
+//                        debugger
+                    },
                     columns: [
                         [
                             {
@@ -74,6 +99,19 @@
                         _this.fire('selected', row);
                     }
                 });
+            },
+
+            _getFiles: function() {
+                let _this = this;
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this.opencgaClient.samples().search({studyId: this.studyId})
+                            .then(function(response) {
+                                if (response.response[0].numResults > 0) {
+                                    _this.files = response.response[0].result;
+                                    console.log(_this.files);
+                                }
+                            });
+                }
             }
         });
     </script>

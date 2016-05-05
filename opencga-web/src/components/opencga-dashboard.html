@@ -28,8 +28,9 @@
 
         <div>
             <div class="dropdown">
-                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    {{projectTitle}} <span class="caret"></span>
+                <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true"
+                        aria-expanded="false">
+                    {{studyTitle}} <span class="caret"></span>
                 </button>
 
                 <ul class="dropdown-menu">
@@ -85,7 +86,7 @@
                 opencgaClientConfig: {
                     type: Object
                 },
-                projectTitle: {
+                studyTitle: {
                     type: String,
                     value: "Select one study"
                 },
@@ -113,8 +114,8 @@
             },
 
             updateProjectName: function (e) {
-                this.projectTitle = e.target.innerHTML;
-                this.studyId = e.target.dataId;
+                this.studyTitle = e.target.innerHTML;
+                this.studyId = parseInt(e.target.dataId);
             },
 
             _getProjects: function () {
@@ -126,6 +127,10 @@
                     console.log("The OpenCGA client is passed properly.");
                     this.opencgaClient.users().projects().then(function(response) {
                         return Promise.all(response.response[0].result.map(_this._getStudiesByProject.bind(_this)))
+                                .then(function() {
+                                    this.studyTitle = this.projects[0].studies[0].name;
+                                    this.studyId = this.projects[0].studies[0].id;
+                                }.bind(_this));
                     });
                 }
             },

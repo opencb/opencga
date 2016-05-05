@@ -127,7 +127,7 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new Status());
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new User.UserStatus());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }
@@ -364,15 +364,18 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options)
-            throws CatalogException {
-        return createUser(id, name, email, password, organization, options, null);
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+                                        QueryOptions options) throws CatalogException {
+//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+        return userManager.create(id, name, email, password, organization, diskQuota, options,
+                catalogConfiguration.getAdmin().getPassword());
     }
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options,
-                                        String sessionId)
+    @Deprecated
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+                                        QueryOptions options, String sessionId)
             throws CatalogException {
-        return userManager.create(id, name, email, password, organization, options, sessionId);
+        return userManager.create(id, name, email, password, organization, diskQuota, options, sessionId);
     }
 
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
@@ -428,13 +431,13 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.getUserId(projectId);
     }
 
-    public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
+    public QueryResult<User> modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
     }
 
-    public void deleteUser(String userId, String sessionId) throws CatalogException {
-        userManager.delete(userId, null, sessionId);
+    public QueryResult<User> deleteUser(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return userManager.delete(userId, queryOptions, sessionId);
     }
 
     /*
