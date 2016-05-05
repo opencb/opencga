@@ -66,22 +66,22 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         if (usersCommandOptions.createUserCommandOptions.databaseUser != null) {
-            configuration.getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
+            catalogConfiguration.getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
         }
         if (usersCommandOptions.createUserCommandOptions.databasePassword != null) {
-            configuration.getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
+            catalogConfiguration.getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
         }
         if (usersCommandOptions.createUserCommandOptions.database != null) {
-            configuration.getDatabase().setDatabase(usersCommandOptions.createUserCommandOptions.database);
+            catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.createUserCommandOptions.database);
         }
         if (usersCommandOptions.createUserCommandOptions.hosts != null) {
-            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.hosts));
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.hosts));
         }
         if (usersCommandOptions.commonOptions.password != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
         }
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
@@ -89,10 +89,10 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.createUserCommandOptions.userDiskQuota != null) {
             userDiskQuota = usersCommandOptions.createUserCommandOptions.userDiskQuota;
         } else {
-            userDiskQuota = configuration.getUserDefaultDiskQuota();
+            userDiskQuota = catalogConfiguration.getUserDefaultDiskQuota();
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
         User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
@@ -136,26 +136,26 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void delete() throws CatalogException {
         if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
-            configuration.getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
+            catalogConfiguration.getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
         }
         if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
-            configuration.getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
+            catalogConfiguration.getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
         }
         if (usersCommandOptions.deleteUserCommandOptions.database != null) {
-            configuration.getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
+            catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
         }
         if (usersCommandOptions.deleteUserCommandOptions.hosts != null) {
-            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.hosts));
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.hosts));
         }
         if (usersCommandOptions.commonOptions.password != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
         }
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
         User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
                 new QueryOptions("force", true), null).first();
         System.out.println("The user has been successfully deleted from the database: " + user.toString());
@@ -163,26 +163,26 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
 
     private void setDiskQuota() throws CatalogException {
         if (usersCommandOptions.diskQuotaUserCommandOptions.databaseUser != null) {
-            configuration.getDatabase().setUser(usersCommandOptions.diskQuotaUserCommandOptions.databaseUser);
+            catalogConfiguration.getDatabase().setUser(usersCommandOptions.diskQuotaUserCommandOptions.databaseUser);
         }
         if (usersCommandOptions.diskQuotaUserCommandOptions.databasePassword != null) {
-            configuration.getDatabase().setPassword(usersCommandOptions.diskQuotaUserCommandOptions.databasePassword);
+            catalogConfiguration.getDatabase().setPassword(usersCommandOptions.diskQuotaUserCommandOptions.databasePassword);
         }
         if (usersCommandOptions.diskQuotaUserCommandOptions.database != null) {
-            configuration.getDatabase().setDatabase(usersCommandOptions.diskQuotaUserCommandOptions.database);
+            catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.diskQuotaUserCommandOptions.database);
         }
         if (usersCommandOptions.diskQuotaUserCommandOptions.hosts != null) {
-            configuration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.hosts));
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.hosts));
         }
         if (usersCommandOptions.commonOptions.password != null) {
-            configuration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
         }
 
-        if (configuration.getAdmin().getPassword() == null || configuration.getAdmin().getPassword().isEmpty()) {
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
             throw new CatalogException("No admin password found. Please, insert your password.");
         }
 
-        CatalogManager catalogManager = new CatalogManager(configuration);
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
         User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
                 new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),
                         usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();
