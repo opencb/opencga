@@ -107,7 +107,7 @@ public class WSServerTestUtils {
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
 
-        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog-configuration.yml");
+        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog-configuration-test.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());

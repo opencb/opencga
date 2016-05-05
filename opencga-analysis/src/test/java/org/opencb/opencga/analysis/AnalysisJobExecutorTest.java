@@ -1,10 +1,12 @@
 package org.opencb.opencga.analysis;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.models.*;
@@ -32,17 +34,12 @@ public class AnalysisJobExecutorTest {
     private File output;
     private URI temporalOutDirUri;
 
+    @Rule
+    public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
     @Before
     public void before() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
-                .openStream());
-        /*Properties properties = new Properties();
-        properties.load(CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
-*/
-        CatalogManagerTest.clearCatalog(catalogConfiguration);
-
-        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager = catalogManagerExternalResource.getCatalogManager();
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");

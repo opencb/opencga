@@ -333,7 +333,7 @@ public class AnalysisCliOptionsParser {
 //        public long studyId;
 
         @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
-        public long jobId = -1;
+        public String jobId = null;
 
         @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
         public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();

@@ -103,71 +103,6 @@ public class CatalogManagerTest extends GenericTest {
         return Paths.get(fileTestName).toFile();
     }
 
-    public static void clearCatalog(Properties properties) throws IOException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-        db.getDb().drop();
-        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-
-        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
-        deleteFolderTree(rootdir.toFile());
-        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
-            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
-    }
-
-    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-        db.getDb().drop();
-        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-
-        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
-        deleteFolderTree(rootdir.toFile());
-        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
-    }
-
-    public static void deleteFolderTree(java.io.File folder) {
-        java.io.File[] files = folder.listFiles();
-        if (files != null) {
-            for (java.io.File f : files) {
-                if (f.isDirectory()) {
-                    deleteFolderTree(f);
-                } else {
-                    f.delete();
-                }
-            }
-        }
-        folder.delete();
-    }
 
     @Before
     public void setUp() throws IOException, CatalogException {
@@ -175,7 +110,7 @@ public class CatalogManagerTest extends GenericTest {
                 .openStream());
 
         catalogConfiguration.getDatabase().setDatabase("opencga_server_test");
-        clearCatalog(catalogConfiguration);
+        CatalogManagerExternalResource.clearCatalog(catalogConfiguration);
 
 //        catalogManager = new CatalogManager(catalogConfiguration);
 //        catalogManager.installCatalogDB();

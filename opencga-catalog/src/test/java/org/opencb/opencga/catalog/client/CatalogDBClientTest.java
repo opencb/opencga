@@ -44,7 +44,7 @@ public class CatalogDBClientTest {
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogDBClientTest.class.getClassLoader().getClass()
-                .getResource("/catalog-configuration.yml").openStream());
+                .getResource("/catalog-configuration-test.yml").openStream());
         /*
         Properties catalogProperties = new Properties();
         catalogProperties.load(CatalogDBClientTest.class.getClassLoader().getResourceAsStream("catalog.properties"));

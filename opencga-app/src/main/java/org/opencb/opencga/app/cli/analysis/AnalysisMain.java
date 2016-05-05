@@ -28,6 +28,10 @@ public class AnalysisMain {
     public static final String VERSION = GitRepositoryState.get().getBuildVersion();
 
     public static void main(String[] args) {
+        System.exit(privateMain(args));
+    }
+
+    public static int privateMain(String[] args) {
 
         AnalysisCliOptionsParser cliOptionsParser = new AnalysisCliOptionsParser();
         try {
@@ -35,7 +39,7 @@ public class AnalysisMain {
         } catch (ParameterException e) {
             System.err.println(e.getMessage());
             cliOptionsParser.printUsage();
-            System.exit(1);
+            return 1;
         }
 
         String parsedCommand = cliOptionsParser.getCommand();
@@ -43,20 +47,20 @@ public class AnalysisMain {
             if (cliOptionsParser.getGeneralOptions().version) {
                 System.out.println("Version " + GitRepositoryState.get().getBuildVersion());
                 System.out.println("Git version: " + GitRepositoryState.get().getBranch() + " " + GitRepositoryState.get().getCommitId());
-                System.exit(0);
+                return 0;
             } else if (cliOptionsParser.getGeneralOptions().help) {
                 cliOptionsParser.printUsage();
-                System.exit(0);
+                return 0;
             } else {
                 cliOptionsParser.printUsage();
-                System.exit(1);
+                return 1;
             }
         } else {
             CommandExecutor commandExecutor = null;
             // Check if any command -h option is present
             if (cliOptionsParser.isHelp()) {
                 cliOptionsParser.printUsage();
-                System.exit(0);
+                return 0;
             } else {
                 String parsedSubCommand = cliOptionsParser.getSubCommand();
                 if (parsedSubCommand == null || parsedSubCommand.isEmpty()) {
@@ -73,28 +77,29 @@ public class AnalysisMain {
                             commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommandOptions());
                             break;
                         default:
-                            System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
+                            System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;
                     }
 
                     if (commandExecutor != null) {
                         if (!commandExecutor.loadConfigurations()) {
-                            System.exit(1);
+                            return 1;
                         }
                         try {
                             commandExecutor.execute();
                         } catch (Exception e) {
                             e.printStackTrace();
-                            System.exit(1);
+                            return 1;
                         }
                     } else {
                         cliOptionsParser.printUsage();
-                        System.exit(1);
+                        return 1;
                     }
                 }
 
             }
         }
+        return 0;
     }
 
 }

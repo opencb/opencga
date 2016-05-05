@@ -68,7 +68,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Before
     public void before() throws IOException, CatalogException {
-        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(

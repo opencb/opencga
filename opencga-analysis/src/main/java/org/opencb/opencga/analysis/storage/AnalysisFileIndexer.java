@@ -100,7 +100,7 @@ public class AnalysisFileIndexer {
      * @throws AnalysisExecutionException
      */
     public QueryResult<Job> index(long fileId, long outDirId, String sessionId, QueryOptions options)
-            throws IOException, CatalogException, AnalysisExecutionException {
+            throws CatalogException, AnalysisExecutionException {
 
         if (options == null) {
             options = new QueryOptions();
@@ -238,7 +238,7 @@ public class AnalysisFileIndexer {
 
         /** Create commandLine **/
         String commandLine = createCommandLine(study, originalFile, inputFile, sampleList,
-                outDirId, temporalOutDirUri, indexAttributes, dataStore, sessionId, options);
+                outDirId, temporalOutDirUri, randomString, indexAttributes, dataStore, sessionId, options);
         if (options.containsKey(PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(PARAMETERS);
             for (String extraParam : extraParams) {
@@ -364,6 +364,7 @@ public class AnalysisFileIndexer {
      * @param sampleList
      * @param outDirId
      * @param outDirUri                 Index outdir
+     * @param randomString
      * @param indexAttributes           Attributes of the index object
      * @param dataStore
      * @return                  CommandLine
@@ -373,7 +374,7 @@ public class AnalysisFileIndexer {
      */
 
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
-                                     long outDirId, URI outDirUri, final ObjectMap indexAttributes, final DataStore dataStore,
+                                     long outDirId, URI outDirUri, String randomString, final ObjectMap indexAttributes, final DataStore dataStore,
                                      String sessionId, QueryOptions options)
             throws CatalogException {
 
@@ -412,7 +413,8 @@ public class AnalysisFileIndexer {
                     .append(" variant index ")
                     .append(" --file-id ").append(inputFile.getId())
                     .append(" --outdir ").append(outDirId)
-                    .append(" --session-id ").append(sessionId);
+                    .append(" --session-id ").append(sessionId)
+                    .append(" --job-id ").append(randomString);
             if (options.getBoolean(VariantStorageManager.Options.ANNOTATE.key(), VariantStorageManager.Options.ANNOTATE.defaultValue())) {
                 sb.append(" --annotate ");
             }

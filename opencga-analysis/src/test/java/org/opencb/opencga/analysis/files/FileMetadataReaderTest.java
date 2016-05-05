@@ -1,15 +1,14 @@
 package org.opencb.opencga.analysis.files;
 
-import junit.framework.TestCase;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -23,18 +22,25 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class FileMetadataReaderTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class FileMetadataReaderTest {
+
+    @Rule
+    public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
     public static final String PASSWORD = "asdf";
     private CatalogManager catalogManager;
@@ -50,12 +56,7 @@ public class FileMetadataReaderTest extends TestCase {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
-                .openStream());
-
-        CatalogManagerTest.clearCatalog(catalogConfiguration);
-
-        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager = catalogManagerExternalResource.getCatalogManager();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");

@@ -11,7 +11,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -66,10 +66,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Before
     public void before() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
                 .openStream());
 
-        CatalogManagerTest.clearCatalog(catalogConfiguration);
+        CatalogManagerExternalResource.clearCatalog(catalogConfiguration);
 
         catalogManager = new CatalogManager(catalogConfiguration);
         catalogManager.installCatalogDB();

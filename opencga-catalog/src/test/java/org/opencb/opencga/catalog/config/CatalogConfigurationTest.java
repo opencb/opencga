@@ -68,7 +68,7 @@ public class CatalogConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml").openStream());
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
         System.out.println("catalogConfiguration = " + catalogConfiguration);
     }
 }

@@ -1,9 +1,21 @@
 package org.opencb.opencga.catalog;
 
+import org.apache.log4j.Level;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
+import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * Created on 05/05/16
@@ -15,10 +27,22 @@ public class CatalogManagerExternalResource extends ExternalResource {
     private CatalogManager catalogManager;
     private CatalogConfiguration catalogConfiguration;
 
-    public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    public final TemporaryFolder temporaryFolder;
+
+    public CatalogManagerExternalResource() {
+
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+
+        temporaryFolder = new TemporaryFolder();
+    }
+
+    public CatalogManagerExternalResource(TemporaryFolder opencgaHome) {
+        this.temporaryFolder = opencgaHome;
+    }
 
     @Override
-    protected void before() throws Throwable {
+    public void before() throws Throwable {
         super.before();
 
         temporaryFolder.create();
@@ -30,11 +54,12 @@ public class CatalogManagerExternalResource extends ExternalResource {
         try {
             catalogManager.deleteCatalogDB();
         } catch (Exception ignore) {}
+        clearCatalog(catalogConfiguration);
         catalogManager.installCatalogDB();
     }
 
     @Override
-    protected void after() {
+    public void after() {
         super.after();
         temporaryFolder.delete();
         try {
@@ -54,5 +79,73 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     public TemporaryFolder getTemporaryFolder() {
         return temporaryFolder;
+    }
+
+
+    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        db.getDb().drop();
+        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+
+        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
+        deleteFolderTree(rootdir.toFile());
+        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
+            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
+    }
+
+    @Deprecated
+    public static void clearCatalog(Properties properties) throws IOException {
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+        db.getDb().drop();
+        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
+
+        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
+        CatalogManagerExternalResource.deleteFolderTree(rootdir.toFile());
+        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
+            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
+            if (jobsDir.toFile().exists()) {
+                CatalogManagerExternalResource.deleteFolderTree(jobsDir.toFile());
+            }
+        }
+    }
+
+    public static void deleteFolderTree(java.io.File folder) {
+        java.io.File[] files = folder.listFiles();
+        if (files != null) {
+            for (java.io.File f : files) {
+                if (f.isDirectory()) {
+                    deleteFolderTree(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        folder.delete();
     }
 }

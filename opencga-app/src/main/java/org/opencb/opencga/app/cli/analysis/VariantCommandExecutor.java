@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.analysis;
 
 import org.apache.commons.lang.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
@@ -26,6 +27,7 @@ import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
@@ -132,7 +134,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Create, if not provided, an indexation job
-        if (cliOptions.jobId < 0) {
+        if (StringUtils.isEmpty(cliOptions.jobId)) {
             Job job;
             long outDirId = catalogManager.getFileId(cliOptions.outdirId);
 
@@ -144,7 +146,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, false)
+                    .append(AnalysisJobExecutor.EXECUTE, true)
                     .append(AnalysisJobExecutor.SIMULATE, false)
                     .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
                     .append(AnalysisFileIndexer.LOAD, cliOptions.load)
@@ -158,12 +160,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
             QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
 
-            job = result.first();
-            ObjectMap update = new ObjectMap("commandLine", job.getCommandLine() + " --job-id " + job.getId());
-            job = (Job) catalogManager.modifyJob(job.getId(), update, sessionId).first();
 
             //Execute locally in a new process. This call will also record the job output files.
-            AnalysisJobExecutor.executeLocal(catalogManager, job, sessionId);
+//            AnalysisJobExecutor.execute(catalogManager, job, sessionId);
 
 //            // Execute in the same thread. Then, record the job output files.
 //            try {
@@ -174,7 +173,9 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 //                outputRecorder.recordJobOutput(job);
 //            }
         } else {
-            index(catalogManager.getJob(cliOptions.jobId, null, sessionId).first());
+            long studyId = catalogManager.getStudyIdByFileId(inputFileId);
+            index(catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, cliOptions.jobId), null, sessionId).first());
+//            index(catalogManager.getJob(cliOptions.jobId, null, sessionId).first());
         }
     }
 
@@ -218,7 +219,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         // 2) Read and validate cli args. Configure options
         ObjectMap options = storageConfiguration.getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
-        options.put(VariantStorageManager.Options.STUDY_NAME.key(), study.getAlias());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyId);
         options.put(VariantStorageManager.Options.FILE_ID.key(), inputFileId);
         options.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
