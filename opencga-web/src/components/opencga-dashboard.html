@@ -115,7 +115,7 @@
 
             updateProjectName: function (e) {
                 this.studyTitle = e.target.innerHTML;
-                this.studyId = e.target.dataId;
+                this.studyId = parseInt(e.target.dataId);
             },
 
             _getProjects: function () {

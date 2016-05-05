@@ -34,6 +34,7 @@
     "crypto-js": "crypto-js-evanvosberg#~3.1.5",
     "iron-input": "PolymerElements/iron-input#^1.0.9",
     "eonasdan-bootstrap-datetimepicker": "latest",
-    "moment": "latest"
+    "moment": "latest",
+    "highcharts": "^4.2.4"
   }
 }
