@@ -132,7 +132,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest{
         checkCalculatedStats(Collections.singletonMap(DEFAULT_COHORT, defaultCohort), catalogManager, dbName, sessionId);
     }
 
-    
+
 }
 
 

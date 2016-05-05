@@ -40,7 +40,7 @@ public class User {
      */
     @Deprecated
     private Role role;
-    private Status status;
+    private UserStatus status;
     private String lastActivity;
     private long diskUsage;
     private long diskQuota;
@@ -60,12 +60,12 @@ public class User {
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, Status status) {
+    public User(String id, String name, String email, String password, String organization, Role role, UserStatus status) {
         this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0),
                 new ArrayList<>(0), new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, Status status,
+    public User(String id, String name, String email, String password, String organization, Role role, UserStatus status,
                 String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
                 List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
@@ -111,120 +111,45 @@ public class User {
         return id;
     }
 
-    public void setId(String id) {
+    public User setId(String id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public User setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getEmail() {
         return email;
     }
 
-    public void setEmail(String email) {
+    public User setEmail(String email) {
         this.email = email;
+        return this;
     }
 
     public String getPassword() {
         return password;
     }
 
-    public void setPassword(String password) {
+    public User setPassword(String password) {
         this.password = password;
+        return this;
     }
 
     public String getOrganization() {
         return organization;
     }
 
-    public void setOrganization(String organization) {
+    public User setOrganization(String organization) {
         this.organization = organization;
-    }
-
-//    public Role getRole() {
-//        return role;
-//    }
-//
-//    public void setRole(Role role) {
-//        this.role = role;
-//    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public String getLastActivity() {
-        return lastActivity;
-    }
-
-    public void setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
-    }
-
-    public long getDiskUsage() {
-        return diskUsage;
-    }
-
-    public void setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
-    }
-
-    public long getDiskQuota() {
-        return diskQuota;
-    }
-
-    public void setDiskQuota(long diskQuota) {
-        this.diskQuota = diskQuota;
-    }
-
-    public List<Project> getProjects() {
-        return projects;
-    }
-
-    public void setProjects(List<Project> projects) {
-        this.projects = projects;
-    }
-
-    public List<Tool> getTools() {
-        return tools;
-    }
-
-    public void setTools(List<Tool> tools) {
-        this.tools = tools;
-    }
-
-    public List<Session> getSessions() {
-        return sessions;
-    }
-
-    public void setSessions(List<Session> sessions) {
-        this.sessions = sessions;
-    }
-
-    public Map<String, Object> getConfigs() {
-        return configs;
-    }
-
-    public void setConfigs(Map<String, Object> configs) {
-        this.configs = configs;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
+        return this;
     }
 
     public Role getRole() {
@@ -235,6 +160,119 @@ public class User {
         this.role = role;
         return this;
     }
+
+    public UserStatus getStatus() {
+        return status;
+    }
+
+    public User setStatus(UserStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    public String getLastActivity() {
+        return lastActivity;
+    }
+
+    public User setLastActivity(String lastActivity) {
+        this.lastActivity = lastActivity;
+        return this;
+    }
+
+    public long getDiskUsage() {
+        return diskUsage;
+    }
+
+    public User setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
+        return this;
+    }
+
+    public long getDiskQuota() {
+        return diskQuota;
+    }
+
+    public User setDiskQuota(long diskQuota) {
+        this.diskQuota = diskQuota;
+        return this;
+    }
+
+    public List<Project> getProjects() {
+        return projects;
+    }
+
+    public User setProjects(List<Project> projects) {
+        this.projects = projects;
+        return this;
+    }
+
+    public List<Tool> getTools() {
+        return tools;
+    }
+
+    public User setTools(List<Tool> tools) {
+        this.tools = tools;
+        return this;
+    }
+
+    public List<Session> getSessions() {
+        return sessions;
+    }
+
+    public User setSessions(List<Session> sessions) {
+        this.sessions = sessions;
+        return this;
+    }
+
+    public Map<String, Object> getConfigs() {
+        return configs;
+    }
+
+    public User setConfigs(Map<String, Object> configs) {
+        this.configs = configs;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public User setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
+    public static class UserStatus extends Status {
+
+        public static final String BANNED = "BANNED";
+
+        public UserStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public UserStatus(String status) {
+            this(status, "");
+        }
+
+        public UserStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(BANNED))) {
+                return true;
+            }
+            return false;
+        }
+    }
+
 
     /*
          * Things to think about:

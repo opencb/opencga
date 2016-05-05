@@ -12,6 +12,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
@@ -38,6 +39,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
             "sample",
             "individual",
             "cohort",
+            "dataset",
             "metadata",
             "audit"
     );
@@ -49,6 +51,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     protected static final String SAMPLE_COLLECTION = "sample";
     protected static final String INDIVIDUAL_COLLECTION = "individual";
     protected static final String COHORT_COLLECTION = "cohort";
+    protected static final String DATASET_COLLECTION = "dataset";
     protected static final String METADATA_COLLECTION = "metadata";
     protected static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
@@ -66,6 +69,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private MongoDBCollection individualCollection;
     private MongoDBCollection jobCollection;
     private MongoDBCollection cohortCollection;
+    private MongoDBCollection datasetCollection;
     private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private CatalogMongoUserDBAdaptor userDBAdaptor;
@@ -76,6 +80,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private CatalogMongoJobDBAdaptor jobDBAdaptor;
     private CatalogMongoProjectDBAdaptor projectDBAdaptor;
     private CatalogMongoCohortDBAdaptor cohortDBAdaptor;
+    private CatalogMongoDatasetDBAdaptor datasetDBAdaptor;
     private CatalogMongoAuditDBAdaptor auditDBAdaptor;
     private CatalogMongoMetaDBAdaptor metaDBAdaptor;
 
@@ -227,6 +232,11 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
+    public CatalogDatasetDBAdaptor getCatalogDatasetDBAdaptor() {
+        return datasetDBAdaptor;
+    }
+
+    @Override
     public CatalogMongoAuditDBAdaptor getCatalogAuditDbAdaptor() {
         return auditDBAdaptor;
     }
@@ -245,6 +255,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         individualCollection = db.getCollection(INDIVIDUAL_COLLECTION);
         jobCollection = db.getCollection(JOB_COLLECTION);
         cohortCollection = db.getCollection(COHORT_COLLECTION);
+        datasetCollection = db.getCollection(DATASET_COLLECTION);
         auditCollection = db.getCollection(AUDIT_COLLECTION);
 
         collections = new HashMap<>();
@@ -256,6 +267,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         collections.put(INDIVIDUAL_COLLECTION, individualCollection);
         collections.put(JOB_COLLECTION, jobCollection);
         collections.put(COHORT_COLLECTION, cohortCollection);
+        collections.put(DATASET_COLLECTION, datasetCollection);
         collections.put(AUDIT_COLLECTION, auditCollection);
 
         fileDBAdaptor = new CatalogMongoFileDBAdaptor(fileCollection, this);
@@ -266,6 +278,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         studyDBAdaptor = new CatalogMongoStudyDBAdaptor(studyCollection, this);
         userDBAdaptor = new CatalogMongoUserDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CatalogMongoCohortDBAdaptor(cohortCollection, this);
+        datasetDBAdaptor = new CatalogMongoDatasetDBAdaptor(datasetCollection, this);
         metaDBAdaptor = new CatalogMongoMetaDBAdaptor(this, metaCollection);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 

@@ -68,7 +68,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 //        return delete(userId, false);
 //    }
 
-    QueryResult<User> delete(String userId, boolean force) throws CatalogDBException;
+    QueryResult<User> delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 
@@ -112,6 +112,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
+        PROJECTS("projects", TEXT_ARRAY, ""),
         PROJECT_ID("projects.id", INTEGER_ARRAY, ""),
         PROJECT_NAME("projects.name", TEXT_ARRAY, ""),
         PROJECT_ALIAS("projects.alias", TEXT_ARRAY, ""),

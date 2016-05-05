@@ -82,7 +82,7 @@ public class CatalogFileUtilsTest {
         catalogManager.installCatalogDB();
 
         //Create USER
-        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
+        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();

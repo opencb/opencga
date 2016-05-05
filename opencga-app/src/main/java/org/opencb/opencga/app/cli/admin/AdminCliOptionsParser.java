@@ -145,7 +145,7 @@ public class AdminCliOptionsParser {
      */
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = true, password = true, arity = 0)
         public String password;
 
     }
@@ -384,15 +384,41 @@ public class AdminCliOptionsParser {
      * USER SUB-COMMANDS
      */
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user in Catalog database and the workspace")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user with a default project in Catalog database and the workspace")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-
-        @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"--user-id"}, description = "User id", required = true, arity = 1)
         public String userId;
+
+        @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
+        public String userName;
+
+        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+        public String userPassword;
+
+        @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
+        public String userEmail;
+
+        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
+        public String userOrganization;
+
+        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
+        public Long userDiskQuota;
+
+        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
+        public String projectName;
+
+        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
+        public String projectAlias;
+
+        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
+        public String projectDescription;
+
+        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
+        public String projectOrganization;
 
     }
 
@@ -420,7 +446,7 @@ public class AdminCliOptionsParser {
         public String userId;
 
         @Parameter(names = {"--quota"}, description = "Disk quota in GB", required = true, arity = 1)
-        public int diskQupta;
+        public long diskQuota;
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Print summary stats for an user")

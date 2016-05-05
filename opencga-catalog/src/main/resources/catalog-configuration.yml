@@ -2,8 +2,8 @@
 logLevel: "INFO"
 logFile: null
 
-openRegister: true
-userDefaultDiskQuota: 0
+openRegister: false
+userDefaultDiskQuota: 200000
 
 dataDir: ${OPENCGA.CATALOG.ROOTDIR}
 tempJobsDir: ${OPENCGA.CATALOG.JOBS.ROOTDIR}

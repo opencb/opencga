@@ -28,3 +28,5 @@
 {"collection": "file", "fields": {"_studyId": 1}, "options": {}}
 
 {"collection": "cohort", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
+
+{"collection": "dataset", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}

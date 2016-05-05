@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
-import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 
 import java.util.HashMap;
@@ -33,129 +32,6 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
-
-    default boolean fileExists(long fileId) throws CatalogDBException {
-        return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
-    }
-
-    default void checkFileId(long fileId) throws CatalogDBException {
-        if (fileId < 0) {
-            throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
-        }
-
-        long count = count(new Query(QueryParams.ID.key(), fileId)).first();
-        if (count <= 0) {
-            throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
-        } else if (count > 1) {
-            throw CatalogDBException.newInstance("'{}' documents found with the File id '{}'", count, fileId);
-        }
-    }
-
-    long getFileId(long studyId, String path) throws CatalogDBException;
-
-    long getStudyIdByFileId(long fileId) throws CatalogDBException;
-
-    List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
-
-    String getFileOwnerId(long fileId) throws CatalogDBException;
-
-    /***
-     * Inserts the passed file in the database.
-     *
-     * @param studyId Id of the study where the file belongs to.
-     * @param file The file to be inserted in the database.
-     * @param options Options to filter the output that will be returned after the insertion of the file.
-     * @return A QueryResult object containing information regarding the inserted file.
-     * @throws CatalogDBException when the file could not be inserted due to different reasons.
-     */
-    QueryResult<File> createFile(long studyId, File file, QueryOptions options) throws CatalogDBException;
-
-    /***
-     * Retrieves the file from the database containing the fileId given.
-     *
-     * @param fileId File ID of the required file.
-     * @param options Options to filter the output.
-     * @return A QueryResult object containing the required file.
-     * @throws CatalogDBException when the file could not be found in the database.
-     */
-    QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException;
-
-    /***
-     * Retrieves all the files belonging to the given study.
-     *
-     * @param studyId Study id where the files will be extracted from.
-     * @param options Options to filter the output.
-     * @return A QueryResult object containing all the files belonging to the study.
-     * @throws CatalogDBException when the study does not exist.
-     */
-    QueryResult<File> getAllFilesInStudy(long studyId, QueryOptions options) throws CatalogDBException;
-
-    /***
-     * Retrieves all the files present in the folder.
-     *
-     * @param studyId Study id where the files will be extracted from.
-     * @param path Directory where the files will be extracted from.
-     * @param options Options to filter the file output.
-     * @return A QueryResult object containing the files present in the folder of the given study.
-     * @throws CatalogDBException when the study or the path does not exist.
-     */
-    QueryResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
-
-    /***
-     * Renames the file.
-     *
-     * @param fileId Id of the file to be renamed.
-     * @param filePath New file or directory name (containing the full path).
-     * @param options Options to filter the file output.
-     * @return A QueryResult object containing the file that have been renamed.
-     *
-     * @throws CatalogDBException when the filePath already exists.
-     */
-    QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
-
-
-
-    /*
-     * ACL methods
-     * ***************************
-     */
-
-    /***
-     * Retrieve the AclEntry of the user in the given file.
-     *
-     * @param fileId File id where the permissions will be checked.
-     * @param userId User id of the user to be checked.
-     * @return AclEntry of the user in the file if any.
-     * @throws CatalogDBException when the userId or the fileId does not exist.
-     */
-    QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException;
-
-    /***
-     * Retrieves the AclEntries of the files and users given.
-     *
-     * @param studyId The id of the study where the files belong to.
-     * @param filePaths The file paths of the files to extract the permissions from.
-     * @param userIds The list of user ids from whom the permissions will be checked.
-     * @return A map of files containing a map of user - AclEntries.
-     * @throws CatalogDBException when the study does not exist.
-     */
-    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
-            throws CatalogDBException;
-
-    QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException;
-
-    QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
-
-    /*
-     * Dataset methods
-     * ***************************
-     */
-
-    long getStudyIdByDatasetId(long datasetId) throws CatalogDBException;
-
-    QueryResult<Dataset> createDataset(long studyId, Dataset dataset, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
@@ -246,6 +122,116 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         }
     }
 
+    default boolean fileExists(long fileId) throws CatalogDBException {
+        return count(new Query(QueryParams.ID.key(), fileId)).first() > 0;
+    }
+
+    default void checkFileId(long fileId) throws CatalogDBException {
+        if (fileId < 0) {
+            throw CatalogDBException.newInstance("File id '{}' is not valid: ", fileId);
+        }
+
+        long count = count(new Query(QueryParams.ID.key(), fileId)).first();
+        if (count <= 0) {
+            throw CatalogDBException.newInstance("File id '{}' does not exist", fileId);
+        } else if (count > 1) {
+            throw CatalogDBException.newInstance("'{}' documents found with the File id '{}'", count, fileId);
+        }
+    }
+
+    long getFileId(long studyId, String path) throws CatalogDBException;
+
+    long getStudyIdByFileId(long fileId) throws CatalogDBException;
+
+    List<Long> getStudyIdsByFileIds(String fileIds) throws CatalogDBException;
+
+    String getFileOwnerId(long fileId) throws CatalogDBException;
+
+    /***
+     * Inserts the passed file in the database.
+     *
+     * @param studyId Id of the study where the file belongs to.
+     * @param file The file to be inserted in the database.
+     * @param options Options to filter the output that will be returned after the insertion of the file.
+     * @return A QueryResult object containing information regarding the inserted file.
+     * @throws CatalogDBException when the file could not be inserted due to different reasons.
+     */
+    QueryResult<File> createFile(long studyId, File file, QueryOptions options) throws CatalogDBException;
+
+    /***
+     * Retrieves the file from the database containing the fileId given.
+     *
+     * @param fileId File ID of the required file.
+     * @param options Options to filter the output.
+     * @return A QueryResult object containing the required file.
+     * @throws CatalogDBException when the file could not be found in the database.
+     */
+    QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException;
+
+    /***
+     * Retrieves all the files belonging to the given study.
+     *
+     * @param studyId Study id where the files will be extracted from.
+     * @param options Options to filter the output.
+     * @return A QueryResult object containing all the files belonging to the study.
+     * @throws CatalogDBException when the study does not exist.
+     */
+    QueryResult<File> getAllFilesInStudy(long studyId, QueryOptions options) throws CatalogDBException;
+
+    /***
+     * Retrieves all the files present in the folder.
+     *
+     * @param studyId Study id where the files will be extracted from.
+     * @param path Directory where the files will be extracted from.
+     * @param options Options to filter the file output.
+     * @return A QueryResult object containing the files present in the folder of the given study.
+     * @throws CatalogDBException when the study or the path does not exist.
+     */
+    QueryResult<File> getAllFilesInFolder(long studyId, String path, QueryOptions options) throws CatalogDBException;
+
+    /***
+     * Renames the file.
+     *
+     * @param fileId Id of the file to be renamed.
+     * @param filePath New file or directory name (containing the full path).
+     * @param options Options to filter the file output.
+     * @return A QueryResult object containing the file that have been renamed.
+     *
+     * @throws CatalogDBException when the filePath already exists.
+     */
+    QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
+
+    /*
+     * ACL methods
+     * ***************************
+     */
+
+    /***
+     * Retrieve the AclEntry of the user in the given file.
+     *
+     * @param fileId File id where the permissions will be checked.
+     * @param userId User id of the user to be checked.
+     * @return AclEntry of the user in the file if any.
+     * @throws CatalogDBException when the userId or the fileId does not exist.
+     */
+    QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException;
+
+    /***
+     * Retrieves the AclEntries of the files and users given.
+     *
+     * @param studyId The id of the study where the files belong to.
+     * @param filePaths The file paths of the files to extract the permissions from.
+     * @param userIds The list of user ids from whom the permissions will be checked.
+     * @return A map of files containing a map of user - AclEntries.
+     * @throws CatalogDBException when the study does not exist.
+     */
+    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+            throws CatalogDBException;
+
+    QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException;
+
+    QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
+
     @Deprecated
     enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
@@ -316,8 +302,6 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
             return _key;
         }
     }
-
-
 
     @Deprecated
     QueryResult<File> modifyFile(long fileId, ObjectMap parameters) throws CatalogDBException;

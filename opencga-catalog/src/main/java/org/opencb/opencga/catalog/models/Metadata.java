@@ -60,31 +60,35 @@ public class Metadata {
         return version;
     }
 
-    public void setVersion(String version) {
+    public Metadata setVersion(String version) {
         this.version = version;
+        return this;
     }
 
     public String getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public Metadata setDate(String date) {
         this.date = date;
+        return this;
     }
 
     public String getOpen() {
         return open;
     }
 
-    public void setOpen(String open) {
+    public Metadata setOpen(String open) {
         this.open = open;
+        return this;
     }
 
     public long getIdCounter() {
         return idCounter;
     }
 
-    public void setIdCounter(long idCounter) {
+    public Metadata setIdCounter(long idCounter) {
         this.idCounter = idCounter;
+        return this;
     }
 }

@@ -49,6 +49,11 @@
                        on-keyup="checkEnterKey">
             </div>
 
+
+            <div id="incorrect" hidden="true" style="color: #AF1616;">
+                {{errorMessage}}
+            </div>
+
             <div class="fields">
                 <button type="button" on-click="login" class="btn btn-primary" style="text-align: center;">{{loginText}}</button>
             </div>
@@ -84,11 +89,16 @@
                 this.opencgaClient.users().login(user, {password: pass}).then(function(response) {
                     _this.$.opencgaUser.value = "";
                     _this.$.opencgaPassword.value = "";
+                    _this.$.incorrect.hidden = true;
                     _this.fire('login', {
                         userId: user,
                         sessionId: response.response[0].result[0].sessionId
                     });
-                });
+                }).catch(function(response) {
+                    debugger
+                    this.errorMessage = response.error;
+                    this.$.incorrect.hidden = false;
+                }.bind(this));
 
             },
 

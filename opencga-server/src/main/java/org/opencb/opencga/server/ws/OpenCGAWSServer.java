@@ -33,7 +33,6 @@ import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
-import org.opencb.cellbase.core.CellBaseConfiguration;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
@@ -55,7 +54,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import javax.ws.rs.core.Response.ResponseBuilder;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,6 +78,16 @@ public class OpenCGAWSServer {
     @QueryParam("include")
     @ApiParam(name = "included fields", value = "Only fields included in response. Whole JSON path e.g.: transcripts.id")
     protected String include;
+
+    @DefaultValue("-1")
+    @QueryParam("limit")
+    @ApiParam(name = "limit results", value = "TODO")
+    protected long limit;
+
+    @DefaultValue("0")
+    @QueryParam("skip")
+    @ApiParam(name = "skip results", value = "TODO")
+    protected long skip;
 
     @DefaultValue("")
     @QueryParam("sid")
@@ -220,11 +228,11 @@ public class OpenCGAWSServer {
 
         startTime = System.currentTimeMillis();
 
-//        queryResponse = new QueryResponse();
+        queryResponse = new QueryResponse();
         queryOptions = new QueryOptions();
         query = new Query();
 
-        parseParams();
+//        parseParams();
     }
 
     /**
@@ -244,9 +252,9 @@ public class OpenCGAWSServer {
             param = indexOf > 0 ? param.substring(0, indexOf) : param;
 
             if (getParam.apply(param) != null) {
-                query.put(entry.getKey(), entry.getValue());
+                query.put(entry.getKey(), entry.getValue().get(0));
             } else {
-                queryOptions.add(param, entry.getValue());
+                queryOptions.add(param, entry.getValue().get(0));
             }
 
         }
@@ -273,22 +281,11 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
+        queryOptions.put("limit", limit);
+        queryOptions.put("skip", skip);
 
-        if(exclude != null && !exclude.isEmpty()) {
-            queryOptions.put("exclude", new LinkedList<>(Splitter.on(",").splitToList(exclude)));
-        } else {
-            queryOptions.put("exclude", (multivaluedMap.get("exclude") != null)
-                    ? Splitter.on(",").splitToList(multivaluedMap.get("exclude").get(0))
-                    : null);
-        }
-
-        if(include != null && !include.isEmpty()) {
-            queryOptions.put("include", new LinkedList<>(Splitter.on(",").splitToList(include)));
-        } else {
-            queryOptions.put("include", (multivaluedMap.get("include") != null)
-                    ? Splitter.on(",").splitToList(multivaluedMap.get("include").get(0))
-                    : null);
-        }
+        parseIncludeExclude(multivaluedMap, "exclude", exclude);
+        parseIncludeExclude(multivaluedMap, "include", include);
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
         // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute
@@ -300,14 +297,24 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), entry.getValue().get(0));
                 });
 
-        if (multivaluedMap.get("sid") != null) {
-            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
-        }
+//        if (multivaluedMap.get("sid") != null) {
+//            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
+//        }
 
         try {
             logger.info("URL: {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(), jsonObjectWriter.writeValueAsString(queryOptions));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void parseIncludeExclude(MultivaluedMap<String, String> multivaluedMap, String key, String value) {
+        if(value != null && !value.isEmpty()) {
+            queryOptions.put(key, new LinkedList<>(Splitter.on(",").splitToList(value)));
+        } else {
+            queryOptions.put(key, (multivaluedMap.get(key) != null)
+                    ? Splitter.on(",").splitToList(multivaluedMap.get(key).get(0))
+                    : null);
         }
     }
 
