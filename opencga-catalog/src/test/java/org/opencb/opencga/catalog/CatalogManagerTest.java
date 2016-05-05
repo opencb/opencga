@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -59,6 +56,10 @@ public class CatalogManagerTest extends GenericTest {
     public final static String PASSWORD = "asdf";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @Rule
+    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+
     protected CatalogManager catalogManager;
     protected String sessionIdUser;
     protected String sessionIdUser2;
@@ -170,14 +171,16 @@ public class CatalogManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
                 .openStream());
 
         catalogConfiguration.getDatabase().setDatabase("opencga_server_test");
         clearCatalog(catalogConfiguration);
 
-        catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.installCatalogDB();
+//        catalogManager = new CatalogManager(catalogConfiguration);
+//        catalogManager.installCatalogDB();
+
+        catalogManager = catalogManagerResource.getCatalogManager();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);

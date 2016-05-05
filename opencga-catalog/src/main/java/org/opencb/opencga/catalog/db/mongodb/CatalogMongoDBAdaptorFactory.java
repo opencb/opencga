@@ -128,6 +128,9 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
 
     @Override
     public void installCatalogDB(CatalogConfiguration catalogConfiguration) throws CatalogException {
+        // TODO: Check META object does not exist. Use {@link isCatalogDBReady}
+        // TODO: Check all collections do not exists, or are empty
+        // TODO: Catch DuplicatedKeyException while inserting META object
         MongoDataStore mongoDataStore = mongoManager.get(database, configuration);
         COLLECTIONS_LIST.forEach(mongoDataStore::createCollection);
         metaDBAdaptor.createIndexes();
