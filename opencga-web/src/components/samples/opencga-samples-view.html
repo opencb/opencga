@@ -14,9 +14,9 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="opencga-shared-styles.html">
+<link rel="import" href="../opencga-shared-styles.html">
 
 <dom-module id="opencga-samples-view">
     <template>
@@ -138,15 +138,16 @@
                                 order: params.order,
                                 sort: params.sort,
                                 limit: params.limit,
-                                skip: params.offset,
-                                contains: params.search
+                                skip: params.offset
                             };
+                            if (params.search !== undefined && params.search.length > 0) {
+                                auxParams["name"] = "~" + params.search;
+                            }
                             return $.extend({}, _this.filters, auxParams);
                         },
                         responseHandler: function(response) {
                             return {
-                                total: 2000,
-//                            response.response[0].numTotalResults,
+                                total: response.response[0].numTotalResults,
                                 rows: response.response[0].result
                             }
                         },
