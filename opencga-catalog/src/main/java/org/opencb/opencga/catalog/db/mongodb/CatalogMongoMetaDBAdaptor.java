@@ -48,6 +48,7 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongo
 public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
     private final MongoDBCollection metaCollection;
+    private static final String VERSION = "v0.8";
 
     public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaMongoDBCollection) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
@@ -119,6 +120,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         createIndexes(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection(), indexes.get("individual"));
         createIndexes(dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection(), indexes.get("file"));
         createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
+        createIndexes(dbAdaptorFactory.getCatalogDatasetDBAdaptor().getDatasetCollection(), indexes.get("dataset"));
 //        createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("job"));
 
     }
@@ -167,7 +169,15 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         Admin admin = catalogConfiguration.getAdmin();
         admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
 
-        Document metadataObject = getMongoDBDocument(new Metadata(), "Metadata");
+        Metadata metadata = new Metadata().setIdCounter(0).setVersion(VERSION);
+
+        if (catalogConfiguration.isOpenRegister()) {
+            metadata.setOpen("public");
+        } else {
+            metadata.setOpen("private");
+        }
+
+        Document metadataObject = getMongoDBDocument(metadata, "Metadata");
         metadataObject.put("_id", "METADATA");
         Document adminDocument = getMongoDBDocument(admin, "Admin");
         adminDocument.put("sessions", new ArrayList<>());
@@ -181,6 +191,14 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         if (metaCollection.count(query).getResult().get(0) == 0) {
             throw new CatalogDBException("The admin password is incorrect.");
         }
+    }
+
+    public boolean isRegisterOpen() {
+        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(MongoDBCollection.INCLUDE, "open")).first();
+        if (doc.getString("open").equals("public")) {
+            return true;
+        }
+        return false;
     }
 
 }

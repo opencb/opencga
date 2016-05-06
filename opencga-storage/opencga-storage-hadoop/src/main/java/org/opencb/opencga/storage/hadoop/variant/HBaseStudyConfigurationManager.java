@@ -19,7 +19,6 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.*;
 
@@ -28,7 +27,7 @@ import java.util.*;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseStudyConfigurationManager extends StudyConfigurationManager implements Closeable {
+public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     private final byte[] studiesRow;
     private final byte[] studiesSummaryColumn;

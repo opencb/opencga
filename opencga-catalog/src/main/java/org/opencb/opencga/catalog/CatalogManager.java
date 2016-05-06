@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -126,7 +127,7 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new Status());
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new User.UserStatus());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }
@@ -363,15 +364,18 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options)
-            throws CatalogException {
-        return createUser(id, name, email, password, organization, options, null);
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+                                        QueryOptions options) throws CatalogException {
+//        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+        return userManager.create(id, name, email, password, organization, diskQuota, options,
+                catalogConfiguration.getAdmin().getPassword());
     }
 
-    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, QueryOptions options,
-                                        String sessionId)
+    @Deprecated
+    public QueryResult<User> createUser(String id, String name, String email, String password, String organization, Long diskQuota,
+                                        QueryOptions options, String sessionId)
             throws CatalogException {
-        return userManager.create(id, name, email, password, organization, options, sessionId);
+        return userManager.create(id, name, email, password, organization, diskQuota, options, sessionId);
     }
 
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
@@ -427,13 +431,13 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.getUserId(projectId);
     }
 
-    public QueryResult modifyUser(String userId, ObjectMap parameters, String sessionId)
+    public QueryResult<User> modifyUser(String userId, ObjectMap parameters, String sessionId)
             throws CatalogException {
         return userManager.update(userId, parameters, null, sessionId);  //TODO: Add query options
     }
 
-    public void deleteUser(String userId, String sessionId) throws CatalogException {
-        userManager.delete(userId, null, sessionId);
+    public QueryResult<User> deleteUser(String userId, QueryOptions queryOptions, String sessionId) throws CatalogException {
+        return userManager.delete(userId, queryOptions, sessionId);
     }
 
     /*
@@ -535,6 +539,10 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Study> getStudy(long studyId, String sessionId, QueryOptions options)
             throws CatalogException {
         return studyManager.read(studyId, options, sessionId);
+    }
+
+    public QueryResult<StudySummary> getStudySummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException {
+        return studyManager.getSummary(studyId, sessionId, queryOptions);
     }
 
     public QueryResult<Study> getAllStudiesInProject(long projectId, QueryOptions options, String sessionId)

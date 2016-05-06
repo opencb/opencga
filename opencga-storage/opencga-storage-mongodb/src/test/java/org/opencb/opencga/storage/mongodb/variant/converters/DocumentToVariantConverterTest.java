@@ -120,7 +120,7 @@ public class DocumentToVariantConverterTest {
         studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Arrays.asList(0, 1)));
         studyConfiguration.getSampleIds().put("NA001", 0);
         studyConfiguration.getSampleIds().put("NA002", 1);
-        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "0/0");
+        studyConfiguration.getAttributes().put(MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE.key(), "0/0");
         studyConfiguration.getAttributes().put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), Collections.singletonList("DP"));
 
         DocumentToVariantConverter converter = new DocumentToVariantConverter(

@@ -19,10 +19,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
-import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -808,8 +805,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
         }
 
-        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
-        QueryResult<Dataset> queryResult = fileDBAdaptor.createDataset(studyId, dataset, options);
+        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, new Status(), attributes);
+        QueryResult<Dataset> queryResult = datasetDBAdaptor.createDataset(studyId, dataset, options);
         auditManager.recordCreation(AuditRecord.Resource.dataset, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -820,7 +817,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        QueryResult<Dataset> queryResult = fileDBAdaptor.getDataset(dataSetId, options);
+        QueryResult<Dataset> queryResult = datasetDBAdaptor.getDataset(dataSetId, options);
 
         for (Long fileId : queryResult.first().getFiles()) {
             authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);

@@ -1,0 +1,99 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="opencga-files-grid.html">
+<link rel="import" href="opencga-files-info-file.html">
+<link rel="import" href="opencga-files-info-samples.html">
+<link rel="import" href="opencga-files-info-jobs.html">
+<link rel="import" href="opencga-files-info-stats.html">
+
+<link rel="import" href="../opencga-shared-styles.html">
+
+<dom-module id="opencga-files-view">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles"></style>
+
+        <div style="padding: 10px;">
+
+            <div class="row" style="height: 530px">
+                <opencga-files-grid on-selected="showInfo" files="{{files}}"></opencga-files-grid>
+            </div>
+
+            <template is="dom-if" if="{{existsSelectedFile(selectedFile)}}">
+                <div class="row" style="height: 530px">
+
+                    <ul id="myTabs" class="nav nav-tabs" role="tablist">
+                        <li role="presentation" class="active"><a href="#fileViewInfo" role="tab" data-toggle="tab">File Info</a></li>
+                        <li role="presentation"><a href="#samplesViewInfo" role="tab" data-toggle="tab">Samples</a></li>
+                        <li role="presentation"><a href="#jobsViewInfo" role="tab" data-toggle="tab">Jobs</a></li>
+                        <li role="presentation"><a href="#statsViewInfo" role="tab" data-toggle="tab">Stats</a></li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <div id="fileViewInfo" role="tabpanel" class="tab-pane active">
+                            <opencga-files-info-file file="{{selectedFile}}"></opencga-files-info-file>
+                        </div>
+
+                        <div id="samplesViewInfo" role="tabpanel" class="tab-pane">
+                            <opencga-files-info-samples opencga-client="{{opencgaClient}}" sample-ids="{{selectedFile.sampleIds}}"></opencga-files-info-samples>
+                        </div>
+
+                        <div id="jobsViewInfo" role="tabpanel" class="tab-pane">
+                            <opencga-files-info-jobs></opencga-files-info-jobs>
+                        </div>
+
+                        <div id="statsViewInfo" role="tabpanel" class="tab-pane">
+                            <opencga-files-info-stats></opencga-files-info-stats>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-files-view',
+
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                files: {
+                    type: Array
+                },
+                selectedFile: {
+                    type: Object
+                }
+            },
+
+            showInfo: function(e) {
+                this.selectedFile = e.detail;
+            },
+
+            existsSelectedFile: function(selectedFile) {
+                if (selectedFile !== undefined && selectedFile.hasOwnProperty("id")) {
+                    return true;
+                }
+                return false;
+            }
+
+        });
+    </script>
+</dom-module>

@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 
 import java.net.URI;
 import java.util.List;
@@ -140,4 +141,15 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
         }
         return groupBy(projectId, query, field, options, sessionId);
     }
+
+    /**
+     * Gets the general stats of a study.
+     *
+     * @param studyId Study id.
+     * @param sessionId Session id.
+     * @param queryOptions QueryOptions object.
+     * @return a QueryResult object containing a summary with the general stats of the study.
+     * @throws CatalogException CatalogException
+     */
+    QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException;
 }

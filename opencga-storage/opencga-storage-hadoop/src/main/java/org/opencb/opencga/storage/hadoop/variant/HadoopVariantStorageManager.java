@@ -84,7 +84,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                     .append(HADOOP_LOAD_ARCHIVE, true)
                     .append(HADOOP_LOAD_VARIANT, false);
             HadoopVariantStorageETL storageETL = newStorageETL(doLoad, extraOptions);
-            StorageETLResult storageETLResult = new StorageETLResult();
+            StorageETLResult storageETLResult = new StorageETLResult(inputFile);
             results.add(storageETLResult);
             futures.add(executorService.submit(() -> {
                 URI nextUri = inputFile;

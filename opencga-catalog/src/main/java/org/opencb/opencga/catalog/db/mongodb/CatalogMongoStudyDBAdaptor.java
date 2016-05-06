@@ -111,13 +111,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         //Empty nested fields
         List<File> files = study.getFiles();
-        study.setFiles(Collections.<File>emptyList());
+        study.setFiles(Collections.emptyList());
 
         List<Job> jobs = study.getJobs();
-        study.setJobs(Collections.<Job>emptyList());
+        study.setJobs(Collections.emptyList());
 
         List<Cohort> cohorts = study.getCohorts();
-        study.setCohorts(Collections.<Cohort>emptyList());
+        study.setCohorts(Collections.emptyList());
+
+        List<Dataset> datasets = study.getDatasets();
+        study.setDatasets(Collections.emptyList());
 
         //Create DBObject
         Document studyObject = getMongoDBDocument(study, "Study");
@@ -156,6 +159,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             String fileErrorMsg = dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(study.getId(), cohort, options).getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += cohort.getName() + ":" + fileErrorMsg + ", ";
+            }
+        }
+
+        for (Dataset dataset : datasets) {
+            String fileErrorMsg = dbAdaptorFactory.getCatalogDatasetDBAdaptor().createDataset(study.getId(), dataset, options)
+                    .getErrorMsg();
+            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
+                errorMsg += dataset.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 

@@ -14,41 +14,26 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<!--<link rel="import" href="opencga-files-filter.html">-->
-<!--<link rel="import" href="opencga-files-view.html">-->
+<link rel="import" href="../opencga-shared-styles.html">
 
-<dom-module id="opencga-files-panel">
+<dom-module id="opencga-files-info-stats">
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
-
-        <div>User name: <span>{{username}}</span></div>
-        <div>Session id: <span>{{session}}</span></div>
-        <div class="panel">
-            <div class="col-md-2">
-                <opencga-files-filter></opencga-files-filter>
-            </div>
-
-            <div class="col-md-10">
-                <opencga-files-view></opencga-files-view>
-            </div>
-        </div>
 
     </template>
     <script>
         Polymer({
-            is: 'opencga-files-panel',
+            is: 'opencga-files-info-stats',
+
             properties: {
-                username: {
-                    type: String
+                opencgaClient: {
+                    type: Object
                 },
-                session: {
-                    type: String
+                file: {
+                    type: Object
                 }
-            },
-            ready: function() {
-                console.log("panel")
             }
         });
     </script>

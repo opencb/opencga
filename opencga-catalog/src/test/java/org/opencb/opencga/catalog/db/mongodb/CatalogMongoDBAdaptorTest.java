@@ -108,7 +108,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", User.Role.USER, new Status(), "", 100, 1000,
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", User.Role.USER, new User.UserStatus(), "", 100, 1000,
                 Arrays.<Project>asList(new Project("project", "P1", "", new Status(), ""), new Project("project", "P2", "", new Status(),
                         ""), new Project("project", "P3", "", new Status(), "")),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), Collections.<String, Object>emptyMap(), Collections
@@ -116,11 +116,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user1, null);
         assertNotNull(createUser.getResult());
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.Role.USER, new Status());
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.Role.USER, new User.UserStatus());
         createUser = catalogUserDBAdaptor.insertUser(user2, null);
         assertNotNull(createUser.getResult());
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, new Status(), "", 1222, 122222,
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, new User.UserStatus(), "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
                         Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", new Status(), "", 0, "", null,
                                         null, Collections.<Experiment>emptyList(),
@@ -141,7 +141,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         createUser = catalogUserDBAdaptor.insertUser(user3, null);
         assertNotNull(createUser.getResult());
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, new Status(), "", 0, 50000,
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, new User.UserStatus(), "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(
@@ -198,8 +198,11 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalogDBAdaptor.initializeCatalogDB();
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 <<<<<<< HEAD
+>>>>>>> feature/catalog-next
+=======
 >>>>>>> feature/catalog-next
 */
 }

@@ -17,21 +17,25 @@
 package org.opencb.opencga.app.cli.analysis;
 
 import com.beust.jcommander.*;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.utils.CommandLineUtils;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.core.common.GitRepositoryState;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 /**
  * Created by imedina on 02/03/15.
  */
-public class CliOptionsParser {
+public class AnalysisCliOptionsParser {
 
     private final JCommander jCommander;
 
-    private final GeneralOptions generalOptions;
-    private final CommonCommandOptions commonCommandOptions;
+    private final GeneralCliOptions.GeneralOptions generalOptions;
+    private final AnalysisCommonCommandOptions commonCommandOptions;
 
     private ExpressionCommandOptions expressionCommandOptions;
     private FunctionalCommandOptions functionalCommandOptions;
@@ -39,13 +43,13 @@ public class CliOptionsParser {
     private ToolsCommandOptions toolsCommandOptions;
 
 
-    public CliOptionsParser() {
-        generalOptions = new GeneralOptions();
+    public AnalysisCliOptionsParser() {
+        generalOptions = new GeneralCliOptions.GeneralOptions();
 
         jCommander = new JCommander(generalOptions);
         jCommander.setProgramName("opencga-analysis.sh");
 
-        commonCommandOptions = new CommonCommandOptions();
+        commonCommandOptions = new AnalysisCommonCommandOptions();
 
         expressionCommandOptions = new ExpressionCommandOptions();
         jCommander.addCommand("expression", expressionCommandOptions);
@@ -97,22 +101,13 @@ public class CliOptionsParser {
         if (parsedCommand != null) {
             JCommander jCommander2 = jCommander.getCommands().get(parsedCommand);
             List<Object> objects = jCommander2.getObjects();
-            if (!objects.isEmpty() && objects.get(0) instanceof CliOptionsParser.CommonCommandOptions) {
-                return ((CliOptionsParser.CommonCommandOptions) objects.get(0)).help;
+            if (!objects.isEmpty() && objects.get(0) instanceof GeneralCliOptions.CommonCommandOptions) {
+                return ((GeneralCliOptions.CommonCommandOptions) objects.get(0)).help;
             }
         }
         return commonCommandOptions.help;
     }
 
-
-    public class GeneralOptions {
-
-        @Parameter(names = {"-h", "--help"}, help = true)
-        public boolean help;
-
-        @Parameter(names = {"--version"})
-        public boolean version;
-    }
 
     /**
      * This class contains all those parameters available for all 'commands'
@@ -140,26 +135,21 @@ public class CliOptionsParser {
     /**
      * This class contains all those common parameters available for all 'subcommands'
      */
-    public class CommonCommandOptions {
+    public class AnalysisCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-h", "--help"}, description = "Print this help", help = true)
-        public boolean help;
+        @Parameter(names = {"--sid", "--session-id"}, description = "Token session id", arity = 1)
+        public String sessionId;
 
-        @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logLevel = "info";
+        @Parameter(names = {"-u", "--user"}, description = "User name", arity = 1)
+        public String user;
 
-        @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
-        public String logFile;
+        @Parameter(names = {"-p", "--password"}, description = "User password", password = true, arity = 0)
+        public String password;
 
-        @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
-        public boolean verbose = false;
+        @DynamicParameter(names = "-D", description = "Storage engine specific parameters go here comma separated, ie. -Dmongodb" +
+                ".compression=snappy", hidden = false)
+        public Map<String, String> params = new HashMap<>(); //Dynamic parameters must be initialized
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration file path.")
-        public String configFile;
-
-        @Deprecated
-        @Parameter(names = {"--storage-engine"}, arity = 1, description = "One of the listed in storage-configuration.yml")
-        public String storageEngine;
     }
 
 
@@ -172,7 +162,7 @@ public class CliOptionsParser {
         DiffExpressionCommandOptions diffExpressionCommandOptions;
         ClusteringExpressionCommandOptions clusteringExpressionCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         public ExpressionCommandOptions() {
             this.diffExpressionCommandOptions = new DiffExpressionCommandOptions();
@@ -190,7 +180,7 @@ public class CliOptionsParser {
         FatigoFunctionalCommandOptions fatigoFunctionalCommandOptions;
         GenesetFunctionalCommandOptions genesetFunctionalCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         public FunctionalCommandOptions() {
             this.fatigoFunctionalCommandOptions = new FatigoFunctionalCommandOptions();
@@ -205,16 +195,18 @@ public class CliOptionsParser {
     @Parameters(commandNames = {"variant"}, commandDescription = "Implement several tools for the genomic variant analysis")
     public class VariantCommandOptions extends CommandOptions {
 
-        IndexVariantCommandOptions indexVariantCommandOptions;
-        QueryVariantCommandOptions queryVariantCommandOptions;
-        IbsVariantCommandOptions ibsVariantCommandOptions;
+        final IndexVariantCommandOptions indexVariantCommandOptions;
+        final QueryVariantCommandOptions queryVariantCommandOptions;
+        final IbsVariantCommandOptions ibsVariantCommandOptions;
+        final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         public VariantCommandOptions() {
             this.indexVariantCommandOptions = new IndexVariantCommandOptions();
             this.queryVariantCommandOptions = new QueryVariantCommandOptions();
             this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
+            this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
         }
     }
 
@@ -229,7 +221,7 @@ public class CliOptionsParser {
         ListToolCommandOptions listToolCommandOptions;
         ShowToolCommandOptions showToolCommandOptions;
 
-        CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         public ToolsCommandOptions() {
             this.installToolCommandOptions = new InstallToolCommandOptions();
@@ -243,15 +235,15 @@ public class CliOptionsParser {
      * Auxiliary class for Database connection.
      */
     class CatalogDatabaseCommandOptions {
-
-        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data, eg. opencga_catalog")
-        public String database;
-
-        @Parameter(names = {"-H", "--host"}, description = "DataBase host and port, eg. localhost:27017")
-        public String host;
-
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
-        public String password;
+//
+//        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data, eg. opencga_catalog")
+//        public String database;
+//
+//        @Parameter(names = {"-H", "--host"}, description = "DataBase host and port, eg. localhost:27017")
+//        public String host;
+//
+//        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
+//        public String password;
     }
 
 
@@ -263,7 +255,7 @@ public class CliOptionsParser {
     public class DiffExpressionCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--filter"}, description = "Query filter for data")
         public String filter;
@@ -273,7 +265,7 @@ public class CliOptionsParser {
     public class ClusteringExpressionCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
     }
 
 
@@ -286,7 +278,7 @@ public class CliOptionsParser {
     public class FatigoFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -298,7 +290,7 @@ public class CliOptionsParser {
     public class GenesetFunctionalCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
@@ -312,22 +304,81 @@ public class CliOptionsParser {
      *  CATALOG SUB-COMMANDS
      */
 
-    @Parameters(commandNames = {"index"}, commandDescription = "Install Catalog database and collections together with the indexes")
+    @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
     public class IndexVariantCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
-        public boolean overwrite;
+//
+//        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
+//        public List<String> input;
+
+//        @Parameter(names = {"-o", "--outdir"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+//        public String outdir;
+
+//        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+//        public String fileId;
+
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        boolean transform = false;
+
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        boolean load = false;
+
+//        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
+//        public boolean overwrite;
+
+//        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
+//        public long studyId;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
+        public long jobId = -1;
+
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
+        public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
+
+        @Parameter(names = {"-o", "--outdir"}, description = "Unique ID for the file", required = false, arity = 1)
+        public String outdirId = null;
+
+        @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
+        public boolean excludeGenotype = false;
+
+        @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
+        public String extraFields = "";
+
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
+        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
+                "file")
+        public String aggregationMappingFile = null;
+
+        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+        public boolean gvcf;
+
+        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
+        public boolean bgzip;
+
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
+        public boolean calculateStats = false;
+
+        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
+        public boolean annotate = false;
+
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
+        public boolean overwriteAnnotations;
 
     }
 
-    @Parameters(commandNames = {"query"}, commandDescription = "Delete the Catalog database")
+    @Parameters(commandNames = {"query"}, commandDescription = "[PENDING] Search over indexed variants")
     public class QueryVariantCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "CSV list of variant ids", required = false)
         public String id;
@@ -429,13 +480,22 @@ public class CliOptionsParser {
 
     }
 
-    @Parameters(commandNames = {"ibs"}, commandDescription = "Create the non-existing indices in Catalog database")
+    @Parameters(commandNames = {"ibs"}, commandDescription = "[PENDING] ")
     public class IbsVariantCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--reset"}, description = "Remove existing indexes before creting the new one")
+    }
+
+
+    @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete an indexed file from the Database")
+    public class DeleteVariantCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--file-id"}, description = "File to delete")
         public boolean reset;
     }
 
@@ -448,7 +508,7 @@ public class CliOptionsParser {
     public class InstallToolCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"-i", "--input"}, description = "File with the new tool to be installed", required = true, arity = 1)
@@ -460,7 +520,7 @@ public class CliOptionsParser {
     public class ListToolCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--filter"}, description = "Some kind of filter", arity = 1)
@@ -472,7 +532,7 @@ public class CliOptionsParser {
     public class ShowToolCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
 
         @Parameter(names = {"--tool-id"}, description = "Full name of the study where the file is classified", arity = 1)
@@ -529,11 +589,11 @@ public class CliOptionsParser {
     }
 
 
-    public GeneralOptions getGeneralOptions() {
+    public GeneralCliOptions.GeneralOptions getGeneralOptions() {
         return generalOptions;
     }
 
-    public CommonCommandOptions getCommonOptions() {
+    public AnalysisCommonCommandOptions getCommonOptions() {
         return commonCommandOptions;
     }
 

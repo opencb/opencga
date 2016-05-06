@@ -1,7 +1,7 @@
 ---
 logLevel: "INFO"
 logFile: null
-openRegister: false
+openRegister: true
 userDefaultDiskQuota: 0
 dataDir: "file:///tmp/opencga/sessions"
 tempJobsDir: "file:///tmp/opencga/sessions/jobs"

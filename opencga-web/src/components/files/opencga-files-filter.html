@@ -1,0 +1,171 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../opencga-shared-styles.html">
+
+<dom-module id="opencga-files-filter">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles">
+            .type-scroll{
+                max-height: 300px;
+                overflow-y: scroll;
+            }
+            .gene-names-display{
+                max-height: 800px;
+                overflow: auto;
+            }
+        </style>
+
+        <div>
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#filter1" role="tab" data-toggle="tab">Filter</a></li>
+                <!--<li role="presentation"><a href="#result1" role="tab" data-toggle="tab">Result</a></li>-->
+            </ul>
+
+            <!--Filter tab content-->
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane active" id="filter1">
+                    <button type="button" class="btn btn-default" on-click="clear">Clear</button>
+                    <button type="button" id="submitButton" class="btn btn-default" on-click="executeQuery">Submit</button>
+                    <br>
+
+                    <!--GeneID filter menu-->
+                    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingOne">
+                                <h4 class="panel-title">
+                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#fileName"
+                                       aria-expanded="true" aria-controls="fileName">
+                                        File name
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="fileName" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                                <div class="panel-body">
+                                    <form class="form-inline">
+                                        Search:
+                                        <div style="float: right">
+                                            <input id="fileNameText" type="text" class="form-control" list="json-datalist" value=""
+                                                   on-keyup="callAutocomplete">
+                                            <datalist id="json-datalist">
+                                                <template is="dom-repeat" items="{{autocompleteData}}">
+                                                    <option value="{{item.name}}">
+                                                </template>
+                                            </datalist>
+                                            <button type="button" class="btn btn-default btn-sm form-control" on-click="addGeneId">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <textarea id="fileNameFilterTextArea" class="form-control" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Date filter menu-->
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingTwo">
+                                <h4 class="panel-title">
+                                    <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
+                                       href="#region" aria-expanded="false" aria-controls="region">
+                                        Date range
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="region" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingTwo">
+                                From:
+                                <div class='input-group date' id='datetimePickerFrom'>
+                                    <input type='text' class="form-control" />
+                                                        <span class="input-group-addon">
+                                                            <span class="glyphicon glyphicon-calendar"></span>
+                                                        </span>
+                                </div>
+                                To:
+                                <div class='input-group date' id='datetimePickerTo'>
+                                    <input type='text' class="form-control" />
+                                                        <span class="input-group-addon">
+                                                            <span class="glyphicon glyphicon-calendar"></span>
+                                                        </span>
+                                </div>
+                                <script type="text/javascript">
+                                    $('#datetimePickerFrom').datetimepicker();
+                                    $('#datetimePickerTo').datetimepicker({
+                                        useCurrent: false //Important! See issue #1075
+                                    });
+                                    $("#datetimePickerFrom").on("dp.change", function (e) {
+                                        $('#datetimePickerTo').data("DateTimePicker").minDate(e.date);
+                                    });
+                                    $("#datetimePickerTo").on("dp.change", function (e) {
+                                        $('#datetimePickerFrom').data("DateTimePicker").maxDate(e.date);
+                                    });
+                                </script>
+                            </div>
+                        </div>
+
+                        <!-- Type filter menu-->
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingThree">
+                                <h4 class="panel-title">
+                                    <a class="collapsed" role="button" data-toggle="collapse" data-parent="#accordion"
+                                       href="#type" aria-expanded="false" aria-controls="type">
+                                        Type
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="type" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingThree">
+                                <div class="panel-body type-scroll">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-files-filter',
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                studyId: {
+                    type: Number,
+                    observer: "_getFiles"
+                },
+                files: {
+                    type: Array,
+                    value: [],
+                    notify: true
+                }
+            },
+            _getFiles: function() {
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this.opencgaClient.files().search({studyId: this.studyId, type: "FILE"})
+                            .then(function(response) {
+                                if (response.response[0].numResults > 0) {
+                                    this.files = response.response[0].result;
+                                    console.log(this.files);
+                                }
+                            }.bind(this));
+                }
+            }
+        });
+    </script>
+</dom-module>

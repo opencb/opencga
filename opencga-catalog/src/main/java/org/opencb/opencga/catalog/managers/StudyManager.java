@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -20,6 +21,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -350,6 +352,71 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    @Override
+    public QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException {
+
+        long startTime = System.currentTimeMillis();
+
+        Study studyInfo = read(studyId, queryOptions, sessionId).first();
+
+        StudySummary studySummary = new StudySummary()
+                .setAlias(studyInfo.getAlias())
+                .setAttributes(studyInfo.getAttributes())
+                .setCipher(studyInfo.getCipher())
+                .setCreationDate(studyInfo.getCreationDate())
+                .setDatasets(studyInfo.getDatasets().size())
+                .setDescription(studyInfo.getDescription())
+                .setDiskUsage(studyInfo.getDiskUsage())
+                .setExperiments(studyInfo.getExperiments())
+                .setGroups(studyInfo.getGroups())
+                .setName(studyInfo.getName())
+                .setRoles(studyInfo.getRoles())
+                .setStats(studyInfo.getStats())
+                .setStatus(studyInfo.getStatus())
+                .setType(studyInfo.getType())
+                .setVariableSets(studyInfo.getVariableSets());
+
+
+        Long nFiles = fileDBAdaptor.count(
+                new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
+                                + File.FileStatus.REMOVED))
+                .first();
+        studySummary.setFiles(nFiles);
+
+        Long nSamples = sampleDBAdaptor.count(
+                new Query(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
+                                + File.FileStatus.REMOVED))
+                .first();
+        studySummary.setSamples(nSamples);
+
+        Long nJobs = jobDBAdaptor.count(
+                new Query(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
+                                + File.FileStatus.REMOVED))
+                .first();
+        studySummary.setJobs(nJobs);
+
+        Long nCohorts = cohortDBAdaptor.count(
+                new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
+                                + File.FileStatus.REMOVED))
+                .first();
+        studySummary.setCohorts(nCohorts);
+
+        Long nIndividuals = individualDBAdaptor.count(
+                new Query(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
+                                + File.FileStatus.REMOVED))
+                .first();
+        studySummary.setIndividuals(nIndividuals);
+
+        return new QueryResult<>("Study summary", (int) (System.currentTimeMillis() - startTime), 1, 1, "", "",
+                Collections.singletonList(studySummary));
     }
 
 

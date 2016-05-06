@@ -19,11 +19,11 @@ package org.opencb.opencga.app.cli.admin;
 /**
  * Created by imedina on 21/04/16.
  */
-public class AuditCommandExecutor extends CommandExecutor {
+public class AuditCommandExecutor extends AdminCommandExecutor {
 
-    private CliOptionsParser.AuditCommandOptions auditCommandOptions;
+    private AdminCliOptionsParser.AuditCommandOptions auditCommandOptions;
 
-    public AuditCommandExecutor(CliOptionsParser.AuditCommandOptions auditCommandOptions) {
+    public AuditCommandExecutor(AdminCliOptionsParser.AuditCommandOptions auditCommandOptions) {
         super(auditCommandOptions.commonOptions);
         this.auditCommandOptions = auditCommandOptions;
     }

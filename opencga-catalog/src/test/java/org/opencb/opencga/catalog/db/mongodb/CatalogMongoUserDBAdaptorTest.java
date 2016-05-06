@@ -47,7 +47,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void createUserTest() throws CatalogException {
 
-        User user = new User("NewUser", "", "", "", "", User.Role.USER, new Status());
+        User user = new User("NewUser", "", "", "", "", User.Role.USER, new User.UserStatus());
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user, null);
         assertNotSame(0, createUser.getResult().size());
 
@@ -57,14 +57,14 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void deleteUserTest() throws CatalogException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new Status());
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new User.UserStatus());
         QueryResult<User> createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
         assertEquals(Status.READY, createUser.first().getStatus().getStatus());
 
-        QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), false);
+        QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
         assertEquals(Status.DELETED, deleteUser.first().getStatus().getStatus());

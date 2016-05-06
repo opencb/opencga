@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -31,6 +32,7 @@ import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Index;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +59,7 @@ public class AnalysisOutputRecorder {
     private final String sessionId;
     private final boolean calculateChecksum = false;    //TODO: Read from config file
     private final FileScanner.FileScannerPolicy fileScannerPolicy = FileScanner.FileScannerPolicy.DELETE; //TODO: Read from config file
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public AnalysisOutputRecorder(CatalogManager catalogManager, String sessionId) {
         this.catalogManager = catalogManager;
@@ -119,68 +122,8 @@ public class AnalysisOutputRecorder {
                 job.getAttributes().get(Job.TYPE).toString() : Job.Type.ANALYSIS.toString();
         switch(Job.Type.valueOf(type)) {
             case INDEX:
-                Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
-                File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
-                final Index index;
-                if (indexedFile.getIndex() != null) {
-                    index = indexedFile.getIndex();
-                    switch (index.getStatus().getStatus()) {
-                        case Index.IndexStatus.NONE:
-                        case Index.IndexStatus.TRANSFORMED:
-                            logger.warn("Unexpected index status. Expected "
-                                    + Index.IndexStatus.TRANSFORMING + ", "
-                                    + Index.IndexStatus.LOADING + " or "
-                                    + Index.IndexStatus.INDEXING
-                                    + " and got " + index.getStatus());
-                        case Index.IndexStatus.READY: //Do not show warn message when index status is READY.
-                            break;
-                        case Index.IndexStatus.TRANSFORMING:
-                            if (jobFailed) {
-                                logger.warn("Job failed. Restoring status from " +
-                                        Index.IndexStatus.TRANSFORMING + " to " + Index.IndexStatus.NONE);
-                                index.getStatus().setStatus(Index.IndexStatus.NONE);
-                            } else {
-                                index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
-                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
-                            }
-                            break;
-                        case Index.IndexStatus.LOADING:
-                            if (jobFailed) {
-                                logger.warn("Job failed. Restoring status from " +
-                                        Index.IndexStatus.LOADING + " to " + Index.IndexStatus.TRANSFORMED);
-                                index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
-                            } else {
-                                index.getStatus().setStatus(Index.IndexStatus.READY);
-                            }
-                            break;
-                        case Index.IndexStatus.INDEXING:
-                            if (jobFailed) {
-                                logger.warn("Job failed. Restoring status from " +
-                                        Index.IndexStatus.INDEXING + " to " + Index.IndexStatus.NONE);
-                                index.getStatus().setStatus(Index.IndexStatus.NONE);
-                            } else {
-                                index.getStatus().setStatus(Index.IndexStatus.READY);
-                                FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
-                            }
-                            break;
-                    }
-                } else {
-                    index = new Index(job.getUserId(), job.getDate(), new Index.IndexStatus(Index.IndexStatus.READY), job.getId(),
-                            new HashMap<>());
-                    logger.warn("Expected INDEX object on the indexed file " +
-                            "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");
-                }
-                catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
-                if (index.getStatus().getStatus().equals(Index.IndexStatus.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
-                    QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
-                    if (queryResult.getNumResults() != 0) {
-                        logger.debug("Default cohort status set to READY");
-                        Cohort defaultCohort = queryResult.first();
-                        catalogManager.modifyCohort(defaultCohort.getId(),
-                                new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.READY),
-                                new QueryOptions(), sessionId);
-                    }
-                }
+                final StorageETLResult storageETLResult = readStorageETLResult(job.getId());
+                postProcessIndexJob(job, storageETLResult, null, sessionId);
                 break;
             case COHORT_STATS:
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");
@@ -193,6 +136,108 @@ public class AnalysisOutputRecorder {
                 break;
             default:
                 break;
+        }
+    }
+
+    public void saveStorageResult(Job job, StorageETLResult storageETLResult) throws CatalogException {
+        if (storageETLResult != null) {
+            catalogManager.modifyJob(job.getId(), new ObjectMap("attributes", new ObjectMap("storageETLResult", storageETLResult)), sessionId);
+        }
+    }
+
+    public StorageETLResult readStorageETLResult(long jobId) throws CatalogException {
+        Object object = catalogManager.getJob(jobId, null, sessionId).first().getAttributes().get("storageETLResult");
+        final StorageETLResult storageETLResult;
+        try {
+            if (object != null) {
+                storageETLResult = objectMapper.readValue(objectMapper.writeValueAsString(object), StorageETLResult.class);
+            } else {
+                storageETLResult = null;
+            }
+        } catch (IOException e) {
+            throw new CatalogException(e);
+        }
+        return storageETLResult;
+    }
+
+    public void postProcessIndexJob(Job job, StorageETLResult storageETLResult, Exception e, String sessionId) throws CatalogException {
+        boolean jobFailed = storageETLResult == null;
+
+        Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
+        File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
+        final Index index;
+
+        boolean transformedSuccess = storageETLResult != null && storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() == null;
+        boolean loadedSuccess = storageETLResult != null && storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() == null;
+
+        if (indexedFile.getIndex() != null) {
+            index = indexedFile.getIndex();
+            switch (index.getStatus().getStatus()) {
+                case Index.IndexStatus.NONE:
+                case Index.IndexStatus.TRANSFORMED:
+                    logger.warn("Unexpected index status. Expected "
+                            + Index.IndexStatus.TRANSFORMING + ", "
+                            + Index.IndexStatus.LOADING + " or "
+                            + Index.IndexStatus.INDEXING
+                            + " and got " + index.getStatus());
+                case Index.IndexStatus.READY: //Do not show warn message when index status is READY.
+                    break;
+                case Index.IndexStatus.TRANSFORMING:
+                    if (jobFailed) {
+                        logger.warn("Job failed. Restoring status from " +
+                                Index.IndexStatus.TRANSFORMING + " to " + Index.IndexStatus.NONE);
+                        index.getStatus().setStatus(Index.IndexStatus.NONE);
+                    } else {
+                        index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
+                    }
+                    break;
+                case Index.IndexStatus.LOADING:
+                    if (jobFailed) {
+                        logger.warn("Job failed. Restoring status from " +
+                                Index.IndexStatus.LOADING + " to " + Index.IndexStatus.TRANSFORMED);
+                        index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
+                    } else {
+                        index.getStatus().setStatus(Index.IndexStatus.READY);
+                    }
+                    break;
+                case Index.IndexStatus.INDEXING:
+                    if (jobFailed) {
+                        String newStatus;
+                        // If transform was executed, restore status to Transformed.
+                        if (transformedSuccess) {
+                            newStatus = Index.IndexStatus.TRANSFORMED;
+                        } else {
+                            newStatus = Index.IndexStatus.NONE;
+                        }
+                        logger.warn("Job failed. Restoring status from " +
+                                Index.IndexStatus.INDEXING + " to " + newStatus);
+                        index.getStatus().setStatus(newStatus);
+                    } else {
+                        index.getStatus().setStatus(Index.IndexStatus.READY);
+                    }
+                    break;
+            }
+        } else {
+            index = new Index(job.getUserId(), job.getDate(), new Index.IndexStatus(Index.IndexStatus.READY), job.getId(),
+                    new HashMap<>());
+            logger.warn("Expected INDEX object on the indexed file " +
+                    "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");
+        }
+
+        if (transformedSuccess) {
+            FileMetadataReader.get(catalogManager).updateVariantFileStats(job, sessionId);
+        }
+
+        catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
+        if (index.getStatus().getStatus().equals(Index.IndexStatus.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
+            QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
+            if (queryResult.getNumResults() != 0) {
+                logger.debug("Default cohort status set to READY");
+                Cohort defaultCohort = queryResult.first();
+                catalogManager.modifyCohort(defaultCohort.getId(),
+                        new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.READY),
+                        new QueryOptions(), sessionId);
+            }
         }
     }
 

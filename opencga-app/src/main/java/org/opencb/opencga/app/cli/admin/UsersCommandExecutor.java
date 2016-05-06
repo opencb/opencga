@@ -17,14 +17,25 @@
 package org.opencb.opencga.app.cli.admin;
 
 
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.User;
+
+import java.io.IOException;
+import java.util.Collections;
+
 /**
  * Created by imedina on 02/03/15.
  */
-public class UsersCommandExecutor extends CommandExecutor {
+public class UsersCommandExecutor extends AdminCommandExecutor {
 
-    private CliOptionsParser.UsersCommandOptions usersCommandOptions;
+    private AdminCliOptionsParser.UsersCommandOptions usersCommandOptions;
 
-    public UsersCommandExecutor(CliOptionsParser.UsersCommandOptions usersCommandOptions) {
+    public UsersCommandExecutor(AdminCliOptionsParser.UsersCommandOptions usersCommandOptions) {
         super(usersCommandOptions.commonOptions);
         this.usersCommandOptions = usersCommandOptions;
     }
@@ -43,6 +54,9 @@ public class UsersCommandExecutor extends CommandExecutor {
             case "delete":
                 delete();
                 break;
+            case "disk-quota":
+                setDiskQuota();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -50,12 +64,129 @@ public class UsersCommandExecutor extends CommandExecutor {
 
     }
 
-    private void create() {
+    private void create() throws CatalogException, IOException {
+        if (usersCommandOptions.createUserCommandOptions.databaseUser != null) {
+            catalogConfiguration.getDatabase().setUser(usersCommandOptions.createUserCommandOptions.databaseUser);
+        }
+        if (usersCommandOptions.createUserCommandOptions.databasePassword != null) {
+            catalogConfiguration.getDatabase().setPassword(usersCommandOptions.createUserCommandOptions.databasePassword);
+        }
+        if (usersCommandOptions.createUserCommandOptions.database != null) {
+            catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.createUserCommandOptions.database);
+        }
+        if (usersCommandOptions.createUserCommandOptions.hosts != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.hosts));
+        }
+        if (usersCommandOptions.commonOptions.password != null) {
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        }
 
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert your password.");
+        }
+
+        long userDiskQuota;
+        if (usersCommandOptions.createUserCommandOptions.userDiskQuota != null) {
+            userDiskQuota = usersCommandOptions.createUserCommandOptions.userDiskQuota;
+        } else {
+            userDiskQuota = catalogConfiguration.getUserDefaultDiskQuota();
+        }
+
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
+                usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
+                usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
+                userDiskQuota, null).first();
+        System.out.println("The user has been successfully created: " + user.toString() + "\n");
+
+        // Login the user
+        ObjectMap login = catalogManager.login(usersCommandOptions.createUserCommandOptions.userId,
+                usersCommandOptions.createUserCommandOptions.userPassword, "localhost").first();
+
+        String projectName = "Default";
+        if (usersCommandOptions.createUserCommandOptions.projectName != null
+                && !usersCommandOptions.createUserCommandOptions.projectName.isEmpty()) {
+            projectName = usersCommandOptions.createUserCommandOptions.projectName;
+        }
+
+        String projectAlias = "default";
+        if (usersCommandOptions.createUserCommandOptions.projectAlias != null
+                && !usersCommandOptions.createUserCommandOptions.projectAlias.isEmpty()) {
+            projectAlias = usersCommandOptions.createUserCommandOptions.projectAlias;
+        }
+
+        String projectDescription = "";
+        if (usersCommandOptions.createUserCommandOptions.projectDescription != null
+                && !usersCommandOptions.createUserCommandOptions.projectDescription.isEmpty()) {
+            projectDescription = usersCommandOptions.createUserCommandOptions.projectDescription;
+        }
+
+        String projectOrganization = "";
+        if (usersCommandOptions.createUserCommandOptions.projectOrganization != null
+                && !usersCommandOptions.createUserCommandOptions.projectOrganization.isEmpty()) {
+            projectOrganization = usersCommandOptions.createUserCommandOptions.projectOrganization;
+        }
+
+        Project project = catalogManager.createProject(usersCommandOptions.createUserCommandOptions.userId, projectName, projectAlias,
+                projectDescription, projectOrganization, null, login.getString("sessionId")).first();
+        System.out.println("A default project has been created for the user: " + project.toString() + "\n");
+
+        catalogManager.logout(usersCommandOptions.createUserCommandOptions.userId, login.getString("sessionId"));
     }
 
-    private void delete() {
+    private void delete() throws CatalogException {
+        if (usersCommandOptions.deleteUserCommandOptions.databaseUser != null) {
+            catalogConfiguration.getDatabase().setUser(usersCommandOptions.deleteUserCommandOptions.databaseUser);
+        }
+        if (usersCommandOptions.deleteUserCommandOptions.databasePassword != null) {
+            catalogConfiguration.getDatabase().setPassword(usersCommandOptions.deleteUserCommandOptions.databasePassword);
+        }
+        if (usersCommandOptions.deleteUserCommandOptions.database != null) {
+            catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
+        }
+        if (usersCommandOptions.deleteUserCommandOptions.hosts != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.hosts));
+        }
+        if (usersCommandOptions.commonOptions.password != null) {
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        }
 
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert your password.");
+        }
+
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
+                new QueryOptions("force", true), null).first();
+        System.out.println("The user has been successfully deleted from the database: " + user.toString());
+    }
+
+    private void setDiskQuota() throws CatalogException {
+        if (usersCommandOptions.diskQuotaUserCommandOptions.databaseUser != null) {
+            catalogConfiguration.getDatabase().setUser(usersCommandOptions.diskQuotaUserCommandOptions.databaseUser);
+        }
+        if (usersCommandOptions.diskQuotaUserCommandOptions.databasePassword != null) {
+            catalogConfiguration.getDatabase().setPassword(usersCommandOptions.diskQuotaUserCommandOptions.databasePassword);
+        }
+        if (usersCommandOptions.diskQuotaUserCommandOptions.database != null) {
+            catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.diskQuotaUserCommandOptions.database);
+        }
+        if (usersCommandOptions.diskQuotaUserCommandOptions.hosts != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.hosts));
+        }
+        if (usersCommandOptions.commonOptions.password != null) {
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        }
+
+        if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+            throw new CatalogException("No admin password found. Please, insert your password.");
+        }
+
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
+                new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),
+                        usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();
+        System.out.println("The disk quota has been properly updated: " + user.toString());
     }
 
 }

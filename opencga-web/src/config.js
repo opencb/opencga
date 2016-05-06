@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-var OPENCGA_HOST = "172.24.193.51:8080/opencga";
+var OPENCGA_HOST = "squalet.hpc.cam.ac.uk:8080/opencga";
 var OPENCGA_VERSION = "v1";
 var OPENCGA_COOKIE_SESSION_ID = "opencga_sId";
 var OPENCGA_COOKIE_USER_NAME = "opencga_userId";

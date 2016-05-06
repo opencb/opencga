@@ -14,10 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.analysis;
+package org.opencb.opencga.app.cli;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,27 +41,27 @@ public abstract class CommandExecutor {
     protected String logFile;
     protected boolean verbose;
     protected String configFile;
+    protected String storageConfigFile;
 
     protected String appHome;
 
-    protected String storageEngine;
-//    protected CatalogConfiguration configuration;
+    protected CatalogConfiguration catalogConfiguration;
+    protected StorageConfiguration storageConfiguration;
 
     protected Logger logger;
 
-    public CommandExecutor(CliOptionsParser.CommonCommandOptions options) {
+    public CommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         init(options);
     }
 
-    protected void init(CliOptionsParser.CommonCommandOptions options) {
-        init(options.logLevel, options.verbose, options.configFile, options.storageEngine);
+    protected void init(GeneralCliOptions.CommonCommandOptions options) {
+        init(options.logLevel, options.verbose, options.configFile);
     }
 
-    protected void init(String logLevel, boolean verbose, String configFile, String storageEngine) {
+    protected void init(String logLevel, boolean verbose, String configFile) {
         this.logLevel = logLevel;
         this.verbose = verbose;
         this.configFile = configFile;
-        this.storageEngine = storageEngine;
 
         /**
          * System property 'app.home' is automatically set up in opencga-storage.sh. If by any reason
@@ -128,6 +130,30 @@ public abstract class CommandExecutor {
     }
 
 
+    public boolean loadConfigurations() {
+        try {
+            loadCatalogConfiguration();
+        } catch (IOException ex) {
+            if (getLogger() == null) {
+                ex.printStackTrace();
+            } else {
+                getLogger().error("Error reading OpenCGA Catalog configuration: " + ex.getMessage());
+            }
+            return false;
+        }
+        try {
+            loadStorageConfiguration();
+        } catch (IOException ex) {
+            if (getLogger() == null) {
+                ex.printStackTrace();
+            } else {
+                getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
+            }
+            return false;
+        }
+        return true;
+    }
+
     /**
      * This method attempts to first data configuration from CLI parameter, if not present then uses
      * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
@@ -136,22 +162,81 @@ public abstract class CommandExecutor {
      */
     public void loadCatalogConfiguration() throws IOException {
         String loadedConfigurationFile;
-//        if (this.configFile != null) {
-//            loadedConfigurationFile = this.configFile;
-//            this.configuration = CatalogConfiguration.load(new FileInputStream(new File(this.configFile)));
-//        } else {
-//            // We load configuration file either from app home folder or from the JAR
-//            Path path = Paths.get(appHome + "/conf/catalog-configuration.yml");
-//            if (appHome != null && Files.exists(path)) {
-//                loadedConfigurationFile = path.toString();
-//                this.configuration = CatalogConfiguration.load(new FileInputStream(path.toFile()));
-//            } else {
-//                loadedConfigurationFile = CatalogConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml")
-//                        .toString();
-//                this.configuration = CatalogConfiguration
-//                        .load(CatalogConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml"));
-//            }
-//        }
+        if (this.configFile != null) {
+            loadedConfigurationFile = this.configFile;
+            this.catalogConfiguration = CatalogConfiguration.load(new FileInputStream(new File(this.configFile)));
+        } else {
+            // We load configuration file either from app home folder or from the JAR
+            Path path = Paths.get(appHome + "/conf/catalog-configuration.yml");
+            if (appHome != null && Files.exists(path)) {
+                loadedConfigurationFile = path.toString();
+                this.catalogConfiguration = CatalogConfiguration.load(new FileInputStream(path.toFile()));
+            } else {
+                loadedConfigurationFile = CatalogConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml")
+                        .toString();
+                this.catalogConfiguration = CatalogConfiguration
+                        .load(CatalogConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml"));
+            }
+        }
+
+        // logLevel parameter has preference in CLI over configuration file
+        if (this.logLevel == null || this.logLevel.isEmpty()) {
+            this.logLevel = this.catalogConfiguration.getLogLevel();
+            configureDefaultLog(this.logLevel);
+        } else {
+            if (!this.logLevel.equalsIgnoreCase(this.catalogConfiguration.getLogLevel())) {
+                this.catalogConfiguration.setLogLevel(this.logLevel);
+                configureDefaultLog(this.logLevel);
+            }
+        }
+
+        // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
+        if (this.logFile != null && !this.logFile.isEmpty()) {
+            this.catalogConfiguration.setLogFile(logFile);
+        }
+
+        // If user has set up a logFile we redirect logs to it
+        if (this.catalogConfiguration.getLogFile() != null && !this.catalogConfiguration.getLogFile().isEmpty()) {
+            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+
+            // If a log file is used then console log is removed
+            rootLogger.removeAppender("stderr");
+
+            // Creating a RollingFileAppender to output the log
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
+                    + "%m%n"), this.catalogConfiguration.getLogFile(), true);
+            rollingFileAppender.setThreshold(Level.toLevel(catalogConfiguration.getLogLevel()));
+            rootLogger.addAppender(rollingFileAppender);
+        }
+
+        logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
+    }
+
+
+    /**
+     * This method attempts to first data configuration from CLI parameter, if not present then uses
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
+     */
+    public void loadStorageConfiguration() throws IOException {
+        String loadedConfigurationFile;
+        if (this.storageConfigFile != null) {
+            loadedConfigurationFile = this.storageConfigFile;
+            this.storageConfiguration = StorageConfiguration.load(new FileInputStream(new File(this.storageConfigFile)));
+        } else {
+            // We load configuration file either from app home folder or from the JAR
+            Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
+            if (appHome != null && Files.exists(path)) {
+                loadedConfigurationFile = path.toString();
+                this.storageConfiguration = StorageConfiguration.load(new FileInputStream(path.toFile()));
+            } else {
+                loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml")
+                        .toString();
+                this.storageConfiguration = StorageConfiguration
+                        .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+            }
+        }
 //
 //        // logLevel parameter has preference in CLI over configuration file
 //        if (this.logLevel == null || this.logLevel.isEmpty()) {
@@ -182,8 +267,8 @@ public abstract class CommandExecutor {
 //            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
 //            rootLogger.addAppender(rollingFileAppender);
 //        }
-//
-//        logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
+
+        logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
 
@@ -223,12 +308,12 @@ public abstract class CommandExecutor {
         return builder;
     }
 
-//    public CatalogConfiguration getConfiguration() {
-//        return configuration;
-//    }
-//
-//    public void setConfiguration(CatalogConfiguration configuration) {
-//        this.configuration = configuration;
-//    }
+    public CatalogConfiguration getCatalogConfiguration() {
+        return catalogConfiguration;
+    }
+
+    public void setCatalogConfiguration(CatalogConfiguration catalogConfiguration) {
+        this.catalogConfiguration = catalogConfiguration;
+    }
 
 }

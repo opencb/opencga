@@ -317,7 +317,22 @@ public class AnalysisJobExecutor {
         return jobQueryResult;
     }
 
-    private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException {
+    public static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId)
+            throws CatalogException, AnalysisExecutionException {
+
+        String status = job.getStatus().getStatus();
+        switch (status) {
+            case Job.JobStatus.QUEUED:
+            case Job.JobStatus.PREPARED:
+                // change to RUNNING
+                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
+                break;
+            case Job.JobStatus.RUNNING:
+                //nothing
+                break;
+            default:
+                throw new AnalysisExecutionException("Unable to execute job in status " + status);
+        }
 
         Command com = new Command(job.getCommandLine());
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());

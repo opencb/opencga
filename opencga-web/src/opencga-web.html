@@ -37,7 +37,8 @@
                     <div class="container-fluid">
                         <!-- Brand and toggle get grouped for better mobile display -->
                         <div class="navbar-header opencga-menu">
-                            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                                    data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
                                 <span class="sr-only">Toggle navigation</span>
                                 <span class="icon-bar"></span>
                                 <span class="icon-bar"></span>
@@ -95,7 +96,8 @@
                                     <h4 class="modal-title" id="myModalLogin">Login</h4>
                                 </div>
                                 <div class="modal-body">
-                                    <opencga-login on-login="login" opencga-client="{{opencgaClient}}" opencga-client-config="{{config}}" login-text="Sign in"></opencga-login>
+                                    <opencga-login on-login="login" opencga-client="{{opencgaClient}}" opencga-client-config="{{config}}"
+                                                   login-text="Sign in"></opencga-login>
                                 </div>
                             </div>
                         </div>
@@ -125,7 +127,7 @@
                     </div>
                     <div class="modal-footer">
                         <button on-click="closeSettings" type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                        <button on-click="saveHost" type="button" class="btn btn-primary">OK</button>
+                        <button on-click="saveHost" type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
                     </div>
                 </div>
             </div>
@@ -141,17 +143,13 @@
                 }
             },
 
-//            listeners: {
-//                'login': 'login'
-//            },
-
             ready: function() {
                 this.enableClick();
-                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-                        OPENCGA_COOKIE_USER_NAME);
-//                let tmpClient = new OpenCGAClient(this.config);
-                this.opencgaClient = new OpenCGAClient(this.config);
-                this.opencgaClient.users().info("", "", "")
+                this.config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID, OPENCGA_COOKIE_USER_NAME);
+                this.tmpHost = OPENCGA_HOST;
+                let tmpClient = new OpenCGAClient(this.config);
+//                this.opencgaClient = new OpenCGAClient(this.config);
+                tmpClient.users().info()
                         .then(function() {
                             // We are logged in. Show home.
                             console.log("We are logged in.");
@@ -165,30 +163,6 @@
                             $('#login').show();
                             this.disableClick();
                         }.bind(this));
-//                debugger
-//
-////                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-////                        OPENCGA_COOKIE_USER_NAME);
-////                this.opencgaClient = undefined;
-//
-//                // Read config file
-////                this.host = OPENCGA_HOST;
-////                this.tmpHost = this.host;
-////                this.version = OPENCGA_VERSION;
-//
-//                // Set the sessionId
-//                if (Cookies.get(OPENCGA_COOKIE_SESSION_ID) == null) {
-//                    $('#login').show();
-//                    this.disableClick();
-//                } else {
-//                    debugger
-//                    let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-//                            OPENCGA_COOKIE_USER_NAME);
-//                    this.opencgaClient = new OpenCGAClient(config);
-//                    $('#home').show();
-//                    this.showLogout();
-//                }
-
             },
 
             enableClick: function() {
@@ -218,18 +192,22 @@
                 $(".opencga-menu a[href='#home']").trigger("click");
                 this.showLogout();
 
-                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID,
-                        OPENCGA_COOKIE_USER_NAME);
+                let config = new OpenCGAClientConfig(OPENCGA_HOST, OPENCGA_VERSION, OPENCGA_COOKIE_SESSION_ID, OPENCGA_COOKIE_USER_NAME);
                 this.opencgaClient = new OpenCGAClient(config);
             },
 
             saveHost: function(e) {
-                this.host = this.tmpHost;
-                OpencgaManager.host = this.host;
+                if (this.opencgaClient instanceof OpenCGAClient) {
+                    this.logout();
+                }
+                this.config.host = this.tmpHost;
+//                this.host = this.tmpHost;
+//                OpencgaManager.host = this.host;
             },
 
             closeSettings: function(e) {
-                this.tmpHost = this.host;
+                this.tmpHost = this.config.host;
+//                this.tmpHost = this.host;
             },
 
             logout: function() {
