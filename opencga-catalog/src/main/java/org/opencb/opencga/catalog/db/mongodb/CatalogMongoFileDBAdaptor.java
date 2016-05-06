@@ -122,7 +122,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
         logger.debug("File get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
                 fileQueryResult.getDbTime());
-        return endQuery("get File", startTime, fileQueryResult.getResult());
+        return endQuery("get File", startTime, fileQueryResult);
     }
 
     @Override
