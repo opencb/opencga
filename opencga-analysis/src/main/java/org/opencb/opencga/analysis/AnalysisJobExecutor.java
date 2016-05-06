@@ -310,6 +310,7 @@ public class AnalysisJobExecutor {
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
+                resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();

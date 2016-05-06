@@ -369,8 +369,7 @@ public class AnalysisFileIndexer {
      * @param dataStore
      * @return                  CommandLine
      *
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogDBException
-     * @throws org.opencb.opencga.catalog.exceptions.CatalogIOException
+     * @throws CatalogException
      */
 
     private String createCommandLine(Study study, File originalFile, File inputFile, List<Sample> sampleList,
