@@ -55,9 +55,7 @@ public class AdminCliOptionsParser {
         JCommander catalogSubCommands = jCommander.getCommands().get("catalog");
         catalogSubCommands.addCommand("install", catalogCommandOptions.installCatalogCommandOptions);
         catalogSubCommands.addCommand("delete", catalogCommandOptions.deleteCatalogCommandOptions);
-//        catalogSubCommands.addCommand("query", catalogCommandOptions.queryCatalogCommandOptions);
         catalogSubCommands.addCommand("index", catalogCommandOptions.indexCatalogCommandOptions);
-//        catalogSubCommands.addCommand("audit", catalogCommandOptions.auditCatalogCommandOptions);
         catalogSubCommands.addCommand("clean", catalogCommandOptions.cleanCatalogCommandOptions);
         catalogSubCommands.addCommand("stats", catalogCommandOptions.statsCatalogCommandOptions);
         catalogSubCommands.addCommand("dump", catalogCommandOptions.dumpCatalogCommandOptions);
@@ -146,7 +144,7 @@ public class AdminCliOptionsParser {
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @Parameter(names = {"-p", "--password"}, description = "Admin password", required = true, password = true, arity = 0)
-        public String password;
+        public String adminPassword;
 
     }
 
@@ -159,9 +157,7 @@ public class AdminCliOptionsParser {
 
         InstallCatalogCommandOptions installCatalogCommandOptions;
         DeleteCatalogCommandOptions deleteCatalogCommandOptions;
-//        QueryCatalogCommandOptions queryCatalogCommandOptions;
         IndexCatalogCommandOptions indexCatalogCommandOptions;
-//        AuditCatalogCommandOptions auditCatalogCommandOptions;
         CleanCatalogCommandOptions cleanCatalogCommandOptions;
         StatsCatalogCommandOptions statsCatalogCommandOptions;
         DumpCatalogCommandOptions dumpCatalogCommandOptions;
@@ -172,9 +168,7 @@ public class AdminCliOptionsParser {
         public CatalogCommandOptions() {
             this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
             this.deleteCatalogCommandOptions = new DeleteCatalogCommandOptions();
-//            this.queryCatalogCommandOptions= new QueryCatalogCommandOptions();
             this.indexCatalogCommandOptions = new IndexCatalogCommandOptions();
-//            this.auditCatalogCommandOptions = new AuditCatalogCommandOptions();
             this.cleanCatalogCommandOptions = new CleanCatalogCommandOptions();
             this.statsCatalogCommandOptions = new StatsCatalogCommandOptions();
             this.dumpCatalogCommandOptions = new DumpCatalogCommandOptions();
@@ -246,16 +240,16 @@ public class AdminCliOptionsParser {
      */
     class CatalogDatabaseCommandOptions {
 
-        @Parameter(names = {"--database-name"}, description = "DataBase name to load the data, eg. opencga_catalog")
+        @Parameter(names = {"-d", "--database-name"}, description = "Database name for the catalog metadata, eg. opencga_catalog. If not present is read from catalog-configuration.yml")
         public String database;
 
-        @Parameter(names = {"--database-hosts"}, description = "DataBase hosts and port, eg. localhost:27017")
-        public String hosts;
+        @Parameter(names = {"--database-host"}, description = "Database host and port, eg. localhost:27017. If not present is read from catalog-configuration.yml")
+        public String databaseHost;
 
-        @Parameter(names = {"--database-user"}, description = "DataBase user name")
+        @Parameter(names = {"--database-user"}, description = "Database user name. If not present is read from catalog-configuration.yml")
         public String databaseUser;
 
-        @Parameter(names = {"--database-password"}, description = "DataBase password", password = true, arity = 0)
+        @Parameter(names = {"--database-password"}, description = "Database password. If not present is read from catalog-configuration.yml", password = true, arity = 0)
         public String databasePassword;
     }
 
@@ -271,8 +265,8 @@ public class AdminCliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
-        public boolean overwrite;
+//        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
+//        public boolean overwrite;
 
     }
 
@@ -284,16 +278,6 @@ public class AdminCliOptionsParser {
 
     }
 
-//    @Parameters(commandNames = {"query"}, commandDescription = "Query audit data from Catalog database")
-//    public class QueryCatalogCommandOptions extends CatalogDatabaseCommandOptions {
-//
-//        @ParametersDelegate
-//        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
-//
-//        @Parameter(names = {"--filter"}, description = "Query filter for data")
-//        public String filter;
-//    }
-
     @Parameters(commandNames = {"index"}, commandDescription = "Create the non-existing indices in Catalog database")
     public class IndexCatalogCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -303,16 +287,6 @@ public class AdminCliOptionsParser {
         @Parameter(names = {"--reset"}, description = "Remove existing indexes before creting the new one")
         public boolean reset;
     }
-
-//    @Parameters(commandNames = {"audit"}, commandDescription = "Query audit data from Catalog database")
-//    public class AuditCatalogCommandOptions extends CatalogDatabaseCommandOptions {
-//
-//        @ParametersDelegate
-//        public CommonCommandOptions commonOptions = CliOptionsParser.this.commonCommandOptions;
-//
-//        @Parameter(names = {"--filter"}, description = "A comma-separated list of collections for the stats")
-//        public String filter;
-//    }
 
     @Parameters(commandNames = {"clean"}, commandDescription = "Query audit data from Catalog database")
     public class CleanCatalogCommandOptions extends CatalogDatabaseCommandOptions {
@@ -384,13 +358,17 @@ public class AdminCliOptionsParser {
      * USER SUB-COMMANDS
      */
 
+    public class UserCommandOptions {
+
+    }
+
     @Parameters(commandNames = {"create"}, commandDescription = "Create a new user with a default project in Catalog database and the workspace")
     public class CreateUserCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
-        @Parameter(names = {"--user-id"}, description = "User id", required = true, arity = 1)
+        @Parameter(names = {"-u", "--user-id"}, description = "User id", required = true, arity = 1)
         public String userId;
 
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
@@ -429,7 +407,7 @@ public class AdminCliOptionsParser {
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
-        @Parameter(names = {"--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
+        @Parameter(names = {"-u", "--user-id"}, description = "Full name of the study where the file is classified", required = true, arity = 1)
         public String userId;
 
     }
@@ -442,7 +420,7 @@ public class AdminCliOptionsParser {
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
-        @Parameter(names = {"--user-id"}, description = "User id to get stats from", required = true, arity = 1)
+        @Parameter(names = {"-u", "--user-id"}, description = "User id to get stats from", required = true, arity = 1)
         public String userId;
 
         @Parameter(names = {"--quota"}, description = "Disk quota in GB", required = true, arity = 1)
@@ -456,13 +434,15 @@ public class AdminCliOptionsParser {
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
 
-        @Parameter(names = {"--user-id"}, description = "User id to get stats from", required = true, arity = 1)
+        @Parameter(names = {"-u", "--user-id"}, description = "User id to get stats from", required = true, arity = 1)
         public String userId;
 
     }
 
 
-
+    /*
+     * TOOL SUB-COMMANDS
+     */
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")
     public class InstallToolCommandOptions extends CatalogDatabaseCommandOptions {

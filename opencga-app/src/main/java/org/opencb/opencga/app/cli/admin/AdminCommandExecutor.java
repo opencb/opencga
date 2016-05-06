@@ -18,7 +18,7 @@ public abstract class AdminCommandExecutor extends CommandExecutor {
 
     protected void init(AdminCliOptionsParser.AdminCommonCommandOptions options) {
         super.init(options);
-        this.adminPassword = options.password;
+        this.adminPassword = options.adminPassword;
     }
 
     public String getAdminPassword() {

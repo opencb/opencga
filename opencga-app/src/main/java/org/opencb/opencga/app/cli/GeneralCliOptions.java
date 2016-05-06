@@ -8,6 +8,7 @@ import com.beust.jcommander.Parameter;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class GeneralCliOptions {
+
     public static class GeneralOptions {
 
         @Parameter(names = {"-h", "--help"}, help = true)
@@ -28,13 +29,13 @@ public class GeneralCliOptions {
         @Parameter(names = {"-L", "--log-level"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
         public String logLevel = "info";
 
-        @Parameter(names = {"--log-file"}, description = "One of the following: 'error', 'warn', 'info', 'debug', 'trace'")
+        @Parameter(names = {"--log-file"}, description = "Set the file to write the log")
         public String logFile;
 
         @Parameter(names = {"-v", "--verbose"}, description = "Increase the verbosity of logs")
         public boolean verbose = false;
 
-        @Parameter(names = {"-C", "--conf"}, description = "Configuration file path.")
+        @Parameter(names = {"-C", "--conf"}, description = "Configuration folder path, this folder must contain opencga.yml, catalog-configuration.yaml and storage-configuration.yml files.")
         public String configFile;
 
     }
