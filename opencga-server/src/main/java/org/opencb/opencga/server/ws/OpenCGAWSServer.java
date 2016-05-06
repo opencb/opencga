@@ -236,7 +236,7 @@ public class OpenCGAWSServer {
         queryOptions = new QueryOptions();
         query = new Query();
 
-//        parseParams();
+        parseParams();
     }
 
     /**
