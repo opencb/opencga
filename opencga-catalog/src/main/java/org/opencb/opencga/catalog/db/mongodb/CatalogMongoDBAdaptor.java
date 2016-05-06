@@ -65,13 +65,13 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
 
     @Deprecated
     protected void addIntegerOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.INTEGER, MongoDBQueryUtils.ComparisonOperator.EQUALS,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
     @Deprecated
     protected void addStringOrQuery(String mongoDbField, String queryParam, Query query, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.TEXT, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+        addQueryFilter(mongoDbField, queryParam, query, QueryParam.Type.TEXT, MongoDBQueryUtils.ComparisonOperator.EQUALS,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
@@ -93,7 +93,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
      * @param andBsonList The list where created filter will be added to.
      */
     protected void addOrQuery(String mongoDbField, String queryParam, Query query, QueryParam.Type paramType, List<Bson> andBsonList) {
-        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUAL,
+        addQueryFilter(mongoDbField, queryParam, query, paramType, MongoDBQueryUtils.ComparisonOperator.EQUALS,
                 MongoDBQueryUtils.LogicalOperator.OR, andBsonList);
     }
 
