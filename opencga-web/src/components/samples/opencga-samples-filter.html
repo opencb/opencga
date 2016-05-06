@@ -1,0 +1,138 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../opencga-shared-styles.html">
+
+<dom-module id="opencga-samples-filter">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles">
+            .border-padding {
+                padding-top: 5px;
+                padding-right: 3px;
+                padding-bottom: 5px;
+                padding-left: 8px;
+            }
+        </style>
+
+        <div>
+            <ul class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#filter1" role="tab" data-toggle="tab">Filter</a></li>
+            </ul>
+
+            <!--Filter tab content-->
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane active" id="filter1">
+                    <button type="button" class="btn btn-default" on-click="clear">Clear</button>
+                    <button type="button" id="submitButton" class="btn btn-default" on-click="executeQuery">Submit</button>
+                    <br>
+
+                    <!--GeneID filter menu-->
+                    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingOne">
+                                <h4 class="panel-title">
+                                    <a role="button" data-toggle="collapse" data-parent="#accordion" href="#sampleFilterName"
+                                       aria-expanded="true" aria-controls="sampleFilterName">
+                                        Sample name
+                                    </a>
+                                </h4>
+                            </div>
+                            <div id="sampleFilterName" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                                <div class="panel-body">
+                                    <form class="form-inline">
+                                        Search:
+                                        <div style="float: right">
+                                            <input id="sampleNameText" type="text" class="form-control" list="json-sample-datalist" value=""
+                                                   on-keyup="callAutocomplete">
+                                            <datalist id="json-sample-datalist">
+                                                <template is="dom-repeat" items="{{_autocompleteData}}">
+                                                    <option value="{{item.name}}">
+                                                </template>
+                                            </datalist>
+                                            <button type="button" class="btn btn-default btn-sm form-control" on-click="addSampleName">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </form>
+                                    <textarea id="sampleFilterTextArea" class="form-control" rows="3"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-samples-filter',
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                studyId: {
+                    type: Number
+                },
+                filters: {
+                    type: Object,
+                    notify: true
+                },
+                _autocompleteData: {
+                    type:Array,
+                    value: []
+                }
+            },
+            clear: function (e) {
+                // we empty the textareas
+                this.$.sampleFilterTextArea.value = "";
+            },
+            executeQuery: function (e) {
+                this.filters = {
+                    "name": this.$.sampleFilterTextArea.value
+                };
+            },
+            addSampleName: function(e) {
+                let allIds = this.$.sampleFilterTextArea.value.split(",");
+                var temp = this.$.sampleNameText.value;
+                if (allIds.indexOf(temp) == -1){
+                    allIds.push(temp);
+                }
+                this.$.sampleNameText.value = '';
+                this.$.sampleFilterTextArea.value = allIds;
+            },
+            callAutocomplete: function(e) {
+                if (this.$.sampleNameText.value.length > 2) {
+                    let _this = this;
+                    let success = function (response) {
+                        _this._autocompleteData = response.response[0].result;
+                    };
+                    this.opencgaClient.samples().search({
+                        studyId: this.studyId,
+                        name: "^" + this.$.sampleNameText.value,
+                        include: "projects.studies.samples.name",
+                        limit: 15
+                    }).then(function(response) {
+                        this._autocompleteData = response.response[0].result;
+                    }.bind(this));
+                }
+
+            }
+        });
+    </script>
+</dom-module>

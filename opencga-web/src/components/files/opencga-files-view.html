@@ -16,7 +16,6 @@
 
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="opencga-files-grid.html">
 <link rel="import" href="opencga-files-info-file.html">
 <link rel="import" href="opencga-files-info-samples.html">
 <link rel="import" href="opencga-files-info-jobs.html">
@@ -31,12 +30,13 @@
         <div style="padding: 10px;">
 
             <div class="row" style="height: 530px">
-                <opencga-files-grid on-selected="showInfo" files="{{files}}"></opencga-files-grid>
+                <table id="filetable" data-search="true" data-show-columns="true" data-pagination="true" data-height="520"
+                       data-page-list="[10, 25, 50]" data-show-export="true" data-striped="true">
+                </table>
             </div>
 
-            <template is="dom-if" if="{{existsSelectedFile(selectedFile)}}">
+            <template is="dom-if" if="{{existsSelectedFile(_file)}}">
                 <div class="row" style="height: 530px">
-
                     <ul id="myTabs" class="nav nav-tabs" role="tablist">
                         <li role="presentation" class="active"><a href="#fileViewInfo" role="tab" data-toggle="tab">File Info</a></li>
                         <li role="presentation"><a href="#samplesViewInfo" role="tab" data-toggle="tab">Samples</a></li>
@@ -46,11 +46,11 @@
 
                     <div class="tab-content">
                         <div id="fileViewInfo" role="tabpanel" class="tab-pane active">
-                            <opencga-files-info-file file="{{selectedFile}}"></opencga-files-info-file>
+                            <opencga-files-info-file file="{{_file}}"></opencga-files-info-file>
                         </div>
 
                         <div id="samplesViewInfo" role="tabpanel" class="tab-pane">
-                            <opencga-files-info-samples opencga-client="{{opencgaClient}}" sample-ids="{{selectedFile.sampleIds}}"></opencga-files-info-samples>
+                            <opencga-files-info-samples opencga-client="{{opencgaClient}}" sample-ids="{{_file.sampleIds}}"></opencga-files-info-samples>
                         </div>
 
                         <div id="jobsViewInfo" role="tabpanel" class="tab-pane">
@@ -73,27 +73,111 @@
 
             properties: {
                 opencgaClient: {
-                    type: Object
+                    type: Object,
+                    observer: 'renderFromServer'
                 },
                 files: {
-                    type: Array
+                    type: Array,
+                    observer: 'renderLocally'
                 },
-                selectedFile: {
+                studyId: {
+                    type: Number,
+                    observer: 'renderFromServer'
+                },
+                filters: {
+                    type: Object,
+                    observer: 'renderFromServer'
+                },
+                _file: {
                     type: Object
+                },
+            },
+
+            ready: function() {
+                // Columns that will be represented
+                this._columns = [
+                    [
+                        {
+                            title: 'Name',
+                            field: 'name',
+                            sortable: true
+                        },
+                        {
+                            title: 'Path',
+                            field: 'path',
+                            sortable: true
+                        },
+                        {
+                            title: 'Bioformat',
+                            field: 'bioformat',
+                            sortable: true
+                        },
+                        {
+                            title: 'Description',
+                            field: 'description'
+                        }
+                    ]
+                ];
+            },
+            renderFromServer: function() {
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this._url = 'http://' + this.opencgaClient.getConfig().host +  '/webservices/rest/v1/files/search';
+                    let _this = this;
+
+                    $('#filetable').bootstrapTable('destroy');
+                    $('#filetable').bootstrapTable({
+                        url: this._url,
+                        sidePagination: 'server',
+                        queryParams: function(params) {
+                            let auxParams = {
+                                studyId: _this.studyId,
+                                sid: Cookies.get(_this.opencgaClient.getConfig().cookieSessionId),
+                                order: params.order,
+                                sort: params.sort,
+                                limit: params.limit,
+                                skip: params.offset,
+                                type: "FILE"
+                            };
+                            if (params.search !== undefined && params.search.length > 0) {
+                                auxParams["name"] = "~" + params.search;
+                            }
+                            console.log($.extend({}, _this.filters, auxParams))
+                            return $.extend({}, _this.filters, auxParams);
+                        },
+                        responseHandler: function(response) {
+                            return {
+                                total: response.response[0].numTotalResults,
+                                rows: response.response[0].result
+                            }
+                        },
+                        columns: this._columns,
+                        onClickRow: function(row, $element) {
+                            _this._file = row;
+                            $('.success').removeClass('success');
+                            $($element).addClass('success');
+                        }
+                    });
                 }
             },
-
-            showInfo: function(e) {
-                this.selectedFile = e.detail;
+            renderLocally: function() {
+                let _this = this;
+                if (this.data != null && this.data.length > 0) {
+                    $('#filetable').bootstrapTable('destroy');
+                    $('#filetable').bootstrapTable({
+                        data: this.data,
+                        columns: this._columns,
+                        onClickRow: function(row) {
+                            _this._file = row;
+                        }
+                    });
+                }
             },
-
             existsSelectedFile: function(selectedFile) {
                 if (selectedFile !== undefined && selectedFile.hasOwnProperty("id")) {
                     return true;
                 }
                 return false;
             }
-
         });
     </script>
 </dom-module>

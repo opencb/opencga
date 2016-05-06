@@ -14,7 +14,7 @@
   ~ limitations under the License.
   -->
 
-<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="opencga-samples-filter.html">
 <link rel="import" href="opencga-samples-view.html">
@@ -23,13 +23,13 @@
     <template>
         <style is="custom-style" include="opencga-shared-styles"></style>
 
-        <div class="panel">
+        <div class="panel" style="padding:15px;">
             <div class="col-md-2">
-                <opencga-samples-filter samples="{{samples}}" opencga-client="{{opencgaClient}}"></opencga-samples-filter>
+                <opencga-samples-filter samples="{{samples}}" opencga-client="{{opencgaClient}}" study-id="{{studyId}}" filters="{{filters}}"></opencga-samples-filter>
             </div>
 
             <div class="col-md-10">
-                <opencga-samples-view samples="{{samples}}" opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-samples-view>
+                <opencga-samples-view samples="{{samples}}" opencga-client="{{opencgaClient}}" study-id="{{studyId}}" filters="{{filters}}"></opencga-samples-view>
             </div>
         </div>
 
@@ -46,8 +46,11 @@
                 },
                 samples: {
                     type: Array
+                },
+                filters: {
+                    type: Object
                 }
-            },
+            }
 
         });
     </script>
