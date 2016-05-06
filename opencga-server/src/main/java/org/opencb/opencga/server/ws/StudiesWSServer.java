@@ -76,8 +76,14 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
         try {
             long projectId = catalogManager.getProjectId(projectIdStr);
-            QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
+            QueryResult queryResult;
+            if (status != null && !status.isEmpty()) {
+                queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId, creationDate, description,
+                        new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
+            } else {
+                queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId, creationDate, description, new Status(),
+                        cipher, null, null, null, null, null, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

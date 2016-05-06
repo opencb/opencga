@@ -136,7 +136,12 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         // 1) Create, if not provided, an indexation job
         if (StringUtils.isEmpty(cliOptions.jobId)) {
             Job job;
-            long outDirId = catalogManager.getFileId(cliOptions.outdirId);
+            long outDirId;
+            if (cliOptions.outdirId == null) {
+                outDirId = catalogManager.getFileParent(inputFileId, null, sessionId).first().getId();
+            } else  {
+                outDirId = catalogManager.getFileId(cliOptions.outdirId);
+            }
 
             AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
