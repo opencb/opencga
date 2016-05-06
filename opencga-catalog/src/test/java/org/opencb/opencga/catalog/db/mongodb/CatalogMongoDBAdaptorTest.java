@@ -27,7 +27,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -198,5 +197,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         thrown.expect(CatalogDBException.class);
         catalogDBAdaptor.initializeCatalogDB();
     }
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> feature/catalog-next
+=======
+>>>>>>> feature/catalog-next
 */
 }
