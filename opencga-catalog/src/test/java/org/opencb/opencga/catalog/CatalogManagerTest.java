@@ -149,7 +149,7 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("boolean", false);
         catalogManager.modifyFile(fileTest1k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
 
-        File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+        File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.DATAMATRIX_EXPRESSION,
                 testFolder.getPath() + "test_0.5K.txt",
                 StringUtils.randomString(500).getBytes(), "", false, sessionIdUser).first();
         attributes = new ObjectMap();
