@@ -129,7 +129,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         }
         qOptions = filterOptions(qOptions, FILTER_ROUTE_COHORTS);
         QueryResult<Cohort> cohortQueryResult = cohortCollection.find(bson, cohortConverter, qOptions);
-        return endQuery("Get cohort", startTime, cohortQueryResult.getResult());
+        return endQuery("Get cohort", startTime, cohortQueryResult);
     }
 
     @Override
