@@ -62,7 +62,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
     public Path isolateOpenCGA() throws IOException {
 
 //        Path opencgaHome = Paths.get("/tmp/opencga-analysis-test");
-        Path opencgaHome = catalogManagerExternalResource.getTemporaryFolder().getRoot().toPath();
+        Path opencgaHome = catalogManagerExternalResource.getOpencgaHome();
         System.setProperty("app.home", opencgaHome.toString());
         Config.setOpenCGAHome(opencgaHome.toString());
 

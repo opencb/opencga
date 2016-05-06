@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,6 +70,7 @@ public abstract class CommandExecutor {
          * this is 'null' then OPENCGA_HOME environment variable is used instead.
          */
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
+        Config.setOpenCGAHome(appHome);
 
         if (verbose) {
             logLevel = "debug";
@@ -95,6 +97,10 @@ public abstract class CommandExecutor {
 
         ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
         stderr.setThreshold(Level.toLevel(logLevel));
+
+        //Disable MongoDB useless logging
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
 
         logger = LoggerFactory.getLogger(this.getClass().toString());
         this.logLevel = logLevel;

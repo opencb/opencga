@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import org.apache.log4j.Level;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -77,6 +78,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         }
     }
 
+    public MongoDBVariantStorageManager() {
+        //Disable MongoDB useless logging
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+    }
 
     @Override
     public void testConnection() throws StorageManagerException {

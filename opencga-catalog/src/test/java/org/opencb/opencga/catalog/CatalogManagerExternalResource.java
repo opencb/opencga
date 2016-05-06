@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog;
 
 import org.apache.log4j.Level;
 import org.junit.rules.ExternalResource;
-import org.junit.rules.TemporaryFolder;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
@@ -11,6 +10,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
@@ -26,40 +26,39 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
     private CatalogManager catalogManager;
     private CatalogConfiguration catalogConfiguration;
+    private Path opencgaHome;
 
-    public final TemporaryFolder temporaryFolder;
 
     public CatalogManagerExternalResource() {
 
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
 
-        temporaryFolder = new TemporaryFolder();
+        opencgaHome = Paths.get(System.getProperty("java.io.tmpdir")).resolve("junit_opencga_home");
     }
 
-    public CatalogManagerExternalResource(TemporaryFolder opencgaHome) {
-        this.temporaryFolder = opencgaHome;
-    }
 
     @Override
     public void before() throws Exception {
-        temporaryFolder.create();
         catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
-        catalogConfiguration.setDataDir(temporaryFolder.newFolder("sessions").toURI().toString());
-        catalogConfiguration.setTempJobsDir(temporaryFolder.newFolder("jobs").toURI().toString());
+        catalogConfiguration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
+        catalogConfiguration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());
 
         catalogManager = new CatalogManager(catalogConfiguration);
         try {
             catalogManager.deleteCatalogDB();
         } catch (Exception ignore) {}
         clearCatalog(catalogConfiguration);
+        if (!opencgaHome.toFile().exists()) {
+            deleteFolderTree(opencgaHome.toFile());
+            Files.createDirectory(opencgaHome);
+        }
         catalogManager.installCatalogDB();
     }
 
     @Override
     public void after() {
         super.after();
-        temporaryFolder.delete();
         try {
             catalogManager.close();
         } catch (CatalogException e) {
@@ -75,10 +74,9 @@ public class CatalogManagerExternalResource extends ExternalResource {
         return catalogManager;
     }
 
-    public TemporaryFolder getTemporaryFolder() {
-        return temporaryFolder;
+    public Path getOpencgaHome() {
+        return opencgaHome;
     }
-
 
     public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();

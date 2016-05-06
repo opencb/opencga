@@ -1,8 +1,5 @@
 package org.opencb.opencga.analysis.storage;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -24,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
@@ -51,8 +49,8 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.toLevel("debug"));
+//        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
+//        stderr.setThreshold(Level.toLevel("debug"));
 
         catalogManager = catalogManagerExternalResource.getCatalogManager();
         fileMetadataReader = FileMetadataReader.get(catalogManager);
@@ -146,14 +144,15 @@ public class CatalogStudyConfigurationFactoryTest {
             File file = catalogManager.getFile(entry.getValue(), sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());
-            assertEquals(new HashSet<>(file.getSampleIds()), studyConfiguration.getSamplesInFiles().get(file.getId()));
+            int id = (int) file.getId();
+            assertEquals(file.getSampleIds().stream().map(Long::intValue).collect(Collectors.toSet()), studyConfiguration.getSamplesInFiles().get((id)));
             if (file.getIndex() != null && file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
-                assertTrue(studyConfiguration.getIndexedFiles().contains(file.getId()));
-                assertTrue(studyConfiguration.getHeaders().containsKey(file.getId()));
-                assertTrue(!studyConfiguration.getHeaders().get(file.getId()).isEmpty());
+                assertTrue(studyConfiguration.getIndexedFiles().contains(id));
+                assertTrue("Missing header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
+                assertTrue("Missing header for file " + file.getId(), !studyConfiguration.getHeaders().get(id).isEmpty());
             } else {
-                assertFalse(studyConfiguration.getIndexedFiles().contains(file.getId()));
-                assertFalse(studyConfiguration.getHeaders().containsKey(file.getId()));
+                assertFalse(studyConfiguration.getIndexedFiles().contains(id));
+                assertFalse("Should not contain header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
             }
         }
     }

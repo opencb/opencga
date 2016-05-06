@@ -100,7 +100,7 @@ public class OpenCGAMain {
                 logLevel = optionsParser.getCommonOptions().logLevel;
             }
             setLogLevel(logLevel);
-            Config.setOpenCGAHome();
+            Config.setAutoOpenCGAHome();
         } catch (ParameterException e){
 
             if(!optionsParser.getGeneralOptions().help && !optionsParser.getCommonOptions().help ) {

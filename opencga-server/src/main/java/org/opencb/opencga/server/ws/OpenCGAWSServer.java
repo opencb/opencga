@@ -156,6 +156,10 @@ public class OpenCGAWSServer {
             rollingFileAppender.setMaxBackupIndex(10);
             rootLogger.setLevel(Level.TRACE);
             rootLogger.addAppender(rollingFileAppender);
+
+            //Disable MongoDB useless logging
+            org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+            org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
         } catch (IOException e) {
             e.printStackTrace();
         }

@@ -37,6 +37,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -110,17 +111,17 @@ public class WSServerTestUtils {
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
 
-        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog-configuration-test.yml");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+        CatalogManagerTest catalogManagerTest =  new CatalogManagerTest();
+        catalogManagerResource = catalogManagerTest.catalogManagerResource;
+        catalogManagerResource.before();
+
+        catalogManagerResource.getCatalogConfiguration().serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
+        InputStream inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = OpenCGAWSServerTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
-        CatalogManagerTest catalogManagerTest =  new CatalogManagerTest();
-        catalogManagerResource = catalogManagerTest.catalogManagerResource;
-        catalogManagerResource.before();
         catalogManagerTest.setUpCatalogManager(catalogManagerResource.getCatalogManager()); //Clear and setup CatalogDatabase
         OpenCGAWSServer.catalogManager = catalogManagerResource.getCatalogManager();
     }

@@ -33,14 +33,12 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractAnalysisFileIndex
 
 
     @Before
-    public void beforeAggregatedIndex(String file, VariantSource.Aggregation aggregation) throws Exception {
+    public void beforeAggregatedIndex() throws Exception {
         files.add(create("variant-test-aggregated-file.vcf.gz"));
     }
 
     @Test
     public void testIndexWithAggregatedStats() throws Exception {
-        beforeAggregatedIndex("variant-test-aggregated-file.vcf.gz", VariantSource.Aggregation.BASIC);
-
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.BASIC);
