@@ -17,7 +17,7 @@
 <link rel="import" href="../../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="opencga-files-filter.html">
-<link rel="import" href="opencga-files-grid.html">
+<link rel="import" href="opencga-files-view.html">
 
 <dom-module id="opencga-files-panel">
     <template>
@@ -25,11 +25,13 @@
 
         <div class="panel" style="padding: 10px;">
             <div class="col-md-2">
-                <opencga-files-filter opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{_files}}"></opencga-files-filter>
+                <opencga-files-filter opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{files}}" filters="{{filters}}">
+                </opencga-files-filter>
             </div>
 
             <div class="col-md-10">
-                <opencga-files-grid opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{_files}}"></opencga-files-grid>
+                <opencga-files-view opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{files}}" filters="{{filters}}">
+                </opencga-files-view>
             </div>
         </div>
 
@@ -44,8 +46,11 @@
                 studyId: {
                     type: Number
                 },
-                _files: {
+                files: {
                     type: Array
+                },
+                filters: {
+                    type: Object
                 }
             }
         });

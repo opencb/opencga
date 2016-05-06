@@ -188,6 +188,7 @@ public class FileWSServerTest {
                                                 .append("exists", true)
                                                 .append("txt", "helloWorld"))),
                         String.class), File.class);
+        System.out.println(response.getQueryOptions().toJson());
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("user@1000G:phase1:analysis:").path("update")
                 .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
@@ -201,11 +202,13 @@ public class FileWSServerTest {
 
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
                 .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
+                .queryParam("limit", "5")
                 .queryParam("sid", sessionId)
                 .queryParam("studyId", studyId)
                 .queryParam("attributes.txt", "~hello").request().get(String.class), File.class);
         assertEquals(2, response.getResponse().get(0).getNumResults());
 
+        System.out.println(response.getQueryOptions().toJson());
         response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
                 .queryParam("include", "projects.studies.files.id,projects.studies.files.path")
                 .queryParam("sid", sessionId)
