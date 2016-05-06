@@ -66,14 +66,29 @@
             <email>igmecas@gmail.com</email>
         </developer>
         <developer>
+            <id>j-coll</id>
+            <name>Jacobo</name>
+            <email>jacobo167@gmail.com</email>
+        </developer>
+        <developer>
+            <id>pfurio</id>
+            <name>Pedro</name>
+            <email>pedrofurio@gmail.com</email>
+        </developer>
+        <developer>
+            <id>mh11</id>
+            <name>Matthias</name>
+            <email>mh719+git@cam.ac.uk</email>
+        </developer>
+        <developer>
+            <id>Antonio26</id>
+            <name>Antonio</name>
+            <email>aruemar@gmail.com</email>
+        </developer>
+        <developer>
             <id>cyenyxe</id>
             <name>Cristina</name>
             <email>cristina.yenyxe@gmail.com</email>
-        </developer>
-        <developer>
-            <id>j-coll</id>
-            <name>jacobo</name>
-            <email>jacobo167@gmail.com</email>
         </developer>
         <developer>
             <id>jmmut</id>
