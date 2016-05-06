@@ -317,7 +317,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (roleId != null) {
             roleQuery.add(Filters.eq("id", roleId));
         }
-        Bson projection = new Document(QueryParams.ROLES.key(), new Document("$elemMatch", Filters.and(roleQuery)));
+        Bson projection = Projections.elemMatch(QueryParams.ROLES.key(), Filters.and(roleQuery));
 
         QueryResult<Document> queryResult = studyCollection.find(query, projection,
                 filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.ROLES.key() + "."));
