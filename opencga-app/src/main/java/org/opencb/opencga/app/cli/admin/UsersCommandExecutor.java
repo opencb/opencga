@@ -74,15 +74,15 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.createUserCommandOptions.database != null) {
             catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.createUserCommandOptions.database);
         }
-        if (usersCommandOptions.createUserCommandOptions.hosts != null) {
-            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.hosts));
+        if (usersCommandOptions.createUserCommandOptions.databaseHost != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.createUserCommandOptions.databaseHost));
         }
-        if (usersCommandOptions.commonOptions.password != null) {
-            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        if (usersCommandOptions.commonOptions.adminPassword != null) {
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
         }
 
         if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
-            throw new CatalogException("No admin password found. Please, insert your password.");
+            throw new CatalogException("No admin password found. Please, insert the OpenCGA admin password.");
         }
 
         long userDiskQuota;
@@ -144,11 +144,11 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.deleteUserCommandOptions.database != null) {
             catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.deleteUserCommandOptions.database);
         }
-        if (usersCommandOptions.deleteUserCommandOptions.hosts != null) {
-            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.hosts));
+        if (usersCommandOptions.deleteUserCommandOptions.databaseHost != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.deleteUserCommandOptions.databaseHost));
         }
-        if (usersCommandOptions.commonOptions.password != null) {
-            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        if (usersCommandOptions.commonOptions.adminPassword != null) {
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
         }
 
         if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
@@ -171,11 +171,11 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         if (usersCommandOptions.diskQuotaUserCommandOptions.database != null) {
             catalogConfiguration.getDatabase().setDatabase(usersCommandOptions.diskQuotaUserCommandOptions.database);
         }
-        if (usersCommandOptions.diskQuotaUserCommandOptions.hosts != null) {
-            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.hosts));
+        if (usersCommandOptions.diskQuotaUserCommandOptions.databaseHost != null) {
+            catalogConfiguration.getDatabase().setHosts(Collections.singletonList(usersCommandOptions.diskQuotaUserCommandOptions.databaseHost));
         }
-        if (usersCommandOptions.commonOptions.password != null) {
-            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.password);
+        if (usersCommandOptions.commonOptions.adminPassword != null) {
+            catalogConfiguration.getAdmin().setPassword(usersCommandOptions.commonOptions.adminPassword);
         }
 
         if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
