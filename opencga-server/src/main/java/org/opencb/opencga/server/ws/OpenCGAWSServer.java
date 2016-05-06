@@ -81,12 +81,12 @@ public class OpenCGAWSServer {
 
     @DefaultValue("-1")
     @QueryParam("limit")
-    @ApiParam(name = "limit results", value = "TODO")
+    @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
     protected long limit;
 
     @DefaultValue("0")
     @QueryParam("skip")
-    @ApiParam(name = "skip results", value = "TODO")
+    @ApiParam(name = "skip results", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
 
     @DefaultValue("")
@@ -285,8 +285,17 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-        queryOptions.put("limit", limit);
-        queryOptions.put("skip", skip);
+        String limit = multivaluedMap.getFirst("limit");
+        if (limit != null) {
+            this.limit = Integer.parseInt(limit);
+            queryOptions.put("limit", this.limit);
+        }
+
+        String skip = multivaluedMap.getFirst("skip");
+        if (skip != null) {
+            this.skip = Integer.parseInt(skip);
+            queryOptions.put("skip", this.skip);
+        }
 
         parseIncludeExclude(multivaluedMap, "exclude", exclude);
         parseIncludeExclude(multivaluedMap, "include", include);
