@@ -42,9 +42,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
     }
 
     @Override
-    public void before() throws Throwable {
-        super.before();
-
+    public void before() throws Exception {
         temporaryFolder.create();
         catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
         catalogConfiguration.setDataDir(temporaryFolder.newFolder("sessions").toURI().toString());

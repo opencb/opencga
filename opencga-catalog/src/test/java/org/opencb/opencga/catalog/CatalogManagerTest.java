@@ -106,16 +106,11 @@ public class CatalogManagerTest extends GenericTest {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
-                .openStream());
-
-        catalogConfiguration.getDatabase().setDatabase("opencga_server_test");
-        CatalogManagerExternalResource.clearCatalog(catalogConfiguration);
-
-//        catalogManager = new CatalogManager(catalogConfiguration);
-//        catalogManager.installCatalogDB();
-
         catalogManager = catalogManagerResource.getCatalogManager();
+        setUpCatalogManager(catalogManager);
+    }
+
+    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
         catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, null);

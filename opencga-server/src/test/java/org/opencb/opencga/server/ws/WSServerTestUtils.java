@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.core.common.Config;
@@ -52,6 +53,7 @@ public class WSServerTestUtils {
     private String restURL;
     public static final int PORT = 8889;
     public static final String DATABASE_PREFIX = "opencga_server_test_";
+    private CatalogManagerExternalResource catalogManagerResource;
 
 
     public static <T> QueryResponse<QueryResult<T>> parseResult(String json, Class<T> clazz) throws IOException {
@@ -90,6 +92,7 @@ public class WSServerTestUtils {
         System.err.println("Shutdown server");
         server.stop();
         server.join();
+        catalogManagerResource.after();
     }
 
     public WebTarget getWebTarget() {
@@ -115,10 +118,11 @@ public class WSServerTestUtils {
         inputStream = OpenCGAWSServerTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
-        CatalogManagerTest catalogManagerTest = new CatalogManagerTest();
-
-        catalogManagerTest.setUp(); //Clear and setup CatalogDatabase
-        OpenCGAWSServer.catalogManager = catalogManagerTest.getTestCatalogManager();
+        CatalogManagerTest catalogManagerTest =  new CatalogManagerTest();
+        catalogManagerResource = catalogManagerTest.catalogManagerResource;
+        catalogManagerResource.before();
+        catalogManagerTest.setUpCatalogManager(catalogManagerResource.getCatalogManager()); //Clear and setup CatalogDatabase
+        OpenCGAWSServer.catalogManager = catalogManagerResource.getCatalogManager();
     }
 }
 

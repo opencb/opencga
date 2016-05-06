@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
 
 import javax.ws.rs.client.WebTarget;
@@ -48,8 +49,8 @@ public class StudyWSServerTest {
         System.out.println("\tsid: " + sessionId);
         System.out.println("\tname: " + stName);
         System.out.println("\talias: " + stName);
-        System.out.println("\ttype: type");
-        System.out.println("\tstatus: status");
+        System.out.println("\ttype: " + Study.Type.CASE_CONTROL);
+        System.out.println("\tstatus: " + Status.READY);
         System.out.println("\tdescription: description");
 
         String s = webTarget.path("studies").path("create")
@@ -58,7 +59,7 @@ public class StudyWSServerTest {
                 .queryParam("name", stName)
                 .queryParam("alias", stName)
                 .queryParam("type", Study.Type.CASE_CONTROL)
-                .queryParam("status", "status")
+                .queryParam("status", Status.READY)
                 .queryParam("description", "description")
                 .request().get(String.class);
         QueryResponse<QueryResult<Study>> queryResponse = WSServerTestUtils.parseResult(s, Study.class);

@@ -38,7 +38,7 @@ public class Status {
         if (isValid(status)) {
             init(status, message);
         } else {
-            throw new IllegalArgumentException("Unknown status " + status);
+            throw new IllegalArgumentException("Unknown status '" + status + "'");
         }
     }
 
