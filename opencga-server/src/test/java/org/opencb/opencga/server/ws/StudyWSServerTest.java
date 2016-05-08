@@ -62,7 +62,7 @@ public class StudyWSServerTest {
                 .queryParam("status", Status.READY)
                 .queryParam("description", "description")
                 .request().get(String.class);
-        QueryResponse<QueryResult<Study>> queryResponse = WSServerTestUtils.parseResult(s, Study.class);
+        QueryResponse<Study> queryResponse = WSServerTestUtils.parseResult(s, Study.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
 
         System.out.println("\nJSON RESPONSE");
@@ -81,7 +81,7 @@ public class StudyWSServerTest {
         String json = webTarget.path("studies").path(String.valueOf(studyId)).path("info")
                 .queryParam("sid", sessionId)
                 .request().get(String.class);
-        QueryResponse<QueryResult<Study>> queryResponse = WSServerTestUtils.parseResult(json, Study.class);
+        QueryResponse<Study> queryResponse = WSServerTestUtils.parseResult(json, Study.class);
         Study study = queryResponse.getResponse().get(0).first();
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
 
@@ -122,7 +122,7 @@ public class StudyWSServerTest {
         System.out.println("\nJSON RESPONSE");
         System.out.println(json);
 
-        QueryResponse<QueryResult<ObjectMap>> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
+        QueryResponse<ObjectMap> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("Testing study modification finished");
     }
@@ -147,7 +147,7 @@ public class StudyWSServerTest {
         System.out.println("json = " + json);
 
 
-        QueryResponse<QueryResult<Variant>> queryResponse = WSServerTestUtils.parseResult(json, Variant.class);
+        QueryResponse<Variant> queryResponse = WSServerTestUtils.parseResult(json, Variant.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         List<Variant> variants = queryResponse.getResponse().get(0).getResult();

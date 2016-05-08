@@ -103,7 +103,7 @@ public class FileWSServerTest {
                 .queryParam("path", path)
                 .queryParam("uri", ROOT_DIR.toUri()).request().get(String.class);
 
-        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        QueryResponse<File> response = WSServerTestUtils.parseResult(json, File.class);
         File file = response.getResponse().get(0).first();
         assertEquals(path + "/", file.getPath());
         assertEquals(ROOT_DIR.toUri(), file.getUri());
@@ -119,7 +119,7 @@ public class FileWSServerTest {
                 .queryParam("path", "data/")
                 .queryParam("uri", fileUri).request().get(String.class);
 
-        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        QueryResponse<File> response = WSServerTestUtils.parseResult(json, File.class);
         File file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
@@ -134,7 +134,7 @@ public class FileWSServerTest {
                 .queryParam("path", "data")
                 .queryParam("uri", fileUri).request().get(String.class);
 
-        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        QueryResponse<File> response = WSServerTestUtils.parseResult(json, File.class);
         File file = response.getResponse().get(0).first();
         assertEquals("data/file1.txt", file.getPath());
         assertEquals(fileUri, file.getUri());
@@ -161,7 +161,7 @@ public class FileWSServerTest {
         String json = webTarget.path("files").path(Long.toString(file.getId())).path("update")
                 .queryParam("sid", sessionId).request().post(Entity.json(updateFile), String.class);
 
-        QueryResponse<QueryResult<Object>> response = WSServerTestUtils.parseResult(json, Object.class);
+        QueryResponse<Object> response = WSServerTestUtils.parseResult(json, Object.class);
         file = OpenCGAWSServer.catalogManager.getFile(file.getId(), sessionId).first();
         assertEquals(updateFile.description, file.getDescription());
     }
@@ -174,7 +174,7 @@ public class FileWSServerTest {
                 .queryParam("studyId", studyId)
                 .queryParam("path", "data/").request().get(String.class);
 
-        QueryResponse<QueryResult<File>> response = WSServerTestUtils.parseResult(json, File.class);
+        QueryResponse<File> response = WSServerTestUtils.parseResult(json, File.class);
         File file = response.getResponse().get(0).first();
         assertEquals(1, response.getResponse().get(0).getNumResults());
         assertEquals("data/", file.getPath());
@@ -244,7 +244,7 @@ public class FileWSServerTest {
         System.out.println("------------------------");
 
 
-//        QueryResult<File> queryResult = OpenCGAWSServer.catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "", true, -1, sessionId);
+//        File> queryResult = OpenCGAWSServer.catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.VARIANT, "data/" + fileName, "", true, -1, sessionId);
 //        new CatalogFileUtils(OpenCGAWSServer.catalogManager).upload(is, queryResult.first(), sessionId, false, false, true);
 
 //        return OpenCGAWSServer.catalogManager.getFile(queryResult.first().getId(), sessionId).first();
@@ -283,7 +283,7 @@ public class FileWSServerTest {
 
         System.out.println("\nJSON RESPONSE");
         System.out.println(json);
-        QueryResponse<QueryResult<File>> queryResponse = WSServerTestUtils.parseResult(json, File.class);
+        QueryResponse<File> queryResponse = WSServerTestUtils.parseResult(json, File.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         File file = queryResponse.getResponse().get(0).first();
 
@@ -306,7 +306,7 @@ public class FileWSServerTest {
                 .queryParam("sid", sessionId)
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
+        QueryResponse<Job> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         Job job = queryResponse.getResponse().get(0).first();
@@ -327,7 +327,7 @@ public class FileWSServerTest {
                 .queryParam("log", "debug")
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<Job>> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
+        QueryResponse<Job> queryResponse = WSServerTestUtils.parseResult(json, Job.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         Job job = queryResponse.getResponse().get(0).first();
@@ -358,7 +358,7 @@ public class FileWSServerTest {
         System.out.println("json = " + json);
 
 
-        QueryResponse<QueryResult<Variant>> queryResponse = WSServerTestUtils.parseResult(json, Variant.class);
+        QueryResponse<Variant> queryResponse = WSServerTestUtils.parseResult(json, Variant.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         List<Variant> variants = queryResponse.getResponse().get(0).getResult();
@@ -388,7 +388,7 @@ public class FileWSServerTest {
         System.out.println("json = " + json);
 
 
-        QueryResponse<QueryResult<ObjectMap>> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
+        QueryResponse<ObjectMap> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         assertEquals("", queryResponse.getError());
@@ -409,8 +409,8 @@ public class FileWSServerTest {
         String json = webTarget.path("files").path(fileIds).path("share")
                 .queryParam("sid", sessionId).queryParam("userIds", shareWith).queryParam("unshare", false).queryParam("read", true)
                 .queryParam("write", true).request().get(String.class);
-        List<QueryResult<AclEntry>> response = WSServerTestUtils.parseResult(json, AclEntry.class).getResponse();
-        assertEquals(10, response.get(0).getNumResults());
+        List<AclEntry> response = WSServerTestUtils.parseResult(json, AclEntry.class).allResults();
+        assertEquals(10, response.size());
 
     }
 }
