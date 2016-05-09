@@ -167,10 +167,10 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Cohort.Type.class);
         filterEnumParams(parameters, cohortParams, acceptedEnums);
 
-        String[] acceptedIntegerListParams = {QueryParams.SAMPLES.key()};
-        filterIntegerListParams(parameters, cohortParams, acceptedIntegerListParams);
+        String[] acceptedLongListParams = {QueryParams.SAMPLES.key()};
+        filterLongParams(parameters, cohortParams, acceptedLongListParams);
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
-            for (Integer sampleId : parameters.getAsIntegerList(QueryParams.SAMPLES.key())) {
+            for (Long sampleId : parameters.getAsLongList(QueryParams.SAMPLES.key())) {
                 if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().sampleExists(sampleId)) {
                     throw CatalogDBException.idNotFound("Sample", sampleId);
                 }

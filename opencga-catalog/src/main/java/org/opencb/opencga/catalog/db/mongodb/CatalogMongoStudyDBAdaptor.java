@@ -880,21 +880,27 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.CREATOR_ID.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.CIPHER.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
-        String[] acceptedLongParams = {"diskUsage"};
+        String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};
         filterLongParams(parameters, studyParameters, acceptedLongParams);
 
-        String[] acceptedMapParams = {"attributes", "stats"};
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, studyParameters, acceptedMapParams);
 
         //Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("type"), Study.Type.class);
         //filterEnumParams(parameters, studyParameters, acceptedEnums);
 
-        if (parameters.containsKey("uri")) {
-            URI uri = parameters.get("uri", URI.class);
-            studyParameters.put("uri", uri.toString());
+        if (parameters.containsKey(QueryParams.URI.key())) {
+            URI uri = parameters.get(QueryParams.URI.key(), URI.class);
+            studyParameters.put(QueryParams.URI.key(), uri.toString());
+        }
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            studyParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
 
         if (!studyParameters.isEmpty()) {
@@ -921,14 +927,54 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        delete(new Query(QueryParams.ID.key(), id), queryOptions);
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        checkStudyId(id);
+        // Check the study is active
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            Study study = get(query, options).first();
+            throw new CatalogDBException("The study {" + id + "} was already " + study.getStatus().getStatus());
+        }
+
+        // If we don't find the force parameter, we check first if the user does not have an active project.
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            // Delete the active studies (if any)
+            query = new Query(PRIVATE_STUDY_ID, id);
+            dbAdaptorFactory.getCatalogFileDBAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogJobDBAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogDatasetDBAdaptor().delete(query, queryOptions);
+        }
+
+        // Change the status of the project to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
         return endQuery("Delete study", startTime, get(query, null));
+    }
+
+    private QueryResult<Study>  setStatus(long studyId, String status) throws CatalogDBException {
+        return update(studyId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
+        long startTime = startQuery();
+        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        QueryResult<Study> studyQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        for (Study study : studyQueryResult.getResult()) {
+            delete(study.getId(), queryOptions);
+        }
+        return endQuery("Delete study", startTime, Collections.singletonList(studyQueryResult.getNumTotalResults()));
 //        long startTime = startQuery();
 //        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
 //
@@ -1016,6 +1062,49 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //            return endQuery("Delete study", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
 //        }
 
+    }
+
+    /**
+     * Checks whether the studyId has any active document in the study.
+     *
+     * @param studyId study id.
+     * @throws CatalogDBException when the study has active documents.
+     */
+    private void checkCanDelete(long studyId) throws CatalogDBException {
+        checkStudyId(studyId);
+        Query query = new Query(PRIVATE_STUDY_ID, studyId)
+                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+
+        Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+                    + " files in use.");
+        }
+        count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+                    + " jobs in use.");
+        }
+        count = dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+                    + " samples in use.");
+        }
+        count = dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+                    + " individuals in use.");
+        }
+        count = dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+                    + " cohorts in use.");
+        }
+        count = dbAdaptorFactory.getCatalogDatasetDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + studyId + "} cannot be deleted. The study has " + count
+                    + " datasets in use.");
+        }
     }
 
     /**
