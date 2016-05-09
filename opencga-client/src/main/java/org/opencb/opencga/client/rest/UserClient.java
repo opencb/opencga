@@ -16,22 +16,43 @@
 
 package org.opencb.opencga.client.rest;
 
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.client.config.ClientConfiguration;
+
+import java.io.IOException;
 
 /**
  * Created by imedina on 04/05/16.
  */
-public class UserClient extends AbstractClient {
+public class UserClient extends AbstractParentClient {
 
-    private static final String USERS = "users";
+    private static final String USERS_URL = "users";
 
-    public UserClient(ClientConfiguration configuration) {
-        super(configuration);
+    UserClient(String sessionId, ClientConfiguration configuration) {
+        super(sessionId, configuration);
     }
 
-    public String login(String user, String password) {
-        QueryResult<String> result = get(USERS, user, "login", createParamsMap("password", password));
-        return result.first();
+    QueryResponse<ObjectMap> login(String user, String password) {
+        QueryResponse<ObjectMap> response = null;
+        try {
+            response = execute(USERS_URL, user, "login", createParamsMap("password", password), ObjectMap.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
     }
+
+    public QueryResponse<User> get(String id, QueryOptions options) throws CatalogException, IOException {
+        QueryResponse<User> user = execute(USERS_URL, id, "info", options, User.class);
+        return user;
+    }
+
+    public QueryResponse<Project> getProjects(String userId, QueryOptions options) throws CatalogException, IOException {
+        QueryResponse<Project> projects = execute(USERS_URL, userId, "projects", options, Project.class);
+        return projects;
+    }
+
 }

@@ -28,6 +28,7 @@ import java.io.OutputStream;
  */
 public class ClientConfiguration {
 
+    private String version;
     private RestConfig rest;
     private GrpcConfig grpc;
 

@@ -17,21 +17,29 @@
 package org.opencb.opencga.client.rest;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created by imedina on 04/05/16.
  */
 public class UserClientTest {
 
+    private OpenCGAClient openCGAClient;
     private UserClient userClient;
     private ClientConfiguration clientConfiguration;
 
     public UserClientTest() {
         try {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
+            openCGAClient = new OpenCGAClient("imedina", "pepe", clientConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -39,7 +47,7 @@ public class UserClientTest {
 
 //    @Before
 //    public void setUp() throws Exception {
-////        Path inputPath = Paths.get(getClass().getResource("/client-configuration-test.yml").toURI());
+////        Path inputPath = Paths.execute(getClass().getResource("/client-configuration-test.yml").toURI());
 ////        getClass().getResourceAsStream("/client-configuration-test.yml")
 //        System.out.println();
 //        userClient = new UserClient(clientConfiguration);
@@ -47,8 +55,24 @@ public class UserClientTest {
 
     @Test
     public void login() throws Exception {
-        userClient = new UserClient(clientConfiguration);
-        userClient.login("user", "pass");
+        userClient = openCGAClient.getUserClient();
+        QueryResponse<ObjectMap> login = userClient.login("imedina", "pepe");
+        assertNotNull(login.firstResult());
     }
+
+    @Test
+    public void get() throws Exception {
+        userClient = openCGAClient.getUserClient();
+        QueryResponse<User> login = userClient.get("imedina", null);
+        assertNotNull(login.firstResult());
+    }
+
+    @Test
+    public void getProjects() throws Exception {
+        userClient = openCGAClient.getUserClient();
+        QueryResponse<Project> login = userClient.getProjects("imedina", null);
+        assertNotNull(login.firstResult());
+    }
+
 
 }
