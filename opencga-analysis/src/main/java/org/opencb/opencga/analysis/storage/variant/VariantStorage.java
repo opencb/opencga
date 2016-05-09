@@ -36,6 +36,7 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -160,24 +161,18 @@ public class VariantStorage {
         }
 
         /** create command line **/
-        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME).toString();
+        String opencgaAnalysisBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME).toString();
 
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         StringBuilder sb = new StringBuilder()
-                .append(opencgaStorageBinPath)
+                .append(opencgaAnalysisBinPath)
                 .append(" variant stats ")
-//                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --study-id ").append(studyId)
                 .append(" --session-id ").append(sessionId)
 //                .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
                 .append(" --output-filename ").append("stats_").append(outputFileName)
                 .append(" --job-id ").append(randomString)
-//                .append(" --database ").append(dataStore.getDbName())
-//                .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
-//                .append(" -D").append("sessionId").append("=").append(sessionId)
-//                .append(" --cohort-name ").append(cohort.getId())
-//                .append(" --cohort-samples ")
                 ;
         if (fileId != null) {
             sb.append(" --file-id ").append(fileId);
@@ -246,6 +241,32 @@ public class VariantStorage {
                 attributes, resourceManagerAttributes);
     }
 
+    /**
+     *
+     * Accepts options:
+     *      {@link AnalysisJobExecutor#EXECUTE}
+     *      {@link AnalysisJobExecutor#SIMULATE}
+     *      {@link AnalysisFileIndexer#LOG_LEVEL}
+     *      {@link AnalysisFileIndexer#PARAMETERS}
+     *      {@link VariantDBAdaptor.VariantQueryParams#REGION}
+     *      {@link VariantDBAdaptor.VariantQueryParams#GENE}
+     *      {@link VariantDBAdaptor.VariantQueryParams#CHROMOSOME}
+     *      {@link VariantDBAdaptor.VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
+     *      {@link VariantAnnotationManager#OVERWRITE_ANNOTATIONS}
+     *      {@link VariantAnnotationManager#FILE_NAME}
+     *      {@link VariantAnnotationManager#ANNOTATION_SOURCE}
+     *      {@link VariantAnnotationManager#SPECIES}
+     *      {@link VariantAnnotationManager#ASSEMBLY}
+     *
+     *
+     * @param studyId
+     * @param outDirId
+     * @param sessionId
+     * @param options
+     * @return
+     * @throws CatalogException
+     * @throws AnalysisExecutionException
+     */
     public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
@@ -266,15 +287,55 @@ public class VariantStorage {
         }
 
         /** create command line **/
-        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
+        String opencgaAnalysisBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME).toString();
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         StringBuilder sb = new StringBuilder()
-                .append(opencgaStorageBinPath)
-                .append(" variant annotation ")
-                .append(" --storage-engine ").append(dataStore.getStorageEngine())
-                .append(" --outdir ").append(temporalOutDirUri.toString())
-                .append(" --database ").append(dataStore.getDbName());
+                .append(opencgaAnalysisBinPath)
+                .append(" variant annotate ")
+                .append(" --study-id ").append(studyId)
+                .append(" --session-id ").append(sessionId)
+                .append(" --job-id ").append(randomString)
+                .append(" --outdir-id ").append(outDir.getId());
+
+
+        if (options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS)) {
+            sb.append(" --overwrite-annotations ");
+        }
+
+        //TODO: Read from Catalog?
+        if (!options.getString(VariantAnnotationManager.SPECIES).isEmpty()) {
+            sb.append(" --species ").append(options.getString(VariantAnnotationManager.SPECIES));
+        }
+
+        if (!options.getString(VariantAnnotationManager.ASSEMBLY).isEmpty()) {
+            sb.append(" --assembly ").append(options.getString(VariantAnnotationManager.ASSEMBLY));
+        }
+
+        if (!options.getString(VariantAnnotationManager.FILE_NAME).isEmpty()) {
+            sb.append(" --output-filename ").append(options.getString(VariantAnnotationManager.FILE_NAME));
+        }
+
+        if (!options.getString(VariantAnnotationManager.ANNOTATION_SOURCE).isEmpty()) {
+            sb.append(" --annotator ").append(options.getString(VariantAnnotationManager.ANNOTATION_SOURCE));
+        }
+
+        if (!options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()).isEmpty()) {
+            sb.append(" --filter-region ").append(options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
+        }
+
+        if (!options.getString(VariantDBAdaptor.VariantQueryParams.GENE.key()).isEmpty()) {
+            sb.append(" --filter-gene ").append(options.getString(VariantDBAdaptor.VariantQueryParams.GENE.key()));
+        }
+
+        if (!options.getString(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key()).isEmpty()) {
+            sb.append(" --filter-chromosome ").append(options.getString(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key()));
+        }
+
+        if (!options.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).isEmpty()) {
+            sb.append(" --filter-annot-consequence-type ").append(options.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()));
+        }
+
         if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
             sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
         }
@@ -300,11 +361,13 @@ public class VariantStorage {
 
         /** create job **/
         String jobDescription = "Variant annotation";
-        String jobName = "annotate-stats";
+        String jobName = "annotate-variants";
+        HashMap<String, Object> resourceManagerAttributes = new HashMap<>();
+        resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
         return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
-                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
+                AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
-                new HashMap<String, Object>(), new HashMap<String, Object>());
+                new HashMap<>(), resourceManagerAttributes);
     }
 
 }

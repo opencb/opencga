@@ -137,7 +137,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
             int exitValue;
             if (args[0].contains(AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME)) {
                 logger.info("==========================================");
-                logger.info("Executing opencga-storage");
+                logger.info("Executing opencga-storage " + job.getName());
                 logger.info("==========================================");
                 exitValue = StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
                 logger.info("==========================================");
@@ -145,7 +145,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 logger.info("==========================================");
             } else if (args[0].contains(AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME)) {
                 logger.info("==========================================");
-                logger.info("Executing opencga-analysis");
+                logger.info("Executing opencga-analysis " + job.getName());
                 logger.info("==========================================");
                 exitValue = AnalysisMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
                 logger.info("==========================================");
