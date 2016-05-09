@@ -211,7 +211,7 @@ public class VariantStatisticsManager {
     class VariantStatsWrapperTask implements ParallelTaskRunner.Task<Variant, String> {
 
         private boolean overwrite;
-        private Map<String, Set<String>> samples;
+        private Map<String, Set<String>> cohorts;
         private StudyConfiguration studyConfiguration;
         //        private String fileId;
         private ObjectMapper jsonObjectMapper;
@@ -220,11 +220,11 @@ public class VariantStatisticsManager {
         private Properties tagmap;
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
-        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> samples,
+        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
                                        StudyConfiguration studyConfiguration, String fileId,
                                        VariantSourceStats variantSourceStats, Properties tagmap) {
             this.overwrite = overwrite;
-            this.samples = samples;
+            this.cohorts = cohorts;
             this.studyConfiguration = studyConfiguration;
 //            this.fileId = fileId;
             jsonObjectMapper = new ObjectMapper(new JsonFactory());
@@ -243,12 +243,13 @@ public class VariantStatisticsManager {
             boolean defaultCohortAbsent = false;
 
             List<VariantStatsWrapper> variantStatsWrappers = variantStatisticsCalculator.calculateBatch(variants,
-                    studyConfiguration.getStudyName(), null/*fileId*/, samples);
+                    studyConfiguration.getStudyName(), null/*fileId*/, cohorts);
 
             long start = System.currentTimeMillis();
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
+                    strings.add("\n");
                     if (variantStatsWrapper.getCohortStats().get(StudyEntry.DEFAULT_COHORT) == null) {
                         defaultCohortAbsent = true;
                     }

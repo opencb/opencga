@@ -35,6 +35,7 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -194,7 +195,7 @@ public class VariantStorage {
         VariantSource.Aggregation studyAggregation = VariantSource.Aggregation.valueOf(study.getAttributes()
                 .getOrDefault(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE).toString());
         if (VariantSource.Aggregation.isAggregated(studyAggregation)
-                && options.containsKey(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())) {
+                && !options.getString(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key()).isEmpty()) {
             sb.append(" --aggregation-mapping-file ")
                     .append(options.getString(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key()));
         }
@@ -221,12 +222,13 @@ public class VariantStorage {
 
         /** Update StudyConfiguration **/
         if (!simulate) {
-            try {
-                StudyConfigurationManager studyConfigurationManager = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
-                        .getDBAdaptor(dataStore.getDbName()).getStudyConfigurationManager();
-                new CatalogStudyConfigurationFactory(catalogManager).updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
+            try (VariantDBAdaptor dbAdaptor = StorageManagerFactory.get().getVariantStorageManager(dataStore.getStorageEngine())
+                    .getDBAdaptor(dataStore.getDbName());
+                 StudyConfigurationManager studyConfigurationManager = dbAdaptor.getStudyConfigurationManager()){
+                new CatalogStudyConfigurationFactory(catalogManager)
+                        .updateStudyConfigurationFromCatalog(studyId, studyConfigurationManager, sessionId);
             } catch (StorageManagerException | ClassNotFoundException | InstantiationException | IllegalAccessException e) {
-                e.printStackTrace();
+                throw new AnalysisExecutionException("Unable to update StudyConfiguration", e);
             }
         }
 

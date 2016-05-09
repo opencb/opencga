@@ -62,7 +62,7 @@ public class VariantStorageTest {
     private long coh3;
     private long coh4;
     private long coh5;
-    private String catalogPropertiesFile;
+
     private final String userId = "user";
     private final String dbName = "opencga_variants_test";
 

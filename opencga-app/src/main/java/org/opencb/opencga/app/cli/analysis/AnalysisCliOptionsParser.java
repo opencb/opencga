@@ -338,7 +338,7 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
         public String jobId = null;
 
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
 
         @Parameter(names = {"-o", "--outdir"}, description = "Unique ID for the file", required = false, arity = 1)
@@ -428,6 +428,8 @@ public class AnalysisCliOptionsParser {
         public String jobId = null;
 
     }
+
+
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
     public class QueryVariantCommandOptions extends QueryCommandOptions {
