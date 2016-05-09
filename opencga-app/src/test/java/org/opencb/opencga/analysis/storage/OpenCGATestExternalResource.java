@@ -45,7 +45,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         catalogManagerExternalResource.before();
         opencgaHome = isolateOpenCGA();
 
-        AnalysisJobExecutor.executor = new StorageLocalExecutorManager();
+        AnalysisJobExecutor.localExecutor = new StorageLocalExecutorManager();
     }
 
     @Override
@@ -100,6 +100,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         public StorageLocalExecutorManager() {
             super(OpenCGATestExternalResource.this.catalogManagerExternalResource.getCatalogManager());
         }
+        protected final Logger logger = LoggerFactory.getLogger(StorageLocalExecutorManager.class);
 
         @Override
         public void execute(Job job, String sessionId) throws CatalogException, AnalysisExecutionException {
@@ -123,6 +124,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 logger.info("Finish opencga-analysis");
                 logger.info("==========================================");
             } else {
+                logger.info("Executing external job!");
                 super.execute(job, sessionId);
                 return;
             }

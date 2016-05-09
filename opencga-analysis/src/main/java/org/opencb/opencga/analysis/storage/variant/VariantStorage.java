@@ -31,8 +31,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.StringUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 06/03/15.
@@ -56,7 +57,26 @@ public class VariantStorage {
         this.catalogManager = catalogManager;
     }
 
-
+    /**
+     * Accepts options:
+     *      {@link VariantStorageManager.Options#FILE_ID}
+     *      {@link VariantStorageManager.Options#UPDATE_STATS}
+     *      {@link VariantStorageManager.Options#AGGREGATION_MAPPING_PROPERTIES}
+     *      {@link AnalysisJobExecutor#EXECUTE}
+     *      {@link AnalysisJobExecutor#SIMULATE}
+     *      {@link AnalysisFileIndexer#LOG_LEVEL}
+     *      {@link AnalysisFileIndexer#PARAMETERS}
+     *
+     *
+     * @param outDirId
+     * @param cohortIds
+     * @param sessionId
+     * @param options
+     * @return
+     * @throws AnalysisExecutionException
+     * @throws CatalogException
+     * @throws IOException
+     */
     public QueryResult<Job> calculateStats(Long outDirId, List<Long> cohortIds, String sessionId, QueryOptions options)
             throws AnalysisExecutionException, CatalogException, IOException {
         if (options == null) {
@@ -89,7 +109,7 @@ public class VariantStorage {
                     break;
                 case Cohort.CohortStatus.READY:
                     if (updateStats) {
-                        catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
+                        catalogManager.modifyCohort(cohortId, new ObjectMap("status.status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
                         break;
                     }
                 case Cohort.CohortStatus.CALCULATING:
@@ -108,7 +128,7 @@ public class VariantStorage {
             outputFileName.append(cohortMap.get(cohortId).getName());
 
             /** Modify cohort status to "CALCULATING" **/
-            catalogManager.modifyCohort(cohortId, new ObjectMap("status", Cohort.CohortStatus.CALCULATING), new QueryOptions(), sessionId);
+            catalogManager.modifyCohort(cohortId, new ObjectMap("status.status", Cohort.CohortStatus.CALCULATING), new QueryOptions(), sessionId);
 
         }
 
@@ -139,17 +159,20 @@ public class VariantStorage {
         }
 
         /** create command line **/
-        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME).toString();
+        String opencgaStorageBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME).toString();
 
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
-        StringBuilder sb = new StringBuilder()
 
+        StringBuilder sb = new StringBuilder()
                 .append(opencgaStorageBinPath)
                 .append(" variant stats ")
-                .append(" --storage-engine ").append(dataStore.getStorageEngine())
+//                .append(" --storage-engine ").append(dataStore.getStorageEngine())
                 .append(" --study-id ").append(studyId)
-                .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
-                .append(" --database ").append(dataStore.getDbName())
+                .append(" --session-id ").append(sessionId)
+//                .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
+                .append(" --output-filename ").append("stats_").append(outputFileName)
+                .append(" --job-id ").append(randomString)
+//                .append(" --database ").append(dataStore.getDbName())
 //                .append(" -D").append(VariantStorageManager.Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key()).append("=").append(CatalogStudyConfigurationManager.class.getName())
 //                .append(" -D").append("sessionId").append("=").append(sessionId)
 //                .append(" --cohort-name ").append(cohort.getId())
@@ -175,14 +198,16 @@ public class VariantStorage {
             sb.append(" --aggregation-mapping-file ")
                     .append(options.getString(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key()));
         }
-        
-        for (Map.Entry<Cohort, List<Sample>> entry : cohorts.entrySet()) {
-            sb.append(" --cohort-sample-ids ").append(entry.getKey().getName());
-            sb.append(":");
-//            for (Sample sample : entry.getValue()) {
-//                sb.append(sample.getName()).append(",");
-//            }
-//            sb.append(" --cohort-ids ").append(entry.getKey().getName()).append(":").append(entry.getKey().getId());
+
+        if (!cohorts.isEmpty()) {
+            sb.append(" --cohort-ids ");
+            for (Iterator<Map.Entry<Cohort, List<Sample>>> iterator = cohorts.entrySet().iterator(); iterator.hasNext(); ) {
+                Map.Entry<Cohort, List<Sample>> entry = iterator.next();
+                sb.append(entry.getKey().getName());
+                if (iterator.hasNext()) {
+                    sb.append(',');
+                }
+            }
         }
         if (options.containsKey(AnalysisFileIndexer.PARAMETERS)) {
             List<String> extraParams = options.getAsStringList(AnalysisFileIndexer.PARAMETERS);
@@ -207,14 +232,16 @@ public class VariantStorage {
 
         /** create job **/
         String jobName = "calculate-stats";
-        String jobDescription = "Stats calculation for cohort " + cohortIds;
+        String jobDescription = "Stats calculation for cohort " + cohortMap.values().stream().map(Cohort::getName).collect(Collectors.toList());
         HashMap<String, Object> attributes = new HashMap<>();
         attributes.put(Job.TYPE, Job.Type.COHORT_STATS);
         attributes.put("cohortIds", cohortIds);
+        HashMap<String, Object> resourceManagerAttributes = new HashMap<>();
+        resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
         return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
-                AnalysisFileIndexer.OPENCGA_STORAGE_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
+                AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
-                attributes, new HashMap<>());
+                attributes, resourceManagerAttributes);
     }
 
     public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {

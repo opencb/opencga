@@ -32,6 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantDBReader;
@@ -119,7 +120,7 @@ public class VariantStatisticsManager {
      */
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts,
                            Map<String, Integer> cohortIds, StudyConfiguration studyConfiguration, QueryOptions options)
-            throws Exception {
+            throws IOException, StorageManagerException {
 //        String fileId;
         if (options == null) {
             options = new QueryOptions();
@@ -184,14 +185,17 @@ public class VariantStatisticsManager {
         StringDataWriter writer = new StringDataWriter(variantStatsPath);
 
         // runner
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
-        ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
+        try {
+            ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
+            ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
 
-        logger.info("starting stats creation for cohorts {}", cohorts.keySet());
-        long start = System.currentTimeMillis();
-        runner.run();
-        logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
-
+            logger.info("starting stats creation for cohorts {}", cohorts.keySet());
+            long start = System.currentTimeMillis();
+            runner.run();
+            logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
+        } catch (Exception e) {
+            throw new StorageManagerException("Unable to calculate statistics.", e);
+        }
         // source stats
         Path fileSourcePath = Paths.get(output.getPath() + SOURCE_STATS_SUFFIX);
         OutputStream outputSourceStream = getOutputStream(fileSourcePath, options);

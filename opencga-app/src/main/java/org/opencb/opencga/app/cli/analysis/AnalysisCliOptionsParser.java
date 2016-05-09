@@ -67,6 +67,7 @@ public class AnalysisCliOptionsParser {
         jCommander.addCommand("variant", variantCommandOptions);
         JCommander catalogSubCommands = jCommander.getCommands().get("variant");
         catalogSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
+        catalogSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         catalogSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
         catalogSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
 
@@ -196,6 +197,7 @@ public class AnalysisCliOptionsParser {
     public class VariantCommandOptions extends CommandOptions {
 
         final IndexVariantCommandOptions indexVariantCommandOptions;
+        final StatsVariantCommandOptions statsVariantCommandOptions;
         final QueryVariantCommandOptions queryVariantCommandOptions;
         final IbsVariantCommandOptions ibsVariantCommandOptions;
         final DeleteVariantCommandOptions deleteVariantCommandOptions;
@@ -204,6 +206,7 @@ public class AnalysisCliOptionsParser {
 
         public VariantCommandOptions() {
             this.indexVariantCommandOptions = new IndexVariantCommandOptions();
+            this.statsVariantCommandOptions = new StatsVariantCommandOptions();
             this.queryVariantCommandOptions = new QueryVariantCommandOptions();
             this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
             this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
@@ -301,7 +304,7 @@ public class AnalysisCliOptionsParser {
 
 
     /*
-     *  CATALOG SUB-COMMANDS
+     *  Variant SUB-COMMANDS
      */
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -371,6 +374,58 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
+
+    }
+
+    @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
+    public class StatsVariantCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+//        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+//        public boolean create = false;
+//
+//        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a "
+//                + "prefix with structure <INPUT_FILENAME>.<TIME>")
+//        public boolean load = false;
+
+        @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
+        public boolean overwriteStats = false;
+
+        @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
+                + "Assumes that existing stats are correct")
+        public boolean updateStats = false;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
+        public int fileId;
+
+        @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
+        String cohortIds;
+
+        // FIXME: Hidden?
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        public String fileName;
+
+        // FIXME: Required?
+        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
+        public String outdirId;
+
+//        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+//        public String outdir = ".";
+
+        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
+        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
+        public String jobId = null;
 
     }
 
@@ -533,7 +588,6 @@ public class AnalysisCliOptionsParser {
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
     }
-
 
     @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete an indexed file from the Database")
     public class DeleteVariantCommandOptions extends CatalogDatabaseCommandOptions {
