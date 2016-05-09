@@ -31,6 +31,7 @@
         <module>opencga-catalog</module>
         <module>opencga-analysis</module>
         <module>opencga-storage</module>
+        <module>opencga-client</module>
         <module>opencga-server</module>
     </modules>
 
