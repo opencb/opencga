@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -36,22 +39,45 @@ public class UserClientTest {
     private UserClient userClient;
     private ClientConfiguration clientConfiguration;
 
+    private static WSTestServer wsTestServer;
+
     public UserClientTest() {
         try {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
+//            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
             openCGAClient = new OpenCGAClient("imedina", "pepe", clientConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-//    @Before
-//    public void setUp() throws Exception {
-////        Path inputPath = Paths.execute(getClass().getResource("/client-configuration-test.yml").toURI());
-////        getClass().getResourceAsStream("/client-configuration-test.yml")
-//        System.out.println();
-//        userClient = new UserClient(clientConfiguration);
-//    }
+    @BeforeClass
+    static public void initServer() throws Exception {
+        wsTestServer = new WSTestServer();
+        wsTestServer.initServer();
+
+//        wsTestServer.setUp();
+//        webTarget = serverTestUtils.getWebTarget();
+//        sessionId = OpenCGAWSServer.catalogManager.login("user", CatalogManagerTest.PASSWORD, "localhost").first().getString("sessionId");
+//        studyId = OpenCGAWSServer.catalogManager.getStudyId("user@1000G:phase1");
+//        in1 = OpenCGAWSServer.catalogManager.createIndividual(studyId, "in1", "f1", -1, -1, null, null, sessionId).first().getId();
+//        s1 = OpenCGAWSServer.catalogManager.createSample(studyId, "s1", "f1", "", null, null, sessionId).first().getId();
+//        s2 = OpenCGAWSServer.catalogManager.createSample(studyId, "s2", "f1", "", null, null, sessionId).first().getId();
+//        s3 = OpenCGAWSServer.catalogManager.createSample(studyId, "s3", "f1", "", null, null, sessionId).first().getId();
+//        s4 = OpenCGAWSServer.catalogManager.createSample(studyId, "s4", "f1", "", null, null, sessionId).first().getId();
+    }
+
+    @AfterClass
+    static public void shutdownServer() throws Exception {
+        wsTestServer.shutdownServer();
+    }
+
+    @Before
+    public void init() throws Exception {
+//        clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
+//        clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest/");
+//        openCGAClient = new OpenCGAClient("imedina", "pepe", clientConfiguration);
+    }
 
     @Test
     public void login() throws Exception {
