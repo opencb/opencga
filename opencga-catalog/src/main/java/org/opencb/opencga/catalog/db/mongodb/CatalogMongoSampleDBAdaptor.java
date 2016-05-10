@@ -946,4 +946,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public MongoDBCollection getSampleCollection() {
         return sampleCollection;
     }
+
+    QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
+        return update(sampleId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
 }

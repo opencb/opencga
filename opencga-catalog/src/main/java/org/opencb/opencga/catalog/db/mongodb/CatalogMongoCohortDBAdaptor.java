@@ -229,8 +229,12 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("Delete cohort", startTime, Collections.singletonList(cohortQueryResult.getNumTotalResults()));
     }
 
-    private QueryResult<Cohort>  setStatus(long cohortId, String status) throws CatalogDBException {
+    QueryResult<Cohort>  setStatus(long cohortId, String status) throws CatalogDBException {
         return update(cohortId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override

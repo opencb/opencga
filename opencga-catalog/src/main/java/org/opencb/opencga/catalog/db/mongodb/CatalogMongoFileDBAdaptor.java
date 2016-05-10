@@ -738,4 +738,11 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         */
     }
 
+    QueryResult<File> setStatus(long fileId, String status) throws CatalogDBException {
+        return update(fileId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
 }

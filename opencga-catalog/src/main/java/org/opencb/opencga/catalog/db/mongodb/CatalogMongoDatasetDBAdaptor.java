@@ -219,8 +219,12 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("Delete dataset", startTime, Collections.singletonList(datasetQueryResult.getNumTotalResults()));
     }
 
-    private QueryResult<Dataset>  setStatus(long datasetId, String status) throws CatalogDBException {
+    QueryResult<Dataset> setStatus(long datasetId, String status) throws CatalogDBException {
         return update(datasetId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override

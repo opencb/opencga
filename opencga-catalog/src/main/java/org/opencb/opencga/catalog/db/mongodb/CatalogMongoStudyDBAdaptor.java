@@ -925,12 +925,18 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
             // Delete the active studies (if any)
             query = new Query(PRIVATE_STUDY_ID, id);
-            dbAdaptorFactory.getCatalogFileDBAdaptor().delete(query, queryOptions);
-            dbAdaptorFactory.getCatalogJobDBAdaptor().delete(query, queryOptions);
-            dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(query, queryOptions);
-            dbAdaptorFactory.getCatalogIndividualDBAdaptor().delete(query, queryOptions);
-            dbAdaptorFactory.getCatalogCohortDBAdaptor().delete(query, queryOptions);
-            dbAdaptorFactory.getCatalogDatasetDBAdaptor().delete(query, queryOptions);
+            dbAdaptorFactory.getCatalogFileDBAdaptor().setStatus(query, Status.DELETED);
+            dbAdaptorFactory.getCatalogJobDBAdaptor().setStatus(query, Status.DELETED);
+            dbAdaptorFactory.getCatalogSampleDBAdaptor().setStatus(query, Status.DELETED);
+            dbAdaptorFactory.getCatalogIndividualDBAdaptor().setStatus(query, Status.DELETED);
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().setStatus(query, Status.DELETED);
+            dbAdaptorFactory.getCatalogDatasetDBAdaptor().setStatus(query, Status.DELETED);
+//            dbAdaptorFactory.getCatalogFileDBAdaptor().delete(query, queryOptions);
+//            dbAdaptorFactory.getCatalogJobDBAdaptor().delete(query, queryOptions);
+//            dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(query, queryOptions);
+//            dbAdaptorFactory.getCatalogIndividualDBAdaptor().delete(query, queryOptions);
+//            dbAdaptorFactory.getCatalogCohortDBAdaptor().delete(query, queryOptions);
+//            dbAdaptorFactory.getCatalogDatasetDBAdaptor().delete(query, queryOptions);
         }
 
         // Change the status of the project to deleted
@@ -941,7 +947,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("Delete study", startTime, get(query, null));
     }
 
-    private QueryResult<Study>  setStatus(long studyId, String status) throws CatalogDBException {
+    private QueryResult<Study> setStatus(long studyId, String status) throws CatalogDBException {
         return update(studyId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 

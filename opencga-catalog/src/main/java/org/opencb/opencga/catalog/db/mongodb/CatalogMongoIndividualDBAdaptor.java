@@ -709,4 +709,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return individualCollection;
     }
 
+    QueryResult<Individual> setStatus(long individualId, String status) throws CatalogDBException {
+        return update(individualId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
 }
