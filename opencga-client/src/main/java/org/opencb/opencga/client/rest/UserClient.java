@@ -45,8 +45,8 @@ public class UserClient extends AbstractParentClient {
         return response;
     }
 
-    public QueryResponse<User> get(String id, QueryOptions options) throws CatalogException, IOException {
-        QueryResponse<User> user = execute(USERS_URL, id, "info", options, User.class);
+    public QueryResponse<User> get(String userId, QueryOptions options) throws CatalogException, IOException {
+        QueryResponse<User> user = execute(USERS_URL, userId, "info", options, User.class);
         return user;
     }
 

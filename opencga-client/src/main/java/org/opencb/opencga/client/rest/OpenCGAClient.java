@@ -69,6 +69,16 @@ public class OpenCGAClient {
         return (ProjectClient) clients.get("PROJECT");
     }
 
+    public StudyClient getStudyClient() {
+        clients.putIfAbsent("STUDY", new StudyClient(sessionId, clientConfiguration));
+        return (StudyClient) clients.get("STUDY");
+    }
+
+    public FileClient getFileClient() {
+        clients.putIfAbsent("FILE", new FileClient(sessionId, clientConfiguration));
+        return (FileClient) clients.get("FILE");
+    }
+
 
     public String login(String user, String password) {
         UserClient userClient = getUserClient();

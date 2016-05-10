@@ -1,19 +1,3 @@
-/*
- * Copyright 2015 OpenCB
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package org.opencb.opencga.client.rest;
 
 import org.junit.AfterClass;
@@ -22,26 +6,27 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.models.Project;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
- * Created by imedina on 04/05/16.
+ * Created by swaathi on 10/05/16.
  */
-public class UserClientTest {
-
+public class StudyClientTest {
     private OpenCGAClient openCGAClient;
-    private UserClient userClient;
+    private StudyClient studyClient;
     private ClientConfiguration clientConfiguration;
 
     private static WSTestServer wsTestServer;
 
-    public UserClientTest() {
+    public StudyClientTest() {
         try {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
@@ -80,25 +65,24 @@ public class UserClientTest {
     }
 
     @Test
-    public void login() throws Exception {
-        userClient = openCGAClient.getUserClient();
-        QueryResponse<ObjectMap> login = userClient.login("swaathi", "swaathi");
-        assertNotNull(login.firstResult());
-    }
-
-    @Test
     public void get() throws Exception {
-        userClient = openCGAClient.getUserClient();
-        QueryResponse<User> login = userClient.get("swaathi", null);
-        assertNotNull(login.firstResult());
+        studyClient = openCGAClient.getStudyClient();
+        QueryResponse<Study> info = studyClient.get("26", null);
+        assertNotNull(info.firstResult());
     }
 
     @Test
-    public void getProjects() throws Exception {
-        userClient = openCGAClient.getUserClient();
-        QueryResponse<Project> login = userClient.getProjects("swaathi", null);
-        assertNotNull(login.firstResult());
+    public void getSamples() throws Exception {
+        studyClient = openCGAClient.getStudyClient();
+        QueryResponse<Sample> info = studyClient.getSamples("26", null);
+        assertNotNull(info.firstResult());
     }
 
+    @Test
+    public void getFiles() throws Exception {
+        studyClient = openCGAClient.getStudyClient();
+        QueryResponse<File> info = studyClient.getFiles("26", null);
+        assertNotNull(info.firstResult());
+    }
 
 }
