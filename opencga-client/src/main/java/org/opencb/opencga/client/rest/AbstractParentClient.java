@@ -55,21 +55,39 @@ class AbstractParentClient {
         jsonObjectMapper = new ObjectMapper();
     }
 
-    protected <T> QueryResponse<T> execute(String category, String id, String resource, Map<String, Object> params, Class<T> clazz)
-            throws IOException {
-        WebTarget path = client.target(configuration.getRest().getHost())
-                .path("v1")
-                .path(category)
-                .path(id)
-                .path(resource);
+    protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, Class<T> clazz) throws IOException {
+        return execute(category, null, action, params, clazz);
+    }
 
+    protected <T> QueryResponse<T> execute(String category, String id, String action, Map<String, Object> params, Class<T> clazz)
+            throws IOException {
+
+        // Build the basic URL
+        WebTarget path = client
+                .target(configuration.getRest().getHost())
+                .path("v1")
+                .path(category);
+
+        // TODO we sttill have to check if there are multiple IDs, the lmit is 200 pero query, this can be parallelized
+        // Some WS do not have IDs such as 'create'
+        if (id != null && !id.isEmpty()) {
+            path = path.path(id);
+        }
+
+        // Add the last URL part, the 'action'
+        path = path.path(action);
+
+        // TODO we still have to check the limit of the query, and keep querying while there are more results
         if (params != null) {
             for (String s : params.keySet()) {
                 path = path.queryParam(s, params.get(s));
             }
         }
 
-        path = path.queryParam("sid", this.sessionId);
+        // Session ID is needed almost always, the only exceptions are 'create/user' and 'login'
+        if (this.sessionId != null && !this.sessionId.isEmpty()) {
+            path = path.queryParam("sid", this.sessionId);
+        }
 
         System.out.println("REST URL: " + path.getUri().toURL());
         String jsonString = path.request().get(String.class);
