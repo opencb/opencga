@@ -39,10 +39,10 @@
         <opencga.version>0.8-dev</opencga.version>
         <biodata.version>0.7.0-SNAPSHOT</biodata.version>
         <datastore.version>0.5.0</datastore.version>
-        <cellbase.version>4.0.0-rc</cellbase.version>
+        <cellbase.version>4.1.0-beta</cellbase.version>
         <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
-        <jackson.version>2.5.4</jackson.version>
+        <jackson.version>2.6.4</jackson.version>
         <jersey.version>2.19</jersey.version>
         <hadoop.version>2.6.3</hadoop.version>
         <hbase.version>1.0.1</hbase.version>
