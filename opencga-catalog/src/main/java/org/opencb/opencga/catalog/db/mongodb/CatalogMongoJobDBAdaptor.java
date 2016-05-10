@@ -14,14 +14,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -450,6 +447,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //        filterEnumParams(parameters, jobParameters, acceptedEnums);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             jobParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
 
 
@@ -507,29 +505,99 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult<Job> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-//        long timeStart = startQuery();
-//        if (id > 0) {
-//            Query query = new Query(QueryParams.ID.key(), id);
-//            QueryResult<Long> delete = delete(query, force);
-//            if (delete.getResult().size() == 0) {
-//                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
-//            }
-//            return endQuery("Delete job", timeStart, get(query, null));
-//        }
-//        throw CatalogDBException.idNotFound("Job ID", id);
-        throw new UnsupportedOperationException("Remove not yet implemented.");
+        long startTime = startQuery();
+
+        checkJobId(id);
+
+        // Check the status of the job
+        Query query = new Query(QueryParams.ID.key(), id);
+        Job job = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key())).first();
+        switch (job.getStatus().getStatus()) {
+            case Job.JobStatus.DELETED:
+            case Job.JobStatus.REMOVED:
+                throw new CatalogDBException("The job {" + id + "} was already " + job.getStatus().getStatus());
+            case Job.JobStatus.PREPARED:
+            case Job.JobStatus.RUNNING:
+            case Job.JobStatus.QUEUED:
+                throw new CatalogDBException("The job {" + id + "} is " + job.getStatus().getStatus()
+                        + ". Please, stop the job before deleting it.");
+            case Job.JobStatus.DONE:
+            case Job.JobStatus.ERROR:
+            case Job.JobStatus.READY:
+            default:
+                break;
+        }
+
+        // If we don't find the force parameter, we check first if the job has any active file.
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+
+        // Change the status of the job to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        return endQuery("Delete job", startTime, get(query, null));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long timeStart = startQuery();
-//        // 1. Mark the jobs from the query as deleted.
-//        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-//        QueryResult<UpdateResult> remove = jobCollection.update(parseQuery(query), Updates.combine(
-//                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-//                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
-//        return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
+        long startTime = startQuery();
+        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        QueryResult<Job> jobQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        for (Job job : jobQueryResult.getResult()) {
+            delete(job.getId(), queryOptions);
+        }
+        return endQuery("Delete job", startTime, Collections.singletonList(jobQueryResult.getNumTotalResults()));
+    }
+
+    private QueryResult<Job>  setStatus(long jobId, String status) throws CatalogDBException {
+        return update(jobId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    /**
+     * Checks whether the files created by the jobId can be deleted.
+     *
+     * @param jobId job id.
+     * @throws CatalogDBException when any of the files created by the job cannot be deleted.
+     */
+    private void checkCanDelete(long jobId) throws CatalogDBException {
+        checkJobId(jobId);
+        Query query = new Query(QueryParams.ID.key(), jobId);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.OUTPUT);
+        Job job = get(query, queryOptions).first();
+
+        Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + jobId + "} cannot be deleted. The study has " + count
+                    + " files in use.");
+        }
+        count = dbAdaptorFactory.getCatalogJobDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + jobId + "} cannot be deleted. The study has " + count
+                    + " jobs in use.");
+        }
+        count = dbAdaptorFactory.getCatalogSampleDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + jobId + "} cannot be deleted. The study has " + count
+                    + " samples in use.");
+        }
+        count = dbAdaptorFactory.getCatalogIndividualDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + jobId + "} cannot be deleted. The study has " + count
+                    + " individuals in use.");
+        }
+        count = dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + jobId + "} cannot be deleted. The study has " + count
+                    + " cohorts in use.");
+        }
+        count = dbAdaptorFactory.getCatalogDatasetDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The study {" + jobId + "} cannot be deleted. The study has " + count
+                    + " datasets in use.");
+        }
     }
 
     @Override

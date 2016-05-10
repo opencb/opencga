@@ -711,27 +711,6 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
-    @Override
-    public QueryResult<Long> removeCohortDependencies(List<Long> cohortIds) throws CatalogDBException {
-        long startTime = startQuery();
-        Bson query = new Document(QueryParams.COHORT_ID.key(), cohortIds);
-        Bson update = Updates.pull(QueryParams.COHORTS.key(), Filters.eq("id", cohortIds));
-
-        QueryResult<UpdateResult> updateResult = studyCollection.update(query, update, null);
-        return endQuery("Remove cohort dependencies", startTime, Collections.singletonList(updateResult.first().getModifiedCount()));
-
-
-                /*
-                * DBObject query = new BasicDBObject("projects.id", projectId);
-//        DBObject pull = new BasicDBObject("$pull",
-//                new BasicDBObject("projects",
-//                        new BasicDBObject("id", projectId)));
-//
-//        QueryResult<WriteResult> update = userCollection.update(query, pull, null);
-                * */
-    }
-
-
 
     /*
     * Helper methods

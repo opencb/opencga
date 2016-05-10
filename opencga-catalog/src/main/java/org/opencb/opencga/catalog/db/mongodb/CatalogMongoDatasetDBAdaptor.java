@@ -200,16 +200,12 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
             throw new CatalogDBException("The dataset {" + id + "} was already " + dataset.getStatus().getStatus());
         }
 
-        // Change the status of the project to deleted
+        // Change the status of the dataset to deleted
         setStatus(id, Status.DELETED);
 
         query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
 
         return endQuery("Delete dataset", startTime, get(query, null));
-    }
-
-    private QueryResult<Dataset>  setStatus(long datasetId, String status) throws CatalogDBException {
-        return update(datasetId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
@@ -221,6 +217,10 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
             delete(dataset.getId(), queryOptions);
         }
         return endQuery("Delete dataset", startTime, Collections.singletonList(datasetQueryResult.getNumTotalResults()));
+    }
+
+    private QueryResult<Dataset>  setStatus(long datasetId, String status) throws CatalogDBException {
+        return update(datasetId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
