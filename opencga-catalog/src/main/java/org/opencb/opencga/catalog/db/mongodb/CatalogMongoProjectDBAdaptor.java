@@ -638,10 +638,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("Delete project", startTime, get(query, queryOptions));
     }
 
-    private QueryResult<Project>  setStatus(long projectId, String status) throws CatalogDBException {
-        return update(projectId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
-    }
-
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
@@ -651,6 +647,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
             delete(project.getId(), queryOptions);
         }
         return endQuery("Delete project", startTime, Collections.singletonList(projectQueryResult.getNumTotalResults()));
+    }
+
+    private QueryResult<Project>  setStatus(long projectId, String status) throws CatalogDBException {
+        return update(projectId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
