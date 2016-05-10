@@ -116,7 +116,8 @@ public class VariantStatisticsManager {
      * @param studyConfiguration Study configuration object
      * @param options          (mandatory) fileId, (optional) filters to the query, batch size, number of threads to use...
      * @return outputUri prefix for the file names (without the "._type_.stats.json.gz")
-     * @throws Exception If any error occurs
+     * @throws IOException If any error occurs
+     * @throws StorageManagerException If any error occurs
      */
     public URI createStats(VariantDBAdaptor variantDBAdaptor, URI output, Map<String, Set<String>> cohorts,
                            Map<String, Integer> cohortIds, StudyConfiguration studyConfiguration, QueryOptions options)
@@ -386,7 +387,7 @@ public class VariantStatisticsManager {
                                                           Map<String, Set<String>> cohorts,
                                                           Map<String, Integer> cohortIds,
                                                           boolean overwrite, boolean updateStats)
-            throws IOException {
+            throws StorageManagerException {
         List<Integer> cohortIdList = new ArrayList<>();
 
         for (Map.Entry<String, Set<String>> entry : cohorts.entrySet()) {
@@ -409,7 +410,7 @@ public class VariantStatisticsManager {
             } else {
                 if (!cohortIds.containsKey(cohortName)) {
                     //ERROR Missing cohortId
-                    throw new IOException("Missing cohortId for the cohort : " + cohortName);
+                    throw new StorageManagerException("Missing cohortId for the cohort : " + cohortName);
                 }
                 cohortId = cohortIds.get(entry.getKey());
             }
@@ -418,12 +419,14 @@ public class VariantStatisticsManager {
             if (studyConfiguration.getCohortIds().containsKey(cohortName)) {
                 if (!studyConfiguration.getCohortIds().get(cohortName).equals(cohortId)) {
                     //ERROR Duplicated cohortName
-                    throw new IOException("Duplicated cohortName " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration "
-                            + "as " + cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
+                    throw new StorageManagerException("Duplicated cohortName " + cohortName + ":" + cohortId
+                            + ". Appears in the StudyConfiguration as "
+                            + cohortName + ":" + studyConfiguration.getCohortIds().get(cohortName));
                 }
             } else if (studyConfiguration.getCohortIds().containsValue(cohortId)) {
                 //ERROR Duplicated cohortId
-                throw new IOException("Duplicated cohortId " + cohortName + ":" + cohortId + ". Appears in the StudyConfiguration as "
+                throw new StorageManagerException("Duplicated cohortId " + cohortName + ":" + cohortId
+                        + ". Appears in the StudyConfiguration as "
                         + StudyConfiguration.inverseMap(studyConfiguration.getCohortIds()).get(cohortId) + ":" + cohortId);
             }
 
@@ -439,7 +442,7 @@ public class VariantStatisticsManager {
 //                if (sampleIds == null || (sampleIds.isEmpty()
 //                        && VariantSource.Aggregation.NONE.equals(studyConfiguration.getAggregation()))) {
                         //ERROR: StudyConfiguration does not have samples for this cohort, and it is not an aggregated study
-                        throw new IOException("Cohort \"" + cohortName + "\" is empty");
+                        throw new StorageManagerException("Cohort \"" + cohortName + "\" is empty");
                     }
                     samples = new HashSet<>();
                     Map<Integer, String> idSamples = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
@@ -453,19 +456,19 @@ public class VariantStatisticsManager {
                 for (String sample : samples) {
                     if (!studyConfiguration.getSampleIds().containsKey(sample)) {
                         //ERROR Sample not found
-                        throw new IOException("Sample " + sample + " not found in the StudyConfiguration");
+                        throw new StorageManagerException("Sample " + sample + " not found in the StudyConfiguration");
                     } else {
                         sampleIds.add(studyConfiguration.getSampleIds().get(sample));
                     }
                 }
                 if (sampleIds.size() != samples.size()) {
-                    throw new IOException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
+                    throw new StorageManagerException("Duplicated samples in cohort " + cohortName + ":" + cohortId);
                 }
                 if (studyConfiguration.getCohorts().get(cohortId) != null
                         && !sampleIds.equals(studyConfiguration.getCohorts().get(cohortId))) {
                     if (!studyConfiguration.getInvalidStats().contains(cohortId)) {
                         //If provided samples are different than the stored in the StudyConfiguration, and the cohort was not invalid.
-                        throw new IOException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
+                        throw new StorageManagerException("Different samples in cohort " + cohortName + ":" + cohortId + ". "
                                 + "Samples in the StudyConfiguration: " + studyConfiguration.getCohorts().get(cohortId).size() + ". "
                                 + "Samples provided " + samples.size() + ". Invalidate stats to continue.");
                     }
@@ -482,7 +485,7 @@ public class VariantStatisticsManager {
                 } else if (updateStats) {
                     logger.debug("Cohort \"" + cohortName + "\" stats already calculated. Calculate only for missing positions");
                 } else {
-                    throw new IOException("Cohort \"" + cohortName + "\" stats already calculated");
+                    throw new StorageManagerException("Cohort \"" + cohortName + "\" stats already calculated");
                 }
             }
 

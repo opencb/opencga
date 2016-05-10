@@ -25,6 +25,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -78,9 +79,9 @@ public class AnalysisCliOptionsParser {
         jCommander.addCommand("alignment", alignmentCommandOptions);
         JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
         alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
 //        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsVariantCommandOptions);
 //        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
-//        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryVariantCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions();
         jCommander.addCommand("tools", toolsCommandOptions);
@@ -233,20 +234,16 @@ public class AnalysisCliOptionsParser {
     public class AlignmentCommandOptions extends CommandOptions {
 
         final IndexAlignmentCommandOptions indexAlignmentCommandOptions;
+        final QueryAlignmentCommandOptions queryAlignmentCommandOptions;
 //        final StatsVariantCommandOptions statsVariantCommandOptions;
 //        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
-//        final QueryVariantCommandOptions queryVariantCommandOptions;
 //        final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
         AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
 
         public AlignmentCommandOptions() {
             this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
-//            this.statsVariantCommandOptions = new StatsVariantCommandOptions();
-//            this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
-//            this.queryVariantCommandOptions = new QueryVariantCommandOptions();
-//            this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
-//            this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
+            this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         }
     }
 
@@ -689,6 +686,10 @@ public class AnalysisCliOptionsParser {
     }
 
 
+    /*
+     *  ALIGNMENT SUB-COMMANDS
+     */
+
 
     @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
     public class IndexAlignmentCommandOptions extends CatalogDatabaseCommandOptions {
@@ -719,6 +720,43 @@ public class AnalysisCliOptionsParser {
         boolean load = false;
 
     }
+
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
+    public class QueryAlignmentCommandOptions extends QueryCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
+        public String study;
+
+        @Parameter(names = {"--file-id"}, description = "File unique ID.", required = false, arity = 1)
+        public String fileId;
+//
+//        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
+//        public String filePath;
+
+        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
+        public boolean coverage = false;
+
+        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
+        public boolean histogram = false;
+
+        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
+        public boolean asPairs;
+
+        @Parameter(names = {"--process-differences"}, description = " ", required = false)
+        public boolean processDifferences;
+
+        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
+        public List<String> stats = new LinkedList<>();
+    }
+
+
+    /*
+     *  Tools SUB-COMMANDS
+     */
 
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")

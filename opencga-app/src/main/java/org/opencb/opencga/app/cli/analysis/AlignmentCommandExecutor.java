@@ -3,17 +3,18 @@ package org.opencb.opencga.app.cli.analysis;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.formats.feature.gff.Gff;
+import org.opencb.biodata.formats.feature.gff.io.GffReader;
+import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
@@ -22,12 +23,16 @@ import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
+import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
+import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -35,10 +40,8 @@ import java.util.stream.Collectors;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class AlignmentCommandExecutor extends CommandExecutor {
+public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
     private final AnalysisCliOptionsParser.AlignmentCommandOptions alignmentCommandOptions;
-    private CatalogManager catalogManager;
-    private StorageManagerFactory storageManagerFactory;
     private AlignmentStorageManager alignmentStorageManager;
 
     public AlignmentCommandExecutor(AnalysisCliOptionsParser.AlignmentCommandOptions options) {
@@ -70,17 +73,6 @@ public class AlignmentCommandExecutor extends CommandExecutor {
                 break;
 
         }
-    }
-
-    private void configure()
-            throws IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
-
-        //  Creating CatalogManager
-        catalogManager = new CatalogManager(catalogConfiguration);
-
-        // Creating StorageManagerFactory
-        storageManagerFactory = new StorageManagerFactory(storageConfiguration);
-
     }
 
     private AlignmentStorageManager initAlignmentStorageManager(DataStore dataStore)
@@ -224,8 +216,141 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         }
     }
 
-    private void query() {
-        throw new UnsupportedOperationException();
+    private void query() throws FileFormatException, ClassNotFoundException, InstantiationException, CatalogException, IllegalAccessException, StorageManagerException, IOException, NoSuchMethodException {
+
+
+        AnalysisCliOptionsParser.QueryAlignmentCommandOptions cliOptions = alignmentCommandOptions.queryAlignmentCommandOptions;
+
+        String sessionId = cliOptions.commonOptions.sessionId;
+
+        long studyId;
+        if (StringUtils.isEmpty(cliOptions.study)) {
+            Map<Long, String> studyIds = getStudyIds(sessionId);
+            if (studyIds.size() != 1) {
+                throw new IllegalArgumentException("Missing study. Please select one from: " + studyIds.entrySet()
+                        .stream()
+                        .map(entry -> entry.getKey() + ":" + entry.getValue())
+                        .collect(Collectors.joining(",", "[", "]")));
+            }
+            else {
+                studyId = studyIds.entrySet().iterator().next().getKey();
+            }
+        } else {
+            studyId = catalogManager.getStudyId(cliOptions.study);
+        }
+
+        /*
+         * Getting VariantStorageManager
+         * We need to find out the Storage Engine Id to be used from Catalog
+         */
+        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
+        initAlignmentStorageManager(dataStore);
+
+        AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(dataStore.getDbName());
+
+        /**
+         * Parse Regions
+         */
+        GffReader gffReader = null;
+        List<Region> regions = Collections.emptyList();
+        if (StringUtils.isNotEmpty(cliOptions.region)) {
+            regions = Region.parseRegions(cliOptions.region);
+            logger.debug("Processed regions: '{}'", regions);
+        } else if (StringUtils.isNotEmpty(cliOptions.regionFile)) {
+            gffReader = new GffReader(cliOptions.regionFile);
+            //throw new UnsupportedOperationException("Unsuppoted GFF file");
+        }
+
+        /**
+         * Parse QueryOptions
+         */
+        QueryOptions options = new QueryOptions();
+
+        if (cliOptions.fileId != null && !cliOptions.fileId.isEmpty()) {
+            long fileId = catalogManager.getFileId(cliOptions.fileId);
+            File file = catalogManager.getFile(fileId, sessionId).first();
+            URI fileUri = catalogManager.getFileUri(file);
+            options.add(AlignmentDBAdaptor.QO_FILE_ID, cliOptions.fileId);
+            options.add(AlignmentDBAdaptor.QO_BAM_PATH, fileUri.getPath());
+        }
+        options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, cliOptions.coverage);
+        options.add(AlignmentDBAdaptor.QO_VIEW_AS_PAIRS, cliOptions.asPairs);
+        options.add(AlignmentDBAdaptor.QO_PROCESS_DIFFERENCES, cliOptions.processDifferences);
+        if (cliOptions.histogram) {
+            options.add(AlignmentDBAdaptor.QO_INCLUDE_COVERAGE, true);
+            options.add(AlignmentDBAdaptor.QO_HISTOGRAM, true);
+            options.add(AlignmentDBAdaptor.QO_INTERVAL_SIZE, cliOptions.histogram);
+        }
+//        if (cliOptions.filePath != null && !cliOptions.filePath.isEmpty()) {
+//            options.add(AlignmentDBAdaptor.QO_BAM_PATH, cliOptions.filePath);
+//        }
+
+
+        if (cliOptions.stats != null && !cliOptions.stats.isEmpty()) {
+            for (String csvStat : cliOptions.stats) {
+                for (String stat : csvStat.split(",")) {
+                    int index = stat.indexOf("<");
+                    index = index >= 0 ? index : stat.indexOf("!");
+                    index = index >= 0 ? index : stat.indexOf("~");
+                    index = index >= 0 ? index : stat.indexOf("<");
+                    index = index >= 0 ? index : stat.indexOf(">");
+                    index = index >= 0 ? index : stat.indexOf("=");
+                    if (index < 0) {
+                        throw new UnsupportedOperationException("Unknown stat filter operation: " + stat);
+                    }
+                    String name = stat.substring(0, index);
+                    String cond = stat.substring(index);
+
+                    if (name.matches("")) {
+                        options.put(name, cond);
+                    } else {
+                        throw new UnsupportedOperationException("Unknown stat filter name: " + name);
+                    }
+                    logger.info("Parsed stat filter: {} {}", name, cond);
+                }
+            }
+        }
+
+
+        /**
+         * Run query
+         */
+        int subListSize = 20;
+        logger.info("options = {}", options.toJson());
+        if (cliOptions.histogram) {
+            for (Region region : regions) {
+                System.out.println(dbAdaptor.getAllIntervalFrequencies(region, options));
+            }
+        } else if (regions != null && !regions.isEmpty()) {
+            for (int i = 0; i < (regions.size() + subListSize - 1) / subListSize; i++) {
+                List<Region> subRegions = regions.subList(
+                        i * subListSize,
+                        Math.min((i + 1) * subListSize, regions.size()));
+
+                logger.info("subRegions = " + subRegions);
+                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                logger.info("{}", queryResult);
+                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+            }
+        } else if (gffReader != null) {
+            List<Gff> gffList;
+            List<Region> subRegions;
+            while ((gffList = gffReader.read(subListSize)) != null) {
+                subRegions = new ArrayList<>(subListSize);
+                for (Gff gff : gffList) {
+                    subRegions.add(new Region(gff.getSequenceName(), gff.getStart(), gff.getEnd()));
+                }
+
+                logger.info("subRegions = " + subRegions);
+                QueryResult queryResult = dbAdaptor.getAllAlignmentsByRegion(subRegions, options);
+                logger.info("{}", queryResult);
+                System.out.println(new ObjectMap("queryResult", queryResult).toJson());
+            }
+        } else {
+            throw new UnsupportedOperationException("Unable to fetch over all the genome");
+//                System.out.println(dbAdaptor.getAllAlignments(options));
+        }
+
     }
 
     private void stats() {
@@ -236,8 +361,5 @@ public class AlignmentCommandExecutor extends CommandExecutor {
         throw new UnsupportedOperationException();
     }
 
-    protected Job getJob(long studyId, String jobId, String sessionId) throws CatalogException {
-        return catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, jobId), null, sessionId).first();
-    }
 
 }

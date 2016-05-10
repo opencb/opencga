@@ -30,15 +30,12 @@ import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -69,11 +66,10 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 /**
  * Created by imedina on 02/03/15.
  */
-public class VariantCommandExecutor extends AnalysisCommandExecutor {
+public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions;
     private VariantStorageManager variantStorageManager;
-    private CatalogManager catalogManager;
 
     public VariantCommandExecutor(AnalysisCliOptionsParser.VariantCommandOptions variantCommandOptions) {
         super(variantCommandOptions.commonOptions);
@@ -112,16 +108,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     }
 
-    private void configure()
-            throws IllegalAccessException, ClassNotFoundException, InstantiationException, CatalogException {
-
-        //  Creating CatalogManager
-        catalogManager = new CatalogManager(catalogConfiguration);
-
-        // Creating StorageManagerFactory
-        storageManagerFactory = new StorageManagerFactory(storageConfiguration);
-
-    }
 
     private VariantStorageManager initVariantStorageManager(DataStore dataStore)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
@@ -146,8 +132,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         String sessionId = variantCommandOptions.commonOptions.sessionId;
 
-        List studies = catalogManager.getAllStudies(new Query(), new QueryOptions("include", "projects.studies.id"), sessionId).getResult().stream().map(Study::getId).collect(Collectors.toList());
-        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studies);
+        Map<Long, String> studyIds = getStudyIds(sessionId);
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
         QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
 
         VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
@@ -207,6 +193,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         }
 
     }
+
 
     private void delete() {
         throw new UnsupportedOperationException();
@@ -702,10 +689,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
-    }
-
-    private Job getJob(long studyId, String jobId, String sessionId) throws CatalogException {
-        return catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, jobId), null, sessionId).first();
     }
 
 }
