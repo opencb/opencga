@@ -42,6 +42,7 @@ public class AnalysisCliOptionsParser {
     private FunctionalCommandOptions functionalCommandOptions;
     private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
+    private AlignmentCommandOptions alignmentCommandOptions;
 
 
     public AnalysisCliOptionsParser() {
@@ -66,12 +67,20 @@ public class AnalysisCliOptionsParser {
 
         variantCommandOptions = new VariantCommandOptions();
         jCommander.addCommand("variant", variantCommandOptions);
-        JCommander catalogSubCommands = jCommander.getCommands().get("variant");
-        catalogSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
-        catalogSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
-        catalogSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
-        catalogSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        catalogSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+        JCommander variantSubCommands = jCommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
+        variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
+        variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
+        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
+        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+
+        alignmentCommandOptions = new AlignmentCommandOptions();
+        jCommander.addCommand("alignment", alignmentCommandOptions);
+        JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
+        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
+//        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsVariantCommandOptions);
+//        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
+//        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryVariantCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions();
         jCommander.addCommand("tools", toolsCommandOptions);
@@ -110,7 +119,6 @@ public class AnalysisCliOptionsParser {
         }
         return commonCommandOptions.help;
     }
-
 
     /**
      * This class contains all those parameters available for all 'commands'
@@ -219,6 +227,31 @@ public class AnalysisCliOptionsParser {
 
 
     /*
+     * Alignment CLI options
+     */
+    @Parameters(commandNames = {"alignment"}, commandDescription = "Implement several tools for the genomic alignment analysis")
+    public class AlignmentCommandOptions extends CommandOptions {
+
+        final IndexAlignmentCommandOptions indexAlignmentCommandOptions;
+//        final StatsVariantCommandOptions statsVariantCommandOptions;
+//        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
+//        final QueryVariantCommandOptions queryVariantCommandOptions;
+//        final DeleteVariantCommandOptions deleteVariantCommandOptions;
+
+        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        public AlignmentCommandOptions() {
+            this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
+//            this.statsVariantCommandOptions = new StatsVariantCommandOptions();
+//            this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
+//            this.queryVariantCommandOptions = new QueryVariantCommandOptions();
+//            this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
+//            this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
+        }
+    }
+
+
+    /*
      * Tools CLI options
      */
     @Parameters(commandNames = {"tools"}, commandDescription = "Implements different tools for working with tools")
@@ -242,15 +275,7 @@ public class AnalysisCliOptionsParser {
      * Auxiliary class for Database connection.
      */
     class CatalogDatabaseCommandOptions {
-//
-//        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data, eg. opencga_catalog")
-//        public String database;
-//
-//        @Parameter(names = {"-H", "--host"}, description = "DataBase host and port, eg. localhost:27017")
-//        public String host;
-//
-//        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
-//        public String password;
+
     }
 
 
@@ -305,6 +330,13 @@ public class AnalysisCliOptionsParser {
 
     }
 
+    public class JobCommand {
+        @Parameter(names = {"--queue"}, description = "Enqueue the job. Do not execute", required = false, arity = 0)
+        public boolean queue = false;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
+        public String jobId = null;
+    }
 
 
     /*
@@ -316,6 +348,9 @@ public class AnalysisCliOptionsParser {
 
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
 
 //
 //        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
@@ -376,12 +411,6 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
 
-        @Parameter(names = {"--queue"}, description = "Enqueue the job. Do not execute", required = false, arity = 1)
-        public boolean queue = false;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
-        public String jobId = null;
-
     }
 
     @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
@@ -389,6 +418,9 @@ public class AnalysisCliOptionsParser {
 
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
 
 //        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
 //        public boolean create = false;
@@ -430,11 +462,6 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
         public String aggregationMappingFile;
 
-        @Parameter(names = {"--queue"}, description = "Enqueue the job. Do not execute", required = false, arity = 1)
-        public boolean queue = false;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
-        public String jobId = null;
 
     }
 
@@ -444,6 +471,9 @@ public class AnalysisCliOptionsParser {
 
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
 
         @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
                 arity = 1)
@@ -486,11 +516,6 @@ public class AnalysisCliOptionsParser {
                 splitter = CommaParameterSplitter.class)
         public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
 
-        @Parameter(names = {"--queue"}, description = "Enqueue the job. Do not execute", required = false, arity = 1)
-        public boolean queue = false;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
-        public String jobId = null;
     }
 
     @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
@@ -665,7 +690,35 @@ public class AnalysisCliOptionsParser {
 
 
 
+    @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
+    public class IndexAlignmentCommandOptions extends CatalogDatabaseCommandOptions {
 
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
+
+        @Parameter(names = {"-i", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
+        public boolean calculateCoverage = true;
+
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag " +
+                "\"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        public List<String> meanCoverage;
+
+        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        public String outdirId;
+
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        boolean transform = false;
+
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        boolean load = false;
+
+    }
 
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")
@@ -776,4 +829,9 @@ public class AnalysisCliOptionsParser {
     public ToolsCommandOptions getToolsCommandOptions() {
         return toolsCommandOptions;
     }
+
+    public AlignmentCommandOptions getAlignmentCommandOptions() {
+        return alignmentCommandOptions;
+    }
+
 }

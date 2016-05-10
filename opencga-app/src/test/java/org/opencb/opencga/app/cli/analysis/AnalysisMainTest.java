@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
@@ -18,6 +19,8 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -36,7 +39,8 @@ public class AnalysisMainTest {
 
     private CatalogManager catalogManager;
     private final String userId = "user";
-    private final String dbName = "opencga_variants_test";
+    private final String dbNameVariants = "opencga_variants_test";
+    private final String dbNameAlignments = "opencga_alignments_test";
     private String sessionId;
     private long projectId;
     private long studyId;
@@ -47,19 +51,26 @@ public class AnalysisMainTest {
     private File file3;
     private File file4;
     private File file5;
+    private File bam;
 
     @Before
     public void setUp() throws Exception {
         catalogManager = opencga.getCatalogManager();
 
 
-        opencga.clearStorageDB(STORAGE_ENGINE, dbName);
+        opencga.clearStorageDB(STORAGE_ENGINE, dbNameVariants);
+        opencga.clearStorageDB(STORAGE_ENGINE, dbNameAlignments);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+
+        Map<File.Bioformat, DataStore> datastores = new HashMap<>();
+        datastores.put(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbNameVariants));
+        datastores.put(File.Bioformat.ALIGNMENT, new DataStore(STORAGE_ENGINE, dbNameAlignments));
+
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null,
-                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbName)), null,
+                null, null, null, datastores, null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE),
                 null, sessionId).first().getId();
         outdirId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
@@ -71,11 +82,13 @@ public class AnalysisMainTest {
         file5 = opencga.createFile(studyId, "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
 
+        bam = opencga.createFile(studyId, "HG00096.chrom20.small.bam", sessionId);
+
 
     }
 
     @Test
-    public void testIndex() throws Exception {
+    public void testVariantIndex() throws Exception {
         Job job;
 
         // Index file1
@@ -116,7 +129,13 @@ public class AnalysisMainTest {
         Assert.assertNotEquals(outdirId, job.getOutDirId());
 
         // Index file4
-        AnalysisMain.privateMain(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file4.getId()), "--calculate-stats"});
+        AnalysisMain.privateMain(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file4.getId()), "--calculate-stats", "--queue"});
+        assertEquals(Index.IndexStatus.INDEXING, catalogManager.getFile(file4.getId(), sessionId).first().getIndex().getStatus().getStatus());
+        assertEquals(Cohort.CohortStatus.CALCULATING, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
+        job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
+        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
+        opencga.runStorageJob(job, sessionId);
+
         assertEquals(Index.IndexStatus.READY, catalogManager.getFile(file4.getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
@@ -139,7 +158,19 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "coh1"), null, sessionId).first().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "coh2"), null, sessionId).first().getStatus().getStatus());
 
+//        AnalysisMain.privateMain(new String[]{"variant", "query", "--session-id", sessionId, "--study", String.valueOf(studyId), "--limit", "10"});
+    }
 
+    @Test
+    public void testAlignmentIndex() throws CatalogException {
+        Job job;
+
+        // Index file1
+        AnalysisMain.privateMain(new String[]{"alignment", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + bam.getPath()});
+        assertEquals(Index.IndexStatus.READY, catalogManager.getFile(bam.getId(), sessionId).first().getIndex().getStatus().getStatus());
+        job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), bam.getId()), null, sessionId).first();
+        assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
 
     }
+
 }

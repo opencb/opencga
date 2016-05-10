@@ -123,7 +123,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
     }
 
-    private void initVariantStorageManager(DataStore dataStore)
+    private VariantStorageManager initVariantStorageManager(DataStore dataStore)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         String storageEngine = dataStore.getStorageEngine();
@@ -132,6 +132,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         } else {
             this.variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
         }
+        return variantStorageManager;
     }
 
 
@@ -215,12 +216,11 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             StorageManagerException, InstantiationException, IllegalAccessException {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
-
         String sessionId = variantCommandOptions.commonOptions.sessionId;
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.jobId)) {
+        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
             Job job;
             long outDirId;
             if (cliOptions.outdirId == null) {
@@ -237,7 +237,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.queue)
+                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
                     .append(AnalysisJobExecutor.SIMULATE, false)
                     .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
                     .append(AnalysisFileIndexer.LOAD, cliOptions.load)
@@ -250,14 +250,13 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel);
 
             QueryResult<Job> result = analysisFileIndexer.index(inputFileId, outDirId, sessionId, options);
-            if (cliOptions.queue) {
+            if (cliOptions.job.queue) {
                 System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
             }
 
         } else {
             long studyId = catalogManager.getStudyIdByFileId(inputFileId);
-            index(getJob(studyId, cliOptions.jobId, sessionId));
-//            index(catalogManager.getJob(cliOptions.jobId, null, sessionId).first());
+            index(getJob(studyId, cliOptions.job.jobId, sessionId));
         }
     }
 
@@ -268,7 +267,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
      * 1) Initialize VariantStorageManager
      * 2) Read and validate cli args. Configure options
      * 3) Execute indexation
-     * 4) Post process job. Update indexation status
+     * 4) Save indexation result
      *
      * @throws CatalogException
      * @throws IllegalAccessException
@@ -284,7 +283,6 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
 
         String sessionId = variantCommandOptions.commonOptions.sessionId;
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
-
 
 
         // 1) Initialize VariantStorageManager
@@ -363,8 +361,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
             e.printStackTrace();
             throw e;
         } finally {
-            // 4) Post process job. Update indexation status
-//            new AnalysisOutputRecorder(catalogManager, sessionId).postProcessIndexJob(job, storageETLResult, e, sessionId);
+            // 4) Save indexation result.
             new AnalysisOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
         }
     }
@@ -377,7 +374,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         String sessionId = variantCommandOptions.commonOptions.sessionId;
 
         // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.jobId)) {
+        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
             Job job;
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
             long outDirId;
@@ -394,7 +391,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.queue)
+                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
                     .append(AnalysisJobExecutor.SIMULATE, false)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
@@ -420,12 +417,12 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                 }
             }
             QueryResult<Job> result = variantStorage.calculateStats(outDirId, cohortIds, sessionId, options);
-            if (cliOptions.queue) {
+            if (cliOptions.job.queue) {
                 System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
             }
         } else {
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
-            stats(getJob(studyId, cliOptions.jobId, sessionId));
+            stats(getJob(studyId, cliOptions.job.jobId, sessionId));
         }
     }
 
@@ -558,7 +555,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         String sessionId = variantCommandOptions.commonOptions.sessionId;
 
         // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.jobId)) {
+        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
             Job job;
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
             long outDirId;
@@ -576,7 +573,7 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.queue)
+                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
                     .append(AnalysisJobExecutor.SIMULATE, false)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
@@ -592,13 +589,13 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
                     .append(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), cliOptions.filterAnnotConsequenceType);
 
             QueryResult<Job> result = variantStorage.annotateVariants(studyId, outDirId, sessionId, options);
-            if (cliOptions.queue) {
+            if (cliOptions.job.queue) {
                 System.out.println(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(result));
             }
 
         } else {
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
-            String jobId = cliOptions.jobId;
+            String jobId = cliOptions.job.jobId;
             annotate(getJob(studyId, jobId, sessionId));
         }
     }

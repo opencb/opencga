@@ -25,6 +25,7 @@ import org.opencb.biodata.models.alignment.AlignmentRegion;
 
 import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
 import org.opencb.biodata.tools.alignment.tasks.AlignmentRegionCoverageCalculatorTask;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
 import org.opencb.commons.run.Task;
@@ -58,7 +59,7 @@ import java.util.List;
  */
 public abstract class AlignmentStorageManager extends StorageManager<AlignmentDBAdaptor> implements StorageETL {
 
-    private StorageEtlConfiguration storageEtlConfiguration;
+    protected StorageEtlConfiguration storageEtlConfiguration;
 
     public enum Options {
         MEAN_COVERAGE_SIZE_LIST ("mean_coverage_size_list", Arrays.asList("200", "10000")),
@@ -112,6 +113,12 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
     }
 
     @Override
+    public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
+        super.setConfiguration(configuration, storageEngineId);
+        storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
+    }
+
+    @Override
     public URI extract(URI input, URI ouput) throws StorageManagerException {
         return input;
     }
@@ -161,17 +168,16 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
         // Only binaries and sorted BAM files are accepted at this point.
         AlignmentFileUtils.checkBamOrCramFile(new FileInputStream(input.toFile()), input.getFileName().toString(), true);
 
-        storageEtlConfiguration = configuration.getStorageEngine(storageEngineId).getAlignment();
-
-        boolean plain = storageEtlConfiguration.getOptions().getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
-        boolean createBai = storageEtlConfiguration.getOptions().getBoolean(Options.CREATE_BAM_INDEX.key(), Options.CREATE_BAM_INDEX
+        ObjectMap options = storageEtlConfiguration.getOptions();
+        boolean plain = options.getBoolean(Options.PLAIN.key, Options.PLAIN.defaultValue());
+        boolean createBai = options.getBoolean(Options.CREATE_BAM_INDEX.key(), Options.CREATE_BAM_INDEX
                 .defaultValue());
-        boolean includeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.INCLUDE_COVERAGE.key, Options.INCLUDE_COVERAGE
+        boolean includeCoverage = options.getBoolean(Options.INCLUDE_COVERAGE.key, Options.INCLUDE_COVERAGE
                 .defaultValue());
-        boolean writeJsonAlignments = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_ALIGNMENTS.key, Options
+        boolean writeJsonAlignments = options.getBoolean(Options.WRITE_ALIGNMENTS.key, Options
                 .WRITE_ALIGNMENTS.defaultValue());
 
-        int regionSize = storageEtlConfiguration.getOptions().getInt(Options.TRANSFORM_REGION_SIZE.key, Options.TRANSFORM_REGION_SIZE
+        int regionSize = options.getInt(Options.TRANSFORM_REGION_SIZE.key, Options.TRANSFORM_REGION_SIZE
                 .defaultValue());
 
         //1 Encrypt
@@ -197,7 +203,7 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
         // We set the different coverage size regions
         if (includeCoverage) {
             AlignmentRegionCoverageCalculatorTask coverageCalculatorTask = new AlignmentRegionCoverageCalculatorTask();
-            List<String> meanCoverageSizeList = storageEtlConfiguration.getOptions().getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key);
+            List<String> meanCoverageSizeList = options.getAsStringList(Options.MEAN_COVERAGE_SIZE_LIST.key);
             meanCoverageSizeList.forEach(coverageCalculatorTask::addMeanCoverageCalculator);
             tasks.add(coverageCalculatorTask);
         }
@@ -211,14 +217,14 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
         }
 
         if (includeCoverage) {
-            boolean writeMeanCoverage = !storageEtlConfiguration.getOptions().getList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options
+            boolean writeMeanCoverage = !options.getList(Options.MEAN_COVERAGE_SIZE_LIST.key, Options
                     .MEAN_COVERAGE_SIZE_LIST.defaultValue()).isEmpty();
-            boolean writeCoverage = storageEtlConfiguration.getOptions().getBoolean(Options.WRITE_COVERAGE.key, Options.WRITE_COVERAGE
+            boolean writeCoverage = options.getBoolean(Options.WRITE_COVERAGE.key, Options.WRITE_COVERAGE
                     .defaultValue());
             AlignmentCoverageJsonDataWriter alignmentCoverageJsonDataWriter =
                     new AlignmentCoverageJsonDataWriter(jsonOutputFiles, writeCoverage, writeMeanCoverage, !plain);
             alignmentCoverageJsonDataWriter.setChunkSize(
-                    storageEtlConfiguration.getOptions().getInt(Options.TRANSFORM_COVERAGE_CHUNK_SIZE.key, Options
+                    options.getInt(Options.TRANSFORM_COVERAGE_CHUNK_SIZE.key, Options
                             .TRANSFORM_COVERAGE_CHUNK_SIZE.defaultValue()));
             writers.add(alignmentCoverageJsonDataWriter);
             if (outputFile == null) {
@@ -357,6 +363,10 @@ public abstract class AlignmentStorageManager extends StorageManager<AlignmentDB
         }
 
         return new AlignmentCoverageJsonDataReader(regionCoverageFile, meanCoverageFile);
+    }
+
+    public ObjectMap getOptions() {
+        return storageEtlConfiguration.getOptions();
     }
 
 }

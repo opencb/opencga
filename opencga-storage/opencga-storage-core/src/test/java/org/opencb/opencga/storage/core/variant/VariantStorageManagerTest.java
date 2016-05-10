@@ -239,6 +239,40 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
 
     }
 
+    @Test
+    public void multiRegionBatchIndex() throws Exception {
+        clearDB(DB_NAME);
+        StudyConfiguration studyConfiguration = new StudyConfiguration(1, "multiRegion");
+
+        StorageETLResult etlResult;
+        ObjectMap options = new ObjectMap()
+                .append(VariantStorageManager.Options.STUDY_TYPE.key(), VariantStudy.StudyType.CONTROL)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), true)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false);
+
+        VariantStorageManager variantStorageManager = getVariantStorageManager();
+
+        URI chr1 = getResourceUri("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        URI chr22 = getResourceUri("10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+
+//        runDefaultETL(chr1, this.variantStorageManager,
+//                studyConfiguration, options.append(VariantStorageManager.Options.FILE_ID.key(), 5));
+//        Integer defaultCohortId = studyConfiguration.getCohortIds().get(StudyEntry.DEFAULT_COHORT);
+//        assertTrue(studyConfiguration.getCohorts().containsKey(defaultCohortId));
+//        assertEquals(2504, studyConfiguration.getCohorts().get(defaultCohortId).size());
+//        assertTrue(studyConfiguration.getIndexedFiles().contains(5));
+//        checkLoadedVariants(variantStorageManager.getDBAdaptor(DB_NAME), studyConfiguration, true, false, -1);
+//
+//        runDefaultETL(chr22, this.variantStorageManager,
+////        runDefaultETL(getResourceUri("1k.chr21.phase3_shapeit2_mvncall_integrated_v5a.20130502.genotypes.vcf.gz"), variantStorageManager,
+//                studyConfiguration, options.append(VariantStorageManager.Options.FILE_ID.key(), 6));
+
+        variantStorageManager.getOptions().append(VariantStorageManager.Options.DB_NAME.key(), DB_NAME)
+                .append(VariantStorageManager.Options.STUDY_NAME.key(), STUDY_NAME)
+                .append(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
+
+        variantStorageManager.index(Arrays.asList(chr1, chr22), outputUri, true, true, true);
+    }
 
     @Test
     public void multiRegionIndex() throws Exception {
