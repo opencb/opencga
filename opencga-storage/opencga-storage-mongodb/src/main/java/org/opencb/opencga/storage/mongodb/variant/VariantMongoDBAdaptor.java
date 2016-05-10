@@ -282,23 +282,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "ensemblGene":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
                 break;
             case "ensemblTranscript":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.ENSEMBL_TRANSCRIPT_ID_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_ENSEMBL_TRANSCRIPT_ID_FIELD;
                 break;
             case "ct":
             case "consequence_type":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
                 break;
             default:
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.GENE_NAME_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
                 break;
         }
 
@@ -470,7 +470,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "ensemblGene":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.ENSEMBL_GENE_ID_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_ENSEMBL_GENE_ID_FIELD;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
 
@@ -479,7 +479,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             case "consequence_type":
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 numUnwinds = 3;
@@ -487,7 +487,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             default:
                 documentPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.GENE_NAME_FIELD;
+                        + "." + DocumentToVariantAnnotationConverter.CT_GENE_NAME_FIELD;
                 unwindPath = DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD;
                 break;
@@ -844,20 +844,20 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 value = value.replace("SO:", "");
                 addQueryIntegerFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD, value, builder, QueryOperation.AND);
+                        + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, value, builder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_BIOTYPE.key())) {
                 String biotypes = query.getString(VariantQueryParams.ANNOT_BIOTYPE.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
+                        + "." + DocumentToVariantAnnotationConverter.CT_BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
             }
 
             if (query.containsKey(VariantQueryParams.POLYPHEN.key())) {
                 addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                                + "." + DocumentToVariantAnnotationConverter.POLYPHEN_FIELD
+                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD,
                         query.getString(VariantQueryParams.POLYPHEN.key()), builder);
             }
@@ -865,7 +865,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (query.containsKey(VariantQueryParams.SIFT.key())) {
                 addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.SIFT_FIELD + "."
+                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD + "."
                         + DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, query.getString(VariantQueryParams.SIFT.key()), builder);
             }
 
@@ -873,7 +873,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String value = query.getString(VariantQueryParams.PROTEIN_SUBSTITUTION.key());
                 addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                        + "." + DocumentToVariantAnnotationConverter.PROTEIN_SUBSTITUTION_SCORE_FIELD, value, builder,
+                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, value, builder,
                         VariantQueryParams.PROTEIN_SUBSTITUTION);
             }
 
@@ -2078,7 +2078,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
                 + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
-                + "." + DocumentToVariantAnnotationConverter.SO_ACCESSION_FIELD, 1), onBackground);
+                + "." + DocumentToVariantAnnotationConverter.CT_SO_ACCESSION_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
                         + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_STUDY_FIELD, 1)

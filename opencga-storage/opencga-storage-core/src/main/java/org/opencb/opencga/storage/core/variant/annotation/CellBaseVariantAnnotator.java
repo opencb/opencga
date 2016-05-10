@@ -211,13 +211,11 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 //                    variants.stream().map(Object::toString).collect(Collectors.joining(",")),
 //                    "full_annotation",
 //                    queryOptions, VariantAnnotation.class);
-            System.out.println("Send cellbase query");
             queryResponse = cellBaseClient.getAnnotation(
                     CellBaseClient.Category.genomic,
                     CellBaseClient.SubCategory.variant,
                     variants,
                     new QueryOptions(queryOptions));
-            System.out.println("Cellbase query: " + cellBaseClient.getLastQuery());
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
                         variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
