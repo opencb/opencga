@@ -69,7 +69,7 @@ public class VariableSetWSServerTest {
         String json = webTarget.path("variables").path(String.valueOf(variableSetId)).path("field").path("add")
                 .queryParam("sid", sessionId).request().post(Entity.json(variable), String.class);
 
-        QueryResponse<QueryResult<VariableSet>> response = WSServerTestUtils.parseResult(json, VariableSet.class);
+        QueryResponse<VariableSet> response = WSServerTestUtils.parseResult(json, VariableSet.class);
 
         Set<Variable> variables = response.getResponse().get(0).getResult().get(0).getVariables();
         assertTrue("The field of the variableSet was not inserted",
@@ -86,7 +86,7 @@ public class VariableSetWSServerTest {
                 .queryParam("studyId", studyId)
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<Sample>> responseSample = WSServerTestUtils.parseResult(json, Sample.class);
+        QueryResponse<Sample> responseSample = WSServerTestUtils.parseResult(json, Sample.class);
 
         List<Sample> samples = responseSample.getResponse().get(0).getResult();
         assertEquals("The number of samples that should be retrieved is 8", 8, samples.size());
@@ -151,7 +151,7 @@ public class VariableSetWSServerTest {
                 .queryParam("newName", "PHEN_renamed")
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<VariableSet>> response = WSServerTestUtils.parseResult(json, VariableSet.class);
+        QueryResponse<VariableSet> response = WSServerTestUtils.parseResult(json, VariableSet.class);
 
         Set<Variable> variables = response.getResponse().get(0).getResult().get(0).getVariables();
         assertTrue("The field of the variableSet was not renamed",
@@ -174,7 +174,7 @@ public class VariableSetWSServerTest {
                 .queryParam("studyId", studyId)
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<Sample>> responseSample = WSServerTestUtils.parseResult(json, Sample.class);
+        QueryResponse<Sample> responseSample = WSServerTestUtils.parseResult(json, Sample.class);
 
         List<Sample> samples = responseSample.getResponse().get(0).getResult();
         assertEquals("The number of samples that should be retrieved is 8", 8, samples.size());
@@ -203,7 +203,7 @@ public class VariableSetWSServerTest {
                 .queryParam("name", "PHEN")
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<VariableSet>> response = WSServerTestUtils.parseResult(json, VariableSet.class);
+        QueryResponse<VariableSet> response = WSServerTestUtils.parseResult(json, VariableSet.class);
 
         Set<Variable> variables = response.getResponse().get(0).getResult().get(0).getVariables();
         assertFalse("The field of the variableSet was not removed",
@@ -220,7 +220,7 @@ public class VariableSetWSServerTest {
                 .queryParam("studyId", studyId)
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<Sample>> responseSample = WSServerTestUtils.parseResult(json, Sample.class);
+        QueryResponse<Sample> responseSample = WSServerTestUtils.parseResult(json, Sample.class);
 
         List<Sample> samples = responseSample.getResponse().get(0).getResult();
         assertEquals("The number of samples that should be retrieved is 8", 8, samples.size());

@@ -57,12 +57,15 @@ public class WSServerTestUtils {
     private CatalogManagerExternalResource catalogManagerResource;
 
 
-    public static <T> QueryResponse<QueryResult<T>> parseResult(String json, Class<T> clazz) throws IOException {
-        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
-                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
+    public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+//        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
+//                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
+//        return reader.readValue(json);
+        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(
+                OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz)
+        );
         return reader.readValue(json);
     }
-
 
     public void initServer() throws Exception {
 
