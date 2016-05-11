@@ -116,9 +116,6 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Cohort> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -133,9 +130,6 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -157,7 +151,6 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-
         Map<String, Object> cohortParams = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
@@ -229,7 +222,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         return endQuery("Delete cohort", startTime, Collections.singletonList(cohortQueryResult.getNumTotalResults()));
     }
 
-    QueryResult<Cohort>  setStatus(long cohortId, String status) throws CatalogDBException {
+    QueryResult<Cohort> setStatus(long cohortId, String status) throws CatalogDBException {
         return update(cohortId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
@@ -352,6 +345,9 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

@@ -675,9 +675,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
+
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -694,9 +692,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -859,6 +854,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries

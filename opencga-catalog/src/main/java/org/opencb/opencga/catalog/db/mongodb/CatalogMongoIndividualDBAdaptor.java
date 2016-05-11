@@ -348,9 +348,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -365,9 +362,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -394,11 +388,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         Map<String, Object> individualParameters = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.RACE.key(), QueryParams.GENDER.key(),
@@ -660,6 +649,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
+
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries

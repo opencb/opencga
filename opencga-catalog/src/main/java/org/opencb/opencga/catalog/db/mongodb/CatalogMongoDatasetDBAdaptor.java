@@ -96,11 +96,6 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Dataset> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -123,10 +118,6 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -154,7 +145,6 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
-
         Map<String, Object> datasetParams = new HashMap<>();
 
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
@@ -245,9 +235,6 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bsonQuery = parseQuery(query);
         Bson update = new Document("$push", new Document(QueryParams.FILES.key(), new Document("$each", fileIds)));
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
@@ -325,6 +312,10 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
+
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
