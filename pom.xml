@@ -450,6 +450,12 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>1.9.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-core</artifactId>
                 <version>0.6-SNAPSHOT</version>

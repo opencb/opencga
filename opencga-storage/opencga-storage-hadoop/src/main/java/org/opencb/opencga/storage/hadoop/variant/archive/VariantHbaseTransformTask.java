@@ -1,34 +1,30 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderVersion;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.BufferedMutator;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VariantToProtoVcfRecord;
 import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
-import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
- *
  */
-public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
+public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Variant, VcfSlice> {
+
+    protected final Logger logger = LoggerFactory.getLogger(VariantHbaseTransformTask.class);
     private static final List<VcfSlice> EMPTY_LIST = Collections.emptyList();
     private final VariantToVcfSliceConverter converter;
     private final ArchiveHelper helper;
@@ -37,69 +33,67 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
     private final Set<String> lookup;
     private final Map<String, List<Variant>> buffer;
     private final LinkedList<String> lookupOrder;
-    private final AtomicLong proto_convert = new AtomicLong(0);
-    private final AtomicLong index_convert = new AtomicLong(0);
-//    private Connection connection;
-//    private final TableName tableName;
+    private final AtomicLong timeProto = new AtomicLong(0);
+    private final AtomicLong timeIndex = new AtomicLong(0);
+    private final AtomicLong timePut = new AtomicLong(0);
+    private final TableName tableName;
+    private Connection connection;
+    private BufferedMutator tableMutator;
 
     /**
-     * @param header {@link VCFHeader}
-     * @param version {@link VCFHeaderVersion}
-     * @param source {@link VariantSource}
-     * @param variantStatsTask {@link VariantGlobalStatsCalculator}
-     * @param includeSrc boolean
-     * @param generateReferenceBlocks boolean
      * @param helper {@link ArchiveHelper}
+     * @param table  {@link String} HBase table name
      */
-    public VariantHbaseTransformTask(VCFHeader header, VCFHeaderVersion version, VariantSource source,
-            VariantGlobalStatsCalculator variantStatsTask, boolean includeSrc, boolean generateReferenceBlocks, ArchiveHelper helper) {
-        super(header, version, source, null, variantStatsTask, includeSrc, generateReferenceBlocks);
+    public VariantHbaseTransformTask(ArchiveHelper helper, String table) {
         converter = new VariantToVcfSliceConverter();
         this.helper = helper;
         storedChr = new HashSet<>();
         lookup = new HashSet<>();
         buffer = new HashMap<>();
         lookupOrder = new LinkedList<>();
-//        this.tableName = TableName.valueOf(tableName);
+        this.tableName = table == null ? null : TableName.valueOf(table);
     }
 
     @Override
+    public List<VcfSlice> apply(List<Variant> batch) {
+        return encodeVariants(batch);
+    }
+
     protected List<VcfSlice> encodeVariants(List<Variant> variants) {
         long curr = System.currentTimeMillis();
-        for (Variant var : variants) {
-            addVariant(var);
-        }
-        this.index_convert.addAndGet(System.currentTimeMillis() - curr);
+        variants.forEach(var -> addVariant(var));
+        this.timeIndex.addAndGet(System.currentTimeMillis() - curr);
         List<VcfSlice> data = checkSlices(1000);
-//        submit(data);
+        curr = System.currentTimeMillis();
+        submit(data);
+        this.timePut.addAndGet(System.currentTimeMillis() - curr);
         return data;
     }
 
     @Override
     public List<VcfSlice> drain() {
         List<VcfSlice> data = checkSlices(0);
-//        submit(data);
+        submit(data);
         return data;
     }
 
-    private void submit(List<Put> data) {
-        if (data.isEmpty()) {
-            return; // Nothing to do
+    private void submit(List<VcfSlice> data) {
+        if (null != this.tableName) {
+            List<Put> putList = data.stream().map(s -> this.getHelper().wrap(s)).collect(Collectors.toList());
+            try {
+                this.tableMutator.mutate(putList);
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Problems submitting %s data to hbase %s ", putList.size(),
+                        this.tableName.getNameAsString()), e);
+            }
         }
-////        logger.info("Open to table " + this.tableName.getNameAsString());
-//        try (Table table = connection.getTable(this.tableName);) { // TODO enable
-//            table.put(data);
-//        } catch (IOException e) {
-//            throw new RuntimeException(String.format("Problems submitting %s data to hbase %s ", data.size(),
-//                    this.tableName.getNameAsString()), e);
-//        }
     }
 
     private List<VcfSlice> checkSlices(int limit) {
         if (lookupOrder.size() < limit) {
             return EMPTY_LIST;
         }
-        List<VcfSlice> retPut = new ArrayList<>();
+        List<VcfSlice> retSlice = new ArrayList<>();
         while (lookupOrder.size() > limit) { // 1000 key buffer
             String key = findSmallest(lookupOrder, storedChr, getHelper().getChunkSize());
             lookupOrder.remove(key);
@@ -116,14 +110,12 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
                 // Variant(v)).collect(Collectors.toList());
 
                 long curr = System.currentTimeMillis();
-                 VcfSlice slice = converter.convert(data, (int) sliceStart);
-                 this.proto_convert.addAndGet(System.currentTimeMillis() - curr);
-                 retPut.add(slice);
-//                 Put put = getHelper().wrap(slice);
-//                 retPut.add(put);
+                VcfSlice slice = converter.convert(data, (int) sliceStart);
+                this.timeProto.addAndGet(System.currentTimeMillis() - curr);
+                retSlice.add(slice);
             }
         }
-        return retPut;
+        return retSlice;
     }
 
     private String findSmallest(LinkedList<String> lookupOrder, Set<String> storedChr, int chunkSize) {
@@ -181,7 +173,7 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
         long startChunk = VariantToProtoVcfRecord.getSlicePosition((int) start, chunkSize);
         long endChunk = VariantToProtoVcfRecord.getSlicePosition((int) end, chunkSize);
         if (endChunk == startChunk) {
-            return new long[] { startChunk };
+            return new long[]{startChunk};
         }
         int len = (int) ((endChunk - startChunk) / chunkSize) + 1;
         long[] ret = new long[len];
@@ -193,39 +185,43 @@ public class VariantHbaseTransformTask extends VariantTransformTask<VcfSlice> {
 
     @Override
     public void pre() {
-//        try { // TODO enable
-//            logger.info("Open connection using " + getHelper().getConf());
-//            connection = ConnectionFactory.createConnection(getHelper().getConf());
-//        } catch (IOException e) {
-//           throw new RuntimeException("Failed to connect to Hbase", e);
-//        }
-        super.pre();
+        if (null != this.tableName) {
+            try {
+                logger.info("Open connection using " + getHelper().getConf());
+                connection = ConnectionFactory.createConnection(getHelper().getConf());
+                tableMutator = connection.getBufferedMutator(this.tableName);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to connect to Hbase", e);
+            }
+        }
     }
 
     @Override
     public void post() {
-        synchronized (variantStatsTask) {
-            variantStatsTask.post();
+        logger.info(String.format("Time norm2proto: %s", this.timeProto.get()));
+        logger.info(String.format("Time idx: %s", this.timeIndex.get()));
+        if (null != this.tableName) {
+            if (null != this.tableMutator) {
+                try {
+                    this.tableMutator.close();
+                } catch (IOException e) {
+                    logger.error("Problem closing Table mutator from HBase", e);
+                } finally {
+                    this.tableMutator = null;
+                }
+
+            }
+            if (null != connection) {
+                try {
+                    connection.close();
+                } catch (IOException e) {
+                    logger.error("Issue with closing DB connection", e);
+                } finally {
+                    connection = null;
+                }
+            }
+            logger.info(String.format("Time put: %s", this.timeIndex.get()));
         }
-//        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(
-//                tableName.getNameAsString(), getHelper().getConf(), null);) {
-//            manager.updateVcfMetaData(source);
-//        } catch (IOException e1) {
-//            throw new RuntimeException(e1);
-//        } finally {
-//            if (null != connection) {
-//                try {
-//                    connection.close();
-//                } catch (IOException e) {
-//                    logger.error("Issue with closing DB connection", e);
-//                } finally {
-//                    connection = null;
-//                }
-//            }
-//        }
-        logger.info(String.format("\nTime txt2hts: %s\nTime hts2avro: %s\nTime avro2norm: %s\nTime norm2proto: %s\nTime idx: %s",
-                this.hts_convert.get(), this.avro_convert.get(), this.norm_convert.get(),
-                this.proto_convert.get(), this.index_convert.get()));
     }
 
     private ArchiveHelper getHelper() {
