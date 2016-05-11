@@ -96,6 +96,27 @@
             <artifactId>jersey-container-servlet-core</artifactId>
             <version>${jersey.version}</version>
         </dependency>
+
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.opencga</groupId>-->
+            <!--<artifactId>opencga-storage-app</artifactId>-->
+            <!--<version>${opencga.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-catalog</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-storage-core</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -126,16 +147,30 @@
                             <goal>assemble</goal>
                         </goals>
                     </execution>
+                    <!--<execution>-->
+                        <!--<id>daemon-1</id>-->
+                        <!--<phase>package</phase>-->
+                        <!--<goals>-->
+                            <!--<goal>generate-daemons</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
                 </executions>
                 <configuration>
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
+                    <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
                     <programs>
                         <program>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
                             <name>opencga.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <name>opencga-admin.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.admin.AdminMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -147,7 +182,36 @@
                                 <platform>unix</platform>
                             </platforms>
                         </program>
+                        <program>
+                            <mainClass>org.opencb.opencga.app.cli.analysis.AnalysisMain</mainClass>
+                            <name>opencga-analysis.sh</name>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
                     </programs>
+
+                    <!--<daemons>-->
+                        <!--<daemon>-->
+                            <!--<id>daemon-1</id>-->
+                            <!--<mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>-->
+                            <!--<commandLineArguments>-->
+                                <!--<commandLineArgument>argument_one</commandLineArgument>-->
+                            <!--</commandLineArguments>-->
+                            <!--<generatorConfigurations>-->
+                                <!--<generatorConfiguration>-->
+                                    <!--<generator>jsw</generator>-->
+                                    <!--<includes>-->
+                                        <!--<include>linux-x86-64</include>-->
+                                    <!--</includes>-->
+                                <!--</generatorConfiguration>-->
+                            <!--</generatorConfigurations>-->
+                            <!--<platforms>-->
+                                <!--<platform>jsw</platform>-->
+                            <!--</platforms>-->
+                        <!--</daemon>-->
+                    <!--</daemons>-->
+
                 </configuration>
             </plugin>
             <plugin>

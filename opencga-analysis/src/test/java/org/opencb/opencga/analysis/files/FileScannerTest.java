@@ -1,30 +1,32 @@
 package org.opencb.opencga.analysis.files;
 
-import junit.framework.TestCase;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.stream.Collectors;
 
-public class FileScannerTest extends TestCase {
+import static org.junit.Assert.*;
+
+public class FileScannerTest {
+    @Rule
+    public CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
     public static final String PASSWORD = "asdf";
     private CatalogManager catalogManager;
@@ -36,14 +38,9 @@ public class FileScannerTest extends TestCase {
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
-                .openStream());
+        catalogManager = catalogManagerExternalResource.getCatalogManager();
 
-        CatalogManagerTest.clearCatalog(catalogConfiguration);
-
-        catalogManager = new CatalogManager(catalogConfiguration);
-
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
         project = catalogManager.createProject("user", "Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();

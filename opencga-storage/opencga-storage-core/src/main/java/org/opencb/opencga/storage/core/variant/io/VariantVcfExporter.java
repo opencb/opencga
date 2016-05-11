@@ -11,6 +11,7 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -191,6 +192,15 @@ public class VariantVcfExporter {
                 for (int i = 0; i < samplesPosition.size(); i++) {
                     returnedSamples.add(samplesPosition.get(i));
                 }
+            } else {
+                List<String> newReturnedSamples = new ArrayList<>(returnedSamples.size());
+                for (String returnedSample : returnedSamples) {
+                    if (StringUtils.isNumeric(returnedSample)) {
+                        int sampleId = Integer.parseInt(returnedSample);
+                        newReturnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
+                    }
+                }
+                returnedSamples = newReturnedSamples;
             }
             String samples = String.join("\t", returnedSamples);
             logger.debug("export will be done on samples: [{}]", samples);

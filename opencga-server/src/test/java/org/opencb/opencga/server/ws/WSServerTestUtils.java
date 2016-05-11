@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.core.common.Config;
@@ -36,6 +37,7 @@ import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.ByteArrayInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -52,14 +54,18 @@ public class WSServerTestUtils {
     private String restURL;
     public static final int PORT = 8889;
     public static final String DATABASE_PREFIX = "opencga_server_test_";
+    private CatalogManagerExternalResource catalogManagerResource;
 
 
-    public static <T> QueryResponse<QueryResult<T>> parseResult(String json, Class<T> clazz) throws IOException {
-        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
-                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
+    public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
+//        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(
+//                QueryResponse.class, QueryResponse.class, OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResult.class, QueryResult.class, clazz)));
+//        return reader.readValue(json);
+        ObjectReader reader = OpenCGAWSServer.jsonObjectMapper.reader(
+                OpenCGAWSServer.jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz)
+        );
         return reader.readValue(json);
     }
-
 
     public void initServer() throws Exception {
 
@@ -90,6 +96,7 @@ public class WSServerTestUtils {
         System.err.println("Shutdown server");
         server.stop();
         server.join();
+        catalogManagerResource.after();
     }
 
     public WebTarget getWebTarget() {
@@ -107,18 +114,19 @@ public class WSServerTestUtils {
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
 
-        InputStream inputStream = CatalogManagerTest.class.getClassLoader().getResourceAsStream("catalog-configuration.yml");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("catalog-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
-        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+        CatalogManagerTest catalogManagerTest =  new CatalogManagerTest();
+        catalogManagerResource = catalogManagerTest.catalogManagerResource;
+        catalogManagerResource.before();
+
+        catalogManagerResource.getCatalogConfiguration().serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
+        InputStream inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = OpenCGAWSServerTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
-        CatalogManagerTest catalogManagerTest = new CatalogManagerTest();
-
-        catalogManagerTest.setUp(); //Clear and setup CatalogDatabase
-        OpenCGAWSServer.catalogManager = catalogManagerTest.getTestCatalogManager();
+        catalogManagerTest.setUpCatalogManager(catalogManagerResource.getCatalogManager()); //Clear and setup CatalogDatabase
+        OpenCGAWSServer.catalogManager = catalogManagerResource.getCatalogManager();
     }
 }
 

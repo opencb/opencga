@@ -1,0 +1,112 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../opencga-shared-styles.html">
+
+<dom-module id="opencga-login">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles"></style>
+        <style>
+            .basic-margin {
+                width: 300px;
+                margin-left: 20px;
+                margin-right: auto;
+            }
+            .fields {
+                margin-top: 10px;
+            }
+        </style>
+
+        <div class="basic-margin">
+            <div class="input-group fields">
+                <span class="input-group-addon" id="username">
+                    <i class="fa fa-user fa-lg"></i>
+                </span>
+                <input type="text" id="opencgaUser" class="form-control" placeholder="Username" aria-describedby="username"
+                       on-keyup="checkEnterKey">
+            </div>
+
+            <div class="input-group fields">
+                <span class="input-group-addon" id="password">
+                    <i class="fa fa-key"></i>
+                </span>
+                <input id="opencgaPassword" type="password" class="form-control" placeholder="Password" aria-describedby="password"
+                       on-keyup="checkEnterKey">
+            </div>
+
+
+            <div id="incorrect" hidden="true" style="color: #AF1616;">
+                {{errorMessage}}
+            </div>
+
+            <div class="fields">
+                <button type="button" on-click="login" class="btn btn-primary" style="text-align: center;">{{loginText}}</button>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-login',
+            properties: {
+                opencgaClient: {
+                    type: Object
+                },
+                opencgaClientConfig: {
+                    type: Object
+                },
+                loginText: {
+                    type: String,
+                    value: "Login"
+                }
+            },
+
+            login: function() {
+                var _this = this;
+
+                if ((this.opencgaClient instanceof OpenCGAClient) === false) {
+                    this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
+                }
+
+                let user = this.$.opencgaUser.value;
+                let pass = this.$.opencgaPassword.value;
+
+                this.opencgaClient.users().login(user, {password: pass}).then(function(response) {
+                    _this.$.opencgaUser.value = "";
+                    _this.$.opencgaPassword.value = "";
+                    _this.$.incorrect.hidden = true;
+                    _this.fire('login', {
+                        userId: user,
+                        sessionId: response.response[0].result[0].sessionId
+                    });
+                }).catch(function(response) {
+                    debugger
+                    this.errorMessage = response.error;
+                    this.$.incorrect.hidden = false;
+                }.bind(this));
+
+            },
+
+            checkEnterKey: function(e) {
+                if (e.keyCode == 13) { // Enter was clicked
+                    this.login();
+                }
+            }
+        });
+    </script>
+</dom-module>

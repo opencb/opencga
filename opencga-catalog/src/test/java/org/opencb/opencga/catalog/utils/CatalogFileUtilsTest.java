@@ -27,12 +27,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
@@ -41,14 +41,12 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 
 import static org.junit.Assert.*;
 
@@ -62,12 +60,12 @@ public class CatalogFileUtilsTest {
     CatalogFileUtils catalogFileUtils;
     private long studyId;
     private String userSessionId;
-    private String adminSessionId;
+//    private String adminSessionId;
     private CatalogManager catalogManager;
 
     @Before
     public void before() throws CatalogException, IOException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
                 .openStream());
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
@@ -79,13 +77,14 @@ public class CatalogFileUtilsTest {
         String[] split = catalogConfiguration.getDatabase().getHosts().get(0).split(":");
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(split[0], Integer.parseInt(split[1]));
 
-        CatalogManagerTest.clearCatalog(catalogConfiguration);
+        CatalogManagerExternalResource.clearCatalog(catalogConfiguration);
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
 
         //Create USER
-        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null);
+        catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
-        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
+//        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
         long projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
 
@@ -102,19 +101,19 @@ public class CatalogFileUtilsTest {
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
                 userSessionId);
-        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, false, 1000);
+        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, false, 1000);
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
                 userSessionId);
-        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, false, 100000000);
+        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, false, 100000000);
 
         sourceUri = CatalogManagerTest.createDebugFile().toURI();
         fileQueryResult = catalogManager.createFile(
                 studyId, File.Format.PLAIN, File.Bioformat.NONE, "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1,
                 userSessionId);
-        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, adminSessionId, false, false, true, true);
+        catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, true);
     }
 
     @Test

@@ -52,8 +52,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException, URISyntaxException {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
-                .getClass().getResource("/catalog-configuration.yml").openStream());
+                .getClass().getResource("/catalog-configuration-test.yml").openStream());
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
 
 

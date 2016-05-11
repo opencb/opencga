@@ -178,27 +178,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public boolean close() {
-        boolean closeCorrect = true;
+    public void close() throws IOException {
         try {
             if (!hbaseCon.isClosed()) {
                 hbaseCon.close();
             }
-        } catch (IOException e) {
-            getLog().error("Problems closing connection", e);
-            closeCorrect = false;
-        }
-
-        try {
             if (phoenixCon != null && !phoenixCon.isClosed()) {
                 phoenixCon.close();
             }
         } catch (SQLException e) {
             getLog().error("Problems closing connection", e);
-            closeCorrect = false;
+            throw new IOException(e);
         }
-
-        return closeCorrect;
     }
 
     public static Logger getLog() {

@@ -59,7 +59,7 @@ public class UserWSServerTest {
         String s = webTarget.request().get(String.class);
         System.out.println("\nJSON RESPONSE");
         System.out.println(s);
-        QueryResponse<QueryResult<User>> queryResponse = WSServerTestUtils.parseResult(s, User.class);
+        QueryResponse<User> queryResponse = WSServerTestUtils.parseResult(s, User.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         User user = queryResponse.getResponse().get(0).first();
         assertEquals(userId, user.getId());
@@ -76,7 +76,7 @@ public class UserWSServerTest {
         System.out.println("\tpassword: " + userId);
 
         String json = webTarget.path("users").path(userId).path("login").queryParam("password", userId).request().get(String.class);
-        QueryResponse<QueryResult<ObjectMap>> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
+        QueryResponse<ObjectMap> queryResponse = WSServerTestUtils.parseResult(json, ObjectMap.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         String sessionId = queryResponse.getResponse().get(0).first().getString("sessionId");
         System.out.println("\nOUTPUT PARAMS");
@@ -126,7 +126,7 @@ public class UserWSServerTest {
 
         String s = webTarget.path("users").path(String.valueOf(userId)).path("projects")
                 .queryParam("sid", sessionId).request().get(String.class);
-        QueryResponse<QueryResult<Project>> queryResponse = WSServerTestUtils.parseResult(s, Project.class);
+        QueryResponse<Project> queryResponse = WSServerTestUtils.parseResult(s, Project.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         String name = queryResponse.getResponse().get(0).first().getName();
@@ -149,7 +149,7 @@ public class UserWSServerTest {
         System.out.println("\nJSON RESPONSE");
         System.out.println(json);
 
-        QueryResponse<QueryResult<User>> queryResponse = WSServerTestUtils.parseResult(json, User.class);
+        QueryResponse<User> queryResponse = WSServerTestUtils.parseResult(json, User.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         User user = queryResponse.getResponse().get(0).first();
         assertEquals(userId, user.getId());

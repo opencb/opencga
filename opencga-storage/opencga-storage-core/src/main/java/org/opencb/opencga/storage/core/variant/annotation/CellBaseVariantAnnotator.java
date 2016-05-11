@@ -24,6 +24,9 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.cellbase.core.client.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
@@ -197,7 +200,8 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 
     private List<VariantAnnotation> getVariantAnnotationsREST(List<Variant> variants) throws IOException {
 
-        org.opencb.commons.datastore.core.QueryResponse<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResponse;
+//        org.opencb.commons.datastore.core.QueryResponse<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResponse;
+        QueryResponse<VariantAnnotation> queryResponse;
 
         boolean queryError = false;
         try {
@@ -207,11 +211,13 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
 //                    variants.stream().map(Object::toString).collect(Collectors.joining(",")),
 //                    "full_annotation",
 //                    queryOptions, VariantAnnotation.class);
+            System.out.println("Send cellbase query");
             queryResponse = cellBaseClient.getAnnotation(
                     CellBaseClient.Category.genomic,
                     CellBaseClient.SubCategory.variant,
                     variants,
-                    new org.opencb.commons.datastore.core.QueryOptions(queryOptions));
+                    new QueryOptions(queryOptions));
+            System.out.println("Cellbase query: " + cellBaseClient.getLastQuery());
             if (queryResponse == null) {
                 logger.warn("CellBase REST fail. Returned null. {} for variants {}", cellBaseClient.getLastQuery(),
                         variants.stream().map(Variant::toString).collect(Collectors.joining(",")));
@@ -253,10 +259,10 @@ public class CellBaseVariantAnnotator extends VariantAnnotator {
         }
 
 
-        List<org.opencb.commons.datastore.core.QueryResult<VariantAnnotation>> queryResults = queryResponse.getResponse();
+        List<QueryResult<VariantAnnotation>> queryResults = queryResponse.getResponse();
 
         List<VariantAnnotation> variantAnnotationList = new ArrayList<>(variants.size());
-        for (org.opencb.commons.datastore.core.QueryResult<VariantAnnotation> queryResult : queryResults) {
+        for (QueryResult<VariantAnnotation> queryResult : queryResults) {
             variantAnnotationList.addAll(queryResult.getResult());
         }
         return variantAnnotationList;

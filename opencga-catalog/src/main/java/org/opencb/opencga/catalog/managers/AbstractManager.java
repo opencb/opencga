@@ -27,6 +27,7 @@ public abstract class AbstractManager {
     @Deprecated
     protected Properties catalogProperties;
 
+    protected final CatalogDBAdaptorFactory catalogDBAdaptorFactory;
     protected final CatalogUserDBAdaptor userDBAdaptor;
     protected final CatalogProjectDBAdaptor projectDBAdaptor;
     protected final CatalogStudyDBAdaptor studyDBAdaptor;
@@ -34,6 +35,7 @@ public abstract class AbstractManager {
     protected final CatalogIndividualDBAdaptor individualDBAdaptor;
     protected final CatalogSampleDBAdaptor sampleDBAdaptor;
     protected final CatalogCohortDBAdaptor cohortDBAdaptor;
+    protected final CatalogDatasetDBAdaptor datasetDBAdaptor;
     protected final CatalogJobDBAdaptor jobDBAdaptor;
 
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
@@ -50,7 +52,9 @@ public abstract class AbstractManager {
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
@@ -70,7 +74,9 @@ public abstract class AbstractManager {
         this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }

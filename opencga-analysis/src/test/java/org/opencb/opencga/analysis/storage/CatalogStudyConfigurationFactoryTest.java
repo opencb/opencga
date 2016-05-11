@@ -1,17 +1,14 @@
 package org.opencb.opencga.analysis.storage;
 
-import org.apache.log4j.ConsoleAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.LogManager;
 import org.junit.BeforeClass;
+import org.junit.ClassRule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -24,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.DB_NAME;
@@ -33,7 +31,8 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
  * Created by hpccoll1 on 16/07/15.
  */
 public class CatalogStudyConfigurationFactoryTest {
-
+    @ClassRule
+    public static CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
 
     static private CatalogManager catalogManager;
     static private String sessionId;
@@ -42,7 +41,7 @@ public class CatalogStudyConfigurationFactoryTest {
     static private FileMetadataReader fileMetadataReader;
     static private CatalogFileUtils catalogFileUtils;
     static private long outputId;
-    static Logger logger = LoggerFactory.getLogger(AnalysisFileIndexerTest.class);
+    static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactoryTest.class);
     static private String catalogPropertiesFile;
     static private final String userId = "user";
     static private List<File> files = new ArrayList<>();
@@ -50,28 +49,23 @@ public class CatalogStudyConfigurationFactoryTest {
 
     @BeforeClass
     public static void beforeClass() throws Exception {
-        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
-        stderr.setThreshold(Level.toLevel("debug"));
+//        ConsoleAppender stderr = (ConsoleAppender) LogManager.getRootLogger().getAppender("stderr");
+//        stderr.setThreshold(Level.toLevel("debug"));
 
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogStudyConfigurationFactoryTest.class.getClassLoader()
-                .getClass().getResource("/catalog-configuration.yml").openStream());
-
-        CatalogManagerTest.clearCatalog(catalogConfiguration);
-
-        catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager = catalogManagerExternalResource.getCatalogManager();
         fileMetadataReader = FileMetadataReader.get(catalogManager);
         catalogFileUtils = new CatalogFileUtils(catalogManager);
 
-        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null).first();
+        User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
-        files.add(create("1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
-        files.add(create("501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
-        files.add(create("1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
-        files.add(create("1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
-        files.add(create("2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
+        files.add(create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
+        files.add(create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
+        files.add(create("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
+        files.add(create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", true));
+        files.add(create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"));
 
     }
 
@@ -150,14 +144,15 @@ public class CatalogStudyConfigurationFactoryTest {
             File file = catalogManager.getFile(entry.getValue(), sessionId).first();
 
             assertEquals(file.getName(), entry.getKey());
-            assertEquals(new HashSet<>(file.getSampleIds()), studyConfiguration.getSamplesInFiles().get(file.getId()));
+            int id = (int) file.getId();
+            assertEquals(file.getSampleIds().stream().map(Long::intValue).collect(Collectors.toSet()), studyConfiguration.getSamplesInFiles().get((id)));
             if (file.getIndex() != null && file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
-                assertTrue(studyConfiguration.getIndexedFiles().contains(file.getId()));
-                assertTrue(studyConfiguration.getHeaders().containsKey(file.getId()));
-                assertTrue(!studyConfiguration.getHeaders().get(file.getId()).isEmpty());
+                assertTrue(studyConfiguration.getIndexedFiles().contains(id));
+                assertTrue("Missing header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
+                assertTrue("Missing header for file " + file.getId(), !studyConfiguration.getHeaders().get(id).isEmpty());
             } else {
-                assertFalse(studyConfiguration.getIndexedFiles().contains(file.getId()));
-                assertFalse(studyConfiguration.getHeaders().containsKey(file.getId()));
+                assertFalse(studyConfiguration.getIndexedFiles().contains(id));
+                assertFalse("Should not contain header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
             }
         }
     }

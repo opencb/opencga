@@ -19,22 +19,21 @@ package org.opencb.opencga.analysis;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.analysis.beans.Analysis;
+import org.opencb.opencga.analysis.beans.Execution;
+import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.analysis.executors.ExecutorManager;
+import org.opencb.opencga.analysis.executors.LocalThreadExecutorManager;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.Option;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exec.Command;
-import org.opencb.opencga.core.exec.RunnableProcess;
 import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +64,9 @@ public class AnalysisJobExecutor {
     protected String sessionId;
     protected Analysis analysis;
     protected Execution execution;
+
+    // Just for test purposes. Do not use in production!
+    public static ExecutorManager localExecutor = null;
 
     protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
 
@@ -124,15 +126,14 @@ public class AnalysisJobExecutor {
     }
 
     public static void execute(CatalogManager catalogManager, Job job, String sessionId)
-            throws AnalysisExecutionException, IOException, CatalogException {
+            throws AnalysisExecutionException, CatalogException {
         logger.debug("AnalysisJobExecuter: execute, job: {}", job);
 
         // read execution param
         String jobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR);
 
-        // local execution
         if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {
-            logger.debug("AnalysisJobExecuter: execute, running by SingleProcess");
+            // local execution
             executeLocal(catalogManager, job, sessionId);
         } else {
             logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
@@ -145,6 +146,16 @@ public class AnalysisJobExecutor {
                 logger.error(e.toString());
                 throw new AnalysisExecutionException("ERROR: sge execution failed.");
             }
+        }
+    }
+
+    private static void executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException, AnalysisExecutionException {
+        if (localExecutor != null) {
+            logger.debug("AnalysisJobExecuter: execute, running by " + localExecutor.getClass());
+            localExecutor.execute(job, sessionId);
+        } else {
+            logger.debug("AnalysisJobExecuter: execute, running by SingleProcess");
+            new LocalThreadExecutorManager(catalogManager).execute(job, sessionId);
         }
     }
 
@@ -301,11 +312,13 @@ public class AnalysisJobExecutor {
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
+                resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.RUNNING), System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
-                jobQueryResult = executeLocal(catalogManager, job, sessionId);
+                executeLocal(catalogManager, job, sessionId);
+                jobQueryResult = catalogManager.getJob(job.getId(), null, sessionId);
 
             } else {
                 /** Create a PREPARED job in CatalogManager **/
@@ -317,91 +330,6 @@ public class AnalysisJobExecutor {
         return jobQueryResult;
     }
 
-    private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException {
-
-        Command com = new Command(job.getCommandLine());
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
-        URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
-        com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
-        URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
-        com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
-
-        final long jobId = job.getId();
-        Thread hook = new Thread(() -> {
-            try {
-                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
-                com.setStatus(RunnableProcess.Status.KILLED);
-                com.setExitValue(-2);
-                postExecuteLocal(catalogManager, job, sessionId, com);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-            }
-        });
-
-        logger.info("==========================================");
-        logger.info("Executing job {}({})", job.getName(), job.getId());
-        logger.debug("Executing commandLine {}", job.getCommandLine());
-        logger.info("==========================================");
-        System.err.println();
-
-        Runtime.getRuntime().addShutdownHook(hook);
-        com.run();
-        Runtime.getRuntime().removeShutdownHook(hook);
-
-        System.err.println();
-        logger.info("==========================================");
-        logger.info("Finished job {}({})", job.getName(), job.getId());
-        logger.info("==========================================");
-
-        return postExecuteLocal(catalogManager, job, sessionId, com);
-    }
-
-    private static QueryResult<Job> postExecuteLocal(CatalogManager catalogManager, Job job, String sessionId, Command com)
-            throws CatalogException {
-        /** Close output streams **/
-        if (com.getOutputOutputStream() != null) {
-            try {
-                com.getOutputOutputStream().close();
-            } catch (IOException e) {
-                logger.warn("Error closing OutputStream", e);
-            }
-            com.setOutputOutputStream(null);
-            com.setOutput(null);
-        }
-        if (com.getErrorOutputStream() != null) {
-            try {
-                com.getErrorOutputStream().close();
-            } catch (IOException e) {
-                logger.warn("Error closing OutputStream", e);
-            }
-            com.setErrorOutputStream(null);
-            com.setError(null);
-        }
-
-        /** Change status to DONE  - Add the execution information to the job entry **/
-//                new AnalysisJobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
-        ObjectMap parameters = new ObjectMap();
-        parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", com));
-        parameters.put("status.status", Job.JobStatus.DONE);
-        catalogManager.modifyJob(job.getId(), parameters, sessionId);
-
-        /** Record output **/
-        AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-        outputRecorder.recordJobOutputAndPostProcess(job, com.getExitValue() != 0);
-
-        /** Change status to READY or ERROR **/
-        if (com.getExitValue() == 0) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.READY), sessionId);
-        } else {
-            parameters = new ObjectMap();
-            parameters.put("status.status", Job.JobStatus.ERROR);
-            parameters.put("error", Job.ERRNO_FINISH_ERROR);
-            parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_FINISH_ERROR));
-            catalogManager.modifyJob(job.getId(), parameters, sessionId);
-        }
-
-        return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
-    }
 
     private static void executeCommandLine(String commandLine, String jobName, int jobId, String jobFolder, String analysisName)
             throws AnalysisExecutionException, IOException {

@@ -16,7 +16,10 @@
 
 package org.opencb.opencga.core.exec;
 
-
+/**
+ * This class has been moved to java-common-libs.
+ */
+@Deprecated
 public abstract class RunnableProcess implements Runnable {
 
     protected long startTime;

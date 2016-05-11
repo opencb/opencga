@@ -91,7 +91,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         try {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
         } catch (CatalogDBException e) {
-            delete(newFileId, false);
+            delete(newFileId, options);
             throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
                     + "with the study collection.");
         }
@@ -102,6 +102,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -119,7 +122,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
         logger.debug("File get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
                 fileQueryResult.getDbTime());
-        return endQuery("get File", startTime, fileQueryResult.getResult());
+        return endQuery("get File", startTime, fileQueryResult);
     }
 
     @Override
@@ -235,6 +238,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -279,12 +285,13 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterStringParams(parameters, fileParameters, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = new HashMap<>();
-        acceptedEnums.put("type", File.Type.class);
-        acceptedEnums.put("format", File.Format.class);
-        acceptedEnums.put("bioformat", File.Bioformat.class);
+        acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
+        acceptedEnums.put(QueryParams.FORMAT.key(), File.Format.class);
+        acceptedEnums.put(QueryParams.BIOFORMAT.key(), File.Bioformat.class);
        // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
@@ -380,47 +387,69 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> delete(long id, boolean force) throws CatalogDBException {
+    public QueryResult<File> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        delete(new Query(QueryParams.ID.key(), id), force);
-        return endQuery("Delete file", startTime, getFile(id, null));
+
+        checkFileNotInUse(id);
+
+        Query query = new Query(QueryParams.ID.key(), id)
+                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        QueryResult<UpdateResult> deleted = fileCollection.update(parseQuery(query),
+                Updates.combine(
+                        Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+                        Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
+                , new QueryOptions());
+
+        if (deleted.first().getModifiedCount() != 1) {
+            throw CatalogDBException.deleteError("File {" + id + "}");
+        }
+
+        Query deletedFileQuery = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED);
+        return endQuery("Delete file", startTime, get(deletedFileQuery, new QueryOptions()));
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
-        List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
-        List<Long> fileIdsToRemove = new ArrayList<>();
-        for (File file : files) {
-            try {
-                checkFileNotInUse(file.getId());
-                fileIdsToRemove.add(file.getId());
-            } catch (CatalogDBException e) {
-                logger.info(e.getMessage());
-            }
-        }
-        QueryResult<UpdateResult> deleted;
-        if (fileIdsToRemove.size() > 0) {
-            Query query1 = new Query(QueryParams.ID.key(), fileIdsToRemove)
-                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-            deleted = fileCollection.update(parseQuery(query1), Updates.combine(
-                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-                    new QueryOptions());
-        } else {
-            throw CatalogDBException.deleteError("File");
-        }
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Delete not yet implemented.");
+//        long startTime = startQuery();
+//        List<File> files = get(query, new QueryOptions("include", QueryParams.ID.key())).getResult();
+//        List<Long> fileIdsToRemove = new ArrayList<>();
+//        for (File file : files) {
+//            try {
+//                checkFileNotInUse(file.getId());
+//                fileIdsToRemove.add(file.getId());
+//            } catch (CatalogDBException e) {
+//                logger.info(e.getMessage());
+//            }
+//        }
+//        QueryResult<UpdateResult> deleted;
+//        if (fileIdsToRemove.size() > 0) {
+//            Query query1 = new Query(QueryParams.ID.key(), fileIdsToRemove)
+//                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+//            deleted = fileCollection.update(parseQuery(query1), Updates.combine(
+//                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+//                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                    new QueryOptions());
+//        } else {
+//            throw CatalogDBException.deleteError("File");
+//        }
+//
+//        return endQuery("Delete file", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    }
 
-        return endQuery("Delete file", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    @Override
+    public QueryResult<File> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
     public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
-    }
-
-    @Override
-    public QueryResult<Long> updateStatus(Query query, File.FileStatus status) throws CatalogDBException {
         return null;
     }
 
@@ -612,77 +641,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult<Long> count = fileCollection.count(query);
         return count.getResult().get(0) != 0;
     }
-
-
-    // TODO: Move the three dataset methods to CatalogStudyMongoDBAdaptor.
-    @Override
-    public long getStudyIdByDatasetId(long datasetId) throws CatalogDBException {
-        Document query = new Document("datasets.id", datasetId);
-//        QueryResult<DBObject> queryResult = studyCollection.find(query, new BasicDBObject("id", 1), null);
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor()
-                .nativeGet(new Query("datasets.id", datasetId), new QueryOptions("include", "id"));
-        if (queryResult.getResult().isEmpty() || !queryResult.getResult().get(0).containsKey("id")) {
-            throw CatalogDBException.idNotFound("Dataset", datasetId);
-        } else {
-            Object id = queryResult.getResult().get(0).get("id");
-            return id instanceof Number ? ((Number) id).longValue() : Long.parseLong(id.toString());
-        }
-    }
-
-    @Override
-    public QueryResult<Dataset> createDataset(long studyId, Dataset dataset, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
-
-//        QueryResult<Long> count = studyCollection.count(BasicDBObjectBuilder
-//                .start(PRIVATE_ID, studyId)
-//                .append("datasets.name", dataset.getName())
-//                .get());
-
-        Query query = new Query(QueryParams.ID.key(), studyId)
-                .append("datasets.name", dataset.getName());
-        QueryResult<Long> count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query);
-
-        if (count.getResult().get(0) > 0) {
-            throw new CatalogDBException("Dataset { name: \"" + dataset.getName() + "\" } already exists in this study.");
-        }
-
-        long newId = getNewId();
-        dataset.setId(newId);
-
-        Document datasetObject = getMongoDBDocument(dataset, "Dataset");
-        QueryResult<UpdateResult> update = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .update(Filters.eq(PRIVATE_ID, studyId), new Document("$push", new Document("datasets", datasetObject)), null);
-
-        if (update.getResult().get(0).getModifiedCount() == 0) {
-            throw CatalogDBException.idNotFound("Study", studyId);
-        }
-
-        return endQuery("createDataset", startTime, getDataset(newId, options));
-    }
-
-    @Override
-    public QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-//        BasicDBObject query = new BasicDBObject("datasets.id", datasetId);
-//        BasicDBObject projection = new BasicDBObject("datasets", new BasicDBObject("$elemMatch", new BasicDBObject("id", datasetId)));
-//        QueryResult<DBObject> queryResult = studyCollection.find(query, projection, filterOptions(options, FILTER_ROUTE_STUDIES));
-
-        Bson query = Filters.eq("datasets.id", datasetId);
-        Bson projection = Projections.elemMatch("datasets", Filters.eq("id", datasetId));
-        QueryResult<Document> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection()
-                .find(query, projection, filterOptions(options, FILTER_ROUTE_STUDIES));
-
-        List<Study> studies = parseStudies(queryResult);
-        if (studies == null || studies.get(0).getDatasets().isEmpty()) {
-            throw CatalogDBException.idNotFound("Dataset", datasetId);
-        } else {
-            return endQuery("readDataset", startTime, studies.get(0).getDatasets());
-        }
-    }
-
-
 
     // TODO: Check these deprecated methods and get rid of them at some point
 

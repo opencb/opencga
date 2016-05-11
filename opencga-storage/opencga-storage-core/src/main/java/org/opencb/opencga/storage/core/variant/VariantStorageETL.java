@@ -639,9 +639,7 @@ public abstract class VariantStorageETL implements StorageETL {
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
 
-        for (Integer fileId : fileIds) {
-            checkLoadedVariants(input, fileId, studyConfiguration, options);
-        }
+        checkLoadedVariants(input, fileIds, studyConfiguration, options);
 
         if (annotate) {
 
@@ -723,8 +721,26 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
+    @Override
+    public void close() throws StorageManagerException {
+        if (dbAdaptor != null) {
+            try {
+                dbAdaptor.close();
+            } catch (IOException e) {
+                throw new StorageManagerException("Error closing DBAdaptor", e);
+            }
+        }
+    }
+
     protected abstract void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options)
             throws StorageManagerException;
+
+    protected void checkLoadedVariants(URI input, List<Integer> fileIds, StudyConfiguration studyConfiguration, ObjectMap options)
+            throws StorageManagerException {
+        for (Integer fileId : fileIds) {
+            checkLoadedVariants(input, fileId, studyConfiguration, options);
+        }
+    }
 
 
     public static String buildFilename(String studyName, int fileId) {
@@ -795,7 +811,7 @@ public abstract class VariantStorageETL implements StorageETL {
             if (studyConfiguration.getFileIds().containsKey(fileName)) {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {
-                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(0) + 1;
+                fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(-1) + 1;
             }
             //throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
         }

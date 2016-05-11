@@ -7,7 +7,7 @@ import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.server.utils.VariantFetcher;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
@@ -91,7 +91,7 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             SearchVariantsResponse response = new SearchVariantsResponse();
 
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
-            List<Variant> variants = variantFetcher.variantsStudy((int) studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
+            List<Variant> variants = variantFetcher.getVariantsPerStudy((int) studyId, queryOptions.getString(REGION.key()), false, null, 0, sessionId, queryOptions).getResult();
             response.setNextPageToken(Integer.toString(++page));
             response.setVariants(variants);
             return buildResponse(Response.ok(response.toString(), MediaType.APPLICATION_JSON_TYPE));

@@ -27,19 +27,15 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
-import java.util.Properties;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -62,6 +58,8 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     CatalogStudyDBAdaptor catalogStudyDBAdaptor;
     CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
 
+    private CatalogConfiguration catalogConfiguration;
+
     @AfterClass
     public static void afterClass() {
         catalogDBAdaptor.close();
@@ -69,7 +67,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
     @Before
     public void before() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
+        catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml")
                 .openStream());
 
         DataStoreServerAddress dataStoreServerAddress = new DataStoreServerAddress(
@@ -104,12 +102,13 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     public void initDefaultCatalogDB() throws CatalogException {
 
         assertTrue(!catalogDBAdaptor.isCatalogDBReady());
-        catalogDBAdaptor.initializeCatalogDB();
+        catalogDBAdaptor.installCatalogDB(catalogConfiguration);
+//        catalogDBAdaptor.initializeCatalogDB(new Admin());
 
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", User.Role.USER, new Status(), "", 100, 1000,
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", User.Role.USER, new User.UserStatus(), "", 100, 1000,
                 Arrays.<Project>asList(new Project("project", "P1", "", new Status(), ""), new Project("project", "P2", "", new Status(),
                         ""), new Project("project", "P3", "", new Status(), "")),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), Collections.<String, Object>emptyMap(), Collections
@@ -117,14 +116,14 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user1, null);
         assertNotNull(createUser.getResult());
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.Role.USER, new Status());
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.Role.USER, new User.UserStatus());
         createUser = catalogUserDBAdaptor.insertUser(user2, null);
         assertNotNull(createUser.getResult());
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, new Status(), "", 1222, 122222,
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, new User.UserStatus(), "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
                         Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", "", new Status(), "", 0, "", null,
-                                        Collections.<Experiment>emptyList(),
+                                        null, Collections.<Experiment>emptyList(),
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/",
                                                         null, null, "", new File.FileStatus(File.FileStatus.READY), 1000),
@@ -142,10 +141,10 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         createUser = catalogUserDBAdaptor.insertUser(user3, null);
         assertNotNull(createUser.getResult());
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, new Status(), "", 0, 50000,
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, new User.UserStatus(), "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", "", new Status(), "", 0, "", null, null,
-                                        Arrays.asList(
+                                        null, Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
@@ -160,7 +159,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                                 ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new
                                         LinkedList<>(), new LinkedList<>(), null, null, Collections.emptyMap(),
                                         Collections.emptyMap()),
-                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", "", new Status(), "", 0, "", null, null,
+                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", "", new Status(), "", 0, "", null, null, null,
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
@@ -198,5 +197,12 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         thrown.expect(CatalogDBException.class);
         catalogDBAdaptor.initializeCatalogDB();
     }
+<<<<<<< HEAD
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+>>>>>>> feature/catalog-next
+=======
+>>>>>>> feature/catalog-next
 */
 }

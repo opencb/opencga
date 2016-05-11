@@ -213,13 +213,13 @@ public class JobManager extends AbstractManager implements IJobManager {
         long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
 
-        QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, false);
+        QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, new QueryOptions());
         // Delete the output files of the job if they are not in use.
         // TODO: Add an if clause to do this only when the user does not want to keep the output files.
         // 2. Check the output files that were created with the deleted jobs.
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), queryResult.first().getOutput());
         try {
-            fileDBAdaptor.delete(query, false);
+            fileDBAdaptor.delete(query, new QueryOptions());
         } catch (CatalogDBException e) {
             logger.info("Delete job { Job: " + queryResult.first() + " }:" + e.getMessage());
         }
@@ -229,18 +229,73 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(studyId, "studyId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        //query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = jobDBAdaptor.rank(query, field, numResults, asc);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(studyId, "studyId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = jobDBAdaptor.groupBy(query, field, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(fields, "fields");
+        ParamUtils.checkObj(studyId, "studyId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = jobDBAdaptor.groupBy(query, fields, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override

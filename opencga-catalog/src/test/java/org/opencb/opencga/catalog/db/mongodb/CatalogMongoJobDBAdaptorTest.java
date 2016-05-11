@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -43,12 +44,12 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
                 ()), null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
-        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, false);
+        QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, new QueryOptions());
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
         assertEquals(Job.JobStatus.DELETED, queryResult.first().getStatus().getStatus());
         try {
-            System.out.println(catalogJobDBAdaptor.delete(-1, false));
+            System.out.println(catalogJobDBAdaptor.delete(-1, new QueryOptions()));
             fail("error: Expected \"Job not found\" exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);

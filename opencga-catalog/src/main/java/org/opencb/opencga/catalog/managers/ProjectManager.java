@@ -12,6 +12,7 @@ import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.authorization.CatalogPermission;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -19,7 +20,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.util.List;
@@ -64,19 +64,17 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult<Project> create(String ownerId, String name, String alias, String description,
+    public QueryResult<Project> create(String name, String alias, String description,
                                        String organization, QueryOptions options, String sessionId)
             throws CatalogException {
-        ParamUtils.checkParameter(ownerId, "ownerId");
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkAlias(alias, "alias");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         //Only the user can create a project
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)
-                && !userId.equals(ownerId)) {
-            throw new CatalogException("Only the user \"" + ownerId + "\" can create a project with himself as owner");
+        if (userId.isEmpty()) {
+            throw new CatalogException("The session id introduced does not correspond to any registered user.");
         }
 
         description = description != null ? description : "";
@@ -84,16 +82,16 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
 
         Project project = new Project(name, alias, description, new Status(), organization);
 
-        QueryResult<Project> queryResult = projectDBAdaptor.createProject(ownerId, project, options);
+        QueryResult<Project> queryResult = projectDBAdaptor.createProject(userId, project, options);
         project = queryResult.getResult().get(0);
 
         try {
-            catalogIOManagerFactory.getDefault().createProject(ownerId, Long.toString(project.getId()));
+            catalogIOManagerFactory.getDefault().createProject(userId, Long.toString(project.getId()));
         } catch (CatalogIOException e) {
             e.printStackTrace();
-            projectDBAdaptor.delete(project.getId(), false);
+            projectDBAdaptor.delete(project.getId(), new QueryOptions());
         }
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastActivity(userId);
         auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -103,7 +101,6 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     public QueryResult<Project> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                objectMap.getString("ownerId"),
                 objectMap.getString("name"),
                 objectMap.getString("alias"),
                 objectMap.getString("description"),
@@ -197,17 +194,79 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
-    public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult rank(String userId, Query query, String field, int numResults, boolean asc, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(userId, "userId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userOfQuery = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!userOfQuery.equals(userId)) {
+            // The user cannot read projects of other users.
+            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
+        }
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = projectDBAdaptor.rank(query, field, numResults, asc);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(String userId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(userId, "userId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userOfQuery = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!userOfQuery.equals(userId)) {
+            // The user cannot read projects of other users.
+            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
+        }
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = projectDBAdaptor.groupBy(query, field, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(String userId, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(fields, "fields");
+        ParamUtils.checkObj(userId, "userId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userOfQuery = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (!userOfQuery.equals(userId)) {
+            // The user cannot read projects of other users.
+            throw CatalogAuthorizationException.cantRead(userOfQuery, "Project", -1, userId);
+        }
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = projectDBAdaptor.groupBy(query, fields, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 }

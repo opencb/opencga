@@ -25,7 +25,6 @@ import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.lang3.NotImplementedException;
-import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -133,7 +132,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            QueryResult<Long> countSessions = userCollection.count(new BasicDBObject("sessions.id", session.getId()));
             QueryResult<Long> countSessions = count(query);
             if (countSessions.getResult().get(0) != 0) {
-                throw new CatalogDBException("Already logged");
+                throw new CatalogDBException("Already logged in");
             } else {
                 addSession(userId, session);
                 ObjectMap resultObjectMap = new ObjectMap();
@@ -186,7 +185,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new Status());
+        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new User.UserStatus());
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");
@@ -403,6 +402,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
 
@@ -422,6 +424,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
 
@@ -448,16 +453,22 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
         Map<String, Object> userParameters = new HashMap<>();
 
-        final String[] acceptedParams = {"name", "email", "organization", "lastActivity", "status"};
+        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key(),
+                QueryParams.LAST_ACTIVITY.key(), };
         filterStringParams(parameters, userParameters, acceptedParams);
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+        }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
         filterEnumParams(parameters, userParameters, acceptedEnums);
 
-        final String[] acceptedIntParams = {"diskQuota", "diskUsage"};
-        filterIntParams(parameters, userParameters, acceptedIntParams);
+        final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
+        filterLongParams(parameters, userParameters, acceptedLongParams);
 
-        final String[] acceptedMapParams = {"attributes", "configs"};
+        final String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), "configs"};
         filterMapParams(parameters, userParameters, acceptedMapParams);
 
         if (!userParameters.isEmpty()) {
@@ -485,50 +496,102 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("Update user", startTime, get(query, null));
     }
 
-    public QueryResult<User> setStatus(String userId, Status status) throws CatalogDBException {
-        return update(userId, new ObjectMap("status", status));
+    public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
+        return update(userId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
-    public QueryResult<User> delete(long id, boolean force) throws CatalogDBException {
+    public QueryResult<User> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
         throw new NotImplementedException("Delete user by int id. The id should be a string.");
     }
 
-    public QueryResult<User> delete(String id, boolean force) throws CatalogDBException {
+    public QueryResult<User> delete(String id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        Query query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id);
-        delete(query, force);
-        return endQuery("Delete user", startTime, get(query, new QueryOptions()));
+
+        checkUserExists(id);
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            Query query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), id)
+                    .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(query, queryOptions);
+        }
+
+        // Check the current status is not deleted or removed.
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), "!=" + User.UserStatus.DELETED + ";!=" + User.UserStatus.REMOVED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The user {" + id + "} could not be deleted. It was already deleted/removed.");
+        }
+        setStatus(id, User.UserStatus.DELETED);
+
+        query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id)
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED);
+
+        return endQuery("Delete user", startTime, get(query, queryOptions));
     }
 
-    @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
+    /**
+     * Checks whether the userId has any active project.
+     *
+     * @param userId user id.
+     * @throws CatalogDBException when the user has active projects. Projects must be deleted first.
+     */
+    private void checkCanDelete(String userId) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), userId);
+        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.PROJECTS.key());
 
-        List<User> userList = get(query, new QueryOptions()).getResult();
-        List<Long> projectIds = new ArrayList<>();
-        for (User user : userList) {
-            for (Project project : user.getProjects()) {
-                projectIds.add(project.getId());
+        User user = get(query, options).first();
+
+        for (Project project : user.getProjects()) {
+            if (project.getStatus().getStatus() == Status.READY) {
+                throw new CatalogDBException("User {" + userId + "} cannot be deleted. The project {" + project.getName() + " - "
+                        + project.getId() + "} is still in use. You must delete it first.");
             }
         }
 
-        if (projectIds.size() > 0) {
-            Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
-            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery, force);
-        }
+    }
 
-        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
-                QueryParams.STATUS_STATUS.key(), Status.DELETED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-                new QueryOptions());
+    @Override
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+//        long startTime = startQuery();
+//
+//        List<User> userList = get(query, new QueryOptions()).getResult();
+//        List<Long> projectIds = new ArrayList<>();
+//        for (User user : userList) {
+//            for (Project project : user.getProjects()) {
+//                projectIds.add(project.getId());
+//            }
+//        }
+//
+//        if (projectIds.size() > 0) {
+//            Query projectIdsQuery = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), StringUtils.join(projectIds.toArray(), ","));
+//            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery, , force);
+//        }
+//
+//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
+//                QueryParams.STATUS_STATUS.key(), Status.DELETED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                new QueryOptions());
+//
+//        if (deleted.first().getModifiedCount() == 0) {
+//            throw CatalogDBException.deleteError("User");
+//        } else {
+//            return endQuery("Delete user", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+//        }
 
-        if (deleted.first().getModifiedCount() == 0) {
-            throw CatalogDBException.deleteError("User");
-        } else {
-            return endQuery("Delete user", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-        }
+    }
 
+    @Override
+    public QueryResult<User> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override

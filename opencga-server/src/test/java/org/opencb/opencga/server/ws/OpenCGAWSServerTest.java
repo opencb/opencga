@@ -36,7 +36,6 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.app.StorageMain;
-import org.opencb.opencga.storage.app.StorageServerMain;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 
 import javax.ws.rs.client.Entity;
@@ -155,14 +154,14 @@ public class OpenCGAWSServerTest {
         }
 
         //Create a new user with permissions just over 2 samples.
-        String userTest2 = OpenCGAWSServer.catalogManager.createUser("userTest2", "userTest2", "my@email.com", "1234", "ACME", new QueryOptions()).first().getId();
+        String userTest2 = OpenCGAWSServer.catalogManager.createUser("userTest2", "userTest2", "my@email.com", "1234", "ACME", null, new QueryOptions()).first().getId();
         String sessionId2 = OpenCGAWSServer.catalogManager.login(userTest2, "1234", "127.0.0.1").first().getString("sessionId");
-        OpenCGAWSServer.catalogManager.addMemberToGroup(study.getId(), AuthorizationManager.MEMBERS_GROUP, userTest2, sessionId);
+        OpenCGAWSServer.catalogManager.addMemberToGroup(study.getId(), AuthorizationManager.MEMBERS_ROLE, userTest2, sessionId);
 
         QueryResult<Sample> allSamples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(),
                 new Query(CatalogSampleDBAdaptor.QueryParams.NAME.key(), "NA19685,NA19661"), new QueryOptions(), sessionId);
-        OpenCGAWSServer.catalogManager.shareSample(allSamples.getResult().get(0).getId() + "", "@" + AuthorizationManager.MEMBERS_GROUP,
-                new AclEntry("@" + AuthorizationManager.MEMBERS_GROUP, true, false, false, false), sessionId);
+        OpenCGAWSServer.catalogManager.shareSample(allSamples.getResult().get(0).getId() + "", "@" + AuthorizationManager.MEMBERS_ROLE,
+                new AclEntry("@" + AuthorizationManager.MEMBERS_ROLE, true, false, false, false), sessionId);
         OpenCGAWSServer.catalogManager.shareSample(allSamples.getResult().get(1).getId() + "", userTest2,
                 new AclEntry(userTest2, true, false, false, false), sessionId);
 

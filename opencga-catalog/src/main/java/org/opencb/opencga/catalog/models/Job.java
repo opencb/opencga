@@ -53,27 +53,33 @@ public class Job {
      * Catalog unique identifier.
      */
     private long id;
+
     /**
      * User given job name.
      */
     private String name;
+
     /**
      * UserId of the user that created the job.
      */
     private String userId;
+
     /**
      * Name of the tool to be executed.
      */
     private String toolName;
+
     /**
      * Job creation date.
      */
     private String date;
     private String description;
+
     /**
      * Start time in milliseconds.
      */
     private long startTime;
+
     /**
      * End time in milliseconds.
      */
@@ -98,17 +104,17 @@ public class Job {
     public Job() {
     }
 
-    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,
-               URI tmpOutDirUri, List<Long> input) {
+    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, URI tmpOutDirUri,
+               List<Long> input) {
         this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1,
                 new JobStatus(JobStatus.PREPARED), 0, outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(),
                 new HashMap<>(), new HashMap<>());
     }
 
-    public Job(long id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, long visits,
-               JobStatus jobStatus, long diskUsage, long outDirId, URI tmpOutDirUri, List<Long> input,
-               List<Long> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+    public Job(long id, String name, String userId, String toolName, String date, String description, long startTime, long endTime,
+               String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId, URI tmpOutDirUri,
+               List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
+               Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -397,7 +403,7 @@ public class Job {
             if (isValid(status)) {
                 init(status, message);
             } else {
-                init(UNKNOWN, message);
+                throw new IllegalArgumentException("Unknown status " + status);
             }
         }
 

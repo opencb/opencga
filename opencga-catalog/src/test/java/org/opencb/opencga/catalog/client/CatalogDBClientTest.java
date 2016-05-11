@@ -44,12 +44,13 @@ public class CatalogDBClientTest {
     @BeforeClass
     public static void beforeClass() throws IOException, CatalogException {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogDBClientTest.class.getClassLoader().getClass()
-                .getResource("/catalog-configuration.yml").openStream());
+                .getResource("/catalog-configuration-test.yml").openStream());
         /*
         Properties catalogProperties = new Properties();
         catalogProperties.load(CatalogDBClientTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
         */
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.installCatalogDB();
         QueryResult<ObjectMap> result = catalogManager.loginAsAnonymous("test-ip");
         userId = result.getResult().get(0).getString("userId");
         sessionId = result.getResult().get(0).getString("sessionId");

@@ -34,6 +34,7 @@ import java.util.Arrays;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public class StudyMongoDBAdaptor implements StudyDBAdaptor {
 
     private final MongoDataStoreManager mongoManager;

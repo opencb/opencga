@@ -96,9 +96,9 @@ public class CohortWSServer extends OpenCGAWSServer {
                 }
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
-                    Query samplesQuery = new Query("annotation", variableName + ":" + s)
+                    Query samplesQuery = new Query("annotation." + variableName, s)
                             .append("variableSetId", variableSetId);
-                    cohorts.add(createCohort(studyId, s, type, cohortDescription, query, samplesQOptions));
+                    cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
             } else {
                 //Create empty cohort

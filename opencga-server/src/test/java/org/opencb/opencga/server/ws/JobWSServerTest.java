@@ -5,7 +5,6 @@ import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -67,7 +66,7 @@ public class JobWSServerTest {
                 .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
                         status, outDirId, Collections.emptyList(), null, null)), String.class);
 
-        QueryResponse<QueryResult<Job>> response = WSServerTestUtils.parseResult(json, Job.class);
+        QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
         Job job = response.getResponse().get(0).first();
 
         assertEquals(jobName, job.getName());
@@ -94,7 +93,7 @@ public class JobWSServerTest {
                 .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
                         status, outDirId, Collections.emptyList(), null, null)), String.class);
 
-        QueryResponse<QueryResult<Job>> response = WSServerTestUtils.parseResult(json, Job.class);
+        QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
         Job job = response.getResponse().get(0).first();
 
         assertEquals(jobName, job.getName());

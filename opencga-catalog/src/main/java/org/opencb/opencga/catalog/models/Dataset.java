@@ -31,18 +31,21 @@ public class Dataset {
 
     private List<Long> files;
 
+    private Status status;
+
     private Map<String, Object> attributes;
 
     public Dataset() {
     }
 
-    public Dataset(int id, String name, String creationDate, String description, List<Long> files,
+    public Dataset(int id, String name, String creationDate, String description, List<Long> files, Status status,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
         this.description = description;
         this.files = files;
+        this.status = status;
         this.attributes = attributes;
     }
 
@@ -54,6 +57,7 @@ public class Dataset {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", files=").append(files);
+        sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -63,47 +67,62 @@ public class Dataset {
         return id;
     }
 
-    public void setId(long id) {
+    public Dataset setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Dataset setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public Dataset setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Dataset setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public List<Long> getFiles() {
         return files;
     }
 
-    public void setFiles(List<Long> files) {
+    public Dataset setFiles(List<Long> files) {
         this.files = files;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Dataset setStatus(Status status) {
+        this.status = status;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Dataset setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 }

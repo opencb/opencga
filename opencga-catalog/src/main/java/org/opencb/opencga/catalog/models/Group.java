@@ -19,18 +19,12 @@ public class Group {
      */
     private List<String> userIds;
 
-    /**
-     * Group permissions over one study.
-     */
-    private StudyPermissions permissions;
-
     public Group() {
     }
 
-    public Group(String id, List<String> userIds, StudyPermissions permissions) {
+    public Group(String id, List<String> userIds) {
         this.id = id;
         this.userIds = userIds;
-        this.permissions = permissions;
     }
 
     @Override
@@ -38,7 +32,6 @@ public class Group {
         final StringBuilder sb = new StringBuilder("Group{");
         sb.append("id='").append(id).append('\'');
         sb.append(", userIds=").append(userIds);
-        sb.append(", permissions=").append(permissions);
         sb.append('}');
         return sb.toString();
     }
@@ -58,15 +51,6 @@ public class Group {
 
     public Group setUserIds(List<String> userIds) {
         this.userIds = userIds;
-        return this;
-    }
-
-    public StudyPermissions getPermissions() {
-        return permissions;
-    }
-
-    public Group setPermissions(StudyPermissions permissions) {
-        this.permissions = permissions;
         return this;
     }
 }
