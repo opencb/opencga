@@ -111,7 +111,7 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
      * @param query query.
      * @param fileIds file ids.
      * @return A queryResult object containing the number of datasets matching the query.
-     * @throws CatalogDBException
+     * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
 
@@ -121,7 +121,7 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
      * @param query query.
      * @param fileIds file ids.
      * @return A queryResult object containing the number of datasets matching the query.
-     * @throws CatalogDBException
+     * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
 

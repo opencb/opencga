@@ -404,13 +404,15 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             checkCanDelete(id);
         }
 
-        deleteReferencesToFile(id);
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            deleteReferencesToFile(id);
+        }
 
         // Change the status of the project to deleted
         setStatus(id, Status.DELETED);
 
-        query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id)
-                .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
 
         return endQuery("Delete file", startTime, get(query, queryOptions));
     }
@@ -743,7 +745,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     /**
-     * Checks whether the fileId has any active study.
+     * Checks whether the fileId is being referred on any other document.
      *
      * @param fileId file id.
      * @throws CatalogDBException when the fileId is being used as input of any job or dataset.

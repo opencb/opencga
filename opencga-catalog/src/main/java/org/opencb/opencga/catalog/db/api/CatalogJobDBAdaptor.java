@@ -89,7 +89,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
      *
      * @param fileIds file ids.
      * @return A queryResult object containing the number of datasets matching the query.
-     * @throws CatalogDBException
+     * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> extractFilesFromJobs(List<Long> fileIds) throws CatalogDBException;
 
