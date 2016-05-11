@@ -187,6 +187,27 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         }
     }
 
+    @Override
+    public QueryResult<Long> extractFilesFromJobs(List<Long> fileIds) throws CatalogDBException {
+        long startTime = startQuery();
+        long numResults;
+
+        // Check for input
+        Query query = new Query(QueryParams.INPUT.key(), fileIds);
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$pull", new Document(QueryParams.INPUT.key(), new Document("$in", fileIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        numResults = jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
+
+        // Check for output
+        query = new Query(QueryParams.OUTPUT.key(), fileIds);
+        bsonQuery = parseQuery(query);
+        update = new Document("$pull", new Document(QueryParams.OUTPUT.key(), new Document("$in", fileIds)));
+        numResults += jobCollection.update(bsonQuery, update, multi).first().getModifiedCount();
+
+        return endQuery("Extract files from jobs", startTime, Collections.singletonList(numResults));
+    }
+
     @Deprecated
     @Override
     public QueryResult<Job> getAllJobs(Query query, QueryOptions options) throws CatalogDBException {

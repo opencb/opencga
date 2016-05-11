@@ -625,7 +625,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
             // Delete the active studies (if any)
-            query = new Query(PRIVATE_PROJECT_ID, id);
+            query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), id);
             dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(query, queryOptions);
         }
 

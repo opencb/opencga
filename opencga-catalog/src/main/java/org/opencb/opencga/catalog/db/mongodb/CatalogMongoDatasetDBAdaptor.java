@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -240,6 +241,29 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> restore(Query query) throws CatalogDBException {
         return null;
+    }
+
+    @Override
+    public QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
+        long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$push", new Document(QueryParams.FILES.key(), new Document("$each", fileIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
+        return endQuery("Insert files into datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$pull", new Document(QueryParams.FILES.key(), new Document("$in", fileIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
+        return endQuery("Extract files from datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 
     @Override
