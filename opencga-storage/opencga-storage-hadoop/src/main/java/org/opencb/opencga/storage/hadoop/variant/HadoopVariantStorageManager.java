@@ -146,7 +146,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
                 storageETL.getOptions().put(HADOOP_LOAD_ARCHIVE, false);
                 storageETL.getOptions().put(HADOOP_LOAD_VARIANT, true);
-//                storageETL.merge(studyId, indexedFiles); // TODO enable again
+                //storageETL.merge(studyId, indexedFiles); // TODO enable again
                 storageETL.postLoad(inputFile, outdirUri);
 
                 indexedFiles.clear();

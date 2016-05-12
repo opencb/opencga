@@ -1,34 +1,56 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang3.StringUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderVersion;
+import org.apache.avro.generic.GenericRecord;
+import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
+import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.runner.StringDataReader;
+import org.opencb.opencga.storage.core.runner.StringDataWriter;
+import org.opencb.opencga.storage.core.runner.VcfVariantReader;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
+import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Paths;
+import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
 
@@ -65,8 +87,24 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
         logger.info("PreTransform: " + input);
 //        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
-        options.put(VariantStorageManager.Options.GVCF.key(), true);
+        if (!options.containsKey(VariantStorageManager.Options.TRANSFORM_FORMAT.key())) {
+            options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
+        }
+        String transVal = options.getString(Options.TRANSFORM_FORMAT.key());
+        switch (transVal){
+            case "avro":
+            case "proto":
+                break;
+            default:
+                throw new NotImplementedException(String.format("Output format %s not supported for Hadoop!", transVal));
+        }
+        if (!options.containsKey(VariantStorageManager.Options.GVCF.key())) {
+            options.put(VariantStorageManager.Options.GVCF.key(), true);
+        }
+        boolean isGvcf = options.getBoolean(Options.GVCF.key());
+        if (!isGvcf) {
+            throw new NotImplementedException("Only GVCF format supported!!!");
+        }
         return super.preTransform(input);
     }
 
@@ -87,39 +125,6 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
         if (loadArch) {
             super.preLoad(input, output);
-
-            //TODO: CopyFromLocal input to HDFS
-            if (!input.getScheme().equals("hdfs")) {
-                if (!StringUtils.isEmpty(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY))) {
-                    output = URI.create(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY));
-                }
-                if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
-                    throw new StorageManagerException("Output must be in HDFS");
-                }
-
-                try {
-                    long startTime = System.currentTimeMillis();
-//                    Configuration conf = getHadoopConfiguration(options);
-                    FileSystem fs = FileSystem.get(conf);
-                    Path variantsOutputPath = new Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
-                    logger.info("Copy from {} to {}", new Path(input).toUri(), variantsOutputPath.toUri());
-                    fs.copyFromLocalFile(false, new Path(input), variantsOutputPath);
-                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-
-                    startTime = System.currentTimeMillis();
-                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
-                    Path fileOutputPath = new Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
-                    logger.info("Copy from {} to {}", new Path(fileInput).toUri(), fileOutputPath.toUri());
-                    fs.copyFromLocalFile(false, new Path(fileInput), fileOutputPath);
-                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
-
-                    input = variantsOutputPath.toUri();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-//            throw new StorageManagerException("Input must be on hdfs. Automatically CopyFromLocal pending");
         }
 
         if (loadVar) {
@@ -132,18 +137,20 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
             int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
             boolean missingFilesDetected = false;
 
+            String tableName = getTableName(studyId);
+
             Set<Integer> files = null;
             ArchiveFileMetadataManager fileMetadataManager;
             try {
-                fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(getTableName(studyId), options);
+                fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(tableName, options);
                 files = fileMetadataManager.getLoadedFiles();
             } catch (IOException e) {
                 throw new StorageHadoopException("Unable to read loaded files", e);
             }
-
+            logger.info(String.format("Found files in DB: " + files));
             StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
             List<Integer> pendingFiles = new LinkedList<>();
-
+            logger.info("Found registered indexed files: {}", studyConfiguration.getIndexedFiles());
             for (Integer loadedFileId : files) {
                 VcfMeta meta = null;
                 try {
@@ -154,6 +161,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
 
                 VariantSource source = meta.getVariantSource();
                 Integer fileId1 = Integer.parseInt(source.getFileId());
+                logger.info("Found source for file id {} with registered id {} ", loadedFileId, fileId1);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {
                     checkNewFile(studyConfiguration, fileId1, source.getFileName());
                     studyConfiguration.getFileIds().put(source.getFileName(), fileId1);
@@ -165,6 +173,8 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
                     pendingFiles.add(fileId1);
                 }
             }
+
+            logger.info(String.format("Found pending in DB: " + pendingFiles));
             if (missingFilesDetected) {
                 dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
             }
@@ -172,7 +182,7 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
                 if (!pendingFiles.contains(fileId)) {
-                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table");
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table " + tableName);
                 }
             } else {
                 //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
@@ -198,6 +208,110 @@ public class HadoopVariantStorageETL extends VariantStorageETL {
         }
 
         return input;
+    }
+
+    @Override
+    protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path
+            outputVariantsFile, Path outputMetaFile, boolean includeSrc, String parser, boolean
+            generateReferenceBlocks, int batchSize, String extension, String compression) throws StorageManagerException {
+
+        //Writer
+        DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<VcfSliceProtos.VcfSlice>(outputVariantsFile, compression);
+
+        final Pair<VCFHeader, VCFHeaderVersion> header;
+        final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in
+        // Normalizer
+        VariantNormalizer normalizer = new VariantNormalizer();
+        normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
+
+        // Converter
+        VariantContextToVariantConverter converter = new VariantContextToVariantConverter(
+                source.getStudyId(), source.getFileId(), source.getSamples());
+
+        // Stats calculator
+        VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+        // final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
+
+
+        if (parser.equalsIgnoreCase("htsjdk")) {
+            logger.info("Using HTSJDK to read variants.");
+            header = readHtsHeader(input);
+        } else {
+            throw new NotImplementedException("Please request to read other than vcf file format");
+        }
+
+        VcfVariantReader dataReader = new VcfVariantReader(
+                new StringDataReader(input), header.getKey(), header.getValue(), converter, statsCalculator,
+                normalizer);
+
+        // Transformer
+        VcfMeta meta = new VcfMeta(source);
+        ArchiveHelper helper = new ArchiveHelper(conf, meta);
+        VariantHbaseTransformTask transformTask = new VariantHbaseTransformTask(helper, null);
+
+        logger.info("Generating output file {}", outputVariantsFile);
+
+        long[] t = new long[]{0, 0, 0};
+        long last = System.nanoTime();
+        Long start = System.currentTimeMillis();
+        long end = System.currentTimeMillis();
+        try {
+            dataReader.open();
+            dataReader.pre();
+            dataWriter.open();
+            dataWriter.pre();
+            transformTask.pre();
+
+            start = System.currentTimeMillis();
+            last = System.nanoTime();
+            // Process data
+            List<Variant> read = dataReader.read(batchSize);
+            t[0] += System.nanoTime() - last;
+            last = System.nanoTime();
+            while (!read.isEmpty()) {
+                List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
+                t[1] += System.nanoTime() - last;
+                last = System.nanoTime();
+                dataWriter.write(slices);
+                t[2] += System.nanoTime() - last;
+                last = System.nanoTime();
+                read = dataReader.read(batchSize);
+                t[0] += System.nanoTime() - last;
+                last = System.nanoTime();
+            }
+            List<VcfSliceProtos.VcfSlice> drain = transformTask.drain();
+            t[1] += System.nanoTime() - last;
+            last = System.nanoTime();
+            dataWriter.write(drain);
+            t[2] += System.nanoTime() - last;
+
+            end = System.currentTimeMillis();
+            transformTask.post();
+            dataReader.post();
+            dataWriter.post();
+        } catch (Exception e) {
+            throw new StorageManagerException(
+                    String.format("Error while Transforming file %s into %s ", input, outputVariantsFile), e);
+        } finally {
+            dataWriter.close();
+            dataReader.close();
+        }
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
+        jsonObjectMapper.addMixIn(GenericRecord.class, GenericRecordAvroJsonMixin.class);
+
+        ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
+        try {
+            String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
+            StringDataWriter.write(finalOutputMetaFile, Collections.singletonList(sourceJsonString));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        logger.info("Times for reading: {}, transforming {}, writing {}",
+                TimeUnit.NANOSECONDS.toSeconds(t[0]),
+                TimeUnit.NANOSECONDS.toSeconds(t[1]),
+                TimeUnit.NANOSECONDS.toSeconds(t[2]));
+        return new ImmutablePair<>(start, end);
     }
 
     @Override

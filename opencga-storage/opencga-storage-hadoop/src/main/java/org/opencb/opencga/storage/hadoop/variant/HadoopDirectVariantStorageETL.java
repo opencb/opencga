@@ -1,48 +1,45 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import htsjdk.tribble.readers.LineIterator;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderVersion;
-import org.apache.commons.lang.NotImplementedException;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
-import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
-import org.opencb.biodata.models.variant.*;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
-import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
-import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.runner.StringDataReader;
-import org.opencb.opencga.storage.core.runner.VcfVariantReader;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
-import org.opencb.opencga.storage.hadoop.variant.archive.*;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
@@ -293,6 +290,30 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         return input;
     }
 
+    @Override
+    public URI postLoad(URI input, URI output) throws StorageManagerException {
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            // Current StudyConfiguration may be outdated. Remove it.
+            options.remove(VariantStorageManager.Options.STUDY_CONFIGURATION.key());
+
+            int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+
+            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+            try {
+                phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable(), studyId);
+            } catch (SQLException e) {
+                throw new StorageManagerException("Unable to register study in Phoenix", e);
+            }
+            options.put(VariantStorageManager.Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
+
+            return super.postLoad(input, output);
+        } else {
+            System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
+            return input;
+        }
+    }
+
     /**
      * Read from VCF file, group by slice and insert into HBase table.
      *
@@ -301,9 +322,7 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
     @Override
     public URI load(URI inputUri) throws IOException, StorageManagerException {
         Path input = Paths.get(inputUri.getPath());
-
         int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
-//        int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
 
         ArchiveHelper.setChunkSize(
                 conf, conf.getInt(
@@ -312,11 +331,6 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         ArchiveHelper.setStudyId(conf, studyId);
 
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-//        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
-//        boolean includeStats = options.getBoolean(Options.INCLUDE_STATS.key(), false);
-
-//        String table = archiveTableCredentials.getTable();
-//        String hostAndPort = archiveTableCredentials.getHostAndPort();
 
         if (loadArch) {
             loadArch(input);
@@ -327,8 +341,14 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
     private void loadArch(Path input) throws StorageManagerException {
         String table = archiveTableCredentials.getTable();
         String fileName = input.getFileName().toString();
+        Path sourcePath = input.getParent().resolve(fileName.replace(".variants.proto.gz", ".file.json.gz"));
         boolean includeSrc = false;
-        String parser = options.getString("transform.parser", "htsjdk");
+
+        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
+        if (!StringUtils.equalsIgnoreCase(format, "proto")) {
+            throw new org.apache.commons.lang3.NotImplementedException("Direct loading only available for PROTO files");
+        }
+
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         Integer fileId;
         if (options.getBoolean(
@@ -338,85 +358,36 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         } else {
             fileId = options.getInt(Options.FILE_ID.key());
         }
-        VariantSource.Aggregation aggregation = options.get(
-                Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation
-                        .class,
-                Options.AGGREGATED_TYPE.defaultValue());
-        VariantStudy.StudyType type = options
-                .get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE.defaultValue());
-        VariantSource source = new VariantSource(
-                fileName, fileId.toString(), Integer.toString(
-                studyConfiguration
-                        .getStudyId()),
-                studyConfiguration.getStudyName(), type, aggregation);
+        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
 
-        boolean generateReferenceBlocks = options.getBoolean(Options.GVCF.key(), false);
-
-        int batchSize = options.getInt(Options.TRANSFORM_BATCH_SIZE.key(), Options.TRANSFORM_BATCH_SIZE.defaultValue());
-
-        int numTasks = 1;
-        int capacity = options.getInt("blockingQueueCapacity", numTasks * 2);
-
-        final VariantVcfFactory factory;
-        if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
-            if (VariantSource.Aggregation.NONE.equals(aggregation)) {
-                factory = new VariantVcfFactory();
-            } else {
-                factory = new VariantAggregatedVcfFactory();
-            }
-        } else {
-            throw new StorageManagerException(String.format("Variants input file format not supported: %s", fileName));
-        }
-        // PedigreeReader pedReader = null;c // TODO Pedigree
-        // if (pedigree != null && pedigree.toFile().exists()) { //FIXME Add
-        // "endsWith(".ped") ??
-        // pedReader = new PedigreePedReader(pedigree.toString());
-        // }
-
-        // Read VariantSource
-        source = VariantStorageManager.readVariantSource(input, source);
-
-        // Reader
-        VcfVariantReader dataReader = null;
-        DataWriter<VcfSlice> hbaseWriter = null;
-        VariantHbaseTransformTask transformTask;
-        VariantSource variantSource = new VariantSource(
-                fileName, Integer.toString(fileId), Integer.toString(
-                studyConfiguration.getStudyId()), studyConfiguration.getStudyName());
-
-        if (!parser.equalsIgnoreCase("htsjdk")) {
-            throw new NotImplementedException("Currently only HTSJDK supported");
-        }
-        logger.info("Using HTSJDK to read variants.");
-        FullVcfCodec codec = new FullVcfCodec();
-        VcfMeta meta = new VcfMeta(variantSource);
+        VariantSource source = loadVariantSource(sourcePath);
+        source.setFileId(fileId.toString());
+        source.setStudyId(Integer.toString(studyId));
+        VcfMeta meta = new VcfMeta(source);
         ArchiveHelper helper = new ArchiveHelper(conf, meta);
-        try (InputStream fileInputStream = input.toString().endsWith("gz") ? new GZIPInputStream(
-                new FileInputStream(input.toFile()))
-                : new FileInputStream(input.toFile())) {
-            LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
-            VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
-            VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-            VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-            VariantContextToVariantConverter converter = new VariantContextToVariantConverter(
-                    source.getStudyId(),
-                    source.getFileId(), source.getSamples());
-            VariantNormalizer normalizer = new VariantNormalizer();
-            normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
-            dataReader = new VcfVariantReader(
-                    new StringDataReader(input), header, headerVersion, converter,
-                    statsCalculator, normalizer);
-            transformTask = new VariantHbaseTransformTask(helper, null);
-            hbaseWriter = new VariantHbasePutTask(helper, table);
+
+        VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table);
+        long counter = 0;
+        long start = System.currentTimeMillis();
+        try (InputStream in = new BufferedInputStream(new GZIPInputStream(new FileInputStream(input.toFile())))) {
+            hbaseWriter.open();
+            hbaseWriter.pre();
+            VcfSlice slice = VcfSlice.parseDelimitedFrom(in);
+            while (null != slice) {
+                ++counter;
+                hbaseWriter.write(slice);
+                slice = VcfSlice.parseDelimitedFrom(in);
+            }
+            hbaseWriter.post();
         } catch (IOException e) {
-            throw new StorageManagerException("Unable to read VCFHeader", e);
+            throw new IllegalStateException("Problems reading " + input, e);
+        } finally {
+            hbaseWriter.close();
         }
-        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, capacity, false);
-
-        long time = processFile(dataReader, transformTask, hbaseWriter, batchSize);
-        logger.info("end - start = " + time / 1000.0 + "s");
-        // TODO store results
+        long end = System.currentTimeMillis();
+        logger.info("Read {} slices", counter);
+        logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
         try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(table, conf, null);) {
             manager.updateVcfMetaData(source);
@@ -426,55 +397,15 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         }
     }
 
-    private long processFile(
-            VcfVariantReader dataReader,
-            ParallelTaskRunner.Task<Variant, VcfSlice> task, DataWriter<VcfSlice>
-                    hbaseWriter, int batchSize) throws StorageManagerException {
+    private VariantSource loadVariantSource(Path sourcePath) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
 
-        long start = System.currentTimeMillis();
-
-        List<Variant> read = dataReader.read(batchSize);
-        while (!read.isEmpty()) {
-            List<VcfSlice> slices = task.apply(read);
-            if (!slices.isEmpty()) {
-                hbaseWriter.write(slices);
-            }
-            read = dataReader.read(batchSize);
+        try (InputStream ids = new GZIPInputStream(new BufferedInputStream(new FileInputStream(sourcePath.toFile())))) {
+            return objectMapper.readValue(ids, VariantSource.class);
+        } catch (IOException e) {
+            throw new IllegalStateException("Problems reading " + sourcePath, e);
         }
-        List<VcfSlice> drain = task.drain();
-        if (null != drain && !drain.isEmpty()) {
-            hbaseWriter.write(drain);
-        }
-        long end = System.currentTimeMillis();
-        return end - start;
-    }
-
-    private long processFileParallel(
-            ParallelTaskRunner.Config config, VcfVariantReader dataReader,
-            ParallelTaskRunner.Task<Variant, VcfSlice> task, DataWriter<VcfSlice>
-                    hbaseWriter, int numTasks) throws StorageManagerException {
-
-        ParallelTaskRunner<Variant, VcfSlice> ptr;
-        try {
-            ptr = new ParallelTaskRunner<>(
-                    dataReader,
-                    () -> task,
-                    hbaseWriter,
-                    config
-            );
-        } catch (Exception e) {
-            throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
-        }
-        logger.info("Multi thread transform... [1 reading, {} transforming, 1 writing]", numTasks);
-        long start = System.currentTimeMillis();
-        try {
-            ptr.run();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-            throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
-        }
-        long end = System.currentTimeMillis();
-        return end - start;
     }
 
     @Override

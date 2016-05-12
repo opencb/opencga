@@ -35,7 +35,7 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     }
 
     @Override
-    public boolean pre() {
+    public boolean open() {
         try {
             logger.info("Open connection using " + getHelper().getConf());
             connection = ConnectionFactory.createConnection(getHelper().getConf());

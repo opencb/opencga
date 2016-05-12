@@ -219,8 +219,8 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
                 } finally {
                     connection = null;
                 }
+                logger.info(String.format("Time put: %s", this.timeIndex.get()));
             }
-            logger.info(String.format("Time put: %s", this.timeIndex.get()));
         }
     }
 

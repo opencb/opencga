@@ -39,6 +39,11 @@ public class HBaseManager extends Configured {
     }
 
 
+    @Override
+    public void setConf(Configuration conf) {
+        super.setConf(conf);
+    }
+
     public HBaseManager(Configuration configuration) {
         super(configuration);
     }

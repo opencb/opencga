@@ -3,28 +3,10 @@ package org.opencb.opencga.storage.core.variant;
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.nio.ByteBuffer;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
-import java.util.zip.GZIPInputStream;
-
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.pedigree.io.PedigreePedReader;
 import org.opencb.biodata.formats.pedigree.io.PedigreeReader;
@@ -32,12 +14,7 @@ import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.variant.StudyEntry;
-import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantAggregatedVcfFactory;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.models.variant.VariantVcfFactory;
+import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
@@ -66,6 +43,16 @@ import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.slf4j.Logger;
+
+import java.io.*;
+import java.net.URI;
+import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Supplier;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created on 30/03/16.
@@ -170,6 +157,21 @@ public abstract class VariantStorageETL implements StorageETL {
         return source;
     }
 
+
+    protected Pair<VCFHeader, VCFHeaderVersion> readHtsHeader(Path input) throws StorageManagerException {
+        try (InputStream fileInputStream = input.toString().endsWith("gz")
+                ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                : new FileInputStream(input.toFile())) {
+            FullVcfCodec codec = new FullVcfCodec();
+            LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
+            VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
+            VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
+            return new ImmutablePair<>(header, headerVersion);
+        } catch (IOException e) {
+            throw new StorageManagerException("Unable to read VCFHeader", e);
+        }
+    }
+
     /**
      * Transform raw variant files into biodata model.
      *
@@ -216,22 +218,13 @@ public abstract class VariantStorageETL implements StorageETL {
         }
 
         // TODO Create a utility to determine which extensions are variants files
-        final VariantVcfFactory factory;
-        if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
-            if (VariantSource.Aggregation.NONE.equals(source.getAggregation())) {
-                factory = new VariantVcfFactory();
-            } else {
-                factory = new VariantAggregatedVcfFactory();
-            }
-        } else {
-            throw new StorageManagerException("Variants input file format not supported");
-        }
+        final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
 
         Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
         Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
 
-        logger.info("Transforming variants...");
+        logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
         if (numTasks == 1 && format.equals("json")) { //Run transformation with a SingleThread runner. The legacy way
             if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
@@ -293,18 +286,10 @@ public abstract class VariantStorageETL implements StorageETL {
                 FullVcfCodec codec = new FullVcfCodec();
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
-                try (InputStream fileInputStream = input.toString().endsWith("gz")
-                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
-                        : new FileInputStream(input.toFile())) {
-                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
-                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
-                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                    taskSupplier = () -> new VariantAvroTransformTask(header, headerVersion, finalSource, finalOutputMetaFile,
-                            statsCalculator, includeSrc, generateReferenceBlocks);
-                } catch (IOException e) {
-                    throw new StorageManagerException("Unable to read VCFHeader", e);
-                }
+                Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
+                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, finalOutputMetaFile,
+                        statsCalculator, includeSrc, generateReferenceBlocks);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
@@ -352,19 +337,10 @@ public abstract class VariantStorageETL implements StorageETL {
             Supplier<ParallelTaskRunner.Task<String, String>> taskSupplier;
             if (parser.equalsIgnoreCase("htsjdk")) {
                 logger.info("Using HTSJDK to read variants.");
-                try (InputStream fileInputStream = input.toString().endsWith("gz")
-                        ? new GZIPInputStream(new FileInputStream(input.toFile()))
-                        : new FileInputStream(input.toFile())) {
-                    FullVcfCodec codec = new FullVcfCodec();
-                    LineIterator lineIterator = codec.makeSourceFromStream(fileInputStream);
-                    VCFHeader header = (VCFHeader) codec.readActualHeader(lineIterator);
-                    VCFHeaderVersion headerVersion = codec.getVCFHeaderVersion();
-                    VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
-                    taskSupplier = () -> new VariantJsonTransformTask(header, headerVersion, finalSource,
-                            finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks);
-                } catch (IOException e) {
-                    throw new StorageManagerException("Unable to read VCFHeader", e);
-                }
+                Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
+                VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
+                taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
+                        finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
@@ -394,6 +370,13 @@ public abstract class VariantStorageETL implements StorageETL {
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
+        } else if (format.equals("proto")) {
+            //Read VariantSource
+            source = VariantStorageManager.readVariantSource(input, source);
+            Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression);
+            start = times.getKey();
+            end = times.getValue();
         } else {
             throw new IllegalArgumentException("Unknown format " + format);
         }
@@ -401,6 +384,27 @@ public abstract class VariantStorageETL implements StorageETL {
         logger.info("Variants transformed!");
 
         return outputUri.resolve(outputVariantsFile.getFileName().toString());
+    }
+
+    protected VariantVcfFactory createVariantVcfFactory(VariantSource source, String fileName) throws StorageManagerException {
+        VariantVcfFactory factory;
+        if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz") || fileName.endsWith(".vcf.snappy")) {
+            if (VariantSource.Aggregation.NONE.equals(source.getAggregation())) {
+                factory = new VariantVcfFactory();
+            } else {
+                factory = new VariantAggregatedVcfFactory();
+            }
+        } else {
+            throw new StorageManagerException("Variants input file format not supported");
+        }
+        return factory;
+    }
+
+    protected Pair<Long, Long> processProto(
+            Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
+            Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
+            int batchSize, String extension, String compression) throws StorageManagerException {
+        throw new NotImplementedException("Please request feature");
     }
 
     @Override
