@@ -929,10 +929,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder);
             }
 
-            if (query.containsKey(VariantQueryParams.ANNOT_GENE_TRAITS_PUBMEDS.key())) {
-                String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_PUBMEDS.key());
-                addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_PUBMEDS_FIELD, value, geneTraitBuilder);
-            }
             DBObject geneTraitQuery = geneTraitBuilder.get();
             if (geneTraitQuery.keySet().size() != 0) {
                 builder.and(DocumentToVariantConverter.ANNOTATION_FIELD

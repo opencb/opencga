@@ -404,20 +404,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 //            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
 //        }
 
-        query = new Query(ANNOT_GENE_TRAITS_ID.key(), "umls:C1306459")
-                .append(ANNOT_GENE_TRAITS_PUBMEDS.key(), ">350")
-                .append(ANNOT_GENE_TRAITS_NAME.key(), "~=malignant neoplasm");
-        queryResult = dbAdaptor.get(query, null);
-        System.out.println("queryResult = " + queryResult.getNumResults());
-        for (Variant variant : queryResult.getResult()) {
-            System.out.println("variant = " + variant);
-            for (GeneTraitAssociation geneTraitAssociation : variant.getAnnotation().getGeneTraitAssociation()) {
-                if (geneTraitAssociation.getId().equals("umls:C1306459")) {
-                    System.out.println("geneTraitAssociation.getNumberOfPubmeds() = " + geneTraitAssociation.getNumberOfPubmeds());
-                }
-            }
-        }
-
         int i = 0;
         for (Map.Entry<String, Integer> entry : idsMap.entrySet()) {
             query = new Query(ANNOT_GENE_TRAITS_ID.key(), entry.getKey());

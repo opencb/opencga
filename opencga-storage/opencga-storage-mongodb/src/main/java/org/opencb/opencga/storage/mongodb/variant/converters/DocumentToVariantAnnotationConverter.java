@@ -87,7 +87,7 @@ public class DocumentToVariantAnnotationConverter
     public static final String GENE_TRAIT_NAME_FIELD = "name";
     public static final String GENE_TRAIT_HPO_FIELD = "name";
     public static final String GENE_TRAIT_SCORE_FIELD = "sc";
-    public static final String GENE_TRAIT_PUBMEDS_FIELD = "nPubmed";
+//    public static final String GENE_TRAIT_PUBMEDS_FIELD = "nPubmed";
     public static final String GENE_TRAIT_TYPES_FIELD = "types";
 //    public static final String GENE_TRAIT_SOURCES_FIELD = "srcs";
     public static final String GENE_TRAIT_SOURCE_FIELD = "src";
@@ -251,7 +251,7 @@ public class DocumentToVariantAnnotationConverter
                         getDefault(document, GENE_TRAIT_NAME_FIELD, ""),
                         getDefault(document, GENE_TRAIT_HPO_FIELD, ""),
                         (float) getDefault(document, GENE_TRAIT_SCORE_FIELD, 0F),
-                        getDefault(document, GENE_TRAIT_PUBMEDS_FIELD, 0),
+                        0, //getDefault(document, GENE_TRAIT_PUBMEDS_FIELD, 0),
                         getDefault(document, GENE_TRAIT_TYPES_FIELD, Collections.emptyList()),
                         Collections.emptyList(),
                         getDefault(document, GENE_TRAIT_SOURCE_FIELD, "")
@@ -498,7 +498,7 @@ public class DocumentToVariantAnnotationConverter
                     putNotNull(d, GENE_TRAIT_ID_FIELD, geneTraitAssociation.getId());
                     putNotNull(d, GENE_TRAIT_NAME_FIELD, geneTraitAssociation.getName());
                     putNotNull(d, GENE_TRAIT_SCORE_FIELD, geneTraitAssociation.getScore());
-                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
+//                    putNotNull(d, GENE_TRAIT_PUBMEDS_FIELD, geneTraitAssociation.getNumberOfPubmeds());
                     putNotNull(d, GENE_TRAIT_TYPES_FIELD, geneTraitAssociation.getAssociationTypes());
 //                    putNotNull(d, GENE_TRAIT_SOURCES_FIELD, geneTraitAssociation.getSources());
                     putNotNull(d, GENE_TRAIT_SOURCE_FIELD, geneTraitAssociation.getSource());

@@ -106,33 +106,14 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
         addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
         addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.conservation);
+        addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.flags);
+        addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
+        addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
+        addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
+        addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
 
-        if (queryVariantsOptions.proteinSubstitution != null && !queryVariantsOptions.proteinSubstitution.isEmpty()) {
-            String[] fields = queryVariantsOptions.proteinSubstitution.split(",");
-            for (String field : fields) {
-                String[] arr = field
-                        .replaceAll("==", " ")
-                        .replaceAll(">=", " ")
-                        .replaceAll("<=", " ")
-                        .replaceAll("=", " ")
-                        .replaceAll("<", " ")
-                        .replaceAll(">", " ")
-                        .split(" ");
-
-                if (arr != null && arr.length > 1) {
-                    switch (arr[0]) {
-                        case "sift":
-                            query.put(ANNOT_SIFT.key(), field.replaceAll("sift", ""));
-                            break;
-                        case "polyphen":
-                            query.put(ANNOT_POLYPHEN.key(), field.replaceAll("polyphen", ""));
-                            break;
-                        default:
-                            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
-                            break;
-                    }
-                }
-            }
+        if (StringUtils.isNoneEmpty(queryVariantsOptions.proteinSubstitution)) {
+            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), queryVariantsOptions.proteinSubstitution);
         }
 
 
@@ -275,7 +256,7 @@ public class VariantQueryCommandUtils {
     }
 
     private static void addParam(Query query, VariantDBAdaptor.VariantQueryParams key, String value) {
-        if (value != null && !value.isEmpty()) {
+        if (StringUtils.isNotEmpty(value)) {
             query.put(key.key(), value);
         }
     }
