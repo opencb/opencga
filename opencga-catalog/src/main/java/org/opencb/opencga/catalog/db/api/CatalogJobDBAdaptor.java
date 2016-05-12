@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -82,6 +83,15 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     QueryResult<Job> modifyJob(long jobId, ObjectMap parameters) throws CatalogDBException;
 
     long getStudyIdByJobId(long jobId) throws CatalogDBException;
+
+    /**
+     * Extract the fileIds given from the jobs matching the query. It will try to take them out from the input and output arrays.
+     *
+     * @param fileIds file ids.
+     * @return A queryResult object containing the number of datasets matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> extractFilesFromJobs(List<Long> fileIds) throws CatalogDBException;
 
     /*
      * Tool methods

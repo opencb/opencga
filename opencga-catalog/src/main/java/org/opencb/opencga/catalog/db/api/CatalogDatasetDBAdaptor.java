@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -103,5 +104,25 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
     QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException;
 
     MongoDBCollection getDatasetCollection();
+
+    /**
+     * Adds the fileIds to the datasets that matches the query.
+     *
+     * @param query query.
+     * @param fileIds file ids.
+     * @return A queryResult object containing the number of datasets matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
+
+    /**
+     * Extract the fileIds given from the datasets that matching the query.
+     *
+     * @param query query.
+     * @param fileIds file ids.
+     * @return A queryResult object containing the number of datasets matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
 
 }

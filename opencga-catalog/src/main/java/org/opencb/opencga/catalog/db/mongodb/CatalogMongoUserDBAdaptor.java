@@ -33,7 +33,6 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FilterConverter;
@@ -402,9 +401,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
 
@@ -424,9 +420,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
 
@@ -502,32 +495,39 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new NotImplementedException("Delete user by int id. The id should be a string.");
+        throw new CatalogDBException("Delete user by int id. The id should be a string.");
     }
 
     public QueryResult<User> delete(String id, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
         checkUserExists(id);
+        // Check the user is active or banned
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED + "," + User.UserStatus.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            User user = get(query, options).first();
+            throw new CatalogDBException("The user {" + id + "} was already " + user.getStatus().getStatus());
+        }
+
+        // If we don't find the force parameter, we check first if the user does not have an active project.
         if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
             checkCanDelete(id);
         }
+
         if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
-            Query query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), id)
-                    .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+            // Delete the active projects (if any)
+            query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), id);
             dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(query, queryOptions);
         }
 
-        // Check the current status is not deleted or removed.
-        Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), "!=" + User.UserStatus.DELETED + ";!=" + User.UserStatus.REMOVED);
-        if (count(query).first() == 0) {
-            throw new CatalogDBException("The user {" + id + "} could not be deleted. It was already deleted/removed.");
-        }
+        // Change the status of the user to deleted
         setStatus(id, User.UserStatus.DELETED);
 
-        query = new Query(CatalogFileDBAdaptor.QueryParams.ID.key(), id)
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED);
+        query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED);
 
         return endQuery("Delete user", startTime, get(query, queryOptions));
     }
@@ -539,18 +539,13 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
      * @throws CatalogDBException when the user has active projects. Projects must be deleted first.
      */
     private void checkCanDelete(String userId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), userId);
-        QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.PROJECTS.key());
-
-        User user = get(query, options).first();
-
-        for (Project project : user.getProjects()) {
-            if (project.getStatus().getStatus() == Status.READY) {
-                throw new CatalogDBException("User {" + userId + "} cannot be deleted. The project {" + project.getName() + " - "
-                        + project.getId() + "} is still in use. You must delete it first.");
-            }
+        checkUserExists(userId);
+        Query query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
+                .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+        Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
         }
-
     }
 
     @Override
@@ -663,6 +658,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {

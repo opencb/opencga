@@ -223,6 +223,21 @@ public class FileWSServerTest {
                 .queryParam("nattributes.num", "<3").request().get(String.class), File.class);
         assertEquals(1, response.getResponse().get(0).getNumResults());
 
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("bioformat", "NONE,DATAMATRIX_EXPRESSION")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .request().get(String.class), File.class);
+        assertEquals(7, response.getResponse().get(0).getNumResults());
+
+        response = WSServerTestUtils.parseResult(webTarget.path("files").path("search")
+                .queryParam("bioformat", "NONE")
+                .queryParam("sid", sessionId)
+                .queryParam("studyId", studyId)
+                .request().get(String.class), File.class);
+        assertEquals(6, response.getResponse().get(0).getNumResults());
+
+
     }
 
     public File uploadVcf(long studyId, String sessionId) throws IOException, CatalogException {
