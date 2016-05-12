@@ -101,9 +101,9 @@ public class VariantQueryCommandUtils {
          */
         addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.consequenceType);
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.biotype);
-        addParam(query, ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
-        addParam(query, POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
-        addParam(query, CONSERVATION, queryVariantsOptions.conservation);
+        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
+        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
+        addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.conservation);
 
         if (queryVariantsOptions.proteinSubstitution != null && !queryVariantsOptions.proteinSubstitution.isEmpty()) {
             String[] fields = queryVariantsOptions.proteinSubstitution.split(",");
@@ -120,13 +120,13 @@ public class VariantQueryCommandUtils {
                 if (arr != null && arr.length > 1) {
                     switch (arr[0]) {
                         case "sift":
-                            query.put(SIFT.key(), field.replaceAll("sift", ""));
+                            query.put(ANNOT_SIFT.key(), field.replaceAll("sift", ""));
                             break;
                         case "polyphen":
-                            query.put(POLYPHEN.key(), field.replaceAll("polyphen", ""));
+                            query.put(ANNOT_POLYPHEN.key(), field.replaceAll("polyphen", ""));
                             break;
                         default:
-                            query.put(PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
+                            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
                             break;
                     }
                 }

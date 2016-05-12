@@ -871,8 +871,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.CT_BIOTYPE_FIELD, biotypes, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.POLYPHEN.key())) {
-                String value = query.getString(VariantQueryParams.POLYPHEN.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_POLYPHEN.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_POLYPHEN.key());
 //                addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                                + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
 //                                + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_POLYPHEN_FIELD
@@ -881,11 +881,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, value, builder,
-                        VariantQueryParams.POLYPHEN, "polyphen");
+                        VariantQueryParams.ANNOT_POLYPHEN, "polyphen");
             }
 
-            if (query.containsKey(VariantQueryParams.SIFT.key())) {
-                String value = query.getString(VariantQueryParams.SIFT.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_SIFT.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_SIFT.key());
 //                addCompListQueryFilter(DocumentToVariantConverter.ANNOTATION_FIELD
 //                        + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
 //                        + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SIFT_FIELD + "."
@@ -893,22 +893,22 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, value, builder,
-                        VariantQueryParams.SIFT, "sift");
+                        VariantQueryParams.ANNOT_SIFT, "sift");
             }
 
-            if (query.containsKey(VariantQueryParams.PROTEIN_SUBSTITUTION.key())) {
-                String value = query.getString(VariantQueryParams.PROTEIN_SUBSTITUTION.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION.key());
                 addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CONSEQUENCE_TYPE_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, value, builder,
-                        VariantQueryParams.PROTEIN_SUBSTITUTION);
+                        VariantQueryParams.ANNOT_PROTEIN_SUBSTITUTION);
             }
 
-            if (query.containsKey(VariantQueryParams.CONSERVATION.key())) {
-                String value = query.getString(VariantQueryParams.CONSERVATION.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_CONSERVATION.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_CONSERVATION.key());
                 addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.CONSERVED_REGION_SCORE_FIELD, value, builder,
-                        VariantQueryParams.CONSERVATION);
+                        VariantQueryParams.ANNOT_CONSERVATION);
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key())) {
@@ -953,31 +953,31 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, value, builder, QueryOperation.AND);
             }
 
-            if (query.containsKey(VariantQueryParams.ALTERNATE_FREQUENCY.key())) {
-                String value = query.getString(VariantQueryParams.ALTERNATE_FREQUENCY.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
                         DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, value, builder,
-                        VariantQueryParams.ALTERNATE_FREQUENCY); // Same
+                        VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY); // Same
                 // method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field
                 // (reference/alternate) where to check the frequency
             }
 
-            if (query.containsKey(VariantQueryParams.REFERENCE_FREQUENCY.key())) {
-                String value = query.getString(VariantQueryParams.REFERENCE_FREQUENCY.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
                         DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_REFERENCE_FREQUENCY_FIELD, value, builder,
-                        VariantQueryParams.REFERENCE_FREQUENCY); // Same
+                        VariantQueryParams.ANNOT_POPULATION_REFERENCE_FREQUENCY); // Same
                 // method addFrequencyFilter is used for reference and allele frequencies. Need to provide the field
                 // (reference/alternate) where to check the frequency
             }
 
-            if (query.containsKey(VariantQueryParams.POPULATION_MINOR_ALLELE_FREQUENCY.key())) {
-                String value = query.getString(VariantQueryParams.POPULATION_MINOR_ALLELE_FREQUENCY.key());
+            if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD + "."
                                 + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD,
-                        value, builder, VariantQueryParams.POPULATION_MINOR_ALLELE_FREQUENCY,
+                        value, builder, VariantQueryParams.ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
                         (v, queryBuilder) -> {
                             String op = getOperator(v);
                             String obj = v.replaceFirst(op, "");

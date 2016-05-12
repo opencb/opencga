@@ -33,9 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -64,26 +62,27 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         STATS_MGF("mgf", TEXT_ARRAY, "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
         MISSING_ALLELES("missingAlleles", TEXT_ARRAY, "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}"),
         MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY, "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}"),
-        ANNOTATION_EXISTS("annotationExists", TEXT_ARRAY, "Specify if the variant annotation must exists."),
         //[<study>:]<sample>:<genotype>[,<genotype>]*
         GENOTYPE("genotype", TEXT_ARRAY, "Samples with a specific genotype:"
                 + " {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1"),
 
-
+        ANNOTATION_EXISTS("annotationExists", BOOLEAN, "Specify if the variant annotation must exists."),
         ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY, ""),
         ANNOT_XREF("annot-xref", TEXT_ARRAY, ""),
         ANNOT_BIOTYPE("annot-biotype", TEXT_ARRAY, ""),
-        POLYPHEN("polyphen", TEXT_ARRAY, "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description}"
+        ANNOT_POLYPHEN("polyphen", TEXT_ARRAY, "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description}"
                 + " e.g. <=0.9 , =benign"),
-        SIFT("sift", TEXT_ARRAY, "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} "
+        ANNOT_SIFT("sift", TEXT_ARRAY, "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} "
                 + " e.g. >0.1 , ~=tolerant"),
         @Deprecated
-        PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY, ""),
-        CONSERVATION("conservation", TEXT_ARRAY, "Conservation score: {conservation_score}[<|>|<=|>=]{number} "
+        ANNOT_PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY, ""),
+        ANNOT_CONSERVATION("conservation", TEXT_ARRAY, "Conservation score: {conservation_score}[<|>|<=|>=]{number} "
                 + " e.g. phastCons>0.5,phylop<0.1,gerp>0.1"),
-        ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
-        REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
-        POPULATION_MINOR_ALLELE_FREQUENCY("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: "
+        ANNOT_POPULATION_ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, "Alternate Population Frequency: "
+                + "{study}:{population}[<|>|<=|>=]{number}"),
+        ANNOT_POPULATION_REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, "Reference Population Frequency: "
+                + "{study}:{population}[<|>|<=|>=]{number}"),
+        ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: "
                 + "{study}:{population}[<|>|<=|>=]{number}"),
         ANNOT_TRANSCRIPTION_FLAGS("annot-transcription-flags", TEXT_ARRAY, ""),
         ANNOT_GENE_TRAITS_ID("annot-gene-trait-id", TEXT_ARRAY, ""),
@@ -91,6 +90,8 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         ANNOT_GENE_TRAITS_PUBMEDS("annot-gene-trait-pubmeds", INTEGER, ""),
         ANNOT_PROTEIN_KEYWORDS("annot-protein-keywords", TEXT_ARRAY, ""),
         ANNOT_DRUG("annot-drug", TEXT_ARRAY, ""),
+        ANNOT_FUNCTIONAL_SCORE("annot-functional-score", TEXT_ARRAY, "Functional score: {functional_score}[<|>|<=|>=]{number} "
+                + " e.g. cadd_scaled>5.2 , cadd_raw<=0.3"),
 
 
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");

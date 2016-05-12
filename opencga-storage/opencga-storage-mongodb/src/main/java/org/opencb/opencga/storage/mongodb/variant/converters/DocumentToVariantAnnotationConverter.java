@@ -34,7 +34,9 @@ import java.util.*;
 /**
  * Created by jacobo on 13/01/15.
  */
-public class DocumentToVariantAnnotationConverter implements ComplexTypeConverter<VariantAnnotation, Document> {
+public class DocumentToVariantAnnotationConverter
+        extends AbstractDocumentConverter
+        implements ComplexTypeConverter<VariantAnnotation, Document> {
 
     public static final String ANNOT_ID_FIELD = "id";
 
@@ -55,7 +57,9 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String CT_SO_ACCESSION_FIELD = "so";
     public static final String CT_PROTEIN_KEYWORDS = "kw";
     public static final String CT_PROTEIN_SUBSTITUTION_SCORE_FIELD = "ps_score";
+    @Deprecated
     public static final String CT_PROTEIN_POLYPHEN_FIELD = "polyphen";
+    @Deprecated
     public static final String CT_PROTEIN_SIFT_FIELD = "sift";
     public static final String CT_PROTEIN_FEATURE_FIELD = "pd";
     public static final String CT_PROTEIN_FEATURE_ID_FIELD = "id";
@@ -149,12 +153,8 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
                     List<Score> proteinSubstitutionScores = new LinkedList<>();
                     if (ct.containsKey(CT_PROTEIN_SUBSTITUTION_SCORE_FIELD)) {
                         List<Document> list = (List) ct.get(CT_PROTEIN_SUBSTITUTION_SCORE_FIELD);
-                        for (Document dbObject : list) {
-                            proteinSubstitutionScores.add(new Score(
-                                    getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
-                                    getDefault(dbObject, SCORE_SOURCE_FIELD, ""),
-                                    getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")
-                            ));
+                        for (Document document : list) {
+                            proteinSubstitutionScores.add(buildScore(document));
                         }
                     }
                     if (ct.containsKey(CT_PROTEIN_POLYPHEN_FIELD)) {
@@ -216,11 +216,7 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
         if (object.containsKey(CONSERVED_REGION_SCORE_FIELD)) {
             List<Document> list = (List) object.get(CONSERVED_REGION_SCORE_FIELD);
             for (Document dbObject : list) {
-                conservedRegionScores.add(new Score(
-                        getDefault(dbObject, SCORE_SCORE_FIELD, 0.0),
-                        getDefault(dbObject, SCORE_SOURCE_FIELD, ""),
-                        getDefault(dbObject, SCORE_DESCRIPTION_FIELD, "")
-                ));
+                conservedRegionScores.add(buildScore(dbObject));
             }
         }
         va.setConservation(conservedRegionScores);
@@ -300,6 +296,14 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
         }
         va.setXrefs(xrefs);
 
+        //Functional score
+        List<Score> functionalScore = new LinkedList<>();
+        if (object.containsKey(FUNCTIONAL_SCORE)) {
+            List<Document> scores = object.get(FUNCTIONAL_SCORE, List.class);
+            for (Document document : scores) {
+                functionalScore.add(buildScore(document));
+            }
+        }
 
         //Clinical Data
         if (object.containsKey(CLINICAL_DATA_FIELD)) {
@@ -307,6 +311,14 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
         }
 
         return va;
+    }
+
+    private Score buildScore(Document document) {
+        return new Score(
+                getDefault(document, SCORE_SCORE_FIELD, 0.0),
+                getDefault(document, SCORE_SOURCE_FIELD, ""),
+                getDefault(document, SCORE_DESCRIPTION_FIELD, "")
+        );
     }
 
     private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
@@ -532,6 +544,18 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
         }
         putNotNull(document, XREFS_FIELD, xrefs);
 
+        //Functional score
+        if (variantAnnotation.getFunctionalScore() != null) {
+            List<Document> scores = new ArrayList<>(variantAnnotation.getFunctionalScore().size());
+            for (Score score : variantAnnotation.getFunctionalScore()) {
+                Document documentScore = new Document();
+                putNotNull(documentScore, SCORE_SCORE_FIELD, score.getScore());
+                putNotNull(documentScore, SCORE_SOURCE_FIELD, score.getSource());
+                scores.add(documentScore);
+            }
+            putNotNull(document, FUNCTIONAL_SCORE, scores);
+        }
+
         //Clinical Data
         Document clinicalDocument = new Document();
         if (variantAnnotation.getVariantTraitAssociation() != null) {
@@ -594,88 +618,5 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
         return dbObject;
     }
 
-
-    //Utils
-    private void putNotNull(Document dbObject, String key, Object obj) {
-        if (obj != null) {
-            dbObject.put(key, obj);
-        }
-    }
-
-    private void putNotNull(Document dbObject, String key, Collection obj) {
-        if (obj != null && !obj.isEmpty()) {
-            dbObject.put(key, obj);
-        }
-    }
-
-    private void putNotNull(Document dbObject, String key, String obj) {
-        if (obj != null && !obj.isEmpty()) {
-            dbObject.put(key, obj);
-        }
-    }
-
-    private void putNotNull(Document dbObject, String key, Integer obj) {
-        if (obj != null && obj != 0) {
-            dbObject.put(key, obj);
-        }
-    }
-
-    private void putNotDefault(Document dbObject, String key, String obj, Object defaultValue) {
-        if (obj != null && !obj.isEmpty() && !obj.equals(defaultValue)) {
-            dbObject.put(key, obj);
-        }
-    }
-
-    private String getDefault(Document object, String key, String defaultValue) {
-        Object o = object.get(key);
-        if (o != null) {
-            return o.toString();
-        } else {
-            return defaultValue;
-        }
-    }
-
-    private <T> T getDefault(Document object, String key, T defaultValue) {
-        Object o = object.get(key);
-        if (o != null) {
-            return (T) o;
-        } else {
-            return defaultValue;
-        }
-    }
-
-    private int getDefault(Document object, String key, int defaultValue) {
-        Object o = object.get(key);
-        if (o != null) {
-            if (o instanceof Integer) {
-                return (Integer) o;
-            } else {
-                try {
-                    return Integer.parseInt(o.toString());
-                } catch (Exception e) {
-                    return defaultValue;
-                }
-            }
-        } else {
-            return defaultValue;
-        }
-    }
-
-    private double getDefault(Document object, String key, double defaultValue) {
-        Object o = object.get(key);
-        if (o != null) {
-            if (o instanceof Double) {
-                return (Double) o;
-            } else {
-                try {
-                    return Double.parseDouble(o.toString());
-                } catch (Exception e) {
-                    return defaultValue;
-                }
-            }
-        } else {
-            return defaultValue;
-        }
-    }
 
 }
