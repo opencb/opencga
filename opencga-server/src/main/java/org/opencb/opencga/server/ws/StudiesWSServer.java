@@ -119,7 +119,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             System.out.println("study = " + study);
             try {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
+                        study.getAlias(), study.getType(), study.getOwnerId(), study.getCreationDate(),
                         study.getDescription(), study.getStatus(), study.getCipher(), null, null, null, study.getStats(),
                         study.getAttributes(), queryOptions, sessionId);
                 Study studyAdded = queryResult.getResult().get(0);

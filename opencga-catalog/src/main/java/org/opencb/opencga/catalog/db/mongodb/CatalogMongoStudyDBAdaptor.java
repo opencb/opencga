@@ -854,7 +854,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.CREATOR_ID.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.OWNER_ID.key(),
                 QueryParams.DESCRIPTION.key(), QueryParams.CIPHER.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
