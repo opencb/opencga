@@ -57,7 +57,7 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
     public static final String CT_PROTEIN_SUBSTITUTION_SCORE_FIELD = "ps_score";
     public static final String CT_PROTEIN_POLYPHEN_FIELD = "polyphen";
     public static final String CT_PROTEIN_SIFT_FIELD = "sift";
-    public static final String CT_PROTEIN_FEATURE_FIELD = "feat";
+    public static final String CT_PROTEIN_FEATURE_FIELD = "pd";
     public static final String CT_PROTEIN_FEATURE_ID_FIELD = "id";
     public static final String CT_PROTEIN_FEATURE_START_FIELD = "start";
     public static final String CT_PROTEIN_FEATURE_END_FIELD = "end";
@@ -90,18 +90,23 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
 
     public static final String DRUG_FIELD = "drug";
     public static final String DRUG_NAME_FIELD = "dn";
+    public static final String DRUG_GENE_FIELD = CT_GENE_NAME_FIELD;
     public static final String DRUG_SOURCE_FIELD = "src";
+    public static final String DRUG_STUDY_TYPE_FIELD = "st";
 
     public static final String SCORE_SCORE_FIELD = "sc";
     public static final String SCORE_SOURCE_FIELD = "src";
     public static final String SCORE_DESCRIPTION_FIELD = "desc";
 
     public static final String CLINICAL_DATA_FIELD = "clinical";
-    public static final String COSMIC_FIELD = "cosmic";
-    public static final String GWAS_FIELD = "gwas";
-    public static final String CLINVAR_FIELD = "clinvar";
+    public static final String CLINICAL_COSMIC_FIELD = "cosmic";
+    public static final String CLINICAL_GWAS_FIELD = "gwas";
+    public static final String CLINICAL_CLINVAR_FIELD = "clinvar";
+
+    public static final String FUNCTIONAL_SCORE = "fn_score";
 
     public static final String DEFAULT_STRAND_VALUE = "+";
+    public static final String DEFAULT_DRUB_SOURCE = "dgidb";
 
     private final ObjectMapper jsonObjectMapper;
     private final ObjectWriter writer;
@@ -181,6 +186,13 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
                     }
 
 
+                    ProteinVariantAnnotation proteinVariantAnnotation = buildProteinVariantAnnotation(
+                            getDefault(ct, CT_AA_POSITION_FIELD, 0),
+                            getDefault(ct, CT_AA_REFERENCE_FIELD, ""),
+                            getDefault(ct, CT_AA_ALTERNATE_FIELD, ""),
+                            proteinSubstitutionScores,
+                            getDefault(ct, CT_PROTEIN_KEYWORDS, Collections.emptyList()),
+                            features);
                     consequenceTypes.add(buildConsequenceType(
                             getDefault(ct, CT_GENE_NAME_FIELD, ""),
                             getDefault(ct, CT_ENSEMBL_GENE_ID_FIELD, ""),
@@ -190,13 +202,9 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
                             getDefault(ct, CT_TRANSCRIPT_ANNOT_FLAGS, Collections.emptyList()),
                             getDefault(ct, CT_C_DNA_POSITION_FIELD, 0),
                             getDefault(ct, CT_CDS_POSITION_FIELD, 0),
-                            getDefault(ct, CT_CODON_FIELD, ""), getDefault(ct, CT_AA_POSITION_FIELD, 0),
-                            getDefault(ct, CT_AA_REFERENCE_FIELD, ""),
-                            getDefault(ct, CT_AA_ALTERNATE_FIELD, ""),
-                            proteinSubstitutionScores,
+                            getDefault(ct, CT_CODON_FIELD, ""),
                             soAccessionNames,
-                            getDefault(ct, CT_PROTEIN_KEYWORDS, Collections.emptyList()),
-                            features));
+                            proteinVariantAnnotation));
                 }
             }
 
@@ -263,9 +271,12 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
             List<Document> list = (List) object.get(DRUG_FIELD);
             for (Document dbObject : list) {
                 //drugs.add(dbObject.toMap());
-                drugs.add(new GeneDrugInteraction(getDefault(dbObject, CT_GENE_NAME_FIELD, ""),
-                        getDefault(dbObject, DRUG_NAME_FIELD, ""), "dgidb",
-                        getDefault(dbObject, DRUG_SOURCE_FIELD, ""), ""));  // "convertToStorageType" stores the study_type within the
+                drugs.add(new GeneDrugInteraction(
+                        getDefault(dbObject, DRUG_GENE_FIELD, ""),
+                        getDefault(dbObject, DRUG_NAME_FIELD, ""),
+                        getDefault(dbObject, DRUG_SOURCE_FIELD, DEFAULT_DRUB_SOURCE),
+                        getDefault(dbObject, DRUG_STUDY_TYPE_FIELD, ""),
+                        ""));  // "convertToStorageType" stores the study_type within the
                 // DRUG_SOURCE_FIELD
 
             }
@@ -299,24 +310,29 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
     }
 
     private ConsequenceType buildConsequenceType(String geneName, String ensemblGeneId, String ensemblTranscriptId, String strand,
-                                                 String biotype, List<String> transcriptAnnotationFlags, Integer cDnaPosition, Integer cdsPosition, String codon,
-                                                 Integer aaPosition, String aaReference, String aaAlternate,
-                                                 List<Score> proteinSubstitutionScores, List<String> soNameList, List<String> keywords, List<ProteinFeature> features) {
+                                                 String biotype, List<String> transcriptAnnotationFlags, Integer cDnaPosition,
+                                                 Integer cdsPosition, String codon,
+                                                 List<String> soNameList, ProteinVariantAnnotation proteinVariantAnnotation) {
         List<SequenceOntologyTerm> soTerms = new ArrayList<>(soNameList.size());
         for (String soName : soNameList) {
             soTerms.add(new SequenceOntologyTerm(ConsequenceTypeMappings.getSoAccessionString(soName), soName));
         }
-        ProteinVariantAnnotation proteinVariantAnnotation = new ProteinVariantAnnotation(null, null, aaPosition,
-                aaReference, aaAlternate, null, null, proteinSubstitutionScores, keywords, features);
         return new ConsequenceType(geneName, ensemblGeneId, ensemblTranscriptId, strand, biotype, transcriptAnnotationFlags, cDnaPosition,
                 cdsPosition, codon, proteinVariantAnnotation, soTerms);
+    }
+
+    private ProteinVariantAnnotation buildProteinVariantAnnotation(Integer aaPosition, String aaReference, String aaAlternate,
+                                                                   List<Score> proteinSubstitutionScores, List<String> keywords,
+                                                                   List<ProteinFeature> features) {
+        return new ProteinVariantAnnotation(null, null, aaPosition,
+                    aaReference, aaAlternate, null, null, proteinSubstitutionScores, keywords, features);
     }
 
     private VariantTraitAssociation parseClinicalData(Document clinicalData) {
         if (clinicalData != null) {
             int size = 0;
             VariantTraitAssociation variantTraitAssociation = new VariantTraitAssociation();
-            List cosmicDBList = (List) clinicalData.get(COSMIC_FIELD);
+            List cosmicDBList = (List) clinicalData.get(CLINICAL_COSMIC_FIELD);
             if (cosmicDBList != null) {
                 List<Cosmic> cosmicList = new ArrayList<>(cosmicDBList.size());
                 for (Object object : cosmicDBList) {
@@ -325,7 +341,7 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
                 size += cosmicList.size();
                 variantTraitAssociation.setCosmic(cosmicList);
             }
-            List gwasDBList = (List) clinicalData.get(GWAS_FIELD);
+            List gwasDBList = (List) clinicalData.get(CLINICAL_GWAS_FIELD);
             if (gwasDBList != null) {
                 List<Gwas> gwasList = new ArrayList<>(gwasDBList.size());
                 for (Object object : gwasDBList) {
@@ -334,7 +350,7 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
                 size += gwasList.size();
                 variantTraitAssociation.setGwas(gwasList);
             }
-            List clinvarDBList = (List) clinicalData.get(CLINVAR_FIELD);
+            List clinvarDBList = (List) clinicalData.get(CLINICAL_CLINVAR_FIELD);
             if (clinvarDBList != null) {
                 List<ClinVar> clinvarList = new ArrayList<>(clinvarDBList.size());
                 for (Object object : clinvarDBList) {
@@ -402,13 +418,15 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
                         List<Document> proteinSubstitutionScores = new LinkedList<>();
                         for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                             if (score != null) {
-                                if (score.getSource().equals("polyphen")) {
-                                    putNotNull(ct, CT_PROTEIN_POLYPHEN_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
-                                } else if (score.getSource().equals("sift")) {
-                                    putNotNull(ct, CT_PROTEIN_SIFT_FIELD, convertScoreToStorage(score.getScore(), null, score.getDescription()));
-                                } else {
+//                                if (score.getSource().equals("polyphen")) {
+//                                    putNotNull(ct, CT_PROTEIN_POLYPHEN_FIELD, convertScoreToStorage(score.getScore(), null,
+//                                            score.getDescription()));
+//                                } else if (score.getSource().equals("sift")) {
+//                                    putNotNull(ct, CT_PROTEIN_SIFT_FIELD, convertScoreToStorage(score.getScore(), null,
+//                                            score.getDescription()));
+//                                } else {
                                     proteinSubstitutionScores.add(convertScoreToStorage(score));
-                                }
+//                                }
                             }
                         }
                         putNotNull(ct, CT_PROTEIN_SUBSTITUTION_SCORE_FIELD, proteinSubstitutionScores);
@@ -496,9 +514,10 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
             List<GeneDrugInteraction> geneDrugInteractionList = variantAnnotation.getGeneDrugInteraction();
             if (geneDrugInteractionList != null) {
                 for (GeneDrugInteraction geneDrugInteraction : geneDrugInteractionList) {
-                    Document drugDbObject = new Document(CT_GENE_NAME_FIELD, geneDrugInteraction.getGeneName());
+                    Document drugDbObject = new Document(DRUG_GENE_FIELD, geneDrugInteraction.getGeneName());
                     putNotNull(drugDbObject, DRUG_NAME_FIELD, geneDrugInteraction.getDrugName());
-                    putNotNull(drugDbObject, "src", geneDrugInteraction.getStudyType());
+                    putNotDefault(drugDbObject, DRUG_SOURCE_FIELD, geneDrugInteraction.getSource(), DEFAULT_DRUB_SOURCE);
+                    putNotNull(drugDbObject, DRUG_STUDY_TYPE_FIELD, geneDrugInteraction.getStudyType());
                     drugGeneInteractions.add(drugDbObject);
                 }
             }
@@ -516,11 +535,11 @@ public class DocumentToVariantAnnotationConverter implements ComplexTypeConverte
         //Clinical Data
         Document clinicalDocument = new Document();
         if (variantAnnotation.getVariantTraitAssociation() != null) {
-            putNotNull(clinicalDocument, COSMIC_FIELD,
+            putNotNull(clinicalDocument, CLINICAL_COSMIC_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getCosmic()));
-            putNotNull(clinicalDocument, GWAS_FIELD,
+            putNotNull(clinicalDocument, CLINICAL_GWAS_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getGwas()));
-            putNotNull(clinicalDocument, CLINVAR_FIELD,
+            putNotNull(clinicalDocument, CLINICAL_CLINVAR_FIELD,
                     generateClinicalDBList(variantAnnotation.getVariantTraitAssociation().getClinvar()));
         }
         if (!clinicalDocument.isEmpty()) {

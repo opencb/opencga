@@ -23,8 +23,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.VariantStudy;
-import org.opencb.biodata.models.variant.avro.PopulationFrequency;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -339,6 +338,204 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566;SO:0001583");
         queryResult = dbAdaptor.get(query, options);
         assertEquals(396, queryResult.getNumResults());
+    }
+
+    @Test
+    public void testGetAllVariants_transcriptionAnnotationFlags() {
+        //ANNOT_TRANSCRIPTION_FLAGS
+        Query query;
+        Map<String, Integer> flags = new HashMap<>();
+        for (Variant variant : dbAdaptor) {
+            Set<String> flagsInVariant = new HashSet<>();
+            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+            }
+            for (String flag : flagsInVariant) {
+                flags.put(flag, flags.getOrDefault(flag, 0) + 1);
+            }
+        }
+
+        assertTrue(flags.containsKey("basic"));
+        assertTrue(flags.containsKey("CCDS"));
+        assertTrue(flags.containsKey("mRNA_start_NF"));
+        assertTrue(flags.containsKey("mRNA_end_NF"));
+        assertTrue(flags.containsKey("cds_start_NF"));
+        assertTrue(flags.containsKey("cds_end_NF"));
+
+        for (Map.Entry<String, Integer> entry : flags.entrySet()) {
+            System.out.println(entry);
+            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_TRANSCRIPTION_FLAGS.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+        }
+
+    }
+
+    @Test
+    public void testGetAllVariants_geneTraits() {
+        //ANNOT_GENE_TRAITS_ID
+        //ANNOT_GENE_TRAITS_NAME
+        Query query;
+        Map<String, Integer> idsMap = new HashMap<>();
+        Map<String, Integer> namesMap = new HashMap<>();
+        for (Variant variant : dbAdaptor) {
+            Set<String> ids = new HashSet<>();
+            Set<String> names = new HashSet<>();
+            if (variant.getAnnotation().getGeneTraitAssociation() != null) {
+                for (GeneTraitAssociation geneTrait : variant.getAnnotation().getGeneTraitAssociation()) {
+                    ids.add(geneTrait.getId());
+                    names.add(geneTrait.getName());
+                }
+            }
+            for (String id : ids) {
+                idsMap.put(id, idsMap.getOrDefault(id, 0) + 1);
+            }
+            for (String name : names) {
+                namesMap.put(name, namesMap.getOrDefault(name, 0) + 1);
+            }
+        }
+
+        System.out.println(idsMap.size());
+        System.out.println(namesMap.size());
+//        for (Map.Entry<String, Integer> entry : namesMap.entrySet()) {
+//            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(), "~="+entry.getKey());
+//            queryResult = dbAdaptor.get(query, null);
+//            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+//        }
+
+        query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(), "umls:C1306459")
+                .append(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_PUBMEDS.key(), ">350")
+                .append(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(), "~=malignant neoplasm");
+        queryResult = dbAdaptor.get(query, null);
+        System.out.println("queryResult = " + queryResult.getNumResults());
+        for (Variant variant : queryResult.getResult()) {
+            System.out.println("variant = " + variant);
+            for (GeneTraitAssociation geneTraitAssociation : variant.getAnnotation().getGeneTraitAssociation()) {
+                if (geneTraitAssociation.getId().equals("umls:C1306459")) {
+                    System.out.println("geneTraitAssociation.getNumberOfPubmeds() = " + geneTraitAssociation.getNumberOfPubmeds());
+                }
+            }
+        }
+
+        int i = 0;
+        for (Map.Entry<String, Integer> entry : idsMap.entrySet()) {
+            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_ID.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+            if (i++ == 400) {
+                break;
+            }
+        }
+
+
+    }
+
+    @Test
+    public void testGetAllVariants_proteinKeywords() {
+        //ANNOT_PROTEIN_KEYWORDS
+        Query query;
+        Map<String, Integer> keywords = new HashMap<>();
+        for (Variant variant : dbAdaptor) {
+            Set<String> keywordsInVariant = new HashSet<>();
+            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                keywordsInVariant.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+            }
+            for (String flag : keywordsInVariant) {
+                keywords.put(flag, keywords.getOrDefault(flag, 0) + 1);
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : keywords.entrySet()) {
+            System.out.println(entry);
+            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_PROTEIN_KEYWORDS.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+        }
+
+    }
+
+    @Test
+    public void testGetAllVariants_drugs() {
+        //ANNOT_DRUG
+        Query query;
+        Map<String, Integer> drugs = new HashMap<>();
+        for (Variant variant : dbAdaptor) {
+            Set<String> drugsInVariant = new HashSet<>();
+            for (GeneDrugInteraction drugInteraction : variant.getAnnotation().getGeneDrugInteraction()) {
+                drugsInVariant.add(drugInteraction.getDrugName());
+            }
+            for (String flag : drugsInVariant) {
+                drugs.put(flag, drugs.getOrDefault(flag, 0) + 1);
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : drugs.entrySet()) {
+            if (entry.getKey().contains(",")) {
+                continue;
+            }
+            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_DRUG.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+        }
+
+    }
+
+    @Test
+    public void testGetAllVariants_sift() {
+        //SIFT
+        Query query;
+        Map<Double, Integer> sift = new HashMap<>();
+        Map<String, Integer> siftDesc = new HashMap<>();
+        Map<Double, Integer> polyphen = new HashMap<>();
+        Map<String, Integer> polyphenDesc = new HashMap<>();
+        for (Variant variant : dbAdaptor) {
+            Set<Double> siftInVariant = new HashSet<>();
+            Set<Double> polyphenInVariant = new HashSet<>();
+            Set<String> siftDescInVariant = new HashSet<>();
+            Set<String> polyphenDescInVariant = new HashSet<>();
+            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                    if (score.getSource().equals("sift")) {
+                        siftInVariant.add(score.getScore());
+                        siftDescInVariant.add(score.getDescription());
+                    } else if (score.getSource().equals("polyphen")) {
+                        polyphenInVariant.add(score.getScore());
+                        polyphenDescInVariant.add(score.getDescription());
+                    }
+                }
+            }
+            for (Double value : siftInVariant) {
+                sift.put(value, sift.getOrDefault(value, 0) + 1);
+            }
+            for (String value : siftDescInVariant) {
+                siftDesc.put(value, siftDesc.getOrDefault(value, 0) + 1);
+            }
+            for (Double value : polyphenInVariant) {
+                polyphen.put(value, polyphen.getOrDefault(value, 0) + 1);
+            }
+            for (String value : polyphenDescInVariant) {
+                polyphenDesc.put(value, polyphenDesc.getOrDefault(value, 0) + 1);
+            }
+        }
+
+        for (Map.Entry<String, Integer> entry : siftDesc.entrySet()) {
+            query = new Query(VariantDBAdaptor.VariantQueryParams.SIFT.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+            System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
+        }
+        for (Map.Entry<String, Integer> entry : polyphenDesc.entrySet()) {
+            query = new Query(VariantDBAdaptor.VariantQueryParams.POLYPHEN.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
+            System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
+        }
+//        for (Map.Entry<Double, Integer> entry : polyphen.entrySet()) {
+//            query = new Query(VariantDBAdaptor.VariantQueryParams.SIFT.key(), entry.getKey());
+//            queryResult = dbAdaptor.get(query, null);
+//            assertEquals(entry.getKey(), entry.getValue(), queryResult.getNumResults());
+//        }
+
     }
 
     @Test

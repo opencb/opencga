@@ -175,7 +175,7 @@ public class DocumentToVariantAnnotationConverterTest {
 
         Document drugDBObject = new Document(DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, "TOMM40")
                 .append(DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, "PA164712505")
-                .append(DocumentToVariantAnnotationConverter.DRUG_SOURCE_FIELD, "PharmGKB");
+                .append(DocumentToVariantAnnotationConverter.DRUG_STUDY_TYPE_FIELD, "PharmGKB");
         LinkedList drugDBList = new LinkedList();
         drugDBList.add(drugDBObject);
         dbObject.append("drug", drugDBList);
@@ -237,7 +237,7 @@ public class DocumentToVariantAnnotationConverterTest {
                 .CONSERVED_REGION_SCORE_FIELD)).get(1)).get(DocumentToVariantAnnotationConverter.SCORE_SOURCE_FIELD));
         assertEquals("RCV000019456", ((Document)  convertedDBObject.get
                 (DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD, Document.class)
-                .get(DocumentToVariantAnnotationConverter.CLINVAR_FIELD, List.class).get(0)).get("accession", String.class));
+                .get(DocumentToVariantAnnotationConverter.CLINICAL_CLINVAR_FIELD, List.class).get(0)).get("accession", String.class));
 
     }
 }
