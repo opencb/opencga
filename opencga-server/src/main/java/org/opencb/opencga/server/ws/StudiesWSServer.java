@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.server.utils.VariantFetcher;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -265,7 +265,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/variants")
-    @ApiOperation(value = "Study samples information", position = 6)
+    @ApiOperation(value = "Study variants data", position = 6)
     public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStrCvs,
                                 @ApiParam(value = "CSV list of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "CSV list of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -311,7 +311,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
+                queryResults.add(variantFetcher.getVariantsPerStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {

@@ -17,7 +17,9 @@
 package org.opencb.opencga.app.cli.analysis;
 
 
-import org.apache.commons.lang.StringUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -26,6 +28,7 @@ import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,16 +38,23 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
 
 /**
  * Created by imedina on 02/03/15.
@@ -113,12 +123,72 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         throw new UnsupportedOperationException();
     }
 
-    private void install() {
-        throw new UnsupportedOperationException();
-    }
+    private void query() throws Exception {
 
-    private void query() {
-        throw new UnsupportedOperationException();
+        AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
+
+        String sessionId = variantCommandOptions.commonOptions.sessionId;
+
+        List studies = catalogManager.getAllStudies(new Query(), new QueryOptions("include", "projects.studies.id"), sessionId).getResult().stream().map(Study::getId).collect(Collectors.toList());
+        Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studies);
+        QueryOptions queryOptions = VariantQueryCommandUtils.parseQueryOptions(cliOptions);
+
+        VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
+
+        if (cliOptions.count) {
+            QueryResult<Long> result = variantFetcher.count(query, sessionId);
+            System.out.println("Num. results\t" + result.getResult().get(0));
+        } else if (StringUtils.isNotEmpty(cliOptions.groupBy)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            QueryResult groupBy = variantFetcher.groupBy(query, queryOptions, cliOptions.groupBy, sessionId);
+            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(groupBy));
+        } else if (StringUtils.isNotEmpty(cliOptions.rank)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            QueryResult rank = variantFetcher.rank(query, queryOptions, cliOptions.rank, sessionId);
+            System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
+        } else {
+            String outputFormat = "vcf";
+            if (StringUtils.isNotEmpty(cliOptions.outputFormat)) {
+                if (cliOptions.outputFormat.equals("json") || cliOptions.outputFormat.equals("json.gz")) {
+                    outputFormat = "json";
+                }
+            }
+            OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(cliOptions);
+            VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId);
+            if (outputFormat.equalsIgnoreCase("vcf")) {
+//                StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
+//                Map<Long, List<Sample>> samplesMetadata = variantFetcher.getSamplesMetadata(studyId, query, queryOptions, sessionId);
+//                QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
+//                        query.getAsStringList(RETURNED_STUDIES.key()).get(0), null);
+                StudyConfiguration studyConfiguration = variantFetcher
+                        .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
+                if (studyConfiguration != null) {
+                    // Samples to be returned
+                    if (query.containsKey(RETURNED_SAMPLES.key())) {
+                        queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
+                    }
+
+//                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
+                    if (cliOptions.annotations != null) {
+                        queryOptions.add("annotations", cliOptions.annotations);
+                    }
+                    VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
+                    variantVcfExporter.export(iterator, studyConfiguration, outputStream, queryOptions);
+                } else {
+                    logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
+                }
+            } else {
+                // we know that it is JSON, otherwise we have not reached this point
+                while (iterator.hasNext()) {
+                    Variant variant = iterator.next();
+                    outputStream.write(variant.toJson().getBytes());
+                    outputStream.write('\n');
+                }
+            }
+            iterator.close();
+
+        }
+
     }
 
     private void delete() {
@@ -225,7 +295,8 @@ public class VariantCommandExecutor extends AnalysisCommandExecutor {
         ObjectMap options = storageConfiguration.getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyId);
-        options.put(VariantStorageManager.Options.FILE_ID.key(), inputFileId);
+        // Use the INDEXED_FILE_ID instead of the given fileID. It may be the transformed file.
+        options.put(VariantStorageManager.Options.FILE_ID.key(), job.getAttributes().containsKey(Job.INDEXED_FILE_ID));
         options.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
         options.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
         options.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);

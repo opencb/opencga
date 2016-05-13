@@ -374,8 +374,8 @@ public class AnalysisCliOptionsParser {
 
     }
 
-    @Parameters(commandNames = {"query"}, commandDescription = "[PENDING] Search over indexed variants")
-    public class QueryVariantCommandOptions {
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed variants")
+    public class QueryVariantCommandOptions extends QueryCommandOptions {
 
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
@@ -392,7 +392,8 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
         public String study;
 
-        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, example: NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
+        @Parameter(names = {"--sample-genotype"}, description = "A comma separated list of samples from the SAME study, example: " +
+                "NA0001:0/0,0/1;NA0002:0/1", required = false, arity = 1)
         public String sampleGenotype;
 
         @Deprecated
@@ -403,26 +404,31 @@ public class AnalysisCliOptionsParser {
         public String type;
 
 
-//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false, arity = 0)
+//        @Parameter(names = {"--include-annotations"}, description = "Add variant annotation to the INFO column", required = false,
+// arity = 0)
 //        public boolean includeAnnotations;
 
         @Parameter(names = {"--annotations"}, description = "Set variant annotation to return in the INFO column. " +
                 "Accepted values include 'all', 'default' aor a comma-separated list such as 'gene,biotype,consequenceType'", required = false, arity = 1)
         public String annotations;
 
-        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046", required = false, arity = 1)
+        @Parameter(names = {"--ct", "--consequence-type"}, description = "Consequence type SO term list. example: SO:0000045,SO:0000046",
+                required = false, arity = 1)
         public String consequenceType;
 
         @Parameter(names = {"--biotype"}, description = "Biotype CSV", required = false, arity = 1)
         public String biotype;
 
-        @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}", required = false, arity = 1)
+        @Parameter(names = {"--pf", "--population-frequency"}, description = "Alternate Population Frequency: " +
+                "{study}:{population}[<|>|<=|>=]{number}", required = false, arity = 1)
         public String populationFreqs;
 
-        @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}", required = false, arity = 1)
+        @Parameter(names = {"--pmaf", "--population-maf"}, description = "Population minor allele frequency: " +
+                "{study}:{population}[<|>|<=|>=]{number}", required = false, arity = 1)
         public String populationMaf;
 
-        @Parameter(names = {"--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: phastCons>0.5,phylop<0.1", required = false, arity = 1)
+        @Parameter(names = {"--conservation"}, description = "Conservation score: {conservation_score}[<|>|<=|>=]{number} example: " +
+                "phastCons>0.5,phylop<0.1", required = false, arity = 1)
         public String conservation;
 
         @Parameter(names = {"--ps", "--protein-substitution"}, description = "", required = false, arity = 1)
@@ -438,7 +444,6 @@ public class AnalysisCliOptionsParser {
         public String clinvar;
 
 
-
         @Deprecated
         @Parameter(names = {"--stats"}, description = " [CSV]", required = false)
         public String stats;
@@ -446,23 +451,32 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--maf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Allele Frequency, example: 1000g:all>0.4", required = false)
         public String maf;
 
-        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: 1000g:all<=0.4", required = false)
+        @Parameter(names = {"--mgf"}, description = "Take a <STUDY>:<COHORT> and filter by Minor Genotype Frequency, example: " +
+                "1000g:all<=0.4", required = false)
         public String mgf;
 
-        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example: 1000g:all=5", required = false)
+        @Parameter(names = {"--missing-allele"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing alleles, example:" +
+                " 1000g:all=5", required = false)
         public String missingAlleleCount;
 
-        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, example: 1000g:all!=0", required = false)
+        @Parameter(names = {"--missing-genotype"}, description = "Take a <STUDY>:<COHORT> and filter by number of missing genotypes, " +
+                "example: 1000g:all!=0", required = false)
         public String missingGenotypeCount;
 
 
-        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--dominant"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is" +
+                " affected or not to filter by dominant segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
+                required = false)
         public String dominant;
 
-        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--recessive"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if " +
+                "is affected or not to filter by recessive segregation, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff",
+                required = false)
         public String recessive;
 
-        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER,CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff,1000g:NA002:unaff,1000g:NA003:aff", required = false)
+        @Parameter(names = {"--ch", "--compound-heterozygous"}, description = "[PENDING] Take a family in the form of: FATHER,MOTHER," +
+                "CHILD and specifies if is affected or not to filter by compound heterozygous, example: 1000g:NA001:aff," +
+                "1000g:NA002:unaff,1000g:NA003:aff", required = false)
         public String compoundHeterozygous;
 
 
@@ -477,6 +491,38 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, json or json.gz", required = false, arity = 1)
         public String outputFormat = "vcf";
+
+    }
+
+    class QueryCommandOptions {
+
+        @Parameter(names = {"-o", "--output"}, description = "Output file. [STDOUT]", required = false, arity = 1)
+        public String output;
+
+        @Parameter(names = {"-r", "--region"}, description = "CSV list of regions: {chr}[:{start}-{end}]. example: 2,3:1000000-2000000",
+                required = false)
+        public String region;
+
+        @Parameter(names = {"--region-file"}, description = "GFF File with regions", required = false)
+        public String regionFile;
+
+        @Parameter(names = {"-g", "--gene"}, description = "CSV list of genes", required = false)
+        public String gene;
+
+        @Parameter(names = {"-i", "--include"}, description = "", required = false, arity = 1)
+        public String include;
+
+        @Parameter(names = {"-e", "--exclude"}, description = "", required = false, arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Skip some number of elements.", required = false, arity = 1)
+        public int skip;
+
+        @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
+        public int limit;
+
+        @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
+        public boolean count;
 
     }
 

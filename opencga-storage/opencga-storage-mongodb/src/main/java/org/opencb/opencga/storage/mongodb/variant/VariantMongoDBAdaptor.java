@@ -1164,7 +1164,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
         }
-        logger.info("Find = " + builder.get());
+        logger.debug("Find = " + builder.get());
         mongoQuery.putAll(builder.get().toMap());
         return mongoQuery;
     }
