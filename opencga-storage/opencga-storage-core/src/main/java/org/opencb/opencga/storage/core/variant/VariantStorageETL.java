@@ -421,6 +421,13 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
+        int studyId = options.getInt(Options.STUDY_ID.key(), -1);
+        long lock;
+        try {
+            lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
+        } catch (InterruptedException e) {
+            throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
+        }
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
@@ -489,6 +496,7 @@ public abstract class VariantStorageETL implements StorageETL {
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
+        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         return input;
     }
 
@@ -638,10 +646,19 @@ public abstract class VariantStorageETL implements StorageETL {
         List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());
         boolean annotate = options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue());
 
+        int studyId = options.getInt(Options.STUDY_ID.key(), -1);
+        long lock;
+        try {
+            lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
+        } catch (InterruptedException e) {
+            throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
+        }
         //Update StudyConfiguration
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         studyConfiguration.getIndexedFiles().addAll(fileIds);
         dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+
+        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
 
         checkLoadedVariants(input, fileIds, studyConfiguration, options);
 

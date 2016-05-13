@@ -28,15 +28,18 @@ public class VariantTableHelper extends GenomeHelper {
     private final AtomicReference<byte[]> outtable = new AtomicReference<>();
     private final AtomicReference<byte[]> intable = new AtomicReference<>();
 
-
     public VariantTableHelper(Configuration conf) {
+        this(conf, null);
+    }
+
+    public VariantTableHelper(Configuration conf, Connection con) {
         this(conf, conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, StringUtils.EMPTY),
-                conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY));
+                conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY), con);
     }
 
 
-    public VariantTableHelper(Configuration conf, String intable, String outTable) {
-        super(conf);
+    public VariantTableHelper(Configuration conf, String intable, String outTable, Connection con) {
+        super(conf, con);
         if (StringUtils.isEmpty(outTable)) {
             throw new IllegalArgumentException("Property for Output Table name missing or empty!!!");
         }

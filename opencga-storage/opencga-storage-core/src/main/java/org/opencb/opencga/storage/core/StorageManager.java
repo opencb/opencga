@@ -74,7 +74,7 @@ public abstract class StorageManager<DBADAPTOR> {
         }
 
         MemoryUsageMonitor monitor = new MemoryUsageMonitor();
-//        monitor.start();
+        monitor.start();
 
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
@@ -147,6 +147,7 @@ public abstract class StorageManager<DBADAPTOR> {
             inputFileUri = storageETL.transform(inputFileUri, null, outdirUri);
             etlResult.setTransformResult(inputFileUri);
 
+            System.out.println("etlResult.getTransformResult = " + etlResult.getTransformResult());
             logger.info("PostTransform '{}'", inputFileUri);
             inputFileUri = storageETL.postTransform(inputFileUri);
             etlResult.setPostTransformResult(inputFileUri);

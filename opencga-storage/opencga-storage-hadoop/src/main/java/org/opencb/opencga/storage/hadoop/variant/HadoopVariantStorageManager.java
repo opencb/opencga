@@ -11,10 +11,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.lang3.StringUtils;
@@ -23,12 +20,14 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
+import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -37,14 +36,14 @@ import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 
 /**
  * Created by mh719 on 16/06/15.
  */
-public class HadoopVariantStorageManager extends VariantStorageManager {
+public class HadoopVariantStorageManager extends VariantStorageManager implements AutoCloseable {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
     public static final String HADOOP_BIN = "hadoop.bin";
@@ -57,12 +56,34 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
 
+    public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
+    public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
+    public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
+
+
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
 
+    private HBaseManager hbaseManager;
+
     public HadoopVariantStorageManager() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
+    }
+
+    protected Connection getConnection(Configuration configuration) {
+        if (null == this.hbaseManager) {
+            this.hbaseManager = new HBaseManager(configuration);
+        }
+        return this.hbaseManager.getConnection();
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (null != this.hbaseManager ) {
+            this.hbaseManager.close();
+            this.hbaseManager = null;
+        }
     }
 
     @Override
@@ -73,99 +94,152 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             return super.index(inputFiles, outdirUri, doExtract, doTransform, doLoad);
         }
 
-        List<StorageETLResult> results = new ArrayList<>(inputFiles.size());
+        final boolean doArchive;
+        final boolean doMerge;
 
-        // Check the database connection before we start
-        if (doLoad) {
-            testConnection();
+
+        if (!getOptions().containsKey(HADOOP_LOAD_ARCHIVE) && !getOptions().containsKey(HADOOP_LOAD_VARIANT)) {
+            doArchive = true;
+            doMerge = true;
+        } else {
+            doArchive = getOptions().getBoolean(HADOOP_LOAD_ARCHIVE, false);
+            doMerge = getOptions().getBoolean(HADOOP_LOAD_VARIANT, false);
         }
-//        ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
-        final int nThreads = 3;
 
-        ExecutorService executorService = Executors.newFixedThreadPool(nThreads);
-        List<Future<StorageETLResult>> futures = new LinkedList<>();
-        List<Integer> indexedFiles = Collections.synchronizedList(new ArrayList<>(nThreads));
-        for (Iterator<URI> iterator = inputFiles.iterator(); iterator.hasNext();) {
-            URI inputFile = iterator.next();
-            //Provide a connected storageETL if load is required.
-            ObjectMap extraOptions = new ObjectMap()
-                    .append(HADOOP_LOAD_ARCHIVE, true)
-                    .append(HADOOP_LOAD_VARIANT, false);
-            VariantStorageETL storageETL = newStorageETL(doLoad, extraOptions);
-            StorageETLResult storageETLResult = new StorageETLResult(inputFile);
-            results.add(storageETLResult);
-            futures.add(executorService.submit(() -> {
-                URI nextUri = inputFile;
-                boolean error = false;
-                if (doTransform) {
-                    try {
-                        nextUri = transformFile(storageETL, storageETLResult, results, nextUri, outdirUri);
-                    } catch (StorageETLException ignore) {
-                        //Ignore here. Errors are stored in the ETLResult
-                        error = true;
+        if (!doArchive && !doMerge) {
+            return Collections.emptyList();
+        }
+
+        final int nThreadArchive = getOptions().getInt(HADOOP_LOAD_ARCHIVE_BATCH_SIZE, 2);
+        ObjectMap extraOptions = new ObjectMap()
+                .append(HADOOP_LOAD_ARCHIVE, true)
+                .append(HADOOP_LOAD_VARIANT, false);
+
+        final List<StorageETLResult> concurrResult = new CopyOnWriteArrayList<>();
+
+        try {
+            ExecutorService executorService = Executors.newFixedThreadPool(nThreadArchive,
+                    r -> {Thread t = new Thread(r); t.setDaemon(true); return t;}); // Set Daemon for quick shutdown !!!
+            LinkedList<Future<StorageETLResult>> futures = new LinkedList<>();
+            List<Integer> indexedFiles = new CopyOnWriteArrayList<>();
+            for (URI inputFile : inputFiles) {
+                //Provide a connected storageETL if load is required.
+
+                VariantStorageETL storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
+                futures.add(executorService.submit(() -> {
+                    StorageETLResult storageETLResult = new StorageETLResult(inputFile);
+                    URI nextUri = inputFile;
+                    boolean error = false;
+                    if (doTransform) {
+                        try {
+                            nextUri = transformFile(storageETL, storageETLResult, concurrResult, nextUri, outdirUri);
+                        } catch (StorageETLException ignore) {
+                            //Ignore here. Errors are stored in the ETLResult
+                            error = true;
+                        }
                     }
-                }
 
-                if (doLoad && !error) {
-                    try {
-                        loadFile(storageETL, storageETLResult, results, nextUri, outdirUri);
+                    if (doLoad && doArchive && !error) {
+                        try {
+                            loadFile(storageETL, storageETLResult, concurrResult, nextUri, outdirUri);
+                        } catch (StorageETLException ignore) {
+                            //Ignore here. Errors are stored in the ETLResult
+                            error = true;
+                        }
+                    }
+                    if (doLoad && !error) {
                         indexedFiles.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
-                    } catch (StorageETLException ignore) {
-                        //Ignore here. Errors are stored in the ETLResult
                     }
-                }
-                return storageETLResult;
-            }));
+                    return storageETLResult;
+                }));
+            }
 
+            executorService.shutdown();
 
-            if (futures.size() % nThreads == 0 || !iterator.hasNext()) {
-                try {
-                    executorService.shutdown();
-                    //FIXME: This is not a good idea
-                    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.DAYS);
-                    executorService = Executors.newFixedThreadPool(nThreads);
-                } catch (InterruptedException e) {
-                    throw new StorageETLException("Interrupted!", e, results);
-                }
-                int errors = 0;
-                for (StorageETLResult result : results) {
-                    if (result.getTransformError() != null) {
-                        //TODO: Handle errors. Retry?
-                        errors++;
-                        result.getTransformError().printStackTrace();
-                    } else if (result.getLoadError() != null) {
-                        //TODO: Handle errors. Retry?
-                        errors++;
-                        result.getLoadError().printStackTrace();
+            int errors = 0;
+            try {
+                while (!futures.isEmpty()) {
+                    executorService.awaitTermination(1l, TimeUnit.MINUTES);
+                    // Check valuesƒ
+                    while (futures.peek().isDone() || futures.peek().isCancelled()) {
+                        Future<StorageETLResult> first = futures.pop();
+                        StorageETLResult result = first.get(1l, TimeUnit.MINUTES);
+                        if (result.getTransformError() != null) {
+                            //TODO: Handle errors. Retry?
+                            errors++;
+                            result.getTransformError().printStackTrace();
+                        } else if (result.getLoadError() != null) {
+                            //TODO: Handle errors. Retry?
+                            errors++;
+                            result.getLoadError().printStackTrace();
+                        }
                     }
                 }
                 if (errors > 0) {
-                    throw new StorageETLException("Errors found", results);
+                    throw new StorageETLException("Errors found", concurrResult);
                 }
-                int studyId = storageETL.getStudyConfiguration().getStudyId();
 
-                storageETL.getOptions().put(HADOOP_LOAD_ARCHIVE, false);
-                storageETL.getOptions().put(HADOOP_LOAD_VARIANT, true);
-                //storageETL.merge(studyId, indexedFiles); // TODO enable again
-                storageETL.postLoad(inputFile, outdirUri);
+                if (doLoad && doMerge) {
 
-                indexedFiles.clear();
+                    int batchMergeSize = getOptions().getInt(HADOOP_LOAD_VARIANT_BATCH_SIZE, 10);
+
+                    List<Integer> filesToMerge = new ArrayList<>(batchMergeSize);
+                    for (Iterator<Integer> iterator = indexedFiles.iterator(); iterator.hasNext(); ) {
+                        Integer indexedFile = iterator.next();
+                        filesToMerge.add(indexedFile);
+                        if (filesToMerge.size() == batchMergeSize || !iterator.hasNext()) {
+                            extraOptions = new ObjectMap()
+                                    .append(HADOOP_LOAD_ARCHIVE, false)
+                                    .append(HADOOP_LOAD_VARIANT, true)
+                                    .append(HADOOP_LOAD_VARIANT_PENDING_FILES, indexedFiles);
+
+                            AbstractHadoopVariantStorageETL localEtl = newStorageETL(doLoad, extraOptions);
+
+                            int studyId = getOptions().getInt(Options.STUDY_ID.key());
+                            localEtl.merge(studyId, filesToMerge);
+                            localEtl.postLoad(inputFiles.get(0), outdirUri);
+                            filesToMerge.clear();
+                        }
+                    }
+                }
+            } catch (InterruptedException e) {
+                throw new StorageETLException("Interrupted!", e, concurrResult);
+            } catch (ExecutionException e) {
+                throw new StorageETLException("Execution exception!", e, concurrResult);
+            } catch (TimeoutException e) {
+                throw new StorageETLException("Timeout Exception", e, concurrResult);
+            }  finally {
+                if (!executorService.isShutdown()) {
+                    try {
+                        executorService.shutdownNow();
+                    } catch (Exception e) {
+                        logger.error("Problems shutting executer service down", e);
+                    }
+                }
+            }
+
+
+        } finally {
+            try {
+                this.close();
+            } catch (IOException e) {
+                logger.error("Issue closing DB connection ", e);
             }
         }
-        return results;
+        return concurrResult;
     }
 
     @Override
-    public VariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
+    public AbstractHadoopVariantStorageETL newStorageETL(boolean connected) throws StorageManagerException {
         return newStorageETL(connected, null);
     }
 
-    public VariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions) throws StorageManagerException {
+    public AbstractHadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions) throws StorageManagerException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         if (extraOptions != null) {
             options.putAll(extraOptions);
         }
-        boolean directLoad = options.getBoolean("hadoop.load.direct", false);
+        boolean directLoad = options.getBoolean(HADOOP_LOAD_DIRECT, false);
         VariantHadoopDBAdaptor dbAdaptor = connected ? getDBAdaptor() : null;
         Configuration hadoopConfiguration = null == dbAdaptor ? null : dbAdaptor.getConfiguration();
         hadoopConfiguration = hadoopConfiguration == null ? getHadoopConfiguration(options) : hadoopConfiguration;
@@ -173,7 +247,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         HBaseCredentials archiveCredentials = buildCredentials(getTableName(options.getInt(Options.STUDY_ID.key())));
 
-        VariantStorageETL storageETL = null;
+        AbstractHadoopVariantStorageETL storageETL = null;
         if (directLoad) {
             storageETL = new HadoopDirectVariantStorageETL(configuration, storageEngineId, dbAdaptor, getMRExecutor(options),
                     hadoopConfiguration, archiveCredentials, getVariantReaderUtils(hadoopConfiguration), options);
@@ -256,8 +330,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
     protected VariantHadoopDBAdaptor getDBAdaptor(HBaseCredentials credentials) throws StorageManagerException {
         try {
-            return new VariantHadoopDBAdaptor(credentials, configuration.getStorageEngine(STORAGE_ENGINE_ID),
-                    getHadoopConfiguration(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions()));
+            StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
+            Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
+//            configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials); // TODO ?
+
+            return new VariantHadoopDBAdaptor(getConnection(configuration), credentials, storageEngine, configuration);
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter", e);
         }
@@ -294,26 +371,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         try {
             HBaseCredentials dbCredentials = getDbCredentials();
             Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options), dbCredentials);
-            return new HBaseStudyConfigurationManager(dbCredentials, configuration, options);
+            return new HBaseStudyConfigurationManager(dbCredentials.getTable(), configuration, options);
         } catch (IOException e) {
             e.printStackTrace();
             return super.buildStudyConfigurationManager(options);
-        }
-    }
-
-    private ArchiveFileMetadataManager buildArchiveFileMetaManager(String archiveTableName, ObjectMap options)
-            throws StorageManagerException {
-        return buildArchiveFileMetaManager(buildCredentials(archiveTableName), options);
-    }
-
-    private ArchiveFileMetadataManager buildArchiveFileMetaManager(HBaseCredentials archiveTableCredentials, ObjectMap options)
-            throws StorageManagerException {
-        try {
-            Configuration configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(getHadoopConfiguration(options),
-                    archiveTableCredentials);
-            return new ArchiveFileMetadataManager(archiveTableCredentials, configuration, options);
-        } catch (IOException e) {
-            throw new StorageManagerException("Unable to build ArchiveFileMetaManager", e);
         }
     }
 

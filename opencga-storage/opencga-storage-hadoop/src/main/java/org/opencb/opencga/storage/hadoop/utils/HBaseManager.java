@@ -12,6 +12,8 @@ import org.apache.hadoop.hbase.util.Bytes;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Created on 13/11/15.
@@ -19,9 +21,7 @@ import java.net.URISyntaxException;
  * @author Matthias Haimel mh719+git@cam.ac.uk
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class HBaseManager extends Configured {
-
-
+public class HBaseManager extends Configured implements AutoCloseable {
 
     @FunctionalInterface
     public interface HBaseTableConsumer {
@@ -44,25 +44,53 @@ public class HBaseManager extends Configured {
         super.setConf(conf);
     }
 
+    private final AtomicBoolean closeConnection = new AtomicBoolean(false);
+    private final AtomicReference<Connection> connection = new AtomicReference<>(null);
+
     public HBaseManager(Configuration configuration) {
-        super(configuration);
+        this(configuration, null);
     }
 
-    /**
-     * Performs an action over a table.
-     * <p>
-     * * This method creates a new connection for the action to perform.
-     * * Create a connection is heavy. Do not use for common operations.
-     * * Use {@link HBaseManager#act(Connection, byte[], HBaseTableConsumer)} when possible
-     *
-     * @param tableName Table name
-     * @param func      Action to perfor
-     * @throws IOException If any IO problem occurs
-     */
-    public void act(byte[] tableName, HBaseTableConsumer func) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(getConf())) {
-            act(con, tableName, func);
+    public HBaseManager(Configuration configuration, Connection connection) {
+        super(configuration);
+        this.closeConnection.set(connection == null);
+        this.connection.set(connection);
+    }
+
+    public boolean getCloseConnection() {
+        return closeConnection.get();
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (this.closeConnection.get()) {
+            Connection con = this.connection.getAndSet(null);
+            if (null != con) {
+                con.close();
+            }
         }
+    }
+
+    public Connection getConnection(){
+        Connection con = this.connection.get();
+        if (this.closeConnection.get() && null == con) {
+            while( null == con) {
+                try {
+                    con = ConnectionFactory.createConnection(this.getConf());
+                } catch (IOException e) {
+                    throw new IllegalStateException("Problems opening connection to DB", e);
+                }
+                if (!this.connection.compareAndSet(null, con)) {
+                    try {
+                        con.close();
+                    } catch (IOException e) {
+                        throw new IllegalStateException("Problems closing connection to DB", e);
+                    }
+                }
+                con = this.connection.get();
+            }
+        }
+        return con;
     }
 
     /**
@@ -73,7 +101,7 @@ public class HBaseManager extends Configured {
      * @param func      Action to perform
      * @throws IOException If any IO problem occurs
      */
-    public void act(Connection con, byte[] tableName, HBaseTableConsumer func) throws IOException {
+    public static void act(Connection con, byte[] tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             func.accept(table);
@@ -83,14 +111,13 @@ public class HBaseManager extends Configured {
     /**
      * Performs an action over a table.
      *
-     * @param con HBase connection object
      * @param tableName Table name
      * @param func      Action to perform
      * @throws IOException If any IO problem occurs
      */
-    public void act(Connection con, String tableName, HBaseTableConsumer func) throws IOException {
+    public void act(String tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
-        try (Table table = con.getTable(tname)) {
+        try (Table table = getConnection().getTable(tname)) {
             func.accept(table);
         }
     }
@@ -126,10 +153,7 @@ public class HBaseManager extends Configured {
      * @throws IOException If any IO problem occurs
      */
     public <T> T act(byte[] tableName, HBaseTableFunction<T> func) throws IOException {
-        TableName tname = TableName.valueOf(tableName);
-        try (Connection con = ConnectionFactory.createConnection(getConf())) {
-            return act(con, tableName, func);
-        }
+        return act(getConnection(), tableName, func);
     }
 
     /**
@@ -142,7 +166,7 @@ public class HBaseManager extends Configured {
      * @return Result of the function
      * @throws IOException If any IO problem occurs
      */
-    public <T> T act(Connection con, byte[] tableName, HBaseTableFunction<T> func) throws IOException {
+    public static <T> T act(Connection con, byte[] tableName, HBaseTableFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             return func.function(table);
@@ -159,7 +183,7 @@ public class HBaseManager extends Configured {
      * @return Result of the function
      * @throws IOException If any IO problem occurs
      */
-    public <T> T act(Connection con, String tableName, HBaseTableFunction<T> func) throws IOException {
+    public static <T> T act(Connection con, String tableName, HBaseTableFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             return func.function(table);
@@ -180,9 +204,7 @@ public class HBaseManager extends Configured {
      * @throws IOException If any IO problem occurs
      */
     public <T> T act(String tableName, HBaseTableAdminFunction<T> func) throws IOException {
-        try (Connection con = ConnectionFactory.createConnection(getConf())) {
-            return act(con, tableName, func);
-        }
+        return act(getConnection(), tableName, func);
     }
 
     /**
@@ -195,7 +217,7 @@ public class HBaseManager extends Configured {
      * @return Result of the function
      * @throws IOException If any IO problem occurs
      */
-    public <T> T act(Connection con, String tableName, HBaseTableAdminFunction<T> func) throws IOException {
+    public static <T> T act(Connection con, String tableName, HBaseTableAdminFunction<T> func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname); Admin admin = con.getAdmin()) {
             return func.function(table, admin);
@@ -205,13 +227,12 @@ public class HBaseManager extends Configured {
     /**
      * Checks if the required table exists.
      *
-     * @param con HBase connection object
      * @param tableName    HBase table name
      * @return boolean True if the table exists
      * @throws IOException throws {@link IOException}
      **/
-    public boolean tableExists(Connection con, String tableName) throws IOException {
-        return act(con, tableName, (table, admin) -> admin.tableExists(table.getName()));
+    public boolean tableExists(String tableName) throws IOException {
+        return act(tableName, (table, admin) -> admin.tableExists(table.getName()));
     }
 
     /**
@@ -223,8 +244,13 @@ public class HBaseManager extends Configured {
      * @return boolean True if a new table was created
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
-    public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily) throws IOException {
+    public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily) throws IOException {
         return createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.SNAPPY);
+    }
+
+
+    public boolean createTableIfNeeded(String tableName, byte[] columnFamily, Compression.Algorithm compressionType) throws IOException {
+        return createTableIfNeeded(getConnection(), tableName, columnFamily, compressionType);
     }
 
     /**
@@ -237,7 +263,7 @@ public class HBaseManager extends Configured {
      * @return boolean True if a new table was created
      * @throws IOException throws {@link IOException} from creating a connection / table
      **/
-    public boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
+    public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
             throws IOException {
         TableName tName = TableName.valueOf(tableName);
         return act(con, tableName, (table, admin) -> {

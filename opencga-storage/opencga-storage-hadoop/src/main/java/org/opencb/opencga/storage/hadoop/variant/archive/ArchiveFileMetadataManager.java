@@ -1,23 +1,9 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.Append;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
@@ -29,8 +15,8 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.util.*;
 
 /**
  * Created on 16/11/15.
@@ -40,34 +26,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class ArchiveFileMetadataManager implements AutoCloseable {
 
     private final String tableName;
-    private final Configuration configuration;
-    private final ObjectMap options;
     private final GenomeHelper genomeHelper;
-    private final Connection connection;
     private final ObjectMapper objectMapper;
-    private final HBaseManager hBaseManager;
 
     private final Logger logger = LoggerFactory.getLogger(ArchiveDriver.class);
 
-    public ArchiveFileMetadataManager(HBaseCredentials credentials, Configuration configuration, ObjectMap options)
+    public ArchiveFileMetadataManager(HBaseCredentials credentials, Configuration configuration)
             throws IOException {
-        this(credentials.getTable(), configuration, options);
+        this(credentials.getTable(), configuration);
     }
 
-    public ArchiveFileMetadataManager(String tableName, Configuration configuration, ObjectMap options)
+    public ArchiveFileMetadataManager(String tableName, Configuration configuration)
             throws IOException {
-        this(ConnectionFactory.createConnection(configuration), tableName, configuration, options);
+        this(null, tableName, configuration);
     }
 
-    public ArchiveFileMetadataManager(Connection con, String tableName, Configuration configuration, ObjectMap options) {
+    public ArchiveFileMetadataManager(Connection con, String tableName, Configuration configuration) {
         this.tableName = tableName;
-        this.configuration = configuration;
-        this.options = options == null ? new ObjectMap() : options;
-        genomeHelper = new GenomeHelper(configuration);
-        connection = con;
-        objectMapper = new ObjectMapper();
-        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-        hBaseManager = new HBaseManager(configuration);
+        this.genomeHelper = new GenomeHelper(configuration, con);
+        this.objectMapper = new ObjectMapper();
+        this.objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
+    }
+
+    protected HBaseManager getHBaseManager() {
+        return this.genomeHelper.getHBaseManager();
     }
 
     public QueryResult<VcfMeta> getAllVcfMetas(ObjectMap options) throws IOException {
@@ -89,12 +71,13 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
                 get.addColumn(genomeHelper.getColumnFamily(), columnName);
             }
         }
-        if (!hBaseManager.act(connection, tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+        HBaseManager hBaseManager = getHBaseManager();
+        if (!hBaseManager.act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
             return new QueryResult<>("getVcfMeta", (int) (System.currentTimeMillis() - start), 0, 0, "", "",
                     Collections.emptyList());
         }
         HBaseManager.HBaseTableFunction<Result> resultHBaseTableFunction = table -> table.get(get);
-        Result result = hBaseManager.act(connection, tableName, resultHBaseTableFunction);
+        Result result = hBaseManager.act(tableName, resultHBaseTableFunction);
         logger.debug("Get VcfMeta from : {}", fileIds);
         if (result.isEmpty()) {
             return new QueryResult<>("getVcfMeta", (int) (System.currentTimeMillis() - start), 0, 0, "", "",
@@ -121,11 +104,11 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
     }
 
     public void updateVcfMetaData(VariantSource variantSource) throws IOException {
-        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, connection)) {
+        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         Put put = wrapVcfMetaAsPut(variantSource, this.genomeHelper);
-        hBaseManager.act(connection, tableName, table -> {
+        getHBaseManager().act(tableName, table -> {
             table.put(put);
         });
     }
@@ -138,7 +121,7 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
     }
 
     public void updateLoadedFilesSummary(List<Integer> newLoadedFiles) throws IOException {
-        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, connection)) {
+        if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
         StringBuilder sb = new StringBuilder();
@@ -149,21 +132,25 @@ public class ArchiveFileMetadataManager implements AutoCloseable {
         Append append = new Append(genomeHelper.getMetaRowKey());
         append.add(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey(),
                 Bytes.toBytes(sb.toString()));
-        hBaseManager.act(connection, tableName, table -> {
+        getHBaseManager().act(tableName, table -> {
             table.append(append);
         });
     }
 
     @Override
     public void close() throws IOException {
-        connection.close();
+        try {
+            this.genomeHelper.close();
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
     }
 
     public Set<Integer> getLoadedFiles() throws IOException {
-        if (!hBaseManager.tableExists(connection, tableName)) {
+        if (!getHBaseManager().tableExists(tableName)) {
             return new HashSet<>();
         } else {
-            return hBaseManager.act(connection, tableName, table -> {
+            return getHBaseManager().act(tableName, table -> {
                 Get get = new Get(genomeHelper.getMetaRowKey());
                 get.addColumn(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());
                 byte[] value = table.get(get).getValue(genomeHelper.getColumnFamily(), genomeHelper.getMetaRowKey());

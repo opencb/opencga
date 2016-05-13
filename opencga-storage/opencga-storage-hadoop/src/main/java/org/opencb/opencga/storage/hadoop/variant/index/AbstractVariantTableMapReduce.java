@@ -99,7 +99,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         Map<Integer, VcfMeta> vcfMetaMap = new HashMap<Integer, VcfMeta>();
         String tableName = Bytes.toString(getHelper().getIntputTable());
         getLog().debug("Load VcfMETA from {}", tableName);
-        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(tableName, conf, null)) {
+        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(tableName, conf)) {
             QueryResult<VcfMeta> allVcfMetas = metadataManager.getAllVcfMetas(new ObjectMap());
             for (VcfMeta vcfMeta : allVcfMetas.getResult()) {
                 vcfMetaMap.put(Integer.parseInt(vcfMeta.getVariantSource().getFileId()), vcfMeta);
@@ -225,12 +225,13 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     protected void setup(Context context) throws IOException,
             InterruptedException {
         getLog().debug("Setup configuration");
-        // Setup configuration
-        helper = new VariantTableHelper(context.getConfiguration());
-        this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Open DB connection
         dbConnection = ConnectionFactory.createConnection(context.getConfiguration());
+
+        // Setup configuration
+        helper = new VariantTableHelper(context.getConfiguration(), dbConnection);
+        this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Load VCF meta data for columns
         Map<Integer, VcfMeta> vcfMetaMap = loadVcfMetaMap(context.getConfiguration()); // Archive meta

@@ -43,17 +43,11 @@ public class ArchiveHelper extends GenomeHelper {
         this(conf, null);
         int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
         String archiveTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
-        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(archiveTable, conf, new ObjectMap())) {
+        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(archiveTable, conf)) {
             VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
             this.meta.set(meta);
         }
     }
-
-//    public ArchiveHelper(GenomeHelper helper, byte[] meta) throws IOException {
-//        super(helper);
-//        this.meta.set(VcfMeta.parseFrom(meta));
-//        column = Bytes.toBytes(getMeta().getVariantSource().getFileId());
-//    }
 
     public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
         super(helper);

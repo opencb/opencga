@@ -7,6 +7,7 @@ import com.google.protobuf.MessageLite;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.query.QueryConstants;
@@ -18,12 +19,13 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
  */
-public class GenomeHelper {
+public class GenomeHelper implements AutoCloseable {
     private final Logger logger = LoggerFactory.getLogger(GenomeHelper.class);
 
     public static final String CONFIG_STUDY_ID = "opencga.study.id";
@@ -49,9 +51,9 @@ public class GenomeHelper {
     private final Configuration conf;
 
     protected final HBaseManager hBaseManager;
-    private int studyId;
+    private final int studyId;
 
-    public GenomeHelper(Configuration conf) {
+    public GenomeHelper(Configuration conf, Connection connection) {
         this.conf = conf;
         this.separator = conf.get(ArchiveDriver.CONFIG_ARCHIVE_ROW_KEY_SEPARATOR, DEFAULT_ROWKEY_SEPARATOR).charAt(0);
         // TODO: Check if columnFamily is upper case
@@ -62,11 +64,16 @@ public class GenomeHelper {
         this.metaRowKey = Bytes.toBytes(metaRowKeyString);
         this.chunkSize.set(conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver.DEFAULT_CHUNK_SIZE));
         this.studyId = conf.getInt(CONFIG_STUDY_ID, -1);
-        this.hBaseManager = new HBaseManager(conf);
+        this.hBaseManager = new HBaseManager(conf, connection);
+
+    }
+
+    public GenomeHelper(Configuration conf) {
+        this(conf, null);
     }
 
     public GenomeHelper(GenomeHelper other) {
-        this(other.getConf());
+        this(other.getConf(), other.getHBaseManager().getCloseConnection()? null:other.getHBaseManager().getConnection());
     }
 
     public Configuration getConf() {
@@ -332,4 +339,8 @@ public class GenomeHelper {
         return wrapAsPut(column, getMetaRowKey(), meta);
     }
 
+    @Override
+    public void close() throws IOException {
+        this.hBaseManager.close();
+    }
 }

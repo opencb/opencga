@@ -4,8 +4,6 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -47,15 +45,7 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageMana
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public class HadoopDirectVariantStorageETL extends VariantStorageETL {
-
-    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
-
-    protected MRExecutor mrExecutor = null;
-    protected final VariantHadoopDBAdaptor dbAdaptor;
-    protected final Configuration conf;
-    protected final HBaseCredentials archiveTableCredentials;
-    protected final HBaseCredentials variantsTableCredentials;
+public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageETL {
 
     /**
      * @param configuration      {@link StorageConfiguration}
@@ -76,17 +66,7 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         super(
                 configuration, storageEngineId, LoggerFactory.getLogger(HadoopDirectVariantStorageETL.class),
                 dbAdaptor, variantReaderUtils,
-                options);
-        this.mrExecutor = mrExecutor;
-        this.dbAdaptor = dbAdaptor;
-        this.conf = new Configuration(conf);
-        this.archiveTableCredentials = archiveCredentials;
-        this.variantsTableCredentials = dbAdaptor == null ? null : dbAdaptor.getCredentials();
-    }
-
-    @Override
-    public URI transform(URI inputUri, URI pedigreeUri, URI outputUri) throws StorageManagerException {
-        return inputUri;
+                options, archiveCredentials, mrExecutor, conf);
     }
 
     @Override
@@ -96,10 +76,16 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
+        int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
+        long lock;
+        try {
+            lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
+        } catch (InterruptedException e) {
+            throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
+        }
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
-            int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
             String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
             checkStudyId(studyId);
             studyConfiguration = new StudyConfiguration(studyId, studyName);
@@ -192,13 +178,9 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
                 String.format(
                         "Create table %s with %s %s", archiveTableCredentials.getTable(), compressName,
                         compression));
-        GenomeHelper genomeHelper = new GenomeHelper(this.conf);
-        try (Connection con = ConnectionFactory.createConnection(this.conf)) {
-            genomeHelper.getHBaseManager().createTableIfNeeded(
-                    con, archiveTableCredentials.getTable(), genomeHelper
-                            .getColumnFamily(),
-                    compression);
-//            ArchiveDriver.createArchiveTableIfNeeded(new GenomeHelper(this.conf), archiveTableCredentials.getTable());
+        try {
+            this.dbAdaptor.getGenomeHelper().getHBaseManager().createTableIfNeeded(
+                    archiveTableCredentials.getTable(), this.dbAdaptor.getGenomeHelper().getColumnFamily(), compression);
         } catch (IOException e1) {
             throw new RuntimeException("Issue creating table " + archiveTableCredentials.getTable(), e1);
         }
@@ -287,6 +269,7 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
                 options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
             }
         }
+        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         return input;
     }
 
@@ -331,14 +314,20 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         ArchiveHelper.setStudyId(conf, studyId);
 
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (loadArch) {
             loadArch(input);
         }
+
+        if (loadVar) {
+            List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            merge(studyId, pendingFiles);
+        }
         return inputUri;
     }
 
-    private void loadArch(Path input) throws StorageManagerException {
+    private void loadArch(Path input) throws StorageManagerException, IOException {
         String table = archiveTableCredentials.getTable();
         String fileName = input.getFileName().toString();
         Path sourcePath = input.getParent().resolve(fileName.replace(".variants.proto.gz", ".file.json.gz"));
@@ -364,7 +353,7 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         source.setFileId(fileId.toString());
         source.setStudyId(Integer.toString(studyId));
         VcfMeta meta = new VcfMeta(source);
-        ArchiveHelper helper = new ArchiveHelper(conf, meta);
+        ArchiveHelper helper = new ArchiveHelper(dbAdaptor.getGenomeHelper(), meta);
 
 
         VariantHbasePutTask hbaseWriter = new VariantHbasePutTask(helper, table);
@@ -389,7 +378,7 @@ public class HadoopDirectVariantStorageETL extends VariantStorageETL {
         logger.info("Read {} slices", counter);
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(table, conf, null);) {
+        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(this.dbAdaptor.getConnection(), table, conf);) {
             manager.updateVcfMetaData(source);
             manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
         } catch (IOException e) {

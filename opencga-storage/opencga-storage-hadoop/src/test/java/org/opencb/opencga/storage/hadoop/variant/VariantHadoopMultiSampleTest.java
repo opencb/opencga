@@ -124,6 +124,78 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
     }
+    @Test
+    public void testMultipleFilesProtoConcurrent() throws Exception {
+
+        List<URI> protoFiles = new LinkedList<>();
+
+        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+//        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+//        options.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, false);
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false);
+        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
+        options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        options.put(VariantStorageManager.Options.STUDY_ID.key(), STUDY_ID);
+        options.put(VariantStorageManager.Options.STUDY_NAME.key(), STUDY_NAME);
+        options.put(VariantStorageManager.Options.FILE_ID.key(), -1);
+
+        List<URI> inputFiles = new LinkedList<>();
+
+//        for (int fileId = 12877; fileId <= 12893; fileId++) {
+        for (int fileId = 12877; fileId <= 12879; fileId++) {
+            String fileName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
+//            inputFiles.add(getResourceUri(fileName));
+            List<StorageETLResult> results = variantStorageManager.index(Collections.singletonList(getResourceUri(fileName)), outputUri, true, true, false);
+            protoFiles.add(results.get(0).getTransformResult());
+
+//            int fileId = studyConfiguration.getFileIds().size() + 1;
+//            studyConfiguration.getFileIds().put(fileName, -1);
+//            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
+//            studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Collections.singleton(fileId)));
+        }
+
+       // dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+
+        protoFiles = protoFiles.subList(0,2); // TODO remove
+
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true);
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false);
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES, Arrays.asList(5,6,7));
+
+        List<StorageETLResult> index2 = variantStorageManager.index(protoFiles, outputUri, false, false, true);
+
+//        printVariantsFromArchiveTable(studyConfiguration);
+
+        System.out.println(index2);
+
+//        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
+
+
+//        for (Variant variant : dbAdaptor) {
+//            System.out.println("variant = " + variant);
+//        }
+//
+//
+//        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+//        studyConfiguration.getHeaders().clear();
+//        System.out.println("HBaseStudyConfiguration = " + ((HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager()).toHBaseStudyConfiguration(studyConfiguration));
+//
+//        ArchiveFileMetadataManager fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), null);
+//        Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles();
+//        System.out.println("loadedFiles = " + loadedFiles);
+//        for (int fileId = 12877; fileId <= 12893; fileId++) {
+//            assertTrue(loadedFiles.contains(fileId));
+//        }
+//        for (Integer loadedFile : loadedFiles) {
+//            VcfMeta vcfMeta = fileMetadataManager.getVcfMeta(loadedFile, null).first();
+//            assertNotNull(vcfMeta);
+//        }
+
+    }
 
     @Test
     public void testMultipleFilesConcurrent() throws Exception {
@@ -147,6 +219,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
 //        options.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
+        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());

@@ -52,6 +52,15 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     public void setDefaultQueryOptions(QueryOptions options) {
     }
 
+    public long lockStudy(int studyId, long lockDuration, long wait) throws InterruptedException {
+        logger.warn("Ignoring lock");
+        return 0;
+    }
+
+    public void unLockStudy(int studyId, long lockId) {
+        logger.warn("Ignoring unLock");
+    }
+
     protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
 
     public final QueryResult<StudyConfiguration> getStudyConfiguration(String studyName, QueryOptions options) {

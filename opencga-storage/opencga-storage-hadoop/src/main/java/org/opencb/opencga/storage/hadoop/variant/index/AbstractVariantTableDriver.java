@@ -106,7 +106,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
         /* -------------------------------*/
         // Validate input CHECK
-        if (!gh.getHBaseManager().act(inTable, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)))) {
+        HBaseManager hBaseManager = gh.getHBaseManager();
+        if (!hBaseManager.act(inTable, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)))) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
         }
 

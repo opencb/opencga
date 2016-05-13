@@ -1,18 +1,16 @@
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.BufferedMutator;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Put;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.commons.io.DataWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -22,7 +20,6 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     protected final Logger logger = LoggerFactory.getLogger(VariantHbasePutTask.class);
     private final ArchiveHelper helper;
     private final TableName tableName;
-    private Connection connection;
     private BufferedMutator tableMutator;
 
     public VariantHbasePutTask(ArchiveHelper helper, String tableName) {
@@ -38,8 +35,7 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
     public boolean open() {
         try {
             logger.info("Open connection using " + getHelper().getConf());
-            connection = ConnectionFactory.createConnection(getHelper().getConf());
-            tableMutator = connection.getBufferedMutator(this.tableName);
+            tableMutator = getHelper().getHBaseManager().getConnection().getBufferedMutator(this.tableName);
         } catch (IOException e) {
             throw new RuntimeException("Failed to connect to Hbase", e);
         }
@@ -77,14 +73,10 @@ public class VariantHbasePutTask implements DataWriter<VcfSlice> {
                 tableMutator = null;
             }
         }
-        if (connection != null) {
-            try {
-                connection.close();
-            } catch (IOException e) {
-                logger.error("Problems closing connection", e);
-            } finally {
-                connection = null;
-            }
+        try {
+            getHelper().close();
+        } catch (Exception e) {
+            throw new IllegalStateException("Problems closing connection", e);
         }
         return true;
     }

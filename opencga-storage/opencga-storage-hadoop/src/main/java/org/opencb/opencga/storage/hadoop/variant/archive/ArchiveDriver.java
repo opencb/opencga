@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.archive;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.apache.avro.file.DataFileStream;
 import org.apache.avro.io.DatumReader;
 import org.apache.avro.mapreduce.AvroJob;
@@ -31,8 +30,8 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
-import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceWritable;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
+import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceWritable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +44,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
+/**
+ * @author mh719
+ */
 public class ArchiveDriver extends Configured implements Tool {
 
     public static final String CONFIG_ARCHIVE_FILE_ID             = "opencga.archive.file.id";
@@ -112,9 +114,6 @@ public class ArchiveDriver extends Configured implements Tool {
                 conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true));
         job.setMapOutputValueClass(VcfSliceWritable.class);
 
-
-
-
         Thread hook = new Thread(() -> {
             try {
                 if (!job.isComplete()) {
@@ -128,10 +127,9 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf, null)) {
+        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf)) {
             manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
         }
-
         return succeed ? 0 : 1;
     }
 
@@ -144,12 +142,11 @@ public class ArchiveDriver extends Configured implements Tool {
     public static boolean createArchiveTableIfNeeded(GenomeHelper genomeHelper, String tableName, Connection con) throws IOException {
         Algorithm compression = Compression.getCompressionAlgorithmByName(
                 genomeHelper.getConf().get(CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName()));
-        return genomeHelper.getHBaseManager().createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(),
-                compression);
+        return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), compression);
     }
 
     private void storeMetaData(VcfMeta meta, String tableName, Configuration conf) throws IOException {
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf, null)) {
+        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf)) {
             manager.updateVcfMetaData(meta);
         }
     }
