@@ -63,14 +63,12 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     //FIXME: Use HBase lock
-    public static ReentrantLock lock = new ReentrantLock();
-
-
+    private static ReentrantLock lock = new ReentrantLock();
 
     @Override
     public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException {
         boolean hasLock = lock.tryLock(timeout, TimeUnit.MILLISECONDS);
-        if (! hasLock) {
+        if (!hasLock) {
             throw new IllegalStateException("Can't get lock !!!");
         }
         return 0;

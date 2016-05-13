@@ -73,7 +73,8 @@ public class GenomeHelper implements AutoCloseable {
     }
 
     public GenomeHelper(GenomeHelper other) {
-        this(other.getConf(), other.getHBaseManager().getCloseConnection()? null:other.getHBaseManager().getConnection());
+        this(other.getConf(), other.getHBaseManager().getCloseConnection() ? null : other.getHBaseManager()
+                .getConnection());
     }
 
     public Configuration getConf() {

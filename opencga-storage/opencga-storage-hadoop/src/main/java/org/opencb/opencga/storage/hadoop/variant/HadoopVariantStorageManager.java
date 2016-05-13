@@ -1,19 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.*;
-import java.util.zip.GZIPInputStream;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
@@ -39,6 +25,15 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
+import java.util.*;
+import java.util.concurrent.*;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by mh719 on 16/06/15.
@@ -80,7 +75,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
 
     @Override
     public void close() throws IOException {
-        if (null != this.hbaseManager ) {
+        if (null != this.hbaseManager) {
             this.hbaseManager.close();
             this.hbaseManager = null;
         }
@@ -118,8 +113,13 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
         final List<StorageETLResult> concurrResult = new CopyOnWriteArrayList<>();
 
         try {
-            ExecutorService executorService = Executors.newFixedThreadPool(nThreadArchive,
-                    r -> {Thread t = new Thread(r); t.setDaemon(true); return t;}); // Set Daemon for quick shutdown !!!
+            ExecutorService executorService = Executors.newFixedThreadPool(
+                    nThreadArchive,
+                    r -> {
+                        Thread t = new Thread(r);
+                        t.setDaemon(true);
+                        return t;
+                    }); // Set Daemon for quick shutdown !!!
             LinkedList<Future<StorageETLResult>> futures = new LinkedList<>();
             List<Integer> indexedFiles = new CopyOnWriteArrayList<>();
             for (URI inputFile : inputFiles) {
@@ -159,11 +159,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
             int errors = 0;
             try {
                 while (!futures.isEmpty()) {
-                    executorService.awaitTermination(1l, TimeUnit.MINUTES);
+                    executorService.awaitTermination(1, TimeUnit.MINUTES);
                     // Check valuesƒ
                     if (futures.peek().isDone() || futures.peek().isCancelled()) {
                         Future<StorageETLResult> first = futures.pop();
-                        StorageETLResult result = first.get(1l, TimeUnit.MINUTES);
+                        StorageETLResult result = first.get(1, TimeUnit.MINUTES);
                         if (result.getTransformError() != null) {
                             //TODO: Handle errors. Retry?
                             errors++;
@@ -185,7 +185,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
                     int batchMergeSize = getOptions().getInt(HADOOP_LOAD_VARIANT_BATCH_SIZE, 10);
 
                     List<Integer> filesToMerge = new ArrayList<>(batchMergeSize);
-                    for (Iterator<Integer> iterator = indexedFiles.iterator(); iterator.hasNext(); ) {
+                    for (Iterator<Integer> iterator = indexedFiles.iterator(); iterator.hasNext();) {
                         Integer indexedFile = iterator.next();
                         filesToMerge.add(indexedFile);
                         if (filesToMerge.size() == batchMergeSize || !iterator.hasNext()) {
@@ -235,7 +235,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
         return newStorageETL(connected, null);
     }
 
-    public AbstractHadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions) throws StorageManagerException {
+    public AbstractHadoopVariantStorageETL newStorageETL(boolean connected, Map<? extends String, ?> extraOptions)
+            throws StorageManagerException {
         ObjectMap options = new ObjectMap(configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions());
         if (extraOptions != null) {
             options.putAll(extraOptions);

@@ -71,10 +71,10 @@ public class HBaseManager extends Configured implements AutoCloseable {
         }
     }
 
-    public Connection getConnection(){
+    public Connection getConnection() {
         Connection con = this.connection.get();
         if (this.closeConnection.get() && null == con) {
-            while( null == con) {
+            while (null == con) {
                 try {
                     con = ConnectionFactory.createConnection(this.getConf());
                 } catch (IOException e) {
