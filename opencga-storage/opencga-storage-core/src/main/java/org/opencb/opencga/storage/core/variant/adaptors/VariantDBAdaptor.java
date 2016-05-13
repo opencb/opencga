@@ -226,6 +226,18 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options);
 
     /**
+     * Return all the variants in the same phase set for a given sample in a given variant.
+     *
+     * @param variant The main variant. See {@link Variant#toString()}
+     * @param studyName Study of the sample
+     * @param sampleName Sample name
+     * @param options Other options
+     * @param windowsSize Windows size for searching the phased variants.
+     * @return A QueryResult with the result of the query
+     */
+    QueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize);
+
+    /**
      * Performs a distinct operation of the given field over the returned results.
      *
      * @param query Query to be executed in the database to filter variants

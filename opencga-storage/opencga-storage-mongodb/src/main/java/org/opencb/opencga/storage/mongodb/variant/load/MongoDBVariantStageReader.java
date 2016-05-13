@@ -69,7 +69,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         //Filter documents with the selected studyId and chromosomes
         //Sorting by _id
         FindIterable<Document> iterable = stageCollection.nativeQuery().find(getQuery(),
-                new QueryOptions(MongoDBCollection.SORT, Sorts.ascending("_id"))
+                new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))
         );
         iterable.batchSize(20);
         this.iterator = iterable.iterator();

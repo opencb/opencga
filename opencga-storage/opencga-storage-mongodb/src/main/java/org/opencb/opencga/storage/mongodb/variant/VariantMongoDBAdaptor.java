@@ -24,6 +24,8 @@ import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.result.UpdateResult;
+import htsjdk.variant.vcf.VCFConstants;
+import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.core.Region;
@@ -231,15 +233,15 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //        DBObject projection = parseProjectionQueryOptions(options);
         Document projection = createProjection(query, options);
         logger.debug("Query to be executed: '{}'", mongoQuery.toString());
-        options.putIfAbsent(MongoDBCollection.SKIP_COUNT, true);
+        options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
 
         int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT, 3_000);
         int maxTimeout = configuration.getInt(MAX_TIMEOUT, 30_000);
-        int timeout = options.getInt(MongoDBCollection.TIMEOUT, defaultTimeout);
+        int timeout = options.getInt(QueryOptions.TIMEOUT, defaultTimeout);
         if (timeout > maxTimeout || timeout < 0) {
             timeout = maxTimeout;
         }
-        options.put(MongoDBCollection.TIMEOUT, timeout);
+        options.put(QueryOptions.TIMEOUT, timeout);
 
         // FIXME: MONGO_MIGRATION
 //        if (options.getBoolean("mongodb.explain", false)) {
@@ -266,6 +268,58 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             queryResultList.add(queryResult);
         }
         return queryResultList;
+    }
+
+    @Override
+    public QueryResult<Variant> getPhased(String varStr, String studyName, String sampleName, QueryOptions options, int windowsSize) {
+        StopWatch watch = new StopWatch();
+        watch.start();
+
+        Variant variant = new Variant(varStr);
+        Region region = new Region(variant.getChromosome(), variant.getStart(), variant.getEnd());
+        Query query = new Query(VariantQueryParams.REGION.key(), region)
+                .append(VariantQueryParams.REFERENCE.key(), variant.getReference())
+                .append(VariantQueryParams.ALTERNATE.key(), variant.getAlternate())
+                .append(VariantQueryParams.STUDIES.key(), studyName)
+                .append(VariantQueryParams.RETURNED_STUDIES.key(), studyName)
+                .append(VariantQueryParams.RETURNED_SAMPLES.key(), sampleName);
+        QueryResult<Variant> queryResult = get(query, new QueryOptions());
+        variant = queryResult.first();
+        if (variant != null && !variant.getStudies().isEmpty()) {
+            StudyEntry studyEntry = variant.getStudies().get(0);
+            Integer psIdx = studyEntry.getFormatPositions().get(VCFConstants.PHASE_SET_KEY);
+            if (psIdx != null) {
+                String ps = studyEntry.getSamplesData().get(0).get(psIdx);
+                if (!ps.equals(DocumentToSamplesConverter.UNKNOWN_FIELD)) {
+                    sampleName = studyEntry.getOrderedSamplesName().get(0);
+
+                    region.setStart(region.getStart() > windowsSize ? region.getStart() - windowsSize : 0);
+                    region.setEnd(region.getEnd() + windowsSize);
+                    query.remove(VariantQueryParams.REFERENCE.key());
+                    query.remove(VariantQueryParams.ALTERNATE.key());
+                    query.remove(VariantQueryParams.RETURNED_STUDIES.key());
+                    query.remove(VariantQueryParams.RETURNED_SAMPLES.key());
+                    queryResult = get(query, new QueryOptions(QueryOptions.SORT, true));
+                    Iterator<Variant> iterator = queryResult.getResult().iterator();
+                    while (iterator.hasNext()) {
+                        Variant next = iterator.next();
+                        if (!next.getStudies().isEmpty()) {
+                            if (!ps.equals(next.getStudies().get(0).getSampleData(sampleName, VCFConstants.PHASE_SET_KEY))) {
+                                iterator.remove();
+                            }
+                        }
+                    }
+                    queryResult.setNumResults(queryResult.getResult().size());
+                    queryResult.setNumTotalResults(queryResult.getResult().size());
+                    watch.stop();
+                    queryResult.setDbTime(((int) watch.getTime()));
+                    queryResult.setId("getPhased");
+                    return queryResult;
+                }
+            }
+        }
+        watch.stop();
+        return new QueryResult<>("getPhased", ((int) watch.getTime()), 0, 0, null, null, Collections.emptyList());
     }
 
 
@@ -1247,15 +1301,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        if (options.containsKey("sort")) {
-            if (options.getBoolean("sort")) {
-                options.put("sort", new Document("_id", 1));
+        if (options.containsKey(QueryOptions.SORT)) {
+            if (options.getBoolean(QueryOptions.SORT)) {
+                options.put(QueryOptions.SORT, "_id");
+                options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);
             } else {
-                options.remove("sort");
+                options.remove(QueryOptions.SORT);
             }
         }
 
-        List<String> includeList = options.getAsStringList("include");
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
                 String key = DocumentToVariantConverter.toShortFieldName(s);
@@ -1269,8 +1324,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             for (String values : DocumentToVariantConverter.FIELDS_MAP.values()) {
                 projection.put(values, 1);
             }
-            if (options.containsKey("exclude")) { // Exclude some
-                List<String> excludeList = options.getAsStringList("exclude");
+            if (options.containsKey(QueryOptions.EXCLUDE)) { // Exclude some
+                List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
                 for (String s : excludeList) {
                     String key = DocumentToVariantConverter.toShortFieldName(s);
                     if (key != null) {

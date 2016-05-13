@@ -552,6 +552,51 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
+    public void testGetSortedVariantsDefault() {
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, true);
+        VariantDBIterator iterator = dbAdaptor.iterator(null, options);
+        Variant next, prev;
+        prev = iterator.next();
+        while (iterator.hasNext()) {
+            next = iterator.next();
+            if (next.getChromosome().equals(prev.getChromosome())) {
+                assertTrue(prev + " <= " + next, prev.getStart() <= next.getStart());
+            }
+            prev = next;
+        }
+    }
+
+    @Test
+    public void testGetSortedVariantsAscending() {
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.ORDER, QueryOptions.ASCENDING);
+        VariantDBIterator iterator = dbAdaptor.iterator(null, options);
+        Variant next, prev;
+        prev = iterator.next();
+        while (iterator.hasNext()) {
+            next = iterator.next();
+            if (next.getChromosome().equals(prev.getChromosome())) {
+                assertTrue(prev + " <= " + next, prev.getStart() <= next.getStart());
+            }
+            prev = next;
+        }
+    }
+
+    @Test
+    public void testGetSortedVariantsReverse() {
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, true).append(QueryOptions.ORDER, QueryOptions.DESCENDING);
+        VariantDBIterator iterator = dbAdaptor.iterator(null, options);
+        Variant next, prev;
+        prev = iterator.next();
+        while (iterator.hasNext()) {
+            next = iterator.next();
+            if (next.getChromosome().equals(prev.getChromosome())) {
+                assertTrue(next + " <= " + prev, next.getStart() <= prev.getStart());
+            }
+            prev = next;
+        }
+    }
+
+    @Test
     public void testGetAllVariants_region() {
         Query query = new Query(REGION.key(), "1:13910417-13910417,1:165389129-165389129");
         queryResult = dbAdaptor.get(query, options);
