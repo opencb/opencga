@@ -1249,8 +1249,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         if (options.containsKey("sort")) {
             if (options.getBoolean("sort")) {
-                options.put("sort", new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1).append(DocumentToVariantConverter
-                        .START_FIELD, 1));
+                options.put("sort", new Document("_id", 1));
             } else {
                 options.remove("sort");
             }
