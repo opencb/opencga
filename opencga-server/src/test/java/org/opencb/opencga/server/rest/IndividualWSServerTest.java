@@ -1,9 +1,8 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.rest;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;

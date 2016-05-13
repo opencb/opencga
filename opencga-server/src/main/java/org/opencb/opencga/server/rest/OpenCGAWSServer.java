@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;

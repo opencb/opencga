@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import encryption.AESCipher;
 import encryption.KeyEncoding;
 import encryption.KeystoreUtil;
-import org.junit.Test;
 
 
 import java.io.FileNotFoundException;

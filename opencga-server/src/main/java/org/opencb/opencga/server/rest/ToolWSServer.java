@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.rest;
 
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
@@ -23,7 +23,6 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;

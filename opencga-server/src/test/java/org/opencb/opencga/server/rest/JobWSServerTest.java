@@ -1,4 +1,4 @@
-package org.opencb.opencga.server.ws;
+package org.opencb.opencga.server.rest;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
