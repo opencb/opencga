@@ -334,7 +334,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
         try {
             StorageEngineConfiguration storageEngine = this.configuration.getStorageEngine(STORAGE_ENGINE_ID);
             Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
-            configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials); 
+            configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
 
             return new VariantHadoopDBAdaptor(getConnection(configuration), credentials, storageEngine, configuration);
         } catch (IOException e) {
