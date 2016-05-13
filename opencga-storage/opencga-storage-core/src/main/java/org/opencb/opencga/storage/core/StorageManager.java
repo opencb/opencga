@@ -74,7 +74,7 @@ public abstract class StorageManager<DBADAPTOR> {
         }
 
         MemoryUsageMonitor monitor = new MemoryUsageMonitor();
-        monitor.start();
+//        monitor.start();
 
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
