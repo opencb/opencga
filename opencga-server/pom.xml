@@ -39,16 +39,16 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-analysis</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.opencb.datastore</groupId>
-            <artifactId>datastore-mongodb</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mongodb</groupId>
-                    <artifactId>mongo-java-driver</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.opencb.datastore</groupId>-->
+            <!--<artifactId>datastore-mongodb</artifactId>-->
+            <!--<exclusions>-->
+                <!--<exclusion>-->
+                    <!--<groupId>org.mongodb</groupId>-->
+                    <!--<artifactId>mongo-java-driver</artifactId>-->
+                <!--</exclusion>-->
+            <!--</exclusions>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -129,12 +129,12 @@
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
-            <version>3.0.0-beta-2</version>
+            <version>${google.protobuf}</version>
         </dependency>
         <dependency>
             <groupId>io.grpc</groupId>
             <artifactId>grpc-all</artifactId>
-            <version>0.13.1</version>
+            <version>${google.grpc}</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -181,7 +181,7 @@
                     -->
                     <protocArtifact>com.google.protobuf:protoc:3.0.0-beta-2:exe:${os.detected.classifier}</protocArtifact>
                     <pluginId>grpc-java</pluginId>
-                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:0.13.1:exe:${os.detected.classifier}</pluginArtifact>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:0.13.2:exe:${os.detected.classifier}</pluginArtifact>
                     <!--<protoSourceRoot>src/main/resources/protobuf</protoSourceRoot>-->
                 </configuration>
                 <executions>
