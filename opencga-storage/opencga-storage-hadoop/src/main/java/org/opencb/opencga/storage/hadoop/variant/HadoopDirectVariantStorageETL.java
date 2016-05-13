@@ -76,6 +76,9 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
+
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
         long lock;
         try {
@@ -83,16 +86,16 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         } catch (InterruptedException e) {
             throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
         }
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        if (studyConfiguration == null) {
-            logger.info("Creating a new StudyConfiguration");
-            String studyName = options.getString(Options.STUDY_NAME.key(), Options.STUDY_NAME.defaultValue());
-            checkStudyId(studyId);
-            studyConfiguration = new StudyConfiguration(studyId, studyName);
-            options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        }
+
+        StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
 
         VariantSource source = readVariantSource(input, options);
+        if (loadArch) {
+            Path inPath = Paths.get(input.getPath());
+            source = loadVariantSource(inPath.getParent().resolve(
+                    inPath.getFileName().toString().replace(".variants.proto.gz", ".file.json.gz")));
+        }
+        source.setStudyId(Integer.toString(studyId));
 
         /*
          * Before load file, check and add fileName to the StudyConfiguration.
@@ -152,15 +155,12 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         fileId = checkNewFile(studyConfiguration, fileId, fileName);
         options.put(Options.FILE_ID.key(), fileId);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
-//        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString()); //
+        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString()); //
 // TODO laster
 
-//        checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options); // TODO ?
-//        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options); // TODO ?
+        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 
         if (!loadArch && !loadVar) {
             loadArch = true;

@@ -161,7 +161,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
                 while (!futures.isEmpty()) {
                     executorService.awaitTermination(1l, TimeUnit.MINUTES);
                     // Check valuesƒ
-                    while (futures.peek().isDone() || futures.peek().isCancelled()) {
+                    if (futures.peek().isDone() || futures.peek().isCancelled()) {
                         Future<StorageETLResult> first = futures.pop();
                         StorageETLResult result = first.get(1l, TimeUnit.MINUTES);
                         if (result.getTransformError() != null) {
@@ -173,6 +173,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
                             errors++;
                             result.getLoadError().printStackTrace();
                         }
+                        concurrResult.add(result);
                     }
                 }
                 if (errors > 0) {
