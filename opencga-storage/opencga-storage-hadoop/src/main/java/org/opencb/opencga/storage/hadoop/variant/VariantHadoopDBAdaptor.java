@@ -62,10 +62,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final java.sql.Connection phoenixCon;
     private final VariantSqlQueryParser queryParser;
 
-//    public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageEngineConfiguration configuration,
-//                                  Configuration conf) throws IOException {
-//        this(null, credentials, configuration, getHbaseConfiguration(conf, credentials));
-//    }
+    public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageEngineConfiguration configuration,
+                                  Configuration conf) throws IOException {
+        this(null, credentials, configuration, getHbaseConfiguration(conf, credentials));
+    }
+
     public VariantHadoopDBAdaptor(Connection connection, HBaseCredentials credentials, StorageEngineConfiguration configuration,
                                   Configuration conf) throws IOException {
         this.credentials = credentials;

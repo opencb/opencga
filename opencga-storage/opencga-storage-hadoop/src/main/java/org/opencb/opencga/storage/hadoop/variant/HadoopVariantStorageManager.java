@@ -6,7 +6,6 @@ import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -22,7 +21,6 @@ import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 
@@ -38,7 +36,7 @@ import java.util.zip.GZIPInputStream;
 /**
  * Created by mh719 on 16/06/15.
  */
-public class HadoopVariantStorageManager extends VariantStorageManager implements AutoCloseable {
+public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String STORAGE_ENGINE_ID = "hadoop";
 
     public static final String HADOOP_BIN = "hadoop.bin";
@@ -60,25 +58,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
     protected MRExecutor mrExecutor;
     private HdfsVariantReaderUtils variantReaderUtils;
 
-    private HBaseManager hbaseManager;
 
     public HadoopVariantStorageManager() {
 //        variantReaderUtils = new HdfsVariantReaderUtils(conf);
-    }
-
-    protected Connection getConnection(Configuration configuration) {
-        if (null == this.hbaseManager) {
-            this.hbaseManager = new HBaseManager(configuration);
-        }
-        return this.hbaseManager.getConnection();
-    }
-
-    @Override
-    public void close() throws IOException {
-        if (null != this.hbaseManager) {
-            this.hbaseManager.close();
-            this.hbaseManager = null;
-        }
     }
 
     @Override
@@ -111,7 +93,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
                 .append(HADOOP_LOAD_VARIANT, false);
 
         final List<StorageETLResult> concurrResult = new CopyOnWriteArrayList<>();
-
+        List<VariantStorageETL> etlList = new ArrayList<>();
         try {
             ExecutorService executorService = Executors.newFixedThreadPool(
                     nThreadArchive,
@@ -126,6 +108,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
                 //Provide a connected storageETL if load is required.
 
                 VariantStorageETL storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
+                etlList.add(storageETL);
                 futures.add(executorService.submit(() -> {
                     StorageETLResult storageETLResult = new StorageETLResult(inputFile);
                     URI nextUri = inputFile;
@@ -218,13 +201,13 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
                     }
                 }
             }
-
-
         } finally {
-            try {
-                this.close();
-            } catch (IOException e) {
-                logger.error("Issue closing DB connection ", e);
+            for (VariantStorageETL etl : etlList) {
+                try {
+                    etl.close();
+                } catch (StorageManagerException e) {
+                    logger.error("Issue closing DB connection ", e);
+                }
             }
         }
         return concurrResult;
@@ -336,7 +319,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager implement
             Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
             configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
 
-            return new VariantHadoopDBAdaptor(getConnection(configuration), credentials, storageEngine, configuration);
+            return new VariantHadoopDBAdaptor(credentials, storageEngine, configuration);
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter", e);
         }
