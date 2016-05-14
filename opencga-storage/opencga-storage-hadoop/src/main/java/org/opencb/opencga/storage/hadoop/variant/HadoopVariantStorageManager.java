@@ -110,6 +110,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                 VariantStorageETL storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
                 etlList.add(storageETL);
                 futures.add(executorService.submit(() -> {
+                    Thread.currentThread().setName(Paths.get(inputFile).getFileName().toString());
                     StorageETLResult storageETLResult = new StorageETLResult(inputFile);
                     URI nextUri = inputFile;
                     boolean error = false;

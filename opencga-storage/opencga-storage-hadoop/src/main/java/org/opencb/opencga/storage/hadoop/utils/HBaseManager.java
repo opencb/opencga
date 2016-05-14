@@ -9,6 +9,8 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -22,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HBaseManager extends Configured implements AutoCloseable {
+    protected static final Logger LOGGER = LoggerFactory.getLogger(HBaseManager.class);
 
     @FunctionalInterface
     public interface HBaseTableConsumer {
@@ -66,6 +69,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
         if (this.closeConnection.get()) {
             Connection con = this.connection.getAndSet(null);
             if (null != con) {
+                LOGGER.info("Close Hadoop DB connection {}", con);
                 con.close();
             }
         }
@@ -77,6 +81,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
             while (null == con) {
                 try {
                     con = ConnectionFactory.createConnection(this.getConf());
+                    LOGGER.info("Opened Hadoop DB connection {}", con);
                 } catch (IOException e) {
                     throw new IllegalStateException("Problems opening connection to DB", e);
                 }
@@ -275,6 +280,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
                 }
                 descr.addFamily(family);
                 try {
+                    LOGGER.info("Create New HBASE table {}", tableName);
                     admin.createTable(descr);
                 } catch (TableExistsException e) {
                     return false;
