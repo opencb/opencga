@@ -94,22 +94,21 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
 
         final List<StorageETLResult> concurrResult = new CopyOnWriteArrayList<>();
         List<VariantStorageETL> etlList = new ArrayList<>();
-        try {
-            ExecutorService executorService = Executors.newFixedThreadPool(
-                    nThreadArchive,
-                    r -> {
-                        Thread t = new Thread(r);
-                        t.setDaemon(true);
-                        return t;
-                    }); // Set Daemon for quick shutdown !!!
-            LinkedList<Future<StorageETLResult>> futures = new LinkedList<>();
-            List<Integer> indexedFiles = new CopyOnWriteArrayList<>();
-            for (URI inputFile : inputFiles) {
-                //Provide a connected storageETL if load is required.
+        ExecutorService executorService = Executors.newFixedThreadPool(
+                nThreadArchive,
+                r -> {
+                    Thread t = new Thread(r);
+                    t.setDaemon(true);
+                    return t;
+                }); // Set Daemon for quick shutdown !!!
+        LinkedList<Future<StorageETLResult>> futures = new LinkedList<>();
+        List<Integer> indexedFiles = new CopyOnWriteArrayList<>();
+        for (URI inputFile : inputFiles) {
+            //Provide a connected storageETL if load is required.
 
-                VariantStorageETL storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
-                etlList.add(storageETL);
-                futures.add(executorService.submit(() -> {
+            VariantStorageETL storageETL = newStorageETL(doLoad, new ObjectMap(extraOptions));
+            futures.add(executorService.submit(() -> {
+                try {
                     Thread.currentThread().setName(Paths.get(inputFile).getFileName().toString());
                     StorageETLResult storageETLResult = new StorageETLResult(inputFile);
                     URI nextUri = inputFile;
@@ -117,6 +116,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                     if (doTransform) {
                         try {
                             nextUri = transformFile(storageETL, storageETLResult, concurrResult, nextUri, outdirUri);
+
                         } catch (StorageETLException ignore) {
                             //Ignore here. Errors are stored in the ETLResult
                             error = true;
@@ -135,79 +135,77 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                         indexedFiles.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
                     }
                     return storageETLResult;
-                }));
-            }
-
-            executorService.shutdown();
-
-            int errors = 0;
-            try {
-                while (!futures.isEmpty()) {
-                    executorService.awaitTermination(1, TimeUnit.MINUTES);
-                    // Check valuesƒ
-                    if (futures.peek().isDone() || futures.peek().isCancelled()) {
-                        Future<StorageETLResult> first = futures.pop();
-                        StorageETLResult result = first.get(1, TimeUnit.MINUTES);
-                        if (result.getTransformError() != null) {
-                            //TODO: Handle errors. Retry?
-                            errors++;
-                            result.getTransformError().printStackTrace();
-                        } else if (result.getLoadError() != null) {
-                            //TODO: Handle errors. Retry?
-                            errors++;
-                            result.getLoadError().printStackTrace();
-                        }
-                        concurrResult.add(result);
-                    }
-                }
-                if (errors > 0) {
-                    throw new StorageETLException("Errors found", concurrResult);
-                }
-
-                if (doLoad && doMerge) {
-
-                    int batchMergeSize = getOptions().getInt(HADOOP_LOAD_VARIANT_BATCH_SIZE, 10);
-
-                    List<Integer> filesToMerge = new ArrayList<>(batchMergeSize);
-                    for (Iterator<Integer> iterator = indexedFiles.iterator(); iterator.hasNext();) {
-                        Integer indexedFile = iterator.next();
-                        filesToMerge.add(indexedFile);
-                        if (filesToMerge.size() == batchMergeSize || !iterator.hasNext()) {
-                            extraOptions = new ObjectMap()
-                                    .append(HADOOP_LOAD_ARCHIVE, false)
-                                    .append(HADOOP_LOAD_VARIANT, true)
-                                    .append(HADOOP_LOAD_VARIANT_PENDING_FILES, indexedFiles);
-
-                            AbstractHadoopVariantStorageETL localEtl = newStorageETL(doLoad, extraOptions);
-
-                            int studyId = getOptions().getInt(Options.STUDY_ID.key());
-                            localEtl.merge(studyId, filesToMerge);
-                            localEtl.postLoad(inputFiles.get(0), outdirUri);
-                            filesToMerge.clear();
-                        }
-                    }
-                }
-            } catch (InterruptedException e) {
-                throw new StorageETLException("Interrupted!", e, concurrResult);
-            } catch (ExecutionException e) {
-                throw new StorageETLException("Execution exception!", e, concurrResult);
-            } catch (TimeoutException e) {
-                throw new StorageETLException("Timeout Exception", e, concurrResult);
-            }  finally {
-                if (!executorService.isShutdown()) {
+                } finally {
                     try {
-                        executorService.shutdownNow();
-                    } catch (Exception e) {
-                        logger.error("Problems shutting executer service down", e);
+                        storageETL.close();
+                    } catch (StorageManagerException e) {
+                        logger.error("Issue closing DB connection ", e);
+                    }
+                }
+            }));
+        }
+
+        executorService.shutdown();
+
+        int errors = 0;
+        try {
+            while (!futures.isEmpty()) {
+                executorService.awaitTermination(1, TimeUnit.MINUTES);
+                // Check valuesƒ
+                if (futures.peek().isDone() || futures.peek().isCancelled()) {
+                    Future<StorageETLResult> first = futures.pop();
+                    StorageETLResult result = first.get(1, TimeUnit.MINUTES);
+                    if (result.getTransformError() != null) {
+                        //TODO: Handle errors. Retry?
+                        errors++;
+                        result.getTransformError().printStackTrace();
+                    } else if (result.getLoadError() != null) {
+                        //TODO: Handle errors. Retry?
+                        errors++;
+                        result.getLoadError().printStackTrace();
+                    }
+                    concurrResult.add(result);
+                }
+            }
+            if (errors > 0) {
+                throw new StorageETLException("Errors found", concurrResult);
+            }
+
+            if (doLoad && doMerge) {
+
+                int batchMergeSize = getOptions().getInt(HADOOP_LOAD_VARIANT_BATCH_SIZE, 10);
+
+                List<Integer> filesToMerge = new ArrayList<>(batchMergeSize);
+                for (Iterator<Integer> iterator = indexedFiles.iterator(); iterator.hasNext();) {
+                    Integer indexedFile = iterator.next();
+                    filesToMerge.add(indexedFile);
+                    if (filesToMerge.size() == batchMergeSize || !iterator.hasNext()) {
+                        extraOptions = new ObjectMap()
+                                .append(HADOOP_LOAD_ARCHIVE, false)
+                                .append(HADOOP_LOAD_VARIANT, true)
+                                .append(HADOOP_LOAD_VARIANT_PENDING_FILES, indexedFiles);
+
+                        AbstractHadoopVariantStorageETL localEtl = newStorageETL(doLoad, extraOptions);
+
+                        int studyId = getOptions().getInt(Options.STUDY_ID.key());
+                        localEtl.merge(studyId, filesToMerge);
+                        localEtl.postLoad(inputFiles.get(0), outdirUri);
+                        filesToMerge.clear();
                     }
                 }
             }
-        } finally {
-            for (VariantStorageETL etl : etlList) {
+        } catch (InterruptedException e) {
+            throw new StorageETLException("Interrupted!", e, concurrResult);
+        } catch (ExecutionException e) {
+            throw new StorageETLException("Execution exception!", e, concurrResult);
+        } catch (TimeoutException e) {
+            throw new StorageETLException("Timeout Exception", e, concurrResult);
+        }  finally {
+            if (!executorService.isShutdown()) {
                 try {
-                    etl.close();
-                } catch (StorageManagerException e) {
-                    logger.error("Issue closing DB connection ", e);
+                    executorService.shutdownNow();
+                } catch (Exception e) {
+                    logger.error("Problems shutting executer service down", e);
                 }
             }
         }
