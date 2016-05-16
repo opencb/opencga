@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -190,33 +191,36 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             throw CatalogDBException.idNotFound("Sample", sampleId);
         }
 
-        return endQuery("get file acl", startTime, sample.getAcl());
+        // TODO: Uncomment
+//        return endQuery("get file acl", startTime, sample.getAcls());
+        return null;
     }
 
     @Override
-    public QueryResult<Map<String, AclEntry>> getSampleAcl(long sampleId, List<String> userIds) throws CatalogDBException {
-
+    public QueryResult<Map<String, SampleAcl>> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
-        /*DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_ID, sampleId));
-        DBObject unwind = new BasicDBObject("$unwind", "$acl");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
-*/
+
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
-        Bson unwind = Aggregates.unwind("$acl");
-        Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
-//        Bson project = Projections.include("id", "acl");
-        Bson project = Aggregates.project(Projections.include("id", "acl"));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
         QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
-        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0))
-                .collect(Collectors.toMap(AclEntry::getUserId, s -> s));
+        Map<String, SampleAcl> userAclMap = new HashMap<>();
+        for (Sample sample : sampleList) {
+            for (SampleAcl sampleAcl : sample.getAcls()) {
+                for (String member : sampleAcl.getUsers()) {
+                    userAclMap.put(member, sampleAcl);
+                }
+            }
+        }
 
         return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
     }
 
+    @Deprecated
     @Override
     public QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
@@ -262,11 +266,42 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
+    public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), acl.getUsers());
+
+        // Check if the permissions found on acl already exist on sampleId
+        Query query = new Query(QueryParams.ID.key(), sampleId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Bson update;
+        if (count(query).first() > 0) {
+            // Append the users to the existing sampleAcl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            query = new Query(QueryParams.ID.key(), sampleId);
+            // Push the new acl to the list of sample acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "SampleAcl")));
+        }
+
+        QueryResult<UpdateResult> updateResult = sampleCollection.update(parseQuery(query), update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setSampleAcl: An error occurred when trying to share sample " + sampleId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ACLS.key());
+
+        return endQuery("setSampleAcl", startTime, get(query, queryOptions).first().getAcls());
+    }
+
+    @Deprecated
+    @Override
     public QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException {
 
         long startTime = startQuery();
 /*
-        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
+        QueryResult<SampleAcl> sampleAcl = getSampleAcl(sampleId, userId);
         DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
         ;
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
@@ -283,6 +318,30 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         return endQuery("unsetSampleAcl", startTime, sampleAcl);
 
+    }
+
+    public void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, sampleId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetSampleAcl: An error occurred when trying to stop sharing sample " + sampleId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible SampleAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), sampleId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        sampleCollection.update(queryBson, update, null);
     }
 
 //    @Override
@@ -911,7 +970,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         if (annotationList.size() > 0) {
-            Bson projection = Projections.elemMatch("annotationSets", Filters.and(annotationList));
+            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
         }
         if (andBsonList.size() > 0) {

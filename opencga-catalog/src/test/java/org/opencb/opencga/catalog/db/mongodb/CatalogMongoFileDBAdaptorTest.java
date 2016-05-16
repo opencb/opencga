@@ -34,7 +34,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         LinkedList<AclEntry> acl = new LinkedList<>();
         acl.push(new AclEntry("jcoll", true, true, true, true));
         acl.push(new AclEntry("jmmut", false, false, true, true));
-        file.setAcl(acl);
+        file.setAcls(acl);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime
                 (), "", new File.FileStatus(File.FileStatus.STAGE), 1000);

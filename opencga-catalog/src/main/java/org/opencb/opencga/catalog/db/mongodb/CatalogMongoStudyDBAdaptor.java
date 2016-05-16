@@ -222,8 +222,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public String getStudyOwnerId(long studyId) throws CatalogDBException {
-        long projectId = getProjectIdByStudyId(studyId);
-        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getProjectOwnerId(projectId);
+        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, FILTER_ROUTE_STUDIES + QueryParams.OWNER_ID.key());
+        return getStudy(studyId, queryOptions).first().getOwnerId();
     }
 
 
@@ -291,9 +291,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.GROUPS.key() + "."));
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>(1);
-        studies.stream().filter(study -> study.getGroups() != null).forEach(study -> {
-            groups.addAll(study.getGroups());
-        });
+        studies.stream().filter(study -> study.getGroups() != null).forEach(study -> groups.addAll(study.getGroups()));
         return endQuery("getGroup", startTime, groups);
     }
 

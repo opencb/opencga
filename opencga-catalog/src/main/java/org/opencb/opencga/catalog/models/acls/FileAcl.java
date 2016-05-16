@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 11/05/16.
@@ -15,8 +16,8 @@ public class FileAcl {
 
     public enum FilePermissions {
         VIEW_HEADER,  // Includes permission to view the sample ids from a VCF file.
-        VIEW_STATS,
         VIEW_CONTENT,
+        VIEW,
         DELETE,
         UPDATE,        // If a folder contains this permission for a user, the user will be able to create files under that folder.
         DOWNLOAD,
@@ -40,6 +41,11 @@ public class FileAcl {
                 this.permissions.add(permission);
             }
         }
+    }
+
+    public FileAcl(List<String> users, List<String> permissions) {
+        this.users = users;
+        this.permissions.addAll(permissions.stream().map(FilePermissions::valueOf).collect(Collectors.toList()));
     }
 
     public List<String> getUsers() {

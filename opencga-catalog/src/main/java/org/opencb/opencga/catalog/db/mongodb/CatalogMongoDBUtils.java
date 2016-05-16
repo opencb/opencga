@@ -104,6 +104,37 @@ class CatalogMongoDBUtils {
     ********************/
 
     /**
+     * Checks if the list of members are all valid.
+     *
+     * The "members" can be:
+     *  - '*' referring to all the users.
+     *  - 'anonymous' referring to the anonymous user.
+     *  - '@{groupId}' referring to a {@link Group}.
+     *  - '{userId}' referring to a specific user.
+     * @param dbAdaptorFactory dbAdaptorFactory
+     * @param studyId studyId
+     * @param members List of members
+     * @throws CatalogDBException CatalogDBException
+     */
+    public static void checkMembers(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
+            throws CatalogDBException {
+        for (String member : members) {
+            if (member.equals("*") || member.equals("anonymous")) {
+                return;
+            } else if (member.startsWith("@")) {
+                String groupId = member.substring(1);
+                QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
+                if (queryResult.getNumResults() == 0) {
+                    throw CatalogDBException.idNotFound("Group", groupId);
+                }
+            } else {
+                dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
+            }
+        }
+    }
+
+
+    /**
      * Checks if the field {@link AclEntry#userId} is valid.
      *
      * The "userId" can be:
@@ -116,6 +147,7 @@ class CatalogMongoDBUtils {
      * @param studyId studyId
      * @throws CatalogDBException CatalogDBException
      */
+    @Deprecated
     public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, long studyId) throws CatalogDBException {
         if (userId.equals(AclEntry.USER_OTHERS_ID)) {
             return;

@@ -705,7 +705,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
 
         if (annotationList.size() > 0) {
-            Bson projection = Projections.elemMatch("annotationSets", Filters.and(annotationList));
+            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
         }
         if (andBsonList.size() > 0) {

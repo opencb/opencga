@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 11/05/16.
@@ -40,6 +41,14 @@ public class SampleAcl {
             if (permissions.containsKey(permission.name()) && permissions.getBoolean(permission.name())) {
                 this.permissions.add(permission);
             }
+        }
+    }
+
+    public SampleAcl(List<String> users, List<String> permissions) {
+        this.users = users;
+        this.permissions = EnumSet.noneOf(SamplePermissions.class);
+        if (permissions.size() > 0) {
+            this.permissions.addAll(permissions.stream().map(SamplePermissions::valueOf).collect(Collectors.toList()));
         }
     }
 

@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
 
 import java.io.IOException;
 import java.util.*;
@@ -38,12 +39,13 @@ public class CatalogMongoSampleDBAdaptorTest {
     private User user1;
     private User user2;
     private User user3;
+    private User user4;
     private Sample s1;
     private Sample s2;
-    private AclEntry acl_s1_user1;
-    private AclEntry acl_s1_user2;
-    private AclEntry acl_s2_user1;
-    private AclEntry acl_s2_user2;
+    private SampleAcl acl_s1_user1;
+    private SampleAcl acl_s1_user2;
+    private SampleAcl acl_s2_user1;
+    private SampleAcl acl_s2_user2;
 
     @AfterClass
     public static void afterClass() {
@@ -58,22 +60,29 @@ public class CatalogMongoSampleDBAdaptorTest {
         user1 = CatalogMongoDBAdaptorTest.user1;
         user2 = CatalogMongoDBAdaptorTest.user2;
         user3 = CatalogMongoDBAdaptorTest.user3;
+        user4 = CatalogMongoDBAdaptorTest.user4;
         dbAdaptorFactory = CatalogMongoDBAdaptorTest.catalogDBAdaptor;
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        acl_s1_user1 = new AclEntry(user1.getId(), false, false, false, false);
-        acl_s1_user2 = new AclEntry(user2.getId(), true, true, true, true);
-        s1 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s1", "", -1, "", Arrays.asList(
-                acl_s1_user1,
-                acl_s1_user2
-        ), null, null), null).first();
-        acl_s2_user1 = new AclEntry(user1.getId(), false, false, false, false);
-        acl_s2_user2 = new AclEntry(user2.getId(), true, true, true, true);
-        s2 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s2", "", -1, "", Arrays.asList(
-                acl_s2_user1,
-                acl_s2_user2
-        ), null, null), null).first();
+        acl_s1_user1 = new SampleAcl(Arrays.asList(user1.getId()), Arrays.asList());
+        acl_s1_user2 = new SampleAcl(Arrays.asList(user2.getId()), Arrays.asList(
+                SampleAcl.SamplePermissions.VIEW.name(),
+                SampleAcl.SamplePermissions.VIEW_ANNOTATIONS.name(),
+                SampleAcl.SamplePermissions.SHARE.name(),
+                SampleAcl.SamplePermissions.UPDATE.name()
+        ));
+        s1 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s1", "", -1, "", Arrays.asList(acl_s1_user1, acl_s1_user2), null,
+                null), null).first();
+        acl_s2_user1 = new SampleAcl(Arrays.asList(user1.getId()), Arrays.asList());
+        acl_s2_user2 = new SampleAcl(Arrays.asList(user2.getId()), Arrays.asList(
+                SampleAcl.SamplePermissions.VIEW.name(),
+                SampleAcl.SamplePermissions.VIEW_ANNOTATIONS.name(),
+                SampleAcl.SamplePermissions.SHARE.name(),
+                SampleAcl.SamplePermissions.UPDATE.name()
+        ));
+        s2 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s2", "", -1, "", Arrays.asList(acl_s2_user1, acl_s2_user2), null,
+                null), null).first();
 
     }
 
@@ -192,13 +201,14 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void getSampleAcl() throws Exception {
-        AclEntry acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId()).first();
+        QueryResult<Map<String, SampleAcl>> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user1.getId()));
+        SampleAcl acl = sampleAcl.first().get(user1.getId());
         assertNotNull(acl);
-        assertEquals(acl_s1_user1, acl);
+        assertEquals(acl_s1_user1.getPermissions(), acl.getPermissions());
 
-        acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first();
+        acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user2.getId())).first().get(user2.getId());
         assertNotNull(acl);
-        assertEquals(acl_s1_user2, acl);
+        assertEquals(acl_s1_user2.getPermissions(), acl.getPermissions());
     }
 
     @Test
@@ -209,18 +219,37 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void getSampleAclFromUserWithoutAcl() throws Exception {
-        QueryResult<AclEntry> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
+        QueryResult<Map<String, SampleAcl>> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user3.getId()));
         assertTrue(sampleAcl.getResult().isEmpty());
     }
 
     @Test
     public void setSampleAclNew() throws Exception {
-        AclEntry acl_s1_user3 = new AclEntry(user3.getId(), false, false, false, false);
+        SampleAcl acl_s1_user3 = new SampleAcl(Arrays.asList(user3.getId()), Collections.emptyList());
 
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3);
-        QueryResult<AclEntry> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
+        QueryResult<Map<String, SampleAcl>> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user3.getId()));
         assertFalse(sampleAcl.getResult().isEmpty());
-        assertEquals(acl_s1_user3, sampleAcl.first());
+        assertEquals(acl_s1_user3.getPermissions(), sampleAcl.first().get(user3.getId()).getPermissions());
+
+        SampleAcl acl_s1_user4 = new SampleAcl(Arrays.asList(user4.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4);
+
+        sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user4.getId()));
+        assertFalse(sampleAcl.getResult().isEmpty());
+        assertEquals(acl_s1_user4.getPermissions(), sampleAcl.first().get(user4.getId()).getPermissions());
+    }
+
+    @Test
+    public void unsetSampleAcl() throws Exception {
+        SampleAcl acl_s1_user3 = new SampleAcl(Arrays.asList(user3.getId()), Collections.emptyList());
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3);
+
+        SampleAcl acl_s1_user4 = new SampleAcl(Arrays.asList(user4.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4);
+
+        // Unset permissions
+        catalogSampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user3.getId(), user4.getId()));
     }
 
     @Test

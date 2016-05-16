@@ -4,6 +4,7 @@ import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -18,11 +19,14 @@ import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
@@ -345,6 +349,10 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
+        List<Bson> annotationList = new ArrayList<>();
+        // We declare variableMap here just in case we have different annotation queries
+        Map<String, Variable> variableMap = null;
+
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
             query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
         }
@@ -372,6 +380,22 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                         mongoKey = entry.getKey().replace(QueryParams.NATTRIBUTES.key(), QueryParams.ATTRIBUTES.key());
                         addAutoOrQuery(mongoKey, entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
+                    case VARIABLE_SET_ID:
+                        addOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), annotationList);
+                        break;
+                    case ANNOTATION:
+                        if (variableMap == null) {
+                            int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
+                            if (variableSetId > 0) {
+                                variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+                                        .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                            }
+                        }
+                        addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
+                        break;
+                    case ANNOTATION_SET_ID:
+                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                        break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
@@ -381,6 +405,10 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
+        if (annotationList.size() > 0) {
+            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
+            andBsonList.add(projection);
+        }
         if (andBsonList.size() > 0) {
             return Filters.and(andBsonList);
         } else {

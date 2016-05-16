@@ -43,7 +43,7 @@ public class AclEntry {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AclEntry{");
+        final StringBuilder sb = new StringBuilder("SampleAcl{");
         sb.append("userId='").append(userId).append('\'');
         sb.append(", read=").append(read);
         sb.append(", write=").append(write);

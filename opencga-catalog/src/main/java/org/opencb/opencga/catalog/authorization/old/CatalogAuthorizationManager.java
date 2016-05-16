@@ -333,7 +333,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @throws CatalogException
      */
     private AclEntry resolveSampleAcl(long studyId, Sample sample, String userId) throws CatalogException {
-        if (sample.getAcl() == null) {
+        if (sample.getAcls() == null) {
             return resolveSampleAcl(studyId, sample.getId(), userId);
         } else {
             Group group = getGroupBelonging(studyId, userId);
@@ -344,8 +344,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
             Role role = getRoleBelonging(studyId, userId, groupId);
 
-            Map<String, AclEntry> userAclMap = sample.getAcl().stream().collect(Collectors.toMap(AclEntry::getUserId, e -> e));
-            return resolveSampleAcl(userId, groupId, role, userAclMap);
+            // TODO: Uncomment
+//            Map<String, AclEntry> userAclMap = sample.getAcls().stream().collect(Collectors.toMap(AclEntry::getUserId, e -> e));
+//            return resolveSampleAcl(userId, groupId, role, userAclMap);
+            return null;
         }
     }
 
@@ -366,14 +368,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             groupId = "@" + group.getId();
         }
 
-        List<String> userIds = (groupId == null)
-                ? Arrays.asList(userId, AclEntry.USER_OTHERS_ID)
-                : Arrays.asList(userId, groupId, AclEntry.USER_OTHERS_ID);
-        Map<String, AclEntry> userAclMap = sampleDBAdaptor.getSampleAcl(sampleId, userIds).first();
-
-        Role role = getRoleBelonging(studyId, userId, groupId);
-
-        return resolveSampleAcl(userId, groupId, role, userAclMap);
+        // TODO: Uncomment
+//        List<String> userIds = (groupId == null)
+//                ? Arrays.asList(userId, AclEntry.USER_OTHERS_ID)
+//                : Arrays.asList(userId, groupId, AclEntry.USER_OTHERS_ID);
+//        Map<String, AclEntry> userAclMap = sampleDBAdaptor.getSampleAcl(sampleId, userIds).first();
+//
+//        Role role = getRoleBelonging(studyId, userId, groupId);
+//
+//        return resolveSampleAcl(userId, groupId, role, userAclMap);
+        return null;
     }
 
     private AclEntry resolveSampleAcl(String userId, String groupId, Role role, Map<String, AclEntry> userAclMap) {
@@ -424,7 +428,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             for (String fileIdValue : fileIdArray) {
                 int fileId = Integer.valueOf(fileIdValue);
                 aclEntries.add(fileDBAdaptor.setFileAcl(fileId, acl).first());
-                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userSessionId, new ObjectMap("acl", acl), "setAcl", null);
+                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userSessionId, new ObjectMap("acl", acl), "setAcls", null);
             }
         }
 
@@ -486,7 +490,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             for (String sampleIdValue : sampleIdArray) {
                 int sampleId = Integer.valueOf(sampleIdValue);
                 aclEntries.add(sampleDBAdaptor.setSampleAcl(sampleId, acl).first());
-                auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userSessionId, new ObjectMap("acl", acl), "setAcl", null);
+                auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userSessionId, new ObjectMap("acl", acl), "setAcls", null);
             }
         }
 

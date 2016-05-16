@@ -348,7 +348,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     public AclEntry getFullProjectAcl(int projectId, String userId) throws CatalogDBException {
         QueryResult<Project> project = getProject(projectId, null);
         if (project.getNumResults() != 0) {
-            List<AclEntry> acl = project.getResult().get(0).getAcl();
+            List<AclEntry> acl = project.getResult().get(0).getAcls();
             for (AclEntry acl1 : acl) {
                 if (userId.equals(acl1.getUserId())) {
                     return acl1;

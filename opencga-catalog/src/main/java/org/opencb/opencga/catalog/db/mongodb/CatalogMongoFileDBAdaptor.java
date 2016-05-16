@@ -165,15 +165,15 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         queryOptions.put("include", Projections.include("acl", "userId"));
 */
 
-        List<AclEntry> acl = get(query, options).getResult().get(0).getAcl();
+        List<AclEntry> acl = get(query, options).getResult().get(0).getAcls();
         int dbTime = (int) (System.currentTimeMillis() - startTime);
         logger.debug("getFileAcl for file {} and user {}, dbTime: {} ", fileId, userId, dbTime);
         return endQuery("Get file ACL", startTime, acl);
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds) throws
-            CatalogDBException {
+    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+            throws CatalogDBException {
 
         long startTime = startQuery();
         dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
@@ -193,8 +193,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         List<File> files = parseFiles(result);
         Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
         for (File file : files) {
-//            AclEntry acl = file.getAcl().get(0);
-            for (AclEntry acl : file.getAcl()) {
+//            AclEntry acl = file.getAcls().get(0);
+            for (AclEntry acl : file.getAcls()) {
                 if (pathAclMap.containsKey(file.getPath())) {
                     pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
                 } else {
@@ -204,7 +204,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 }
             }
         }
-//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
+//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcls().get(0)));
         logger.debug("getFilesAcl for {} paths and {} users, dbTime: {} ", filePaths.size(), userIds.size(), result.getDbTime());
         return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
     }

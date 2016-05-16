@@ -15,9 +15,19 @@ import java.util.List;
  */
 public interface AuthorizationManager {
 
+    String FILTER_ROUTE_STUDIES = "projects.studies.";
+    String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
+    String FILTER_ROUTE_DATASETS = "projects.studies.datasets.";
+    String FILTER_ROUTE_INDIVIDUALS = "projects.studies.individuals.";
+    String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
+    String FILTER_ROUTE_FILES = "projects.studies.files.";
+    String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
+
     String ADMINS_ROLE = "admins";
     String DATA_MANAGERS_ROLE = "dataManagers";
     String MEMBERS_ROLE = "members";
+
+    String OTHER_USERS_ID = "*";
 
     /**
      * Get the default Acls for the default roles.
@@ -53,7 +63,7 @@ public interface AuthorizationManager {
 
     void checkCohortPermission(long cohortId, String userId, CohortAcl.CohortPermissions permission) throws CatalogException;
 
-    void checkDatasetPermission(long datasetId, String userId, StudyAcl.StudyPermissions permission) throws CatalogException;
+    void checkDatasetPermission(long datasetId, String userId, DatasetAcl.DatasetPermissions permission) throws CatalogException;
 
     //User.Role getUserRole(String userId) throws CatalogException;
 
@@ -67,7 +77,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the FileAcl applied to the different file ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the files.
      */
-    QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<FileAcl.FilePermissions> permissions)
+    QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<String> permissions)
             throws CatalogException;
 
     /**
@@ -90,8 +100,8 @@ public interface AuthorizationManager {
      * @return A queryResult containing the SampleAcl applied to the different sample ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the samples.
      */
-    QueryResult<SampleAcl> setSamplePermissions(String userId, String sampleIds, String userIds,
-                                              List<SampleAcl.SamplePermissions> permissions) throws CatalogException;
+    QueryResult<SampleAcl> setSamplePermissions(String userId, String sampleIds, String userIds, List<String> permissions)
+            throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the sample ids given.
@@ -113,8 +123,8 @@ public interface AuthorizationManager {
      * @return A queryResult containing the CohortAcl applied to the different cohort ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
-    QueryResult<CohortAcl> setCohortPermissions(String userId, String cohortIds, String userIds,
-                                                List<CohortAcl.CohortPermissions> permissions) throws CatalogException;
+    QueryResult<CohortAcl> setCohortPermissions(String userId, String cohortIds, String userIds, List<String> permissions)
+            throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the cohort ids given.
@@ -136,8 +146,8 @@ public interface AuthorizationManager {
      * @return A queryResult containing the IndividualAcl applied to the different individual ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the individuals.
      */
-    QueryResult<IndividualAcl> setIndividualPermissions(String userId, String individualIds, String userIds,
-                                                List<IndividualAcl.IndividualPermissions> permissions) throws CatalogException;
+    QueryResult<IndividualAcl> setIndividualPermissions(String userId, String individualIds, String userIds, List<String> permissions)
+            throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the individual ids given.
@@ -159,7 +169,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the JobAcl applied to the different job ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
-    QueryResult<JobAcl> setJobPermissions(String userId, String jobIds, String userIds, List<JobAcl.JobPermissions> permissions)
+    QueryResult<JobAcl> setJobPermissions(String userId, String jobIds, String userIds, List<String> permissions)
             throws CatalogException;
 
     /**
@@ -171,6 +181,29 @@ public interface AuthorizationManager {
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
     void unsetJobPermissions(String userId, String jobIds, String userIds) throws CatalogException;
+
+    /**
+     * Set the permissions given for all the users and dataset ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param datasetIds Comma separated list of dataset ids.
+     * @param userIds Comma separated list of user ids which the dataset will be shared with.
+     * @param permissions List of dataset permissions.
+     * @return A queryResult containing the DatasetAcl applied to the different dataset ids.
+     * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
+     */
+    QueryResult<DatasetAcl> setDatasetPermissions(String userId, String datasetIds, String userIds, List<String> permissions)
+            throws CatalogException;
+
+    /**
+     * Remove the permissions given for all the users in the dataset ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param datasetIds Comma separated list of dataset ids.
+     * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
+     */
+    void unsetDatasetPermissions(String userId, String datasetIds, String userIds) throws CatalogException;
 
     /**
      * Removes from the list the projects that the user can not read.
@@ -243,24 +276,35 @@ public interface AuthorizationManager {
     void filterJobs(String userId, long studyId, List<Job> jobs) throws CatalogException;
 
     /**
+     * Removes from the list the datasets that the user can not read.
+     *
+     * @param userId  UserId.
+     * @param studyId StudyId.
+     * @param datasets datasets.
+     * @throws CatalogException CatalogException.
+     */
+    void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
+
+    /**
      * Retrieves the groupId where the user belongs to.
      *
      * @param studyId study id.
      * @param userId user id.
-     * @return the group id of the user.
+     * @return the group id of the user. Null if the user does not take part of any group.
      * @throws CatalogException when there is any database error.
      */
-    String getGroupBelonging(long studyId, String userId) throws CatalogException;
+    QueryResult<Group> getGroupBelonging(long studyId, String userId) throws CatalogException;
 
     /**
      * Retrieves the StudyAcl where the user/group belongs to.
      *
      * @param studyId study id.
-     * @param userId user or group id. For groups, the string starts with @.
+     * @param userId user id.
+     * @param groupId group id. This can be null.
      * @return the studyAcl where the user/group belongs to.
      * @throws CatalogException when there is any database error.
      */
-    StudyAcl getStudyAclBelonging(long studyId, String userId) throws CatalogException;
+    StudyAcl getStudyAclBelonging(long studyId, String userId, String groupId) throws CatalogException;
 
     /**
      * Adds the newUser to the groupId specified.
@@ -272,7 +316,7 @@ public interface AuthorizationManager {
      * @return a queryResult containing the group created.
      * @throws CatalogException when the userId does not have the proper permissions to add other users to groups.
      */
-    QueryResult<Group> addMember(String userId, long studyId, String groupId, String newUserId) throws CatalogException;
+    QueryResult<Group> addUserToGroup(String userId, long studyId, String groupId, String newUserId) throws CatalogException;
 
     /**
      * Removes the oldUserId from the groupId specified.
@@ -284,6 +328,30 @@ public interface AuthorizationManager {
      * @return a queryResult containing the group.
      * @throws CatalogException when the userId does not have the proper permissions to remove other users from groups.
      */
-    QueryResult<Group> removeMember(String userId, long studyId, String groupId, String oldUserId) throws CatalogException;
+    QueryResult<Group> removeUserFromGroup(String userId, long studyId, String groupId, String oldUserId) throws CatalogException;
+
+    /**
+     * Adds the list of members to the roleId specified.
+     *  @param userId User id of the user ordering the action.
+     * @param studyId Study id under which the members will be added to the role.
+     * @param members List of member ids (users and/or groups).
+     * @param roleId Role id where the members will be added to.
+     * @return a queryResult containing the complete studyAcl where the members have been added to.
+     * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
+     */
+    QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId) throws CatalogException;
+
+    /**
+     * Removes the members from the roleId specified.
+     *
+     * @param userId User id of the user ordering the action.
+     * @param studyId Study id under which the members will be removed from the groupId.
+     * @param members List of member ids (users and/or groups).
+     * @param roleId Role id where the members will be remove from.
+     * @return a queryResult containing the modified studyAcls.
+     * @throws CatalogException when the userId does not have the proper permissions to remove other users from roles, or the members or
+     * roleId do not exist.
+     */
+    QueryResult<StudyAcl> removeMembersFromRole(String userId, long studyId, List<String> members, String roleId) throws CatalogException;
 
 }

@@ -27,6 +27,7 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
 
 import java.util.List;
 import java.util.Map;
@@ -66,13 +67,19 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
-    QueryResult<Map<String, AclEntry>> getSampleAcl(long sampleId, List<String> userIds) throws CatalogDBException;
+    QueryResult<Map<String, SampleAcl>> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException;
 
+    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException;
+
     QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException;
+
+    void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     default QueryResult<Sample> deleteSample(long sampleId) throws CatalogDBException {
@@ -132,12 +139,21 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
-        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
-        ACL_READ("acl.read", BOOLEAN, ""),
-        ACL_WRITE("acl.write", BOOLEAN, ""),
-        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, ""),
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        @Deprecated
+        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
+        @Deprecated
+        ACL_READ("acls.read", BOOLEAN, ""),
+        @Deprecated
+        ACL_WRITE("acls.write", BOOLEAN, ""),
+        @Deprecated
+        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
+        @Deprecated
+        ACL_DELETE("acls.delete", BOOLEAN, ""),
 
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
         ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");

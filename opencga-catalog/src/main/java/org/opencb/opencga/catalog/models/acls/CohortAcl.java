@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Created by pfurio on 11/05/16.
@@ -41,6 +42,11 @@ public class CohortAcl {
                 this.permissions.add(permission);
             }
         }
+    }
+
+    public CohortAcl(List<String> users, List<String> permissions) {
+        this.users = users;
+        this.permissions.addAll(permissions.stream().map(CohortPermissions::valueOf).collect(Collectors.toList()));
     }
 
     public List<String> getUsers() {

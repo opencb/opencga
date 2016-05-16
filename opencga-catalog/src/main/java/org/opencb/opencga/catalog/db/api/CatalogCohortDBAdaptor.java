@@ -24,7 +24,13 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         STATUS_DATE("status.date", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
 
+        ACLS("acls", TEXT_ARRAY, ""),
         SAMPLES("samples", DECIMAL, ""),
+
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
+        VARIABLE_SET_ID("variableSetId", INTEGER, ""),
+        ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
+        ANNOTATION("annotation", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),

@@ -55,12 +55,14 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
-        // TOCHECK: Pedro. Check parameter user_others_id.
-        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
-        ACL_READ("acl.read", BOOLEAN, ""),
-        ACL_WRITE("acl.write", BOOLEAN, ""),
-        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, ""),
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACL_USERS("acls.users", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+//        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
+//        ACL_READ("acls.read", BOOLEAN, ""),
+//        ACL_WRITE("acls.write", BOOLEAN, ""),
+//        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
+//        ACL_DELETE("acls.delete", BOOLEAN, ""),
 
         //INDEX("index", TEXT, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),

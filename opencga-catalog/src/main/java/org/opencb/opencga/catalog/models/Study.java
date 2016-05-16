@@ -63,6 +63,48 @@ public class Study {
 
     private Map<String, Object> stats;
 
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Study{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", ownerId='").append(ownerId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", cipher='").append(cipher).append('\'');
+        sb.append(", groups=").append(groups);
+        sb.append(", roles=").append(roles);
+        sb.append(", acls=").append(acls);
+        sb.append(", experiments=").append(experiments);
+        sb.append(", files=").append(files);
+        sb.append(", jobs=").append(jobs);
+        sb.append(", individuals=").append(individuals);
+        sb.append(", samples=").append(samples);
+        sb.append(", datasets=").append(datasets);
+        sb.append(", cohorts=").append(cohorts);
+        sb.append(", variableSets=").append(variableSets);
+        sb.append(", uri=").append(uri);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", stats=").append(stats);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public List<StudyAcl> getAcls() {
+        return acls;
+    }
+
+    public Study setAcls(List<StudyAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
     public enum Type {
         CASE_CONTROL,
         CASE_SET,
@@ -102,6 +144,7 @@ public class Study {
         this.diskUsage = diskUsage;
         this.cipher = cipher;
         this.roles = roles;
+        this.acls = new ArrayList<>();
         this.groups = groups;
         this.experiments = experiments;
         this.files = files;
@@ -341,35 +384,4 @@ public class Study {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Study{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
-        sb.append(", ownerId='").append(ownerId).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", lastActivity='").append(lastActivity).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", cipher='").append(cipher).append('\'');
-        sb.append(", groups=").append(groups);
-        sb.append(", roles=").append(roles);
-        sb.append(", experiments=").append(experiments);
-        sb.append(", files=").append(files);
-        sb.append(", jobs=").append(jobs);
-        sb.append(", individuals=").append(individuals);
-        sb.append(", samples=").append(samples);
-        sb.append(", datasets=").append(datasets);
-        sb.append(", cohorts=").append(cohorts);
-        sb.append(", variableSets=").append(variableSets);
-        sb.append(", uri=").append(uri);
-        sb.append(", dataStores=").append(dataStores);
-        sb.append(", attributes=").append(attributes);
-        sb.append(", stats=").append(stats);
-        sb.append('}');
-        return sb.toString();
-    }
 }

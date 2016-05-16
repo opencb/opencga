@@ -7,59 +7,60 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Created by pfurio on 11/05/16.
+ * Created by pfurio on 12/05/16.
  */
-public class JobAcl {
+public class DatasetAcl {
 
     private List<String> users;
-    private EnumSet<JobPermissions> permissions;
+    private EnumSet<DatasetPermissions> permissions;
 
-    public enum JobPermissions {
+    public enum DatasetPermissions {
         VIEW,
         UPDATE,
         DELETE,
         SHARE
     }
 
-    public JobAcl() {
+    public DatasetAcl() {
     }
 
-    public JobAcl(List<String> users, EnumSet<JobPermissions> permissions) {
+    public DatasetAcl(List<String> users, EnumSet<DatasetPermissions> permissions) {
         this.users = users;
         this.permissions = permissions;
     }
 
-    public JobAcl(List<String> users, ObjectMap permissions) {
+    public DatasetAcl(List<String> users, ObjectMap permissions) {
         this.users = users;
 
-        EnumSet<JobPermissions> aux = EnumSet.allOf(JobPermissions.class);
-        for (JobPermissions permission : aux) {
+        EnumSet<DatasetPermissions> aux = EnumSet.allOf(DatasetPermissions.class);
+        for (DatasetPermissions permission : aux) {
             if (permissions.containsKey(permission.name()) && permissions.getBoolean(permission.name())) {
                 this.permissions.add(permission);
             }
         }
     }
 
-    public JobAcl(List<String> users, List<String> permissions) {
+    public DatasetAcl(List<String> users, List<String> permissions) {
         this.users = users;
-        this.permissions.addAll(permissions.stream().map(JobPermissions::valueOf).collect(Collectors.toList()));
+        this.permissions.addAll(permissions.stream().map(DatasetPermissions::valueOf).collect(Collectors.toList()));
     }
 
     public List<String> getUsers() {
         return users;
     }
 
-    public JobAcl setUsers(List<String> users) {
+    public DatasetAcl setUsers(List<String> users) {
         this.users = users;
         return this;
     }
 
-    public EnumSet<JobPermissions> getPermissions() {
+    public EnumSet<DatasetPermissions> getPermissions() {
         return permissions;
     }
 
-    public JobAcl setPermissions(EnumSet<JobPermissions> permissions) {
+    public DatasetAcl setPermissions(EnumSet<DatasetPermissions> permissions) {
         this.permissions = permissions;
         return this;
     }
+
 }
