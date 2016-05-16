@@ -33,7 +33,7 @@ import java.net.URI;
  *  - load: in this step a DBWriter from getDBWriter (see below) is used to load data in the storage engine
  *  - post-load: data can be cleaned and some database validations can be performed
  */
-public interface StorageETL /* extends AutoClosable */ {
+public interface StorageETL extends AutoCloseable {
 
     /*
      * This method extracts the data from the data source. This data source can be a database or a remote
@@ -73,5 +73,8 @@ public interface StorageETL /* extends AutoClosable */ {
     default ObjectMap getLoadStats() {
         return new ObjectMap();
     }
+
+    @Override
+    default void close() throws StorageManagerException {}
 
 }

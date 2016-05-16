@@ -81,10 +81,13 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException;
 
+    QueryResult<T> delete(long id, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<T> delete(long id, boolean force) throws CatalogDBException;
+    QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException;
+    QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
     QueryResult<Long> restore(Query query) throws CatalogDBException;
 

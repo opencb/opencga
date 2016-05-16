@@ -19,10 +19,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
-import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -530,9 +527,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         userDBAdaptor.updateUserLastActivity(ownerId);
+
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put("status.status", File.FileStatus.TRASHED);
-        objectMap.put("attributes", new ObjectMap(File.DELETE_DATE, System.currentTimeMillis()));
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED);
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_DATE.key(), System.currentTimeMillis());
 
         switch (file.getType()) {
             case FOLDER: {
@@ -573,25 +571,115 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
+    public QueryResult rank(long studyId, Query query, String field, int numResults, boolean asc, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(studyId, "studyId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = fileDBAdaptor.rank(query, field, numResults, asc);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    public QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException {
+        QueryResult<File> queryResult = read(fileId, null, sessionId);
+        File file = queryResult.first();
+
+        if (isRootFolder(file)) {
+            throw new CatalogException("Can not delete root folder");
+        }
+
+        if (!isExternal(file)) {
+            throw new CatalogException("Cannot unlink a file that does not have an URI.");
+        }
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.DELETE);
+
+        List<File> filesToDelete;
+        if (file.getType().equals(File.Type.FOLDER)) {
+            filesToDelete = fileDBAdaptor.get(
+                    new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath()),
+                    new QueryOptions("include", "projects.studies.files.id")).getResult();
+        } else {
+            filesToDelete = Collections.singletonList(file);
+        }
+
+        for (File f : filesToDelete) {
+            fileDBAdaptor.delete(f.getId(), new QueryOptions());
+        }
+
+        return queryResult;
+    }
+
+    @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
         return null;
     }
 
     @Override
-    public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long studyId, Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(field, "field");
+        ParamUtils.checkObj(studyId, "studyId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = fileDBAdaptor.groupBy(query, field, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     @Override
-    public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+    public QueryResult groupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
+            throws CatalogException {
+        query = ParamUtils.defaultObject(query, Query::new);
+        options = ParamUtils.defaultObject(options, QueryOptions::new);
+        ParamUtils.checkObj(fields, "fields");
+        ParamUtils.checkObj(studyId, "studyId");
+        ParamUtils.checkObj(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+
+        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
+        boolean count = true;
+//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+        QueryResult queryResult = null;
+        if (count) {
+            // We do not need to check for permissions when we show the count of files
+            queryResult = fileDBAdaptor.groupBy(query, fields, options);
+        }
+
+        return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
         authorizationManager.checkFilePermission(file.getId(), userId, CatalogPermission.DELETE);
 
         switch (file.getStatus().getStatus()) {
-            case File.FileStatus.TRASHED:
             case File.FileStatus.DELETED:
                 //Send warning message
                 String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}";
@@ -717,8 +805,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
         }
 
-        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, attributes);
-        QueryResult<Dataset> queryResult = fileDBAdaptor.createDataset(studyId, dataset, options);
+        Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, new Status(), attributes);
+        QueryResult<Dataset> queryResult = datasetDBAdaptor.createDataset(studyId, dataset, options);
         auditManager.recordCreation(AuditRecord.Resource.dataset, queryResult.first().getId(), userId, queryResult.first(), null, null);
         return queryResult;
     }
@@ -729,7 +817,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        QueryResult<Dataset> queryResult = fileDBAdaptor.getDataset(dataSetId, options);
+        QueryResult<Dataset> queryResult = datasetDBAdaptor.getDataset(dataSetId, options);
 
         for (Long fileId : queryResult.first().getFiles()) {
             authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);

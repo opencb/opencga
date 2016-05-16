@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.junit.Test;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -63,7 +64,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
         QueryResult<Project> result = catalogProjectDBAdaptor.createProject(user1.getId(), p, null);
         System.out.println(result.first().getStatus());
         p = result.first();
-        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId(), false);
+        QueryResult<Project> queryResult = catalogProjectDBAdaptor.delete(p.getId(), new QueryOptions());
         System.out.println(queryResult.first().getStatus());
         assertTrue(queryResult.getNumResults() == 1);
 
@@ -71,7 +72,7 @@ public class CatalogMongoProjectDBAdaptorTest extends CatalogMongoDBAdaptorTest 
         //catalogProjectDBAdaptor.delete(p.getId());
 
         thrown.expect(CatalogDBException.class);    //Expected "Project not found" exception
-        catalogProjectDBAdaptor.delete(-1, false);
+        catalogProjectDBAdaptor.delete(-1, new QueryOptions());
     }
 
     @Test

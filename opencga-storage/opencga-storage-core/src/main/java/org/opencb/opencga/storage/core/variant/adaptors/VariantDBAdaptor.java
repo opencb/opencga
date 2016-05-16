@@ -37,10 +37,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
  * @author Ignacio Medina <igmecas@gmail.com>
  * @author Jacobo Coll <jacobo167@gmail.com>
  * @author Cristina Yenyxe Gonzalez Garcia <cgonzalez@cipf.es>
- *
- * TODO Implement {@link AutoCloseable}
  */
-public interface VariantDBAdaptor extends Iterable<Variant> {
+public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     enum VariantQueryParams implements QueryParam {
         ID("ids", TEXT_ARRAY, "CSV list of variant ids"),
@@ -77,7 +75,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
                 + " e.g. phastCons>0.5,phylop<0.1"),
         ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
         REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
-        POPULATION_MINOR_ALLELE_FREQUENCY ("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: "
+        POPULATION_MINOR_ALLELE_FREQUENCY("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: "
                 + "{study}:{population}[<|>|<=|>=]{number}"),
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");
 
@@ -241,6 +239,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
+    List<Integer> getReturnedStudies(Query query, QueryOptions options);
     /**
      * Returns all the possible samples to be returned by an specific query.
      *
@@ -259,7 +258,8 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
 
-    default void preUpdateAnnotations() throws IOException {}
+    default void preUpdateAnnotations() throws IOException {
+    }
 
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
@@ -279,7 +279,7 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
 
-    boolean close();
+    void close() throws IOException;
 
 
     /**
@@ -334,7 +334,6 @@ public interface VariantDBAdaptor extends Iterable<Variant> {
         throw new UnsupportedOperationException();
     }
 
-    @Deprecated
     default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
         throw new UnsupportedOperationException();
     }

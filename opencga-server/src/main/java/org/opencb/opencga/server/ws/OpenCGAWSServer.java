@@ -79,6 +79,16 @@ public class OpenCGAWSServer {
     @ApiParam(name = "included fields", value = "Only fields included in response. Whole JSON path e.g.: transcripts.id")
     protected String include;
 
+    @DefaultValue("-1")
+    @QueryParam("limit")
+    @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
+    protected long limit;
+
+    @DefaultValue("0")
+    @QueryParam("skip")
+    @ApiParam(name = "skip results", value = "Number of documents to be skipped when querying for data.")
+    protected long skip;
+
     @DefaultValue("")
     @QueryParam("sid")
     @ApiParam(value = "Session Id")
@@ -113,6 +123,8 @@ public class OpenCGAWSServer {
     protected static CatalogManager catalogManager;
     protected static StorageManagerFactory storageManagerFactory;
 
+    protected static CatalogConfiguration catalogConfiguration;
+
     static {
 
         Properties properties = new Properties();
@@ -144,6 +156,10 @@ public class OpenCGAWSServer {
             rollingFileAppender.setMaxBackupIndex(10);
             rootLogger.setLevel(Level.TRACE);
             rootLogger.addAppender(rollingFileAppender);
+
+            //Disable MongoDB useless logging
+            org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+            org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -165,7 +181,8 @@ public class OpenCGAWSServer {
 
         try {
             logger.info("|  * Reading StorageConfiguration");
-            StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "storage-configuration.yml").toFile()));
+            StorageConfiguration storageConfiguration = StorageConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "storage-configuration.yml").toFile()));
             logger.info("|  * Initializing StorageManagerFactory");
             storageManagerFactory = new StorageManagerFactory(storageConfiguration);
         } catch (IOException e) {
@@ -174,9 +191,14 @@ public class OpenCGAWSServer {
 
         try {
             logger.info("|  * Reading CatalogConfiguration");
-            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(), "conf", "catalog-configuration.yml").toFile()));
+            CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(new FileInputStream(Paths.get(Config.getOpenCGAHome(),
+                    "conf", "catalog-configuration.yml").toFile()));
             logger.info("|  * Initializing CatalogManager");
             catalogManager = new CatalogManager(catalogConfiguration);
+            if (!catalogManager.existsCatalogDB()) {
+                catalogManager.installCatalogDB();
+            }
+            logger.info("|  * Database name: " + catalogConfiguration.getDatabase().getDatabase());
             logger.info("========================================================================");
         } catch (IOException | CatalogException e) {
             logger.error("Error while creating CatalogManager", e);
@@ -210,7 +232,7 @@ public class OpenCGAWSServer {
 
         startTime = System.currentTimeMillis();
 
-//        queryResponse = new QueryResponse();
+        queryResponse = new QueryResponse();
         queryOptions = new QueryOptions();
         query = new Query();
 
@@ -234,9 +256,9 @@ public class OpenCGAWSServer {
             param = indexOf > 0 ? param.substring(0, indexOf) : param;
 
             if (getParam.apply(param) != null) {
-                query.put(entry.getKey(), entry.getValue());
+                query.put(entry.getKey(), entry.getValue().get(0));
             } else {
-                queryOptions.add(param, entry.getValue());
+                queryOptions.add(param, entry.getValue().get(0));
             }
 
         }
@@ -263,22 +285,20 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-
-        if(exclude != null && !exclude.isEmpty()) {
-            queryOptions.put("exclude", new LinkedList<>(Splitter.on(",").splitToList(exclude)));
-        } else {
-            queryOptions.put("exclude", (multivaluedMap.get("exclude") != null)
-                    ? Splitter.on(",").splitToList(multivaluedMap.get("exclude").get(0))
-                    : null);
+        String limit = multivaluedMap.getFirst("limit");
+        if (limit != null) {
+            this.limit = Integer.parseInt(limit);
+            queryOptions.put("limit", this.limit);
         }
 
-        if(include != null && !include.isEmpty()) {
-            queryOptions.put("include", new LinkedList<>(Splitter.on(",").splitToList(include)));
-        } else {
-            queryOptions.put("include", (multivaluedMap.get("include") != null)
-                    ? Splitter.on(",").splitToList(multivaluedMap.get("include").get(0))
-                    : null);
+        String skip = multivaluedMap.getFirst("skip");
+        if (skip != null) {
+            this.skip = Integer.parseInt(skip);
+            queryOptions.put("skip", this.skip);
         }
+
+        parseIncludeExclude(multivaluedMap, "exclude", exclude);
+        parseIncludeExclude(multivaluedMap, "include", include);
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
         // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute
@@ -290,14 +310,24 @@ public class OpenCGAWSServer {
                     queryOptions.put(entry.getKey(), entry.getValue().get(0));
                 });
 
-        if (multivaluedMap.get("sid") != null) {
-            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
-        }
+//        if (multivaluedMap.get("sid") != null) {
+//            queryOptions.put("sessionId", multivaluedMap.get("sid").get(0));
+//        }
 
         try {
             logger.info("URL: {}, queryOptions = {}", uriInfo.getAbsolutePath().toString(), jsonObjectWriter.writeValueAsString(queryOptions));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void parseIncludeExclude(MultivaluedMap<String, String> multivaluedMap, String key, String value) {
+        if(value != null && !value.isEmpty()) {
+            queryOptions.put(key, new LinkedList<>(Splitter.on(",").splitToList(value)));
+        } else {
+            queryOptions.put(key, (multivaluedMap.get(key) != null)
+                    ? Splitter.on(",").splitToList(multivaluedMap.get(key).get(0))
+                    : null);
         }
     }
 
@@ -430,4 +460,11 @@ public class OpenCGAWSServer {
                 .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
                 .build();
     }
+
+//    @GET
+//    @Path("/testIndices")
+//    public Response testIndices() {
+//        catalogManager.testIndices();
+//        return Response.ok("mira el log").build();
+//    }
 }

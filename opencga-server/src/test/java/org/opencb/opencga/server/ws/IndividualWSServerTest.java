@@ -2,8 +2,8 @@ package org.opencb.opencga.server.ws;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
@@ -65,7 +65,7 @@ public class IndividualWSServerTest {
                 .queryParam("family", "The Family Name")
                 .queryParam("sid", sessionId).request().get(String.class);
 
-        QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
+        QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
         assertEquals(Individual.Gender.FEMALE, individual.getGender());
@@ -81,7 +81,7 @@ public class IndividualWSServerTest {
                 .queryParam("exclude", "projects.studies.individuals.gender")
                 .queryParam("sid", sessionId).request().get(String.class);
 
-        QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
+        QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
         assertEquals("f1", individual.getFamily());
@@ -97,7 +97,7 @@ public class IndividualWSServerTest {
                 .queryParam("exclude", "projects.studies.individuals.gender")
                 .queryParam("sid", sessionId).request().get(String.class);
 
-        QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
+        QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         List<Individual> result = response.getResponse().get(0).getResult();
 
@@ -115,7 +115,7 @@ public class IndividualWSServerTest {
                 .queryParam("family", "f3")
                 .queryParam("sid", sessionId).request().get(String.class);
 
-        QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
+        QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
         assertEquals("f3", individual.getFamily());
@@ -126,7 +126,7 @@ public class IndividualWSServerTest {
         String json = webTarget.path("individuals").path(Long.toString(in1)).path("delete")
                 .queryParam("sid", sessionId).request().get(String.class);
 
-        QueryResponse<QueryResult<Individual>> response = WSServerTestUtils.parseResult(json, Individual.class);
+        QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
 

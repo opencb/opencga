@@ -53,6 +53,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -62,9 +63,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.MULTI;
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
+import static org.opencb.commons.datastore.mongodb.MongoDBCollection.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import static org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions.DEFAULT_GENOTYPE;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -75,6 +76,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public static final String DEFAULT_TIMEOUT = "dbadaptor.default_timeout";
     public static final String MAX_TIMEOUT = "dbadaptor.max_timeout";
+    private boolean closeConnection;
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final String collectionName;
@@ -96,11 +98,21 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
                                  StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
             throws UnknownHostException {
-        this.credentials = credentials;
+        this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName, filesCollectionName,
+                studyConfigurationManager, storageEngineConfiguration);
+        this.closeConnection = true;
+    }
+
+    public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials,
+                                 String variantsCollectionName, String filesCollectionName,
+                                 StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
+            throws UnknownHostException {
         // MongoDB configuration
-        mongoManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        this.closeConnection = false;
+        this.credentials = credentials;
+        this.mongoManager = mongoManager;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
-        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(credentials, filesCollectionName);
+        variantSourceMongoDBAdaptor = new VariantSourceMongoDBAdaptor(db, filesCollectionName);
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
@@ -113,6 +125,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     protected MongoDBCollection getVariantsCollection() {
         return variantsCollection;
+    }
+
+    protected MongoDataStore getDB() {
+        return db;
     }
 
     protected MongoCredentials getCredentials() {
@@ -555,12 +571,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
         List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
         if (studyIds.isEmpty()) {
             studyIds = utils.getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
         }
+        return studyIds;
+    }
+
+    @Override
+    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+
+        List<Integer> studyIds = getReturnedStudies(query, options);
 
         List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
                 .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
@@ -745,9 +767,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
 
     @Override
-    public boolean close() {
-        mongoManager.close(db.getDatabaseName());
-        return true;
+    public void close() throws IOException {
+        if (closeConnection) {
+            mongoManager.close();
+        }
+        studyConfigurationManager.close();
     }
 
     private Document parseQuery(Query query) {
@@ -1150,7 +1174,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
         }
-        logger.info("Find = " + builder.get());
+        logger.debug("Find = " + builder.get());
         mongoQuery.putAll(builder.get().toMap());
         return mongoQuery;
     }
@@ -1281,7 +1305,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         long nanoTime = System.nanoTime();
         Map missingSamples = Collections.emptyMap();
-        String defaultGenotype = studyConfiguration.getAttributes().getString(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "");
+        String defaultGenotype = studyConfiguration.getAttributes().getString(DEFAULT_GENOTYPE.key(), "");
         if (defaultGenotype.equals(DocumentToSamplesConverter.UNKNOWN_GENOTYPE)) {
             logger.debug("Do not need fill gaps. DefaultGenotype is UNKNOWN_GENOTYPE({}).", DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
         } else if (excludeGenotypes) {
@@ -1368,8 +1392,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
 
-            writeResult.setNewDocuments(newDocuments);
-            writeResult.setUpdatedObjects(updatedObjects);
+            writeResult.setNewVariants(newDocuments);
+            writeResult.setUpdatedVariants(updatedObjects);
 //                writeResult.setNewDocuments(data.size() - nonInsertedVariants.size() - writeResult.getSkippedVariants());
             queries.clear();
             updates.clear();
@@ -1434,7 +1458,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             // Can happen that nonInsertedVariantsNum != queries.size() != nonInsertedVariants.size() if there was
             // a duplicated variant.
             writeResult.setNonInsertedVariants(nonInsertedVariants.size() - update.first().getMatchedCount());
-            writeResult.setUpdatedObjects(writeResult.getUpdatedObjects() + update.first().getModifiedCount());
+            writeResult.setUpdatedVariants(writeResult.getUpdatedVariants() + update.first().getModifiedCount());
         }
 
         return new QueryResult<>("insertVariants", ((int) (System.currentTimeMillis() - startTime)), 1, 1, "", "",
@@ -1470,7 +1494,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         // { $push : {
         //      "studies.$.gt.?/?" : {$each : [ <fileSampleIds> ] }
         // } }
-        if (studyConfiguration.getAttributes().getAsStringList(MongoDBVariantStorageManager.DEFAULT_GENOTYPE, "")
+        if (studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key(), "")
                 .equals(Collections.singletonList(DocumentToSamplesConverter.UNKNOWN_GENOTYPE))
 //                && studyConfiguration.getAttributes().getAsStringList(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()).isEmpty()
                 ) {
@@ -1541,7 +1565,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         DocumentToSamplesConverter samplesConverter;
         if (studyIds.isEmpty()) {
-            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager, null);
+            samplesConverter = new DocumentToSamplesConverter(studyConfigurationManager);
         } else {
             List<StudyConfiguration> studyConfigurations = new LinkedList<>();
             for (Integer studyId : studyIds) {
@@ -2041,10 +2065,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     void createIndexes(QueryOptions options) {
-        logger.info("Start creating indexes");
+        createIndexes(options, variantsCollection);
+    }
 
-        Document onBackground = new Document("background", true);
-        Document backgroundAndSparse = new Document("background", true).append("sparse", true);
+    public static void createIndexes(QueryOptions options, MongoDBCollection variantsCollection) {
+        logger.info("Start creating indexes");
+        ObjectMap onBackground = new ObjectMap(MongoDBCollection.BACKGROUND, true);
+        ObjectMap onBackgroundSparse = new ObjectMap(MongoDBCollection.BACKGROUND, true).append(MongoDBCollection.SPARSE, true);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.AT_FIELD + '.'
                 + DocumentToVariantConverter.CHUNK_IDS_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.CHROMOSOME_FIELD, 1)
@@ -2071,10 +2098,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         .append(DocumentToVariantConverter.ANNOTATION_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCIES_FIELD
                                 + "." + DocumentToVariantAnnotationConverter.POPULATION_FREQUENCY_ALTERNATE_FREQUENCY_FIELD, 1),
-                backgroundAndSparse);
+                onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.CLINICAL_DATA_FIELD + ".clinvar.clinicalSignificance", 1),
-                backgroundAndSparse);
+                onBackgroundSparse);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
                 .MAF_FIELD, 1), onBackground);
         variantsCollection.createIndex(new Document(DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter
@@ -2144,6 +2171,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceMongoDBAdaptor;
+    }
+
+    @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
     }
@@ -2161,10 +2193,4 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return loadedSampleIds;
     }
 
-    /* OLD METHODS*/
-    @Override
-    @Deprecated
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return variantSourceMongoDBAdaptor;
-    }
 }

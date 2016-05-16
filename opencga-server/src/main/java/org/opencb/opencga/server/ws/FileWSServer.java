@@ -38,7 +38,7 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.server.utils.VariantFetcher;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -468,14 +468,14 @@ public class FileWSServer extends OpenCGAWSServer {
                     && (query.get(CatalogFileDBAdaptor.QueryParams.NAME.key()) == null
                     || query.getString(CatalogFileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
                 query.remove(CatalogFileDBAdaptor.QueryParams.NAME.key());
-                System.out.println("Name attribute empty, it's been removed");
+                logger.debug("Name attribute empty, it's been removed");
             }
 
             if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
                 qOptions.put(MongoDBCollection.LIMIT, 1000);
-                System.out.println("Adding a limit of 1000");
+                logger.debug("Adding a limit of 1000");
             }
-            System.out.println("query = " + query.toJson());
+            logger.debug("query = " + query.toJson());
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, qOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -744,7 +744,7 @@ public class FileWSServer extends OpenCGAWSServer {
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
                 QueryResult result;
-                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
+                result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
         } catch (Exception e) {
@@ -912,6 +912,18 @@ public class FileWSServer extends OpenCGAWSServer {
                         false);
             }
             return createOkResponse(new QueryResult<>("link", 0, 1, 1, null, null, Collections.singletonList(file)));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/unlink")
+    @ApiOperation(value = "Unlink an external file from catalog.", position = 17)
+    public Response link(@ApiParam(required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
+        try {
+            QueryResult<File> queryResult = catalogManager.unlink(Integer.parseInt(fileIdStr), sessionId);
+            return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

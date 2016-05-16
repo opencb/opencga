@@ -22,7 +22,6 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.catalog.models.User;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -403,6 +402,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         * */
 
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -417,6 +419,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -501,28 +506,40 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Job> delete(long id, boolean force) throws CatalogDBException {
-        long timeStart = startQuery();
-        if (id > 0) {
-            Query query = new Query(QueryParams.ID.key(), id);
-            QueryResult<Long> delete = delete(query, force);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
-            }
-            return endQuery("Delete job", timeStart, get(query, null));
-        }
-        throw CatalogDBException.idNotFound("Job ID", id);
+    public QueryResult<Job> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+//        long timeStart = startQuery();
+//        if (id > 0) {
+//            Query query = new Query(QueryParams.ID.key(), id);
+//            QueryResult<Long> delete = delete(query, force);
+//            if (delete.getResult().size() == 0) {
+//                throw CatalogDBException.newInstance("Job id '{}' has not been deleted", id);
+//            }
+//            return endQuery("Delete job", timeStart, get(query, null));
+//        }
+//        throw CatalogDBException.idNotFound("Job ID", id);
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long timeStart = startQuery();
-        // 1. Mark the jobs from the query as deleted.
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-        QueryResult<UpdateResult> remove = jobCollection.update(parseQuery(query), Updates.combine(
-                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
-        return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+//        long timeStart = startQuery();
+//        // 1. Mark the jobs from the query as deleted.
+//        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//        QueryResult<UpdateResult> remove = jobCollection.update(parseQuery(query), Updates.combine(
+//                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+//                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
+//        return endQuery("Delete job", timeStart, Collections.singletonList(remove.getNumTotalResults()));
+    }
+
+    @Override
+    public QueryResult<Job> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
@@ -594,6 +611,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
                         addOrQuery(PRIVATE_STUDY_ID, queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
                     case ATTRIBUTES:
+                        addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
+                        break;
+                    case RESOURCE_MANAGER_ATTRIBUTES:
                         addAutoOrQuery(entry.getKey(), entry.getKey(), query, queryParam.type(), andBsonList);
                         break;
                     case BATTRIBUTES:

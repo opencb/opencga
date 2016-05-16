@@ -1,0 +1,179 @@
+<!--
+  ~ Copyright 2015 OpenCB
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../opencga-shared-styles.html">
+
+<dom-module id="opencga-samples-view">
+    <template>
+        <style is="custom-style" include="opencga-shared-styles"></style>
+
+        <style>
+            .container > .row > .table tr.active td {
+                background-color: #1f9cda;
+            }
+        </style>
+
+        <table id="samplestable" data-search="true" data-show-columns="true" data-pagination="true" data-page-list="[10, 25, 50]"
+               data-striped="true">
+        </table>
+
+        <div style="padding: 10px;" class="row" style="height: 530px">
+
+            <ul id="sampleViewTabs" class="nav nav-tabs" role="tablist">
+                <li role="presentation" class="active"><a href="#sampleViewAnnotation" role="tab" data-toggle="tab">Sample Annotations</a></li>
+                <li role="presentation"><a href="#sampleViewAcl" role="tab" data-toggle="tab">ACL</a></li>
+            </ul>
+
+            <div class="tab-content">
+                <div id="sampleViewAnnotation" role="tabpanel" class="tab-pane active">
+                    <template is="dom-repeat" items="{{_sample.annotationSets}}" as="annotationSet">
+
+                        <h3>{{annotationSet.id}} ({{annotationSet.date}})</h3>
+
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Value</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <template is="dom-repeat" items="{{annotationSet.annotations}}" as="annotation">
+                                <tr>
+                                    <td>{{annotation.id}}</td>
+                                    <td>{{annotation.value}}</td>
+                                </tr>
+                            </template>
+                            </tbody>
+                        </table>
+
+                    </template>
+                </div>
+
+                <div id="sampleViewAcl" role="tabpanel" class="tab-pane">
+
+                </div>
+            </div>
+        </div>
+
+    </template>
+    <script>
+        Polymer({
+            is: 'opencga-samples-view',
+
+            properties: {
+                opencgaClient: {
+                    type: Object,
+                    observer: 'renderFromServer'
+                },
+                data: {
+                    type: Array,
+                    value: [],
+                    observer: 'renderLocally'
+                },
+                studyId: {
+                    type: Number,
+                    observer: 'renderFromServer'
+                },
+                filters: {
+                    type: Object,
+                    value: {},
+                    observer: 'renderFromServer'
+                },
+                sample: {
+                    type: Object
+                }
+            },
+
+            ready: function() {
+                // Columns that will be represented
+                this._columns = [
+                    [
+                        {
+                            title: 'Name',
+                            field: 'name',
+                            sortable: true
+                        },
+                        {
+                            title: 'Source',
+                            field: 'source',
+                            sortable: true
+                        },
+                        {
+                            title: 'Description',
+                            field: 'description'
+                        }
+                    ]
+                ];
+            },
+
+            renderFromServer: function() {
+                if (this.opencgaClient instanceof OpenCGAClient && this.studyId > 0) {
+                    this._url = 'http://' + this.opencgaClient.getConfig().host +  '/webservices/rest/v1/samples/search';
+                    let _this = this;
+
+                    $('#samplestable').bootstrapTable('destroy');
+                    $('#samplestable').bootstrapTable({
+                        url: this._url,
+                        sidePagination: 'server',
+                        queryParams: function(params) {
+                            let auxParams = {
+                                studyId: _this.studyId,
+                                sid: Cookies.get(_this.opencgaClient.getConfig().cookieSessionId),
+                                order: params.order,
+                                sort: params.sort,
+                                limit: params.limit,
+                                skip: params.offset
+                            };
+                            if (params.search !== undefined && params.search.length > 0) {
+                                auxParams["name"] = "~" + params.search;
+                            }
+                            return $.extend({}, _this.filters, auxParams);
+                        },
+                        responseHandler: function(response) {
+                            return {
+                                total: response.response[0].numTotalResults,
+                                rows: response.response[0].result
+                            }
+                        },
+                        columns: this._columns,
+                        onClickRow: function(row, $element) {
+                            _this._sample = row;
+                            $('.success').removeClass('success');
+                            $($element).addClass('success');
+                        }
+                    });
+                }
+            },
+            renderLocally: function() {
+                let _this = this;
+                if (this.data != null && this.data.length > 0) {
+                    $('#samplestable').bootstrapTable('destroy');
+                    $('#samplestable').bootstrapTable({
+                        data: this.data,
+                        columns: this._columns,
+                        onClickRow: function(row) {
+                            _this._sample = row;
+                        }
+                    });
+                }
+            }
+
+        });
+    </script>
+</dom-module>

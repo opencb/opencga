@@ -39,10 +39,10 @@
         <opencga.version>0.8-dev</opencga.version>
         <biodata.version>0.7.0-SNAPSHOT</biodata.version>
         <datastore.version>0.5.0</datastore.version>
-        <cellbase.version>4.0.0-rc</cellbase.version>
+        <cellbase.version>4.1.0-beta</cellbase.version>
         <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
-        <jackson.version>2.5.4</jackson.version>
+        <jackson.version>2.6.4</jackson.version>
         <jersey.version>2.19</jersey.version>
         <hadoop.version>2.6.3</hadoop.version>
         <hbase.version>1.0.1</hbase.version>
@@ -69,14 +69,29 @@
             <email>igmecas@gmail.com</email>
         </developer>
         <developer>
+            <id>j-coll</id>
+            <name>Jacobo</name>
+            <email>jacobo167@gmail.com</email>
+        </developer>
+        <developer>
+            <id>pfurio</id>
+            <name>Pedro</name>
+            <email>pedrofurio@gmail.com</email>
+        </developer>
+        <developer>
+            <id>mh11</id>
+            <name>Matthias</name>
+            <email>mh719+git@cam.ac.uk</email>
+        </developer>
+        <developer>
+            <id>Antonio26</id>
+            <name>Antonio</name>
+            <email>aruemar@gmail.com</email>
+        </developer>
+        <developer>
             <id>cyenyxe</id>
             <name>Cristina</name>
             <email>cristina.yenyxe@gmail.com</email>
-        </developer>
-        <developer>
-            <id>j-coll</id>
-            <name>jacobo</name>
-            <email>jacobo167@gmail.com</email>
         </developer>
         <developer>
             <id>jmmut</id>
@@ -179,6 +194,12 @@
                 <groupId>org.opencb.commons</groupId>
                 <artifactId>commons-lib</artifactId>
                 <version>${java-common-libs.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>slf4j-simple</artifactId>
+                        <groupId>org.slf4j</groupId>
+                    </exclusion>
+                </exclusions>
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>

@@ -2,19 +2,17 @@ package org.opencb.opencga.server.ws;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,6 +68,13 @@ public class SampleWSServerTest {
         assertEquals(1, queryResult.getNumTotalResults());
         Sample sample = queryResult.first();
         assertEquals("s1", sample.getName());
+
+//        json = webTarget.path("samples").path("search").queryParam("sid", sessionId)
+//                .queryParam(CatalogSampleDBAdaptor.SampleFilterOption.studyId.toString(), studyId)
+//                .queryParam(MongoDBCollection.SKIP, 1).queryParam(MongoDBCollection.LIMIT, 2)
+//                .request().get(String.class);
+//
+//        queryResult = WSServerTestUtils.parseResult(json, Sample.class).getResponse().get(0);
     }
 
     @Test

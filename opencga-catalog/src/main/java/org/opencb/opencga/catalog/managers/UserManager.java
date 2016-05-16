@@ -10,7 +10,6 @@ import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
-import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -19,7 +18,6 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
 import org.opencb.opencga.catalog.models.Filter;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -41,7 +39,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     //    private final SessionManager sessionManager;
     protected static final Pattern EMAILPATTERN = Pattern.compile(EMAIL_PATTERN);
     protected static Logger logger = LoggerFactory.getLogger(UserManager.class);
-    protected final Policies.UserCreation creationUserPolicy;
+//    protected final Policies.UserCreation creationUserPolicy;
 
     @Deprecated
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
@@ -49,19 +47,18 @@ public class UserManager extends AbstractManager implements IUserManager {
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
-        creationUserPolicy = Policies.UserCreation.ALWAYS;
+//        creationUserPolicy = Policies.UserCreation.ALWAYS;
         //creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER,
         // Policies.UserCreation.ALWAYS);
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                       AuditManager auditManager,
-                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
+                       AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        CatalogConfiguration catalogConfiguration) {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
 
-        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
+//        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
 
@@ -97,14 +94,21 @@ public class UserManager extends AbstractManager implements IUserManager {
                 objectMap.getString("name"),
                 objectMap.getString("email"),
                 objectMap.getString("password"),
-                objectMap.getString("organization"),
-                options, sessionId
-        );
+                objectMap.getString("organization"), objectMap.getLong("diskQuota"), options, sessionId);
     }
 
     @Override
-    public QueryResult<User> create(String id, String name, String email, String password, String organization,
-                                    QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<User> create(String id, String name, String email, String password, String organization, Long diskQuota,
+                                    QueryOptions options, String adminPassword) throws CatalogException {
+
+        // Check if the users can be registered publicly or just the admin.
+        if (!catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().isRegisterOpen()) {
+            if (adminPassword != null && !adminPassword.isEmpty()) {
+                catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(adminPassword);
+            } else {
+                throw new CatalogException("The registration is closed to the public: Please talk to your administrator.");
+            }
+        }
 
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(password, "password");
@@ -112,34 +116,43 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkEmail(email);
         organization = organization != null ? organization : "";
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, new Status());
-
-        String userId;
-
-        switch (creationUserPolicy) {
-            case ONLY_ADMIN: {
-                userId = getUserId(sessionId);
-                if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                    user.getAttributes().put("creatorUserId", userId);
-                } else {
-                    throw new CatalogException("CreateUser Fail. Required Admin role");
-                }
-                break;
-            }
-            case ANY_LOGGED_USER: {
-                ParamUtils.checkParameter(sessionId, "sessionId");
-                userId = getUserId(sessionId);
-                if (userId.isEmpty()) {
-                    throw new CatalogException("CreateUser Fail. Required existing account");
-                }
-                user.getAttributes().put("creatorUserId", userId);
-                break;
-            }
-            case ALWAYS:
-            default:
-                userId = id;
-                break;
+        if (userDBAdaptor.userExists(id)) {
+            throw new CatalogException("The user " + id + " is already in use in our database. Please, choose another one.");
         }
+
+        User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
+
+        if (diskQuota != null && diskQuota > 0L) {
+            user.setDiskQuota(diskQuota);
+        }
+
+        // TODO: If the registration is closed, we have to check the sessionId to see if it corresponds with the admin in order to continue.
+        String userId = id;
+
+//        switch (creationUserPolicy) {
+//            case ONLY_ADMIN: {
+//                userId = getUserId(sessionId);
+//                if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
+//                    user.getAttributes().put("creatorUserId", userId);
+//                } else {
+//                    throw new CatalogException("CreateUser Fail. Required Admin role");
+//                }
+//                break;
+//            }
+//            case ANY_LOGGED_USER: {
+//                ParamUtils.checkParameter(sessionId, "sessionId");
+//                userId = getUserId(sessionId);
+//                if (userId.isEmpty()) {
+//                    throw new CatalogException("CreateUser Fail. Required existing account");
+//                }
+//                user.getAttributes().put("creatorUserId", userId);
+//                break;
+//            }
+//            case ALWAYS:
+//            default:
+//                userId = id;
+//                break;
+//        }
 
 
         try {
@@ -202,14 +215,24 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult<User> update(String userId, ObjectMap parameters, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
-        checkSessionId(userId, sessionId);
-        for (String s : parameters.keySet()) {
-            if (!s.matches("name|email|organization|attributes|configs")) {
-                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+
+        if (sessionId != null && !sessionId.isEmpty()) {
+            ParamUtils.checkParameter(sessionId, "sessionId");
+            checkSessionId(userId, sessionId);
+            for (String s : parameters.keySet()) {
+                if (!s.matches("name|email|organization|attributes|configs")) {
+                    throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+                }
             }
+        } else {
+            if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                        + "deleted.");
+            }
+            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         }
+
         if (parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
@@ -220,38 +243,47 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> delete(String userId, QueryOptions options, String sessionId)
-            throws CatalogException {
-        QueryResult<User> user = read(userId, options, sessionId);
+    public QueryResult<User> delete(String userId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
-            try {
-                catalogIOManagerFactory.getDefault().deleteUser(userId);
-            } catch (CatalogIOException e) {
-                e.printStackTrace();
+
+        if (sessionId != null && !sessionId.isEmpty()) {
+            ParamUtils.checkParameter(sessionId, "sessionId");
+            checkSessionId(userId, sessionId);
+        } else {
+            if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
+                throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
+                        + "deleted.");
             }
-            userDBAdaptor.delete(userId, false);
+            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         }
-        user.setId("deleteUser");
-        auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, user, null, null);
-        return user;
+
+        QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
+//
+//        if (userIdBySessionId.equals(userId) || authorizationManager.getUserRole(userIdBySessionId).equals(User.Role.ADMIN)) {
+//            try {
+//                catalogIOManagerFactory.getDefault().deleteUser(userId);
+//            } catch (CatalogIOException e) {
+//                e.printStackTrace();
+//            }
+//        }
+//        user.setId("deleteUser");
+        auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, deletedUser.first(), null, null);
+        return deletedUser;
     }
 
     @Override
     public QueryResult rank(Query query, String field, int numResults, boolean asc, String sessionId) throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException("User: Operation not supported.");
     }
 
     @Override
     public QueryResult groupBy(Query query, String field, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException("User: Operation not supported.");
     }
 
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options, String sessionId) throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException("User: Operation not supported.");
     }
 
     @Override

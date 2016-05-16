@@ -100,7 +100,7 @@ public class OpenCGAMain {
                 logLevel = optionsParser.getCommonOptions().logLevel;
             }
             setLogLevel(logLevel);
-            Config.setOpenCGAHome();
+            Config.setAutoOpenCGAHome();
         } catch (ParameterException e){
 
             if(!optionsParser.getGeneralOptions().help && !optionsParser.getCommonOptions().help ) {
@@ -209,7 +209,7 @@ public class OpenCGAMain {
                     case "create": {
                         OptionsParser.UserCommands.CreateCommand c = optionsParser.getUserCommands().createCommand;
                         //QueryResult<User> user = catalogManager.insertUser(new User(c.up.user, c.name, c.email, c.up.password, c.organization, User.Role.USER, ""));
-                        QueryResult<User> user = catalogManager.createUser(c.user, c.name, c.email, c.password, c.organization, null);
+                        QueryResult<User> user = catalogManager.createUser(c.user, c.name, c.email, c.password, c.organization, null, null);
                         System.out.println(createOutput(c.cOpt, user, null));
                         break;
                     }

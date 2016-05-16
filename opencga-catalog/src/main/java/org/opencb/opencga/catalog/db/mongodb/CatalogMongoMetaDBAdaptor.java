@@ -16,17 +16,31 @@
 
 package org.opencb.opencga.catalog.db.mongodb;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.config.Admin;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Metadata;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.List;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.*;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongoDBDocument;
 
 /**
  * Created by imedina on 13/01/16.
@@ -34,13 +48,12 @@ import java.util.List;
 public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
     private final MongoDBCollection metaCollection;
+    private static final String VERSION = "v0.8";
 
-    private List<String> COLLECTIONS_LIST = Collections.singletonList("");
-
-    public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection userCollection) {
+    public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaMongoDBCollection) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
-        this.metaCollection = userCollection;
+        this.metaCollection = metaMongoDBCollection;
     }
 
     public long getNewAutoIncrementId() {
@@ -67,24 +80,80 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
     }
 
 
-    public void createCollections() {
-        clean(Collections.singletonList(""));
-//        metaCollection.createIndex()
-//        dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection().createIndex()
+//    public void createCollections() {
+//        clean(Collections.singletonList(""));
+////        metaCollection.createIndexes()
+////        dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection().createIndexes()
+//    }
+
+    public void createIndexes() {
+        InputStream resourceAsStream = getClass().getResourceAsStream("/catalog-indexes.txt");
+        ObjectMapper objectMapper = new ObjectMapper();
+        BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(resourceAsStream));
+        // We store all the indexes that are in the file in the indexes object
+        Map<String, List<Map<String, ObjectMap>>> indexes = new HashMap<>();
+        bufferedReader.lines().filter(s -> !s.trim().isEmpty()).forEach(s -> {
+            try {
+                HashMap hashMap = objectMapper.readValue(s, HashMap.class);
+
+                String collection = (String) hashMap.get("collection");
+                if (!indexes.containsKey(collection)) {
+                    indexes.put(collection, new ArrayList<>());
+                }
+                Map<String, ObjectMap> myIndexes = new HashMap<>();
+                myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
+                myIndexes.put("options", new ObjectMap((Map) hashMap.get("options")));
+                indexes.get(collection).add(myIndexes);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        try {
+            bufferedReader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("user"));
+        createIndexes(dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyCollection(), indexes.get("study"));
+        createIndexes(dbAdaptorFactory.getCatalogSampleDBAdaptor().getSampleCollection(), indexes.get("sample"));
+        createIndexes(dbAdaptorFactory.getCatalogIndividualDBAdaptor().getIndividualCollection(), indexes.get("individual"));
+        createIndexes(dbAdaptorFactory.getCatalogFileDBAdaptor().getFileCollection(), indexes.get("file"));
+        createIndexes(dbAdaptorFactory.getCatalogCohortDBAdaptor().getCohortCollection(), indexes.get("cohort"));
+        createIndexes(dbAdaptorFactory.getCatalogDatasetDBAdaptor().getDatasetCollection(), indexes.get("dataset"));
+//        createIndexes(dbAdaptorFactory.getCatalogUserDBAdaptor().getUserCollection(), indexes.get("job"));
+
     }
 
-    public void createIndex(List<String> collections) {
-        for (String collection : collections) {
-            System.out.println(collection);
-            switch (collection) {
-                case "user":
-                    break;
-                default:
-                    break;
+    private void createIndexes(MongoDBCollection mongoCollection, List<Map<String, ObjectMap>> indexes) {
+        QueryResult<Document> index = mongoCollection.getIndex();
+        // We store the existent indexes
+        Set<String> existingIndexes = index.getResult()
+                .stream()
+                .map(document -> (String) document.get("name"))
+                .collect(Collectors.toSet());
+
+        if (index.getNumResults() != indexes.size() + 1) { // It is + 1 because mongo always create the _id index by default
+            for (Map<String, ObjectMap> userIndex : indexes) {
+                String indexName = "";
+                Document keys = new Document();
+                Iterator fieldsIterator = userIndex.get("fields").entrySet().iterator();
+                while (fieldsIterator.hasNext()) {
+                    Map.Entry pair = (Map.Entry)fieldsIterator.next();
+                    keys.append((String) pair.getKey(), pair.getValue());
+
+                    if (!indexName.isEmpty()) {
+                        indexName += "_";
+                    }
+                    indexName += pair.getKey() + "_" + pair.getValue();
+                }
+
+                if (!existingIndexes.contains(indexName)) {
+                    mongoCollection.createIndex(keys, new ObjectMap(userIndex.get("options")));
+                }
             }
         }
     }
-
 
     public void clean() {
         clean(Collections.singletonList(""));
@@ -94,6 +163,42 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         for (String collection : collections) {
             System.out.println(collection);
         }
+    }
+
+    public void initializeMetaCollection(CatalogConfiguration catalogConfiguration) throws CatalogException {
+        Admin admin = catalogConfiguration.getAdmin();
+        admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+
+        Metadata metadata = new Metadata().setIdCounter(0).setVersion(VERSION);
+
+        if (catalogConfiguration.isOpenRegister()) {
+            metadata.setOpen("public");
+        } else {
+            metadata.setOpen("private");
+        }
+
+        Document metadataObject = getMongoDBDocument(metadata, "Metadata");
+        metadataObject.put("_id", "METADATA");
+        Document adminDocument = getMongoDBDocument(admin, "Admin");
+        adminDocument.put("sessions", new ArrayList<>());
+        metadataObject.put("admin", adminDocument);
+
+        metaCollection.insert(metadataObject, null);
+    }
+
+    public void checkAdmin(String password) throws CatalogException {
+        Bson query = Filters.eq("admin.password", CatalogAuthenticationManager.cipherPassword(password));
+        if (metaCollection.count(query).getResult().get(0) == 0) {
+            throw new CatalogDBException("The admin password is incorrect.");
+        }
+    }
+
+    public boolean isRegisterOpen() {
+        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(MongoDBCollection.INCLUDE, "open")).first();
+        if (doc.getString("open").equals("public")) {
+            return true;
+        }
+        return false;
     }
 
 }

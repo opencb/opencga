@@ -37,8 +37,10 @@ public class CatalogConfigurationTest {
         catalogConfiguration.setDataDir("/opt/opencga/sessions");
         catalogConfiguration.setTempJobsDir("/opt/opencga/sessions/jobs");
 
-        catalogConfiguration.setAdmin("admin");
-        catalogConfiguration.setPassword("admin");
+        catalogConfiguration.setAdmin(new Admin("password", "admin@admin.com"));
+
+        catalogConfiguration.setMonitor(new Monitor());
+        catalogConfiguration.setExecution(new Execution());
 
         EmailServer emailServer = new EmailServer("localhost", "", "", "", "", false);
         catalogConfiguration.setEmailServer(emailServer);
@@ -46,8 +48,6 @@ public class CatalogConfigurationTest {
         DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
         catalogConfiguration.setDatabase(databaseCredentials);
 
-        Policies policies = new Policies().setUserCreation(Policies.UserCreation.ALWAYS);
-        catalogConfiguration.setPolicies(policies);
 //        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
 //        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));
 //
@@ -68,7 +68,7 @@ public class CatalogConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml").openStream());
+        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
         System.out.println("catalogConfiguration = " + catalogConfiguration);
     }
 }

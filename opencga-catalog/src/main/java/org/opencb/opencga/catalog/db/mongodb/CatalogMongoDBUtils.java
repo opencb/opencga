@@ -45,6 +45,18 @@ import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.PRIVAT
  */
 class CatalogMongoDBUtils {
 
+    // Special queryOptions keys
+    /**
+     * FORCE is used when deleting/removing a document. If FORCE is set to true, the document will be deleted/removed no matter if other
+     * documents might depend on that one.
+     */
+    public static final String FORCE = "force";
+    /**
+     * KEEP_OUTPUT is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been generated
+     * with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
+     */
+    public static final String KEEP_OUTPUT = "keepOutput";
+
     public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
             .collect(Collectors.toSet());
     public static final Set<String> OTHER_OPTIONS = Arrays.asList("of", "sid", "sessionId", "metadata", "includeProjects",
@@ -149,8 +161,7 @@ class CatalogMongoDBUtils {
             for (Document document : result.getResult()) {
                 document.remove("_id");
                 document.remove("_projectId");
-//                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document).toString()));
-                objects.add(objectReader.<T>readValue(restoreDotsInKeys(document.toJson())));
+                objects.add(objectReader.<T>readValue(restoreDotsInKeys(jsonObjectWriter.writeValueAsString(document))));
             }
         } catch (IOException e) {
             throw new CatalogDBException("Error parsing " + tClass.getName(), e);
@@ -361,8 +372,12 @@ class CatalogMongoDBUtils {
                 }
                 try {
                     Document document = getMongoDBDocument(map, s);
-                    for (Map.Entry<String, Object> entry : map.entrySet()) {
-                        filteredParams.put(s + "." + entry.getKey(), document.get(entry.getKey()));
+                    if (map.size() > 0) {
+                        for (Map.Entry<String, Object> entry : map.entrySet()) {
+                            filteredParams.put(s + "." + entry.getKey(), document.get(entry.getKey()));
+                        }
+                    } else {
+                        filteredParams.put(s, document);
                     }
                 } catch (CatalogDBException e) {
                     e.printStackTrace();

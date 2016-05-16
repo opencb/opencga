@@ -22,6 +22,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 /**
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
  */
+@Deprecated
 public interface StudyDBAdaptor {
 
     QueryResult getAllStudies(QueryOptions options);

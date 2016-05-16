@@ -34,7 +34,7 @@ public class CohortConverter extends GenericConverter<Cohort, Document> {
         Document document = null;
         try {
             document = Document.parse(CohortWriter.writeValueAsString(object));
-            document.put("id", document.getLong("id"));
+            document.put("id", document.getInteger("id").longValue());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

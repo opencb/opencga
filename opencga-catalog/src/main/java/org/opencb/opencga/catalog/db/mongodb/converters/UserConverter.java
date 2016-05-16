@@ -35,7 +35,6 @@ public class UserConverter extends GenericConverter<User, Document> {
         Document document = null;
         try {
             document = Document.parse(userWriter.writeValueAsString(object));
-            document.put("id", document.getLong("id"));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

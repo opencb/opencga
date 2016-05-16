@@ -33,23 +33,25 @@ public class CatalogConfiguration {
     private String logLevel;
     private String logFile;
 
+    private boolean openRegister;
+    private int userDefaultDiskQuota;
+
     private String dataDir;
     private String tempJobsDir;
+    private String toolsDir;
 
-    private String admin;
-    private String password;
-    private String adminEmail;
+    private Admin admin;
+    private Monitor monitor;
+    private Execution execution;
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
-    private Policies policies;
+//    private Policies policies;
 
-//    private authentication
 
     protected static Logger logger = LoggerFactory.getLogger(CatalogConfiguration.class);
 
     public CatalogConfiguration() {
-
     }
 
 //    public CatalogConfiguration(String defaultStorageEngineId, List<StorageEngineConfiguration> storageEngines) {
@@ -88,19 +90,22 @@ public class CatalogConfiguration {
         return catalogConfiguration;
     }
 
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CatalogConfiguration{");
         sb.append("logLevel='").append(logLevel).append('\'');
         sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", openRegister=").append(openRegister);
+        sb.append(", userDefaultDiskQuota=").append(userDefaultDiskQuota);
         sb.append(", dataDir='").append(dataDir).append('\'');
         sb.append(", tempJobsDir='").append(tempJobsDir).append('\'');
-        sb.append(", admin='").append(admin).append('\'');
-        sb.append(", password='").append(password).append('\'');
-        sb.append(", adminEmail='").append(adminEmail).append('\'');
+        sb.append(", toolsDir='").append(toolsDir).append('\'');
+        sb.append(", admin=").append(admin);
+        sb.append(", monitor=").append(monitor);
+        sb.append(", execution=").append(execution);
         sb.append(", emailServer=").append(emailServer);
         sb.append(", database=").append(database);
-        sb.append(", policies=").append(policies);
         sb.append('}');
         return sb.toString();
     }
@@ -109,79 +114,107 @@ public class CatalogConfiguration {
         return logLevel;
     }
 
-    public void setLogLevel(String logLevel) {
+    public CatalogConfiguration setLogLevel(String logLevel) {
         this.logLevel = logLevel;
+        return this;
     }
 
     public String getLogFile() {
         return logFile;
     }
 
-    public void setLogFile(String logFile) {
+    public CatalogConfiguration setLogFile(String logFile) {
         this.logFile = logFile;
+        return this;
+    }
+
+    public boolean isOpenRegister() {
+        return openRegister;
+    }
+
+    public CatalogConfiguration setOpenRegister(boolean openRegister) {
+        this.openRegister = openRegister;
+        return this;
+    }
+
+    public int getUserDefaultDiskQuota() {
+        return userDefaultDiskQuota;
+    }
+
+    public CatalogConfiguration setUserDefaultDiskQuota(int userDefaultDiskQuota) {
+        this.userDefaultDiskQuota = userDefaultDiskQuota;
+        return this;
     }
 
     public String getDataDir() {
         return dataDir;
     }
 
-    public void setDataDir(String dataDir) {
+    public CatalogConfiguration setDataDir(String dataDir) {
         this.dataDir = dataDir;
+        return this;
     }
 
     public String getTempJobsDir() {
         return tempJobsDir;
     }
 
-    public void setTempJobsDir(String tempJobsDir) {
+    public CatalogConfiguration setTempJobsDir(String tempJobsDir) {
         this.tempJobsDir = tempJobsDir;
+        return this;
     }
 
-    public String getAdmin() {
+    public String getToolsDir() {
+        return toolsDir;
+    }
+
+    public CatalogConfiguration setToolsDir(String toolsDir) {
+        this.toolsDir = toolsDir;
+        return this;
+    }
+
+    public Admin getAdmin() {
         return admin;
     }
 
-    public void setAdmin(String admin) {
+    public CatalogConfiguration setAdmin(Admin admin) {
         this.admin = admin;
+        return this;
     }
 
-    public String getPassword() {
-        return password;
+    public Monitor getMonitor() {
+        return monitor;
     }
 
-    public void setPassword(String password) {
-        this.password = password;
+    public CatalogConfiguration setMonitor(Monitor monitor) {
+        this.monitor = monitor;
+        return this;
+    }
+
+    public Execution getExecution() {
+        return execution;
+    }
+
+    public CatalogConfiguration setExecution(Execution execution) {
+        this.execution = execution;
+        return this;
     }
 
     public EmailServer getEmailServer() {
         return emailServer;
     }
 
-    public void setEmailServer(EmailServer emailServer) {
+    public CatalogConfiguration setEmailServer(EmailServer emailServer) {
         this.emailServer = emailServer;
+        return this;
     }
 
     public DatabaseCredentials getDatabase() {
         return database;
     }
 
-    public void setDatabase(DatabaseCredentials database) {
+    public CatalogConfiguration setDatabase(DatabaseCredentials database) {
         this.database = database;
-    }
-
-    public String getAdminEmail() {
-        return adminEmail;
-    }
-
-    public void setAdminEmail(String adminEmail) {
-        this.adminEmail = adminEmail;
-    }
-
-    public Policies getPolicies() {
-        return policies;
-    }
-
-    public void setPolicies(Policies policies) {
-        this.policies = policies;
+        return this;
     }
 }

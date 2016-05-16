@@ -18,8 +18,8 @@ package org.opencb.opencga.server.ws;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.opencb.datastore.core.QueryResponse;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.Project;
 
 import javax.ws.rs.client.WebTarget;
@@ -61,7 +61,7 @@ public class ProjectWSServerTest {
                 .queryParam("organization", "organization")
                 .request().get(String.class);
 
-        QueryResponse<QueryResult<Project>> queryResponse = WSServerTestUtils.parseResult(json, Project.class);
+        QueryResponse<Project> queryResponse = WSServerTestUtils.parseResult(json, Project.class);
 
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
@@ -84,7 +84,7 @@ public class ProjectWSServerTest {
         String json = webTarget.path("projects").path(String.valueOf(projectId)).path("info")
                 .queryParam("sid", sessionId).request().get(String.class);
 
-        QueryResponse<QueryResult<Project>> queryResponse = WSServerTestUtils.parseResult(json, Project.class);
+        QueryResponse<Project> queryResponse = WSServerTestUtils.parseResult(json, Project.class);
         assertEquals("Expected [], actual [" + queryResponse.getError() + "]", "", queryResponse.getError());
         System.out.println("\nOUTPUT PARAMS");
         Project project = queryResponse.getResponse().get(0).first();

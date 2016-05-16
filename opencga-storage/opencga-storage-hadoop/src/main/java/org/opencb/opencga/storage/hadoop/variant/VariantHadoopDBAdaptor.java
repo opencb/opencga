@@ -11,11 +11,11 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
-import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -149,27 +149,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public boolean close() {
-        boolean closeCorrect = true;
+    public void close() throws IOException {
         try {
             if (!hbaseCon.isClosed()) {
                 hbaseCon.close();
             }
-        } catch (IOException e) {
-            getLog().error("Problems closing connection", e);
-            closeCorrect = false;
-        }
-
-        try {
             if (phoenixCon != null && !phoenixCon.isClosed()) {
                 phoenixCon.close();
             }
         } catch (SQLException e) {
             getLog().error("Problems closing connection", e);
-            closeCorrect = false;
+            throw new IOException(e);
         }
-
-        return closeCorrect;
     }
 
     public static Logger getLog() {
@@ -389,6 +380,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public QueryResult groupBy(Query query, List<String> fields, QueryOptions options) {
         // TODO Auto-generated method stub
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
 

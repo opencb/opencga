@@ -31,8 +31,9 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.server.utils.VariantFetcher;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -75,8 +76,14 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
         try {
             long projectId = catalogManager.getProjectId(projectIdStr);
-            QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId,
-                    creationDate, description, new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
+            QueryResult queryResult;
+            if (status != null && !status.isEmpty()) {
+                queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId, creationDate, description,
+                        new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
+            } else {
+                queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId, creationDate, description, new Status(),
+                        cipher, null, null, null, null, null, queryOptions, sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -155,8 +162,25 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{studyId}/summary")
+    @ApiOperation(value = "Summary with the general stats of a study", position = 3)
+    public Response summary(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
+        try {
+            String[] studyIdArray = studyIdsStr.split(",");
+            List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
+            for (String studyIdStr : studyIdArray) {
+                long studyId = catalogManager.getStudyId(studyIdStr);
+                queryResults.add(catalogManager.getStudySummary(studyId, sessionId, queryOptions));
+            }
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/search")
-    @ApiOperation(value = "Search studies", position = 3)
+    @ApiOperation(value = "Search studies", position = 4)
     public Response getAllStudies(@ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
@@ -185,7 +209,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @POST
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 3, notes = "Campos aceptados: LALALALA")
+    @ApiOperation(value = "Search studies", position = 5, notes = "Campos aceptados: LALALALA")
     public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
         try {
             QueryOptions qOptions = new QueryOptions(queryOptions);
@@ -241,7 +265,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/variants")
-    @ApiOperation(value = "Study samples information", position = 6)
+    @ApiOperation(value = "Study variants data", position = 6)
     public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStrCvs,
                                 @ApiParam(value = "CSV list of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "CSV list of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -287,7 +311,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             for (String studyIdStr : studyIds) {
                 long studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(variantFetcher.variantsStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
+                queryResults.add(variantFetcher.getVariantsPerStudy(studyId, region, histogram, groupBy, interval, sessionId, queryOptions));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {

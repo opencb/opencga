@@ -40,12 +40,11 @@ public class Sample {
     }
 
     public Sample(long id, String name, String source, long individualId, String description) {
-        this(id, name, source, individualId, description, Collections.<AclEntry>emptyList(), new LinkedList<AnnotationSet>(), new
-                HashMap<String, Object>());
+        this(id, name, source, individualId, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, long individualId, String description,
-                  List<AclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Sample(long id, String name, String source, long individualId, String description, List<AclEntry> acl,
+                  List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;

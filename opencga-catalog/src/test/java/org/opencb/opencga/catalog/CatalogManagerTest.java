@@ -17,10 +17,7 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -59,6 +56,10 @@ public class CatalogManagerTest extends GenericTest {
     public final static String PASSWORD = "asdf";
     @Rule
     public ExpectedException thrown = ExpectedException.none();
+
+    @Rule
+    public CatalogManagerExternalResource catalogManagerResource = new CatalogManagerExternalResource();
+
     protected CatalogManager catalogManager;
     protected String sessionIdUser;
     protected String sessionIdUser2;
@@ -102,85 +103,18 @@ public class CatalogManagerTest extends GenericTest {
         return Paths.get(fileTestName).toFile();
     }
 
-    public static void clearCatalog(Properties properties) throws IOException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : properties.getProperty(CatalogManager.CATALOG_DB_HOSTS, "localhost").split(",")) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-        db.getDb().drop();
-        mongoManager.close(properties.getProperty(CatalogManager.CATALOG_DB_DATABASE));
-
-        Path rootdir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_MAIN_ROOTDIR)));
-        deleteFolderTree(rootdir.toFile());
-        if (properties.containsKey(CatalogManager.CATALOG_JOBS_ROOTDIR)) {
-            Path jobsDir = Paths.get(URI.create(properties.getProperty(CatalogManager.CATALOG_JOBS_ROOTDIR)));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
-    }
-
-    public static void clearCatalog(CatalogConfiguration catalogConfiguration) throws IOException {
-        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
-            if (hostPort.contains(":")) {
-                String[] split = hostPort.split(":");
-                Integer port = Integer.valueOf(split[1]);
-                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
-            } else {
-                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
-            }
-        }
-        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
-        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
-        db.getDb().drop();
-        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
-
-        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
-        deleteFolderTree(rootdir.toFile());
-        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
-            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
-            if (jobsDir.toFile().exists()) {
-                deleteFolderTree(jobsDir.toFile());
-            }
-        }
-    }
-
-    public static void deleteFolderTree(java.io.File folder) {
-        java.io.File[] files = folder.listFiles();
-        if (files != null) {
-            for (java.io.File f : files) {
-                if (f.isDirectory()) {
-                    deleteFolderTree(f);
-                } else {
-                    f.delete();
-                }
-            }
-        }
-        folder.delete();
-    }
 
     @Before
     public void setUp() throws IOException, CatalogException {
-        CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration.yml")
-                .openStream());
+        catalogManager = catalogManagerResource.getCatalogManager();
+        setUpCatalogManager(catalogManager);
+    }
 
-        catalogConfiguration.getDatabase().setDatabase("opencga_server_test");
-        clearCatalog(catalogConfiguration);
+    public void setUpCatalogManager(CatalogManager catalogManager) throws IOException, CatalogException {
 
-        catalogManager = new CatalogManager(catalogConfiguration);
-
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null);
-        catalogManager.createUser("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null);
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
+        catalogManager.createUser("user2", "User2 Name", "mail2@ebi.ac.uk", PASSWORD, "", null, null);
+        catalogManager.createUser("user3", "User3 Name", "user.2@e.mail", PASSWORD, "ACME", null, null);
 
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getString("sessionId");
@@ -318,7 +252,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateExistingUser() throws Exception {
         thrown.expect(CatalogException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null);
+        catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
     }
 
     @Test
@@ -574,7 +508,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_GROUP, "user2", sessionIdUser);
+        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_ROLE, "user2", sessionIdUser);
         catalogManager.shareFile(Long.toString(testFolder.getId()), "user2", new AclEntry("user2", false, true, false, false), sessionIdUser);
         catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
                 sessionIdUser2);

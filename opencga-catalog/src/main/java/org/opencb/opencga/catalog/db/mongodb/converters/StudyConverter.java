@@ -35,7 +35,7 @@ public class StudyConverter extends GenericConverter<Study, Document> {
         Document document = null;
         try {
             document = Document.parse(studyWriter.writeValueAsString(object));
-            document.put("id", document.getLong("id"));
+            document.put("id", document.getInteger("id").longValue());
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

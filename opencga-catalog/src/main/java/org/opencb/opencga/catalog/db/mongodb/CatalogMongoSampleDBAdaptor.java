@@ -33,7 +33,6 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -41,8 +40,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static java.lang.Math.toIntExact;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -659,6 +658,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -670,11 +672,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         QueryResult<Sample> sampleQueryResult = sampleCollection.find(bson, sampleConverter, qOptions);
         logger.debug("Sample get: query : {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
                 sampleQueryResult.getDbTime());
-        return endQuery("Get sample", startTime, sampleQueryResult.getResult());
+        return endQuery("Get sample", startTime, sampleQueryResult);
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -722,31 +727,17 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     // TODO: Check clean
     public QueryResult<Sample> clean(long id) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            // Check if the sample is being used anywhere
-            checkInUse(id);
-            QueryResult<Long> delete = delete(query, false);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Sample id '{}' does not exist", id);
-        }
-        return sampleQueryResult;
+        throw new UnsupportedOperationException("Clean is not yet implemented.");
     }
 
-
-
-
-
     @Override
-    public QueryResult<Sample> delete(long id, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
-        checkSampleId(id);
-        delete(new Query(QueryParams.ID.key(), id), force);
-        return endQuery("Delete sample", startTime, getSample(id, null));
+    public QueryResult<Sample> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+//        long startTime = startQuery();
+//        checkSampleId(id);
+//        QueryResult<Sample> sample = getSample(id, null);
+//        delete(new Query(QueryParams.ID.key(), id), force);
+//        return endQuery("Delete sample", startTime, sample);
         /*
 
         Query query = new Query(QueryParams.ID.key(), id);
@@ -766,35 +757,36 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, boolean force) throws CatalogDBException {
-        long startTime = startQuery();
-
-        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-        List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())
-                .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
-
-        List<Long> sampleIdsToRemove = new ArrayList<>();
-        for (Sample sample : samples) {
-            try {
-                checkInUse(sample.getId());
-                sampleIdsToRemove.add(sample.getId());
-            } catch (CatalogDBException e) {
-                logger.info(e.getMessage());
-            }
-        }
-
-        QueryResult<UpdateResult> deleted;
-        if (sampleIdsToRemove.size() > 0) {
-            deleted = sampleCollection.update(parseQuery(new Query(QueryParams.ID.key(), sampleIdsToRemove)),
-                    Updates.combine(
-                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-                    new QueryOptions());
-        } else {
-            throw CatalogDBException.deleteError("Sample");
-        }
-
-        return endQuery("Delete sample", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+//        long startTime = startQuery();
+//
+//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+//        List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())
+//                .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
+//
+//        List<Long> sampleIdsToRemove = new ArrayList<>();
+//        for (Sample sample : samples) {
+//            try {
+//                checkInUse(sample.getId());
+//                sampleIdsToRemove.add(sample.getId());
+//            } catch (CatalogDBException e) {
+//                logger.info(e.getMessage());
+//            }
+//        }
+//
+//        QueryResult<UpdateResult> deleted;
+//        if (sampleIdsToRemove.size() > 0) {
+//            deleted = sampleCollection.update(parseQuery(new Query(QueryParams.ID.key(), sampleIdsToRemove)),
+//                    Updates.combine(
+//                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
+//                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                    new QueryOptions());
+//        } else {
+//            throw CatalogDBException.deleteError("Sample");
+//        }
+//
+//        return endQuery("Delete sample", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
         /*
         long startTime = startQuery();
 
@@ -809,6 +801,16 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             return endQuery("delete sample", startTime, Collections.singletonList(deleteResult.getDeletedCount()));
         }
         */
+    }
+
+    @Override
+    public QueryResult<Sample> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Remove not yet implemented.");
     }
 
     @Override
@@ -921,7 +923,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     case ANNOTATION_SET_ID:
                         addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
-
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
                         break;
@@ -940,5 +941,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         } else {
             return new Document();
         }
+    }
+
+    public MongoDBCollection getSampleCollection() {
+        return sampleCollection;
     }
 }
