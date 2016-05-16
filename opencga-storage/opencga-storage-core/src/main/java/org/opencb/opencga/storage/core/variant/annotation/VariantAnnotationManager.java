@@ -24,6 +24,8 @@ import org.opencb.biodata.formats.io.FormatReaderWrapper;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -42,7 +44,9 @@ import org.opencb.opencga.storage.core.variant.io.avro.VariantAnnotationJsonData
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.nio.file.Path;
@@ -317,6 +321,34 @@ public class VariantAnnotationManager {
                     throw new StorageManagerException("Error executing ParallelTaskRunner", e);
                 }
             } catch (NoSuchMethodException e) {
+                throw new RuntimeException(e); // This should never happen!
+            }
+        }else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
+            try {
+                InputStream is = new FileInputStream(fileName);
+                VariantSource source = new VariantSource("fileName", "f", "s", "s");
+                ParallelTaskRunner<Variant, Void> ptr;
+                try {
+                    ptr = new ParallelTaskRunner<>(
+                            new VariantVcfHtsjdkReader(is,source) ,
+                            variantList -> {
+                                for (Variant b : variantList) {
+                                    Region region = new Region(normalizeChromosome(b.getChromosome()), b.getStart(), b.getEnd());
+                                    Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                    ObjectMap annotation = new ObjectMap("annotation", b.getAnnotation());
+                                    dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
+                                }
+                                return Collections.emptyList();
+                            }, null, config);
+                } catch (Exception e) {
+                    throw new StorageManagerException("Unable to create ParallelTaskRunner", e);
+                }
+                try {
+                    ptr.run();
+                } catch (ExecutionException e) {
+                    throw new StorageManagerException("Error executing ParallelTaskRunner", e);
+                }
+            } catch (Exception e) {
                 throw new RuntimeException(e); // This should never happen!
             }
         } else {
