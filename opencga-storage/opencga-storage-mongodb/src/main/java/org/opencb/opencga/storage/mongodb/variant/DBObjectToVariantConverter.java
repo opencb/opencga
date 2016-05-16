@@ -15,6 +15,14 @@ import org.opencb.datastore.core.ComplexTypeConverter;
 /**
  *
  * @author Cristina Yenyxe Gonzalez Garcia <cyenyxe@ebi.ac.uk>
+ * @author Jose Miguel Mut <jmmut@ebi.ac.uk>
+ *
+ * Design policies:
+ *  - IDS
+ *      - The ids of a Variant will NOT be put in the DBObject. Using addToSet(ids) and
+ *              setOnInsert(without ids) avoids overwriting ids.
+ *      - In a DBObject, both an empty ids array or no ids property, converts to a Variant with an
+ *              empty set of ids.
  */
 public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant, DBObject> {
 
@@ -97,6 +105,8 @@ public class DBObjectToVariantConverter implements ComplexTypeConverter<Variant,
         if (object.containsField(IDS_FIELD)) {
             Object ids = object.get(IDS_FIELD);
             variant.setIds(new HashSet<String>(((Collection<String>) ids)));
+        } else {
+            variant.setIds(new HashSet<String>());
         }
 
         // Transform HGVS: List of map entries -> Map of lists
