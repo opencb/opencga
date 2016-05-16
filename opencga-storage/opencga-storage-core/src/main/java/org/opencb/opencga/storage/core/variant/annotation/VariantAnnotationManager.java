@@ -191,8 +191,6 @@ public class VariantAnnotationManager {
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
-        } catch (IOException e) {
-            throw e;
         } catch (Exception e) {
             throw new IOException(e);
         }
