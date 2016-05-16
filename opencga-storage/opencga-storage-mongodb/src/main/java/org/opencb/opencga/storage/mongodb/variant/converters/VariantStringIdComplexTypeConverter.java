@@ -60,16 +60,16 @@ public class VariantStringIdComplexTypeConverter implements ComplexTypeConverter
                 .append(StringUtils.leftPad(Integer.toString(start), 10, " "))
                 .append(':');
 
-        if (alternate.length() > Variant.SV_THRESHOLD) {
-            stringBuilder.append(new String(CryptoUtils.encryptSha1(alternate)));
-        } else if (!alternate.equals("-")) {
-            stringBuilder.append(alternate);
-        }
-        stringBuilder.append(':');
         if (reference.length() > Variant.SV_THRESHOLD) {
             stringBuilder.append(new String(CryptoUtils.encryptSha1(reference)));
         } else if (!reference.equals("-")) {
             stringBuilder.append(reference);
+        }
+        stringBuilder.append(':');
+        if (alternate.length() > Variant.SV_THRESHOLD) {
+            stringBuilder.append(new String(CryptoUtils.encryptSha1(alternate)));
+        } else if (!alternate.equals("-")) {
+            stringBuilder.append(alternate);
         }
         return stringBuilder.toString();
     }
