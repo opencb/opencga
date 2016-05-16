@@ -201,12 +201,12 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void getSampleAcl() throws Exception {
-        QueryResult<Map<String, SampleAcl>> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user1.getId()));
-        SampleAcl acl = sampleAcl.first().get(user1.getId());
+        QueryResult<SampleAcl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user1.getId());
+        SampleAcl acl = sampleAcl.first();
         assertNotNull(acl);
         assertEquals(acl_s1_user1.getPermissions(), acl.getPermissions());
 
-        acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user2.getId())).first().get(user2.getId());
+        acl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first();
         assertNotNull(acl);
         assertEquals(acl_s1_user2.getPermissions(), acl.getPermissions());
     }
@@ -219,7 +219,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void getSampleAclFromUserWithoutAcl() throws Exception {
-        QueryResult<Map<String, SampleAcl>> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user3.getId()));
+        QueryResult<SampleAcl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
         assertTrue(sampleAcl.getResult().isEmpty());
     }
 
@@ -228,16 +228,16 @@ public class CatalogMongoSampleDBAdaptorTest {
         SampleAcl acl_s1_user3 = new SampleAcl(Arrays.asList(user3.getId()), Collections.emptyList());
 
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3);
-        QueryResult<Map<String, SampleAcl>> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user3.getId()));
+        QueryResult<SampleAcl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
         assertFalse(sampleAcl.getResult().isEmpty());
-        assertEquals(acl_s1_user3.getPermissions(), sampleAcl.first().get(user3.getId()).getPermissions());
+        assertEquals(acl_s1_user3.getPermissions(), sampleAcl.first().getPermissions());
 
         SampleAcl acl_s1_user4 = new SampleAcl(Arrays.asList(user4.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4);
 
-        sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user4.getId()));
+        sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user4.getId());
         assertFalse(sampleAcl.getResult().isEmpty());
-        assertEquals(acl_s1_user4.getPermissions(), sampleAcl.first().get(user4.getId()).getPermissions());
+        assertEquals(acl_s1_user4.getPermissions(), sampleAcl.first().getPermissions());
     }
 
     @Test
@@ -254,16 +254,14 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void setSampleAclOverride() throws Exception {
+        assertEquals(acl_s1_user2.getPermissions(),
+                catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first().getPermissions());
 
-        assertEquals(acl_s1_user2, catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first());
-
-        AclEntry newAcl = new AclEntry(user2.getId(), false, true, false, true);
-        assertTrue(!acl_s1_user2.equals(newAcl));
-
+        SampleAcl newAcl = new SampleAcl(Arrays.asList(user2.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
+        assertTrue(!acl_s1_user2.getPermissions().equals(newAcl.getPermissions()));
         catalogSampleDBAdaptor.setSampleAcl(s1.getId(), newAcl);
 
-        assertEquals(newAcl, catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first());
-
+        assertEquals(newAcl.getPermissions(), catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first().getPermissions());
     }
 
     @Test

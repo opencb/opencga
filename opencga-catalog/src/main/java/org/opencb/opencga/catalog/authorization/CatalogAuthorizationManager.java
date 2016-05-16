@@ -233,7 +233,14 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID);
-        Map<String, SampleAcl> userAclMap = sampleDBAdaptor.getSampleAcl(sampleId, userIds).first();
+        List<SampleAcl> sampleAclList = sampleDBAdaptor.getSampleAcl(sampleId, userIds).getResult();
+
+        Map<String, SampleAcl> userAclMap = new HashMap<>();
+        for (SampleAcl sampleAcl : sampleAclList) {
+            for (String member : sampleAcl.getUsers()) {
+                userAclMap.put(member, sampleAcl);
+            }
+        }
 
         return resolveSamplePermissions(studyId, userId, groupId, userAclMap);
     }

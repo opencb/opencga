@@ -119,17 +119,35 @@ class CatalogMongoDBUtils {
     public static void checkMembers(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
             throws CatalogDBException {
         for (String member : members) {
-            if (member.equals("*") || member.equals("anonymous")) {
-                return;
-            } else if (member.startsWith("@")) {
-                String groupId = member.substring(1);
-                QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
-                if (queryResult.getNumResults() == 0) {
-                    throw CatalogDBException.idNotFound("Group", groupId);
-                }
-            } else {
-                dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
+            checkMember(dbAdaptorFactory, studyId, member);
+        }
+    }
+
+    /**
+     * Checks if the member is valid.
+     *
+     * The "member" can be:
+     *  - '*' referring to all the users.
+     *  - 'anonymous' referring to the anonymous user.
+     *  - '@{groupId}' referring to a {@link Group}.
+     *  - '{userId}' referring to a specific user.
+     * @param dbAdaptorFactory dbAdaptorFactory
+     * @param studyId studyId
+     * @param member member
+     * @throws CatalogDBException CatalogDBException
+     */
+    public static void checkMember(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, String member)
+            throws CatalogDBException {
+        if (member.equals("*") || member.equals("anonymous")) {
+            return;
+        } else if (member.startsWith("@")) {
+            String groupId = member.substring(1);
+            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
+            if (queryResult.getNumResults() == 0) {
+                throw CatalogDBException.idNotFound("Group", groupId);
             }
+        } else {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
         }
     }
 
