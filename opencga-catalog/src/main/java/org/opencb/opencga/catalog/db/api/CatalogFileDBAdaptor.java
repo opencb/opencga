@@ -21,7 +21,9 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +58,8 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACL_USERS("acls.users", TEXT_ARRAY, ""),
-        ACL_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
 //        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
 //        ACL_READ("acls.read", BOOLEAN, ""),
 //        ACL_WRITE("acls.write", BOOLEAN, ""),
@@ -209,16 +211,6 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      */
 
     /***
-     * Retrieve the AclEntry of the user in the given file.
-     *
-     * @param fileId File id where the permissions will be checked.
-     * @param userId User id of the user to be checked.
-     * @return AclEntry of the user in the file if any.
-     * @throws CatalogDBException when the userId or the fileId does not exist.
-     */
-    QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException;
-
-    /***
      * Retrieves the AclEntries of the files and users given.
      *
      * @param studyId The id of the study where the files belong to.
@@ -227,12 +219,24 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A map of files containing a map of user - AclEntries.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+    QueryResult<Map<String, Map<String, FileAcl>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
+
+    default QueryResult<FileAcl> getFileAcl(long fileId, String member) throws CatalogDBException {
+        return getFileAcl(fileId, Arrays.asList(member));
+    }
+
+    QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
+
+    QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl) throws CatalogDBException;
+
+    void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {

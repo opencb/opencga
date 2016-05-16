@@ -5,7 +5,6 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
-import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -18,7 +17,10 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.AclEntry;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -26,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
@@ -151,28 +154,102 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException {
+    public QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
-        checkFileId(fileId);
-        //dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
-        checkAclUserId(dbAdaptorFactory, userId, getStudyIdByFileId(fileId));
-        Query query = new Query(QueryParams.ID.key(), fileId);
-        Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
-        QueryOptions options = new QueryOptions(MongoDBCollection.ELEM_MATCH, projection);
-/*
-        QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put("elemMatch", Projections.elemMatch("acl", Filters.eq("userId", userId)));
-        queryOptions.put("include", Projections.include("acl", "userId"));
-*/
 
-        List<AclEntry> acl = get(query, options).getResult().get(0).getAcls();
-        int dbTime = (int) (System.currentTimeMillis() - startTime);
-        logger.debug("getFileAcl for file {} and user {}, dbTime: {} ", fileId, userId, dbTime);
-        return endQuery("Get file ACL", startTime, acl);
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, fileId));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<FileAcl> fileAcl = null;
+        QueryResult<Document> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        File file = fileConverter.convertToDataModelType(aggregate.first());
+
+        if (file != null) {
+            fileAcl = file.getAcls();
+        }
+
+        return endQuery("get file Acl", startTime, fileAcl);
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+    public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByFileId(fileId), acl.getUsers());
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<FileAcl> fileAcls = getFileAcl(fileId, acl.getUsers());
+        if (fileAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
+            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (FileAcl fileAcl : fileAcls.getResult()) {
+                for (String member : fileAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetFileAcl(fileId, usersToOverride);
+        }
+
+        // Check if the permissions found on acl already exist on file id
+        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Bson update;
+        if (count(query).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            query = new Query(QueryParams.ID.key(), fileId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
+        }
+
+        QueryResult<UpdateResult> updateResult = fileCollection.update(parseQuery(query), update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setFileAcl: An error occurred when trying to share file " + fileId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+
+        return endQuery("setFileAcl", startTime, get(query, queryOptions).first().getAcls());
+    }
+
+    @Override
+    public void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException {
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByFileId(fileId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, fileId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = fileCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetFileAcl: An error occurred when trying to stop sharing file " + fileId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible fileAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), fileId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        fileCollection.update(queryBson, update, null);
+    }
+
+    @Override
+    public QueryResult<Map<String, Map<String, FileAcl>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException {
 
         long startTime = startQuery();
@@ -191,16 +268,23 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(result);
-        Map<String, Map<String, AclEntry>> pathAclMap = new HashMap<>();
+        Map<String, Map<String, FileAcl>> pathAclMap = new HashMap<>();
         for (File file : files) {
 //            AclEntry acl = file.getAcls().get(0);
-            for (AclEntry acl : file.getAcls()) {
+            for (FileAcl acl : file.getAcls()) {
                 if (pathAclMap.containsKey(file.getPath())) {
-                    pathAclMap.get(file.getPath()).put(acl.getUserId(), acl);
+                    Map<String, FileAcl> userAclMap = pathAclMap.get(file.getPath());
+                    for (String user : acl.getUsers()) {
+                        if (!userAclMap.containsKey(user)) {
+                            userAclMap.put(user, acl);
+                        }
+                    }
                 } else {
-                    HashMap<String, AclEntry> map = new HashMap<>();
-                    map.put(acl.getUserId(), acl);
-                    pathAclMap.put(file.getPath(), map);
+                    HashMap<String, FileAcl> userAclMap = new HashMap<>();
+                    for (String user : acl.getUsers()) {
+                        userAclMap.put(user, acl);
+                    }
+                    pathAclMap.put(file.getPath(), userAclMap);
                 }
             }
         }
@@ -526,53 +610,57 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
+    @Deprecated
     public QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException {
-        long startTime = startQuery();
-        String userId = newAcl.getUserId();
-
-        checkAclUserId(dbAdaptorFactory, userId, getStudyIdByFileId(fileId));
-
-        //DBObject newAclObject = getDbObject(newAcl, "ACL");
-        Document newAclObject = getMongoDBDocument(newAcl, "ACL");
-
-        List<AclEntry> aclList = getFileAcl(fileId, userId).getResult();
-        Bson query;
-        Bson update;
-        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
-            //query = new BasicDBObject(PRIVATE_ID, fileId);
-            // update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
-            query = Filters.eq(PRIVATE_ID, fileId);
-            update = Updates.push("acl", newAclObject);
-        } else {    // there is already another ACL: overwrite
-            /*query = BasicDBObjectBuilder
-                    .start(PRIVATE_ID, fileId)
-                    .append("acl.userId", userId).get();
-            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));*/
-            query = Filters.and(Filters.eq(PRIVATE_ID, fileId), Filters.eq("acl.userId", userId));
-            update = Updates.set("acl.$", newAclObject);
-        }
-        QueryResult<UpdateResult> queryResult = fileCollection.update(query, update, null);
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.idNotFound("File", fileId);
-        }
-
-        return endQuery("setFileAcl", startTime, getFileAcl(fileId, userId));
+        return null;
+//        long startTime = startQuery();
+//        String userId = newAcl.getUserId();
+//
+//        checkAclUserId(dbAdaptorFactory, userId, getStudyIdByFileId(fileId));
+//
+//        //DBObject newAclObject = getDbObject(newAcl, "ACL");
+//        Document newAclObject = getMongoDBDocument(newAcl, "ACL");
+//
+//        List<AclEntry> aclList = getFileAcl(fileId, userId).getResult();
+//        Bson query;
+//        Bson update;
+//        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
+//            //query = new BasicDBObject(PRIVATE_ID, fileId);
+//            // update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+//            query = Filters.eq(PRIVATE_ID, fileId);
+//            update = Updates.push("acl", newAclObject);
+//        } else {    // there is already another ACL: overwrite
+//            /*query = BasicDBObjectBuilder
+//                    .start(PRIVATE_ID, fileId)
+//                    .append("acl.userId", userId).get();
+//            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));*/
+//            query = Filters.and(Filters.eq(PRIVATE_ID, fileId), Filters.eq("acl.userId", userId));
+//            update = Updates.set("acl.$", newAclObject);
+//        }
+//        QueryResult<UpdateResult> queryResult = fileCollection.update(query, update, null);
+//        if (queryResult.first().getModifiedCount() != 1) {
+//            throw CatalogDBException.idNotFound("File", fileId);
+//        }
+//
+//        return endQuery("setFileAcl", startTime, getFileAcl(fileId, userId));
     }
 
     @Override
+    @Deprecated
     public QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<AclEntry> fileAcl = getFileAcl(fileId, userId);
-//        DBObject query = new BasicDBObject(PRIVATE_ID, fileId);
-//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
-//        QueryResult queryResult = fileCollection.update(query, update, null);
-
-        Bson query = Filters.eq(PRIVATE_ID, fileId);
-        Bson update = Updates.pull("acl", new Document("userId", userId));
-        QueryResult<UpdateResult> queryResult = fileCollection.update(query, update, null);
-
-        return endQuery("unsetFileAcl", startTime, fileAcl);
+        return null;
+//        long startTime = startQuery();
+//
+//        QueryResult<AclEntry> fileAcl = getFileAcl(fileId, userId);
+////        DBObject query = new BasicDBObject(PRIVATE_ID, fileId);
+////        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+////        QueryResult queryResult = fileCollection.update(query, update, null);
+//
+//        Bson query = Filters.eq(PRIVATE_ID, fileId);
+//        Bson update = Updates.pull("acl", new Document("userId", userId));
+//        QueryResult<UpdateResult> queryResult = fileCollection.update(query, update, null);
+//
+//        return endQuery("unsetFileAcl", startTime, fileAcl);
     }
 
 

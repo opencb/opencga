@@ -42,7 +42,10 @@ public class JobAcl {
 
     public JobAcl(List<String> users, List<String> permissions) {
         this.users = users;
-        this.permissions.addAll(permissions.stream().map(JobPermissions::valueOf).collect(Collectors.toList()));
+        this.permissions = EnumSet.noneOf(JobPermissions.class);
+        if (permissions.size() > 0) {
+            this.permissions.addAll(permissions.stream().map(JobPermissions::valueOf).collect(Collectors.toList()));
+        }
     }
 
     public List<String> getUsers() {

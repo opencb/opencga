@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.mongodb.DuplicateKeyException;
 import com.mongodb.MongoWriteException;
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.UpdateResult;
@@ -20,6 +21,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.acls.CohortAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +89,101 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException {
         return delete(cohortId, queryOptions);
+    }
+
+    @Override
+    public QueryResult<CohortAcl> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, cohortId));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<CohortAcl> cohortAcl = null;
+        QueryResult<Document> aggregate = cohortCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
+
+        if (cohort != null) {
+            cohortAcl = cohort.getAcls();
+        }
+
+        return endQuery("get cohort Acl", startTime, cohortAcl);
+    }
+
+    @Override
+    public QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByCohortId(cohortId), acl.getUsers());
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<CohortAcl> cohortAcls = getCohortAcl(cohortId, acl.getUsers());
+        if (cohortAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
+            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (CohortAcl cohortAcl : cohortAcls.getResult()) {
+                for (String member : cohortAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetCohortAcl(cohortId, usersToOverride);
+        }
+
+        // Check if the permissions found on acl already exist on cohort id
+        Query query = new Query(QueryParams.ID.key(), cohortId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Bson update;
+        if (count(query).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            query = new Query(QueryParams.ID.key(), cohortId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "JobAcl")));
+        }
+
+        QueryResult<UpdateResult> updateResult = cohortCollection.update(parseQuery(query), update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setCohortAcl: An error occurred when trying to share cohort " + cohortId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+
+        return endQuery("setCohortAcl", startTime, get(query, queryOptions).first().getAcls());
+    }
+
+    @Override
+    public void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByCohortId(cohortId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, cohortId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = cohortCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetCohortAcl: An error occurred when trying to stop sharing cohort " + cohortId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible cohortAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), cohortId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        cohortCollection.update(queryBson, update, null);
     }
 
     @Override

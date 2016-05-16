@@ -282,44 +282,45 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private Map<String, Map<String, AclEntry>> getFileAclEntries(StudyAuthenticationContext studyAuthenticationContext, String userId,
                                                                  long studyId, String groupId, List<String> paths)
             throws CatalogDBException {
-        for (Iterator<String> iterator = paths.iterator(); iterator.hasNext();) {
-            String path = iterator.next();
-            if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
-                Map<String, AclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
-                if (userAclMap.containsKey(userId) && (groupId == null || userAclMap.containsKey(groupId))
-                        && userAclMap.containsKey(AclEntry.USER_OTHERS_ID)) {
-                    iterator.remove();
-                }
-            }
-        }
-        if (!paths.isEmpty()) {
-            // We make a query to obtain the ACLs of all the paths for userId, groupId and *
-            List<String> userIds = (groupId == null)
-                    ? Arrays.asList(userId, AclEntry.USER_OTHERS_ID)
-                    : Arrays.asList(userId, groupId, AclEntry.USER_OTHERS_ID);
-            Map<String, Map<String, AclEntry>> map = fileDBAdaptor.getFilesAcl(studyId, paths, userIds).first();
-            for (String path : paths) {
-                Map<String, AclEntry> stringAclEntryMap;
-                if (map.containsKey(path)) {
-                    stringAclEntryMap = map.get(path);
-                } else {
-                    stringAclEntryMap = new HashMap<>();
-                }
-                stringAclEntryMap.putIfAbsent(userId, null);
-                if (groupId != null) {
-                    stringAclEntryMap.putIfAbsent(groupId, null);
-                }
-                stringAclEntryMap.putIfAbsent(AclEntry.USER_OTHERS_ID, null);
-
-                if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
-                    studyAuthenticationContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
-                } else {
-                    studyAuthenticationContext.pathUserAclMap.put(path, stringAclEntryMap);
-                }
-            }
-        }
-
-        return studyAuthenticationContext.pathUserAclMap;
+        return null;
+//        for (Iterator<String> iterator = paths.iterator(); iterator.hasNext();) {
+//            String path = iterator.next();
+//            if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
+//                Map<String, AclEntry> userAclMap = studyAuthenticationContext.pathUserAclMap.get(path);
+//                if (userAclMap.containsKey(userId) && (groupId == null || userAclMap.containsKey(groupId))
+//                        && userAclMap.containsKey(AclEntry.USER_OTHERS_ID)) {
+//                    iterator.remove();
+//                }
+//            }
+//        }
+//        if (!paths.isEmpty()) {
+//            // We make a query to obtain the ACLs of all the paths for userId, groupId and *
+//            List<String> userIds = (groupId == null)
+//                    ? Arrays.asList(userId, AclEntry.USER_OTHERS_ID)
+//                    : Arrays.asList(userId, groupId, AclEntry.USER_OTHERS_ID);
+//            Map<String, Map<String, AclEntry>> map = fileDBAdaptor.getFilesAcl(studyId, paths, userIds).first();
+//            for (String path : paths) {
+//                Map<String, AclEntry> stringAclEntryMap;
+//                if (map.containsKey(path)) {
+//                    stringAclEntryMap = map.get(path);
+//                } else {
+//                    stringAclEntryMap = new HashMap<>();
+//                }
+//                stringAclEntryMap.putIfAbsent(userId, null);
+//                if (groupId != null) {
+//                    stringAclEntryMap.putIfAbsent(groupId, null);
+//                }
+//                stringAclEntryMap.putIfAbsent(AclEntry.USER_OTHERS_ID, null);
+//
+//                if (studyAuthenticationContext.pathUserAclMap.containsKey(path)) {
+//                    studyAuthenticationContext.pathUserAclMap.get(path).putAll(stringAclEntryMap);
+//                } else {
+//                    studyAuthenticationContext.pathUserAclMap.put(path, stringAclEntryMap);
+//                }
+//            }
+//        }
+//
+//        return studyAuthenticationContext.pathUserAclMap;
     }
 
     /**
@@ -405,66 +406,68 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * ACL Management methods
      */
 
+    @Deprecated
     @Override
     public QueryResult setFileACL(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
-
-        long startTime = System.currentTimeMillis();
-        ParamUtils.checkObj(acl, "acl");
-        ParamUtils.checkParameter(sessionId, "sessionId");
-
-        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        List<Long> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
-        for (Long studyId : studyIdsBySampleIds) {
-            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
-        }
-
-        List<AclEntry> aclEntries = new ArrayList<>();
-
-        String[] fileIdArray = fileIds.split(",");
-        String[] userIdArray = userIds.split(",");
-
-        for (String userId : userIdArray) {
-            acl.setUserId(userId);
-            for (String fileIdValue : fileIdArray) {
-                int fileId = Integer.valueOf(fileIdValue);
-                aclEntries.add(fileDBAdaptor.setFileAcl(fileId, acl).first());
-                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userSessionId, new ObjectMap("acl", acl), "setAcls", null);
-            }
-        }
-
-        return new QueryResult<>("Set File ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
-                "", "", aclEntries);
+        return null;
+//        long startTime = System.currentTimeMillis();
+//        ParamUtils.checkObj(acl, "acl");
+//        ParamUtils.checkParameter(sessionId, "sessionId");
+//
+//        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        List<Long> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
+//        for (Long studyId : studyIdsBySampleIds) {
+//            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
+//        }
+//
+//        List<AclEntry> aclEntries = new ArrayList<>();
+//
+//        String[] fileIdArray = fileIds.split(",");
+//        String[] userIdArray = userIds.split(",");
+//
+//        for (String userId : userIdArray) {
+//            acl.setUserId(userId);
+//            for (String fileIdValue : fileIdArray) {
+//                int fileId = Integer.valueOf(fileIdValue);
+//                aclEntries.add(fileDBAdaptor.setFileAcl(fileId, acl).first());
+//                auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userSessionId, new ObjectMap("acl", acl), "setAcls", null);
+//            }
+//        }
+//
+//        return new QueryResult<>("Set File ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
+//                "", "", aclEntries);
     }
 
     @Override
     public QueryResult unsetFileACL(String fileIds, String userIds, String sessionId) throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(userIds, "userId");
-
-        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        List<Long> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
-        for (Long studyId : studyIdsBySampleIds) {
-            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
-        }
-
-        List<AclEntry> aclEntries = new ArrayList<>();
-
-        String[] fileIdArray = fileIds.split(",");
-        String[] userIdArray = userIds.split(",");
-
-        for (String userId : userIdArray) {
-            for (String fileIdValue : fileIdArray) {
-                int fileId = Integer.valueOf(fileIdValue);
-                aclEntries.add(fileDBAdaptor.unsetFileAcl(fileId, userId).first());
-                auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl",
-                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
-
-            }
-        }
-
-        return new QueryResult<>("Unset File ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
-                "", "", aclEntries);
+        return null;
+//        long startTime = System.currentTimeMillis();
+//        ParamUtils.checkParameter(sessionId, "sessionId");
+//        ParamUtils.checkParameter(userIds, "userId");
+//
+//        String userSessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        List<Long> studyIdsBySampleIds = fileDBAdaptor.getStudyIdsByFileIds(fileIds);
+//        for (Long studyId : studyIdsBySampleIds) {
+//            checkStudyPermission(studyId, userSessionId, StudyPermission.MANAGE_STUDY);
+//        }
+//
+//        List<AclEntry> aclEntries = new ArrayList<>();
+//
+//        String[] fileIdArray = fileIds.split(",");
+//        String[] userIdArray = userIds.split(",");
+//
+//        for (String userId : userIdArray) {
+//            for (String fileIdValue : fileIdArray) {
+//                int fileId = Integer.valueOf(fileIdValue);
+//                aclEntries.add(fileDBAdaptor.unsetFileAcl(fileId, userId).first());
+//                auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.UPDATE, fileId, userId, new ObjectMap("acl",
+//                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
+//
+//            }
+//        }
+//
+//        return new QueryResult<>("Unset File ACL", (int) (System.currentTimeMillis() - startTime), aclEntries.size(), aclEntries.size(),
+//                "", "", aclEntries);
     }
 
     @Override

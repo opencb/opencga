@@ -46,7 +46,10 @@ public class IndividualAcl {
 
     public IndividualAcl(List<String> users, List<String> permissions) {
         this.users = users;
-        this.permissions.addAll(permissions.stream().map(IndividualPermissions::valueOf).collect(Collectors.toList()));
+        this.permissions = EnumSet.noneOf(IndividualPermissions.class);
+        if (permissions.size() > 0) {
+            this.permissions.addAll(permissions.stream().map(IndividualPermissions::valueOf).collect(Collectors.toList()));
+        }
     }
 
     public List<String> getUsers() {

@@ -4,7 +4,10 @@ import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.acls.CohortAcl;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -25,6 +28,8 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         DESCRIPTION("description", TEXT, ""),
 
         ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         SAMPLES("samples", DECIMAL, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
@@ -112,6 +117,16 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
     QueryResult<Cohort> modifyCohort(long cohortId, ObjectMap parameters, QueryOptions options) throws CatalogDBException;
 
     QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException;
+
+    default QueryResult<CohortAcl> getCohortAcl(long cohortId, String member) throws CatalogDBException {
+        return getCohortAcl(cohortId, Arrays.asList(member));
+    }
+
+    QueryResult<CohortAcl> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
+
+    QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl) throws CatalogDBException;
+
+    void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
 
     long getStudyIdByCohortId(long cohortId) throws CatalogDBException;
 }

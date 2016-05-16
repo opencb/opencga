@@ -10,8 +10,8 @@ import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
@@ -31,9 +31,14 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         File file;
         file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000);
-        LinkedList<AclEntry> acl = new LinkedList<>();
-        acl.push(new AclEntry("jcoll", true, true, true, true));
-        acl.push(new AclEntry("jmmut", false, false, true, true));
+        LinkedList<FileAcl> acl = new LinkedList<>();
+        acl.push(new FileAcl(Arrays.asList("jcoll"), Arrays.asList(FileAcl.FilePermissions.VIEW.name(),
+                FileAcl.FilePermissions.VIEW_CONTENT.name(), FileAcl.FilePermissions.VIEW_HEADER.name(),
+                FileAcl.FilePermissions.DELETE.name(), FileAcl.FilePermissions.SHARE.name()
+                )));
+        acl.push(new FileAcl(Arrays.asList("jmmut"), Collections.emptyList()));
+//        acl.push(new AclEntry("jcoll", true, true, true, true));
+//        acl.push(new AclEntry("jmmut", false, false, true, true));
         file.setAcls(acl);
         System.out.println(catalogFileDBAdaptor.createFile(studyId, file, null));
         file = new File("file.sam", File.Type.FILE, File.Format.PLAIN, File.Bioformat.ALIGNMENT, "data/file.sam", null, TimeUtils.getTime
@@ -177,22 +182,27 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(fileId);
 
-        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
+        FileAcl granted = new FileAcl(Arrays.asList("jmmut"), Arrays.asList(FileAcl.FilePermissions.VIEW.name(),
+                FileAcl.FilePermissions.VIEW_CONTENT.name(), FileAcl.FilePermissions.VIEW_HEADER.name(),
+                FileAcl.FilePermissions.DELETE.name(), FileAcl.FilePermissions.SHARE.name()
+        ));
+
+//        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
         catalogFileDBAdaptor.setFileAcl(fileId, granted);
-        granted.setUserId("imedina");
+        granted.setUsers(Arrays.asList("imedina"));
         catalogFileDBAdaptor.setFileAcl(fileId, granted);
         try {
-            granted.setUserId("noUser");
+            granted.setUsers(Arrays.asList("noUser"));
             catalogFileDBAdaptor.setFileAcl(fileId, granted);
             fail("error: expected exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
 
-        List<AclEntry> jmmut = catalogFileDBAdaptor.getFileAcl(fileId, "jmmut").getResult();
+        List<FileAcl> jmmut = catalogFileDBAdaptor.getFileAcl(fileId, "jmmut").getResult();
         assertTrue(!jmmut.isEmpty());
-        System.out.println(jmmut.get(0));
-        List<AclEntry> jcoll = catalogFileDBAdaptor.getFileAcl(fileId, "jcoll").getResult();
+        System.out.println(jmmut.get(0).getPermissions());
+        List<FileAcl> jcoll = catalogFileDBAdaptor.getFileAcl(fileId, "jcoll").getResult();
         assertTrue(jcoll.isEmpty());
     }
 

@@ -18,6 +18,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.JobAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -171,6 +172,101 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         }
         return endQuery("Modify job", startTime, getJob(jobId, null));
         */
+    }
+
+    @Override
+    public QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, jobId));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<JobAcl> jobAcl = null;
+        QueryResult<Document> aggregate = jobCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        Job job = jobConverter.convertToDataModelType(aggregate.first());
+
+        if (job != null) {
+            jobAcl = job.getAcls();
+        }
+
+        return endQuery("get job Acl", startTime, jobAcl);
+    }
+
+    @Override
+    public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByJobId(jobId), acl.getUsers());
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getUsers());
+        if (jobAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
+            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (JobAcl jobAcl : jobAcls.getResult()) {
+                for (String member : jobAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetJobAcl(jobId, usersToOverride);
+        }
+
+        // Check if the permissions found on acl already exist on job id
+        Query query = new Query(QueryParams.ID.key(), jobId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Bson update;
+        if (count(query).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            query = new Query(QueryParams.ID.key(), jobId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "JobAcl")));
+        }
+
+        QueryResult<UpdateResult> updateResult = jobCollection.update(parseQuery(query), update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setJobAcl: An error occurred when trying to share job " + jobId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+
+        return endQuery("setJobAcl", startTime, get(query, queryOptions).first().getAcls());
+    }
+
+    @Override
+    public void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException {
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByJobId(jobId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, jobId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = jobCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetJobAcl: An error occurred when trying to stop sharing job " + jobId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible jobAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), jobId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        jobCollection.update(queryBson, update, null);
     }
 
     @Override

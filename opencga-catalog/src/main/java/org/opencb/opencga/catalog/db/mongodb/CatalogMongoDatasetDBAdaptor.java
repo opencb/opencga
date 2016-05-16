@@ -1,7 +1,9 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -16,11 +18,13 @@ import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.acls.DatasetAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
@@ -250,6 +254,101 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
         return endQuery("Extract files from datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, datasetId));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<DatasetAcl> datasetAcl = null;
+        QueryResult<Document> aggregate = datasetCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
+
+        if (dataset != null) {
+            datasetAcl = dataset.getAcls();
+        }
+
+        return endQuery("get dataset Acl", startTime, datasetAcl);
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), acl.getUsers());
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<DatasetAcl> datasetAcls = getDatasetAcl(datasetId, acl.getUsers());
+        if (datasetAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
+            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (DatasetAcl datasetAcl : datasetAcls.getResult()) {
+                for (String member : datasetAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetDatasetAcl(datasetId, usersToOverride);
+        }
+
+        // Check if the permissions found on acl already exist on dataset id
+        Query query = new Query(QueryParams.ID.key(), datasetId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Bson update;
+        if (count(query).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            query = new Query(QueryParams.ID.key(), datasetId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "DatasetAcl")));
+        }
+
+        QueryResult<UpdateResult> updateResult = datasetCollection.update(parseQuery(query), update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setDatasetAcl: An error occurred when trying to share dataset " + datasetId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+
+        return endQuery("setDatasetAcl", startTime, get(query, queryOptions).first().getAcls());
+    }
+
+    @Override
+    public void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, datasetId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = datasetCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetDatasetAcl: An error occurred when trying to stop sharing dataset " + datasetId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible datasetAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), datasetId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        datasetCollection.update(queryBson, update, null);
     }
 
     @Override

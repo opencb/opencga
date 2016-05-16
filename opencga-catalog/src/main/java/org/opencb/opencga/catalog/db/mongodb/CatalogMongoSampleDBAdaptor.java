@@ -209,14 +209,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         return endQuery("getSampleAcl", startTime, sampleAcl);
-//        Map<String, SampleAcl> userAclMap = new HashMap<>();
-//        for (Sample sample : sampleList) {
-//            for (SampleAcl sampleAcl : sample.getAcls()) {
-//                for (String member : sampleAcl.getUsers()) {
-//                    userAclMap.put(member, sampleAcl);
-//                }
-//            }
-//        }
     }
 
     @Deprecated
@@ -310,7 +302,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     + " with other members.");
         }
 
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ACLS.key());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
 
         return endQuery("setSampleAcl", startTime, get(query, queryOptions).first().getAcls());
     }

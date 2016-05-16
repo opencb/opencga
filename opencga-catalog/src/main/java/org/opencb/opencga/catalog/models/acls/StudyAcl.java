@@ -38,7 +38,10 @@ public class StudyAcl {
 
     public StudyAcl(List<String> users, List<String> permissions) {
         this.users = users;
-        this.permissions.addAll(permissions.stream().map(StudyPermissions::valueOf).collect(Collectors.toList()));
+        this.permissions = EnumSet.noneOf(StudyPermissions.class);
+        if (permissions.size() > 0) {
+            this.permissions.addAll(permissions.stream().map(StudyPermissions::valueOf).collect(Collectors.toList()));
+        }
     }
 
     public String getRole() {
