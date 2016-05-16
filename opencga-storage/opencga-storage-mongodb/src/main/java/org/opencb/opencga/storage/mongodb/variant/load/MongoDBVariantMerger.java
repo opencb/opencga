@@ -312,7 +312,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         List<Document> overlappedVariants = null;
 
         for (Document document : variants) {
-            Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document);
             Document study = document.get(Integer.toString(studyId), Document.class);
             if (study != null) {
                 if (previousVariant != null && variant.overlapWith(chromosome, start, end, true)) {
@@ -433,7 +433,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     protected void processOverlappedVariants(List<Document> overlappedVariants, MongoDBOperations mongoDBOps) {
         for (Document document : overlappedVariants) {
-            Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(document);
             processOverlappedVariants(mainVariant, overlappedVariants, mongoDBOps);
         }
     }
@@ -467,7 +467,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             mongoDBOps.overlappedVariants++;
         } else {
 
-            Variant emptyVar = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant emptyVar = STRING_ID_CONVERTER.convertToDataModelType(document);
             Document study = document.get(studyId.toString(), Document.class);
 
             // An overlapping variant will be considered missing if is missing or duplicated for all the files
@@ -572,7 +572,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         // For each variant, create an empty variant that will be filled by the VariantMerger
         for (Document document : overlappedVariants) {
-            Variant var = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant var = STRING_ID_CONVERTER.convertToDataModelType(document);
             if (!mainVariant.overlapWith(var, true)) {
                 // Skip those variants that do not overlap with the given main variant
                 continue;
@@ -880,8 +880,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     public static boolean isNewVariant(Document document, boolean newStudy) {
-        // If the document has only the study and the _id field.
-        return newStudy && document.size() == 2;
+        // If the document has only the study, _id, end, ref and alt fields.
+        return newStudy && document.size() == 5;
     }
 
     private boolean sameVariant(Variant variant, Variant other) {

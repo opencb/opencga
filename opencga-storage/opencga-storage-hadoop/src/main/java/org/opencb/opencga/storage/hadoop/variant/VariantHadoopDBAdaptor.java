@@ -226,6 +226,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public QueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize) {
+        throw new UnsupportedOperationException("Unimplemented");
+    }
+
+    @Override
     public QueryResult<Long> count(Query query) {
         if (query == null) {
             query = new Query();

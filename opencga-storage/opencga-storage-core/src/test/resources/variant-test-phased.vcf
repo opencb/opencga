@@ -1,0 +1,21 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth for tier1 (used+filtered)">
+##FORMAT=<ID=PS,Number=1,Type=String,Description="Phase set">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE_1	SAMPLE_2
+1	565004	.	T	C	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	565464	.	T	C	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	734964	.	T	C	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	788533	.	C	G	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	819320	.	A	C	.	PASS	.	GT:PS:DP	0/1:PS1:30	0/1:.:30
+1	819411	.	A	G	.	PASS	.	GT:PS:DP	0/1:PS1:30	0/1:PS2:30
+1	819651	.	A	G	.	PASS	.	GT:PS:DP	0/1:PS1:30	0/1:PS2:30
+1	820211	.	T	C	.	PASS	.	GT:PS:DP	0/1:PS1:30	0/1:PS2:30
+1	820811	.	G	C	.	PASS	.	GT:PS:DP	0/1:.30	0/1:PS2:30
+1	947562	.	C	T	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	1048875	.	C	T	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	1089391	.	T	G	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	1121758	.	T	G	.	PASS	.	GT:DP	0/1:30	0/1:30
+1	1128501	.	T	C	.	PASS	.	GT:DP	0/1:30	0/1:30
+
