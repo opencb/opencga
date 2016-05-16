@@ -89,7 +89,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
     private final VariantDBAdaptorUtils utils;
     private final MongoCredentials credentials;
-    private static final Pattern OPERATION_PATTERN = Pattern.compile("^()(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     private StudyConfigurationManager studyConfigurationManager;
 
@@ -1003,6 +1003,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                         + "." + DocumentToVariantAnnotationConverter.DRUG_NAME_FIELD, value, builder, QueryOperation.AND);
             }
 
+            if (query.containsKey(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_FUNCTIONAL_SCORE.key());
+                addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_SCORE, value, builder,
+                        VariantQueryParams.ANNOT_FUNCTIONAL_SCORE);
+            }
+
             if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
                 String value = query.getString(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key());
                 addFrequencyFilter(DocumentToVariantConverter.ANNOTATION_FIELD
@@ -1847,6 +1854,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder) {
         String op = getOperator(value);
         String obj = value.replaceFirst(op, "");
+        return addCompQueryFilter(key, obj, builder, op);
+    }
+
+    private QueryBuilder addCompQueryFilter(String key, String obj, QueryBuilder builder, String op) {
 
         switch (op) {
             case "<":
@@ -1939,23 +1950,32 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
         List<DBObject> dbObjects = new ArrayList<>();
         for (String elem : list) {
-            String[] score = splitKeyValue(elem);
+            String[] score = splitKeyOpValue(elem);
             String scoreValue;
-            if (score.length != 2) {
+            String op;
+            if (score.length != 3) {
                 if (score.length != 1 || source == null) {
                     logger.error("Bad score filter: " + elem);
                     throw VariantQueryException.malformedParam(conservation, value);
                 }
                 scoreValue = score[0];
+                op = "=";
             } else {
-                source = score[0];
-                scoreValue = score[1];
+                if (!score[0].isEmpty()) {
+                    if (source != null) {
+                        logger.error("Bad score filter: " + elem);
+                        throw VariantQueryException.malformedParam(conservation, value);
+                    }
+                    source = score[0];
+                }
+                op = score[1];
+                scoreValue = score[2];
             }
             QueryBuilder scoreBuilder = new QueryBuilder();
             scoreBuilder.and(DocumentToVariantAnnotationConverter.SCORE_SOURCE_FIELD).is(source);
             try {
                 double v = Double.parseDouble(scoreValue);
-                addCompQueryFilter(DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, scoreValue, scoreBuilder);
+                addCompQueryFilter(DocumentToVariantAnnotationConverter.SCORE_SCORE_FIELD, scoreValue, scoreBuilder, op);
             } catch (NumberFormatException e) {
                 addStringCompQueryFilter(DocumentToVariantAnnotationConverter.SCORE_DESCRIPTION_FIELD, scoreValue, scoreBuilder);
             }
@@ -2386,7 +2406,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (!matcher.find()) {
             return new String[]{keyValue};
         } else {
-            return new String[]{matcher.group(1), matcher.group(3)};
+            return new String[]{matcher.group(1), matcher.group(2) + matcher.group(3)};
+        }
+    }
+
+    private String[] splitKeyOpValue(String keyValue) {
+        Matcher matcher = OPERATION_PATTERN.matcher(keyValue);
+        if (!matcher.find()) {
+            return new String[]{keyValue};
+        } else {
+            return new String[]{matcher.group(1), matcher.group(2), matcher.group(3)};
         }
     }
 

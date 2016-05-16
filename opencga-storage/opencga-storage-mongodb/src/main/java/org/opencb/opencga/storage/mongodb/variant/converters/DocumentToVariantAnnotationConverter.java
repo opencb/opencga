@@ -304,6 +304,7 @@ public class DocumentToVariantAnnotationConverter
                 functionalScore.add(buildScore(document));
             }
         }
+        va.setFunctionalScore(functionalScore);
 
         //Clinical Data
         if (object.containsKey(CLINICAL_DATA_FIELD)) {

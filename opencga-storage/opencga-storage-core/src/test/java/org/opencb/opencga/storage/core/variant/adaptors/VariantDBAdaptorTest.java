@@ -475,6 +475,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Map<Double, Integer> sift = new HashMap<>();
         Map<String, Integer> siftDesc = new HashMap<>();
         Map<Double, Integer> polyphen = new HashMap<>();
+        Map<Double, Integer> maxPolyphen = new HashMap<>();
         Map<String, Integer> polyphenDesc = new HashMap<>();
         for (Variant variant : allVariants.getResult()) {
             Set<Double> siftInVariant = new HashSet<>();
@@ -501,6 +502,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             for (Double value : polyphenInVariant) {
                 polyphen.put(value, polyphen.getOrDefault(value, 0) + 1);
             }
+            Optional<Double> max = polyphenInVariant.stream().max(Double::compareTo);
+            if (max.isPresent()) {
+                maxPolyphen.put(max.get(), maxPolyphen.getOrDefault(max.get(), 0) + 1);
+            }
             for (String value : polyphenDescInVariant) {
                 polyphenDesc.put(value, polyphenDesc.getOrDefault(value, 0) + 1);
             }
@@ -518,6 +523,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
             System.out.println("queryResult.getDbTime() = " + queryResult.getDbTime());
         }
+        query = new Query(ANNOT_POLYPHEN.key(), ">0.5");
+        queryResult = dbAdaptor.get(query, null);
+        Integer expected = maxPolyphen.entrySet()
+                .stream()
+                .filter(entry -> entry.getKey() > 0.5)
+                .map(Map.Entry::getValue)
+                .reduce((i, j) -> i + j).orElse(0);
+        assertEquals(expected.intValue(), queryResult.getNumResults());
+
+
+        query = new Query(ANNOT_POLYPHEN.key(), "sift>0.5");
+        thrown.expect(VariantQueryException.class);
+        dbAdaptor.get(query, null);
 //        for (Map.Entry<Double, Integer> entry : polyphen.entrySet()) {
 //            query = new Query(VariantDBAdaptor.VariantQueryParams.SIFT.key(), entry.getKey());
 //            queryResult = dbAdaptor.get(query, null);
@@ -532,23 +550,33 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
         Query query;
         query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled>5");
-        assertEquals(countFunctionalScore("cadd_scalled", allVariants, s -> s > 5.0),
-                countFunctionalScore("cadd_scalled", dbAdaptor.get(query, null), s -> s > 5.0));
+        assertTrue(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0) > 0);
+        System.out.println("countFunctionalScore(\"cadd_scaled\", allVariants, s -> s > 5.0) = " + countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0));
+
+        assertEquals(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0),
+                countFunctionalScore("cadd_scaled", dbAdaptor.get(query, null), s -> s > 5.0));
+
         query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw<0.5");
         assertEquals(countFunctionalScore("cadd_raw", allVariants, s -> s < 0.5),
                 countFunctionalScore("cadd_raw", dbAdaptor.get(query, null), s -> s < 0.5));
-        assertEquals(countFunctionalScore("cadd_scalled", allVariants, s -> s <= 0.5),
-                countFunctionalScore("cadd_scalled", dbAdaptor.get(query, null), s -> s <= 0.5));
+
+        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5");
+        assertEquals(countFunctionalScore("cadd_scaled", allVariants, s -> s <= 0.5),
+                countFunctionalScore("cadd_scaled", dbAdaptor.get(query, null), s -> s <= 0.5));
     }
 
     private long countFunctionalScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {
-        return variantQueryResult.getResult()
-                .stream()
-                .filter(variant -> variant.getAnnotation() != null && variant.getAnnotation().getFunctionalScore() != null)
-                .flatMap(variant -> variant.getAnnotation().getFunctionalScore().stream())
-                .filter(score -> score.getSource().equals(source))
-                .map(Score::getScore)
-                .filter(doublePredicate).count();
+        long c = 0;
+        for (Variant variant : variantQueryResult.getResult()) {
+            for (Score score : variant.getAnnotation().getFunctionalScore()) {
+                if (score.getSource().equals(source)) {
+                    if (doublePredicate.test(score.getScore())) {
+                        c++;
+                    }
+                }
+            }
+        }
+        return c;
     }
 
     @Test
