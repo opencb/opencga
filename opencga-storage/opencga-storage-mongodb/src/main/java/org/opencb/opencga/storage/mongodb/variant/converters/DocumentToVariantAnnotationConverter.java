@@ -126,6 +126,11 @@ public class DocumentToVariantAnnotationConverter
 
     @Override
     public VariantAnnotation convertToDataModelType(Document object) {
+        return convertToDataModelType(object, null);
+    }
+
+
+    public VariantAnnotation convertToDataModelType(Document object, Document customAnnotation) {
         VariantAnnotation va = new VariantAnnotation();
 
         //ConsequenceType
@@ -308,6 +313,10 @@ public class DocumentToVariantAnnotationConverter
         //Clinical Data
         if (object.containsKey(CLINICAL_DATA_FIELD)) {
             va.setVariantTraitAssociation(parseClinicalData((Document) object.get(CLINICAL_DATA_FIELD)));
+        }
+
+        if (customAnnotation != null) {
+            va.setAdditionalAttributes(new HashMap<>(customAnnotation));
         }
 
         return va;

@@ -75,6 +75,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        FIELDS_MAP.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
         FIELDS_MAP.put("sourceEntries", STUDIES_FIELD);
         FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
+        FIELDS_MAP.put("annotation.additionalAttributes", CUSTOM_ANNOTATION_FIELD);
         FIELDS_MAP.put("sourceEntries.cohortStats", STATS_FIELD);
     }
 
@@ -156,7 +157,8 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
             mongoAnnotation = (Document) object.get(ANNOTATION_FIELD);
         }
         if (mongoAnnotation != null) {
-            VariantAnnotation annotation = variantAnnotationConverter.convertToDataModelType(mongoAnnotation);
+            VariantAnnotation annotation = variantAnnotationConverter
+                    .convertToDataModelType(mongoAnnotation, object.get(CUSTOM_ANNOTATION_FIELD, Document.class));
             annotation.setChromosome(variant.getChromosome());
             annotation.setAlternate(variant.getAlternate());
             annotation.setReference(variant.getReference());

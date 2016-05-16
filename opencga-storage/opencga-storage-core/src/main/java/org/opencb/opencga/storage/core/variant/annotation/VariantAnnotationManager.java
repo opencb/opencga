@@ -323,14 +323,14 @@ public class VariantAnnotationManager {
             } catch (NoSuchMethodException e) {
                 throw new RuntimeException(e); // This should never happen!
             }
-        }else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
+        } else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
             try {
                 InputStream is = new FileInputStream(fileName);
                 VariantSource source = new VariantSource("fileName", "f", "s", "s");
                 ParallelTaskRunner<Variant, Void> ptr;
                 try {
                     ptr = new ParallelTaskRunner<>(
-                            new VariantVcfHtsjdkReader(is,source) ,
+                            new VariantVcfHtsjdkReader(is, source),
                             variantList -> {
                                 for (Variant b : variantList) {
                                     Region region = new Region(normalizeChromosome(b.getChromosome()), b.getStart(), b.getEnd());
