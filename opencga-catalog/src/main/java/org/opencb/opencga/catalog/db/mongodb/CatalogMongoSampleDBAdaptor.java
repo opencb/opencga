@@ -174,7 +174,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), userId));
@@ -194,7 +194,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
@@ -260,7 +260,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkSampleId(sampleId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), acl.getUsers());
 
@@ -334,6 +334,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     public void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+        checkSampleId(sampleId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), members);
 

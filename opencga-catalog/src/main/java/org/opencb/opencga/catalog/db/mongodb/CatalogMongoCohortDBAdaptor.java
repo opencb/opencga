@@ -95,6 +95,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<CohortAcl> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
+        checkCohortId(cohortId);
+
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, cohortId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
@@ -114,6 +116,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl) throws CatalogDBException {
         long startTime = startQuery();
+
+        checkCohortId(cohortId);
 
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByCohortId(cohortId), acl.getUsers());
@@ -163,6 +167,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
+        checkCohortId(cohortId);
+
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByCohortId(cohortId), members);
 
@@ -188,6 +194,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public long getStudyIdByCohortId(long cohortId) throws CatalogDBException {
+        checkCohortId(cohortId);
         QueryResult queryResult = nativeGet(new Query(QueryParams.ID.key(), cohortId),
                 new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID));
         if (queryResult.getResult().isEmpty()) {

@@ -169,7 +169,9 @@ public interface AuthorizationManager {
 
 //    void deleteGroup(int studyId, String groupId, String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<Group> addMember(long studyId, String groupId, String userId, String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<Group> removeMember(long studyId, String groupId, String userId, String sessionId) throws CatalogException;
 }

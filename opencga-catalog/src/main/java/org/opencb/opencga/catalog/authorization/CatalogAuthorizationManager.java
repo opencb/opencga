@@ -919,15 +919,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public StudyAcl getStudyAclBelonging(long studyId, String userId, String groupId) throws CatalogException {
-//        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
-//                .append(CatalogStudyDBAdaptor.QueryParams.ACLS_USERS.key(), userId + "," + groupId);
-//        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, CatalogStudyDBAdaptor.QueryParams.ACLS);
-
-        // TODO: Uncomment
-//        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, userId, groupId);
-//        if (studyQueryResult.getNumResults() > 0) {
-//            return studyQueryResult.first();
-//        }
+        List<String> members = groupId != null ? Arrays.asList(userId, groupId) : Arrays.asList(userId);
+        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, members);
+        if (studyQueryResult.getNumResults() > 0) {
+            return studyQueryResult.first();
+        }
         return null;
     }
 

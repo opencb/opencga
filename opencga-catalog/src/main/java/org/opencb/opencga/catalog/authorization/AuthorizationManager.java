@@ -5,6 +5,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.*;
 
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumSet;
@@ -304,7 +305,7 @@ public interface AuthorizationManager {
      * @return the studyAcl where the user/group belongs to.
      * @throws CatalogException when there is any database error.
      */
-    StudyAcl getStudyAclBelonging(long studyId, String userId, String groupId) throws CatalogException;
+    StudyAcl getStudyAclBelonging(long studyId, String userId, @Nullable String groupId) throws CatalogException;
 
     /**
      * Adds the newUser to the groupId specified.

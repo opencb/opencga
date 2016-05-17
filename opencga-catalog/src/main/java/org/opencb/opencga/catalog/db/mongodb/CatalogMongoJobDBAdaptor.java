@@ -177,7 +177,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkJobId(jobId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, jobId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
@@ -197,7 +197,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkJobId(jobId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByJobId(jobId), acl.getUsers());
 
@@ -246,6 +246,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException {
+        checkJobId(jobId);
+
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByJobId(jobId), members);
 

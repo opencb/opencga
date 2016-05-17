@@ -826,39 +826,41 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * Group management methods
      */
 
+    @Deprecated
     @Override
     public QueryResult<Group> addMember(long studyId, String groupId, String userIdToAdd, String sessionId) throws CatalogException {
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
-
-        Group groupFromUserToAdd = getGroupBelonging(studyId, userIdToAdd);
-        if (groupFromUserToAdd != null) {
-            throw new CatalogException("User \"" + userIdToAdd + "\" already belongs to group " + groupFromUserToAdd.getId());
-        }
-
-        QueryResult<Group> queryResult = studyDBAdaptor.addMemberToGroup(studyId, groupId, userIdToAdd);
-        ObjectMap after = new ObjectMap("groups", new ObjectMap("userIds", Collections.singletonList(userIdToAdd)).append("id", groupId));
-        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.UPDATE, studyId, userId, null, after, "addMember", null);
-        return queryResult;
+return null;
+//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+//
+//        Group groupFromUserToAdd = getGroupBelonging(studyId, userIdToAdd);
+//        if (groupFromUserToAdd != null) {
+//            throw new CatalogException("User \"" + userIdToAdd + "\" already belongs to group " + groupFromUserToAdd.getId());
+//        }
+//
+//        QueryResult<Group> queryResult = studyDBAdaptor.addMemberToGroup(studyId, groupId, userIdToAdd);
+//        ObjectMap after = new ObjectMap("groups", new ObjectMap("userIds", Collections.singletonList(userIdToAdd)).append("id", groupId));
+//        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.UPDATE, studyId, userId, null, after, "addMember", null);
+//        return queryResult;
     }
 
+    @Deprecated
     @Override
     public QueryResult<Group> removeMember(long studyId, String groupId, String userIdToRemove, String sessionId) throws CatalogException {
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
-
-        Group groupFromUserToRemove = getGroupBelonging(studyId, userIdToRemove);
-        if (groupFromUserToRemove == null || !groupFromUserToRemove.getId().equals(groupId)) {
-            throw new CatalogException("User \"" + userIdToRemove + "\" does not belongs to group " + groupId);
-        }
-
-        QueryResult<Group> queryResult = studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
-        ObjectMap before = new ObjectMap("groups", new ObjectMap("userIds", Collections.singletonList(userIdToRemove)).append("id",
-                groupId));
-        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.UPDATE, studyId, userId, before, null, "addMember", null);
-        return queryResult;
+return null;
+//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+//
+//        Group groupFromUserToRemove = getGroupBelonging(studyId, userIdToRemove);
+//        if (groupFromUserToRemove == null || !groupFromUserToRemove.getId().equals(groupId)) {
+//            throw new CatalogException("User \"" + userIdToRemove + "\" does not belongs to group " + groupId);
+//        }
+//
+//        QueryResult<Group> queryResult = studyDBAdaptor.removeMemberFromGroup(studyId, groupId, userIdToRemove);
+//        ObjectMap before = new ObjectMap("groups", new ObjectMap("userIds", Collections.singletonList(userIdToRemove)).append("id",
+//                groupId));
+//        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.UPDATE, studyId, userId, before, null, "addMember", null);
+//        return queryResult;
     }
 
     //TODO: Cache this?

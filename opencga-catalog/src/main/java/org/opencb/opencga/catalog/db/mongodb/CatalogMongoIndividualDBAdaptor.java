@@ -288,7 +288,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkIndividualId(individualId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, individualId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
@@ -308,7 +308,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkIndividualId(individualId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByIndividualId(individualId), acl.getUsers());
 
@@ -357,6 +357,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
+        checkIndividualId(individualId);
+
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByIndividualId(individualId), members);
 

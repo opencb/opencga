@@ -260,6 +260,8 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
+        checkDatasetId(datasetId);
+
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, datasetId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
@@ -280,6 +282,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException {
         long startTime = startQuery();
 
+        checkDatasetId(datasetId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), acl.getUsers());
 
@@ -328,6 +331,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
+        checkDatasetId(datasetId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), members);
 

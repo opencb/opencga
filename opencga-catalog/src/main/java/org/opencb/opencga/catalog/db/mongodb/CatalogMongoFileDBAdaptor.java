@@ -156,7 +156,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkFileId(fileId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, fileId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
         Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
@@ -176,7 +176,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl) throws CatalogDBException {
         long startTime = startQuery();
-
+        checkFileId(fileId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByFileId(fileId), acl.getUsers());
 
@@ -225,6 +225,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException {
+
+        checkFileId(fileId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByFileId(fileId), members);
 

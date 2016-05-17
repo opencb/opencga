@@ -36,9 +36,11 @@ import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
 import java.util.function.Consumer;
@@ -226,6 +228,51 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return getStudy(studyId, queryOptions).first().getOwnerId();
     }
 
+    @Override
+    public QueryResult<StudyAcl> getStudyAcl(long studyId, @Nullable String roleId, List<String> members)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkStudyId(studyId);
+        checkMembers(dbAdaptorFactory, studyId, members);
+        checkRoleId(studyId, roleId);
+
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
+        aggregation.add(Aggregates.unwind("$" + QueryParams.ACLS.key()));
+
+        List<Bson> filters = new ArrayList<>();
+        if (roleId != null && !roleId.isEmpty()) {
+            filters.add(Filters.eq(QueryParams.ACLS_ROLE.key(), roleId));
+        }
+        if (members != null && members.size() > 0) {
+            filters.add(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        }
+        if (filters.size() > 0) {
+            Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
+            aggregation.add(filter);
+        }
+
+        aggregation.add(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<StudyAcl> studyAcl = null;
+        QueryResult<Document> aggregate = studyCollection.aggregate(aggregation, null);
+        Study study = studyConverter.convertToDataModelType(aggregate.first());
+
+        if (study != null) {
+            studyAcl = study.getAcls();
+        }
+
+        return endQuery("get study Acl", startTime, studyAcl);
+    }
+
+    private void checkRoleId(long studyId, String roleId) throws CatalogDBException {
+        Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.ACLS_ROLE.key(), roleId);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The role " + roleId + " is not a valid role in " + studyId);
+        }
+    }
+
 
     private long getDiskUsageByStudy(int studyId) {
         /*
@@ -296,6 +343,36 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
+    public QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkStudyId(studyId);
+        for (String userId : userIds) {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+        }
+        if (!groupExists(studyId, groupId)) {
+            throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
+        }
+
+        Bson query = new Document(PRIVATE_ID, studyId);
+        List<Bson> groupQuery = new ArrayList<>();
+        if (userIds.size() > 0) {
+            groupQuery.add(Filters.in("userIds", userIds));
+        }
+        if (groupId != null && groupId.length() > 0) {
+            groupQuery.add(Filters.eq("id", groupId));
+        }
+        Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
+
+        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
+        List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
+        List<Group> groups = new ArrayList<>();
+        studies.stream().filter(study -> study.getGroups() != null).forEach(study -> groups.addAll(study.getGroups()));
+        return endQuery("getGroup", startTime, groups);
+    }
+
+    @Deprecated
+    @Override
     public QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options)
             throws CatalogDBException {
         long startTime = startQuery();
@@ -333,38 +410,135 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Group> addMemberToGroup(long studyId, String groupId, String userId) throws CatalogDBException {
+    public QueryResult<Group> addMemberToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        if (!groupExists(studyId, groupId)) {
-            throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
+        checkStudyId(studyId);
+        // Check that the members exist.
+        for (String member : members) {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
         }
 
-        Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
-        Bson addToSet = Updates.addToSet("groups.$.userIds", userId);
-        QueryResult<UpdateResult> queryResult = studyCollection.update(and, addToSet, null);
+        // Check that the members do not belong to other group.
+        List<Group> result = getGroup(studyId, null, members).getResult();
+        if (result.size() > 0) {
+            Set<String> usersSet = new HashSet<>(members.size());
+            usersSet.addAll(members.stream().collect(Collectors.toList()));
+
+            for (Group group : result) {
+                // Remove the members that already existed in other groups different than the one to be set.
+                if (!group.getId().equals(groupId)) {
+                    List<String> usersToRemove = new ArrayList<>();
+                    for (String userId : group.getUserIds()) {
+                        if (usersSet.contains(userId)) {
+                            usersToRemove.add(userId);
+                        }
+                    }
+                    if (usersToRemove.size() > 0) {
+                        removeMemberFromGroup(studyId, group.getId(), usersToRemove);
+                    }
+                }
+            }
+        }
+
+        Document query;
+        Document update;
+        if (groupExists(studyId, groupId)) {
+            query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_ID.key(), groupId);
+            update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
+        } else {
+            Group group = new Group(groupId, members);
+            query = new Document(PRIVATE_ID, studyId);
+            update = new Document("$push", new Document(QueryParams.GROUPS.key(), getMongoDBDocument(group, "Group")));
+        }
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+
         if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to add member to group " + groupId);
+            throw new CatalogDBException("Unable to add members to group " + groupId);
         }
 
         return endQuery("addMemberToGroup", startTime, getGroup(studyId, null, groupId, null));
     }
 
     @Override
-    public QueryResult<Group> removeMemberFromGroup(long studyId, String groupId, String userId) throws CatalogDBException {
-        long startTime = startQuery();
-
-        if (!groupExists(studyId, groupId)) {
-            throw new CatalogDBException("Group \"" + groupId + "\" does not exists in study " + studyId);
+    public void removeMemberFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+        checkStudyId(studyId);
+        for (String member : members) {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
         }
+        if (!groupExists(studyId, groupId)) {
+            throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
+        }
+
         Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
-        Bson pull = Updates.pull("groups.$.userIds", userId);
+        Bson pull = Updates.pull("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
         if (update.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to remove member to group " + groupId);
+            throw new CatalogDBException("Unable to remove members from group " + groupId);
+        }
+    }
+
+    @Override
+    public QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkStudyId(studyId);
+        checkRoleId(studyId, roleId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<StudyAcl> studyAcls = getStudyAcl(studyId, null, members);
+        if (studyAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(members.size());
+            usersSet.addAll(members.stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (StudyAcl studyAcl : studyAcls.getResult()) {
+                for (String member : studyAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetStudyAcl(studyId, usersToOverride);
         }
 
-        return endQuery("removeMemberFromGroup", startTime, getGroup(studyId, null, groupId, null));
+        // Check if the permissions found on acl already exist on cohort id
+        Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.ACLS_ROLE.key(), roleId);
+        Bson update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", members)));
+
+        QueryResult<UpdateResult> updateResult = studyCollection.update(parseQuery(query), update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setStudyAcl: An error occurred when trying to share study " + studyId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+
+        return endQuery("setStudyAcl", startTime, get(query, queryOptions).first().getAcls());
+    }
+
+    @Override
+    public void unsetStudyAcl(long studyId, List<String> members) throws CatalogDBException {
+        checkStudyId(studyId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, studyId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = studyCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetStudyAcl: An error occurred when trying to stop sharing study " + studyId
+                        + " with other " + member + ".");
+            }
+        }
     }
 
 
