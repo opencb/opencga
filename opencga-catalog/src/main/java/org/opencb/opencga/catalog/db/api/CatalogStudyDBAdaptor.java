@@ -141,7 +141,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param roleId Role that will be applied to the members.
      * @param members List of members (users and/or groups).
      * @return A queryResult with the studyAcl after the update.
-     * @throws CatalogDBException when any of the studyId, roleId or members do not exist.
+     * @throws CatalogDBException when any of the studyId, roleId or members do not exist or if there is a user inside a group defined in
+     * members that already have a permission created.
      */
     QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members) throws CatalogDBException;
 

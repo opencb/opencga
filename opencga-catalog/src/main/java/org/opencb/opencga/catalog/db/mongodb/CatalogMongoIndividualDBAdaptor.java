@@ -309,8 +309,28 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(individualId);
+        long studyId = getStudyIdByIndividualId(individualId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByIndividualId(individualId), acl.getUsers());
+
+        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        // already have permissions on its own.
+        List<Group> groups = new ArrayList<>();
+        for (String member : acl.getUsers()) {
+            if (member.startsWith("@")) {
+                groups.add(dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first());
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Group group : groups) {
+                QueryResult<IndividualAcl> individualAcl = getIndividualAcl(individualId, group.getUserIds());
+                if (individualAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("Error when adding permissions in individual. At least one user in " + group.getId()
+                            + " has already defined permissions for individual " + individualId);
+                }
+            }
+        }
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<IndividualAcl> individualAcls = getIndividualAcl(individualId, acl.getUsers());

@@ -14,7 +14,9 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -198,8 +200,28 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException {
         long startTime = startQuery();
         checkJobId(jobId);
+        long studyId = getStudyIdByJobId(jobId);
         // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, getStudyIdByJobId(jobId), acl.getUsers());
+        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
+
+        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        // already have permissions on its own.
+        List<Group> groups = new ArrayList<>();
+        for (String member : acl.getUsers()) {
+            if (member.startsWith("@")) {
+                groups.add(dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first());
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Group group : groups) {
+                QueryResult<JobAcl> jobAcl = getJobAcl(jobId, group.getUserIds());
+                if (jobAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("Error when adding permissions in job. At least one user in " + group.getId()
+                            + " has already defined permissions for job " + jobId);
+                }
+            }
+        }
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getUsers());

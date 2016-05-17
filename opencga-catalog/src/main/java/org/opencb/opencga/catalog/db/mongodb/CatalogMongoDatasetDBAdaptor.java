@@ -17,6 +17,7 @@ import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.acls.DatasetAcl;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -283,8 +284,28 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         long startTime = startQuery();
 
         checkDatasetId(datasetId);
+        long studyId = getStudyIdByDatasetId(datasetId);
         // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), acl.getUsers());
+        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
+
+        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        // already have permissions on its own.
+        List<Group> groups = new ArrayList<>();
+        for (String member : acl.getUsers()) {
+            if (member.startsWith("@")) {
+                groups.add(dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first());
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Group group : groups) {
+                QueryResult<DatasetAcl> datasetAcl = getDatasetAcl(datasetId, group.getUserIds());
+                if (datasetAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + group.getId()
+                            + " has already defined permissions for dataset " + datasetId);
+                }
+            }
+        }
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<DatasetAcl> datasetAcls = getDatasetAcl(datasetId, acl.getUsers());

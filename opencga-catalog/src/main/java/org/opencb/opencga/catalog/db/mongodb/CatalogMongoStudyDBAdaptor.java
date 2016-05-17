@@ -487,6 +487,25 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
 
+        // If there are groups in members, we will obtain all the users pertaining to the groups and will check if any of them already have
+        // a special permission on their own. If this is the case, we will throw an exception.
+        List<Group> groups = new ArrayList<>();
+        for (String member : members) {
+            if (member.startsWith("@")) {
+                groups.add(getGroup(studyId, member, Collections.emptyList()).first());
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Group group : groups) {
+                QueryResult<StudyAcl> studyAcl = getStudyAcl(studyId, null, group.getUserIds());
+                if (studyAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + group.getId()
+                            + " already have permissions set on its own.");
+                }
+            }
+        }
+
         // Check if the members of the new acl already have some permissions set
         QueryResult<StudyAcl> studyAcls = getStudyAcl(studyId, null, members);
         if (studyAcls.getNumResults() > 0) {

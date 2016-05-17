@@ -261,8 +261,28 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
+        long studyId = getStudyIdBySampleId(sampleId);
         // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), acl.getUsers());
+        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
+
+        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        // already have permissions on its own.
+        List<Group> groups = new ArrayList<>();
+        for (String member : acl.getUsers()) {
+            if (member.startsWith("@")) {
+                groups.add(dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first());
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Group group : groups) {
+                QueryResult<SampleAcl> sampleAcl = getSampleAcl(sampleId, group.getUserIds());
+                if (sampleAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("Error when adding permissions in sample. At least one user in " + group.getId()
+                            + " has already defined permissions for sample " + sampleId);
+                }
+            }
+        }
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<SampleAcl> sampleAcls = getSampleAcl(sampleId, acl.getUsers());
@@ -408,7 +428,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //
 //        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
 //                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
-//        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
+//        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);/**/
 //        if (cohortQueryResult.getNumResults() != 0) {
 //            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : " +
 //                    cohortQueryResult.getResult().stream()
