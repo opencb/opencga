@@ -489,28 +489,47 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // If there are groups in members, we will obtain all the users pertaining to the groups and will check if any of them already have
         // a special permission on their own. If this is the case, we will throw an exception.
-        List<Group> groups = new ArrayList<>();
+        Map<String, List<String>> groups = new HashMap<>();
+        Set<String> users = new HashSet<>();
         for (String member : members) {
             if (member.startsWith("@")) {
-                groups.add(getGroup(studyId, member, Collections.emptyList()).first());
+                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
+                groups.put(group.getId(), group.getUserIds());
+            } else {
+                users.add(member);
             }
         }
         if (groups.size() > 0) {
             // Check if any user already have permissions set on their own.
-            for (Group group : groups) {
-                QueryResult<StudyAcl> studyAcl = getStudyAcl(studyId, null, group.getUserIds());
+            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+                QueryResult<StudyAcl> studyAcl = getStudyAcl(studyId, null, entry.getValue());
                 if (studyAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + group.getId()
+                    throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + entry.getKey()
                             + " already have permissions set on its own.");
                 }
             }
         }
 
+        // Check if any of the users in the set of users also belongs to any passed group. In that case, we will remove the user
+        // because the group will be given the permission.
+        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+            for (String userId : entry.getValue()) {
+                if (users.contains(userId)) {
+                    users.remove(userId);
+                }
+            }
+        }
+
+        // Create the definitive list of members that will be added in the acl
+        List<String> membersAcl = new ArrayList<>(users.size() + groups.size());
+        membersAcl.addAll(users.stream().collect(Collectors.toList()));
+        membersAcl.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
+
         // Check if the members of the new acl already have some permissions set
-        QueryResult<StudyAcl> studyAcls = getStudyAcl(studyId, null, members);
+        QueryResult<StudyAcl> studyAcls = getStudyAcl(studyId, null, membersAcl);
         if (studyAcls.getNumResults() > 0) {
-            Set<String> usersSet = new HashSet<>(members.size());
-            usersSet.addAll(members.stream().collect(Collectors.toList()));
+            Set<String> usersSet = new HashSet<>(membersAcl.size());
+            usersSet.addAll(membersAcl.stream().collect(Collectors.toList()));
 
             List<String> usersToOverride = new ArrayList<>();
             for (StudyAcl studyAcl : studyAcls.getResult()) {
@@ -528,7 +547,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Check if the permissions found on acl already exist on cohort id
         Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.ACLS_ROLE.key(), roleId);
-        Bson update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", members)));
+        Bson update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", membersAcl)));
 
         QueryResult<UpdateResult> updateResult = studyCollection.update(parseQuery(query), update, null);
         if (updateResult.first().getModifiedCount() == 0) {

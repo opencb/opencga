@@ -290,22 +290,42 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
         // already have permissions on its own.
-        List<Group> groups = new ArrayList<>();
+        Map<String, List<String>> groups = new HashMap<>();
+        Set<String> users = new HashSet<>();
         for (String member : acl.getUsers()) {
             if (member.startsWith("@")) {
-                groups.add(dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first());
+                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
+                groups.put(group.getId(), group.getUserIds());
+            } else {
+                users.add(member);
             }
         }
         if (groups.size() > 0) {
             // Check if any user already have permissions set on their own.
-            for (Group group : groups) {
-                QueryResult<DatasetAcl> datasetAcl = getDatasetAcl(datasetId, group.getUserIds());
+            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+                QueryResult<DatasetAcl> datasetAcl = getDatasetAcl(datasetId, entry.getValue());
                 if (datasetAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + group.getId()
+                    throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + entry.getKey()
                             + " has already defined permissions for dataset " + datasetId);
                 }
             }
         }
+
+        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
+        // because the group will be given the permission.
+        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+            for (String userId : entry.getValue()) {
+                if (users.contains(userId)) {
+                    users.remove(userId);
+                }
+            }
+        }
+
+        // Create the definitive list of members that will be added in the acl
+        List<String> members = new ArrayList<>(users.size() + groups.size());
+        members.addAll(users.stream().collect(Collectors.toList()));
+        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
+        acl.setUsers(members);
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<DatasetAcl> datasetAcls = getDatasetAcl(datasetId, acl.getUsers());
