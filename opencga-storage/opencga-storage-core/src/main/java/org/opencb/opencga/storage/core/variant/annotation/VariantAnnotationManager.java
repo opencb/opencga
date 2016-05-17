@@ -23,9 +23,9 @@ import org.opencb.biodata.formats.feature.gff.io.GffReader;
 import org.opencb.biodata.formats.io.FormatReaderWrapper;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -56,6 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -191,7 +192,7 @@ public class VariantAnnotationManager {
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner =
                     new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
-        } catch (Exception e) {
+        } catch (ExecutionException e) {
             throw new IOException(e);
         }
 
@@ -268,22 +269,18 @@ public class VariantAnnotationManager {
         if (fileName.endsWith(".gff") || fileName.endsWith(".gff.gz")) {
             try {
                 GffReader gffReader = new GffReader(path);
-                ParallelTaskRunner<Gff, Void> ptr;
-                try {
-                    ptr = new ParallelTaskRunner<>(
-                            new FormatReaderWrapper<>(gffReader),
-                            gffList -> {
-                                for (Gff gff : gffList) {
-                                    Region region = new Region(normalizeChromosome(gff.getSequenceName()), gff.getStart(), gff.getEnd());
-                                    Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-                                    dbAdaptor.updateCustomAnnotations(query, key,
-                                            new ObjectMap("feature", gff.getFeature()), new QueryOptions());
-                                }
-                                return Collections.emptyList();
-                            }, null, config);
-                } catch (Exception e) {
-                    throw new StorageManagerException("Unable to create ParallelTaskRunner", e);
-                }
+                ParallelTaskRunner<Gff, Void> ptr = new ParallelTaskRunner<>(
+                        new FormatReaderWrapper<>(gffReader),
+                        gffList -> {
+                            for (Gff gff : gffList) {
+                                Region region = new Region(normalizeChromosome(gff.getSequenceName()), gff.getStart(), gff.getEnd());
+                                Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                dbAdaptor.updateCustomAnnotations(query, key,
+                                        new ObjectMap("feature", gff.getFeature()), new QueryOptions());
+                            }
+                            return Collections.emptyList();
+                        }, null, config);
+
                 try {
                     ptr.run();
                 } catch (ExecutionException e) {
@@ -295,24 +292,19 @@ public class VariantAnnotationManager {
         } else if (fileName.endsWith(".bed") || fileName.endsWith(".bed.gz")) {
             try {
                 BedReader bedReader = new BedReader(path);
-                ParallelTaskRunner<Bed, Void> ptr;
-                try {
-                    ptr = new ParallelTaskRunner<>(
-                            new FormatReaderWrapper<>(bedReader),
-                            bedList -> {
-                                for (Bed bed: bedList) {
-                                    Region region = new Region(normalizeChromosome(bed.getChromosome()), bed.getStart(), bed.getEnd());
-                                    Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-                                    ObjectMap annotation = new ObjectMap("name", bed.getName())
-                                                    .append("score", bed.getScore())
-                                                    .append("strand", bed.getStrand());
-                                    dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
-                                }
-                                return Collections.emptyList();
-                            }, null, config);
-                } catch (Exception e) {
-                    throw new StorageManagerException("Unable to create ParallelTaskRunner", e);
-                }
+                ParallelTaskRunner<Bed, Void> ptr = new ParallelTaskRunner<>(
+                        new FormatReaderWrapper<>(bedReader),
+                        bedList -> {
+                            for (Bed bed: bedList) {
+                                Region region = new Region(normalizeChromosome(bed.getChromosome()), bed.getStart(), bed.getEnd());
+                                Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                                ObjectMap annotation = new ObjectMap("name", bed.getName())
+                                        .append("score", bed.getScore())
+                                        .append("strand", bed.getStrand());
+                                dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
+                            }
+                            return Collections.emptyList();
+                        }, null, config);
                 try {
                     ptr.run();
                 } catch (ExecutionException e) {
@@ -322,32 +314,26 @@ public class VariantAnnotationManager {
                 throw new RuntimeException(e); // This should never happen!
             }
         } else if (fileName.endsWith(".vcf") || fileName.endsWith(".vcf.gz")) {
+            InputStream is = new FileInputStream(path.toFile());
+            if (fileName.endsWith(".gz")) {
+                is = new GZIPInputStream(is);
+            }
+            VariantSource source = new VariantSource(fileName, "f", "s", "s");
+            ParallelTaskRunner<Variant, Void> ptr = new ParallelTaskRunner<>(
+                    new VariantVcfHtsjdkReader(is, source),
+                    variantList -> {
+                        for (Variant variant : variantList) {
+                            Region region = new Region(normalizeChromosome(variant.getChromosome()), variant.getStart(), variant.getEnd());
+                            Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+                            ObjectMap annotation = new ObjectMap("annotation", variant.getAnnotation());
+                            dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
+                        }
+                        return Collections.emptyList();
+                    }, null, config);
             try {
-                InputStream is = new FileInputStream(fileName);
-                VariantSource source = new VariantSource("fileName", "f", "s", "s");
-                ParallelTaskRunner<Variant, Void> ptr;
-                try {
-                    ptr = new ParallelTaskRunner<>(
-                            new VariantVcfHtsjdkReader(is, source),
-                            variantList -> {
-                                for (Variant b : variantList) {
-                                    Region region = new Region(normalizeChromosome(b.getChromosome()), b.getStart(), b.getEnd());
-                                    Query query = new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
-                                    ObjectMap annotation = new ObjectMap("annotation", b.getAnnotation());
-                                    dbAdaptor.updateCustomAnnotations(query, key, annotation, new QueryOptions());
-                                }
-                                return Collections.emptyList();
-                            }, null, config);
-                } catch (Exception e) {
-                    throw new StorageManagerException("Unable to create ParallelTaskRunner", e);
-                }
-                try {
-                    ptr.run();
-                } catch (ExecutionException e) {
-                    throw new StorageManagerException("Error executing ParallelTaskRunner", e);
-                }
-            } catch (Exception e) {
-                throw new RuntimeException(e); // This should never happen!
+                ptr.run();
+            } catch (ExecutionException e) {
+                throw new StorageManagerException("Error executing ParallelTaskRunner", e);
             }
         } else {
             throw new StorageManagerException("Unknown format file : " + path);

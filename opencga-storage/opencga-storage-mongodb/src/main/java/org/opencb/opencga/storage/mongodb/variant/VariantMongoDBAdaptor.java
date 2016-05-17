@@ -990,7 +990,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key())) {
                 String value = query.getString(VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key());
-                addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder);
+                addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder, false);
             }
 
             DBObject geneTraitQuery = geneTraitBuilder.get();
@@ -1018,6 +1018,12 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addScoreFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.FUNCTIONAL_SCORE, value, builder,
                         VariantQueryParams.ANNOT_FUNCTIONAL_SCORE);
+            }
+
+            if (query.containsKey(VariantQueryParams.ANNOT_CUSTOM.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_CUSTOM.key());
+                addCompListQueryFilter(DocumentToVariantConverter.CUSTOM_ANNOTATION_FIELD, value, builder, true);
+                System.out.println("builder.get() = " + builder.get());
             }
 
             if (query.containsKey(VariantQueryParams.ANNOT_POPULATION_ALTERNATE_FREQUENCY.key())) {
@@ -1305,7 +1311,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     String[] split = numgt.split(":");
                     addCompQueryFilter(
                             DocumentToVariantConverter.STATS_FIELD + "." + DocumentToVariantStatsConverter.NUMGT_FIELD + "." + split[0],
-                            split[1], builder);
+                            split[1], builder, false);
                 }
             }
         }
@@ -1838,9 +1844,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * @param key
      * @param value
      * @param builder
+     * @param extendKey
      * @return
      */
-    private QueryBuilder addCompListQueryFilter(String key, String value, QueryBuilder builder) {
+    private QueryBuilder addCompListQueryFilter(String key, String value, QueryBuilder builder, boolean extendKey) {
         QueryOperation op = checkOperator(value);
         List<String> values = splitValue(value, op);
 
@@ -1852,7 +1859,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
         for (String elem : values) {
-            addCompQueryFilter(key, elem, compBuilder);
+            addCompQueryFilter(key, elem, compBuilder, extendKey);
         }
 
         if (op == QueryOperation.OR) {
@@ -1861,10 +1868,17 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return builder;
     }
 
-    private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder) {
-        String op = getOperator(value);
-        String obj = value.replaceFirst(op, "");
-        return addCompQueryFilter(key, obj, builder, op);
+    private QueryBuilder addCompQueryFilter(String key, String value, QueryBuilder builder, boolean extendKey) {
+        String[] strings = splitKeyOpValue(value);
+        String op = "";
+        if (strings.length == 3) {
+            if (extendKey && !strings[0].isEmpty()) {
+                key = key + "." + strings[0];
+            }
+            value = strings[2];
+            op = strings[1];
+        }
+        return addCompQueryFilter(key, value, builder, op);
     }
 
     private QueryBuilder addCompQueryFilter(String key, String obj, QueryBuilder builder, String op) {
@@ -1884,7 +1898,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 break;
             case "=":
             case "==":
-                builder.and(key).is(Double.parseDouble(obj));
+                try {
+                    builder.and(key).is(Double.parseDouble(obj));
+                } catch (NumberFormatException e) {
+                    builder.and(key).is(obj);
+                }
                 break;
             case "!=":
                 builder.and(key).notEquals(Double.parseDouble(obj));
@@ -2014,7 +2032,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      */
     private QueryBuilder addFrequencyFilter(String key, String alleleFrequencyField, String value, QueryBuilder builder,
                                             VariantQueryParams queryParam) {
-        return addFrequencyFilter(key, value, builder, queryParam, (v, qb) -> addCompQueryFilter(alleleFrequencyField, v, qb));
+        return addFrequencyFilter(key, value, builder, queryParam, (v, qb) -> addCompQueryFilter(alleleFrequencyField, v, qb, false));
     }
 
     /**
@@ -2147,10 +2165,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (cohortId != null) {
                 statsBuilder.and(DocumentToVariantStatsConverter.COHORT_ID).is(cohortId);
             }
-            addCompQueryFilter(key, operatorValue, statsBuilder);
+            addCompQueryFilter(key, operatorValue, statsBuilder, false);
             builder.and(DocumentToVariantConverter.STATS_FIELD).elemMatch(statsBuilder.get());
         } else {
-            addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, value, builder);
+            addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, value, builder, false);
         }
         return builder;
     }

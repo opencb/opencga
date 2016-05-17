@@ -91,7 +91,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         ANNOT_SIFT("sift", TEXT_ARRAY,
                 "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant"),
         ANNOT_PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY,
-                "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or {protein_score}[~=|=|]{description} "
+                "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or {protein_score}[~=|=]{description} "
                         + "e.g. polyphen>0.1 , sift=tolerant"),
         ANNOT_CONSERVATION("conservation", TEXT_ARRAY,
                 "Conservation score: {conservation_score}[<|>|<=|>=]{number}  e.g. phastCons>0.5,phylop<0.1,gerp>0.1"),
@@ -113,6 +113,9 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
                 "List of drug names"),
         ANNOT_FUNCTIONAL_SCORE("annot-functional-score", TEXT_ARRAY,
                 "Functional score: {functional_score}[<|>|<=|>=]{number}  e.g. cadd_scaled>5.2 , cadd_raw<=0.3"),
+
+        ANNOT_CUSTOM("annot-custom", TEXT_ARRAY,
+                "Custom annotation: {key}[<|>|<=|>=]{number} or {key}[~=|=]{text}"),
 
 
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");
