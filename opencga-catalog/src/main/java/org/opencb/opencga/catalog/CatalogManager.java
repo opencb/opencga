@@ -568,9 +568,10 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.addUsersToGroup(userId, studyId, groupId, userIds);
     }
 
-    public void removeUsersFromGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
+    public QueryResult removeUsersFromGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         authorizationManager.removeUsersFromGroup(userId, studyId, groupId, userIds);
+        return new QueryResult("removeUsersFromGroup");
     }
 
     public QueryResult shareStudy(long studyId, String members, String roleId, String sessionId) throws CatalogException {
