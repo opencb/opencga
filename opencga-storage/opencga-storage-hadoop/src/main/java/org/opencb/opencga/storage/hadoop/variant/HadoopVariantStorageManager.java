@@ -44,6 +44,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES = "opencga.storage.hadoop.jar-with-dependencies";
     public static final String HADOOP_LOAD_ARCHIVE = "hadoop.load.archive";
     public static final String HADOOP_LOAD_VARIANT = "hadoop.load.variant";
+    public static final String HADOOP_LOAD_VARIANT_RESUME = "hadoop.load.variant.resume";
     public static final String HADOOP_DELETE_FILE = "hadoop.delete.file";
     //Other files to be loaded from Archive to Variant
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";

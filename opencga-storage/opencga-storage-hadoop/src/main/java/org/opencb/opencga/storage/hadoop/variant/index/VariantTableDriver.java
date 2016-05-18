@@ -9,6 +9,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
@@ -49,12 +50,15 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
             BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
             if (currentStatus != null) {
                 switch (currentStatus) {
-                    case RUNNING:
-                        throw new StorageHadoopException("Unable to load a new batch. Already loading batch: "
-                                + batchFileOperation);
                     case READY:
                         batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, batchFileOperation.getTimestamp() + 1);
                         break;
+                    case RUNNING:
+                        if (!conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false)) {
+                            throw new StorageHadoopException("Unable to load a new batch. Already loading batch: "
+                                    + batchFileOperation);
+                        }
+                        // Do not break. Resuming last loading, go to error case.
                     case ERROR:
                         if (batchFileOperation.getFileIds().equals(fileIds)) {
                             LOG.info("Resuming Last batch loading due to error.");
