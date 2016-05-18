@@ -115,6 +115,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         return studyConfiguration;
     }
 
+    @Test
     @Override
     public void multiIndexPlatinum() throws Exception {
         super.multiIndexPlatinum();
@@ -172,10 +173,24 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         }
     }
 
+
+
+    @Test
+    @Override
+    public void multiRegionBatchIndex() throws Exception {
+        super.multiRegionBatchIndex();
+        checkLoadedVariants();
+    }
+
+    @Test
     @Override
     public void multiRegionIndex() throws Exception {
         super.multiRegionIndex();
 
+        checkLoadedVariants();
+    }
+
+    public void checkLoadedVariants() throws Exception {
         try (VariantMongoDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME)) {
             MongoDBCollection variantsCollection = dbAdaptor.getVariantsCollection();
 
@@ -201,6 +216,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         }
     }
 
+    @Test
     @Override
     public void indexWithOtherFieldsExcludeGT() throws Exception {
         super.indexWithOtherFieldsExcludeGT();

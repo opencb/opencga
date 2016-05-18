@@ -161,7 +161,7 @@ public class AnalysisOutputRecorder {
     }
 
     public void postProcessIndexJob(Job job, StorageETLResult storageETLResult, Exception e, String sessionId) throws CatalogException {
-        boolean jobFailed = storageETLResult == null;
+        boolean jobFailed = storageETLResult == null || storageETLResult.getLoadError() != null || storageETLResult.getTransformError() != null;
 
         Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
         File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
@@ -229,8 +229,12 @@ public class AnalysisOutputRecorder {
         }
 
         catalogManager.modifyFile(indexedFileId, new ObjectMap("index", index), sessionId); //Modify status
-        if (index.getStatus().getStatus().equals(Index.IndexStatus.READY) && Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(), VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString())) {
-            QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()), new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
+        boolean calculateStats = Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(),
+                VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString());
+
+        if (index.getStatus().getStatus().equals(Index.IndexStatus.READY) && calculateStats) {
+            QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()),
+                    new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (queryResult.getNumResults() != 0) {
                 logger.debug("Default cohort status set to READY");
                 Cohort defaultCohort = queryResult.first();

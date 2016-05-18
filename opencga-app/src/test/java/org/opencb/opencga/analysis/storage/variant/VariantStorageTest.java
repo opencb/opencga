@@ -15,6 +15,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
@@ -32,7 +33,6 @@ import org.slf4j.LoggerFactory;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -62,14 +62,12 @@ public class VariantStorageTest {
     private long coh3;
     private long coh4;
     private long coh5;
-    private String catalogPropertiesFile;
+
     private final String userId = "user";
     private final String dbName = "opencga_variants_test";
 
     public void before () throws Exception {
         catalogManager = opencga.getCatalogManager();
-        Path opencgaHome = opencga.getOpencgaHome();
-
         clearDB(dbName);
 
         fileMetadataReader = FileMetadataReader.get(catalogManager);
@@ -78,7 +76,8 @@ public class VariantStorageTest {
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
-        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null, null, null, sessionId).first().getId();
+        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null,
+                Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null, null, null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
         File file1 = create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         File file2 = create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
@@ -106,8 +105,7 @@ public class VariantStorageTest {
     }
 
     public File beforeAggregated(String fileName, VariantSource.Aggregation aggregation) throws Exception {
-        Path opencgaHome = opencga.getOpencgaHome();
-
+        catalogManager = opencga.getCatalogManager();
         clearDB(dbName);
 
         catalogManager = opencga.getCatalogManager();
@@ -181,7 +179,8 @@ public class VariantStorageTest {
 //        cohorts.put("all", null);
         checkCalculatedStats(cohorts);
 
-        runStorageJob(variantStorage.calculateStats(outputId, Collections.singletonList(coh2), sessionId, new QueryOptions()).first(), sessionId);
+        Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh2), sessionId, new QueryOptions(AnalysisJobExecutor.EXECUTE, true)).first();
+        assertEquals(Status.READY, job.getStatus().getStatus());
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
         checkCalculatedStats(cohorts);
 

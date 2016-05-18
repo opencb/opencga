@@ -76,6 +76,9 @@ public class AnalysisMain {
                         case "variant":
                             commandExecutor = new VariantCommandExecutor(cliOptionsParser.getVariantCommandOptions());
                             break;
+                        case "alignment":
+                            commandExecutor = new AlignmentCommandExecutor(cliOptionsParser.getAlignmentCommandOptions());
+                            break;
                         default:
                             System.err.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

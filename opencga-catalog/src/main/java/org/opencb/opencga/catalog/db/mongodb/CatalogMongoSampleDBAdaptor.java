@@ -608,6 +608,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return sampleCollection.aggregate(aggregation, sampleConverter, new QueryOptions()).getResult();
     }
 
+    @Deprecated
     public void checkInUse(long sampleId) throws CatalogDBException {
         long studyId = getStudyIdBySampleId(sampleId);
 
@@ -635,8 +636,24 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                             .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
-
     }
+
+    /**
+     * To be able to delete a sample, the sample does not have to be part of any cohort.
+     *
+     * @param sampleId sample id.
+     * @throws CatalogDBException if the sampleId is used on any cohort.
+     */
+    private void checkCanDelete(long sampleId) throws CatalogDBException {
+        Query query = new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
+            List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor()
+                    .get(query, new QueryOptions(MongoDBCollection.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key())).getResult();
+            throw new CatalogDBException("The sample {" + sampleId + "} cannot be deleted/removed. It is being used in "
+                    + cohorts.size() + " cohorts: [" + cohorts.stream().map(Cohort::getId).collect(Collectors.toList()).toString() + "]");
+        }
+    }
+
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
@@ -658,9 +675,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
+
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -677,9 +692,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -732,75 +744,38 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long startTime = startQuery();
-//        checkSampleId(id);
-//        QueryResult<Sample> sample = getSample(id, null);
-//        delete(new Query(QueryParams.ID.key(), id), force);
-//        return endQuery("Delete sample", startTime, sample);
-        /*
+        long startTime = startQuery();
 
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            // Check if the sample is being used anywhere
-            checkInUse(id);
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Sample id '{}' does not exist", id);
+        checkSampleId(id);
+        // Check the sample is active
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            Sample sample = get(query, options).first();
+            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getStatus());
         }
-        return sampleQueryResult;
-        */
+
+        checkCanDelete(id);
+
+        // Change the status of the sample to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        return endQuery("Delete sample", startTime, get(query, queryOptions));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long startTime = startQuery();
-//
-//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-//        List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())
-//                .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
-//
-//        List<Long> sampleIdsToRemove = new ArrayList<>();
-//        for (Sample sample : samples) {
-//            try {
-//                checkInUse(sample.getId());
-//                sampleIdsToRemove.add(sample.getId());
-//            } catch (CatalogDBException e) {
-//                logger.info(e.getMessage());
-//            }
-//        }
-//
-//        QueryResult<UpdateResult> deleted;
-//        if (sampleIdsToRemove.size() > 0) {
-//            deleted = sampleCollection.update(parseQuery(new Query(QueryParams.ID.key(), sampleIdsToRemove)),
-//                    Updates.combine(
-//                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-//                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-//                    new QueryOptions());
-//        } else {
-//            throw CatalogDBException.deleteError("Sample");
-//        }
-//
-//        return endQuery("Delete sample", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-        /*
         long startTime = startQuery();
-
-//        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
-//        checkInUse(sampleId);
-        // Fixme: Remove the id of the sample from the sampleIds array from file
-        Bson bson = parseQuery(query);
-        DeleteResult deleteResult = sampleCollection.remove(bson, null).getResult().get(0);
-        if (deleteResult.getDeletedCount() == 0) {
-            throw CatalogDBException.newInstance("Sample id '{}' not found", query.get(CatalogSampleDBAdaptor.QueryParams.ID.key()));
-        } else {
-            return endQuery("delete sample", startTime, Collections.singletonList(deleteResult.getDeletedCount()));
+        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        for (Sample sample : sampleQueryResult.getResult()) {
+            delete(sample.getId(), queryOptions);
         }
-        */
+        return endQuery("Delete sample", startTime, Collections.singletonList(sampleQueryResult.getNumTotalResults()));
     }
 
     @Override
@@ -879,6 +854,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -945,5 +923,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     public MongoDBCollection getSampleCollection() {
         return sampleCollection;
+    }
+
+    QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
+        return update(sampleId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 }

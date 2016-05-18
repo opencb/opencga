@@ -39,6 +39,7 @@ import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -482,9 +483,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         List<Bson> aggregates = new ArrayList<>();
 
         aggregates.add(Aggregates.unwind("$projects"));
@@ -508,9 +506,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         List<Bson> aggregates = new ArrayList<>();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         aggregates.add(Aggregates.match(parseQuery(query)));
         aggregates.add(Aggregates.unwind("$projects"));
 
@@ -536,16 +531,16 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
 
-        //BasicDBObject projectParameters = new BasicDBObject();
         Bson projectParameters = new Document();
 
-        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.ORGANIZATION.key(), QueryParams.LAST_ACTIVITY.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
             }
         }
-        String[] acceptedIntParams = {"diskQuota", "diskUsage"};
+        String[] acceptedIntParams = {QueryParams.DISK_USAGE.key()};
         for (String s : acceptedIntParams) {
             if (parameters.containsKey(s)) {
                 int anInt = parameters.getInt(s, Integer.MIN_VALUE);
@@ -554,12 +549,18 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
                 }
             }
         }
-        Map<String, Object> attributes = parameters.getMap("attributes");
+        Map<String, Object> attributes = parameters.getMap(QueryParams.ATTRIBUTES.key());
         if (attributes != null) {
             for (Map.Entry<String, Object> entry : attributes.entrySet()) {
                 ((Document) projectParameters).put("projects.$.attributes." + entry.getKey(), entry.getValue());
             }
 //            projectParameters.put("projects.$.attributes", attributes);
+        }
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            ((Document) projectParameters).put("projects.$.attributes." + QueryParams.STATUS_STATUS.key(),
+                    parameters.get(QueryParams.STATUS_STATUS.key()));
+            ((Document) projectParameters).put("projects.$.attributes." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
 
         QueryResult<UpdateResult> updateResult = new QueryResult<>();
@@ -599,48 +600,51 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Project> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
-//        long startTime = startQuery();
-//        Query query = new Query(CatalogProjectDBAdaptor.QueryParams.ID.key(), id);
-//        delete(query, force);
-//        return endQuery("Delete project", startTime, get(query, new QueryOptions()));
+        long startTime = startQuery();
+
+        checkProjectId(id);
+        // Check the project is active
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            Project project = get(query, options).first();
+            throw new CatalogDBException("The project {" + id + "} was already " + project.getStatus().getStatus());
+        }
+
+        // If we don't find the force parameter, we check first if the user does not have an active project.
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            // Delete the active studies (if any)
+            query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), id);
+            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(query, queryOptions);
+        }
+
+        // Change the status of the project to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        return endQuery("Delete project", startTime, get(query, queryOptions));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
-//        long startTime = startQuery();
-//
-//        List<Project> projectList = get(query, new QueryOptions()).getResult();
-//        List<Long> projectListIds = new ArrayList<>();
-//        List<Long> studyIds = new ArrayList<>();
-//        for (Project project : projectList) {
-//            projectListIds.add(project.getId());
-//            for (Study study : project.getStudies()) {
-//                studyIds.add(study.getId());
-//            }
-//        }
-//
-//        if (studyIds.size() > 0) {
-//            Query studyIdsQuery = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), StringUtils.join(studyIds.toArray(), ","));
-//            dbAdaptorFactory.getCatalogStudyDBAdaptor().delete(studyIdsQuery, queryOptions);
-//        }
-//
-//        if (projectListIds.size() > 0) {
-//            QueryResult<UpdateResult> deleted = userCollection.update(Filters.and(
-//                    Filters.all("projects.id", projectListIds),
-//                    Filters.nin("projects." + QueryParams.STATUS_STATUS.key(), Arrays.asList(Status.DELETED, Status.REMOVED))),
-//                    new Document("$set", new Document("projects.$." + QueryParams.STATUS_STATUS.key(), Status.DELETED)
-//                            .append("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())), new QueryOptions());
-//
-//            if (deleted.first().getModifiedCount() == 0) {
-//                throw CatalogDBException.alreadyDeletedOrRemoved("Project");
-//            } else {
-//                return endQuery("Delete project", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-//            }
-//        }
-//
-//        throw CatalogDBException.deleteError("Project");
+        long startTime = startQuery();
+        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        QueryResult<Project> projectQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        for (Project project : projectQueryResult.getResult()) {
+            delete(project.getId(), queryOptions);
+        }
+        return endQuery("Delete project", startTime, Collections.singletonList(projectQueryResult.getNumTotalResults()));
+    }
+
+    private QueryResult<Project>  setStatus(long projectId, String status) throws CatalogDBException {
+        return update(projectId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
@@ -700,6 +704,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
+
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -739,4 +747,19 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
     }
 
+    /**
+     * Checks whether the projectId has any active study.
+     *
+     * @param projectId project id.
+     * @throws CatalogDBException when the project has active studies. Studies must be deleted first.
+     */
+    private void checkCanDelete(long projectId) throws CatalogDBException {
+        checkProjectId(projectId);
+        Query query = new Query(PRIVATE_PROJECT_ID, projectId).append(CatalogStudyDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+        Long count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The project {" + projectId + "} cannot be deleted. The project has " + count
+                    + " studies in use.");
+        }
+    }
 }

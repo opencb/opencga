@@ -17,12 +17,14 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 
-import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -145,22 +147,25 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
-    QueryResult<Long> removeCohortDependencies(List<Long> cohortIds) throws CatalogDBException;
-
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT, ""),
         CREATOR_ID("creatorId", TEXT_ARRAY, ""),
+        DESCRIPTION("description", TEXT, ""),
+        CIPHER("cipher", TEXT, ""),
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
+        URI("uri", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
-        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
+        STATS("stats", TEXT, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_ID("groups.id", TEXT_ARRAY, ""),
@@ -181,40 +186,40 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         EXPERIMENT_CENTER("experiments.center", TEXT_ARRAY, ""),
         EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
-        FILE_ID("files.id", INTEGER_ARRAY, ""),
-        FILE_NAME("files.name", TEXT_ARRAY, ""),
-        FILE_TYPE("files.type", TEXT_ARRAY, ""),
-        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
-        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
-        FILE_DISK_USAGE("files.diskUsage", INTEGER_ARRAY, ""),
+//        FILE_ID("files.id", INTEGER_ARRAY, ""),
+//        FILE_NAME("files.name", TEXT_ARRAY, ""),
+//        FILE_TYPE("files.type", TEXT_ARRAY, ""),
+//        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
+//        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
+//        FILE_DISK_USAGE("files.diskUsage", INTEGER_ARRAY, ""),
 
-        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
-        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
-        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
-        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
-        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
-        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
-        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
+//        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
+//        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
+//        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
+//        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
+//        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
+//        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
+//        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
 
-        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
-        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
-        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
-        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
-        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
-        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
+//        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
+//        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
+//        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
 
-        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
-        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
-        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
-        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),
+//        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
+//        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
+//        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
+//        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),
 
-        DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
-        DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
+//        DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
+//        DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
 
         COHORTS("cohorts", TEXT_ARRAY, ""),
-        COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
-        COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
-        COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
+//        COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
+//        COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
+//        COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
 
         VARIABLE_SET("variableSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSets.id", INTEGER_ARRAY, ""),

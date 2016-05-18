@@ -38,7 +38,7 @@ import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.server.utils.VariantFetcher;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
@@ -443,9 +443,10 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") File.Type type,
                            @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
-                           @ApiParam(value = "bioformat", required = false) @DefaultValue("") @QueryParam("bioformat") File.Bioformat bioformat,
+                           @ApiParam(value = "Comma separated Type values. For existing Types see files/help", required = false) @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/help", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "Comma separated Format values. For existing Formats see files/help", required = false) @DefaultValue("") @QueryParam("format") String formats,
                            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
                            @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
@@ -468,14 +469,14 @@ public class FileWSServer extends OpenCGAWSServer {
                     && (query.get(CatalogFileDBAdaptor.QueryParams.NAME.key()) == null
                     || query.getString(CatalogFileDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
                 query.remove(CatalogFileDBAdaptor.QueryParams.NAME.key());
-                System.out.println("Name attribute empty, it's been removed");
+                logger.debug("Name attribute empty, it's been removed");
             }
 
             if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
                 qOptions.put(MongoDBCollection.LIMIT, 1000);
-                System.out.println("Adding a limit of 1000");
+                logger.debug("Adding a limit of 1000");
             }
-            System.out.println("query = " + query.toJson());
+            logger.debug("query = " + query.toJson());
             QueryResult<File> result = catalogManager.searchFile(studyIdNum, query, qOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -744,7 +745,7 @@ public class FileWSServer extends OpenCGAWSServer {
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
                 QueryResult result;
-                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
+                result = variantFetcher.getVariantsPerFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
         } catch (Exception e) {
