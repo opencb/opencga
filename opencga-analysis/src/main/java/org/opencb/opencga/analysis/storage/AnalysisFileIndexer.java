@@ -221,17 +221,26 @@ public class AnalysisFileIndexer {
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
                     new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION, "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION,
+                        "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
             }
 
+            ObjectMap updateParams = new ObjectMap();
+
+            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
+                updateParams.append("status.status", Cohort.CohortStatus.CALCULATING);
+            }
             //Samples are the already indexed plus those that are going to be indexed
             Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
             samples.addAll(sampleList.stream().map(Sample::getId).collect(Collectors.toList()));
             if (samples.size() != defaultCohort.getSamples().size()) {
                 logger.debug("Updating \"{}\" cohort", StudyEntry.DEFAULT_COHORT);
-                catalogManager.modifyCohort(defaultCohort.getId(), new ObjectMap("samples", new ArrayList<>(samples)), new QueryOptions(), sessionId);
+                updateParams.append("samples", new ArrayList<>(samples));
+            }
+            if (!updateParams.isEmpty()) {
+                catalogManager.modifyCohort(defaultCohort.getId(), updateParams, new QueryOptions(), sessionId);
             }
         }
 
@@ -383,18 +392,18 @@ public class AnalysisFileIndexer {
         String commandLine;
 
 
+//        String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
+        String opencgaAnalysisBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_ANALYSIS_BIN_NAME).toString();
         if(originalFile.getBioformat() == File.Bioformat.ALIGNMENT || name.endsWith(".bam") || name.endsWith(".sam")) {
-            String opencgaStorageBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_STORAGE_BIN_NAME).toString();
             int chunkSize = 200;    //TODO: Read from properties.
-            StringBuilder sb = new StringBuilder(opencgaStorageBin)
+            StringBuilder sb = new StringBuilder(opencgaAnalysisBin)
                     .append(" alignment index ")
-                    .append(" --storage-engine ").append(dataStore.getStorageEngine())
                     .append(" --file-id ").append(originalFile.getId())
-                    .append(" --database ").append(dataStore.getDbName())
-                    .append(" --input ").append(catalogManager.getFileUri(inputFile))
+                    .append(" --outdir-id ").append(outDirId)
                     .append(" --calculate-coverage ")
                     .append(" --mean-coverage ").append(chunkSize)
-                    .append(" --outdir ").append(outDirUri);
+                    .append(" --session-id ").append(sessionId)
+                    .append(" --job-id ").append(randomString);
 //                    .append(" --credentials ")
             if (options.containsKey(LOG_LEVEL)) {
                 sb.append(" --log-level ").append(options.getString(LOG_LEVEL));
@@ -406,7 +415,6 @@ public class AnalysisFileIndexer {
         } else if (name.endsWith(".fasta") || name.endsWith(".fasta.gz")) {
             throw new UnsupportedOperationException();
         } else if (originalFile.getBioformat() == File.Bioformat.VARIANT || name.contains(".vcf") || name.contains(".vcf.gz")) {
-            String opencgaAnalysisBin = Paths.get(Config.getOpenCGAHome(), "bin", OPENCGA_ANALYSIS_BIN_NAME).toString();
 
             StringBuilder sb = new StringBuilder(opencgaAnalysisBin)
                     .append(" variant index ")

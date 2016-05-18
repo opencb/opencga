@@ -328,6 +328,10 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             cohortParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
             cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
+        if (parameters.containsKey("status")) {
+            throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_STATUS.key()
+                    + "\" instead of \"status\"");
+        }
 
         if (!cohortParams.isEmpty()) {
             QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query), new Document("$set", cohortParams), null);
