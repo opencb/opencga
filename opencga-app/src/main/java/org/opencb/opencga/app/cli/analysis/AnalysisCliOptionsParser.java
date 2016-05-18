@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.analysis;
 
 import com.beust.jcommander.*;
+import com.beust.jcommander.converters.CommaParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
@@ -24,6 +25,7 @@ import org.opencb.opencga.core.common.GitRepositoryState;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -41,6 +43,7 @@ public class AnalysisCliOptionsParser {
     private FunctionalCommandOptions functionalCommandOptions;
     private VariantCommandOptions variantCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
+    private AlignmentCommandOptions alignmentCommandOptions;
 
 
     public AnalysisCliOptionsParser() {
@@ -65,10 +68,20 @@ public class AnalysisCliOptionsParser {
 
         variantCommandOptions = new VariantCommandOptions();
         jCommander.addCommand("variant", variantCommandOptions);
-        JCommander catalogSubCommands = jCommander.getCommands().get("variant");
-        catalogSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
-        catalogSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
-        catalogSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+        JCommander variantSubCommands = jCommander.getCommands().get("variant");
+        variantSubCommands.addCommand("index", variantCommandOptions.indexVariantCommandOptions);
+        variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
+        variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
+        variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
+        variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
+
+        alignmentCommandOptions = new AlignmentCommandOptions();
+        jCommander.addCommand("alignment", alignmentCommandOptions);
+        JCommander alignmentSubCommands = jCommander.getCommands().get("alignment");
+        alignmentSubCommands.addCommand("index", alignmentCommandOptions.indexAlignmentCommandOptions);
+        alignmentSubCommands.addCommand("query", alignmentCommandOptions.queryAlignmentCommandOptions);
+//        alignmentSubCommands.addCommand("stats", alignmentCommandOptions.statsVariantCommandOptions);
+//        alignmentSubCommands.addCommand("annotate", alignmentCommandOptions.annotateVariantCommandOptions);
 
         toolsCommandOptions = new ToolsCommandOptions();
         jCommander.addCommand("tools", toolsCommandOptions);
@@ -107,7 +120,6 @@ public class AnalysisCliOptionsParser {
         }
         return commonCommandOptions.help;
     }
-
 
     /**
      * This class contains all those parameters available for all 'commands'
@@ -196,6 +208,8 @@ public class AnalysisCliOptionsParser {
     public class VariantCommandOptions extends CommandOptions {
 
         final IndexVariantCommandOptions indexVariantCommandOptions;
+        final StatsVariantCommandOptions statsVariantCommandOptions;
+        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
         final QueryVariantCommandOptions queryVariantCommandOptions;
         final IbsVariantCommandOptions ibsVariantCommandOptions;
         final DeleteVariantCommandOptions deleteVariantCommandOptions;
@@ -204,9 +218,32 @@ public class AnalysisCliOptionsParser {
 
         public VariantCommandOptions() {
             this.indexVariantCommandOptions = new IndexVariantCommandOptions();
+            this.statsVariantCommandOptions = new StatsVariantCommandOptions();
+            this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
             this.queryVariantCommandOptions = new QueryVariantCommandOptions();
             this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
             this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
+        }
+    }
+
+
+    /*
+     * Alignment CLI options
+     */
+    @Parameters(commandNames = {"alignment"}, commandDescription = "Implement several tools for the genomic alignment analysis")
+    public class AlignmentCommandOptions extends CommandOptions {
+
+        final IndexAlignmentCommandOptions indexAlignmentCommandOptions;
+        final QueryAlignmentCommandOptions queryAlignmentCommandOptions;
+//        final StatsVariantCommandOptions statsVariantCommandOptions;
+//        final AnnotateVariantCommandOptions annotateVariantCommandOptions;
+//        final DeleteVariantCommandOptions deleteVariantCommandOptions;
+
+        AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        public AlignmentCommandOptions() {
+            this.indexAlignmentCommandOptions = new IndexAlignmentCommandOptions();
+            this.queryAlignmentCommandOptions = new QueryAlignmentCommandOptions();
         }
     }
 
@@ -235,15 +272,7 @@ public class AnalysisCliOptionsParser {
      * Auxiliary class for Database connection.
      */
     class CatalogDatabaseCommandOptions {
-//
-//        @Parameter(names = {"-d", "--database"}, description = "DataBase name to load the data, eg. opencga_catalog")
-//        public String database;
-//
-//        @Parameter(names = {"-H", "--host"}, description = "DataBase host and port, eg. localhost:27017")
-//        public String host;
-//
-//        @Parameter(names = {"-p", "--password"}, description = "Admin password", password = true, arity = 0)
-//        public String password;
+
     }
 
 
@@ -298,10 +327,17 @@ public class AnalysisCliOptionsParser {
 
     }
 
+    public class JobCommand {
+        @Parameter(names = {"--queue"}, description = "Enqueue the job. Do not execute", required = false, arity = 0)
+        public boolean queue = false;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
+        public String jobId = null;
+    }
 
 
     /*
-     *  CATALOG SUB-COMMANDS
+     *  Variant SUB-COMMANDS
      */
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index variants file")
@@ -309,6 +345,9 @@ public class AnalysisCliOptionsParser {
 
         @ParametersDelegate
         public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
 
 //
 //        @Parameter(names = {"-i", "--input"}, description = "File to index in the selected backend", required = true, variableArity = true)
@@ -332,10 +371,7 @@ public class AnalysisCliOptionsParser {
 //        @Parameter(names = {"--study-id"}, description = "Unque ID for the study", arity = 1)
 //        public long studyId;
 
-        @Parameter(names = {"--job-id"}, description = "Job id", hidden = true,required = false, arity = 1)
-        public String jobId = null;
-
-        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = false, arity = 1)
+        @Parameter(names = {"--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
         public String fileId = VariantStorageManager.Options.FILE_ID.defaultValue().toString();
 
         @Parameter(names = {"-o", "--outdir"}, description = "Unique ID for the file", required = false, arity = 1)
@@ -371,6 +407,111 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
         public boolean overwriteAnnotations;
+
+    }
+
+    @Parameters(commandNames = {"stats"}, commandDescription = "Create and load stats into a database.")
+    public class StatsVariantCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
+
+//        @Parameter(names = {"--create"}, description = "Run only the creation of the stats to a file")
+//        public boolean create = false;
+//
+//        @Parameter(names = {"--load"}, description = "Load the stats from an already existing FILE directly into the database. FILE is a "
+//                + "prefix with structure <INPUT_FILENAME>.<TIME>")
+//        public boolean load = false;
+
+        @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
+        public boolean overwriteStats = false;
+
+        @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
+                + "Assumes that existing stats are correct")
+        public boolean updateStats = false;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "Calculate stats only for the selected file", required = false, arity = 1)
+        public int fileId;
+
+        @Parameter(names = {"--cohort-ids"}, description = "Cohort Ids for the cohorts to be calculated.")
+        String cohortIds;
+
+        // FIXME: Hidden?
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: database name", required = false, arity = 1)
+        public String fileName;
+
+        @Parameter(names = {"--outdir-id"}, description = "Output directory", required = false, arity = 1)
+        public String outdirId;
+
+//        @Parameter(names = {"-o", "--outdir"}, description = "Output directory.", required = false, arity = 1)
+//        public String outdir = ".";
+
+        @Parameter(names = {"--aggregated"}, description = "Aggregated VCF File: basic or EVS (optional)", arity = 1)
+        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        public String aggregationMappingFile;
+
+
+    }
+
+
+    @Parameters(commandNames = {"annotate"}, commandDescription = "Create and load variant annotations into the database")
+    public class AnnotateVariantCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Unique ID for the study where the file is classified", required = true,
+                arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-o", "--outdir-id"}, description = "Output directory", required = false, arity = 1)
+        public String outdirId;
+
+        @Parameter(names = {"--create"}, description = "Run only the creation of the annotations to a file (specified by --output-filename)")
+        public boolean create = false;
+
+        @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
+        public String load = null;
+
+        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations in variants already present")
+        public boolean overwriteAnnotations = false;
+
+        @Parameter(names = {"--output-filename"}, description = "Output file name. Default: dbName", required = false, arity = 1)
+        public String fileName;
+
+        @Parameter(names = {"--species"}, description = "Species. Default hsapiens", required = false, arity = 1)
+        public String species = "hsapiens";
+
+        @Parameter(names = {"--assembly"}, description = "Assembly. Default GRc37", required = false, arity = 1)
+        public String assembly = "GRc37";
+
+        @Parameter(names = {"--filter-region"}, description = "Comma separated region filters", splitter = CommaParameterSplitter.class)
+        public List<String> filterRegion;
+
+        @Parameter(names = {"--filter-chromosome"}, description = "Comma separated chromosome filters", splitter = CommaParameterSplitter.class)
+        public List<String> filterChromosome;
+
+        @Parameter(names = {"--filter-gene"}, description = "Comma separated gene filters", splitter = CommaParameterSplitter.class)
+        public String filterGene;
+
+        @Parameter(names = {"--filter-annot-consequence-type"}, description = "Comma separated annotation consequence type filters",
+                splitter = CommaParameterSplitter.class)
+        public List filterAnnotConsequenceType = null; // TODO will receive CSV, only available when create annotations
 
     }
 
@@ -534,7 +675,6 @@ public class AnalysisCliOptionsParser {
 
     }
 
-
     @Parameters(commandNames = {"delete"}, commandDescription = "[PENDING] Delete an indexed file from the Database")
     public class DeleteVariantCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -546,8 +686,77 @@ public class AnalysisCliOptionsParser {
     }
 
 
+    /*
+     *  ALIGNMENT SUB-COMMANDS
+     */
 
 
+    @Parameters(commandNames = {"index-alignments"}, commandDescription = "Index alignment file")
+    public class IndexAlignmentCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public JobCommand job = new JobCommand();
+
+        @Parameter(names = {"-i", "--file-id"}, description = "Unique ID for the file", required = true, arity = 1)
+        public String fileId;
+
+        @Parameter(names = "--calculate-coverage", description = "Calculate coverage while indexing")
+        public boolean calculateCoverage = true;
+
+        @Parameter(names = "--mean-coverage", description = "Specify the chunk sizes to calculate average coverage. Only works if flag " +
+                "\"--calculate-coverage\" is also given. Please specify chunksizes as CSV: --mean-coverage 200,400", required = false)
+        public List<String> meanCoverage;
+
+        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory where output files will be saved (optional)", arity = 1, required = false)
+        public String outdirId;
+
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        boolean transform = false;
+
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        boolean load = false;
+
+    }
+
+    @Parameters(commandNames = {"query"}, commandDescription = "Search over indexed alignments")
+    public class QueryAlignmentCommandOptions extends QueryCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be used as filter", required = false)
+        public String study;
+
+        @Parameter(names = {"--file-id"}, description = "File unique ID.", required = false, arity = 1)
+        public String fileId;
+//
+//        @Parameter(names = {"--file-path"}, description = "", required = false, arity = 1)
+//        public String filePath;
+
+        @Parameter(names = {"--include-coverage"}, description = " [CSV]", required = false)
+        public boolean coverage = false;
+
+        @Parameter(names = {"-H", "--histogram"}, description = " ", required = false, arity = 1)
+        public boolean histogram = false;
+
+        @Parameter(names = {"--view-as-pairs"}, description = " ", required = false)
+        public boolean asPairs;
+
+        @Parameter(names = {"--process-differences"}, description = " ", required = false)
+        public boolean processDifferences;
+
+        @Parameter(names = {"-S", "--stats-filter"}, description = " [CSV]", required = false)
+        public List<String> stats = new LinkedList<>();
+    }
+
+
+    /*
+     *  Tools SUB-COMMANDS
+     */
 
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")
@@ -658,4 +867,9 @@ public class AnalysisCliOptionsParser {
     public ToolsCommandOptions getToolsCommandOptions() {
         return toolsCommandOptions;
     }
+
+    public AlignmentCommandOptions getAlignmentCommandOptions() {
+        return alignmentCommandOptions;
+    }
+
 }

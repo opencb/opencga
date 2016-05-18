@@ -15,4 +15,8 @@ public interface ExecutorManager {
 
     void execute(Job job, String sessionId) throws CatalogException, AnalysisExecutionException;
 
+    // String status(Job job, String sessionId);
+
+    // Job kill(Job job, String sessionId);
+
 }

@@ -30,12 +30,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -93,18 +92,20 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return endQuery("createIndividual", startQuery, Collections.singletonList(individual));
     }
 
+    @Deprecated
     @Override
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException {
-        long startQuery = startQuery();
-
-        QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
-                FILTER_ROUTE_INDIVIDUALS));
-        Individual individual = parseObject(result, Individual.class);
-        if (individual == null) {
-            throw CatalogDBException.idNotFound("Individual", individualId);
-        }
-
-        return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
+        return get(new Query(QueryParams.ID.key(), individualId), options);
+//        long startQuery = startQuery();
+//
+//        QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
+//                FILTER_ROUTE_INDIVIDUALS));
+//        Individual individual = parseObject(result, Individual.class);
+//        if (individual == null) {
+//            throw CatalogDBException.idNotFound("Individual", individualId);
+//        }
+//
+//        return endQuery("getIndividual", startQuery, Collections.singletonList(individual));
     }
 
 //    @Deprecated
@@ -347,9 +348,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -364,9 +362,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -408,6 +403,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            individualParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+        }
 
         // Obtain all the possible individual Ids that satisfies the query
         QueryResult<Individual> myResults= get(query, new QueryOptions("include", "id"));
@@ -454,114 +454,141 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-//        long startTime = startQuery();
-//
-//        // This will be the query that will be updated.
-//        Query updateQuery = new Query();
-//
-//        if (!force) {
-//            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-//            List<Individual> individuals = get(subQuery, null).getResult();
-//            List<Long> individualIdsToDelete = new ArrayList<>();
-//
-//            if (individuals.size() == 0) {
-//                // Check if we do not get any results because they are already deleted.
-//                if (count(query).first() > 0) {
-//                    throw CatalogDBException.alreadyDeletedOrRemoved("Individual");
-//                } else {
-//                    throw CatalogDBException.queryNotFound("Individual");
-//                }
-//            }
-//
-//            // Check that the individualIds could be deleted because there is no dependency between them.
-//            // The map will contain a map family -> list of ids of the family
-//            Map<String, List<Individual>> familyIndividuals = new HashMap<>();
-//            for (Individual individual : individuals) {
-//                if (!familyIndividuals.containsKey(individual.getFamily())) {
-//                    List<Individual> individualList = new ArrayList<>();
-//                    familyIndividuals.put(individual.getFamily(), individualList);
-//                }
-//                familyIndividuals.get(individual.getFamily()).add(individual);
-//            }
-//
-//            // Check family by family
-//            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-//            for (Map.Entry<String, List<Individual>> indFamily : familyIndividuals.entrySet()) {
-//                Query tmpQuery = new Query(queryNoDeletedNoRemoved).append(QueryParams.FAMILY.key(), indFamily.getKey());
-//                List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
-//                if (individualListDatabase.size() == indFamily.getValue().size()) {
-//                    individualIdsToDelete.addAll(indFamily.getValue().stream()
-//                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toList()));
-//                } else {
-//                    // Remove in order from children to parents
-//                    List<Individual> indCopyDatabase = new ArrayList<>(individualListDatabase);
-//                    Set<Long> desiredIdsToDelete = indFamily.getValue().stream()
-//                            .map((Function<Individual, Long>) Individual::getId).collect(Collectors.toSet());
-//                    boolean changed = true;
-//                    // While we still have some individuals to remove
-//                    while (indCopyDatabase.size() > 0 && changed) {
-//                        changed = false;
-//                        Set<Long> parents = new HashSet<>();
-//                        Set<Long> children = new HashSet<>();
-//                        for (Individual individual : indCopyDatabase) {
-//                            // Add to parents
-//                            parents.add(individual.getFatherId());
-//                            parents.add(individual.getMotherId());
-//
-//                            // Add child
-//                            if (!parents.contains(individual.getId())) {
-//                                children.add(individual.getId());
-//                            }
-//
-//                            // Check whether any of the new parents were already inserted in children
-//                            if (children.contains(individual.getFatherId())) {
-//                                children.remove(individual.getFatherId());
-//                            }
-//                            if (children.contains(individual.getMotherId())) {
-//                                children.remove(individual.getMotherId());
-//                            }
-//                        }
-//
-//                        Set<Long> newIdsToDelete = new HashSet<>();
-//                        Iterator<Long> iterator = children.iterator();
-//                        while (iterator.hasNext()) {
-//                            Long individualId = iterator.next();
-//                            if (desiredIdsToDelete.contains(individualId)) {
-//                                individualIdsToDelete.add(individualId);
-//                                newIdsToDelete.add(individualId);
-//                                changed = true;
-//                            }
-//                        }
-//
-//                        if (changed) {
-//                            // Update indCopyDatabase removing the ids that have been marked to be deleted.
-//                            List<Individual> temporalIndCopyDatabase = new ArrayList<>(indCopyDatabase);
-//                            for (Individual individual : temporalIndCopyDatabase) {
-//                                if (newIdsToDelete.contains(individual.getId())) {
-//                                    indCopyDatabase.remove(individual);
-//                                }
-//                            }
-//                        }
-//                    }
-//                }
-//            }
-//
-//            updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
-//                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-//
-//        } else {
-//            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
-//        }
-//
-//        QueryResult<UpdateResult> deleted = individualCollection.update(parseQuery(updateQuery), Updates.combine(
-//                Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-//                Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
-//                , new QueryOptions());
-//
-//        return endQuery("Delete individual", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-        throw new UnsupportedOperationException("Delete not yet implemented.");
+    public QueryResult<Individual> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        checkIndividualId(id);
+        // Check the file is active
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
+                + File.FileStatus.REMOVED);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            Individual individual = get(query, options).first();
+            throw new CatalogDBException("The individual {" + id + "} was already " + individual.getStatus().getStatus());
+        }
 
+        // If we don't find the force parameter, we check first if the file could be deleted.
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            deleteReferences(id);
+        }
+
+        // Change the status of the project to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        return endQuery("Delete individual", startTime, get(query, queryOptions));
+    }
+
+    @Override
+    public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // This will be the query that will be updated.
+        Query updateQuery = new Query();
+
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            List<Individual> individuals = get(subQuery, null).getResult();
+            List<Long> individualIdsToDelete = new ArrayList<>();
+
+            if (individuals.size() == 0) {
+                // Check if we do not get any results because they are already deleted.
+                if (count(query).first() > 0) {
+                    throw CatalogDBException.alreadyDeletedOrRemoved("Individual");
+                } else {
+                    throw CatalogDBException.queryNotFound("Individual");
+                }
+            }
+
+            // Check that the individualIds could be deleted because there is no dependency between them.
+            // The map will contain a map family -> list of ids of the family
+            Map<String, List<Individual>> familyIndividuals = new HashMap<>();
+            for (Individual individual : individuals) {
+                if (!familyIndividuals.containsKey(individual.getFamily())) {
+                    List<Individual> individualList = new ArrayList<>();
+                    familyIndividuals.put(individual.getFamily(), individualList);
+                }
+                familyIndividuals.get(individual.getFamily()).add(individual);
+            }
+
+            // Check family by family
+            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            for (Map.Entry<String, List<Individual>> indFamily : familyIndividuals.entrySet()) {
+                Query tmpQuery = new Query(queryNoDeletedNoRemoved).append(QueryParams.FAMILY.key(), indFamily.getKey());
+                List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
+                if (individualListDatabase.size() == indFamily.getValue().size()) {
+                    individualIdsToDelete.addAll(indFamily.getValue().stream()
+                            .map(Individual::getId).collect(Collectors.toList()));
+                } else {
+                    // Remove in order from children to parents
+                    List<Individual> indCopyDatabase = new ArrayList<>(individualListDatabase);
+                    Set<Long> desiredIdsToDelete = indFamily.getValue().stream()
+                            .map(Individual::getId).collect(Collectors.toSet());
+                    boolean changed = true;
+                    // While we still have some individuals to remove
+                    while (indCopyDatabase.size() > 0 && changed) {
+                        changed = false;
+                        Set<Long> parents = new HashSet<>();
+                        Set<Long> children = new HashSet<>();
+                        for (Individual individual : indCopyDatabase) {
+                            // Add to parents
+                            parents.add(individual.getFatherId());
+                            parents.add(individual.getMotherId());
+
+                            // Add child
+                            if (!parents.contains(individual.getId())) {
+                                children.add(individual.getId());
+                            }
+
+                            // Check whether any of the new parents were already inserted in children
+                            if (children.contains(individual.getFatherId())) {
+                                children.remove(individual.getFatherId());
+                            }
+                            if (children.contains(individual.getMotherId())) {
+                                children.remove(individual.getMotherId());
+                            }
+                        }
+
+                        Set<Long> newIdsToDelete = new HashSet<>();
+                        Iterator<Long> iterator = children.iterator();
+                        while (iterator.hasNext()) {
+                            Long individualId = iterator.next();
+                            if (desiredIdsToDelete.contains(individualId)) {
+                                individualIdsToDelete.add(individualId);
+                                newIdsToDelete.add(individualId);
+                                changed = true;
+                            }
+                        }
+
+                        if (changed) {
+                            // Update indCopyDatabase removing the ids that have been marked to be deleted.
+                            List<Individual> temporalIndCopyDatabase = new ArrayList<>(indCopyDatabase);
+                            for (Individual individual : temporalIndCopyDatabase) {
+                                if (newIdsToDelete.contains(individual.getId())) {
+                                    indCopyDatabase.remove(individual);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
+                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+
+        } else {
+            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+        }
+
+        long count = setStatus(updateQuery, Status.DELETED).first();
+
+        return endQuery("Delete individual", startTime, Collections.singletonList(count));
     }
 
     @Override
@@ -577,27 +604,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Long> restore(Query query) throws CatalogDBException {
         return null;
-    }
-
-    @Override
-    public QueryResult<Individual> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Delete not yet implemented.");
-//        long startTime = startQuery();
-//        checkIndividualId(id);
-//        delete(new Query(QueryParams.ID.key(), id), force);
-//        return endQuery("Delete individual", startTime, getIndividual(id, null));
-        /*
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Individual> individualQueryResult = get(query, null);
-        if (individualQueryResult.getResult().size() == 1) {
-            QueryResult<Long> delete = delete(query, force);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Individual id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.idNotFound("Individual id '{}' does not exist (or there are too many)", id);
-        }
-        return individualQueryResult;*/
     }
 
     @Override
@@ -643,6 +649,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
+
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -709,4 +719,56 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         return individualCollection;
     }
 
+    QueryResult<Individual> setStatus(long individualId, String status) throws CatalogDBException {
+        return update(individualId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    /**
+     * Checks whether the individualId is parent of any other individual.
+     *
+     * @param individualId individual id.
+     * @throws CatalogDBException when the individualId is parent of other individual.
+     */
+    private void checkCanDelete(long individualId) throws CatalogDBException {
+        // Check if the individual is father
+        Query query = new Query(QueryParams.FATHER_ID.key(), individualId);
+        Long count = count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The individual " + individualId + " cannot be deleted/removed because it is the father of "
+                    + count + " individuals. Please, consider deleting first the children or using the force parameter.");
+        }
+
+        // Check if the individual is mother
+        query = new Query(QueryParams.MOTHER_ID.key(), individualId);
+        count = count(query).first();
+        if (count > 0) {
+            throw new CatalogDBException("The individual " + individualId + " cannot be deleted/removed because it is the mother of "
+                    + count + " individuals. Please, consider deleting first the children or using the force parameter.");
+        }
+    }
+
+    /**
+     * Remove the possible references from other individuals or samples.
+     *
+     * @param individualId individual Id.
+     * @throws CatalogDBException when there is any kind of error.
+     */
+    private void deleteReferences(long individualId) throws CatalogDBException {
+        Query query = new Query(QueryParams.FATHER_ID.key(), individualId);
+        Long count = update(query, new ObjectMap(QueryParams.FATHER_ID.key(), -1)).first();
+        logger.debug("Individual id {} extracted as father from {} individuals", individualId, count);
+
+        query = new Query(QueryParams.MOTHER_ID.key(), individualId);
+        count = update(query, new ObjectMap(QueryParams.MOTHER_ID.key(), -1)).first();
+        logger.debug("Individual id {} extracted as mother from {} individuals", individualId, count);
+
+        query = new Query(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), individualId);
+        count = dbAdaptorFactory.getCatalogSampleDBAdaptor()
+                .update(query, new ObjectMap(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1)).first();
+        logger.debug("Individual id {} extracted from {} samples", individualId, count);
+    }
 }

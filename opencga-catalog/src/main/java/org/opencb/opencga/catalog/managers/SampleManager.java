@@ -413,7 +413,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
                             + "\"");
                 case Cohort.CohortStatus.READY:
-                    params.put("status.status", Cohort.CohortStatus.INVALID);
+                    params.putIfAbsent("status.status", Cohort.CohortStatus.INVALID);
                     break;
                 case Cohort.CohortStatus.NONE:
                 case Cohort.CohortStatus.INVALID:

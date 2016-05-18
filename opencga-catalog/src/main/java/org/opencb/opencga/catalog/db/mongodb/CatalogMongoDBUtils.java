@@ -52,10 +52,10 @@ class CatalogMongoDBUtils {
      */
     public static final String FORCE = "force";
     /**
-     * KEEP_OUTPUT is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been generated
-     * with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
+     * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
+     * generated with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
      */
-    public static final String KEEP_OUTPUT = "keepOutput";
+    public static final String KEEP_OUTPUT_FILES = "keepOutputFiles";
 
     public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
             .collect(Collectors.toSet());
