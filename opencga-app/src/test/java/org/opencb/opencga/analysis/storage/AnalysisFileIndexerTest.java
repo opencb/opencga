@@ -22,7 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.storage.OpenCGATestExternalResource.runStorageJob;
-import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedStats;
+import static org.opencb.opencga.analysis.storage.variant.StatsVariantStorageTest.checkCalculatedStats;
 
 /**
  * Created by hpccoll1 on 13/07/15.

@@ -19,7 +19,7 @@ import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.opencb.biodata.models.variant.StudyEntry.DEFAULT_COHORT;
 import static org.opencb.opencga.analysis.storage.OpenCGATestExternalResource.runStorageJob;
-import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.checkCalculatedAggregatedStats;
+import static org.opencb.opencga.analysis.storage.variant.StatsVariantStorageTest.checkCalculatedAggregatedStats;
 
 /**
  * Created on 05/05/16

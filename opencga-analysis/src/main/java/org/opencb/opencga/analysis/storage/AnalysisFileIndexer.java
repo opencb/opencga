@@ -72,6 +72,7 @@ public class AnalysisFileIndexer {
     //Options
     public static final String PARAMETERS = "parameters";
     public static final String TRANSFORM = "transform";
+    public static final String CREATE = "create";
     public static final String LOAD = "load";
     public static final String LOG_LEVEL = "logLevel";
 

@@ -485,6 +485,9 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--load"}, description = "Run only the load of the annotations into the DB from FILE")
         public String load = null;
 
+        @Parameter(names = {"--custom-name"}, description = "Provide a name to the custom annotation")
+        public String customAnnotationKey = null;
+
         @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
         public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator;
 

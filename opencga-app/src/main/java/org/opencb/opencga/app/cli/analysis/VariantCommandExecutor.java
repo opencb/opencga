@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -562,14 +563,15 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             QueryOptions options = new QueryOptions()
                     .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
                     .append(AnalysisJobExecutor.SIMULATE, false)
-//                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
-//                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
+                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
+                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)
                     .append(AnalysisFileIndexer.LOG_LEVEL, cliOptions.commonOptions.logLevel)
                     .append(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations)
                     .append(VariantAnnotationManager.FILE_NAME, cliOptions.fileName)
                     .append(VariantAnnotationManager.SPECIES, cliOptions.species)
                     .append(VariantAnnotationManager.ASSEMBLY, cliOptions.assembly)
+                    .append(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey)
                     .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.filterRegion)
                     .append(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key(), cliOptions.filterChromosome)
                     .append(VariantDBAdaptor.VariantQueryParams.GENE.key(), cliOptions.filterGene)
@@ -631,6 +633,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         if (cliOptions.assembly != null) {
             options.put(VariantAnnotationManager.ASSEMBLY, cliOptions.assembly);
         }
+        if (cliOptions.customAnnotationKey != null) {
+            options.put(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY, cliOptions.customAnnotationKey);
+        }
 
         VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(storageConfiguration, dataStore.getStorageEngine());
 //            VariantAnnotator annotator = VariantAnnotationManager.buildVariantAnnotator(annotatorSource, annotatorProperties,
@@ -683,10 +688,10 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             long start = System.currentTimeMillis();
             logger.info("Starting annotation load");
             if (annotationFile == null) {
-//                annotationFile = new URI(null, c.load, null);
-                annotationFile = Paths.get(cliOptions.load).toUri();
+                long fileId = catalogManager.getFileId(cliOptions.load);
+                annotationFile = catalogManager.getFileUri(catalogManager.getFile(fileId, sessionId).first());
             }
-            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions());
+            variantAnnotationManager.loadAnnotation(annotationFile, new QueryOptions(options));
             logger.info("Finished annotation load {}ms", System.currentTimeMillis() - start);
         }
     }

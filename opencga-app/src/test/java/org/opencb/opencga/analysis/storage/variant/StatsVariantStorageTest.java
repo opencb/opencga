@@ -16,14 +16,12 @@ import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -32,7 +30,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -43,7 +40,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
 /**
  * Created by hpccoll1 on 08/07/15.
  */
-public class VariantStorageTest {
+public class StatsVariantStorageTest {
 
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
@@ -52,10 +49,8 @@ public class VariantStorageTest {
     private String sessionId;
     private long projectId;
     private long studyId;
-    private FileMetadataReader fileMetadataReader;
-    private CatalogFileUtils catalogFileUtils;
     private long outputId;
-    Logger logger = LoggerFactory.getLogger(VariantStorageTest.class);
+    Logger logger = LoggerFactory.getLogger(StatsVariantStorageTest.class);
     private long all;
     private long coh1;
     private long coh2;
@@ -70,20 +65,17 @@ public class VariantStorageTest {
         catalogManager = opencga.getCatalogManager();
         clearDB(dbName);
 
-        fileMetadataReader = FileMetadataReader.get(catalogManager);
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
-
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null,
                 Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null, null, null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
-        File file1 = create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        File file2 = create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        File file3 = create("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        File file4 = create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
-        File file5 = create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+        File file2 = opencga.createFile(studyId, "1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+        File file3 = opencga.createFile(studyId, "1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+        File file4 = opencga.createFile(studyId, "1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+        File file5 = opencga.createFile(studyId, "1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         coh1 = catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
         coh2 = catalogManager.createCohort(studyId, "coh2", Cohort.Type.CONTROL_SET, "", file2.getSampleIds(), null, sessionId).first().getId();
@@ -109,8 +101,6 @@ public class VariantStorageTest {
         clearDB(dbName);
 
         catalogManager = opencga.getCatalogManager();
-        fileMetadataReader = FileMetadataReader.get(catalogManager);
-        catalogFileUtils = new CatalogFileUtils(catalogManager);
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
@@ -120,7 +110,7 @@ public class VariantStorageTest {
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), aggregation),
                 null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
-        File file1 = create(fileName);
+        File file1 = opencga.createFile(studyId, fileName, sessionId);
 
 //        coh1 = catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
 
@@ -152,14 +142,6 @@ public class VariantStorageTest {
         MongoDataStoreManager mongoManager = new MongoDataStoreManager("localhost", 27017);
         MongoDataStore mongoDataStore = mongoManager.get(dbName);
         mongoManager.drop(dbName);
-    }
-
-    public File create(String resourceName) throws IOException, CatalogException {
-        File file;
-        URI uri = getResourceUri(resourceName);
-        file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
-        catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
-        return catalogManager.getFile(file.getId(), sessionId).first();
     }
 
     @After

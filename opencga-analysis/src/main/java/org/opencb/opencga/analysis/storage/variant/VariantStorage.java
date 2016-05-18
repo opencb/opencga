@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.storage.variant;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -27,10 +28,10 @@ import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -45,6 +46,8 @@ import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 
 /**
  * Created by jacobo on 06/03/15.
@@ -152,7 +155,7 @@ public class VariantStorage {
         }
 
         /** Create temporal Job Outdir **/
-        final String randomString = "I_" + StringUtils.randomString(10);
+        final String randomString = "I_" + RandomStringUtils.randomAlphanumeric(10);
         final URI temporalOutDirUri;
         if (simulate) {
             temporalOutDirUri = AnalysisFileIndexer.createSimulatedOutDirUri(randomString);
@@ -242,12 +245,13 @@ public class VariantStorage {
     }
 
     /**
-     *
      * Accepts options:
      *      {@link AnalysisJobExecutor#EXECUTE}
      *      {@link AnalysisJobExecutor#SIMULATE}
      *      {@link AnalysisFileIndexer#LOG_LEVEL}
      *      {@link AnalysisFileIndexer#PARAMETERS}
+     *      {@link AnalysisFileIndexer#CREATE}
+     *      {@link AnalysisFileIndexer#LOAD}
      *      {@link VariantDBAdaptor.VariantQueryParams#REGION}
      *      {@link VariantDBAdaptor.VariantQueryParams#GENE}
      *      {@link VariantDBAdaptor.VariantQueryParams#CHROMOSOME}
@@ -267,7 +271,8 @@ public class VariantStorage {
      * @throws CatalogException
      * @throws AnalysisExecutionException
      */
-    public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options) throws CatalogException, AnalysisExecutionException {
+    public QueryResult<Job> annotateVariants(long studyId, long outDirId, String sessionId, QueryOptions options)
+            throws CatalogException, AnalysisExecutionException {
         if (options == null) {
             options = new QueryOptions();
         }
@@ -276,10 +281,11 @@ public class VariantStorage {
         final long start = System.currentTimeMillis();
 
         File outDir = catalogManager.getFile(outDirId, null, sessionId).first();
+        List<Long> inputFiles = new ArrayList<>();
 
         /** Create temporal Job Outdir **/
         final URI temporalOutDirUri;
-        final String randomString = "I_" + StringUtils.randomString(10);
+        final String randomString = "I_" + RandomStringUtils.randomAlphanumeric(10);
         if (simulate) {
             temporalOutDirUri = AnalysisFileIndexer.createSimulatedOutDirUri(randomString);
         } else {
@@ -299,40 +305,59 @@ public class VariantStorage {
                 .append(" --outdir-id ").append(outDir.getId());
 
 
+        if (isNotEmpty(options.getString(AnalysisFileIndexer.LOAD))) {
+            String fileIdstr = options.getString(AnalysisFileIndexer.LOAD);
+            long fileId = catalogManager.getFileId(fileIdstr);
+            if (fileId < 0) {
+                throw CatalogDBException.idNotFound("File", fileIdstr);
+            }
+
+            sb.append(" --load ").append(fileId);
+            inputFiles.add(fileId);
+        }
+
+        if (options.getBoolean(AnalysisFileIndexer.CREATE, false)) {
+            sb.append(" --create ");
+        }
+
         if (options.getBoolean(VariantAnnotationManager.OVERWRITE_ANNOTATIONS)) {
             sb.append(" --overwrite-annotations ");
         }
 
         //TODO: Read from Catalog?
-        if (!options.getString(VariantAnnotationManager.SPECIES).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantAnnotationManager.SPECIES))) {
             sb.append(" --species ").append(options.getString(VariantAnnotationManager.SPECIES));
         }
 
-        if (!options.getString(VariantAnnotationManager.ASSEMBLY).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantAnnotationManager.ASSEMBLY))) {
             sb.append(" --assembly ").append(options.getString(VariantAnnotationManager.ASSEMBLY));
         }
 
-        if (!options.getString(VariantAnnotationManager.FILE_NAME).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantAnnotationManager.FILE_NAME))) {
             sb.append(" --output-filename ").append(options.getString(VariantAnnotationManager.FILE_NAME));
         }
 
-        if (!options.getString(VariantAnnotationManager.ANNOTATION_SOURCE).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY))) {
+            sb.append(" --custom-name ").append(options.getString(VariantAnnotationManager.CUSTOM_ANNOTATION_KEY));
+        }
+
+        if (isNotEmpty(options.getString(VariantAnnotationManager.ANNOTATION_SOURCE))) {
             sb.append(" --annotator ").append(options.getString(VariantAnnotationManager.ANNOTATION_SOURCE));
         }
 
-        if (!options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()))) {
             sb.append(" --filter-region ").append(options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key()));
         }
 
-        if (!options.getString(VariantDBAdaptor.VariantQueryParams.GENE.key()).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantDBAdaptor.VariantQueryParams.GENE.key()))) {
             sb.append(" --filter-gene ").append(options.getString(VariantDBAdaptor.VariantQueryParams.GENE.key()));
         }
 
-        if (!options.getString(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key()).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key()))) {
             sb.append(" --filter-chromosome ").append(options.getString(VariantDBAdaptor.VariantQueryParams.CHROMOSOME.key()));
         }
 
-        if (!options.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()).isEmpty()) {
+        if (isNotEmpty(options.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()))) {
             sb.append(" --filter-annot-consequence-type ").append(options.getString(VariantDBAdaptor.VariantQueryParams.ANNOT_CONSEQUENCE_TYPE.key()));
         }
 
@@ -365,7 +390,7 @@ public class VariantStorage {
         HashMap<String, Object> resourceManagerAttributes = new HashMap<>();
         resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
         return AnalysisJobExecutor.createJob(catalogManager, studyId, jobName,
-                AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.emptyList(),
+                AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, inputFiles,
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate,
                 new HashMap<>(), resourceManagerAttributes);
     }

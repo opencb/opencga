@@ -19,6 +19,8 @@ import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.app.StorageMain;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.StorageManagerFactory;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
     private CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private Path opencgaHome;
     Logger logger = LoggerFactory.getLogger(OpenCGATestExternalResource.class);
+    private StorageConfiguration storageConfiguration;
+    private StorageManagerFactory storageManagerFactory;
 
 
     @Override
@@ -71,6 +75,13 @@ public class OpenCGATestExternalResource extends ExternalResource {
         return catalogManagerExternalResource.getCatalogManager();
     }
 
+    public StorageManagerFactory getStorageManagerFactory() {
+        return storageManagerFactory;
+    }
+
+    public StorageConfiguration getStorageConfiguration() {
+        return storageConfiguration;
+    }
 
     public Path isolateOpenCGA() throws IOException {
 
@@ -88,7 +99,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+        storageConfiguration = StorageConfiguration.load(StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+        Files.copy(inputStream,  opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
+        storageManagerFactory = new StorageManagerFactory(storageConfiguration);
 
         return opencgaHome;
     }
@@ -110,6 +124,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
     public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, AnalysisExecutionException {
         return runStorageJob(getCatalogManager(), storageJob, logger, sessionId);
+    }
+
+    public void clearStorageDB(String dbName) {
+        clearStorageDB(getStorageConfiguration().getDefaultStorageEngineId(), dbName);
     }
 
     public void clearStorageDB(String storageEngine, String dbName) {
