@@ -7,19 +7,24 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.old.AuthorizationManager;
-import org.opencb.opencga.catalog.authorization.old.CatalogPermission;
-import org.opencb.opencga.catalog.authorization.old.StudyPermission;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.AclEntry;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +64,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkReadJob(userId, jobId);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
     }
 
@@ -110,13 +115,14 @@ public class JobManager extends AbstractManager implements IJobManager {
         inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Long>emptyList());
         outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Long>emptyList());
 
-        // FIXME check inputFiles? is a null conceptually valid?
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_JOBS);
 
+        // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        authorizationManager.checkFilePermission(outDirId, userId, CatalogPermission.WRITE);
+        authorizationManager.checkFilePermission(outDirId, userId, FileAcl.FilePermissions.CREATE);
         for (Long inputFile : inputFiles) {
-            authorizationManager.checkFilePermission(inputFile, userId, CatalogPermission.READ);
+            authorizationManager.checkFilePermission(inputFile, userId, FileAcl.FilePermissions.VIEW);
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
                 "projects.studies.files.id",
@@ -153,8 +159,8 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.VIEW);
         QueryResult<Job> queryResult = jobDBAdaptor.getJob(jobId, options);
-        authorizationManager.checkReadJob(userId, queryResult.first());
         return queryResult;
     }
 
@@ -179,15 +185,13 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
         //query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            if (studyId < 0) {
-                throw new CatalogException("Permission denied. Can't get jobs without specifying an StudyId");
-            } else {
-                authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-            }
+
+        if (!authorizationManager.userHasPermissionsInStudy(studyId, userId)) {
+            throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
         }
+
         QueryResult<Job> queryResult = jobDBAdaptor.get(query, options);
-        authorizationManager.filterJobs(userId, queryResult.getResult(), studyId);
+        authorizationManager.filterJobs(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
@@ -197,10 +201,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.LAUNCH_JOBS);
-        }
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.UPDATE);
         QueryResult<Job> queryResult = jobDBAdaptor.update(jobId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
         return queryResult;
@@ -210,8 +211,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> delete(Long jobId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.DELETE);
 
         QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, new QueryOptions());
         // Delete the output files of the job if they are not in use.
@@ -237,7 +237,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -260,7 +260,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -284,7 +284,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -304,8 +304,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(dirName, "dirName");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.DELETE_JOBS);
 
         URI uri = studyDBAdaptor.getStudy(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
                 .first().getUri();

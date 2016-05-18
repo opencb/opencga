@@ -2,7 +2,7 @@ package org.opencb.opencga.catalog.managers;
 
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.old.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;

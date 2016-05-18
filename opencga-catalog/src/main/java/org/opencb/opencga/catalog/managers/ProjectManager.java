@@ -8,8 +8,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.old.AuthorizationManager;
-import org.opencb.opencga.catalog.authorization.old.CatalogPermission;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -20,6 +19,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.util.List;
@@ -115,7 +115,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.READ);
+        authorizationManager.checkProjectPermission(projectId, userId, StudyAcl.StudyPermissions.VIEW_STUDY);
         QueryResult<Project> projectResult = projectDBAdaptor.getProject(projectId, options);
         if (!projectResult.getResult().isEmpty()) {
             authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());
@@ -150,7 +150,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
-        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+
+        if (!userId.equals(ownerId)) {
+            throw new CatalogException("Permission denied: Only the owner of the project can update it.");
+        }
 
         if (parameters.containsKey("alias")) {
             rename(projectId, parameters.getString("alias"), sessionId);
@@ -180,7 +183,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
-        authorizationManager.checkProjectPermission(projectId, userId, CatalogPermission.WRITE);
+        if (!userId.equals(ownerId)) {
+            throw new CatalogException("Permission denied: Only the owner of the project can update it.");
+        }
 
         userDBAdaptor.updateUserLastActivity(ownerId);
         QueryResult queryResult = projectDBAdaptor.renameProjectAlias(projectId, newProjectAlias);

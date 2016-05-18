@@ -122,7 +122,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @return The group that has been updated/created.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    QueryResult<Group> addMemberToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.
@@ -132,7 +132,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param members List of members that are going to be removed from the group.
      * @throws CatalogDBException when any of the studyId, groupId or members do not exist.
      */
-    void removeMemberFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Adds the permissions defined in the roleId to the list of members.
@@ -159,8 +159,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     @Deprecated
     QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options) throws CatalogDBException;
-
-
 
     /*
      * VariableSet Methods

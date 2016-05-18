@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.authorization;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -21,7 +20,7 @@ import java.util.*;
  */
 public class CatalogAuthorizationManager implements AuthorizationManager {
 
-    private static final QueryOptions FILE_INCLUDE_QUERY_OPTIONS = new QueryOptions(MongoDBCollection.INCLUDE,
+    private static final QueryOptions FILE_INCLUDE_QUERY_OPTIONS = new QueryOptions(QueryOptions.INCLUDE,
             Arrays.asList(FILTER_ROUTE_FILES + CatalogFileDBAdaptor.QueryParams.ID.key(),
                     FILTER_ROUTE_FILES + CatalogFileDBAdaptor.QueryParams.PATH.key(),
                     FILTER_ROUTE_FILES + CatalogFileDBAdaptor.QueryParams.ACLS.key()
@@ -59,7 +58,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
         if (permission.equals(StudyAcl.StudyPermissions.VIEW_STUDY)) {
             final Query query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId);
-            final QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE,
+            final QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE,
                     FILTER_ROUTE_STUDIES + CatalogStudyDBAdaptor.QueryParams.ID.key());
             for (Study study : studyDBAdaptor.get(query, queryOptions).getResult()) {
                 try {
@@ -913,62 +912,40 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<Group> getGroupBelonging(long studyId, String userId) throws CatalogException {
-        return studyDBAdaptor.getGroup(studyId, userId, null, null);
-    }
-
-    @Override
-    public StudyAcl getStudyAclBelonging(long studyId, String userId, String groupId) throws CatalogException {
-        List<String> members = groupId != null ? Arrays.asList(userId, groupId) : Arrays.asList(userId);
-        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, members);
-        if (studyQueryResult.getNumResults() > 0) {
-            return studyQueryResult.first();
-        }
-        return null;
-    }
-
-    @Override
-    public QueryResult<Group> addUserToGroup(String userId, long studyId, String groupId, String newUserId) throws CatalogException {
+    public QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-        QueryResult<Group> groupBelonging = getGroupBelonging(studyId, newUserId);
-
-        if (groupBelonging.getNumResults() > 0) {
-            if (groupBelonging.first().getId().equals(groupId)) {
-                return groupBelonging;
-            } else {
-                throw new CatalogException("Cannot add the user to the group " + groupId + ". " + newUserId + " belongs to a different "
-                        + "group: " + groupBelonging.first().getId());
-            }
-        }
-        // TODO: Uncomment
-        return null;
-//        return studyDBAdaptor.addMemberToGroupp(studyId, groupId, newUserId);
+        return studyDBAdaptor.addMembersToGroup(studyId, groupId, members);
     }
 
     @Override
-    public QueryResult<Group> removeUserFromGroup(String userId, long studyId, String groupId, String oldUserId) throws CatalogException {
+    public void removeUsersFromGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-//        return studyDBAdaptor.removeMemberFromGroupp(studyId, groupId, oldUserId);
-        // TODO: Uncomment
-        return null;
+        studyDBAdaptor.removeMembersFromGroup(studyId, groupId, members);
     }
 
     @Override
     public QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId)
             throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-        // TODO: Uncomment
-        return null;
-//        return studyDBAdaptor.addMembersToRole(studyId, members, roleId);
+        return studyDBAdaptor.setStudyAcl(studyId, roleId, members);
     }
 
     @Override
-    public QueryResult<StudyAcl> removeMembersFromRole(String userId, long studyId, List<String> members, String roleId)
+    public void removeMembersFromRole(String userId, long studyId, List<String> members)
             throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-        // TODO: Uncomment
-        return null;
-//        return studyDBAdaptor.removeMembersFromRole(studyId, members, roleId);
+        studyDBAdaptor.unsetStudyAcl(studyId, members);
+    }
+
+    @Override
+    public boolean userHasPermissionsInStudy(long studyId, String userId) throws CatalogException {
+        String groupId = null;
+        QueryResult<Group> groupQueryResult = getGroupBelonging(studyId, userId);
+        if (groupQueryResult.getNumResults() > 0) {
+            groupId = groupQueryResult.first().getId();
+        }
+        StudyAcl studyAcl = getStudyAclBelonging(studyId, userId, groupId);
+        return studyAcl != null;
     }
 
     private boolean isStudyOwner(long studyId, String userId) throws CatalogDBException {
@@ -1051,6 +1028,45 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         return studyAuthenticationContext.pathUserAclMap;
+    }
+
+
+    /*
+    ====================================
+    Auxiliar methods
+    ====================================
+     */
+    /**
+     * Retrieves the groupId where the members belongs to.
+     *
+     * @param studyId study id.
+     * @param members List of user ids.
+     * @return the group id of the user. Null if the user does not take part of any group.
+     * @throws CatalogException when there is any database error.
+     */
+    QueryResult<Group> getGroupBelonging(long studyId, List<String> members) throws CatalogException {
+        return studyDBAdaptor.getGroup(studyId, null, members);
+    }
+    QueryResult<Group> getGroupBelonging(long studyId, String members) throws CatalogException {
+        return getGroupBelonging(studyId, Arrays.asList(members.split(",")));
+    }
+
+    /**
+     * Retrieves the StudyAcl where the user/group belongs to.
+     *
+     * @param studyId study id.
+     * @param userId user id.
+     * @param groupId group id. This can be null.
+     * @return the studyAcl where the user/group belongs to.
+     * @throws CatalogException when there is any database error.
+     */
+    StudyAcl getStudyAclBelonging(long studyId, String userId, String groupId) throws CatalogException {
+        List<String> members = groupId != null ? Arrays.asList(userId, groupId) : Arrays.asList(userId);
+        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, members);
+        if (studyQueryResult.getNumResults() > 0) {
+            return studyQueryResult.first();
+        }
+        return null;
     }
 
     /*

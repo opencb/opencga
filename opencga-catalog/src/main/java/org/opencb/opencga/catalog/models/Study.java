@@ -129,7 +129,7 @@ public class Study {
 
     public Study(long id, String name, String alias, Type type, String ownerId, String creationDate,
                  String description, Status status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
-                 List<Role> roles, List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples,
+                 List<StudyAcl> acls, List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples,
                  List<Dataset> datasets, List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
@@ -143,8 +143,8 @@ public class Study {
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
-        this.roles = roles;
-        this.acls = new ArrayList<>();
+//        this.roles = roles;
+        this.acls = acls;
         this.groups = groups;
         this.experiments = experiments;
         this.files = files;

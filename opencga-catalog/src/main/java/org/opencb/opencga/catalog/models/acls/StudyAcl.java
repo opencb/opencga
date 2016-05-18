@@ -84,9 +84,13 @@ public class StudyAcl {
         VIEW_STUDY,
         UPDATE_STUDY,
         SHARE_STUDY, // Add members to groups, add members/groups to roles.
+        CREATE_VARIABLE_SET,
+        VIEW_VARIABLE_SET,
+        UPDATE_VARIABLE_SET,
+        DELETE_VARIABLE_SET,
 
         // FILES
-        CREATE_FILES,
+        CREATE_FILES(FileAcl.FilePermissions.CREATE.name(), FILE),
         VIEW_FILE_HEADERS(FileAcl.FilePermissions.VIEW_HEADER.name(), FILE),
         VIEW_FILE_CONTENTS(FileAcl.FilePermissions.VIEW_CONTENT.name(), FILE),
         VIEW_FILES(FileAcl.FilePermissions.VIEW.name(), FILE),

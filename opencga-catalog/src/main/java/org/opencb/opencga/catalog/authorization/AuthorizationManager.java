@@ -5,11 +5,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.*;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -287,49 +283,33 @@ public interface AuthorizationManager {
     void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
 
     /**
-     * Retrieves the groupId where the user belongs to.
-     *
-     * @param studyId study id.
-     * @param userId user id.
-     * @return the group id of the user. Null if the user does not take part of any group.
-     * @throws CatalogException when there is any database error.
-     */
-    QueryResult<Group> getGroupBelonging(long studyId, String userId) throws CatalogException;
-
-    /**
-     * Retrieves the StudyAcl where the user/group belongs to.
-     *
-     * @param studyId study id.
-     * @param userId user id.
-     * @param groupId group id. This can be null.
-     * @return the studyAcl where the user/group belongs to.
-     * @throws CatalogException when there is any database error.
-     */
-    StudyAcl getStudyAclBelonging(long studyId, String userId, @Nullable String groupId) throws CatalogException;
-
-    /**
-     * Adds the newUser to the groupId specified.
+     * Adds the members to the groupId specified.
      *
      * @param userId User id of the user ordering the action.
      * @param studyId Study id under which the newUserId will be added to the group.
      * @param groupId Group id where the userId wants to add the newUser.
-     * @param newUserId User id that will be added to the group.
+     * @param members List of user ids that will be added to the group.
      * @return a queryResult containing the group created.
      * @throws CatalogException when the userId does not have the proper permissions to add other users to groups.
      */
-    QueryResult<Group> addUserToGroup(String userId, long studyId, String groupId, String newUserId) throws CatalogException;
+    QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException;
+    default QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, String members) throws CatalogException {
+        return addUsersToGroup(userId, studyId, groupId, Arrays.asList(members.split(",")));
+    }
 
     /**
-     * Removes the oldUserId from the groupId specified.
+     * Removes the members from the groupId specified.
      *
      * @param userId User id of the user ordering the action.
      * @param studyId Study id under which the oldUserId will be removed from the groupId.
      * @param groupId Group id where the userId wants to remove the oldUserId from.
-     * @param oldUserId User id that will be taken out from the group.
-     * @return a queryResult containing the group.
+     * @param members List of user ids that will be taken out from the group.
      * @throws CatalogException when the userId does not have the proper permissions to remove other users from groups.
      */
-    QueryResult<Group> removeUserFromGroup(String userId, long studyId, String groupId, String oldUserId) throws CatalogException;
+    void removeUsersFromGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException;
+    default void removeUsersFromGroup(String userId, long studyId, String groupId, String members) throws CatalogException {
+        removeUsersFromGroup(userId, studyId, groupId, Arrays.asList(members.split(",")));
+    }
 
     /**
      * Adds the list of members to the roleId specified.
@@ -341,18 +321,32 @@ public interface AuthorizationManager {
      * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
      */
     QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId) throws CatalogException;
-
+    default QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, String members, String roleId)
+            throws CatalogException {
+        return addMembersToRole(userId, studyId, Arrays.asList(members.split(",")), roleId);
+    }
     /**
      * Removes the members from the roleId specified.
      *
      * @param userId User id of the user ordering the action.
      * @param studyId Study id under which the members will be removed from the groupId.
      * @param members List of member ids (users and/or groups).
-     * @param roleId Role id where the members will be remove from.
-     * @return a queryResult containing the modified studyAcls.
      * @throws CatalogException when the userId does not have the proper permissions to remove other users from roles, or the members or
      * roleId do not exist.
      */
-    QueryResult<StudyAcl> removeMembersFromRole(String userId, long studyId, List<String> members, String roleId) throws CatalogException;
+    void removeMembersFromRole(String userId, long studyId, List<String> members) throws CatalogException;
+    default void removeMembersFromRole(String userId, long studyId, String members)
+            throws CatalogException {
+        removeMembersFromRole(userId, studyId, Arrays.asList(members.split(",")));
+    }
 
+    /**
+     * Checks if the userId belongs to one role or not.
+     *
+     * @param studyId study id.
+     * @param userId User id.
+     * @return true if the user belongs to one role. False otherwise.
+     * @throws CatalogException CatalogException.
+     */
+    boolean userHasPermissionsInStudy(long studyId, String userId) throws CatalogException;
 }

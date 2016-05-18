@@ -345,12 +345,11 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException {
         long startTime = startQuery();
-
         checkStudyId(studyId);
         for (String userId : userIds) {
             dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
         }
-        if (!groupExists(studyId, groupId)) {
+        if (groupId != null && groupId.length() > 0 && !groupExists(studyId, groupId)) {
             throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
         }
 
@@ -410,7 +409,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Group> addMemberToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -435,7 +434,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                         }
                     }
                     if (usersToRemove.size() > 0) {
-                        removeMemberFromGroup(studyId, group.getId(), usersToRemove);
+                        removeMembersFromGroup(studyId, group.getId(), usersToRemove);
                     }
                 }
             }
@@ -461,7 +460,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public void removeMemberFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         checkStudyId(studyId);
         for (String member : members) {
             dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);

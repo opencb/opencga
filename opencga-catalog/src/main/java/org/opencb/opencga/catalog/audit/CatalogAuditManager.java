@@ -2,17 +2,16 @@ package org.opencb.opencga.catalog.audit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.authorization.old.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogAuditDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,11 +97,13 @@ public class CatalogAuditManager implements AuditManager {
 
     @Override
     public QueryResult<AuditRecord> getRecords(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            throw new CatalogAuthorizationException("User " + userId + " can't read AuditRecords");
-        }
-        return auditDBAdaptor.get(query, queryOptions);
+        // TODO: Check if this will be useful to implement
+        throw new NotImplementedException("Get records still to implement");
+//        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+//        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
+//            throw new CatalogAuthorizationException("User " + userId + " can't read AuditRecords");
+//        }
+//        return auditDBAdaptor.get(query, queryOptions);
     }
 
     private ObjectMap toObjectMap(Object object) {

@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.authorization.old.AuthorizationManager;
+import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -171,8 +171,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> read(String userId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<User> read(String userId, QueryOptions options, String sessionId) throws CatalogException {
         return read(userId, null, options, sessionId);
     }
 
@@ -228,7 +227,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         } else {
             if (catalogConfiguration.getAdmin().getPassword() == null || catalogConfiguration.getAdmin().getPassword().isEmpty()) {
                 throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
-                        + "deleted.");
+                        + "updated.");
             }
             catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
         }
@@ -291,6 +290,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         return authenticationManager.resetPassword(userId, email);
     }
 
+    @Deprecated
     @Override
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
@@ -336,16 +336,18 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
-        switch (authorizationManager.getUserRole(userId)) {
-            case ANONYMOUS:
-                return logoutAnonymous(sessionId);
-            default:
-//                List<Session> sessions = Collections.singletonList(sessionManager.logout(userId, sessionId));
-//                return new QueryResult<>("logout", 0, 1, 1, "", "", sessions);
-                return userDBAdaptor.logout(userId, sessionId);
-        }
+        return userDBAdaptor.logout(userId, sessionId);
+//        switch (authorizationManager.getUserRole(userId)) {
+//            case ANONYMOUS:
+//                return logoutAnonymous(sessionId);
+//            default:
+////                List<Session> sessions = Collections.singletonList(sessionManager.logout(userId, sessionId));
+////                return new QueryResult<>("logout", 0, 1, 1, "", "", sessions);
+//                return userDBAdaptor.logout(userId, sessionId);
+//        }
     }
 
+    @Deprecated
     @Override
     public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");

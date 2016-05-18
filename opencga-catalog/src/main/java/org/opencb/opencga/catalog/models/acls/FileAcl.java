@@ -18,8 +18,9 @@ public class FileAcl {
         VIEW_HEADER,  // Includes permission to view the sample ids from a VCF file.
         VIEW_CONTENT,
         VIEW,
+        CREATE,       // If a folder contains this permission for a user, the user will be able to create files under that folder.
         DELETE,
-        UPDATE,        // If a folder contains this permission for a user, the user will be able to create files under that folder.
+        UPDATE,       // Modify metadata fields
         DOWNLOAD,
         SHARE
     }
