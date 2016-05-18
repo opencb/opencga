@@ -7,6 +7,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
+import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
@@ -21,8 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.utils.CompressionUtils;
-import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -121,30 +122,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 
     public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = VARIANT_CONVERTER_JSON;
 
-    public static final ComplexTypeConverter<Variant, String> STRING_ID_CONVERTER = new ComplexTypeConverter<Variant, String>() {
-
-        @Override
-        public Variant convertToDataModelType(String object) {
-            String[] split = object.split(":", -1);
-            return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()), split[2], split[3]);
-        }
-
-        @Override public String convertToStorageType(Variant variant) {
-            String reference = variant.getReference();
-            String alternate = variant.getAlternate();
-            if (reference.length() > Variant.SV_THRESHOLD) {
-                reference = new String(CryptoUtils.encryptSha1(reference));
-            }
-            if (alternate.length() > Variant.SV_THRESHOLD) {
-                alternate = new String(CryptoUtils.encryptSha1(alternate));
-            }
-            if (variant.getChromosome().length() == 1) {
-                return String.format(" %s:%10d:%s:%s", variant.getChromosome(), variant.getStart(), reference, alternate);
-            } else {
-                return String.format("%s:%10d:%s:%s", variant.getChromosome(), variant.getStart(), reference, alternate);
-            }
-        }
-    };
+    public static final VariantStringIdComplexTypeConverter STRING_ID_CONVERTER = new VariantStringIdComplexTypeConverter();
 
     public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, int numTotalVariants) {
         this.collection = collection;
@@ -171,7 +149,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
         final int[] variantsLocalCount = {0};
         final int[] skippedVariants = {0};
 
-        ListMultimap<String, Binary> ids = LinkedListMultimap.create();
+        ListMultimap<Document, Binary> ids = LinkedListMultimap.create();
 
         stream.forEach(variant -> {
             variantsLocalCount[0]++;
@@ -180,7 +158,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
                 return;
             }
             Binary binary = VARIANT_CONVERTER_DEFAULT.convertToStorageType(variant);
-            String id = STRING_ID_CONVERTER.convertToStorageType(variant);
+            Document id = STRING_ID_CONVERTER.convertToStorageType(variant);
 
             ids.put(id, binary);
         });
@@ -230,7 +208,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
      * @return              List of non updated documents.
      * @throws MongoBulkWriteException if the exception was not a DuplicatedKeyException (e:11000)
      */
-    private Set<String> updateMongo(ListMultimap<String, Binary> values, MongoDBVariantWriteResult result, Set<String> retryIds) {
+    private Set<String> updateMongo(ListMultimap<Document, Binary> values, MongoDBVariantWriteResult result, Set<String> retryIds) {
 
         Set<String> nonInsertedIds = Collections.emptySet();
         if (values.isEmpty()) {
@@ -239,14 +217,20 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
-        for (String id : values.keySet()) {
-            if (retryIds == null || retryIds.contains(id)) {
+        for (Document id : values.keySet()) {
+            if (retryIds == null || retryIds.contains(id.getString("_id"))) {
                 List<Binary> binaryList = values.get(id);
-                queries.add(eq("_id", id));
+                queries.add(eq("_id", id.getString("_id")));
                 if (binaryList.size() == 1) {
-                    updates.add(push(fieldName, binaryList.get(0)));
+                    updates.add(combine(push(fieldName, binaryList.get(0)),
+                            setOnInsert("end", id.get("end")),
+                            setOnInsert("ref", id.get("ref")),
+                            setOnInsert("alt", id.get("alt"))));
                 } else {
-                    updates.add(pushEach(fieldName, binaryList));
+                    updates.add(combine(pushEach(fieldName, binaryList),
+                            setOnInsert("end", id.get("end")),
+                            setOnInsert("ref", id.get("ref")),
+                            setOnInsert("alt", id.get("alt"))));
                 }
             }
         }

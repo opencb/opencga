@@ -69,7 +69,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         //Filter documents with the selected studyId and chromosomes
         //Sorting by _id
         FindIterable<Document> iterable = stageCollection.nativeQuery().find(getQuery(),
-                new QueryOptions(MongoDBCollection.SORT, Sorts.ascending("_id"))
+                new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))
         );
         iterable.batchSize(20);
         this.iterator = iterable.iterator();
@@ -108,7 +108,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
 
         if (iterator.hasNext()) {
             // Obtain the LastVariant from the read LastDocument
-            Variant lastVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(last.getString("_id"));
+            Variant lastVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(last);
             int start = lastVar.getStart();
             int end = lastVar.getEnd();
             String chr = lastVar.getChromosome();
@@ -116,7 +116,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
                 // Get the next document. Check if this should be in the current batch.
                 // If not, will be added as the first element of the next batch
                 next = iterator.next();
-                Variant nextVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(next.getString("_id"));
+                Variant nextVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(next);
 
                 // If the last and next variants overlaps, add next to the batch.
                 if (nextVar.overlapWith(chr, start, end, true)) {

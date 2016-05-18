@@ -123,7 +123,7 @@ public class AnalysisMainTest {
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
         Assert.assertNotEquals(outdirId, job.getOutDirId());
 
-        // Index file4
+        // Index file4 and stats
         AnalysisMain.privateMain(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file4.getId()), "--calculate-stats", "--queue"});
         assertEquals(Index.IndexStatus.INDEXING, catalogManager.getFile(file4.getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.CALCULATING, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
@@ -136,8 +136,8 @@ public class AnalysisMainTest {
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
 
-        // Index file5
-        AnalysisMain.privateMain(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file5.getId())});
+        // Index file5 and annotation
+        AnalysisMain.privateMain(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file5.getId()), "--annotate"});
         assertEquals(Index.IndexStatus.READY, catalogManager.getFile(file5.getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
