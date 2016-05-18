@@ -44,9 +44,6 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
 
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
-
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
         boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
         boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
 

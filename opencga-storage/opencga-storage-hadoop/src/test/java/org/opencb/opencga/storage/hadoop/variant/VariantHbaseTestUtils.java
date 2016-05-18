@@ -62,12 +62,13 @@ public class VariantHbaseTestUtils {
                                          String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
 
-        ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro")
+        ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto")
                 .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
                 .append(VariantStorageManager.Options.DB_NAME.key(), dbName).append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, loadArchive)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, loadVariant);
 

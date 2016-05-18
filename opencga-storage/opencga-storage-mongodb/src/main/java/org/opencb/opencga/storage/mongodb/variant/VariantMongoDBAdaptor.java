@@ -226,7 +226,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (options == null) {
             options = new QueryOptions();
         }
-        studyConfigurationManager.setDefaultQueryOptions(options);
 
 //        parseQueryOptions(options, qb);
         Document mongoQuery = parseQuery(query, new Document());
@@ -1682,7 +1681,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     private DocumentToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
-        studyConfigurationManager.setDefaultQueryOptions(options);
         List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key(), ",|;"), options);
 
         DocumentToSamplesConverter samplesConverter;
@@ -2400,7 +2398,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      *
      * @param keyValue The keyvalue parameter to be split
      * @return An array with 2 positions for the key and value
+     *
+     * @deprecated use {@link VariantDBAdaptorUtils#splitOperator(String)}
      */
+    @Deprecated
     private String[] splitKeyValue(String keyValue) {
         Matcher matcher = OPERATION_PATTERN.matcher(keyValue);
         if (!matcher.find()) {
@@ -2410,6 +2411,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
     }
 
+    /**
+     * @deprecated use {@link VariantDBAdaptorUtils#splitOperator(String)}
+     */
+    @Deprecated
     private String[] splitKeyOpValue(String keyValue) {
         Matcher matcher = OPERATION_PATTERN.matcher(keyValue);
         if (!matcher.find()) {

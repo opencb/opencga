@@ -48,10 +48,6 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
-    //FIXME This is a temporary method
-    public void setDefaultQueryOptions(QueryOptions options) {
-    }
-
     public long lockStudy(int studyId, long lockDuration, long wait) throws InterruptedException {
         logger.warn("Ignoring lock");
         return 0;

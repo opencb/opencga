@@ -1,7 +1,5 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import com.fasterxml.jackson.databind.MapperFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.io.compress.Compression;
@@ -70,6 +68,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
 
     @Override
     protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+        // FIXME: Should not to this
         return buildVariantSource(Paths.get(input.getPath()), options);
     }
 
@@ -88,11 +87,13 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
 
         StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
 
-        VariantSource source = readVariantSource(input, options);
+        final VariantSource source;
         if (loadArch) {
             Path inPath = Paths.get(input.getPath());
-            source = loadVariantSource(inPath.getParent().resolve(
-                    inPath.getFileName().toString().replace(".variants.proto.gz", ".file.json.gz")));
+            source = VariantReaderUtils.readVariantSource(inPath.getParent().resolve(
+                    inPath.getFileName().toString().replace(".variants.proto.gz", ".file.json.gz")), null);
+        } else {
+            source = buildVariantSource(Paths.get(input.getPath()), options);
         }
         source.setStudyId(Integer.toString(studyId));
 
@@ -348,7 +349,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         }
         int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
 
-        VariantSource source = loadVariantSource(sourcePath);
+        VariantSource source = VariantReaderUtils.readVariantSource(sourcePath, null);
         source.setFileId(fileId.toString());
         source.setStudyId(Integer.toString(studyId));
         VcfMeta meta = new VcfMeta(source);
@@ -382,17 +383,6 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
             manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
         } catch (IOException e) {
             throw new RuntimeException("Not able to store Variant Source for file!!!", e);
-        }
-    }
-
-    private VariantSource loadVariantSource(Path sourcePath) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
-
-        try (InputStream ids = new GZIPInputStream(new BufferedInputStream(new FileInputStream(sourcePath.toFile())))) {
-            return objectMapper.readValue(ids, VariantSource.class);
-        } catch (IOException e) {
-            throw new IllegalStateException("Problems reading " + sourcePath, e);
         }
     }
 

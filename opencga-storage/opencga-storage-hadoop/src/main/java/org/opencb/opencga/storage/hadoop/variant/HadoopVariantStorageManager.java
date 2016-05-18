@@ -414,7 +414,11 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             VariantSource source;
 
             if (input.getScheme() == null || input.getScheme().startsWith("file")) {
-                return VariantReaderUtils.readVariantSource(Paths.get(input.getPath()), null);
+                if (input.getPath().contains("variants.proto")) {
+                    return VariantReaderUtils.readVariantSource(Paths.get(input.getPath().replace("variants.proto", "file.json")), null);
+                } else {
+                    return VariantReaderUtils.readVariantSource(Paths.get(input.getPath()), null);
+                }
             }
 
             Path metaPath = new Path(VariantReaderUtils.getMetaFromInputFile(input.toString()));
