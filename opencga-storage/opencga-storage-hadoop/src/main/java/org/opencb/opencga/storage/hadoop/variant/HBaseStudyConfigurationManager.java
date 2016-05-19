@@ -16,12 +16,13 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Created on 12/11/15.
@@ -38,6 +39,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     private final GenomeHelper genomeHelper;
     private final ObjectMapper objectMapper;
     private final String tableName;
+    private final HBaseLock lock;
 
     public HBaseStudyConfigurationManager(GenomeHelper helper, String tableName, Configuration configuration, ObjectMap options)
             throws IOException {
@@ -49,6 +51,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         this.objectMapper = new ObjectMapper();
         this.studiesRow = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
         this.studiesSummaryColumn = genomeHelper.generateVariantRowKey(GenomeHelper.DEFAULT_METADATA_ROW_KEY, 0);
+        lock = new HBaseLock(getHBaseManager(), this.tableName, genomeHelper.getColumnFamily(), studiesRow);
     }
 
     public HBaseStudyConfigurationManager(String tableName, Configuration configuration, ObjectMap options)
@@ -62,29 +65,30 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         return internalGetStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
     }
 
-    //FIXME: Use HBase lock
-    private static ReentrantLock lock = new ReentrantLock();
-
     @Override
-    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException {
-        boolean hasLock = lock.tryLock(timeout, TimeUnit.MILLISECONDS);
-        if (!hasLock) {
-            throw new IllegalStateException("Can't get lock !!!");
+    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+        try {
+            VariantTableDriver.createVariantTableIfNeeded(genomeHelper, tableName, getConnection());
+            return lock.lock(Bytes.toBytes(studyId + "_LOCK"), lockDuration, timeout);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
         }
-        return 0;
     }
 
     @Override
-    public void unLockStudy(int studyId, long lockId) {
-        lock.unlock();
+    public void unLockStudy(int studyId, long lockToken) {
+        try {
+            lock.unlock(Bytes.toBytes(studyId + "_LOCK"), lockToken);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
-
 
     public GenomeHelper getGenomeHelper() {
         return this.genomeHelper;
     }
 
-    public HBaseManager getHBaseHelper() {
+    protected HBaseManager getHBaseManager() {
         return this.getGenomeHelper().getHBaseManager();
     }
 
@@ -111,8 +115,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         }
 
         try {
-            if (getHBaseHelper().act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
-                studyConfigurationList = getHBaseHelper().act(getConnection(), tableName, table -> {
+            if (getHBaseManager().act(getConnection(), tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+                studyConfigurationList = getHBaseManager().act(getConnection(), tableName, table -> {
                     Result result = table.get(get);
                     if (result.isEmpty()) {
                         return Collections.emptyList();
@@ -139,7 +143,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         byte[] columnQualifier = Bytes.toBytes(studyConfiguration.getStudyName());
 
         try {
-            getHBaseHelper().act(tableName, table -> {
+            getHBaseManager().act(tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
                 Put put = new Put(studiesRow);
                 put.addColumn(genomeHelper.getColumnFamily(), columnQualifier, studyConfiguration.getTimeStamp(), bytes);
@@ -162,11 +166,11 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         Get get = new Get(studiesRow);
         get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
-            if (!getHBaseHelper().act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
+            if (!getHBaseManager().act(tableName, (table, admin) -> admin.tableExists(table.getName()))) {
                 logger.info("Get StudyConfiguration summary TABLE_NO_EXISTS");
                 return HashBiMap.create();
             }
-            return getHBaseHelper().act(tableName, table -> {
+            return getHBaseManager().act(tableName, table -> {
                 Result result = table.get(get);
                 if (result.isEmpty()) {
                     logger.info("Get StudyConfiguration summary EMPTY");
@@ -206,15 +210,15 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
                 put.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn, bytes);
                 table.put(put);
             } catch (IOException e) {
-                e.printStackTrace();
+                throw new UncheckedIOException(e);
             }
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
     }
 
     public Connection getConnection() throws IOException {
-        return this.getHBaseHelper().getConnection();
+        return this.getHBaseManager().getConnection();
     }
 
     public HBaseVariantStudyConfiguration toHBaseStudyConfiguration(StudyConfiguration studyConfiguration) throws IOException {
@@ -239,7 +243,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     @Override
     public void close() throws IOException {
         try {
-            this.getHBaseHelper().close();
+            this.getHBaseManager().close();
         } catch (Exception e) {
             throw new IOException(e);
         }

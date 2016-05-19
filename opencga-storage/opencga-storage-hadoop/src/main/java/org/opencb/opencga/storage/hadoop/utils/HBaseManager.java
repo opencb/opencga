@@ -106,6 +106,19 @@ public class HBaseManager extends Configured implements AutoCloseable {
      * @param func      Action to perform
      * @throws IOException If any IO problem occurs
      */
+    public static void act(Connection con, String tableName, HBaseTableConsumer func) throws IOException {
+        TableName tname = TableName.valueOf(tableName);
+        try (Table table = con.getTable(tname)) {
+            func.accept(table);
+        }    }
+    /**
+     * Performs an action over a table.
+     *
+     * @param con HBase connection object
+     * @param tableName Table name
+     * @param func      Action to perform
+     * @throws IOException If any IO problem occurs
+     */
     public static void act(Connection con, byte[] tableName, HBaseTableConsumer func) throws IOException {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {

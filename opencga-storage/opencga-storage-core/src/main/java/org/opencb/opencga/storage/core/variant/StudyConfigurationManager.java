@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -48,7 +49,7 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
-    public long lockStudy(int studyId, long lockDuration, long wait) throws InterruptedException {
+    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
         logger.warn("Ignoring lock");
         return 0;
     }

@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 
@@ -425,7 +426,7 @@ public abstract class VariantStorageETL implements StorageETL {
         long lock;
         try {
             lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | TimeoutException e) {
             throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
         }
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -650,7 +651,7 @@ public abstract class VariantStorageETL implements StorageETL {
         long lock;
         try {
             lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | TimeoutException e) {
             throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
         }
         //Update StudyConfiguration

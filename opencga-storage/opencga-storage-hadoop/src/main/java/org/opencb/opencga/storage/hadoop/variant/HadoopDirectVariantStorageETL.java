@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
@@ -81,7 +82,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         long lock;
         try {
             lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-        } catch (InterruptedException e) {
+        } catch (InterruptedException | TimeoutException e) {
             throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
         }
 
