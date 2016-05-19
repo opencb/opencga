@@ -128,5 +128,7 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
 
     void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
 
+    void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
     long getStudyIdByCohortId(long cohortId) throws CatalogDBException;
 }

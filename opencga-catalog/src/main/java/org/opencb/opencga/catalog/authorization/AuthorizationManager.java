@@ -20,9 +20,9 @@ public interface AuthorizationManager {
     String FILTER_ROUTE_FILES = "projects.studies.files.";
     String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
 
-    String ADMINS_ROLE = "admins";
+    String ADMINS_ROLE = "@admins";
     String DATA_MANAGERS_ROLE = "dataManagers";
-    String MEMBERS_ROLE = "members";
+    String MEMBERS_ROLE = "@members";
 
     String OTHER_USERS_ID = "*";
 
@@ -341,12 +341,12 @@ public interface AuthorizationManager {
     }
 
     /**
-     * Checks if the userId belongs to one role or not.
+     * Checks if the member belongs to one role or not.
      *
      * @param studyId study id.
-     * @param userId User id.
-     * @return true if the user belongs to one role. False otherwise.
+     * @param member User or group id.
+     * @return true if the member belongs to one role. False otherwise.
      * @throws CatalogException CatalogException.
      */
-    boolean userHasPermissionsInStudy(long studyId, String userId) throws CatalogException;
+    boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException;
 }

@@ -324,6 +324,28 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
+    public void unsetJobAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_STUDY_ID, studyId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            jobCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+
+        // Remove possible JobAcls that might have permissions defined but no users
+        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        jobCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
+    @Override
     public long getStudyIdByJobId(long jobId) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), jobId);
         QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, PRIVATE_STUDY_ID);

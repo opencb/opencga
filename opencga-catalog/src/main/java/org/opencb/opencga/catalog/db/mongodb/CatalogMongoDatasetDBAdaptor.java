@@ -14,6 +14,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -405,6 +406,28 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
                         new Document("$exists", true).append("$eq", Collections.emptyList()));
         Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
         datasetCollection.update(queryBson, update, null);
+    }
+
+    @Override
+    public void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_STUDY_ID, studyId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            datasetCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+
+        // Remove possible DatasetAcls that might have permissions defined but no users
+        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        datasetCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override

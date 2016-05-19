@@ -224,7 +224,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public String getStudyOwnerId(long studyId) throws CatalogDBException {
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, FILTER_ROUTE_STUDIES + QueryParams.OWNER_ID.key());
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FILTER_ROUTE_STUDIES + QueryParams.OWNER_ID.key());
         return getStudy(studyId, queryOptions).first().getOwnerId();
     }
 
@@ -235,10 +235,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         checkStudyId(studyId);
         checkMembers(dbAdaptorFactory, studyId, members);
-        checkRoleId(studyId, roleId);
+        if (roleId != null) {
+            checkRoleId(studyId, roleId);
+        }
 
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
+        aggregation.add(Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key())));
         aggregation.add(Aggregates.unwind("$" + QueryParams.ACLS.key()));
 
         List<Bson> filters = new ArrayList<>();
@@ -250,10 +253,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         if (filters.size() > 0) {
             Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
-            aggregation.add(filter);
+            aggregation.add(Aggregates.match(filter));
         }
-
-        aggregation.add(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
         List<StudyAcl> studyAcl = null;
         QueryResult<Document> aggregate = studyCollection.aggregate(aggregation, null);
@@ -353,17 +354,36 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
         }
 
-        Bson query = new Document(PRIVATE_ID, studyId);
-        List<Bson> groupQuery = new ArrayList<>();
+        /*
+        * List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(),
+                Filters.eq(VariableSetParams.ID.key(), variableSetId))));
+        aggregation.add(Aggregates.project(Projections.include(QueryParams.VARIABLE_SET.key())));
+        aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key()));
+        aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
+        QueryResult<VariableSet> queryResult = studyCollection.aggregate(aggregation, variableSetConverter, new QueryOptions());
+        * */
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, studyId)));
+        aggregation.add(Aggregates.project(Projections.include(QueryParams.GROUPS.key())));
+        aggregation.add(Aggregates.unwind("$" + QueryParams.GROUPS.key()));
+
+//        Document query = new Document(PRIVATE_ID, studyId);
+//        List<Bson> groupQuery = new ArrayList<>();
         if (userIds.size() > 0) {
-            groupQuery.add(Filters.in("userIds", userIds));
+            aggregation.add(Aggregates.match(Filters.in(QueryParams.GROUP_USER_IDS.key(), userIds)));
+//            groupQuery.add(Filters.in("userIds", userIds));
         }
         if (groupId != null && groupId.length() > 0) {
-            groupQuery.add(Filters.eq("id", groupId));
+            aggregation.add(Aggregates.match(Filters.eq(QueryParams.GROUP_ID.key(), groupId)));
+//            groupQuery.add(Filters.eq("id", groupId));
         }
-        Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
 
-        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
+//        Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
+
+        QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, null);
+
+//        QueryResult<Document> queryResult = studyCollection.find(query, projection, null);
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Group> groups = new ArrayList<>();
         studies.stream().filter(study -> study.getGroups() != null).forEach(study -> groups.addAll(study.getGroups()));
@@ -564,6 +584,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         checkStudyId(studyId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
+
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().unsetSampleAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().unsetFileAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogJobDBAdaptor().unsetJobAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogDatasetDBAdaptor().unsetDatasetAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().unsetIndividualAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().unsetCohortAclsInStudy(studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
@@ -1116,7 +1143,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
             Study study = get(query, options).first();
             throw new CatalogDBException("The study {" + id + "} was already " + study.getStatus().getStatus());
         }

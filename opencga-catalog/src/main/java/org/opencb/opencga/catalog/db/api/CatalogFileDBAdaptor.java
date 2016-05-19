@@ -238,6 +238,8 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException;
 
+    void unsetFileAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
     @Deprecated
     enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),

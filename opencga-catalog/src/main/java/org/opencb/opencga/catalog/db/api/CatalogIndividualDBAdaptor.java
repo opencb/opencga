@@ -81,6 +81,8 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
 
+    void unsetIndividualAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
     long getStudyIdByIndividualId(long individualId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {

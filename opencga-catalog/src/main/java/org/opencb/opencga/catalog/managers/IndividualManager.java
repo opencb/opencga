@@ -116,7 +116,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.userHasPermissionsInStudy(studyId, userId)) {
+        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "individual", studyId, null);
         }
         query.append(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

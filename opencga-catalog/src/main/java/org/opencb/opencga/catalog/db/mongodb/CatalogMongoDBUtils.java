@@ -141,10 +141,10 @@ class CatalogMongoDBUtils {
         if (member.equals("*") || member.equals("anonymous")) {
             return;
         } else if (member.startsWith("@")) {
-            String groupId = member.substring(1);
-            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
+            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member,
+                    Collections.emptyList());
             if (queryResult.getNumResults() == 0) {
-                throw CatalogDBException.idNotFound("Group", groupId);
+                throw CatalogDBException.idNotFound("Group", member);
             }
         } else {
             dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);

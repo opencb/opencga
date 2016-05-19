@@ -424,7 +424,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (studyId <= 0) {
             throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
         } else {
-            if (!authorizationManager.userHasPermissionsInStudy(studyId, userId)) {
+            if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
                 throw CatalogAuthorizationException.deny(userId, "view", "files", studyId, null);
             }
             query.put(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);

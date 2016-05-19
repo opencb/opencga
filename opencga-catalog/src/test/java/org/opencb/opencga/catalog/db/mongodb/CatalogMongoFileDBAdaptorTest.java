@@ -235,8 +235,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void testRank() throws Exception {
-
-        List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
+        List<Document> rankedFilesPerDiskUsage = catalogFileDBAdaptor.rank(
+                new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
                 CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), 100, false).getResult();
 
         assertEquals(3, rankedFilesPerDiskUsage.size());
@@ -249,7 +249,6 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         assertEquals(10, rankedFilesPerDiskUsage.get(2).get("_id"));
         assertEquals(2, rankedFilesPerDiskUsage.get(2).get("count"));
-
     }
 
     @Test

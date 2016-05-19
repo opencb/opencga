@@ -13,6 +13,7 @@ import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.*;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -520,6 +521,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkFilePermission(Long.valueOf(fileId), userId, FileAcl.FilePermissions.SHARE);
         }
 
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String fileId : fileIdArray) {
+            long studyId = fileDBAdaptor.getStudyIdByFileId(Long.valueOf(fileId));
+            for (String member : userArray) {
+                if (!memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share file with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
+        }
+
 //         Set the permissions
         List<FileAcl> fileAclList = new ArrayList<>(fileIdArray.length);
         String[] userIdArray = userIds.split(",");
@@ -556,6 +570,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // Check if the userId has proper permissions for all the samples.
         for (String sampleId : sampleIdArray) {
             checkSamplePermission(Long.valueOf(sampleId), userId, SampleAcl.SamplePermissions.SHARE);
+        }
+
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String sampleId : sampleIdArray) {
+            long studyId = sampleDBAdaptor.getStudyIdBySampleId(Long.valueOf(sampleId));
+            for (String member : userArray) {
+                if (!memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share sample with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
         }
 
         // Set the permissions
@@ -595,6 +622,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkCohortPermission(Long.valueOf(cohortId), userId, CohortAcl.CohortPermissions.SHARE);
         }
 
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String cohortId : cohortIdArray) {
+            long studyId = cohortDBAdaptor.getStudyIdByCohortId(Long.valueOf(cohortId));
+            for (String member : userArray) {
+                if (!memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share cohort with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
+        }
+
         // Set the permissions
         List<CohortAcl> cohortAclList = new ArrayList<>(cohortIdArray.length);
         String[] userIdArray = userIds.split(",");
@@ -630,6 +670,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // Check if the userId has proper permissions for all the individuals.
         for (String individualId : individualIdArray) {
             checkIndividualPermission(Long.valueOf(individualId), userId, IndividualAcl.IndividualPermissions.SHARE);
+        }
+
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String individualId : individualIdArray) {
+            long studyId = individualDBAdaptor.getStudyIdByIndividualId(Long.valueOf(individualId));
+            for (String member : userArray) {
+                if (!memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share individual with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
         }
 
         // Set the permissions
@@ -669,6 +722,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             checkJobPermission(Long.valueOf(jobId), userId, JobAcl.JobPermissions.SHARE);
         }
 
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String jobId : jobIdArray) {
+            long studyId = jobDBAdaptor.getStudyIdByJobId(Long.valueOf(jobId));
+            for (String member : userArray) {
+                if (!memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share job with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
+        }
+
         // Set the permissions
         List<JobAcl> jobAclList = new ArrayList<>(jobIdArray.length);
         String[] userIdArray = userIds.split(",");
@@ -704,6 +770,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         // Check if the userId has proper permissions for all the datasets.
         for (String datasetId : datasetArray) {
             checkDatasetPermission(Long.valueOf(datasetId), userId, DatasetAcl.DatasetPermissions.SHARE);
+        }
+
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String datasetId : datasetArray) {
+            long studyId = datasetDBAdaptor.getStudyIdByDatasetId(Long.valueOf(datasetId));
+            for (String member : userArray) {
+                if (!memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share dataset with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
         }
 
         // Set the permissions
@@ -938,13 +1017,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public boolean userHasPermissionsInStudy(long studyId, String userId) throws CatalogException {
-        String groupId = null;
-        QueryResult<Group> groupQueryResult = getGroupBelonging(studyId, userId);
-        if (groupQueryResult.getNumResults() > 0) {
-            groupId = groupQueryResult.first().getId();
+    public boolean memberHasPermissionsInStudy(long studyId, String member) throws CatalogException {
+        List<String> memberList = new ArrayList<>();
+        memberList.add(member);
+        if (!member.startsWith("@")) { // User
+            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+            if (groupBelonging.getNumResults() > 0) {
+                memberList.add(groupBelonging.first().getId()); // Add the groupId to the memberList
+            }
         }
-        StudyAcl studyAcl = getStudyAclBelonging(studyId, userId, groupId);
+        StudyAcl studyAcl = getStudyAclBelonging(studyId, memberList);
         return studyAcl != null;
     }
 
@@ -1060,14 +1142,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @return the studyAcl where the user/group belongs to.
      * @throws CatalogException when there is any database error.
      */
-    StudyAcl getStudyAclBelonging(long studyId, String userId, String groupId) throws CatalogException {
+    StudyAcl getStudyAclBelonging(long studyId, String userId, @Nullable String groupId) throws CatalogException {
         List<String> members = groupId != null ? Arrays.asList(userId, groupId) : Arrays.asList(userId);
+        return getStudyAclBelonging(studyId, members);
+    }
+
+    StudyAcl getStudyAclBelonging(long studyId, List<String> members) throws CatalogException {
         QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, members);
         if (studyQueryResult.getNumResults() > 0) {
             return studyQueryResult.first();
         }
         return null;
     }
+
 
     /*
     ====================================

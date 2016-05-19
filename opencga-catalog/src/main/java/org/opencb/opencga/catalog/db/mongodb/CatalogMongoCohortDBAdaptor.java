@@ -16,6 +16,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Cohort;
@@ -241,6 +242,28 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                         new Document("$exists", true).append("$eq", Collections.emptyList()));
         Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
         cohortCollection.update(queryBson, update, null);
+    }
+
+    @Override
+    public void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_STUDY_ID, studyId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            cohortCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+
+        // Remove possible CohortAcls that might have permissions defined but no users
+        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        cohortCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override

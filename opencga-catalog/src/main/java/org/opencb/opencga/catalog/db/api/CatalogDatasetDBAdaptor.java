@@ -139,4 +139,6 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
 
     void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
 
+    void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
 }

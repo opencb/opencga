@@ -215,7 +215,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!authorizationManager.userHasPermissionsInStudy(studyId, userId)) {
+        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "samples", studyId, null);
         }
 
@@ -367,7 +367,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         query = ParamUtils.defaultObject(query, Query::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.userHasPermissionsInStudy(studyId, userId)) {
+        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "cohorts", studyId, null);
         }
 

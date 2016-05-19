@@ -80,6 +80,8 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
+    void unsetSampleAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
     @Deprecated
     default QueryResult<Sample> deleteSample(long sampleId) throws CatalogDBException {
         return delete(sampleId, new QueryOptions());

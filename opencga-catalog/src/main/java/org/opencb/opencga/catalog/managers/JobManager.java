@@ -186,7 +186,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         //query.putAll(options);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!authorizationManager.userHasPermissionsInStudy(studyId, userId)) {
+        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
         }
 
