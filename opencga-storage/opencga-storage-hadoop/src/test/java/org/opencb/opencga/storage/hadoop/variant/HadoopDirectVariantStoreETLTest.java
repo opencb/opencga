@@ -63,6 +63,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageMana
         Configuration conf = new Configuration();
         ObjectMap options = new ObjectMap();
         options.append(HADOOP_LOAD_ARCHIVE, true);
+        options.append(Options.TRANSFORM_FORMAT.key(), "proto");
         StudyConfiguration studyConf = new StudyConfiguration(1, "1");
         StorageConfiguration sconfig = new StorageConfiguration();
         options.append(Options.STUDY_CONFIGURATION.key(), studyConf);

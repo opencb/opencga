@@ -1,22 +1,19 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -33,7 +30,7 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
 
     private void removeFile(String file, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
         Integer fileId = studyConfiguration.getFileIds().get(file);
-        System.out.println(String.format("Use File ID %s for %s", fileId, file));
+        System.out.printf("Use File ID %s for %s", fileId, file);
         VariantHbaseTestUtils.removeFile(getVariantStorageManager(), DB_NAME, outputUri, fileId, studyConfiguration, map);
     }
 
@@ -73,6 +70,9 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
         assertTrue(variants.containsKey("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals(null, variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));
+
+        System.out.println("studyConfiguration = " + studyConfiguration);
+        System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
     }
 
     private Map<String, Variant> buildVariantsIdx() throws Exception {

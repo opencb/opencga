@@ -55,6 +55,7 @@ public class VariantHbaseTestUtils {
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .putAll(params);
         variantStorageManager.dropFile(studyConfiguration.getStudyName(), fileId);
+        studyConfiguration.copy(variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
 //        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
     }
 
@@ -81,8 +82,7 @@ public class VariantHbaseTestUtils {
         }
         StorageETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
         StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        studyConfiguration.setIndexedFiles(updatedStudyConfiguration.getIndexedFiles());
-        studyConfiguration.setAttributes(updatedStudyConfiguration.getAttributes());
+        studyConfiguration.copy(updatedStudyConfiguration);
 
         return variantStorageManager.readVariantSource(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }

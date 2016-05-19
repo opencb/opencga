@@ -51,7 +51,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeoutException;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 
@@ -118,13 +117,8 @@ public abstract class VariantStorageETL implements StorageETL {
             studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
-            long lock;
-            try {
-                options.remove(Options.STUDY_CONFIGURATION.key());
-                lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-            } catch (InterruptedException | TimeoutException e) {
-                throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
-            }
+            long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+            options.remove(Options.STUDY_CONFIGURATION.key());
 
             //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
             studyConfiguration = getStudyConfiguration(options);
@@ -433,13 +427,9 @@ public abstract class VariantStorageETL implements StorageETL {
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
-        long lock;
-        try {
-            lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-            options.remove(Options.STUDY_CONFIGURATION.key());
-        } catch (InterruptedException | TimeoutException e) {
-            throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
-        }
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+        options.remove(Options.STUDY_CONFIGURATION.key());
+
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
@@ -660,12 +650,8 @@ public abstract class VariantStorageETL implements StorageETL {
         boolean annotate = options.getBoolean(Options.ANNOTATE.key(), Options.ANNOTATE.defaultValue());
 
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
-        long lock;
-        try {
-            lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-        } catch (InterruptedException | TimeoutException e) {
-            throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
-        }
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+
         //Update StudyConfiguration
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);
         studyConfiguration.getIndexedFiles().addAll(fileIds);

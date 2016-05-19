@@ -243,6 +243,9 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         variantMerger = new VariantMerger();
 
         timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
+        if (timestamp == -1) {
+            throw new IllegalArgumentException("Missing TimeStamp");
+        }
 
         super.setup(context);
     }

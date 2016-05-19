@@ -58,6 +58,10 @@ public class StudyConfiguration {
     }
 
     public StudyConfiguration(StudyConfiguration other) {
+        copy(other);
+    }
+
+    public void copy(StudyConfiguration other) {
         this.studyId = other.studyId;
         this.studyName = other.studyName;
         this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
