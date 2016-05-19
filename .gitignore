@@ -66,3 +66,5 @@ opencga-server/install.sh
 
 # Generated properties
 git.properties
+*.RData
+*.Rproj
