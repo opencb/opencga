@@ -372,27 +372,41 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             unsetIndividualAcl(individualId, usersToOverride);
         }
 
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions()
+                .stream()
+                .map(IndividualAcl.IndividualPermissions::name)
+                .collect(Collectors.toList());
+
         // Check if the permissions found on acl already exist on individual id
-        Query query = new Query(QueryParams.ID.key(), individualId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Document queryDocument = new Document(PRIVATE_ID, individualId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
+        } else {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
+        }
+
         Bson update;
-        if (count(query).first() > 0) {
+        if (individualCollection.count(queryDocument).first() > 0) {
             // Append the users to the existing acl.
             update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
         } else {
-            query = new Query(QueryParams.ID.key(), individualId);
+            queryDocument = new Document(PRIVATE_ID, individualId);
             // Push the new acl to the list of acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "IndividualAcl")));
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
+
         }
 
-        QueryResult<UpdateResult> updateResult = individualCollection.update(parseQuery(query), update, null);
+        QueryResult<UpdateResult> updateResult = individualCollection.update(queryDocument, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
             throw new CatalogDBException("setIndividualAcl: An error occurred when trying to share individual " + individualId
                     + " with other members.");
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        Individual individual = individualConverter.convertToDataModelType(individualCollection.find(queryDocument, queryOptions).first());
 
-        return endQuery("setIndividualAcl", startTime, get(query, queryOptions).first().getAcls());
+        return endQuery("setIndividualAcl", startTime, individual.getAcls());
     }
 
     @Override

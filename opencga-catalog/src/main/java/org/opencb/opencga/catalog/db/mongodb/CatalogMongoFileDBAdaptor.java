@@ -246,27 +246,38 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             unsetFileAcl(fileId, usersToOverride);
         }
 
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions().stream().map(FileAcl.FilePermissions::name).collect(Collectors.toList());
+
         // Check if the permissions found on acl already exist on file id
-        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Document queryDocument = new Document(PRIVATE_ID, fileId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
+        } else {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
+        }
+
         Bson update;
-        if (count(query).first() > 0) {
+        if (fileCollection.count(queryDocument).first() > 0) {
             // Append the users to the existing acl.
             update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
         } else {
-            query = new Query(QueryParams.ID.key(), fileId);
+            queryDocument = new Document(PRIVATE_ID, fileId);
             // Push the new acl to the list of acls.
             update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
+
         }
 
-        QueryResult<UpdateResult> updateResult = fileCollection.update(parseQuery(query), update, null);
+        QueryResult<UpdateResult> updateResult = fileCollection.update(queryDocument, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
             throw new CatalogDBException("setFileAcl: An error occurred when trying to share file " + fileId
                     + " with other members.");
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        File file = fileConverter.convertToDataModelType(fileCollection.find(queryDocument, queryOptions).first());
 
-        return endQuery("setFileAcl", startTime, get(query, queryOptions).first().getAcls());
+        return endQuery("setFileAcl", startTime, file.getAcls());
     }
 
     @Override

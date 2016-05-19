@@ -263,27 +263,37 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             unsetJobAcl(jobId, usersToOverride);
         }
 
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions().stream().map(JobAcl.JobPermissions::name).collect(Collectors.toList());
+
         // Check if the permissions found on acl already exist on job id
-        Query query = new Query(QueryParams.ID.key(), jobId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Document queryDocument = new Document(PRIVATE_ID, jobId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
+        } else {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
+        }
+
         Bson update;
-        if (count(query).first() > 0) {
+        if (jobCollection.count(queryDocument).first() > 0) {
             // Append the users to the existing acl.
             update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
         } else {
-            query = new Query(QueryParams.ID.key(), jobId);
+            queryDocument = new Document(PRIVATE_ID, jobId);
             // Push the new acl to the list of acls.
             update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "JobAcl")));
+
         }
 
-        QueryResult<UpdateResult> updateResult = jobCollection.update(parseQuery(query), update, null);
+        QueryResult<UpdateResult> updateResult = jobCollection.update(queryDocument, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("setJobAcl: An error occurred when trying to share job " + jobId
-                    + " with other members.");
+            throw new CatalogDBException("setJobAcl: An error occurred when trying to share job " + jobId + " with other members.");
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        Job job = jobConverter.convertToDataModelType(jobCollection.find(queryDocument, queryOptions).first());
 
-        return endQuery("setJobAcl", startTime, get(query, queryOptions).first().getAcls());
+        return endQuery("setJobAcl", startTime, job.getAcls());
     }
 
     @Override

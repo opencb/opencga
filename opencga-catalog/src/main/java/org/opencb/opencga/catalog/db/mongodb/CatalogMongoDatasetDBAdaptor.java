@@ -347,27 +347,38 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
             unsetDatasetAcl(datasetId, usersToOverride);
         }
 
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions().stream().map(DatasetAcl.DatasetPermissions::name).collect(Collectors.toList());
+
         // Check if the permissions found on acl already exist on dataset id
-        Query query = new Query(QueryParams.ID.key(), datasetId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
+        Document queryDocument = new Document(PRIVATE_ID, datasetId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
+        } else {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
+        }
+
         Bson update;
-        if (count(query).first() > 0) {
+        if (datasetCollection.count(queryDocument).first() > 0) {
             // Append the users to the existing acl.
             update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
         } else {
-            query = new Query(QueryParams.ID.key(), datasetId);
+            queryDocument = new Document(PRIVATE_ID, datasetId);
             // Push the new acl to the list of acls.
             update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "DatasetAcl")));
+
         }
 
-        QueryResult<UpdateResult> updateResult = datasetCollection.update(parseQuery(query), update, null);
+        QueryResult<UpdateResult> updateResult = datasetCollection.update(queryDocument, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
             throw new CatalogDBException("setDatasetAcl: An error occurred when trying to share dataset " + datasetId
                     + " with other members.");
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        Dataset dataset = datasetConverter.convertToDataModelType(datasetCollection.find(queryDocument, queryOptions).first());
 
-        return endQuery("setDatasetAcl", startTime, get(query, queryOptions).first().getAcls());
+        return endQuery("setDatasetAcl", startTime, dataset.getAcls());
     }
 
     @Override

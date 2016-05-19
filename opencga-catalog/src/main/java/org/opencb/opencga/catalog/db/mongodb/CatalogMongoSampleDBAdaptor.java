@@ -325,27 +325,38 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             unsetSampleAcl(sampleId, usersToOverride);
         }
 
-        // Check if the permissions found on acl already exist on sampleId
-        Query query = new Query(QueryParams.ID.key(), sampleId).append(QueryParams.ACLS_PERMISSIONS.key(), acl.getPermissions());
-        Bson update;
-        if (count(query).first() > 0) {
-            // Append the users to the existing sampleAcl.
-            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions().stream().map(SampleAcl.SamplePermissions::name).collect(Collectors.toList());
+
+        // Check if the permissions found on acl already exist on sample id
+        Document queryDocument = new Document(PRIVATE_ID, sampleId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
         } else {
-            query = new Query(QueryParams.ID.key(), sampleId);
-            // Push the new acl to the list of sample acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "SampleAcl")));
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
         }
 
-        QueryResult<UpdateResult> updateResult = sampleCollection.update(parseQuery(query), update, null);
+        Bson update;
+        if (sampleCollection.count(queryDocument).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            queryDocument = new Document(PRIVATE_ID, sampleId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "SampleAcl")));
+
+        }
+
+        QueryResult<UpdateResult> updateResult = sampleCollection.update(queryDocument, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
             throw new CatalogDBException("setSampleAcl: An error occurred when trying to share sample " + sampleId
                     + " with other members.");
         }
 
         QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        Sample sample = sampleConverter.convertToDataModelType(sampleCollection.find(queryDocument, queryOptions).first());
 
-        return endQuery("setSampleAcl", startTime, get(query, queryOptions).first().getAcls());
+        return endQuery("setSampleAcl", startTime, sample.getAcls());
     }
 
     @Deprecated
