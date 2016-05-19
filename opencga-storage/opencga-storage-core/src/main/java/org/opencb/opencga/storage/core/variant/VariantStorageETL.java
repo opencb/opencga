@@ -118,6 +118,14 @@ public abstract class VariantStorageETL implements StorageETL {
             studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
+            long lock;
+            try {
+                options.remove(Options.STUDY_CONFIGURATION.key());
+                lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
+            } catch (InterruptedException | TimeoutException e) {
+                throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
+            }
+
             //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
             studyConfiguration = getStudyConfiguration(options);
 
@@ -129,6 +137,8 @@ public abstract class VariantStorageETL implements StorageETL {
             }
             fileId = checkNewFile(studyConfiguration, fileId, fileName);
             options.put(Options.FILE_ID.key(), fileId);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
 
@@ -836,20 +846,23 @@ public abstract class VariantStorageETL implements StorageETL {
                 fileId = studyConfiguration.getFileIds().get(fileName);
             } else {
                 fileId = studyConfiguration.getFileIds().values().stream().max(Integer::compareTo).orElse(-1) + 1;
+                studyConfiguration.getFileIds().put(fileName, fileId);
             }
             //throw new StorageManagerException("Invalid fileId " + fileId + " for file " + fileName + ". FileId must be positive.");
         }
 
         if (studyConfiguration.getFileIds().containsKey(fileName)) {
             if (studyConfiguration.getFileIds().get(fileName) != fileId) {
-                throw new StorageManagerException("FileName " + fileName + " have a different fileId in the StudyConfiguration: "
+                throw new StorageManagerException("File " + fileName + " (" + fileId + ") "
+                        + "has a different fileId in the StudyConfiguration: "
                         + fileName + " (" + studyConfiguration.getFileIds().get(fileName) + ")");
             }
         }
         if (idFiles.containsKey(fileId)) {
             if (!idFiles.get(fileId).equals(fileName)) {
-                throw new StorageManagerException("FileId " + fileId + " has a different fileName in the StudyConfiguration: "
-                        + idFiles.containsKey(fileId) + " (" + fileId + ")");
+                throw new StorageManagerException("File " + fileName + " (" + fileId + ") "
+                        + "has a different fileName in the StudyConfiguration: "
+                        + idFiles.get(fileId) + " (" + fileId + ")");
             }
         }
         if (studyConfiguration.getIndexedFiles().contains(fileId)) {

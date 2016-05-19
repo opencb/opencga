@@ -14,7 +14,6 @@ import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 
-import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -55,7 +54,7 @@ public class VariantTableHelper extends GenomeHelper {
                 new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null)) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
             if (query.getResult().size() != 1) {
-                throw new NotSupportedException("Only one study configuration expected for study");
+                throw new IllegalStateException("Only one study configuration expected for study");
             }
             return query.first();
         }

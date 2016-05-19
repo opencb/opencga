@@ -211,16 +211,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         for (int fileId = 12877; fileId <= 12893; fileId++) {
             String fileName = "platinum/1K.end.platinum-genomes-vcf-NA" + fileId + "_S1.genome.vcf.gz";
             inputFiles.add(getResourceUri(fileName));
-//            int fileId = studyConfiguration.getFileIds().size() + 1;
-            studyConfiguration.getFileIds().put(fileName, fileId);
-            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
-            studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Collections.singleton(fileId)));
         }
 
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
 
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-//        options.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
         options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
@@ -250,7 +244,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         ArchiveFileMetadataManager fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), null);
         Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles();
         System.out.println("loadedFiles = " + loadedFiles);
-        for (int fileId = 12877; fileId <= 12893; fileId++) {
+        for (int fileId = 0; fileId <= 16; fileId++) {
             assertTrue(loadedFiles.contains(fileId));
         }
         for (Integer loadedFile : loadedFiles) {

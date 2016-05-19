@@ -65,6 +65,7 @@ public class VariantHbaseTestUtils {
         ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto")
                 .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
                 .append(VariantStorageManager.Options.DB_NAME.key(), dbName).append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)

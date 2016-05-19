@@ -192,6 +192,9 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     private void updateStudiesSummary(String study, Integer studyId, QueryOptions options) {
         BiMap<String, Integer> studiesSummary = getStudiesSummary(options);
+        if (study.isEmpty()) {
+            throw new IllegalStateException("Can't save an study with empty StudyName");
+        }
         if (studiesSummary.getOrDefault(study, Integer.MIN_VALUE).equals(studyId)) {
             //Nothing to update
             return;
