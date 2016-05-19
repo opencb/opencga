@@ -177,8 +177,6 @@ public class VariantAnnotationManager {
             ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numThreads, batchSize, numThreads * 2, true, false);
             ParallelTaskRunner<Variant, VariantAnnotation> parallelTaskRunner = new ParallelTaskRunner<>(variantDataReader, annotationTask, variantAnnotationDataWriter, config);
             parallelTaskRunner.run();
-        } catch (IOException e) {
-            throw e;
         } catch (Exception e) {
             throw new IOException(e);
         }
