@@ -172,6 +172,9 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             int num = 0;
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
+                if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
+                    continue;
+                }
                 Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
                 System.out.println("Variant = " + variant);
                 if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {

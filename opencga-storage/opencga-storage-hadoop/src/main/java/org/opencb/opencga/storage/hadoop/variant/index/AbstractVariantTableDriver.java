@@ -145,7 +145,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         Configuration conf = getConf();
         HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
 
-        long lock = scm.lockStudy(studyConfiguration.getStudyId());
+        long lock = scm.lockStudy(getHelper().getStudyId());
         StudyConfiguration s = loadStudyConfiguration();
         studyConfiguration = scm.toHBaseStudyConfiguration(s);
 
@@ -191,7 +191,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     protected void onError() {
         try {
             HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
-            long lock = scm.lockStudy(studyConfiguration.getStudyId());
+            long lock = scm.lockStudy(getHelper().getStudyId());
             studyConfiguration = scm.toHBaseStudyConfiguration(scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
             BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
             batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.ERROR);
@@ -205,7 +205,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     protected void onSuccess() {
         try {
             HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
-            long lock = scm.lockStudy(studyConfiguration.getStudyId());
+            long lock = scm.lockStudy(getHelper().getStudyId());
             studyConfiguration = scm.toHBaseStudyConfiguration(scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
             BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
             batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);

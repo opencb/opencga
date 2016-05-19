@@ -126,6 +126,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
     }
+
     @Test
     public void testMultipleFilesProtoConcurrent() throws Exception {
 
