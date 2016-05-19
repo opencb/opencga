@@ -426,6 +426,7 @@ public abstract class VariantStorageETL implements StorageETL {
         long lock;
         try {
             lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
+            options.remove(Options.STUDY_CONFIGURATION.key());
         } catch (InterruptedException | TimeoutException e) {
             throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
         }
@@ -462,7 +463,8 @@ public abstract class VariantStorageETL implements StorageETL {
             if (fileIdFromParams >= 0) {
                 if (fileIdFromParams != fileId) {
                     if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
-                        throw new StorageManagerException("Wrong fileId! Unable to load using fileId: " + fileIdFromParams + ". "
+                        throw new StorageManagerException("Wrong fileId! Unable to load using fileId: "
+                                + fileIdFromParams + ". "
                                 + "The input file has fileId: " + fileId
                                 + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
                     } else {

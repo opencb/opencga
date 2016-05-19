@@ -277,7 +277,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
         Integer fileId = studyConfiguration.getFileIds().get("s1.genome.vcf");
         System.out.println("fileId = " + fileId);
-        VariantSource source1 = loadFile("s1.genome.vcf.variants.avro.gz", 1, studyConfiguration,
+        VariantSource source1 = loadFile("s1.genome.vcf.variants.proto.gz", -1, studyConfiguration,
                 Collections.singletonMap(TestMRExecutor.VariantTableMapperFail.SLICE_TO_FAIL, "_"), false, false, true);
         checkArchiveTableTimeStamp(dbAdaptor);
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());

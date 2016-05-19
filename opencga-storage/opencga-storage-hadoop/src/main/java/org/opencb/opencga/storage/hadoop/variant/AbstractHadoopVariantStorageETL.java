@@ -3,19 +3,20 @@ package org.opencb.opencga.storage.hadoop.variant;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.io.compress.Compression;
 import org.opencb.biodata.formats.io.FileFormatException;
+import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.converter.VariantContextToVariantConverter;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -24,31 +25,37 @@ import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
-import org.opencb.opencga.storage.core.runner.VcfVariantReader;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.GenericRecordAvroJsonMixin;
 import org.opencb.opencga.storage.core.variant.io.json.VariantSourceJsonMixin;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.sql.SQLException;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.zip.GZIPInputStream;
 
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.HADOOP_BIN;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_PENDING_FILES;
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager
-        .OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
 
 /**
  * Created by mh719 on 13/05/2016.
@@ -108,7 +115,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         //Writer
         DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<VcfSliceProtos.VcfSlice>(outputVariantsFile, compression);
 
-        final Pair<VCFHeader, VCFHeaderVersion> header;
+//        final Pair<VCFHeader, VCFHeaderVersion> header;
         final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in
         // Normalizer
         VariantNormalizer normalizer = new VariantNormalizer();
@@ -123,16 +130,27 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         // final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
 
-        if (parser.equalsIgnoreCase("htsjdk")) {
-            logger.info("Using HTSJDK to read variants.");
-            header = readHtsHeader(input);
-        } else {
-            throw new NotImplementedException("Please request to read other than vcf file format");
-        }
+//        if (parser.equalsIgnoreCase("htsjdk")) {
+//            logger.info("Using HTSJDK to read variants.");
+//            header = readHtsHeader(input);
+//        } else {
+//            throw new NotImplementedException("Please request to read other than vcf file format");
+//        }
 
-        VcfVariantReader dataReader = new VcfVariantReader(
-                new StringDataReader(input), header.getKey(), header.getValue(), converter, statsCalculator,
-                normalizer);
+//        DataReader<Variant> dataReader = new VcfVariantReader(
+//                new StringDataReader(input), header.getKey(), header.getValue(), converter, statsCalculator,
+//                normalizer);
+        VariantReader dataReader = null;
+        try {
+            InputStream inputStream = new FileInputStream(input.toFile());
+            if (input.toString().endsWith("gz")) {
+                inputStream = new GZIPInputStream(inputStream);
+            }
+
+            dataReader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
+        } catch (IOException e) {
+            throw new StorageManagerException("Unable to read from " + input, e);
+        }
 
         // Transformer
         VcfMeta meta = new VcfMeta(source);
@@ -151,6 +169,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             dataWriter.open();
             dataWriter.pre();
             transformTask.pre();
+            statsCalculator.pre();
 
             start = System.currentTimeMillis();
             last = System.nanoTime();
@@ -159,6 +178,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             t[0] += System.nanoTime() - last;
             last = System.nanoTime();
             while (!read.isEmpty()) {
+                statsCalculator.apply(read);
                 List<VcfSliceProtos.VcfSlice> slices = transformTask.apply(read);
                 t[1] += System.nanoTime() - last;
                 last = System.nanoTime();
@@ -176,6 +196,9 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             t[2] += System.nanoTime() - last;
 
             end = System.currentTimeMillis();
+
+            source.getMetadata().put("variantFileHeader", dataReader.getHeader());
+            statsCalculator.post();
             transformTask.post();
             dataReader.post();
             dataWriter.post();
@@ -202,6 +225,137 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                 TimeUnit.NANOSECONDS.toSeconds(t[1]),
                 TimeUnit.NANOSECONDS.toSeconds(t[2]));
         return new ImmutablePair<>(start, end);
+    }
+
+    @Override
+    public URI preLoad(URI input, URI output) throws StorageManagerException {
+        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
+        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
+
+        if (!loadArch && !loadVar) {
+            loadArch = true;
+            loadVar = true;
+            options.put(HADOOP_LOAD_ARCHIVE, loadArch);
+            options.put(HADOOP_LOAD_VARIANT, loadVar);
+        }
+
+        if (loadArch) {
+            super.preLoad(input, output);
+        }
+
+        logger.info("Try to set Snappy " + Compression.Algorithm.SNAPPY.getName());
+        String compressName = conf.get(
+                ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY
+                        .getName());
+        Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(compressName);
+        logger.info(
+                String.format(
+                        "Create table %s with %s %s", archiveTableCredentials.getTable(), compressName,
+                        compression));
+        try {
+            this.dbAdaptor.getGenomeHelper().getHBaseManager().createTableIfNeeded(
+                    archiveTableCredentials.getTable(), this.dbAdaptor.getGenomeHelper().getColumnFamily(), compression);
+        } catch (IOException e1) {
+            throw new RuntimeException("Issue creating table " + archiveTableCredentials.getTable(), e1);
+        }
+
+        if (loadVar) {
+            // Load into variant table
+            // Update the studyConfiguration with data from the Archive Table.
+            // Reads the VcfMeta documents, and populates the StudyConfiguration if needed.
+            // Obtain the list of pending files.
+
+            int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key(), -1);
+            int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key(), -1);
+            boolean missingFilesDetected = false;
+
+
+            String tableName = getTableName(studyId);
+
+            Set<Integer> files = null;
+            ArchiveFileMetadataManager fileMetadataManager;
+            try {
+                fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(tableName, options);
+                files = fileMetadataManager.getLoadedFiles();
+            } catch (IOException e) {
+                throw new StorageHadoopException("Unable to read loaded files", e);
+            }
+
+            logger.info("Found files in Archive DB: " + files);
+
+            long lock;
+            try {
+                lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
+                options.remove(Options.STUDY_CONFIGURATION.key());
+            } catch (InterruptedException | TimeoutException e) {
+                throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
+            }
+            StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
+
+            List<Integer> pendingFiles = new LinkedList<>();
+            logger.info("Found registered indexed files: {}", studyConfiguration.getIndexedFiles());
+            for (Integer loadedFileId : files) {
+                VcfMeta meta = null;
+                try {
+                    meta = fileMetadataManager.getVcfMeta(loadedFileId, options).first();
+                } catch (IOException e) {
+                    throw new StorageHadoopException("Unable to read file VcfMeta for file : " + loadedFileId, e);
+                }
+
+                VariantSource source = meta.getVariantSource();
+                Integer fileId1 = Integer.parseInt(source.getFileId());
+                logger.info("Found source for file id {} with registered id {} ", loadedFileId, fileId1);
+                if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {
+                    checkNewFile(studyConfiguration, fileId1, source.getFileName());
+                    studyConfiguration.getFileIds().put(source.getFileName(), fileId1);
+                    studyConfiguration.getHeaders().put(fileId1, source.getMetadata().get("variantFileHeader").toString());
+                    checkAndUpdateStudyConfiguration(studyConfiguration, fileId1, source, options);
+                    missingFilesDetected = true;
+                }
+                if (!studyConfiguration.getIndexedFiles().contains(fileId1)) {
+                    pendingFiles.add(fileId1);
+                }
+            }
+
+            VariantSource source = readVariantSource(input, options);
+            fileId = checkNewFile(studyConfiguration, fileId, source.getFileName());
+
+
+            logger.info("Found pending in DB: " + pendingFiles);
+            if (missingFilesDetected) {
+                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+            }
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+
+            if (!loadArch) {
+                //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
+                if (!pendingFiles.contains(fileId)) {
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table " + tableName);
+                }
+            } else {
+                //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
+                if (pendingFiles.contains(fileId)) {
+                    // set loadArch to false?
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table");
+                } else {
+                    pendingFiles.add(fileId);
+                }
+            }
+
+            //If there are some given pending files, load only those files, not all pending files
+            List<Integer> givenPendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+            if (!givenPendingFiles.isEmpty()) {
+                for (Integer pendingFile : givenPendingFiles) {
+                    if (!pendingFiles.contains(pendingFile)) {
+                        throw new StorageManagerException("File " + fileId + " is not pending to be loaded in variant table");
+                    }
+                }
+            } else {
+                options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
+            }
+        }
+
+        return input;
     }
 
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageManagerException {
@@ -240,7 +394,30 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     }
 
     @Override
-    public URI postTransform(URI input) throws IOException, FileFormatException {
-        return super.postTransform(input);
+    public URI postLoad(URI input, URI output) throws StorageManagerException {
+//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
+        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
+            // Current StudyConfiguration may be outdated. Remove it.
+            options.remove(VariantStorageManager.Options.STUDY_CONFIGURATION.key());
+
+//            HadoopCredentials dbCredentials = getDbCredentials();
+//            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
+            int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+
+            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
+            try {
+                phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable(), studyId);
+            } catch (SQLException e) {
+                throw new StorageManagerException("Unable to register study in Phoenix", e);
+            }
+
+            options.put(VariantStorageManager.Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
+
+            return super.postLoad(input, output);
+        } else {
+            System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
+            return input;
+        }
     }
+
 }

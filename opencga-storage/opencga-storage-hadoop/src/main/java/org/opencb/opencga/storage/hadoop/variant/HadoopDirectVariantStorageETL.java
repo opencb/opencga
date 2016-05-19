@@ -2,8 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.io.compress.Compression;
-import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
@@ -15,12 +13,10 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
@@ -30,12 +26,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.SQLException;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
@@ -65,237 +57,6 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
                 configuration, storageEngineId, LoggerFactory.getLogger(HadoopDirectVariantStorageETL.class),
                 dbAdaptor, variantReaderUtils,
                 options, archiveCredentials, mrExecutor, conf);
-    }
-
-    @Override
-    protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
-        // FIXME: Should not to this
-        return buildVariantSource(Paths.get(input.getPath()), options);
-    }
-
-    @Override
-    public URI preLoad(URI input, URI output) throws StorageManagerException {
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
-
-        int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
-        long lock;
-        try {
-            lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-        } catch (InterruptedException | TimeoutException e) {
-            throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
-        }
-
-        StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
-
-        final VariantSource source;
-        if (loadArch) {
-            Path inPath = Paths.get(input.getPath());
-            source = VariantReaderUtils.readVariantSource(inPath.getParent().resolve(
-                    inPath.getFileName().toString().replace(".variants.proto.gz", ".file.json.gz")), null);
-        } else {
-            source = buildVariantSource(Paths.get(input.getPath()), options);
-        }
-        source.setStudyId(Integer.toString(studyId));
-
-        /*
-         * Before load file, check and add fileName to the StudyConfiguration.
-         * FileID and FileName is read from the VariantSource
-         * If fileId is -1, read fileId from Options
-         * Will fail if:
-         *     fileId is not an integer
-         *     fileId was already in the studyConfiguration.indexedFiles
-         *     fileId was already in the studyConfiguration.fileIds with a different fileName
-         *     fileName was already in the studyConfiguration.fileIds with a different fileId
-         */
-
-        int fileId;
-        String fileName = source.getFileName();
-        try {
-            fileId = Integer.parseInt(source.getFileId());
-        } catch (NumberFormatException e) {
-            throw new StorageManagerException("FileId '" + source.getFileId() + "' is not an integer", e);
-        }
-
-        if (fileId < 0) {
-            fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-        } else {
-            int fileIdFromParams = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-            if (fileIdFromParams >= 0) {
-                if (fileIdFromParams != fileId) {
-                    if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
-                        throw new StorageManagerException(
-                                "Wrong fileId! Unable to load using fileId: "
-                                        + fileIdFromParams + ". "
-                                        + "The input file has fileId: " + fileId
-                                        + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
-                    } else {
-                        //Override the fileId
-                        fileId = fileIdFromParams;
-                    }
-                }
-            }
-        }
-
-        if (studyConfiguration.getIndexedFiles().isEmpty()) {
-            // First indexed file
-            // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
-            boolean excludeGenotypes = options.getBoolean(
-                    Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES
-                            .defaultValue());
-            studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
-        } else {
-            // Not first indexed file
-            // Use the EXCLUDE_GENOTYPES value from StudyConfiguration. Ignore CLI value
-            boolean excludeGenotypes = studyConfiguration.getAttributes()
-                    .getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
-            options.put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
-        }
-
-
-        fileId = checkNewFile(studyConfiguration, fileId, fileName);
-        options.put(Options.FILE_ID.key(), fileId);
-        studyConfiguration.getFileIds().put(source.getFileName(), fileId);
-        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString()); //
-// TODO laster
-
-        checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options); // TODO ?
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
-        if (!loadArch && !loadVar) {
-            loadArch = true;
-            loadVar = true;
-            options.put(HADOOP_LOAD_ARCHIVE, loadArch);
-            options.put(HADOOP_LOAD_VARIANT, loadVar);
-        }
-
-        logger.info("Try to set Snappy " + Compression.Algorithm.SNAPPY.getName());
-        String compressName = conf.get(
-                ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY
-                        .getName());
-        Algorithm compression = Compression.getCompressionAlgorithmByName(compressName);
-        logger.info(
-                String.format(
-                        "Create table %s with %s %s", archiveTableCredentials.getTable(), compressName,
-                        compression));
-        try {
-            this.dbAdaptor.getGenomeHelper().getHBaseManager().createTableIfNeeded(
-                    archiveTableCredentials.getTable(), this.dbAdaptor.getGenomeHelper().getColumnFamily(), compression);
-        } catch (IOException e1) {
-            throw new RuntimeException("Issue creating table " + archiveTableCredentials.getTable(), e1);
-        }
-
-        if (loadVar) {
-            // Load into variant table
-            // Update the studyConfiguration with data from the Archive Table.
-            // Reads the VcfMeta documents, and populates the StudyConfiguration
-            // if needed.
-            // Obtain the list of pending files.
-
-
-            boolean missingFilesDetected = false;
-
-            Set<Integer> files = null;
-            ArchiveFileMetadataManager fileMetadataManager;
-            try {
-                fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(
-                        getTableName(
-                                studyConfiguration
-                                        .getStudyId()), options);
-                files = fileMetadataManager.getLoadedFiles();
-            } catch (IOException e) {
-                throw new StorageHadoopException("Unable to read loaded files", e);
-            }
-
-            List<Integer> pendingFiles = new LinkedList<>();
-
-            for (Integer loadedFileId : files) {
-                VcfMeta meta = null;
-                try {
-                    meta = fileMetadataManager.getVcfMeta(loadedFileId, options).first();
-                } catch (IOException e) {
-                    throw new StorageHadoopException("Unable to read file VcfMeta for file : " + loadedFileId, e);
-                }
-
-                Integer fileId1 = Integer.parseInt(source.getFileId());
-                if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {
-                    checkNewFile(studyConfiguration, fileId1, source.getFileName());
-                    studyConfiguration.getFileIds().put(source.getFileName(), fileId1);
-                    studyConfiguration.getHeaders().put(
-                            fileId1, source.getMetadata().get("variantFileHeader")
-                                    .toString());
-                    checkAndUpdateStudyConfiguration(studyConfiguration, fileId1, source, options);
-                    missingFilesDetected = true;
-                }
-                if (!studyConfiguration.getIndexedFiles().contains(fileId1)) {
-                    pendingFiles.add(fileId1);
-                }
-            }
-            if (missingFilesDetected) {
-                // getStudyConfigurationManager(options).updateStudyConfiguration(studyConfiguration,
-                // null);
-                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-            }
-
-            if (!loadArch) {
-                // If skip archive loading, input fileId must be already in
-                // archiveTable, so "pending to be loaded"
-                if (!pendingFiles.contains(fileId)) {
-                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table");
-                }
-            } else {
-                // If don't skip archive, input fileId must not be pending,
-                // because must not be in the archive table.
-                if (pendingFiles.contains(fileId)) {
-                    // set loadArch to false?
-                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table");
-                } else {
-                    pendingFiles.add(fileId);
-                }
-            }
-
-            // If there are some given pending files, load only those files, not
-            // all pending files
-            List<Integer> givenPendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            if (!givenPendingFiles.isEmpty()) {
-                for (Integer pendingFile : givenPendingFiles) {
-                    if (!pendingFiles.contains(pendingFile)) {
-                        throw new StorageManagerException(
-                                "File " + fileId + " is not pending to be loaded in variant"
-                                        + " table");
-                    }
-                }
-            } else {
-                options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
-            }
-        }
-        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
-        return input;
-    }
-
-    @Override
-    public URI postLoad(URI input, URI output) throws StorageManagerException {
-//        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
-        if (options.getBoolean(HADOOP_LOAD_VARIANT)) {
-            // Current StudyConfiguration may be outdated. Remove it.
-            options.remove(VariantStorageManager.Options.STUDY_CONFIGURATION.key());
-
-            int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
-
-            VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
-            try {
-                phoenixHelper.registerNewStudy(dbAdaptor.getJdbcConnection(), variantsTableCredentials.getTable(), studyId);
-            } catch (SQLException e) {
-                throw new StorageManagerException("Unable to register study in Phoenix", e);
-            }
-            options.put(VariantStorageManager.Options.FILE_ID.key(), options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES));
-
-            return super.postLoad(input, output);
-        } else {
-            System.out.println(Thread.currentThread().getName() + " - DO NOTHING!");
-            return input;
-        }
     }
 
     /**
@@ -379,7 +140,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         logger.info("Read {} slices", counter);
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(this.dbAdaptor.getConnection(), table, conf);) {
+        try (ArchiveFileMetadataManager manager = dbAdaptor.getArchiveFileMetadataManager(table, options)) {
             manager.updateVcfMetaData(source);
             manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
         } catch (IOException e) {
