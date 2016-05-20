@@ -156,7 +156,7 @@ public class OpenCGAWSServerTest {
         //Create a new user with permissions just over 2 samples.
         String userTest2 = OpenCGAWSServer.catalogManager.createUser("userTest2", "userTest2", "my@email.com", "1234", "ACME", null, new QueryOptions()).first().getId();
         String sessionId2 = OpenCGAWSServer.catalogManager.login(userTest2, "1234", "127.0.0.1").first().getString("sessionId");
-        OpenCGAWSServer.catalogManager.addMemberToGroup(study.getId(), AuthorizationManager.MEMBERS_ROLE, userTest2, sessionId);
+        OpenCGAWSServer.catalogManager.addUsersToGroup(study.getId(), AuthorizationManager.MEMBERS_ROLE, userTest2, sessionId);
 
         QueryResult<Sample> allSamples = OpenCGAWSServer.catalogManager.getAllSamples(study.getId(),
                 new Query(CatalogSampleDBAdaptor.QueryParams.NAME.key(), "NA19685,NA19661"), new QueryOptions(), sessionId);

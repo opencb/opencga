@@ -119,7 +119,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             System.out.println("study = " + study);
             try {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getCreatorId(), study.getCreationDate(),
+                        study.getAlias(), study.getType(), study.getOwnerId(), study.getCreationDate(),
                         study.getDescription(), study.getStatus(), study.getCipher(), null, null, null, study.getStats(),
                         study.getAttributes(), queryOptions, sessionId);
                 Study studyAdded = queryResult.getResult().get(0);
@@ -565,10 +565,10 @@ public class StudiesWSServer extends OpenCGAWSServer {
                 return createErrorResponse("groups", "Must specify only one user to add or remove from one group");
             }
             if (!addUser.isEmpty()) {
-                queryResults.add(catalogManager.addMemberToGroup(studyId, groupId, addUser, sessionId));
+                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUser, sessionId));
             }
             if (!removeUser.isEmpty()) {
-                queryResults.add(catalogManager.removeMemberFromGroup(studyId, groupId, removeUser, sessionId));
+                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUser, sessionId));
             }
             if (queryResults.isEmpty()) {
                 return createErrorResponse("groups", "Must specify a user to add or remove from one group");

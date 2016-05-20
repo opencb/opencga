@@ -44,7 +44,7 @@ public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
 
-    public static Query parseQuery(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions, List studyIds)
+    public static Query parseQuery(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
             throws Exception {
         Query query = new Query();
 
@@ -77,7 +77,7 @@ public class VariantQueryCommandUtils {
                 }
             }
         } else {
-            studies = studyIds;
+            studies = new ArrayList<>(studyIds.keySet());
         }
 
         // If the studies to be returned is empty then we return the studies being queried
@@ -191,7 +191,7 @@ public class VariantQueryCommandUtils {
             } else if (returnedStudiesSize == 0 && studyIds.size() != 1 //If there are no returned studies, and there are more than one study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
                 throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned "
-                        + "study. Available studies: [ " + String.join(", ", studyIds) + " ]");
+                        + "study. Available studies: " + studyIds);
             } else {
                 if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
                     query.put(RETURNED_STUDIES.key(), studyIds.get(0));

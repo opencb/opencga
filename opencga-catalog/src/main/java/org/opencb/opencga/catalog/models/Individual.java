@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +39,7 @@ public class Individual {
     private Species species;
     private Population population;
     private Status status;
+    private List<IndividualAcl> acls;
     private List<AnnotationSet> annotationSets;
     private Map<String, Object> attributes;
 
@@ -55,6 +58,7 @@ public class Individual {
         this.species = species;
         this.population = population;
         this.annotationSets = annotationSets;
+        this.acls = new ArrayList<>();
         this.status = new Status();
         this.attributes = attributes;
     }
@@ -71,6 +75,8 @@ public class Individual {
         sb.append(", race='").append(race).append('\'');
         sb.append(", species=").append(species);
         sb.append(", population=").append(population);
+        sb.append(", status=").append(status);
+        sb.append(", acls=").append(acls);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -243,6 +249,15 @@ public class Individual {
 
     public void setStatus(Status status) {
         this.status = status;
+    }
+
+    public List<IndividualAcl> getAcls() {
+        return acls;
+    }
+
+    public Individual setAcls(List<IndividualAcl> acls) {
+        this.acls = acls;
+        return this;
     }
 
     public enum Gender {

@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog;
 
+import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
@@ -139,25 +140,27 @@ public class CatalogManager implements AutoCloseable {
 //        catalogClient = new CatalogDBClient(this);
         //TODO: Check if catalog is empty
         //TODO: Setup catalog if it's empty.
-
-        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
-                .getCatalogUserDBAdaptor(), authorizationManager, properties);
-        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), properties);
-        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
-        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
-        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
-        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
-        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
-        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, catalogConfiguration);
-        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
-        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
-                catalogIOManagerFactory, properties);
+//
+//        auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
+//                .getCatalogUserDBAdaptor(), authorizationManager, properties);
+//        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), properties);
+//        authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
+//        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, properties);
+//        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, properties);
+//        studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, properties);
+//        projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, properties);
+//        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, catalogConfiguration);
+//        sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, properties);
+//        individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+//                catalogIOManagerFactory, properties);
+        throw new NotImplementedException("Configure managers does not take a Properties object any more. "
+                + "Use CatalogConfiguration instead");
     }
 
     private void configureManagers(CatalogConfiguration catalogConfiguration) {
@@ -547,8 +550,7 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Study> getAllStudiesInProject(long projectId, QueryOptions options, String sessionId)
             throws CatalogException {
-        return studyManager.readAll(new Query(CatalogStudyDBAdaptor.StudyFilterOptions.projectId.toString(), projectId), options,
-                sessionId);
+        return studyManager.readAll(new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId), options, sessionId);
     }
 
     public QueryResult<Study> getAllStudies(Query query, QueryOptions options, String sessionId)
@@ -559,6 +561,28 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult renameStudy(long studyId, String newStudyAlias, String sessionId)
             throws CatalogException {
         return studyManager.update(studyId, new ObjectMap("alias", newStudyAlias), null, sessionId);
+    }
+
+    public QueryResult addUsersToGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.addUsersToGroup(userId, studyId, groupId, userIds);
+    }
+
+    public QueryResult removeUsersFromGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.removeUsersFromGroup(userId, studyId, groupId, userIds);
+        return new QueryResult("removeUsersFromGroup");
+    }
+
+    public QueryResult shareStudy(long studyId, String members, String roleId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.addMembersToRole(userId, studyId, members, roleId);
+    }
+
+    public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.removeMembersFromRole(userId, studyId, members);
+        return new QueryResult("unshareStudy");
     }
 
     /**
@@ -583,14 +607,6 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.update(studyId, parameters, null, sessionId);
     }
 
-    public QueryResult addMemberToGroup(long studyId, String groupId, String userId, String sessionId) throws CatalogException {
-        return authorizationManager.addMember(studyId, groupId, userId, sessionId);
-    }
-
-    public QueryResult removeMemberFromGroup(long studyId, String groupId, String userId, String sessionId) throws CatalogException {
-        return authorizationManager.removeMember(studyId, groupId, userId, sessionId);
-    }
-
     /*
      * File methods
      * ***************************
@@ -606,9 +622,7 @@ public class CatalogManager implements AutoCloseable {
 
     //create file with byte[]
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, byte[] bytes, String
-            description,
-                                        boolean parents, String sessionId)
-            throws CatalogException, IOException {
+            description, boolean parents, String sessionId) throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
                 description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(new ByteArrayInputStream(bytes), queryResult.first(), sessionId, false, false, true);
@@ -616,9 +630,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, URI fileLocation, String
-            description,
-                                        boolean parents, String sessionId)
-            throws CatalogException, IOException {
+            description, boolean parents, String sessionId) throws CatalogException, IOException {
         QueryResult<File> queryResult = fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null,
                 description, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, null, sessionId);
         new CatalogFileUtils(this).upload(fileLocation, queryResult.first(), null, sessionId, false, false, true, true, Long.MAX_VALUE);
@@ -626,18 +638,16 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<File> createFile(long studyId, File.Format format, File.Bioformat bioformat, String path, String description,
-                                        boolean parents, long jobId, String sessionId)
-            throws CatalogException {
+                                        boolean parents, long jobId, String sessionId) throws CatalogException {
         return fileManager.create(studyId, File.Type.FILE, format, bioformat, path, null, null, description, null, 0, -1, null,
                 jobId, null, null, parents, null, sessionId);
     }
 
 
     public QueryResult<File> createFile(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String ownerId, String creationDate, String description, File.FileStatus status,
-                                        long diskUsage, long experimentId, List<Long> sampleIds, long jobId,
-                                        Map<String, Object> stats, Map<String, Object> attributes,
-                                        boolean parents, QueryOptions options, String sessionId)
+                                        String ownerId, String creationDate, String description, File.FileStatus status, long diskUsage,
+                                        long experimentId, List<Long> sampleIds, long jobId, Map<String, Object> stats,
+                                        Map<String, Object> attributes, boolean parents, QueryOptions options, String sessionId)
             throws CatalogException {
         return fileManager.create(studyId, type, format, bioformat, path, ownerId, creationDate, description, status,
                 diskUsage, experimentId, sampleIds, jobId, stats, attributes, parents, options, sessionId);
@@ -650,28 +660,25 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<File> createFolder(long studyId, Path folderPath, File.FileStatus status, boolean parents, String description,
-                                          QueryOptions options, String sessionId)
-            throws CatalogException {
+                                          QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkPath(folderPath, "folderPath");
         return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, description, options, sessionId);
     }
 
-    public QueryResult deleteFolder(long folderId, String sessionId)
-            throws CatalogException, IOException {
+    public QueryResult deleteFolder(long folderId, String sessionId) throws CatalogException, IOException {
         return deleteFile(folderId, sessionId);
     }
 
-    public QueryResult deleteFile(long fileId, String sessionId)
-            throws CatalogException, IOException {
+    public QueryResult deleteFile(long fileId, String sessionId) throws CatalogException, IOException {
         return fileManager.delete(fileId, null, sessionId);
     }
 
+    @Deprecated
     public QueryResult moveFile(long fileId, String newPath, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.move(fileId, newPath, options, sessionId);
     }
 
-    public QueryResult renameFile(long fileId, String newName, String sessionId)
-            throws CatalogException {
+    public QueryResult renameFile(long fileId, String newName, String sessionId) throws CatalogException {
         return fileManager.rename(fileId, newName, sessionId);
     }
 
@@ -694,28 +701,23 @@ public class CatalogManager implements AutoCloseable {
      * @return QueryResult QueryResult
      * @throws CatalogException CatalogException
      */
-    public QueryResult modifyFile(long fileId, ObjectMap parameters, String sessionId)
-            throws CatalogException {
+    public QueryResult modifyFile(long fileId, ObjectMap parameters, String sessionId) throws CatalogException {
         return fileManager.update(fileId, parameters, null, sessionId); //TODO: Add query options
     }
 
-    public QueryResult<File> getFileParent(long fileId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> getFileParent(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.getParent(fileId, options, sessionId);
     }
 
-    public QueryResult<File> getFileParents(long fileId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> getFileParents(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.getParents(fileId, options, sessionId);
     }
 
-    public QueryResult<File> getFile(long fileId, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> getFile(long fileId, String sessionId) throws CatalogException {
         return getFile(fileId, null, sessionId);
     }
 
-    public QueryResult<File> getFile(long fileId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> getFile(long fileId, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.read(fileId, options, sessionId);
     }
 
@@ -736,13 +738,11 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.readAll(studyId, new Query(options), options, sessionId);
     }
 
-    public DataInputStream downloadFile(long fileId, String sessionId)
-            throws IOException, CatalogException {
+    public DataInputStream downloadFile(long fileId, String sessionId) throws IOException, CatalogException {
         return downloadFile(fileId, -1, -1, sessionId);
     }
 
-    public DataInputStream downloadFile(long fileId, int start, int limit, String sessionId)
-            throws IOException, CatalogException {
+    public DataInputStream downloadFile(long fileId, int start, int limit, String sessionId) throws IOException, CatalogException {
         return fileManager.download(fileId, start, limit, null, sessionId);
     }
 
@@ -754,29 +754,37 @@ public class CatalogManager implements AutoCloseable {
     }
 
 
-    public QueryResult shareFile(String fileIds, String userIds, AclEntry acl, String sessionId)
-            throws CatalogException {
-        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
+    @Deprecated
+    public QueryResult shareFile(String fileIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
+        throw new CatalogException("The method being called is deprecated.");
+//        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
     }
 
-    public QueryResult unshareFile(String fileIds, String userIds, String sessionId)
-            throws CatalogException {
-        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
+    public QueryResult shareFile(String fileIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setFilePermissions(userId, fileIds, members, permissions);
+    }
+
+//    public QueryResult unshareFile(String fileIds, String userIds, String sessionId) throws CatalogException {
+//        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
+//    }
+
+    public QueryResult unshareFile(String fileIds, String members, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetFilePermissions(userId, fileIds, members);
+        return new QueryResult("unshareFile");
     }
 
     /*Require role admin*/
-    public QueryResult<File> searchFile(Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> searchFile(Query query, QueryOptions options, String sessionId) throws CatalogException {
         return searchFile(-1, query, options, sessionId);
     }
 
-    public QueryResult<File> searchFile(long studyId, Query query, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> searchFile(long studyId, Query query, String sessionId) throws CatalogException {
         return searchFile(studyId, query, null, sessionId);
     }
 
-    public QueryResult<File> searchFile(long studyId, Query query, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<File> searchFile(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.readAll(studyId, query, options, sessionId);
     }
 
@@ -786,8 +794,7 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.createDataset(studyId, name, description, files, attributes, options, sessionId);
     }
 
-    public QueryResult<Dataset> getDataset(long dataSetId, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Dataset> getDataset(long dataSetId, QueryOptions options, String sessionId) throws CatalogException {
         return fileManager.readDataset(dataSetId, options, sessionId);
     }
 
@@ -801,6 +808,17 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.unlink(fileId, sessionId);
     }
 
+    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setDatasetPermissions(userId, datasetIds, members, permissions);
+    }
+
+    public QueryResult unshareDatasets(String datasetIds, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetDatasetPermissions(userId, datasetIds, userIds);
+        return new QueryResult("unshareDatasets");
+    }
 
     /*
      * **************************
@@ -863,8 +881,19 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
 
+    public QueryResult shareJob(String jobIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setJobPermissions(userId, jobIds, members, permissions);
+    }
+
+    public QueryResult unshareJob(String jobIds, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetJobPermissions(userId, jobIds, userIds);
+        return new QueryResult("unshareJob");
+    }
+
     /*
-     * Project methods
+     * Individual methods
      * ***************************
      */
 
@@ -892,6 +921,18 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.delete(individualId, options, sessionId);
     }
 
+    public QueryResult shareIndividual(String individualIds, String members, List<String> permissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setIndividualPermissions(userId, individualIds, members, permissions);
+    }
+
+    public QueryResult unshareIndividual(String individualIds, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetIndividualPermissions(userId, individualIds, userIds);
+        return new QueryResult("unshareIndividual");
+    }
+
     /*
      * Samples methods
      * ***************************
@@ -916,14 +957,23 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.update(sampleId, queryOptions, queryOptions, sessionId);
     }
 
+    @Deprecated
     public QueryResult shareSample(String sampleIds, String userIds, AclEntry acl, String sessionId)
             throws CatalogException {
-        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
+        throw new CatalogException("Calling to deprecated shareSample method.");
+//        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
+    }
+
+    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setSamplePermissions(userId, sampleIds, members, permissions);
     }
 
     public QueryResult unshareSample(String sampleIds, String userIds, String sessionId)
             throws CatalogException {
-        return authorizationManager.unsetSampleACL(sampleIds, userIds, sessionId);
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetSamplePermissions(userId, sampleIds, userIds);
+        return new QueryResult("unshareSample");
     }
 
     public QueryResult<AnnotationSet> annotateSample(long sampleId, String id, long variableSetId,
@@ -1056,6 +1106,17 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
+    }
+
+    public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setCohortPermissions(userId, cohortIds, members, permissions);
+    }
+
+    public QueryResult unshareCohorts(String cohortIds, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetCohortPermissions(userId, cohortIds, userIds);
+        return new QueryResult("unshareCohorts");
     }
 
     /*

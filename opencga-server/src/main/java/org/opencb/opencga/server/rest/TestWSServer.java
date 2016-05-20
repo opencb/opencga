@@ -23,6 +23,7 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.core.exception.VersionException;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -46,7 +47,7 @@ public class TestWSServer extends OpenCGAWSServer {
     @Path("/echo")
     @ApiOperation(value = "echo multipart")
     public Response formPost(@DefaultValue("") @FormDataParam("message") String message) {
-        System.out.println("Recived message " + message);
+        System.out.println("Received message " + message);
         return buildResponse(Response.ok(message));
     }
 

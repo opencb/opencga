@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.authorization;
+package org.opencb.opencga.catalog.authorization.old;
 
 import java.security.acl.Permission;
 

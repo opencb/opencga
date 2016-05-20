@@ -59,7 +59,12 @@
             <dependency>
                 <groupId>com.google.protobuf</groupId>
                 <artifactId>protobuf-java</artifactId>
-                <version>3.0.0-beta-1</version>
+                <version>${google.protobuf}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-all</artifactId>
+                <version>${google.grpc}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

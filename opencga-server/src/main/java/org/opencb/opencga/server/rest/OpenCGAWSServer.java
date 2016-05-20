@@ -49,6 +49,7 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantStatsJsonMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.QueryParam;
@@ -119,6 +120,8 @@ public class OpenCGAWSServer {
 //    @DefaultValue("json")
 //    @QueryParam("of")
 //    protected String outputFormat;
+    private @Context ServletContext context;
+
 
     protected static CatalogManager catalogManager;
     protected static StorageManagerFactory storageManagerFactory;
@@ -229,6 +232,11 @@ public class OpenCGAWSServer {
 //        System.out.println("sessionIp = " + sessionIp);
 //        logger.debug(uriInfo.getRequestUri().toString());
 //        this.queryOptions = null;
+
+        this.context = httpServletRequest.getServletContext();
+
+        System.out.println("Config Dir");
+        System.out.println(this.context.getInitParameter("config-dir"));
 
         startTime = System.currentTimeMillis();
 

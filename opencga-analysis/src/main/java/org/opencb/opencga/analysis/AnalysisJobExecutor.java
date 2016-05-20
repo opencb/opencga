@@ -66,7 +66,7 @@ public class AnalysisJobExecutor {
     protected Execution execution;
 
     // Just for test purposes. Do not use in production!
-    public static ExecutorManager executor = null;
+    public static ExecutorManager localExecutor = null;
 
     protected static ObjectMapper jsonObjectMapper = new ObjectMapper();
 
@@ -132,12 +132,8 @@ public class AnalysisJobExecutor {
         // read execution param
         String jobExecutor = Config.getAnalysisProperties().getProperty(OPENCGA_ANALYSIS_JOB_EXECUTOR);
 
-        if (executor != null) {
-            logger.debug("AnalysisJobExecuter: execute, running by " + executor.getClass());
-            executor.execute(job, sessionId);
-        } else if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {
+        if (jobExecutor == null || jobExecutor.trim().equalsIgnoreCase("LOCAL")) {
             // local execution
-            logger.debug("AnalysisJobExecuter: execute, running by SingleProcess");
             executeLocal(catalogManager, job, sessionId);
         } else {
             logger.debug("AnalysisJobExecuter: execute, running by SgeManager");
@@ -154,7 +150,13 @@ public class AnalysisJobExecutor {
     }
 
     private static void executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException, AnalysisExecutionException {
-        new LocalThreadExecutorManager(catalogManager).execute(job, sessionId);
+        if (localExecutor != null) {
+            logger.debug("AnalysisJobExecuter: execute, running by " + localExecutor.getClass());
+            localExecutor.execute(job, sessionId);
+        } else {
+            logger.debug("AnalysisJobExecuter: execute, running by SingleProcess");
+            new LocalThreadExecutorManager(catalogManager).execute(job, sessionId);
+        }
     }
 
     private boolean checkRequiredParams(Map<String, List<String>> params, List<Option> validParams) {
