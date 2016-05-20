@@ -245,6 +245,12 @@
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-core</artifactId>
                 <version>${hpg-bigdata.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                </exclusions>
             </dependency>
 
             <!-- General dependencies -->

@@ -14,59 +14,79 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.server.rest;
+package org.opencb.opencga.server.rest;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
 import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.opencb.opencga.server.AbstractStorageServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
-import org.opencb.opencga.storage.server.common.AbstractStorageServer;
 import org.slf4j.LoggerFactory;
+
+import java.nio.file.Path;
 
 /**
  * Created by imedina on 02/01/16.
  */
-public class RestStorageServer extends AbstractStorageServer {
+public class RestServer extends AbstractStorageServer {
 
     private static Server server;
 
     private boolean exit;
 
-    public RestStorageServer() {
-        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
+    public RestServer() {
+//        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public RestStorageServer(int port, String defaultStorageEngine) {
+    public RestServer(int port, String defaultStorageEngine) {
         super(port, defaultStorageEngine);
 
+        init();
+    }
+
+    public RestServer(Path configDir) {
+        super(configDir);
+
+        init();
+    }
+
+    @Deprecated
+    public RestServer(StorageConfiguration storageConfiguration) {
+        super(storageConfiguration.getServer().getRest(), storageConfiguration.getDefaultStorageEngineId());
+        this.storageConfiguration = storageConfiguration;
+
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public RestStorageServer(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration.getServer().getRest(), storageConfiguration.getDefaultStorageEngineId());
-        RestStorageServer.storageConfiguration = storageConfiguration;
-
+    private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
+        if (configuration != null) {
+            this.port = configuration.getServer().getRest();
+        }
     }
 
     @Override
     public void start() throws Exception {
         ResourceConfig resourceConfig = new ResourceConfig();
-        resourceConfig.packages(true, "org.opencb.opencga.storage.server.rest");
+        resourceConfig.packages(true, "org.opencb.opencga.server.rest");
+
+        // Registering MultiPart class for POST forms
+        resourceConfig.register(MultiPartFeature.class);
 
         ServletContainer sc = new ServletContainer(resourceConfig);
         ServletHolder sh = new ServletHolder("opencga", sc);
 
         logger.info("Server in port : {}", port);
-        server = new Server(port);
+        server = new Server(9090);
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
-        context.setInitParameter("testparam", "testparamvalue");
+        context.setInitParameter("config-dir", configDir.toFile().toString());
 
-        GenericRestWebService.setStorageConfiguration(storageConfiguration);
+//        GenericRestWebService.setStorageConfiguration(storageConfiguration);
         server.start();
         logger.info("REST server started, listening on {}", port);
 

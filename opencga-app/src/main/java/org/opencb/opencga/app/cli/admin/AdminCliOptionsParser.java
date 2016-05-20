@@ -40,6 +40,7 @@ public class AdminCliOptionsParser {
     private UsersCommandOptions usersCommandOptions;
     private AuditCommandOptions auditCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
+    private ServerCommandOptions serverCommandOptions;
 
 
     public AdminCliOptionsParser() {
@@ -82,6 +83,12 @@ public class AdminCliOptionsParser {
         toolsSubCommands.addCommand("install", toolsCommandOptions.installToolCommandOptions);
         toolsSubCommands.addCommand("list", toolsCommandOptions.listToolCommandOptions);
         toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
+
+        serverCommandOptions = new ServerCommandOptions();
+        jCommander.addCommand("server", serverCommandOptions);
+        JCommander serverSubCommands = jCommander.getCommands().get("server");
+        serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
+        serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -233,6 +240,24 @@ public class AdminCliOptionsParser {
             this.showToolCommandOptions = new ShowToolCommandOptions();
         }
     }
+
+    /*
+     * Server CLI options
+     */
+    @Parameters(commandNames = {"server"}, commandDescription = "Manage REST and gRPC servers")
+    public class ServerCommandOptions extends CommandOptions {
+
+        RestServerCommandOptions restServerCommandOptions;
+        GrpcServerCommandOptions grpcServerCommandOptions;
+
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        public ServerCommandOptions() {
+            this.restServerCommandOptions = new RestServerCommandOptions();
+            this.grpcServerCommandOptions = new GrpcServerCommandOptions();
+        }
+    }
+
 
 
     /**
@@ -443,7 +468,6 @@ public class AdminCliOptionsParser {
     /*
      * TOOL SUB-COMMANDS
      */
-
     @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")
     public class InstallToolCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -480,6 +504,35 @@ public class AdminCliOptionsParser {
 
     }
 
+
+    /*
+     * SERVER SUB-COMMANDS
+     */
+    @Parameters(commandNames = {"rest"}, commandDescription = "Install and check a new tool")
+    public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+
+        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean start;
+
+        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean stop;
+    }
+
+    @Parameters(commandNames = {"grpc"}, commandDescription = "Print a summary list of all tools")
+    public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+
+        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean start;
+
+        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean stop;
+    }
 
 
     public void printUsage() {
@@ -551,5 +604,9 @@ public class AdminCliOptionsParser {
 
     public ToolsCommandOptions getToolsCommandOptions() {
         return toolsCommandOptions;
+    }
+
+    public ServerCommandOptions getServerCommandOptions() {
+        return serverCommandOptions;
     }
 }

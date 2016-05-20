@@ -22,35 +22,51 @@ import org.opencb.opencga.server.AbstractStorageServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Path;
+
 /**
  * Created by imedina on 02/01/16.
  */
-public class StorageGrpcServer extends AbstractStorageServer {
+public class GrpcServer extends AbstractStorageServer {
 
     private Server server;
 
-    public StorageGrpcServer() {
+    public GrpcServer() {
 //        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public StorageGrpcServer(int port, String defaultStorageEngine) {
+    public GrpcServer(int port, String defaultStorageEngine) {
         super(port, defaultStorageEngine);
 
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public StorageGrpcServer(StorageConfiguration storageConfiguration) {
+    public GrpcServer(Path configDir) {
+        super(configDir);
+
+        init();
+    }
+
+    @Deprecated
+    public GrpcServer(StorageConfiguration storageConfiguration) {
 //        super(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
-        StorageGrpcServer.storageConfiguration = storageConfiguration;
+        this.storageConfiguration = storageConfiguration;
 
         logger = LoggerFactory.getLogger(this.getClass());
+    }
+
+    private void init() {
+        logger = LoggerFactory.getLogger(this.getClass());
+        if (configuration != null) {
+            this.port = configuration.getServer().getGrpc();
+        }
     }
 
     @Override
     public void start() throws Exception {
         server = ServerBuilder.forPort(port)
-                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(storageConfiguration, this)))
-                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(storageConfiguration)))
+                .addService(AdminServiceGrpc.bindService(new AdminGrpcService(catalogConfiguration, storageConfiguration, this)))
+                .addService(VariantServiceGrpc.bindService(new VariantGrpcService(catalogConfiguration, storageConfiguration)))
                 .build()
                 .start();
         logger.info("gRPC server started, listening on {}", port);
@@ -59,9 +75,9 @@ public class StorageGrpcServer extends AbstractStorageServer {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                System.err.println("*** shutting down gRPC server since JVM is shutting down");
-                StorageGrpcServer.this.stop();
-                System.err.println("*** server shut down");
+                System.err.println("*** Shutting down gRPC server since JVM is shutting down");
+                GrpcServer.this.stop();
+                System.err.println("*** gRPC server shut down");
             }
         });
     }
