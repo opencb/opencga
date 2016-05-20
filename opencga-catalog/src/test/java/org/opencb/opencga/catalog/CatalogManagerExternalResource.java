@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.apache.log4j.Level;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
@@ -34,12 +35,13 @@ public class CatalogManagerExternalResource extends ExternalResource {
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
 
-        opencgaHome = Paths.get(System.getProperty("java.io.tmpdir")).resolve("junit_opencga_home");
     }
 
 
     @Override
     public void before() throws Exception {
+        opencgaHome = Paths.get("target/test-data").resolve("junit_opencga_home_" + RandomStringUtils.randomAlphabetic(10));
+        Files.createDirectories(opencgaHome);
         catalogConfiguration = CatalogConfiguration.load(getClass().getResource("/catalog-configuration-test.yml").openStream());
         catalogConfiguration.setDataDir(opencgaHome.resolve("sessions").toUri().toString());
         catalogConfiguration.setTempJobsDir(opencgaHome.resolve("jobs").toUri().toString());

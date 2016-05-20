@@ -1,10 +1,11 @@
 package org.opencb.opencga.storage.core.variant;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -21,11 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.attribute.FileAttribute;
 import java.util.Collections;
 import java.util.Objects;
-
-import static org.junit.Assert.fail;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -49,6 +47,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     protected static URI outputUri;
     protected VariantStorageManager variantStorageManager;
     public static Logger logger;
+    private static Path rootDir = null;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -93,9 +92,17 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     protected static Path getTmpRootDir() throws IOException {
-        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
-        Files.createDirectories(rootDir);
+//        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
+
+        if (rootDir == null) {
+            rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+RandomStringUtils.randomAlphanumeric(10));
+            Files.createDirectories(rootDir);
+        }
         return rootDir;
+    }
+
+    public static void setRootDir(Path rootDir) {
+        VariantStorageManagerTestUtils.rootDir = rootDir;
     }
 
 //    private static File tempFile = null;
