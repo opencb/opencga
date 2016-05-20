@@ -21,7 +21,11 @@ import org.opencb.commons.datastore.core.DataStoreServerAddress;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.app.demo.CatalogManagerDemo;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -46,6 +50,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
 
         String subCommandString = catalogCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
+            case "demo":
+                demo();
+                break;
             case "install":
                 install();
                 break;
@@ -60,6 +67,18 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
         }
 
+    }
+
+    private void demo() throws CatalogException, StorageManagerException, IOException, URISyntaxException {
+        if (catalogCommandOptions.demoCatalogCommandOptions.database != null) {
+            catalogConfiguration.getDatabase().setDatabase(catalogCommandOptions.demoCatalogCommandOptions.database);
+        } else {
+            catalogConfiguration.getDatabase().setDatabase("opencga_catalog_demo");
+        }
+        catalogConfiguration.setOpenRegister(true);
+        catalogConfiguration.getAdmin().setPassword("demo");
+        CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        CatalogManagerDemo.createDemoDatabase(catalogManager, catalogCommandOptions.demoCatalogCommandOptions.force);
     }
 
     private void install() throws CatalogException {
@@ -144,7 +163,7 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 + catalogConfiguration.getDatabase().getHosts() + "\n");
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        catalogManager.deleteCatalogDB();
+        catalogManager.deleteCatalogDB(false);
     }
 
     private void index() throws CatalogException {

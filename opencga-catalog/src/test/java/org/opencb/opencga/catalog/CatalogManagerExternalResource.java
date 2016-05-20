@@ -46,7 +46,7 @@ public class CatalogManagerExternalResource extends ExternalResource {
 
         catalogManager = new CatalogManager(catalogConfiguration);
         try {
-            catalogManager.deleteCatalogDB();
+            catalogManager.deleteCatalogDB(false);
         } catch (Exception ignore) {}
         clearCatalog(catalogConfiguration);
         if (!opencgaHome.toFile().exists()) {

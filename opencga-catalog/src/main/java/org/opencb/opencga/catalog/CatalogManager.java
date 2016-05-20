@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog;
 import org.apache.commons.lang.NotImplementedException;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.audit.CatalogAuditManager;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
@@ -206,9 +208,52 @@ public class CatalogManager implements AutoCloseable {
         catalogDBAdaptorFactory.createIndexes();
     }
 
-    public void deleteCatalogDB() throws CatalogException {
-        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+    public void deleteCatalogDB(boolean force) throws CatalogException {
+        if (!force) {
+            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+        }
         catalogDBAdaptorFactory.deleteCatalogDB();
+        clearCatalog();
+    }
+
+    private void clearCatalog() {
+        List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
+        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
+            if (hostPort.contains(":")) {
+                String[] split = hostPort.split(":");
+                Integer port = Integer.valueOf(split[1]);
+                dataStoreServerAddresses.add(new DataStoreServerAddress(split[0], port));
+            } else {
+                dataStoreServerAddresses.add(new DataStoreServerAddress(hostPort, 27017));
+            }
+        }
+        MongoDataStoreManager mongoManager = new MongoDataStoreManager(dataStoreServerAddresses);
+        MongoDataStore db = mongoManager.get(catalogConfiguration.getDatabase().getDatabase());
+        db.getDb().drop();
+        mongoManager.close(catalogConfiguration.getDatabase().getDatabase());
+
+        Path rootdir = Paths.get(URI.create(catalogConfiguration.getDataDir()));
+        deleteFolderTree(rootdir.toFile());
+        if (!catalogConfiguration.getTempJobsDir().isEmpty()) {
+            Path jobsDir = Paths.get(URI.create(catalogConfiguration.getTempJobsDir()));
+            if (jobsDir.toFile().exists()) {
+                deleteFolderTree(jobsDir.toFile());
+            }
+        }
+    }
+
+    private void deleteFolderTree(java.io.File folder) {
+        java.io.File[] files = folder.listFiles();
+        if (files != null) {
+            for (java.io.File f : files) {
+                if (f.isDirectory()) {
+                    deleteFolderTree(f);
+                } else {
+                    f.delete();
+                }
+            }
+        }
+        folder.delete();
     }
 //
 //    public void testIndices() {
