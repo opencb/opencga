@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
+
 import java.util.*;
 
 /**
@@ -29,7 +31,7 @@ public class Sample {
     private long individualId;
     private String description;
 
-    private List<AclEntry> acl;
+    private List<SampleAcl> acls;
     private List<AnnotationSet> annotationSets;
 
     private Status status;
@@ -43,7 +45,7 @@ public class Sample {
         this(id, name, source, individualId, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, long individualId, String description, List<AclEntry> acl,
+    public Sample(long id, String name, String source, long individualId, String description, List<SampleAcl> acls,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -51,7 +53,7 @@ public class Sample {
         this.status = new Status();
         this.individualId = individualId;
         this.description = description;
-        this.acl = acl;
+        this.acls = acls;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -65,7 +67,7 @@ public class Sample {
         sb.append(", status='").append(status).append('\'');
         sb.append(", individualId=").append(individualId);
         sb.append(", description='").append(description).append('\'');
-        sb.append(", acl=").append(acl);
+        sb.append(", acls=").append(acls);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -125,12 +127,12 @@ public class Sample {
         return this;
     }
 
-    public List<AclEntry> getAcl() {
-        return acl;
+    public List<SampleAcl> getAcls() {
+        return acls;
     }
 
-    public Sample setAcl(List<AclEntry> acl) {
-        this.acl = acl;
+    public Sample setAcls(List<SampleAcl> acls) {
+        this.acls = acls;
         return this;
     }
 

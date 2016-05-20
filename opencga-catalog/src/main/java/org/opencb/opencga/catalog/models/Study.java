@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -30,7 +31,7 @@ public class Study {
     private String name;
     private String alias;
     private Type type;
-    private String creatorId;
+    private String ownerId;
     private String creationDate;
     private String description;
     private Status status;
@@ -39,7 +40,9 @@ public class Study {
     private String cipher;
 
     private List<Group> groups;
+    @Deprecated
     private List<Role> roles;
+    private List<StudyAcl> acls;
 
     private List<Experiment> experiments;
 
@@ -59,6 +62,48 @@ public class Study {
     private Map<String, Object> attributes;
 
     private Map<String, Object> stats;
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Study{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", ownerId='").append(ownerId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", cipher='").append(cipher).append('\'');
+        sb.append(", groups=").append(groups);
+        sb.append(", roles=").append(roles);
+        sb.append(", acls=").append(acls);
+        sb.append(", experiments=").append(experiments);
+        sb.append(", files=").append(files);
+        sb.append(", jobs=").append(jobs);
+        sb.append(", individuals=").append(individuals);
+        sb.append(", samples=").append(samples);
+        sb.append(", datasets=").append(datasets);
+        sb.append(", cohorts=").append(cohorts);
+        sb.append(", variableSets=").append(variableSets);
+        sb.append(", uri=").append(uri);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", stats=").append(stats);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public List<StudyAcl> getAcls() {
+        return acls;
+    }
+
+    public Study setAcls(List<StudyAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
 
     public enum Type {
         CASE_CONTROL,
@@ -82,23 +127,24 @@ public class Study {
                 new LinkedList<>(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    public Study(long id, String name, String alias, Type type, String creatorId, String creationDate,
+    public Study(long id, String name, String alias, Type type, String ownerId, String creationDate,
                  String description, Status status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
-                 List<Role> roles, List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples,
+                 List<StudyAcl> acls, List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples,
                  List<Dataset> datasets, List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
                  Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.type = type;
-        this.creatorId = creatorId;
+        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
-        this.roles = roles;
+//        this.roles = roles;
+        this.acls = acls;
         this.groups = groups;
         this.experiments = experiments;
         this.files = files;
@@ -149,12 +195,12 @@ public class Study {
         return this;
     }
 
-    public String getCreatorId() {
-        return creatorId;
+    public String getOwnerId() {
+        return ownerId;
     }
 
-    public Study setCreatorId(String creatorId) {
-        this.creatorId = creatorId;
+    public Study setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
         return this;
     }
 
@@ -338,35 +384,4 @@ public class Study {
         return this;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Study{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
-        sb.append(", creatorId='").append(creatorId).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", lastActivity='").append(lastActivity).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", cipher='").append(cipher).append('\'');
-        sb.append(", groups=").append(groups);
-        sb.append(", roles=").append(roles);
-        sb.append(", experiments=").append(experiments);
-        sb.append(", files=").append(files);
-        sb.append(", jobs=").append(jobs);
-        sb.append(", individuals=").append(individuals);
-        sb.append(", samples=").append(samples);
-        sb.append(", datasets=").append(datasets);
-        sb.append(", cohorts=").append(cohorts);
-        sb.append(", variableSets=").append(variableSets);
-        sb.append(", uri=").append(uri);
-        sb.append(", dataStores=").append(dataStores);
-        sb.append(", attributes=").append(attributes);
-        sb.append(", stats=").append(stats);
-        sb.append('}');
-        return sb.toString();
-    }
 }

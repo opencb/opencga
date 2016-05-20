@@ -7,8 +7,11 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.catalog.models.acls.DatasetAcl;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
@@ -29,7 +32,9 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -103,5 +108,37 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
     QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException;
 
     MongoDBCollection getDatasetCollection();
+
+    /**
+     * Adds the fileIds to the datasets that matches the query.
+     *
+     * @param query query.
+     * @param fileIds file ids.
+     * @return A queryResult object containing the number of datasets matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
+
+    /**
+     * Extract the fileIds given from the datasets that matching the query.
+     *
+     * @param query query.
+     * @param fileIds file ids.
+     * @return A queryResult object containing the number of datasets matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException;
+
+    default QueryResult<DatasetAcl> getDatasetAcl(long datasetId, String member) throws CatalogDBException {
+        return getDatasetAcl(datasetId, Arrays.asList(member));
+    }
+
+    QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
+
+    QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException;
+
+    void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
+
+    void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
 }

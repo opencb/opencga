@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.DatasetAcl;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -30,6 +33,7 @@ public class Dataset {
     private String description;
 
     private List<Long> files;
+    private List<DatasetAcl> acls;
 
     private Status status;
 
@@ -45,6 +49,7 @@ public class Dataset {
         this.creationDate = creationDate;
         this.description = description;
         this.files = files;
+        this.acls = new ArrayList<>();
         this.status = status;
         this.attributes = attributes;
     }
@@ -57,6 +62,7 @@ public class Dataset {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", files=").append(files);
+        sb.append(", acls=").append(acls);
         sb.append(", status=").append(status);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -123,6 +129,15 @@ public class Dataset {
 
     public Dataset setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public List<DatasetAcl> getAcls() {
+        return acls;
+    }
+
+    public Dataset setAcls(List<DatasetAcl> acls) {
+        this.acls = acls;
         return this;
     }
 }

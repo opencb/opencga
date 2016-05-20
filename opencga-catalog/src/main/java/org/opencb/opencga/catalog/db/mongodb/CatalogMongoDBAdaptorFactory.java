@@ -12,7 +12,6 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
@@ -232,7 +231,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogDatasetDBAdaptor getCatalogDatasetDBAdaptor() {
+    public CatalogMongoDatasetDBAdaptor getCatalogDatasetDBAdaptor() {
         return datasetDBAdaptor;
     }
 

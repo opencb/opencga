@@ -9,17 +9,19 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.authorization.CatalogPermission;
-import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.DatasetAcl;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -306,10 +308,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (status.getStatus() != File.FileStatus.STAGE && type == File.Type.FILE) {
-            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-                throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
-            }
+        if (!Objects.equals(status.getStatus(), File.FileStatus.STAGE) && type == File.Type.FILE) {
+//            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
+            throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
+//            }
         }
 
         if (type == File.Type.FOLDER && !path.endsWith("/")) {
@@ -356,7 +358,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         } else {
             if (!newParent) {
                 //If parent has been created, for sure we have permissions to create the new file.
-                authorizationManager.checkFilePermission(parentFileId, userId, CatalogPermission.WRITE);
+                authorizationManager.checkFilePermission(parentFileId, userId, FileAcl.FilePermissions.CREATE);
             }
         }
 
@@ -364,7 +366,8 @@ public class FileManager extends AbstractManager implements IFileManager {
         //Check external file
         boolean isExternal = isExternal(file);
 
-        if (file.getType() == File.Type.FOLDER && file.getStatus().getStatus() == File.FileStatus.READY && (!isExternal || isRoot)) {
+        if (file.getType() == File.Type.FOLDER && Objects.equals(file.getStatus().getStatus(), File.FileStatus.READY)
+                && (!isExternal || isRoot)) {
             URI fileUri = getFileUri(studyId, file.getPath());
             CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
             ioManager.createDirectory(fileUri, parents);
@@ -380,9 +383,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkFilePermission(id, userId, CatalogPermission.READ);
+//        authorizationManager.checkFilePermission(id, userId, CatalogPermission.READ);
+        authorizationManager.checkFilePermission(id, userId, FileAcl.FilePermissions.VIEW);
 
-        return fileDBAdaptor.getFile(id, options);
+        QueryResult<File> fileQueryResult = fileDBAdaptor.getFile(id, options);
+        authorizationManager.filterFiles(userId, getStudyId(id), fileQueryResult.getResult());
+        fileQueryResult.setNumResults(fileQueryResult.getResult().size());
+        return fileQueryResult;
     }
 
     @Override
@@ -415,16 +422,14 @@ public class FileManager extends AbstractManager implements IFileManager {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
         if (studyId <= 0) {
-            switch (authorizationManager.getUserRole(userId)) {
-                case ADMIN:
-                    break;
-                default:
-                    throw new CatalogDBException("Permission denied. StudyId or Admin role required");
-            }
+            throw new CatalogDBException("Permission denied. Only the files of one study can be seen at a time.");
         } else {
-            authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+            if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
+                throw CatalogAuthorizationException.deny(userId, "view", "files", studyId, null);
+            }
             query.put(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
+
         QueryResult<File> queryResult = fileDBAdaptor.get(query, options);
         authorizationManager.filterFiles(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
@@ -444,51 +449,44 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Can not modify root folder");
         }
 
-        switch (authorizationManager.getUserRole(userId)) {
-            case ADMIN:
-                logger.info("UserAdmin " + userId + " modifies file {id: " + fileId + "}");
-                break;
-            default:
-                authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
-                for (String s : parameters.keySet()) {
-                    switch (s) { //Special cases
-                        //Can be modified anytime
-                        case "format":
-                        case "bioformat":
-                        case "description":
-                        case "status.status":
-                        case "attributes":
-                        case "stats":
-                        case "index":
-                        case "sampleIds":
-                        case "jobId":
-                            break;
-                        case "uri":
-                            logger.info("File {id: " + fileId + "} uri modified. New value: " + parameters.get("uri"));
-                            break;
-
-                        //Can only be modified when file.status == STAGE
-                        case "creationDate":
-                        case "modificationDate":
-                        case "diskUsage":
+        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.UPDATE);
+        for (String s : parameters.keySet()) {
+            switch (s) { //Special cases
+                //Can be modified anytime
+                case "format":
+                case "bioformat":
+                case "description":
+                case "status.status":
+                case "attributes":
+                case "stats":
+                case "index":
+                case "sampleIds":
+                case "jobId":
+                    break;
+                case "uri":
+                    logger.info("File {id: " + fileId + "} uri modified. New value: " + parameters.get("uri"));
+                    break;
+                //Can only be modified when file.status == STAGE
+                case "creationDate":
+                case "modificationDate":
+                case "diskUsage":
 //                            if (!file.getStatus().equals(File.Status.STAGE)) {
 //                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
 //                                        "status == " + file.getStatus().name() + ". " +
 //                                        "Required status STAGE or admin account");
 //                            }
-                            break;
-                        //Path and Name must be changed with "raname" and/or "move" methods.
-                        case "path":
-                        case "name":
-                            break;
-                        case "type":
-                        default:
-                            throw new CatalogException("Parameter '" + s + "' can't be changed. "
-                                    + "Requires admin account");
-                    }
-                }
-                break;
+                    break;
+                //Path and Name must be changed with "raname" and/or "move" methods.
+                case "path":
+                case "name":
+                    break;
+                case "type":
+                default:
+                    throw new CatalogException("Parameter '" + s + "' can't be changed. "
+                            + "Requires admin account");
+            }
         }
+
         //Path and Name must be changed with "raname" and/or "move" methods.
         if (parameters.containsKey("name")) {
             logger.info("Rename file using update method!");
@@ -511,6 +509,9 @@ public class FileManager extends AbstractManager implements IFileManager {
             throws CatalogException {        //Safe delete: Don't delete. Just rename file and set {deleting:true}
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DELETE);
+
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
@@ -579,7 +580,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -606,7 +607,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.DELETE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DELETE);
 
         List<File> filesToDelete;
         if (file.getType().equals(File.Type.FOLDER)) {
@@ -638,7 +639,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -662,7 +663,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -677,7 +678,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
-        authorizationManager.checkFilePermission(file.getId(), userId, CatalogPermission.DELETE);
+        authorizationManager.checkFilePermission(file.getId(), userId, FileAcl.FilePermissions.DELETE);
 
         switch (file.getStatus().getStatus()) {
             case File.FileStatus.DELETED:
@@ -710,7 +711,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
-        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.WRITE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.UPDATE);
         QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
         File file = fileResult.first();
 
@@ -764,6 +765,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         return result;
     }
 
+    @Deprecated
     @Override
     public QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -796,13 +798,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_DATASETS);
 
         for (Long fileId : files) {
             if (fileDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
-                throw new CatalogException("Can't create a dataset with files from different files.");
+                throw new CatalogException("Can't create a dataset with files from different studies.");
             }
-            authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
+            authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.VIEW);
         }
 
         Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, new Status(), attributes);
@@ -820,7 +822,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<Dataset> queryResult = datasetDBAdaptor.getDataset(dataSetId, options);
 
         for (Long fileId : queryResult.first().getFiles()) {
-            authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
+            authorizationManager.checkDatasetPermission(fileId, userId, DatasetAcl.DatasetPermissions.VIEW);
         }
 
         return queryResult;
@@ -831,7 +833,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
+        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.VIEW);
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
         boolean ignoreCase = options.getBoolean("ignoreCase");
@@ -843,7 +845,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public DataInputStream download(long fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkFilePermission(fileId, userId, CatalogPermission.READ);
+        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DOWNLOAD);
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
 
