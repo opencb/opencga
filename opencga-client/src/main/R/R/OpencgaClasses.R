@@ -1,26 +1,21 @@
-### Expected classes
-# OpencgaClient create login
-# OpencgaUser
-# OpencgaProject
-# OpencgaStudy
-# OpencgaFiles
-# OpencgaJobs
-# OpencgaIndividuals
-# OpencgaSamples
-# OpencgaVariables
-# opencgaCohorts
 require(methods)
-
+require(miniUI)
+require(shiny)
 #' @include OpencgaFunctions.R
 #' This class defines the Opencga object
 Opencga <- setClass("Opencga", slots = c(baseurl="character",
     userID="character", sessionID="character"))
 
 ## A constructor function
+
 Opencga <- function(baseurl, userID, sessionID){
   new("Opencga", baseurl=baseurl, userID=userID, sessionID=sessionID)
 }
-
+#' @title A method to query user data
+#' @aliases OpencgaUser
+#' @description This method allow the user to create update and see user data
+#'
+#' @export
 setMethod("show",signature = "Opencga",definition = function(object){
   cat("|An object of class ", class(object), "\n", sep = "")
   cat("|This object is required by all Opencga Methods")
@@ -28,7 +23,8 @@ setMethod("show",signature = "Opencga",definition = function(object){
 
 setGeneric("OpencgaUser", function(object, category, id, action, params=NULL)
   standardGeneric("OpencgaUser"))
-
+#' A method to query user data
+#' @export
 setMethod("OpencgaUser", "Opencga", definition = function(object,
           id, action, params=NULL){
   category <- "users"
@@ -40,7 +36,7 @@ setMethod("OpencgaUser", "Opencga", definition = function(object,
 ###
 setGeneric("OpencgaStudy", function(object, id, action, params=NULL)
   standardGeneric("OpencgaStudy"))
-
+#' @export
 setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
                                                           action, params){
  category <- "studies"
@@ -50,7 +46,7 @@ setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
 })
 setGeneric("OpencgaProjects", function(object, id, action, params, ...)
   standardGeneric("OpencgaProjects"))
-
+#' @export
 setMethod("OpencgaProjects", "Opencga",    definition = function(object,
           id, action, params, ...){
   category <- "projects"
@@ -60,7 +56,7 @@ setMethod("OpencgaProjects", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaFiles", function(object, id, action, params, ...)
   standardGeneric("OpencgaFiles"))
-
+#' @export
 setMethod("OpencgaFiles", "Opencga",    definition = function(object,
           id, action, params, ...){
   category <- "files"
@@ -70,6 +66,7 @@ setMethod("OpencgaFiles", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaSamples", function(object, id, action, params, ...)
   standardGeneric("OpencgaSamples"))
+#' @export
 setMethod("OpencgaSamples", "Opencga",    definition = function(object,
          id, action, params, ...){
   category <- "samples"
@@ -79,7 +76,7 @@ setMethod("OpencgaSamples", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaIndividuals", function(object, id, action, params, ...)
   standardGeneric("OpencgaIndividuals"))
-
+#' @export
 setMethod("OpencgaIndividuals", "Opencga",    definition = function(object,
          id, action, params, ...){
   category <- "individuals"
@@ -89,7 +86,7 @@ setMethod("OpencgaIndividuals", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaJobs", function(object, id, action, params, ...)
   standardGeneric("OpencgaJobs"))
-
+#' @export
 setMethod("OpencgaJobs", "Opencga",    definition = function(object,
           id, action, params, ...){
   category <- "jobs"
@@ -99,7 +96,7 @@ setMethod("OpencgaJobs", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaVariables", function(object, id, action, params, ...)
   standardGeneric("OpencgaVariables"))
-
+#' @export
 setMethod("OpencgaVariables", "Opencga",    definition = function(object,
           id, action, params, ...){
   category <- "variables"
@@ -109,7 +106,7 @@ setMethod("OpencgaVariables", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaCohorts", function(object, id, action, params, ...)
   standardGeneric("OpencgaCohorts"))
-
+#' @export
 setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
           id, action, params, ...){
   category <- "cohorts"
@@ -117,7 +114,7 @@ setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
                         params=NULL)
   return(data)
 })
-
+#' @export
 OpencgaParam <- setClass("OpencgaParam", slots = c(region="character",
                           chromosome="character", type="character",
                           gene="character", maf="character", mgf="character",

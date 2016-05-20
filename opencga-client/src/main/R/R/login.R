@@ -1,6 +1,6 @@
-library(miniUI)
-library(shiny)
 user_login <- function() {
+  require(miniUI)
+  require(shiny)
   ui <- miniPage(
     gadgetTitleBar("Please enter your username and password"),
     miniContentPanel(

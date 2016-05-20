@@ -1,14 +1,22 @@
 Package: opencgaR
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Querying Opencga Data
 Version: 0.1.0
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Author: Mohammed <melsiddieg@gmail.com>
+Maintainer: Mohammed OE Abdallah <melsiddieg@gmail.com>
+Description: Classes and methods for working with Opencga data
+License: Apache Licence v2
 LazyData: TRUE
+Depends:
+    R(>= 3.2.2),
+    jsonlite,methods,shiny,miniUI
 Collate:
     'OpencgaFunctions.R'
     'OpencgaClasses.R'
     'login.R'
 RoxygenNote: 5.0.1
+VignetteBuilder: knitr
+Suggests:
+    BiocStyle,
+    knitr,
+    rmarkdown

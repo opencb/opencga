@@ -12,6 +12,8 @@ OpencgaLogin(baseurl, userid = NULL, passwd = NULL, interactive = FALSE)
 \item{userid}{a charatcer the username}
 
 \item{passwd}{a charcter the user password}
+
+\item{logical}{whether to launch a graphical interface, FALSE by default}
 }
 \value{
 an Opencga class object

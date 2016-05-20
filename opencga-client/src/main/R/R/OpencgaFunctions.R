@@ -7,7 +7,7 @@ require(miniUI)
 require(shiny)
 require(jsonlite)
 base <- "http://localhost:8080/opencga/webservices/rest/v1"
-source("/home/melsiddieg/R/opencgaR/R/login.R")
+#' @export
 OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
   require(jsonlite)
   userid <- paste0("userid=", userid)
@@ -50,9 +50,16 @@ excuteOpencga <- function(object, category, id, action, params){
   id <- as.character(id)
   action <- paste0("/", action)
   category <- paste0("/", category, "/")
+  ## loop to get all the data to be finished
+  i=1
+  server_limit=1000
+  skip=0
+  num_results=1000
+  container=list()
+  ##
   url <- createURL(baseurl, category, id, action,  sessionID, params)
-  data <- parseJ(url)
-  return(list(data=data, url=url) )
+  res <- parseJ(url)
+  return(list(data=res$data, num_results=res$num_results) )
 }
 
 
@@ -65,5 +72,6 @@ createURL <- function(baseurl, category, id, action, sessionID, params){
 parseJ <- function(url){
   require(jsonlite)
   res <- fromJSON(url)
-  return(as.data.frame(res$response$result))
+  num_results <- res$response$numResults
+  return(list(num_results=num_results,data=as.data.frame(res$response$result)))
 }
