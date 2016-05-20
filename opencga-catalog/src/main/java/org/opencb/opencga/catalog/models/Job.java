@@ -16,13 +16,11 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.JobAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -96,6 +94,7 @@ public class Job {
     private List<Long> input;    // input files to this job
     private List<Long> output;   // output files of this job
     private List<String> tags;
+    private List<JobAcl> acls;
     private Map<String, Object> attributes;
     private Map<String, Object> resourceManagerAttributes;
     private String error;
@@ -134,6 +133,7 @@ public class Job {
 //        this.outDir = outDir;
         this.input = input;
         this.output = output;
+        this.acls = new ArrayList<>();
         this.tags = tags;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
@@ -174,6 +174,7 @@ public class Job {
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
+        sb.append(", acls=").append(acls);
         sb.append(", attributes=").append(attributes);
         sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
         sb.append(", error='").append(error).append('\'');
@@ -374,6 +375,15 @@ public class Job {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public List<JobAcl> getAcls() {
+        return acls;
+    }
+
+    public Job setAcls(List<JobAcl> acls) {
+        this.acls = acls;
+        return this;
     }
 
     public static class JobStatus extends Status {

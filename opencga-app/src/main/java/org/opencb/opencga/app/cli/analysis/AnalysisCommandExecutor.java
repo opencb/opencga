@@ -11,8 +11,6 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
  */
 public abstract class AnalysisCommandExecutor extends CommandExecutor {
 
-    protected StorageManagerFactory storageManagerFactory;
-
     public AnalysisCommandExecutor(GeneralCliOptions.CommonCommandOptions options) {
         super(options);
     }

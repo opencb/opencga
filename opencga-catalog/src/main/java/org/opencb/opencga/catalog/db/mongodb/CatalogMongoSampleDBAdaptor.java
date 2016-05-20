@@ -33,6 +33,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -171,119 +172,266 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<AclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
+    public QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
-
-        long studyId = getStudyIdBySampleId(sampleId);
-        checkAclUserId(dbAdaptorFactory, userId, studyId);
-
-//        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        Bson eq = Filters.eq(PRIVATE_ID, sampleId);
-
-//        DBObject projection = new BasicDBObject("acl", new BasicDBObject("$elemMatch", new BasicDBObject("userId", userId)));
-        Bson projection = Projections.elemMatch("acl", Filters.eq("userId", userId));
-
-        QueryResult<Document> queryResult = sampleCollection.find(eq, projection, null);
-        Sample sample = parseObject(queryResult, Sample.class);
-
-        if (queryResult.getNumResults() == 0 || sample == null) {
-            throw CatalogDBException.idNotFound("Sample", sampleId);
-        }
-
-        return endQuery("get file acl", startTime, sample.getAcl());
-    }
-
-    @Override
-    public QueryResult<Map<String, AclEntry>> getSampleAcl(long sampleId, List<String> userIds) throws CatalogDBException {
-
-        long startTime = startQuery();
-        /*DBObject match = new BasicDBObject("$match", new BasicDBObject(PRIVATE_ID, sampleId));
-        DBObject unwind = new BasicDBObject("$unwind", "$acl");
-        DBObject match2 = new BasicDBObject("$match", new BasicDBObject("acl.userId", new BasicDBObject("$in", userIds)));
-        DBObject project = new BasicDBObject("$project", new BasicDBObject("id", 1).append("acl", 1));
-*/
+        checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
-        Bson unwind = Aggregates.unwind("$acl");
-        Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
-//        Bson project = Projections.include("id", "acl");
-        Bson project = Aggregates.project(Projections.include("id", "acl"));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), userId));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
+        List<SampleAcl> sampleAcl = null;
         QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
-        Map<String, AclEntry> userAclMap = sampleList.stream().map(s -> s.getAcl().get(0))
-                .collect(Collectors.toMap(AclEntry::getUserId, s -> s));
+        if (sampleList.size() > 0) {
+            sampleAcl = sampleList.get(0).getAcls();
+        }
 
-        return endQuery("getSampleAcl", startTime, Collections.singletonList(userAclMap));
+        return endQuery("getSampleAcl", startTime, sampleAcl);
     }
 
+    @Override
+    public QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+        checkSampleId(sampleId);
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<SampleAcl> sampleAcl = null;
+        QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        List<Sample> sampleList = parseSamples(aggregate);
+
+        if (sampleList.size() > 0) {
+            sampleAcl = sampleList.get(0).getAcls();
+        }
+
+        return endQuery("getSampleAcl", startTime, sampleAcl);
+    }
+
+    @Deprecated
     @Override
     public QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException {
-        long startTime = startQuery();
-
-        String userId = acl.getUserId();
-        /*DBObject query;
-        DBObject newAclObject = getDbObject(acl, "ACL");
-        DBObject update;
-*/
-        Bson query;
-        Document newAclObject = getMongoDBDocument(acl, "ACL");
-        Bson update;
-
-        /*
-        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
-        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
-            query = new BasicDBObject(PRIVATE_ID, sampleId);
-            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
-        } else {    // there is already another ACL: overwrite
-            query = BasicDBObjectBuilder
-                    .start(PRIVATE_ID, sampleId)
-                    .append("acl.userId", userId).get();
-            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
-        }
-        */
-        CatalogMongoDBUtils.checkAclUserId(dbAdaptorFactory, userId, getStudyIdBySampleId(sampleId));
-
-        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
-        if (aclList.isEmpty()) { // there is no acl for that user in that file. Push
-            query = new Document(PRIVATE_ID, sampleId);
-            update = Updates.push("acl", newAclObject);
-        } else {
-            query = new Document(PRIVATE_ID, sampleId).append("acl.userId", userId);
-            update = Updates.set("acl.$", newAclObject);
-        }
-
-        QueryResult<UpdateResult> queryResult = sampleCollection.update(query, update, null);
-        if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.idNotFound("Sample", sampleId);
-        }
-
-        return endQuery("setSampleAcl", startTime, getSampleAcl(sampleId, userId));
+        return null;
+//        long startTime = startQuery();
+//
+//        String userId = acl.getUserId();
+//        /*DBObject query;
+//        DBObject newAclObject = getDbObject(acl, "ACL");
+//        DBObject update;
+//*/
+//        Bson query;
+//        Document newAclObject = getMongoDBDocument(acl, "ACL");
+//        Bson update;
+//
+//        /*
+//        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
+//        if (aclList.isEmpty()) {  // there is no acl for that user in that file. push
+//            query = new BasicDBObject(PRIVATE_ID, sampleId);
+//            update = new BasicDBObject("$push", new BasicDBObject("acl", newAclObject));
+//        } else {    // there is already another ACL: overwrite
+//            query = BasicDBObjectBuilder
+//                    .start(PRIVATE_ID, sampleId)
+//                    .append("acl.userId", userId).get();
+//            update = new BasicDBObject("$set", new BasicDBObject("acl.$", newAclObject));
+//        }
+//        */
+//        CatalogMongoDBUtils.checkAclUserId(dbAdaptorFactory, userId, getStudyIdBySampleId(sampleId));
+//
+//        List<AclEntry> aclList = getSampleAcl(sampleId, userId).getResult();
+//        if (aclList.isEmpty()) { // there is no acl for that user in that file. Push
+//            query = new Document(PRIVATE_ID, sampleId);
+//            update = Updates.push("acl", newAclObject);
+//        } else {
+//            query = new Document(PRIVATE_ID, sampleId).append("acl.userId", userId);
+//            update = Updates.set("acl.$", newAclObject);
+//        }
+//
+//        QueryResult<UpdateResult> queryResult = sampleCollection.update(query, update, null);
+//        if (queryResult.first().getModifiedCount() != 1) {
+//            throw CatalogDBException.idNotFound("Sample", sampleId);
+//        }
+//
+//        return endQuery("setSampleAcl", startTime, getSampleAcl(sampleId, userId));
     }
 
     @Override
-    public QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException {
-
+    public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException {
         long startTime = startQuery();
-/*
-        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
-        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        ;
-        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+        checkSampleId(sampleId);
+        long studyId = getStudyIdBySampleId(sampleId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
 
-        QueryResult queryResult = sampleCollection.update(query, update, null);
-*/
-        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
+        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        // already have permissions on its own.
+        Map<String, List<String>> groups = new HashMap<>();
+        Set<String> users = new HashSet<>();
 
-        if (!sampleAcl.getResult().isEmpty()) {
-            Bson query = new Document(PRIVATE_ID, sampleId);
-            Bson update = Updates.pull("acl", new Document("userId", userId));
-            sampleCollection.update(query, update, null);
+        for (String member : acl.getUsers()) {
+            if (member.startsWith("@")) {
+                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
+                groups.put(group.getId(), group.getUserIds());
+            } else {
+                users.add(member);
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+                QueryResult<SampleAcl> sampleAcl = getSampleAcl(sampleId, entry.getValue());
+                if (sampleAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("Error when adding permissions in sample. At least one user in " + entry.getKey()
+                            + " has already defined permissions for sample " + sampleId);
+                }
+            }
         }
 
-        return endQuery("unsetSampleAcl", startTime, sampleAcl);
+        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
+        // because the group will be given the permission.
+        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+            for (String userId : entry.getValue()) {
+                if (users.contains(userId)) {
+                    users.remove(userId);
+                }
+            }
+        }
+
+        // Create the definitive list of members that will be added in the acl
+        List<String> members = new ArrayList<>(users.size() + groups.size());
+        members.addAll(users.stream().collect(Collectors.toList()));
+        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
+        acl.setUsers(members);
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<SampleAcl> sampleAcls = getSampleAcl(sampleId, acl.getUsers());
+        if (sampleAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
+            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (SampleAcl sampleAcl : sampleAcls.getResult()) {
+                for (String member : sampleAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetSampleAcl(sampleId, usersToOverride);
+        }
+
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions().stream().map(SampleAcl.SamplePermissions::name).collect(Collectors.toList());
+
+        // Check if the permissions found on acl already exist on sample id
+        Document queryDocument = new Document(PRIVATE_ID, sampleId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
+        } else {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
+        }
+
+        Bson update;
+        if (sampleCollection.count(queryDocument).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            queryDocument = new Document(PRIVATE_ID, sampleId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "SampleAcl")));
+
+        }
+
+        QueryResult<UpdateResult> updateResult = sampleCollection.update(queryDocument, update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setSampleAcl: An error occurred when trying to share sample " + sampleId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        Sample sample = sampleConverter.convertToDataModelType(sampleCollection.find(queryDocument, queryOptions).first());
+
+        return endQuery("setSampleAcl", startTime, sample.getAcls());
+    }
+
+    @Deprecated
+    @Override
+    public QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException {
+        return null;
+//
+//        long startTime = startQuery();
+///*
+//        QueryResult<SampleAcl> sampleAcl = getSampleAcl(sampleId, userId);
+//        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
+//        ;
+//        DBObject update = new BasicDBObject("$pull", new BasicDBObject("acl", new BasicDBObject("userId", userId)));
+//
+//        QueryResult queryResult = sampleCollection.update(query, update, null);
+//*/
+//        QueryResult<AclEntry> sampleAcl = getSampleAcl(sampleId, userId);
+//
+//        if (!sampleAcl.getResult().isEmpty()) {
+//            Bson query = new Document(PRIVATE_ID, sampleId);
+//            Bson update = Updates.pull("acl", new Document("userId", userId));
+//            sampleCollection.update(query, update, null);
+//        }
+//
+//        return endQuery("unsetSampleAcl", startTime, sampleAcl);
 
     }
+
+    public void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+        checkSampleId(sampleId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, sampleId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetSampleAcl: An error occurred when trying to stop sharing sample " + sampleId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible SampleAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), sampleId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        sampleCollection.update(queryBson, update, null);
+    }
+
+    @Override
+    public void unsetSampleAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_STUDY_ID, studyId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            sampleCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+
+        // Remove possible SampleAcls that might have permissions defined but no users
+        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        sampleCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+    }
+
 
 //    @Override
 //    public QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException {
@@ -335,7 +483,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 //
 //        queryOptions = new QueryOptions(CohortFilterOption.samples.toString(), sampleId)
 //                .append("include", Arrays.asList("projects.studies.cohorts.id", "projects.studies.cohorts.name"));
-//        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);
+//        QueryResult<Cohort> cohortQueryResult = getAllCohorts(studyId, queryOptions);/**/
 //        if (cohortQueryResult.getNumResults() != 0) {
 //            String msg = "Can't delete Sample " + sampleId + ", still in use in cohorts : " +
 //                    cohortQueryResult.getResult().stream()
@@ -608,6 +756,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         return sampleCollection.aggregate(aggregation, sampleConverter, new QueryOptions()).getResult();
     }
 
+    @Deprecated
     public void checkInUse(long sampleId) throws CatalogDBException {
         long studyId = getStudyIdBySampleId(sampleId);
 
@@ -635,8 +784,24 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                             .collect(Collectors.joining(", ", "[", "]"));
             throw new CatalogDBException(msg);
         }
-
     }
+
+    /**
+     * To be able to delete a sample, the sample does not have to be part of any cohort.
+     *
+     * @param sampleId sample id.
+     * @throws CatalogDBException if the sampleId is used on any cohort.
+     */
+    private void checkCanDelete(long sampleId) throws CatalogDBException {
+        Query query = new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+        if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
+            List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor()
+                    .get(query, new QueryOptions(MongoDBCollection.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key())).getResult();
+            throw new CatalogDBException("The sample {" + sampleId + "} cannot be deleted/removed. It is being used in "
+                    + cohorts.size() + " cohorts: [" + cohorts.stream().map(Cohort::getId).collect(Collectors.toList()).toString() + "]");
+        }
+    }
+
 
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
@@ -658,9 +823,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
+
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -677,9 +840,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -732,75 +892,38 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long startTime = startQuery();
-//        checkSampleId(id);
-//        QueryResult<Sample> sample = getSample(id, null);
-//        delete(new Query(QueryParams.ID.key(), id), force);
-//        return endQuery("Delete sample", startTime, sample);
-        /*
+        long startTime = startQuery();
 
-        Query query = new Query(QueryParams.ID.key(), id);
-        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions());
-        if (sampleQueryResult.getResult().size() == 1) {
-            // Check if the sample is being used anywhere
-            checkInUse(id);
-            QueryResult<Long> delete = delete(query);
-            if (delete.getResult().size() == 0) {
-                throw CatalogDBException.newInstance("Sample id '{}' has not been deleted", id);
-            }
-        } else {
-            throw CatalogDBException.newInstance("Sample id '{}' does not exist", id);
+        checkSampleId(id);
+        // Check the sample is active
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            Sample sample = get(query, options).first();
+            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getStatus());
         }
-        return sampleQueryResult;
-        */
+
+        checkCanDelete(id);
+
+        // Change the status of the sample to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        return endQuery("Delete sample", startTime, get(query, queryOptions));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
-//        long startTime = startQuery();
-//
-//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-//        List<Sample> samples = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key())
-//                .append(MongoDBCollection.SORT, new Document(QueryParams.ID.key(), -1))).getResult();
-//
-//        List<Long> sampleIdsToRemove = new ArrayList<>();
-//        for (Sample sample : samples) {
-//            try {
-//                checkInUse(sample.getId());
-//                sampleIdsToRemove.add(sample.getId());
-//            } catch (CatalogDBException e) {
-//                logger.info(e.getMessage());
-//            }
-//        }
-//
-//        QueryResult<UpdateResult> deleted;
-//        if (sampleIdsToRemove.size() > 0) {
-//            deleted = sampleCollection.update(parseQuery(new Query(QueryParams.ID.key(), sampleIdsToRemove)),
-//                    Updates.combine(
-//                            Updates.set(QueryParams.STATUS_STATUS.key(), Status.DELETED),
-//                            Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
-//                    new QueryOptions());
-//        } else {
-//            throw CatalogDBException.deleteError("Sample");
-//        }
-//
-//        return endQuery("Delete sample", startTime, Collections.singletonList(deleted.first().getModifiedCount()));
-        /*
         long startTime = startQuery();
-
-//        QueryResult<Sample> sampleQueryResult = getSample(sampleId, null);
-//        checkInUse(sampleId);
-        // Fixme: Remove the id of the sample from the sampleIds array from file
-        Bson bson = parseQuery(query);
-        DeleteResult deleteResult = sampleCollection.remove(bson, null).getResult().get(0);
-        if (deleteResult.getDeletedCount() == 0) {
-            throw CatalogDBException.newInstance("Sample id '{}' not found", query.get(CatalogSampleDBAdaptor.QueryParams.ID.key()));
-        } else {
-            return endQuery("delete sample", startTime, Collections.singletonList(deleteResult.getDeletedCount()));
+        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        for (Sample sample : sampleQueryResult.getResult()) {
+            delete(sample.getId(), queryOptions);
         }
-        */
+        return endQuery("Delete sample", startTime, Collections.singletonList(sampleQueryResult.getNumTotalResults()));
     }
 
     @Override
@@ -879,6 +1002,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -933,7 +1059,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         if (annotationList.size() > 0) {
-            Bson projection = Projections.elemMatch("annotationSets", Filters.and(annotationList));
+            Bson projection = Projections.elemMatch(QueryParams.ANNOTATION_SETS.key(), Filters.and(annotationList));
             andBsonList.add(projection);
         }
         if (andBsonList.size() > 0) {
@@ -945,5 +1071,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     public MongoDBCollection getSampleCollection() {
         return sampleCollection;
+    }
+
+    QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
+        return update(sampleId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 }

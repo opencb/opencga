@@ -1,7 +1,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.client.MongoCursor;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -11,20 +14,21 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.DatasetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
+import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
+import org.opencb.opencga.catalog.models.acls.DatasetAcl;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.filterOptions;
-import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 /**
  * Created by pfurio on 04/05/16.
@@ -98,11 +102,6 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Dataset> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -120,15 +119,11 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<Dataset> datasetQueryResult = datasetCollection.find(bson, datasetConverter, qOptions);
         logger.debug("Dataset get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
                 datasetQueryResult.getDbTime());
-        return endQuery("Get Dataset", startTime, datasetQueryResult.getResult());
+        return endQuery("Get Dataset", startTime, datasetQueryResult);
     }
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -148,22 +143,84 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Dataset> update(long id, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        update(new Query(QueryParams.ID.key(), id), parameters);
+        return endQuery("Update dataset", startTime, getDataset(id, new QueryOptions()));
     }
 
     @Override
     public QueryResult<Long> update(Query query, ObjectMap parameters) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        Map<String, Object> datasetParams = new HashMap<>();
+
+        String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
+        filterStringParams(parameters, datasetParams, acceptedParams);
+
+        String[] acceptedLongListParams = {QueryParams.FILES.key()};
+        filterLongParams(parameters, datasetParams, acceptedLongListParams);
+        if (parameters.containsKey(QueryParams.FILES.key())) {
+            for (Long fileId : parameters.getAsLongList(QueryParams.FILES.key())) {
+                if (!dbAdaptorFactory.getCatalogFileDBAdaptor().fileExists(fileId)) {
+                    throw CatalogDBException.idNotFound("File", fileId);
+                }
+            }
+        }
+
+        String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
+        filterMapParams(parameters, datasetParams, acceptedMapParams);
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            datasetParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+        }
+
+        if (!datasetParams.isEmpty()) {
+            QueryResult<UpdateResult> update = datasetCollection.update(parseQuery(query), new Document("$set", datasetParams), null);
+            return endQuery("Update cohort", startTime, Arrays.asList(update.getNumTotalResults()));
+        }
+
+        return endQuery("Update cohort", startTime, new QueryResult<>());
     }
 
     @Override
-    public QueryResult<Dataset> delete(long id, QueryOptions queryOptions) throws CatalogDBException {
-        return null;
+    public QueryResult<Dataset> delete(long id, QueryOptions queryOptions) throws CatalogDBException    {
+        long startTime = startQuery();
+
+        checkDatasetId(id);
+        // Check the dataset is active
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        if (count(query).first() == 0) {
+            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            Dataset dataset = get(query, options).first();
+            throw new CatalogDBException("The dataset {" + id + "} was already " + dataset.getStatus().getStatus());
+        }
+
+        // Change the status of the dataset to deleted
+        setStatus(id, Status.DELETED);
+
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+
+        return endQuery("Delete dataset", startTime, get(query, null));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
-        return null;
+        long startTime = startQuery();
+        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        QueryResult<Dataset> datasetQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        for (Dataset dataset : datasetQueryResult.getResult()) {
+            delete(dataset.getId(), queryOptions);
+        }
+        return endQuery("Delete dataset", startTime, Collections.singletonList(datasetQueryResult.getNumTotalResults()));
+    }
+
+    QueryResult<Dataset> setStatus(long datasetId, String status) throws CatalogDBException {
+        return update(datasetId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     @Override
@@ -179,6 +236,198 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> restore(Query query) throws CatalogDBException {
         return null;
+    }
+
+    @Override
+    public QueryResult<Long> insertFilesIntoDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$push", new Document(QueryParams.FILES.key(), new Document("$each", fileIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
+        return endQuery("Insert files into datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<Long> extractFilesFromDatasets(Query query, List<Long> fileIds) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$pull", new Document(QueryParams.FILES.key(), new Document("$in", fileIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> updateQueryResult = datasetCollection.update(bsonQuery, update, multi);
+        return endQuery("Extract files from datasets", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkDatasetId(datasetId);
+
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, datasetId));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+
+        List<DatasetAcl> datasetAcl = null;
+        QueryResult<Document> aggregate = datasetCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
+
+        if (dataset != null) {
+            datasetAcl = dataset.getAcls();
+        }
+
+        return endQuery("get dataset Acl", startTime, datasetAcl);
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkDatasetId(datasetId);
+        long studyId = getStudyIdByDatasetId(datasetId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
+
+        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        // already have permissions on its own.
+        Map<String, List<String>> groups = new HashMap<>();
+        Set<String> users = new HashSet<>();
+        for (String member : acl.getUsers()) {
+            if (member.startsWith("@")) {
+                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
+                groups.put(group.getId(), group.getUserIds());
+            } else {
+                users.add(member);
+            }
+        }
+        if (groups.size() > 0) {
+            // Check if any user already have permissions set on their own.
+            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+                QueryResult<DatasetAcl> datasetAcl = getDatasetAcl(datasetId, entry.getValue());
+                if (datasetAcl.getNumResults() > 0) {
+                    throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + entry.getKey()
+                            + " has already defined permissions for dataset " + datasetId);
+                }
+            }
+        }
+
+        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
+        // because the group will be given the permission.
+        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
+            for (String userId : entry.getValue()) {
+                if (users.contains(userId)) {
+                    users.remove(userId);
+                }
+            }
+        }
+
+        // Create the definitive list of members that will be added in the acl
+        List<String> members = new ArrayList<>(users.size() + groups.size());
+        members.addAll(users.stream().collect(Collectors.toList()));
+        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
+        acl.setUsers(members);
+
+        // Check if the members of the new acl already have some permissions set
+        QueryResult<DatasetAcl> datasetAcls = getDatasetAcl(datasetId, acl.getUsers());
+        if (datasetAcls.getNumResults() > 0) {
+            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
+            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
+
+            List<String> usersToOverride = new ArrayList<>();
+            for (DatasetAcl datasetAcl : datasetAcls.getResult()) {
+                for (String member : datasetAcl.getUsers()) {
+                    if (usersSet.contains(member)) {
+                        // Add the user to the list of users that will be taken out from the Acls.
+                        usersToOverride.add(member);
+                    }
+                }
+            }
+
+            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
+            unsetDatasetAcl(datasetId, usersToOverride);
+        }
+
+        // Append the users to the existing acl.
+        List<String> permissions = acl.getPermissions().stream().map(DatasetAcl.DatasetPermissions::name).collect(Collectors.toList());
+
+        // Check if the permissions found on acl already exist on dataset id
+        Document queryDocument = new Document(PRIVATE_ID, datasetId);
+        if (permissions.size() > 0) {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
+        } else {
+            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
+        }
+
+        Bson update;
+        if (datasetCollection.count(queryDocument).first() > 0) {
+            // Append the users to the existing acl.
+            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
+        } else {
+            queryDocument = new Document(PRIVATE_ID, datasetId);
+            // Push the new acl to the list of acls.
+            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "DatasetAcl")));
+
+        }
+
+        QueryResult<UpdateResult> updateResult = datasetCollection.update(queryDocument, update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setDatasetAcl: An error occurred when trying to share dataset " + datasetId
+                    + " with other members.");
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
+        Dataset dataset = datasetConverter.convertToDataModelType(datasetCollection.find(queryDocument, queryOptions).first());
+
+        return endQuery("setDatasetAcl", startTime, dataset.getAcls());
+    }
+
+    @Override
+    public void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
+        checkDatasetId(datasetId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_ID, datasetId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            QueryResult<UpdateResult> updateResult = datasetCollection.update(query, update, null);
+            if (updateResult.first().getModifiedCount() == 0) {
+                throw new CatalogDBException("unsetDatasetAcl: An error occurred when trying to stop sharing dataset " + datasetId
+                        + " with other " + member + ".");
+            }
+        }
+
+        // Remove possible datasetAcls that might have permissions defined but no users
+        Bson queryBson = new Document(QueryParams.ID.key(), datasetId)
+                .append(QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        datasetCollection.update(queryBson, update, null);
+    }
+
+    @Override
+    public void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
+        // Check that all the members (users) are correct and exist.
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Remove the permissions the members might have had
+        for (String member : members) {
+            Document query = new Document(PRIVATE_STUDY_ID, studyId)
+                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            datasetCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
+        }
+
+        // Remove possible DatasetAcls that might have permissions defined but no users
+        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_USERS.key(),
+                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+        datasetCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
@@ -241,6 +490,10 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
+
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {

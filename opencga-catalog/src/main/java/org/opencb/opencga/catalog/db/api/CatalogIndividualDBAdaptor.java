@@ -25,11 +25,13 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.BOOLEAN;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -69,6 +71,18 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> deleteIndividual(long individualId, QueryOptions options) throws CatalogDBException;
 
+    default QueryResult<IndividualAcl> getIndividualAcl(long individualId, String member) throws CatalogDBException {
+        return getIndividualAcl(individualId, Arrays.asList(member));
+    }
+
+    QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+
+    QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException;
+
+    void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+
+    void unsetIndividualAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
     long getStudyIdByIndividualId(long individualId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
@@ -89,11 +103,15 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
 
         STUDY_ID("studyId", DECIMAL, ""),
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
         ANNOTATION_SET_ID("annotationSetId", TEXT, ""),
         ANNOTATION("annotation", TEXT, "");
