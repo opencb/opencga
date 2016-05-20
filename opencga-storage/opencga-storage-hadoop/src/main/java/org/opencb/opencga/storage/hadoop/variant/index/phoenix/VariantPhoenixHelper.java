@@ -79,10 +79,17 @@ public class VariantPhoenixHelper {
         GENES("GENES", PVarcharArray.INSTANCE),
         BIOTYPE("BIOTYPE", PVarcharArray.INSTANCE),
         TRANSCRIPTS("TRANSCRIPTS", PVarcharArray.INSTANCE),
+        TRANSCRIPTION_FLAGS("FLAGS", PVarcharArray.INSTANCE),
+        GENE_TRAITS_NAME("GT_NAME", PVarcharArray.INSTANCE),
+        GENE_TRAITS_ID("GT_ID", PVarcharArray.INSTANCE),
+        PROTEIN_KEYWORDS("PROT_KW", PVarcharArray.INSTANCE),
+        DRUG("DRUG", PVarcharArray.INSTANCE),
 
         //Protein substitution scores
         POLYPHEN("POLYPHEN", PFloatArray.INSTANCE),
+//        POLYPHEN_DESC("POLYPHEN_DESC", PVarcharArray.INSTANCE),
         SIFT("SIFT", PFloatArray.INSTANCE),
+//        SIFT_DESC("SIFT_DESC", PVarcharArray.INSTANCE),
 
         //Conservation Scores
         PHASTCONS("PHASTCONS", PFloat.INSTANCE),
@@ -181,21 +188,21 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreateView(String tableName, String columnFamily) {
-        return "CREATE VIEW IF NOT EXISTS \"" + tableName + "\" " + "("
-                + CHROMOSOME + " " + CHROMOSOME.sqlType() + " NOT NULL, "
-                + POSITION + " " + POSITION.sqlType() + " NOT NULL, "
-                + REFERENCE + " " + REFERENCE.sqlType() + " , "
-                + ALTERNATE + " " + ALTERNATE.sqlType() + " , "
-                + GENES + " " + GENES.sqlType() + " , "
-                + BIOTYPE + " " + BIOTYPE.sqlType() + " , "
-                + SO + " " + SO.sqlType() + " , "
-                + POLYPHEN + " " + POLYPHEN.sqlType() + " , "
-                + SIFT + " " + SIFT.sqlType() + " , "
-                + PHYLOP + " " + PHYLOP.sqlType() + " , "
-                + PHASTCONS + " " + PHASTCONS.sqlType() + " , "
-                + FULL_ANNOTATION + " " + FULL_ANNOTATION.sqlType() + " "
-                + "CONSTRAINT PK PRIMARY KEY (" + CHROMOSOME + ", " + POSITION + ", " + REFERENCE + ", " + ALTERNATE + ") " + ") "
-                + "DEFAULT_COLUMN_FAMILY='" + columnFamily + "'";
+        StringBuilder sb = new StringBuilder().append("CREATE VIEW IF NOT EXISTS \"").append(tableName).append("\" ").append("(");
+        //.append(CHROMOSOME).append(" ").append(CHROMOSOME.sqlType()).append(" NOT NULL, ").append(POSITION).append(" ").append(POSITION.sqlType()).append(" NOT NULL, ").append(REFERENCE).append(" ").append(REFERENCE.sqlType()).append(" , ").append(ALTERNATE).append(" ").append(ALTERNATE.sqlType()).append(" , ").append(SO).append(" ").append(SO.sqlType()).append(" , ").append(GENES).append(" ").append(GENES.sqlType()).append(" , ").append(BIOTYPE).append(" ").append(BIOTYPE.sqlType()).append(" , ").append(TRANSCRIPTION_FLAGS).append(" ").append(TRANSCRIPTION_FLAGS.sqlType()).append(" , ").append(GENE_TRAITS_NAME).append(" ").append(GENE_TRAITS_NAME.sqlType()).append(" , ").append(GENE_TRAITS_ID).append(" ").append(GENE_TRAITS_ID.sqlType()).append(" , ").append(DRUG).append(" ").append(DRUG.sqlType()).append(" , ").append(POLYPHEN).append(" ").append(POLYPHEN.sqlType()).append(" , ").append(SIFT).append(" ").append(SIFT.sqlType()).append(" , ").append(PHYLOP).append(" ").append(PHYLOP.sqlType()).append(" , ").append(PHASTCONS).append(" ").append(PHASTCONS.sqlType()).append(" , ").append(FULL_ANNOTATION).append(" ").append(FULL_ANNOTATION.sqlType())
+        for (VariantColumn variantColumn : VariantColumn.values()) {
+            switch (variantColumn) {
+                case CHROMOSOME:
+                case POSITION:
+                    sb.append(" ").append(variantColumn).append(" ").append(variantColumn.sqlType()).append(" NOT NULL , ");
+                    break;
+                default:
+                    sb.append(" ").append(variantColumn).append(" ").append(variantColumn.sqlType()).append(" , ");
+                    break;
+            }
+        }
+
+        return sb.append(" ").append("CONSTRAINT PK PRIMARY KEY (").append(CHROMOSOME).append(", ").append(POSITION).append(", ").append(REFERENCE).append(", ").append(ALTERNATE).append(") ").append(") ").append("DEFAULT_COLUMN_FAMILY='").append(columnFamily).append("'").toString();
     }
 
     public String buildAlterViewAddColumn(String tableName, String column, String type) {

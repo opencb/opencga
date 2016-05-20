@@ -69,9 +69,21 @@ public class VariantSqlQueryParser {
         appendFromStatement(sb, dynamicColumns);
         appendWhereStatement(sb, regionFilters, filters);
 
-        if (options.getInt("limit") > 0) {
+        if (options.getBoolean(QueryOptions.SORT)) {
+            sb.append(" ORDER BY ").append(VariantColumn.CHROMOSOME.column()).append(",").append(VariantColumn.POSITION.column());
+
+            String order = options.getString(QueryOptions.ORDER, QueryOptions.ASCENDING);
+            if (order.equalsIgnoreCase(QueryOptions.ASCENDING) || order.equalsIgnoreCase("ASC")) {
+                sb.append(" ASC ");
+            } else {
+                sb.append(" DESC ");
+            }
+        }
+
+        if (options.getInt(QueryOptions.LIMIT) > 0) {
             sb.append(" LIMIT ").append(options.getInt("limit"));
         }
+
 
         return sb.toString();
     }
@@ -91,7 +103,7 @@ public class VariantSqlQueryParser {
      * @param options   other options
      * @return String builder
      */
-    public StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
+    protected StringBuilder appendProjectedColumns(StringBuilder sb, Query query, QueryOptions options) {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
@@ -117,7 +129,7 @@ public class VariantSqlQueryParser {
         }
     }
 
-    public void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
+    protected void appendFromStatement(StringBuilder sb, Set<Column> dynamicColumns) {
         sb.append(" FROM \"").append(variantTable).append('"');
 
         if (!dynamicColumns.isEmpty()) {
@@ -129,7 +141,7 @@ public class VariantSqlQueryParser {
 
     }
 
-    public StringBuilder appendWhereStatement(StringBuilder sb, List<String> regionFilters, List<String> filters) {
+    protected StringBuilder appendWhereStatement(StringBuilder sb, List<String> regionFilters, List<String> filters) {
         if (!regionFilters.isEmpty() || !filters.isEmpty()) {
             sb.append(" WHERE");
         }
@@ -145,7 +157,7 @@ public class VariantSqlQueryParser {
         return sb;
     }
 
-    public StringBuilder appendFilters(StringBuilder sb, List<String> filters, String delimiter) {
+    protected StringBuilder appendFilters(StringBuilder sb, List<String> filters, String delimiter) {
         delimiter = " " + delimiter + " ";
         if (!filters.isEmpty()) {
             sb.append(filters.stream().collect(Collectors.joining(delimiter, " ( ", " ) ")));
@@ -168,7 +180,7 @@ public class VariantSqlQueryParser {
      * @param query Query to parse
      * @return List of region filters
      */
-    public List<String> getRegionFilters(Query query) {
+    protected List<String> getRegionFilters(Query query) {
         List<String> regionFilters = new LinkedList<>();
 
 
@@ -226,6 +238,13 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY}
      * {@link VariantQueryParams#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
      * {@link VariantQueryParams#ANNOT_POPULATION_REFERENCE_FREQUENCY}
+
+     * {@link VariantQueryParams#ANNOT_TRANSCRIPTION_FLAGS}
+     * {@link VariantQueryParams#ANNOT_GENE_TRAITS_ID}
+     * {@link VariantQueryParams#ANNOT_GENE_TRAITS_NAME}
+     * {@link VariantQueryParams#ANNOT_PROTEIN_KEYWORDS}
+     * {@link VariantQueryParams#ANNOT_DRUG}
+     * {@link VariantQueryParams#ANNOT_FUNCTIONAL_SCORE}
      *
      * Stats filters:
      * {@link VariantQueryParams#STATS_MAF}
@@ -237,10 +256,22 @@ public class VariantSqlQueryParser {
      * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
      * @return List of sql filters
      */
-    public List<String> getOtherFilters(Query query, final Set<Column> dynamicColumns) {
+    protected List<String> getOtherFilters(Query query, final Set<Column> dynamicColumns) {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
+        addVariantFilters(query, filters);
+
+        // Annotation filters:
+        addAnnotFilters(query, dynamicColumns, filters);
+
+        // Stats filters:
+        addStatsFilters(query, filters);
+
+        return filters;
+    }
+
+    protected void addVariantFilters(Query query, List<String> filters) {
         addSimpleQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
         addSimpleQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
@@ -330,8 +361,9 @@ public class VariantSqlQueryParser {
                 filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
             }
         }
+    }
 
-        // Annotation filters:
+    protected void addAnnotFilters(Query query, Set<Column> dynamicColumns, List<String> filters) {
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (query.getBoolean(ANNOTATION_EXISTS.key())) {
                 filters.add(VariantColumn.FULL_ANNOTATION + " IS NOT NULL");
@@ -392,9 +424,24 @@ public class VariantSqlQueryParser {
             return column;
         }, filters, s -> 1 - Double.parseDouble(s));
 
-        // Stats filters:
+        addSimpleQueryFilter(query, ANNOT_TRANSCRIPTION_FLAGS, VariantColumn.TRANSCRIPTION_FLAGS, filters);
+
+        addSimpleQueryFilter(query, ANNOT_GENE_TRAITS_ID, VariantColumn.GENE_TRAITS_ID, filters);
+
+        addSimpleQueryFilter(query, ANNOT_GENE_TRAITS_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
+
+        addSimpleQueryFilter(query, ANNOT_PROTEIN_KEYWORDS, VariantColumn.PROTEIN_KEYWORDS, filters);
 
 
+        addSimpleQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
+
+
+        if (isValidParam(query, ANNOT_FUNCTIONAL_SCORE)) {
+            logger.warn("Unsupported filter " +  ANNOT_FUNCTIONAL_SCORE);
+        }
+    }
+
+    protected void addStatsFilters(Query query, List<String> filters) {
         if (isValidParam(query, STATS_MAF)) {
             logger.warn("Unsupported filter " +  STATS_MAF);
         }
@@ -410,8 +457,6 @@ public class VariantSqlQueryParser {
         if (isValidParam(query, MISSING_GENOTYPES)) {
             logger.warn("Unsupported filter " +  MISSING_GENOTYPES);
         }
-
-        return filters;
     }
 
     /**

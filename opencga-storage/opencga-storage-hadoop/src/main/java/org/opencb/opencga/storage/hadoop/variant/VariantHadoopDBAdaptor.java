@@ -227,6 +227,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         }
         long startTime = System.currentTimeMillis();
         String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
+        logger.info(sql);
         try {
             Statement statement = phoenixCon.createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
@@ -252,6 +253,14 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public VariantDBIterator iterator(Query query, QueryOptions options) {
+
+        if (options == null) {
+            options = new QueryOptions();
+        }
+
+        if (query == null) {
+            query = new Query();
+        }
 
         if (options.getBoolean("archive", false)) {
             String study = query.getString(STUDIES.key());

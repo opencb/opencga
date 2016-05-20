@@ -232,7 +232,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
 
-            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
+//            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
+            StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
             studyEntry.setSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
             studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));

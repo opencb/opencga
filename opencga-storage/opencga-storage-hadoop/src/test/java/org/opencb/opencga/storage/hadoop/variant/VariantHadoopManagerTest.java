@@ -50,6 +50,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
+    private QueryResult<Variant> allVariantsQueryResult;
 
     @Before
     public void before() throws Exception {
@@ -59,14 +60,15 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
 
             URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
+//            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
             studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
             etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
-                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "proto")
+                    new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
                             .append(Options.FILE_ID.key(), FILE_ID)
                             .append(Options.ANNOTATE.key(), true)
                             .append(Options.CALCULATE_STATS.key(), false)
-                            .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true)
+                            .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, false)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
             );
@@ -74,9 +76,15 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
             VariantGlobalStats stats = source.getStats();
             Assert.assertNotNull(stats);
+
+            allVariantsQueryResult = null;
         }
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+
+        if (allVariantsQueryResult == null) {
+            allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());
+        }
 
     }
 
@@ -115,7 +123,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
 
         // Group by Gene
         HashMap<String, Long> genesCount = new HashMap<>();
-        for (Variant variant : dbAdaptor) {
+        for (Variant variant : allVariantsQueryResult.getResult()) {
             HashSet<String> genesInVariant = new HashSet<>();
             for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                 String geneName = consequenceType.getGeneName();

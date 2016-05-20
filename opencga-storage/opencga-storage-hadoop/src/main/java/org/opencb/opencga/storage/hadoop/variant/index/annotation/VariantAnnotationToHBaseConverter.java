@@ -45,16 +45,22 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
 
         Set<String> genes = new HashSet<>();
         Set<String> transcript = new HashSet<>();
+        Set<String> flags = new HashSet<>();
         Set<Integer> so = new HashSet<>();
         Set<String> biotype = new HashSet<>();
         Set<Double> polyphen = new HashSet<>();
         Set<Double> sift = new HashSet<>();
+        Set<String> geneTraitName = new HashSet<>();
+        Set<String> geneTraitId = new HashSet<>();
+        Set<String> drugs = new HashSet<>();
+        Set<String> proteinKeywords = new HashSet<>();
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
             addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getEnsemblGeneId());
             addNotNull(transcript, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
+            addAllNotNull(flags, consequenceType.getTranscriptAnnotationFlags());
             for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
                 String accession = sequenceOntologyTerm.getAccession();
                 addNotNull(so, Integer.parseInt(accession.substring(3)));
@@ -69,6 +75,20 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
                         }
                     }
                 }
+                proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+            }
+        }
+
+        if (variantAnnotation.getGeneTraitAssociation() != null) {
+            for (GeneTraitAssociation geneTrait : variantAnnotation.getGeneTraitAssociation()) {
+                addNotNull(geneTraitName, geneTrait.getName());
+                addNotNull(geneTraitId, geneTrait.getId());
+            }
+        }
+
+        if (variantAnnotation.getGeneDrugInteraction() != null) {
+            for (GeneDrugInteraction drug : variantAnnotation.getGeneDrugInteraction()) {
+                addNotNull(drugs, drug.getDrugName());
             }
         }
 
@@ -78,6 +98,11 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         addIntegerArray(put, SO.bytes(), so);
         addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
         addArray(put, SIFT.bytes(), sift, (PArrayDataType) SIFT.getPDataType());
+        addVarcharArray(put, TRANSCRIPTION_FLAGS.bytes(), flags);
+        addVarcharArray(put, GENE_TRAITS_ID.bytes(), geneTraitId);
+        addVarcharArray(put, PROTEIN_KEYWORDS.bytes(), proteinKeywords);
+        addVarcharArray(put, GENE_TRAITS_NAME.bytes(), geneTraitName);
+        addVarcharArray(put, DRUG.bytes(), drugs);
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
@@ -111,6 +136,12 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
     public <T> void addNotNull(Collection<T> collection, T value) {
         if (value != null) {
             collection.add(value);
+        }
+    }
+
+    public <T> void addAllNotNull(Collection<T> collection, Collection<T> values) {
+        if (values != null) {
+            collection.addAll(values);
         }
     }
 

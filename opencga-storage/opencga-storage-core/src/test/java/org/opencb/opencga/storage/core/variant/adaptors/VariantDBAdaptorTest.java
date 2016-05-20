@@ -79,8 +79,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                     .append(VariantStorageManager.Options.ANNOTATE.key(), true)
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseVariantAnnotator.class.getName())
                     .append(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+            params.putAll(getOtherParams());
             StorageETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
-            source = VariantStorageManager.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
+            source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
@@ -108,10 +109,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             cohortIds.put("cohort2", 11);
 
             //Calculate stats
-            dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-            URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration,
-                    options);
-            vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+            if (getOtherParams().getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), true)) {
+                dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+                URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration,
+                        options);
+                vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+            }
 
 
         }
@@ -349,7 +352,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         for (Variant variant : allVariants.getResult()) {
             Set<String> flagsInVariant = new HashSet<>();
             for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+                if (consequenceType.getTranscriptAnnotationFlags() != null) {
+                    flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+                }
             }
             for (String flag : flagsInVariant) {
                 flags.put(flag, flags.getOrDefault(flag, 0) + 1);
@@ -424,8 +429,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Map<String, Integer> keywords = new HashMap<>();
         for (Variant variant : allVariants.getResult()) {
             Set<String> keywordsInVariant = new HashSet<>();
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                keywordsInVariant.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+            if (variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                    if (consequenceType.getProteinVariantAnnotation() != null) {
+                        keywordsInVariant.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+                    }
+                }
             }
             for (String flag : keywordsInVariant) {
                 keywords.put(flag, keywords.getOrDefault(flag, 0) + 1);
@@ -483,13 +492,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             Set<String> siftDescInVariant = new HashSet<>();
             Set<String> polyphenDescInVariant = new HashSet<>();
             for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
-                    if (score.getSource().equals("sift")) {
-                        siftInVariant.add(score.getScore());
-                        siftDescInVariant.add(score.getDescription());
-                    } else if (score.getSource().equals("polyphen")) {
-                        polyphenInVariant.add(score.getScore());
-                        polyphenDescInVariant.add(score.getDescription());
+                if (consequenceType.getProteinVariantAnnotation() != null) {
+                    if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                        for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                            if (score.getSource().equals("sift")) {
+                                siftInVariant.add(score.getScore());
+                                siftDescInVariant.add(score.getDescription());
+                            } else if (score.getSource().equals("polyphen")) {
+                                polyphenInVariant.add(score.getScore());
+                                polyphenDescInVariant.add(score.getDescription());
+                            }
+                        }
                     }
                 }
             }
@@ -618,7 +631,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         while (iterator.hasNext()) {
             next = iterator.next();
             if (next.getChromosome().equals(prev.getChromosome())) {
-                assertTrue(next + " <= " + prev, next.getStart() <= prev.getStart());
+                assertTrue(prev + " >= " + next, prev.getStart() >= next.getStart());
             }
             prev = next;
         }
@@ -972,6 +985,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
 
+    }
+
+    protected ObjectMap getOtherParams() {
+        return new ObjectMap();
     }
 /*
     @Test
