@@ -20,13 +20,10 @@ import com.mongodb.BasicDBObject;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -466,7 +463,7 @@ public class CatalogManagerTest extends GenericTest {
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
-        catalogManager.addMemberToGroup(study_4, "admins", "user3", sessionIdUser);
+        catalogManager.addUsersToGroup(study_4, "admins", "user3", sessionIdUser);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
@@ -508,7 +505,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_ROLE, "user2", sessionIdUser);
+        catalogManager.addUsersToGroup(studyId, AuthorizationManager.MEMBERS_ROLE, "user2", sessionIdUser);
         catalogManager.shareFile(Long.toString(testFolder.getId()), "user2", new AclEntry("user2", false, true, false, false), sessionIdUser);
         catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
                 sessionIdUser2);

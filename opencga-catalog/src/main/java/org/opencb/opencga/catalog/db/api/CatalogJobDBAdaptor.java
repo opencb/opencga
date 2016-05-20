@@ -20,7 +20,9 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.acls.JobAcl;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +84,18 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     @Deprecated
     QueryResult<Job> modifyJob(long jobId, ObjectMap parameters) throws CatalogDBException;
 
+    default QueryResult<JobAcl> getJobAcl(long jobId, String member) throws CatalogDBException {
+        return getJobAcl(jobId, Arrays.asList(member));
+    }
+
+    QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException;
+
+    QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException;
+
+    void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException;
+
+    void unsetJobAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
     long getStudyIdByJobId(long jobId) throws CatalogDBException;
 
     /**
@@ -137,6 +151,9 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         INPUT("input", INTEGER_ARRAY, ""),
         OUTPUT("output", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

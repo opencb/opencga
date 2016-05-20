@@ -65,6 +65,7 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult move(long fileId, String newPath, QueryOptions options, String sessionId)
             throws CatalogException;
 
