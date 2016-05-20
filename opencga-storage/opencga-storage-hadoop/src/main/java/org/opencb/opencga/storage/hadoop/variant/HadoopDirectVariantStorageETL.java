@@ -149,10 +149,8 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
     }
 
     @Override
-    protected void checkLoadedVariants(URI input, int fileId, StudyConfiguration studyConfiguration, ObjectMap options)
-            throws StorageManagerException {
-        // TODO Auto-generated method stub
-
+    protected boolean needLoadFromHdfs() {
+        return false;
     }
 
 }

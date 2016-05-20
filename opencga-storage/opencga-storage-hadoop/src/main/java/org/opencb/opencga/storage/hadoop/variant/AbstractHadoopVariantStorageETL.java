@@ -5,10 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.NotImplementedException;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.io.compress.Compression;
+import org.apache.hadoop.fs.FileSystem;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -46,6 +47,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -241,22 +243,47 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
         if (loadArch) {
             super.preLoad(input, output);
+
+            if (needLoadFromHdfs() && !input.getScheme().equals("hdfs")) {
+                if (!StringUtils.isEmpty(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY))) {
+                    output = URI.create(options.getString(OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY));
+                }
+                if (output.getScheme() != null && !output.getScheme().equals("hdfs")) {
+                    throw new StorageManagerException("Output must be in HDFS");
+                }
+
+                try {
+                    long startTime = System.currentTimeMillis();
+//                    Configuration conf = getHadoopConfiguration(options);
+                    FileSystem fs = FileSystem.get(conf);
+                    org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
+                    logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(input).toUri(), variantsOutputPath.toUri());
+                    fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(input), variantsOutputPath);
+                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+
+                    startTime = System.currentTimeMillis();
+                    URI fileInput = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+                    org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
+                    logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
+                    fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(fileInput), fileOutputPath);
+                    logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
+
+                    input = variantsOutputPath.toUri();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
 
-        logger.info("Try to set Snappy " + Compression.Algorithm.SNAPPY.getName());
-        String compressName = conf.get(
-                ArchiveDriver.CONFIG_ARCHIVE_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY
-                        .getName());
-        Compression.Algorithm compression = Compression.getCompressionAlgorithmByName(compressName);
-        logger.info(
-                String.format(
-                        "Create table %s with %s %s", archiveTableCredentials.getTable(), compressName,
-                        compression));
         try {
-            this.dbAdaptor.getGenomeHelper().getHBaseManager().createTableIfNeeded(
-                    archiveTableCredentials.getTable(), this.dbAdaptor.getGenomeHelper().getColumnFamily(), compression);
-        } catch (IOException e1) {
-            throw new RuntimeException("Issue creating table " + archiveTableCredentials.getTable(), e1);
+            ArchiveDriver.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(), dbAdaptor.getConnection());
+        } catch (IOException e) {
+            throw new StorageHadoopException("Issue creating table " + archiveTableCredentials.getTable(), e);
+        }
+        try {
+            VariantTableDriver.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(), dbAdaptor.getConnection());
+        } catch (IOException e) {
+            throw new StorageHadoopException("Issue creating table " + variantsTableCredentials.getTable(), e);
         }
 
         if (loadVar) {
@@ -357,6 +384,15 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
         return input;
     }
+
+    /**
+     * Specify if the current class needs to move the file to load to HDFS.
+     *
+     * If true, the transformed file will be copied to hdfs during the {@link #preLoad}
+     *
+     * @return boolean
+     */
+    protected abstract boolean needLoadFromHdfs();
 
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageManagerException {
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");

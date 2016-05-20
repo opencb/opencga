@@ -81,4 +81,8 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
     }
 
 
+    @Override
+    protected boolean needLoadFromHdfs() {
+        return true;
+    }
 }

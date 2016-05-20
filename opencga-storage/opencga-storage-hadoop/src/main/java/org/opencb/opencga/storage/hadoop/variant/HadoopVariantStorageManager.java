@@ -243,6 +243,10 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         return storageETL;
     }
 
+    public HdfsVariantReaderUtils getVariantReaderUtils() {
+        return getVariantReaderUtils(conf);
+    }
+
     private HdfsVariantReaderUtils getVariantReaderUtils(Configuration config) {
         if (null == variantReaderUtils) {
             variantReaderUtils = new HdfsVariantReaderUtils(config);
@@ -422,8 +426,13 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             }
 
             Path metaPath = new Path(VariantReaderUtils.getMetaFromInputFile(input.toString()));
+            FileSystem fs = null;
+            try {
+                fs = FileSystem.get(conf);
+            } catch (IOException e) {
+                throw new StorageManagerException("Unable to get FileSystem", e);
+            }
             try (
-                    FileSystem fs = FileSystem.get(conf);
                     InputStream inputStream = new GZIPInputStream(fs.open(metaPath))
             ) {
                 source = VariantReaderUtils.readVariantSource(inputStream);

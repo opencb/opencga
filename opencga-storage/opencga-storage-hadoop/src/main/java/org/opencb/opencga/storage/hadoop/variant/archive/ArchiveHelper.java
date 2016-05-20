@@ -33,7 +33,7 @@ public class ArchiveHelper extends GenomeHelper {
 
     private final Logger logger = LoggerFactory.getLogger(ArchiveHelper.class);
     private final AtomicReference<VcfMeta> meta = new AtomicReference<>();
-    private final byte[] column;
+    private byte[] column;
 
 
     private final VcfRecordComparator vcfComparator = new VcfRecordComparator();
@@ -47,6 +47,7 @@ public class ArchiveHelper extends GenomeHelper {
             VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
             this.meta.set(meta);
         }
+        column = Bytes.toBytes(getColumnName(meta.get().getVariantSource()));
     }
 
     public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
@@ -57,9 +58,11 @@ public class ArchiveHelper extends GenomeHelper {
 
     public ArchiveHelper(Configuration conf, VcfMeta meta) {
         super(conf);
-        this.meta.set(meta);
-        VariantSource variantSource = getMeta().getVariantSource();
-        column = Bytes.toBytes(getColumnName(variantSource));
+        if (meta != null) {
+            this.meta.set(meta);
+            VariantSource variantSource = getMeta().getVariantSource();
+            column = Bytes.toBytes(getColumnName(variantSource));
+        }
     }
 
     public ArchiveHelper(GenomeHelper helper, VariantSource source) throws IOException {
