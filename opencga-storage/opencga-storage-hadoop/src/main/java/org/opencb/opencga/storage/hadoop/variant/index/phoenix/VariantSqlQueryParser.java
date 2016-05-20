@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.phoenix.schema.types.PFloat;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
@@ -393,9 +394,27 @@ public class VariantSqlQueryParser {
 
         addSimpleQueryFilter(query, ANNOT_BIOTYPE, VariantColumn.BIOTYPE, filters);
 
-        addSimpleQueryFilter(query, ANNOT_SIFT, VariantColumn.SIFT, filters);
+        addQueryFilter(query, ANNOT_SIFT, (keyOpValue, rawValue) -> {
+            if (StringUtils.isNotEmpty(keyOpValue[0])) {
+                throw VariantQueryException.malformedParam(ANNOT_SIFT, Arrays.toString(keyOpValue));
+            }
+            if (NumberUtils.isParsable(keyOpValue[2])) {
+                return VariantColumn.SIFT;
+            } else {
+                return VariantColumn.SIFT_DESC;
+            }
+        }, filters, null);
 
-        addSimpleQueryFilter(query, ANNOT_POLYPHEN, VariantColumn.POLYPHEN, filters);
+        addQueryFilter(query, ANNOT_POLYPHEN, (keyOpValue, rawValue) -> {
+            if (StringUtils.isNotEmpty(keyOpValue[0])) {
+                throw VariantQueryException.malformedParam(ANNOT_POLYPHEN, Arrays.toString(keyOpValue));
+            }
+            if (NumberUtils.isParsable(keyOpValue[2])) {
+                return VariantColumn.POLYPHEN;
+            } else {
+                return VariantColumn.POLYPHEN_DESC;
+            }
+        }, filters, null);
 
         addQueryFilter(query, ANNOT_CONSERVATION, (keyOpValue, rawValue) -> {
             String upperCaseValue = keyOpValue[0];

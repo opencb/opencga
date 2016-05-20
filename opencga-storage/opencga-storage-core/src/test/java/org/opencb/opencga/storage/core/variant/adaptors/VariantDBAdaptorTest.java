@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -121,6 +123,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         allVariants = dbAdaptor.get(new Query(), new QueryOptions());
         options = new QueryOptions();
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+        assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
+
     }
 
     @After
@@ -348,31 +353,33 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_transcriptionAnnotationFlags() {
         //ANNOT_TRANSCRIPTION_FLAGS
         Query query;
-        Map<String, Integer> flags = new HashMap<>();
+        Multiset<String> flags = HashMultiset.create();
+        Set<String> flagsInVariant = new HashSet<>();
         for (Variant variant : allVariants.getResult()) {
-            Set<String> flagsInVariant = new HashSet<>();
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                if (consequenceType.getTranscriptAnnotationFlags() != null) {
-                    flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+            if (variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                    if (consequenceType.getTranscriptAnnotationFlags() != null) {
+                        flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+                    }
                 }
             }
-            for (String flag : flagsInVariant) {
-                flags.put(flag, flags.getOrDefault(flag, 0) + 1);
-            }
+            flags.addAll(flagsInVariant);
+            flagsInVariant.clear();
         }
 
-        assertTrue(flags.containsKey("basic"));
-        assertTrue(flags.containsKey("CCDS"));
-        assertTrue(flags.containsKey("mRNA_start_NF"));
-        assertTrue(flags.containsKey("mRNA_end_NF"));
-        assertTrue(flags.containsKey("cds_start_NF"));
-        assertTrue(flags.containsKey("cds_end_NF"));
+        System.out.println(flags);
+        assertTrue(flags.contains("basic"));
+        assertTrue(flags.contains("CCDS"));
+        assertTrue(flags.contains("mRNA_start_NF"));
+        assertTrue(flags.contains("mRNA_end_NF"));
+        assertTrue(flags.contains("cds_start_NF"));
+        assertTrue(flags.contains("cds_end_NF"));
 
-        for (Map.Entry<String, Integer> entry : flags.entrySet()) {
-            System.out.println(entry);
-            query = new Query(ANNOT_TRANSCRIPTION_FLAGS.key(), entry.getKey());
+        for (String flag : flags.elementSet()) {
+            System.out.println(flag + ", " + flags.count(flag));
+            query = new Query(ANNOT_TRANSCRIPTION_FLAGS.key(), flag);
             queryResult = dbAdaptor.get(query, null);
-            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+            assertEquals(flags.count(flag), queryResult.getNumResults());
         }
 
     }
@@ -491,16 +498,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             Set<Double> polyphenInVariant = new HashSet<>();
             Set<String> siftDescInVariant = new HashSet<>();
             Set<String> polyphenDescInVariant = new HashSet<>();
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                if (consequenceType.getProteinVariantAnnotation() != null) {
-                    if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
-                        for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
-                            if (score.getSource().equals("sift")) {
-                                siftInVariant.add(score.getScore());
-                                siftDescInVariant.add(score.getDescription());
-                            } else if (score.getSource().equals("polyphen")) {
-                                polyphenInVariant.add(score.getScore());
-                                polyphenDescInVariant.add(score.getDescription());
+            if (variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                    if (consequenceType.getProteinVariantAnnotation() != null) {
+                        if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                                if (score.getSource().equals("sift")) {
+                                    siftInVariant.add(score.getScore());
+                                    siftDescInVariant.add(score.getDescription());
+                                } else if (score.getSource().equals("polyphen")) {
+                                    polyphenInVariant.add(score.getScore());
+                                    polyphenDescInVariant.add(score.getDescription());
+                                }
                             }
                         }
                     }
@@ -561,21 +570,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_functionalScore() {
         //FUNCTIONAL_SCORE
 
-        Query query;
-        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled>5");
         assertTrue(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0) > 0);
         System.out.println("countFunctionalScore(\"cadd_scaled\", allVariants, s -> s > 5.0) = " + countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0));
 
-        assertEquals(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0),
-                countFunctionalScore("cadd_scaled", dbAdaptor.get(query, null), s -> s > 5.0));
+        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled>5"), s -> s > 5.0, "cadd_scaled");
 
-        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw<0.5");
-        assertEquals(countFunctionalScore("cadd_raw", allVariants, s -> s < 0.5),
-                countFunctionalScore("cadd_raw", dbAdaptor.get(query, null), s -> s < 0.5));
+        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw<0.5"), s1 -> s1 < 0.5, "cadd_raw");
 
-        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5");
-        assertEquals(countFunctionalScore("cadd_scaled", allVariants, s -> s <= 0.5),
-                countFunctionalScore("cadd_scaled", dbAdaptor.get(query, null), s -> s <= 0.5));
+        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5"), s -> s <= 0.5, "cadd_scaled");
+    }
+
+    public void checkFunctionalScore(Query query, Predicate<Double> doublePredicate, String source) {
+        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        long expected = countFunctionalScore(source, allVariants, doublePredicate);
+        long actual = countFunctionalScore(source, result, doublePredicate);
+        assertTrue(expected > 0);
+        assertEquals(expected, result.getNumResults());
+        assertEquals(expected, actual);
     }
 
     private long countFunctionalScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {

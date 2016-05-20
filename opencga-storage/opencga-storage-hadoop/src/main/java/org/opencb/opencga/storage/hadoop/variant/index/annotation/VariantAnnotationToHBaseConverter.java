@@ -50,6 +50,8 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         Set<String> biotype = new HashSet<>();
         Set<Double> polyphen = new HashSet<>();
         Set<Double> sift = new HashSet<>();
+        Set<String> polyphenDesc = new HashSet<>();
+        Set<String> siftDesc = new HashSet<>();
         Set<String> geneTraitName = new HashSet<>();
         Set<String> geneTraitId = new HashSet<>();
         Set<String> drugs = new HashSet<>();
@@ -70,12 +72,16 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
                     for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                         if (score.getSource().equalsIgnoreCase("sift")) {
                             addNotNull(sift, score.getScore());
+                            addNotNull(siftDesc, score.getDescription());
                         } else if (score.getSource().equalsIgnoreCase("polyphen")) {
                             addNotNull(polyphen, score.getScore());
+                            addNotNull(polyphenDesc, score.getDescription());
                         }
                     }
                 }
-                proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+                if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
+                    proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+                }
             }
         }
 
@@ -97,7 +103,9 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         addVarcharArray(put, BIOTYPE.bytes(), biotype);
         addIntegerArray(put, SO.bytes(), so);
         addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
+        addArray(put, POLYPHEN_DESC.bytes(), polyphenDesc, (PArrayDataType) POLYPHEN_DESC.getPDataType());
         addArray(put, SIFT.bytes(), sift, (PArrayDataType) SIFT.getPDataType());
+        addArray(put, SIFT_DESC.bytes(), siftDesc, (PArrayDataType) SIFT_DESC.getPDataType());
         addVarcharArray(put, TRANSCRIPTION_FLAGS.bytes(), flags);
         addVarcharArray(put, GENE_TRAITS_ID.bytes(), geneTraitId);
         addVarcharArray(put, PROTEIN_KEYWORDS.bytes(), proteinKeywords);

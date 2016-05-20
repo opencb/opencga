@@ -87,9 +87,9 @@ public class VariantPhoenixHelper {
 
         //Protein substitution scores
         POLYPHEN("POLYPHEN", PFloatArray.INSTANCE),
-//        POLYPHEN_DESC("POLYPHEN_DESC", PVarcharArray.INSTANCE),
+        POLYPHEN_DESC("POLYPHEN_DESC", PVarcharArray.INSTANCE),
         SIFT("SIFT", PFloatArray.INSTANCE),
-//        SIFT_DESC("SIFT_DESC", PVarcharArray.INSTANCE),
+        SIFT_DESC("SIFT_DESC", PVarcharArray.INSTANCE),
 
         //Conservation Scores
         PHASTCONS("PHASTCONS", PFloat.INSTANCE),
@@ -189,7 +189,6 @@ public class VariantPhoenixHelper {
 
     public static String buildCreateView(String tableName, String columnFamily) {
         StringBuilder sb = new StringBuilder().append("CREATE VIEW IF NOT EXISTS \"").append(tableName).append("\" ").append("(");
-        //.append(CHROMOSOME).append(" ").append(CHROMOSOME.sqlType()).append(" NOT NULL, ").append(POSITION).append(" ").append(POSITION.sqlType()).append(" NOT NULL, ").append(REFERENCE).append(" ").append(REFERENCE.sqlType()).append(" , ").append(ALTERNATE).append(" ").append(ALTERNATE.sqlType()).append(" , ").append(SO).append(" ").append(SO.sqlType()).append(" , ").append(GENES).append(" ").append(GENES.sqlType()).append(" , ").append(BIOTYPE).append(" ").append(BIOTYPE.sqlType()).append(" , ").append(TRANSCRIPTION_FLAGS).append(" ").append(TRANSCRIPTION_FLAGS.sqlType()).append(" , ").append(GENE_TRAITS_NAME).append(" ").append(GENE_TRAITS_NAME.sqlType()).append(" , ").append(GENE_TRAITS_ID).append(" ").append(GENE_TRAITS_ID.sqlType()).append(" , ").append(DRUG).append(" ").append(DRUG.sqlType()).append(" , ").append(POLYPHEN).append(" ").append(POLYPHEN.sqlType()).append(" , ").append(SIFT).append(" ").append(SIFT.sqlType()).append(" , ").append(PHYLOP).append(" ").append(PHYLOP.sqlType()).append(" , ").append(PHASTCONS).append(" ").append(PHASTCONS.sqlType()).append(" , ").append(FULL_ANNOTATION).append(" ").append(FULL_ANNOTATION.sqlType())
         for (VariantColumn variantColumn : VariantColumn.values()) {
             switch (variantColumn) {
                 case CHROMOSOME:
@@ -202,7 +201,13 @@ public class VariantPhoenixHelper {
             }
         }
 
-        return sb.append(" ").append("CONSTRAINT PK PRIMARY KEY (").append(CHROMOSOME).append(", ").append(POSITION).append(", ").append(REFERENCE).append(", ").append(ALTERNATE).append(") ").append(") ").append("DEFAULT_COLUMN_FAMILY='").append(columnFamily).append("'").toString();
+        return sb.append(" ")
+                .append("CONSTRAINT PK PRIMARY KEY (")
+                    .append(CHROMOSOME).append(", ")
+                    .append(POSITION).append(", ")
+                    .append(REFERENCE).append(", ")
+                    .append(ALTERNATE).append(") ").append(") ")
+                .append("DEFAULT_COLUMN_FAMILY='").append(columnFamily).append("'").toString();
     }
 
     public String buildAlterViewAddColumn(String tableName, String column, String type) {

@@ -256,14 +256,16 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     long startTime = System.currentTimeMillis();
 //                    Configuration conf = getHadoopConfiguration(options);
                     FileSystem fs = FileSystem.get(conf);
-                    org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(output.resolve(Paths.get(input.getPath()).getFileName().toString()));
+                    org.apache.hadoop.fs.Path variantsOutputPath = new org.apache.hadoop.fs.Path(
+                            output.resolve(Paths.get(input.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(input).toUri(), variantsOutputPath.toUri());
                     fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(input), variantsOutputPath);
                     logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
 
                     startTime = System.currentTimeMillis();
                     URI fileInput = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
-                    org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
+                    org.apache.hadoop.fs.Path fileOutputPath = new org.apache.hadoop.fs.Path(
+                            output.resolve(Paths.get(fileInput.getPath()).getFileName().toString()));
                     logger.info("Copy from {} to {}", new org.apache.hadoop.fs.Path(fileInput).toUri(), fileOutputPath.toUri());
                     fs.copyFromLocalFile(false, new org.apache.hadoop.fs.Path(fileInput), fileOutputPath);
                     logger.info("Copied to hdfs in {}s", (System.currentTimeMillis() - startTime) / 1000.0);
@@ -276,12 +278,14 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         }
 
         try {
-            ArchiveDriver.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(), dbAdaptor.getConnection());
+            ArchiveDriver.createArchiveTableIfNeeded(dbAdaptor.getGenomeHelper(), archiveTableCredentials.getTable(),
+                    dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + archiveTableCredentials.getTable(), e);
         }
         try {
-            VariantTableDriver.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(), dbAdaptor.getConnection());
+            VariantTableDriver.createVariantTableIfNeeded(dbAdaptor.getGenomeHelper(), variantsTableCredentials.getTable(),
+                    dbAdaptor.getConnection());
         } catch (IOException e) {
             throw new StorageHadoopException("Issue creating table " + variantsTableCredentials.getTable(), e);
         }

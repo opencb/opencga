@@ -26,7 +26,6 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.nio.file.Path;
 
 /**
@@ -201,7 +200,7 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
      * @return Read VariantSource
      * @throws StorageManagerException if the format is not valid or there is an error reading
      *
-     * @deprecated use {@link VariantReaderUtils#readVariantSource(URI)}
+     * @deprecated use {@link VariantReaderUtils#readVariantSource(java.net.URI)}
      */
     @Deprecated
     public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
