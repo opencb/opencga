@@ -11,11 +11,9 @@ Opencga <- setClass("Opencga", slots = c(baseurl="character",
 Opencga <- function(baseurl, userID, sessionID){
   new("Opencga", baseurl=baseurl, userID=userID, sessionID=sessionID)
 }
-#' @title A method to query user data
-#' @aliases OpencgaUser
-#' @description This method allow the user to create update and see user data
-#'
-#' @export
+
+
+
 setMethod("show",signature = "Opencga",definition = function(object){
   cat("|An object of class ", class(object), "\n", sep = "")
   cat("|This object is required by all Opencga Methods")
@@ -24,6 +22,10 @@ setMethod("show",signature = "Opencga",definition = function(object){
 setGeneric("OpencgaUser", function(object, category, id, action, params=NULL)
   standardGeneric("OpencgaUser"))
 #' A method to query user data
+#' @title A method to query user data
+#' @aliases OpencgaUser
+#' @description This method allow the user to create, update, and explore user
+#'  data and metadata
 #' @export
 setMethod("OpencgaUser", "Opencga", definition = function(object,
           id, action, params=NULL){
@@ -36,6 +38,11 @@ setMethod("OpencgaUser", "Opencga", definition = function(object,
 ###
 setGeneric("OpencgaStudy", function(object, id, action, params=NULL)
   standardGeneric("OpencgaStudy"))
+#' A method to query Studies
+#' @title A method to query Opencga studies
+#' @aliases OpencgaStudy
+#' @description This method allow the user to create, update and explore
+#' study data and metadta
 #' @export
 setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
                                                           action, params){
@@ -44,8 +51,14 @@ setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
                        params=NULL)
   return(data)
 })
+
 setGeneric("OpencgaProjects", function(object, id, action, params, ...)
   standardGeneric("OpencgaProjects"))
+#' A method to query Projects data
+#' @title A method to query Opencga Projects
+#' @aliases OpencgaStudy
+#' @description This method allow the user to create, update and explore
+#' projects data and metadta
 #' @export
 setMethod("OpencgaProjects", "Opencga",    definition = function(object,
           id, action, params, ...){
@@ -56,6 +69,10 @@ setMethod("OpencgaProjects", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaFiles", function(object, id, action, params, ...)
   standardGeneric("OpencgaFiles"))
+#' @title A method to query Opencga Files
+#' @aliases OpencgaFiles
+#' @description This method allow the user to create, update and explore
+#' files data and metadta
 #' @export
 setMethod("OpencgaFiles", "Opencga",    definition = function(object,
           id, action, params, ...){
@@ -66,6 +83,10 @@ setMethod("OpencgaFiles", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaSamples", function(object, id, action, params, ...)
   standardGeneric("OpencgaSamples"))
+#' @title A method to query Opencga Samples
+#' @aliases OpencgaSamples
+#' @description This method allow the user to create, update and explore
+#' Samples data and metadta
 #' @export
 setMethod("OpencgaSamples", "Opencga",    definition = function(object,
          id, action, params, ...){
@@ -76,6 +97,10 @@ setMethod("OpencgaSamples", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaIndividuals", function(object, id, action, params, ...)
   standardGeneric("OpencgaIndividuals"))
+#' @title A method to query Opencga Individuals
+#' @aliases OpencgaIndividuals
+#' @description This method allow the user to create, update and explore
+#' Individuals data and metadta
 #' @export
 setMethod("OpencgaIndividuals", "Opencga",    definition = function(object,
          id, action, params, ...){
@@ -86,6 +111,10 @@ setMethod("OpencgaIndividuals", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaJobs", function(object, id, action, params, ...)
   standardGeneric("OpencgaJobs"))
+#' @title A method to query Opencga Jobs
+#' @aliases OpencgaJobs
+#' @description This method allow the user to create, update and explore
+#' jobs data and metadta
 #' @export
 setMethod("OpencgaJobs", "Opencga",    definition = function(object,
           id, action, params, ...){
@@ -96,6 +125,10 @@ setMethod("OpencgaJobs", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaVariables", function(object, id, action, params, ...)
   standardGeneric("OpencgaVariables"))
+#' @title A method to query Opencga Variables
+#' @aliases OpencgaVariables
+#' @description This method allow the user to create, update and explore
+#' vaiables data and metadta
 #' @export
 setMethod("OpencgaVariables", "Opencga",    definition = function(object,
           id, action, params, ...){
@@ -106,6 +139,10 @@ setMethod("OpencgaVariables", "Opencga",    definition = function(object,
 })
 setGeneric("OpencgaCohorts", function(object, id, action, params, ...)
   standardGeneric("OpencgaCohorts"))
+#' @title A method to query Opencga cohorts
+#' @aliases OpencgaCohorts
+#' @description This method allow the user to create, update and explore
+#' cohorts data and metadta
 #' @export
 setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
           id, action, params, ...){
@@ -114,6 +151,9 @@ setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
                         params=NULL)
   return(data)
 })
+#' @title A class to store Opencga parameters for filtering queries
+#' @aliases OpencgaParam
+#' @param chromosome the name of the chromosome to be returned
 #' @export
 OpencgaParam <- setClass("OpencgaParam", slots = c(region="character",
                           chromosome="character", type="character",
