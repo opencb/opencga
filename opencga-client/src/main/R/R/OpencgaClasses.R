@@ -117,3 +117,42 @@ setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
                         params=NULL)
   return(data)
 })
+
+OpencgaParam <- setClass("OpencgaParam", slots = c(region="character",
+                          chromosome="character", type="character",
+                          gene="character", maf="character", mgf="character",
+                          genotype="character", polyphen="character",
+                          sift="character", conservation="character",
+                          reference="character", alternate="character",
+                          so="character", biotype="character", skip="numeric",
+                          limit="numeric", files="character"),
+                          prototype = prototype(region=character(),
+                          chromosome=character(), type=character(),
+                          gene=character(), maf=character(),
+                          mgf=character(), genotype=character(),
+                          polyphen=character(), sift=character(),
+                          conservation=character(), reference=character(),
+                          alternate=character(), so=character(),
+                          so=character(), biotype=character(),
+                          skip=numeric(), limit=numeric(),
+                          files=character()))
+
+
+OpencgaParam <- function(region=character(), chromosome=character(),
+                         type=character(), gene=character(), maf=character(),
+                         mgf=character(), genotype=character(),
+                         polyphen=character(), sift=character(),
+                         conservation=character(), reference=character(),
+                         alternate=character(), so=character(),
+                         biotype=character(), skip=numeric(), limit=numeric(),
+                         files=character())
+{
+
+  new("OpencgaParam", region=region, chromosome=chromosome, type=type,
+      gene=gene, maf=maf, mgf=mgf, genotype=genotype, polyphen=polyphen,
+      sift=sift, conservation=conservation, reference=reference,
+      alternate=alternate, so=so, biotype=biotype, skip=0, limit=1000,
+      files=files)
+}
+
+

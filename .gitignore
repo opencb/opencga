@@ -68,3 +68,4 @@ opencga-server/install.sh
 git.properties
 *.RData
 *.Rproj
+.Rproj.user

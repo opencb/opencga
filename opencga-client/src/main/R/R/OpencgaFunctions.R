@@ -50,16 +50,18 @@ excuteOpencga <- function(object, category, id, action, params){
   id <- as.character(id)
   action <- paste0("/", action)
   category <- paste0("/", category, "/")
-  url <- paste0(baseurl, category, id, action, "?", sessionID, params=NULL)
+  url <- createURL(baseurl, category, id, action,  sessionID, params)
   data <- parseJ(url)
   return(list(data=data, url=url) )
 }
 
 
-createURL <- function(base, category, id, action,params){
-  paste0(baseurl, category, id, action, "?", sessionID, params=NULL)
+createURL <- function(baseurl, category, id, action, sessionID, params){
+  params <- paste0("&merge=true")
+  url <- paste0(baseurl, category, id, action, "?", sessionID, params)
   return(url)
 }
+
 parseJ <- function(url){
   require(jsonlite)
   res <- fromJSON(url)
