@@ -21,10 +21,11 @@ package org.opencb.opencga.core.config;
  */
 public class GrpcServerConfiguration extends ServerConfiguration {
 
+    public GrpcServerConfiguration() {
+    }
+
     public GrpcServerConfiguration(int port) {
         super(port);
     }
-
-
 
 }

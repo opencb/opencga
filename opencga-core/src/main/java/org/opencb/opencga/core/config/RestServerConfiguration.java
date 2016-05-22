@@ -24,6 +24,10 @@ public class RestServerConfiguration extends ServerConfiguration {
     private int defaultLimit;
     private int maxLimit;
 
+
+    public RestServerConfiguration() {
+    }
+
     public RestServerConfiguration(int port) {
         this(port, 2000, 5000);
     }

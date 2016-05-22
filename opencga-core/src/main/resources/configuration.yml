@@ -2,10 +2,10 @@
 logLevel: null
 logFile: null
 rest:
-  port: 9090
+  port: ${OPENCGA.SERVER.REST.PORT}
   logFile: null
   defaultLimit: 2000
   maxLimit: 5000
 grpc:
-  port: 9091
+  port: ${OPENCGA.SERVER.GRPC.PORT}
   logFile: null

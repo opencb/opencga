@@ -21,8 +21,11 @@ package org.opencb.opencga.core.config;
  */
 public abstract class ServerConfiguration {
 
-    private int port;
-    private String logFile;
+    protected int port;
+    protected String logFile;
+
+    public ServerConfiguration() {
+    }
 
     public ServerConfiguration(int port) {
         this.port = port;
