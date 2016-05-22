@@ -26,6 +26,11 @@
 
     <display-name>OpenCGA</display-name>
 
+    <context-param>
+        <param-name>OPENCGA_HOME</param-name>
+        <param-value>${OPENCGA.INSTALLATION.DIR}</param-value>
+    </context-param>
+
     <servlet>
         <servlet-name>OpenCGA</servlet-name>
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
