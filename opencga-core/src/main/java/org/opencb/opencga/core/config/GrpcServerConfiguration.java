@@ -16,30 +16,15 @@
 
 package org.opencb.opencga.core.config;
 
-import org.junit.Test;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-
-import static org.junit.Assert.*;
-
 /**
- * Created by imedina on 25/04/16.
+ * Created by imedina on 22/05/16.
  */
-public class ConfigurationTest {
+public class GrpcServerConfiguration extends ServerConfiguration {
 
-    @Test
-    public void testDefault() {
-        Configuration configuration = new Configuration();
-
-        configuration.setRest(new RestServerConfiguration(9090));
-        configuration.setGrpc(new GrpcServerConfiguration(9091));
-
-        try {
-            configuration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
+    public GrpcServerConfiguration(int port) {
+        super(port);
     }
+
+
+
 }

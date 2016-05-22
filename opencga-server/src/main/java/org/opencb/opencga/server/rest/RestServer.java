@@ -64,7 +64,7 @@ public class RestServer extends AbstractStorageServer {
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
         if (configuration != null) {
-            this.port = configuration.getServer().getRest();
+            this.port = configuration.getRest().getPort();
         }
     }
 
