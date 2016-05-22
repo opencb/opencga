@@ -54,6 +54,7 @@ public class AdminCliOptionsParser {
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
         JCommander catalogSubCommands = jCommander.getCommands().get("catalog");
+        catalogSubCommands.addCommand("demo", catalogCommandOptions.demoCatalogCommandOptions);
         catalogSubCommands.addCommand("install", catalogCommandOptions.installCatalogCommandOptions);
         catalogSubCommands.addCommand("delete", catalogCommandOptions.deleteCatalogCommandOptions);
         catalogSubCommands.addCommand("index", catalogCommandOptions.indexCatalogCommandOptions);
@@ -162,6 +163,7 @@ public class AdminCliOptionsParser {
     @Parameters(commandNames = {"catalog"}, commandDescription = "Implements different tools interact with Catalog database")
     public class CatalogCommandOptions extends CommandOptions {
 
+        DemoCatalogCommandOptions demoCatalogCommandOptions;
         InstallCatalogCommandOptions installCatalogCommandOptions;
         DeleteCatalogCommandOptions deleteCatalogCommandOptions;
         IndexCatalogCommandOptions indexCatalogCommandOptions;
@@ -173,6 +175,7 @@ public class AdminCliOptionsParser {
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public CatalogCommandOptions() {
+            this.demoCatalogCommandOptions = new DemoCatalogCommandOptions();
             this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
             this.deleteCatalogCommandOptions = new DeleteCatalogCommandOptions();
             this.indexCatalogCommandOptions = new IndexCatalogCommandOptions();
@@ -283,6 +286,20 @@ public class AdminCliOptionsParser {
     /*
      *  CATALOG SUB-COMMANDS
      */
+
+    @Parameters(commandNames = {"demo"}, commandDescription = "Install and populate a catalog database with demonstration purposes.")
+    public class DemoCatalogCommandOptions {
+
+//        @ParametersDelegate
+//        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--database-name"}, description = "Database name for the catalog metadata. If not present, it will be set to opencga_catalog_demo")
+        public String database;
+
+        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+        public boolean force;
+
+    }
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install Catalog database and collections together with the indexes")
     public class InstallCatalogCommandOptions extends CatalogDatabaseCommandOptions {
