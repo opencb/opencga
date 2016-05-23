@@ -1101,9 +1101,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 } else {
                     defaultStudyConfiguration = null;
                 }
-                String studyIdsCsv = studyIds.stream().map(Object::toString).collect(Collectors.joining(","));
-                this.addQueryIntegerFilter(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyIdsCsv, studyBuilder,
-                        QueryOperation.AND);
+                if (!studyIds.isEmpty()) {
+                    String studyIdsCsv = studyIds.stream().map(Object::toString).collect(Collectors.joining(","));
+                    this.addQueryIntegerFilter(DocumentToStudyVariantEntryConverter.STUDYID_FIELD, studyIdsCsv, studyBuilder,
+                            QueryOperation.AND);
+                }
 
             } else {
                 List<String> studyNames = studyConfigurationManager.getStudyNames(null);
@@ -2232,21 +2234,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             value = String.valueOf(objectValue);
         }
         return value;
-    }
-
-    /**
-     * Splits the string with the specified operation.
-     */
-    private List<String> splitValue(String value, QueryOperation operation) {
-        List<String> list;
-        if (operation == null) {
-            list = Collections.singletonList(value);
-        } else if (operation == QueryOperation.AND) {
-            list = Arrays.asList(value.split(AND));
-        } else {
-            list = Arrays.asList(value.split(OR));
-        }
-        return list;
     }
 
     void createIndexes(QueryOptions options) {

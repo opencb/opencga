@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.QueryOperation;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -63,7 +63,7 @@ public class VariantSqlQueryParser {
 
         Set<Column> dynamicColumns = new HashSet<>();
         List<String> regionFilters = getRegionFilters(query);
-        List<String> filters = getOtherFilters(query, dynamicColumns);
+        List<String> filters = getOtherFilters(query, options, dynamicColumns);
 
 
         appendProjectedColumns(sb, query, options);
@@ -120,7 +120,7 @@ public class VariantSqlQueryParser {
 
             for (Integer studyId : studyIds) {
                 for (String studyColumn : STUDY_COLUMNS) {
-                    sb.append(",\"").append(VariantTableStudyRow.buildColumnKey(studyId, studyColumn)).append('"');
+                    sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
                 }
             }
 
@@ -196,9 +196,7 @@ public class VariantSqlQueryParser {
 
         addSimpleQueryFilter(query, CHROMOSOME, VariantColumn.CHROMOSOME, regionFilters);
 
-        if (isValidParam(query, ID)) {
-            logger.warn("Unsupported filter " +  ID);
-        }
+        unsupportedFilter(query, ID);
 
         if (isValidParam(query, GENE)) {
             // TODO: Ask cellbase for gene region?
@@ -253,15 +251,16 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#MISSING_ALLELES}
      * {@link VariantQueryParams#MISSING_GENOTYPES}
      *
-     * @param query Query to parse
+     * @param query     Query to parse
+     * @param options   Options
      * @param dynamicColumns Initialized empty set to be filled with dynamic columns required by the queries
      * @return List of sql filters
      */
-    protected List<String> getOtherFilters(Query query, final Set<Column> dynamicColumns) {
+    protected List<String> getOtherFilters(Query query, QueryOptions options, final Set<Column> dynamicColumns) {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        addVariantFilters(query, filters);
+        addVariantFilters(query, options, filters);
 
         // Annotation filters:
         addAnnotFilters(query, dynamicColumns, filters);
@@ -272,35 +271,55 @@ public class VariantSqlQueryParser {
         return filters;
     }
 
-    protected void addVariantFilters(Query query, List<String> filters) {
+    protected void addVariantFilters(Query query, QueryOptions options, List<String> filters) {
         addSimpleQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
         addSimpleQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
 
-        if (isValidParam(query, TYPE)) {
-            logger.warn("Unsupported filter " +  TYPE);
-        }
+        unsupportedFilter(query, TYPE);
 
         final StudyConfiguration defaultStudyConfiguration;
         if (isValidParam(query, STUDIES)) {
-            List<Integer> studyIds = utils.getStudyIds(query.getAsList(STUDIES.key(), ",|;"), null);
+            String value = query.getString(STUDIES.key());
+            QueryOperation operation = checkOperator(value);
+            List<String> values = splitValue(value, operation);
+            StringBuilder sb = new StringBuilder();
+            Iterator<String> iterator = values.iterator();
+            while (iterator.hasNext()) {
+                String study = iterator.next();
+                Integer studyId = utils.getStudyId(study, options, false);
+                if (study.startsWith("!")) {
+                    sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NULL ");
+                } else {
+                    sb.append("\"").append(buildColumnKey(studyId, VariantTableStudyRow.HOM_REF)).append("\" IS NOT NULL ");
+                }
+                if (iterator.hasNext()) {
+                    if (operation == null || operation.equals(QueryOperation.AND)) {
+                        sb.append(" AND ");
+                    } else {
+                        sb.append(" OR ");
+                    }
+                }
+                filters.add(sb.toString());
+            }
+            List<Integer> studyIds = utils.getStudyIds(values, options);
             if (studyIds.size() == 1) {
-                defaultStudyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyIds.get(0), null).first();
+                defaultStudyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyIds.get(0), options).first();
             } else {
                 defaultStudyConfiguration = null;
             }
-            logger.warn("Unsupported filter " +  STUDIES);
         } else {
-            defaultStudyConfiguration = null;
+            List<Integer> studyIds = utils.getStudyConfigurationManager().getStudyIds(options);
+            if (studyIds != null && studyIds.size() == 1) {
+                defaultStudyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyIds.get(0), options).first();
+            } else {
+                defaultStudyConfiguration = null;
+            }
         }
 
-        if (isValidParam(query, FILES)) {
-            logger.warn("Unsupported filter " +  FILES);
-        }
+        unsupportedFilter(query, FILES);
 
-        if (isValidParam(query, COHORTS)) {
-            logger.warn("Unsupported filter " +  COHORTS);
-        }
+        unsupportedFilter(query, COHORTS);
 
         //
         //
@@ -313,6 +332,10 @@ public class VariantSqlQueryParser {
                 int studyId;
                 int sampleId;
                 if (split.length == 2) {
+                    if (defaultStudyConfiguration == null) {
+                        List<String> studyNames = utils.getStudyConfigurationManager().getStudyNames(null);
+                        throw VariantQueryException.missingStudyForSample(split[0], studyNames);
+                    }
                     studyId = defaultStudyConfiguration.getStudyId();
                     sampleId = utils.getSampleId(split[0], defaultStudyConfiguration);
                     genotypes = Arrays.asList(split[1].split(","));
@@ -364,6 +387,12 @@ public class VariantSqlQueryParser {
         }
     }
 
+    private void unsupportedFilter(Query query, VariantQueryParams param) {
+        if (isValidParam(query, param)) {
+            logger.warn("Unsupported filter " + param);
+        }
+    }
+
     protected void addAnnotFilters(Query query, Set<Column> dynamicColumns, List<String> filters) {
         if (isValidParam(query, ANNOTATION_EXISTS)) {
             if (query.getBoolean(ANNOTATION_EXISTS.key())) {
@@ -388,9 +417,7 @@ public class VariantSqlQueryParser {
             return soAccession;
         });
 
-        if (isValidParam(query, ANNOT_XREF)) {
-            logger.warn("Unsupported filter " +  ANNOT_XREF);
-        }
+        unsupportedFilter(query, ANNOT_XREF);
 
         addSimpleQueryFilter(query, ANNOT_BIOTYPE, VariantColumn.BIOTYPE, filters);
 
@@ -427,9 +454,7 @@ public class VariantSqlQueryParser {
             }
         }, filters, null);
 
-        if (isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
-            logger.warn("Unsupported filter " + ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
-        }
+        unsupportedFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
 
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
             Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
@@ -454,28 +479,17 @@ public class VariantSqlQueryParser {
 
         addSimpleQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
-
-        if (isValidParam(query, ANNOT_FUNCTIONAL_SCORE)) {
-            logger.warn("Unsupported filter " +  ANNOT_FUNCTIONAL_SCORE);
-        }
+        unsupportedFilter(query, ANNOT_FUNCTIONAL_SCORE);
     }
 
     protected void addStatsFilters(Query query, List<String> filters) {
-        if (isValidParam(query, STATS_MAF)) {
-            logger.warn("Unsupported filter " +  STATS_MAF);
-        }
+        unsupportedFilter(query, STATS_MAF);
 
-        if (isValidParam(query, STATS_MGF)) {
-            logger.warn("Unsupported filter " +  STATS_MGF);
-        }
+        unsupportedFilter(query, STATS_MGF);
 
-        if (isValidParam(query, MISSING_ALLELES)) {
-            logger.warn("Unsupported filter " +  MISSING_ALLELES);
-        }
+        unsupportedFilter(query, MISSING_ALLELES);
 
-        if (isValidParam(query, MISSING_GENOTYPES)) {
-            logger.warn("Unsupported filter " +  MISSING_GENOTYPES);
-        }
+        unsupportedFilter(query, MISSING_GENOTYPES);
     }
 
     /**

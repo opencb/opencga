@@ -438,7 +438,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             Set<String> keywordsInVariant = new HashSet<>();
             if (variant.getAnnotation().getConsequenceTypes() != null) {
                 for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                    if (consequenceType.getProteinVariantAnnotation() != null) {
+                    if (consequenceType.getProteinVariantAnnotation() != null && consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
                         keywordsInVariant.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
                     }
                 }
@@ -689,6 +689,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
+    public void testGetAllVariants_studies() {
+
+        Query query = new Query(STUDIES.key(), studyConfiguration.getStudyName());
+        long numResults = dbAdaptor.count(query).first();
+        assertEquals(allVariants.getNumResults(), numResults);
+
+        query = new Query(STUDIES.key(), studyConfiguration.getStudyId());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(allVariants.getNumResults(), numResults);
+
+        query = new Query(STUDIES.key(), "!" + studyConfiguration.getStudyId());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(0, numResults);
+
+        query = new Query(STUDIES.key(), "!" + studyConfiguration.getStudyName());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(0, numResults);
+
+    }
+
+    @Test
     public void testGetAllVariants_files() {
 
         Query query = new Query(FILES.key(), 6);
@@ -781,8 +802,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
         )));
 
-        query = new Query(GENOTYPE.key(), "NA19600:1|1").append(
-                STUDIES.key(), STUDY_NAME);
+        query = new Query(GENOTYPE.key(), "NA19600:1|1")
+                .append(STUDIES.key(), STUDY_NAME);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
@@ -807,12 +828,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
         )));
 
-        //This works, but is incorrect. Better use "./."
-        query = new Query(GENOTYPE.key(), na19600 + ":-1/-1");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(9, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
-        )));
+//        //This works, but is incorrect. Better use "./."
+//        query = new Query(GENOTYPE.key(), na19600 + ":-1/-1");
+//        queryResult = dbAdaptor.get(query, new QueryOptions());
+//        assertEquals(9, queryResult.getNumTotalResults());
+//        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
+//        )));
 
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
