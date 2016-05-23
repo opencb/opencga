@@ -94,3 +94,7 @@ parseJ <- function(url){
   num_results <- res$response$numResults
   return(list(num_results=num_results,data=as.data.frame(res$response$result)))
 }
+getParam <- function(object){
+
+  return(param)
+}
