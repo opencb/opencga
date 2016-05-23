@@ -434,6 +434,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         //ANNOT_PROTEIN_KEYWORDS
         Query query;
         Map<String, Integer> keywords = new HashMap<>();
+        int combinedKeywordsOr = 0;
+        int combinedKeywordsAnd = 0;
+        int combinedKeywordsAndNot = 0;
         for (Variant variant : allVariants.getResult()) {
             Set<String> keywordsInVariant = new HashSet<>();
             if (variant.getAnnotation().getConsequenceTypes() != null) {
@@ -446,7 +449,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             for (String flag : keywordsInVariant) {
                 keywords.put(flag, keywords.getOrDefault(flag, 0) + 1);
             }
+            if (keywordsInVariant.contains("Complete proteome") || keywordsInVariant.contains("Transmembrane helix")) {
+                combinedKeywordsOr++;
+            }
+            if (keywordsInVariant.contains("Complete proteome") && keywordsInVariant.contains("Transmembrane helix")) {
+                combinedKeywordsAnd++;
+            }
+            if (keywordsInVariant.contains("Complete proteome") && !keywordsInVariant.contains("Transmembrane helix")) {
+                combinedKeywordsAndNot++;
+            }
         }
+
+        assertTrue(combinedKeywordsOr > 0);
+        assertTrue(combinedKeywordsAnd > 0);
+        assertTrue(combinedKeywordsAndNot > 0);
+
+        query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome,Transmembrane helix");
+        assertEquals(combinedKeywordsOr, dbAdaptor.count(query).first().intValue());
+        query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome;Transmembrane helix");
+        assertEquals(combinedKeywordsAnd, dbAdaptor.count(query).first().intValue());
+        query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome;!Transmembrane helix");
+        assertEquals(combinedKeywordsAndNot, dbAdaptor.count(query).first().intValue());
 
         for (Map.Entry<String, Integer> entry : keywords.entrySet()) {
             System.out.println(entry);

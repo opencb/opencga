@@ -536,32 +536,43 @@ public class VariantSqlQueryParser {
                 Object parsedValue;
                 String[] keyOpValue = splitOperator(rawValue);
                 Column column = columnParser.apply(keyOpValue, rawValue);
+
+                final String negated;
+                if (rawValue.startsWith("!")) {
+                    rawValue = rawValue.substring(1);
+                    negated = "NOT ";
+                } else {
+                    negated = "";
+                }
+
                 switch (column.sqlType()) {
                     case "VARCHAR":
                         parsedValue = parser == null ? rawValue : parser.apply(rawValue);
-                        subFilters.add("\"" + column + "\" = '" + parsedValue + "'");
+                        subFilters.add(negated + "\"" + column + "\" = '" + parsedValue + "'");
                         break;
                     case "VARCHAR ARRAY":
                         parsedValue = parser == null ? rawValue : parser.apply(rawValue);
-                        subFilters.add("'" + parsedValue + "' = ANY(\"" + column + "\")");
+                        subFilters.add(negated + "'" + parsedValue + "' = ANY(\"" + column + "\")");
                         break;
                     case "INTEGER ARRAY":
                         parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(\"" + column + "\")");
+                        String operator = flipOperator(parseNumericOperator(keyOpValue[1]));
+                        subFilters.add(negated + parsedValue + " " + operator + " ANY(\"" + column + "\")");
                         break;
                     case "INTEGER":
                         parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add("\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        subFilters.add(negated + "\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
                         break;
                     case "FLOAT ARRAY":
                     case "DOUBLE ARRAY":
                         parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(parsedValue + " " + flipOperator(parseNumericOperator(keyOpValue[1])) + " ANY(\"" + column + "\")");
+                        String flipOperator = flipOperator(parseNumericOperator(keyOpValue[1]));
+                        subFilters.add(negated + parsedValue + " " + flipOperator + " ANY(\"" + column + "\")");
                         break;
                     case "FLOAT":
                     case "DOUBLE":
                         parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add("\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        subFilters.add(negated + "\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
                         break;
                     default:
                         logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);
