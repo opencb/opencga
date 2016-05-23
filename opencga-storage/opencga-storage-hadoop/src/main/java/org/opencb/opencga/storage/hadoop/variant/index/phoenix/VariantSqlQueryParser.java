@@ -2,7 +2,6 @@ package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.phoenix.schema.types.PFloat;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
@@ -443,27 +442,19 @@ public class VariantSqlQueryParser {
             }
         }, filters, null);
 
-        addQueryFilter(query, ANNOT_CONSERVATION, (keyOpValue, rawValue) -> {
-            String upperCaseValue = keyOpValue[0];
-            if (VariantColumn.PHASTCONS.name().equalsIgnoreCase(upperCaseValue)) {
-                return VariantColumn.PHASTCONS;
-            } else if (VariantColumn.PHYLOP.name().equalsIgnoreCase(upperCaseValue)) {
-                return VariantColumn.PHYLOP;
-            } else {
-                throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue, "Unknown conservation value.");
-            }
-        }, filters, null);
+        addQueryFilter(query, ANNOT_CONSERVATION,
+                (keyOpValue, rawValue) -> VariantPhoenixHelper.getConservationScoreColumn(keyOpValue[0], rawValue, true), filters, null);
 
         unsupportedFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
 
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
-            Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
+            Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(keyOpValue[0]);
             dynamicColumns.add(column);
             return column;
         }, filters, null);
 
         addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY, (keyOpValue, s) -> {
-            Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
+            Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(keyOpValue[0]);
             dynamicColumns.add(column);
             return column;
         }, filters, s -> 1 - Double.parseDouble(s));
@@ -476,10 +467,13 @@ public class VariantSqlQueryParser {
 
         addSimpleQueryFilter(query, ANNOT_PROTEIN_KEYWORDS, VariantColumn.PROTEIN_KEYWORDS, filters);
 
-
         addSimpleQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
-        unsupportedFilter(query, ANNOT_FUNCTIONAL_SCORE);
+        addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> {
+            Column column = VariantPhoenixHelper.getFunctionalScoreColumn(keyOpValue[0]);
+            dynamicColumns.add(column);
+            return column;
+        }, filters, null);
     }
 
     protected void addStatsFilters(Query query, List<String> filters) {

@@ -42,6 +42,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -591,7 +592,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_functionalScore() {
-        //FUNCTIONAL_SCORE
+        //ANNOT_FUNCTIONAL_SCORE
 
         assertTrue(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0) > 0);
         System.out.println("countFunctionalScore(\"cadd_scaled\", allVariants, s -> s > 5.0) = " + countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0));
@@ -603,20 +604,50 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5"), s -> s <= 0.5, "cadd_scaled");
     }
 
+    @Test
+    public void testGetAllVariants_conservationScore() {
+        //ANNOT_CONSERVATION
+
+        assertTrue(countConservationScore("phastCons", allVariants, s -> s > 0.5) > 0);
+        System.out.println("countFunctionalScore(\"phastCons\", allVariants, s -> s > 0.5) = " + countConservationScore("phastCons", allVariants, s -> s > 0.5));
+
+        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phylop>0.5"), s -> s > 0.5, "phylop");
+
+        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phastCons<0.5"), s1 -> s1 < 0.5, "phastCons");
+
+        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5"), s -> s <= 0.5, "gerp");
+    }
+
+    public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
+        checkScore(query, doublePredicate, source, VariantAnnotation::getConservation);
+    }
+
     public void checkFunctionalScore(Query query, Predicate<Double> doublePredicate, String source) {
+        checkScore(query, doublePredicate, source, VariantAnnotation::getFunctionalScore);
+    }
+
+    public void checkScore(Query query, Predicate<Double> doublePredicate, String source, Function<VariantAnnotation, List<Score>> mapper) {
         QueryResult<Variant> result = dbAdaptor.get(query, null);
-        long expected = countFunctionalScore(source, allVariants, doublePredicate);
-        long actual = countFunctionalScore(source, result, doublePredicate);
+        long expected = countScore(source, allVariants, doublePredicate, mapper);
+        long actual = countScore(source, result, doublePredicate, mapper);
         assertTrue(expected > 0);
         assertEquals(expected, result.getNumResults());
         assertEquals(expected, actual);
     }
 
+    private long countConservationScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {
+        return countScore(source, variantQueryResult, doublePredicate, VariantAnnotation::getConservation);
+    }
+
     private long countFunctionalScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {
+        return countScore(source, variantQueryResult, doublePredicate, VariantAnnotation::getFunctionalScore);
+    }
+
+    private long countScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate, Function<VariantAnnotation, List<Score>> mapper) {
         long c = 0;
         for (Variant variant : variantQueryResult.getResult()) {
-            for (Score score : variant.getAnnotation().getFunctionalScore()) {
-                if (score.getSource().equals(source)) {
+            for (Score score : mapper.apply(variant.getAnnotation())) {
+                if (score.getSource().equalsIgnoreCase(source)) {
                     if (doublePredicate.test(score.getScore())) {
                         c++;
                     }

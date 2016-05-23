@@ -3,13 +3,14 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PFloat;
 import org.apache.phoenix.schema.types.PIntegerArray;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
     public VariantAnnotationToHBaseConverter(GenomeHelper genomeHelper) {
         this.genomeHelper = genomeHelper;
     }
+    private final Logger logger = LoggerFactory.getLogger(VariantAnnotationToHBaseConverter.class);
 
     @Override
     public Put convert(VariantAnnotation variantAnnotation) {
@@ -114,31 +116,25 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
-                put.addColumn(genomeHelper.getColumnFamily(), getConservationColumnName(score), PFloat.INSTANCE.toBytes(score.getScore()));
+                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
+                put.addColumn(genomeHelper.getColumnFamily(), column.bytes(), column.getPDataType().toBytes(score.getScore()));
             }
         }
 
         if (variantAnnotation.getPopulationFrequencies() != null) {
-            for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
-                        PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
+            for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
+                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
+                put.addColumn(genomeHelper.getColumnFamily(), column.bytes(),
+                        column.getPDataType().toBytes(pf.getAltAlleleFreq()));
             }
         }
 
+        for (Score score : variantAnnotation.getFunctionalScore()) {
+            VariantPhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
+            put.addColumn(genomeHelper.getColumnFamily(), column.bytes(), column.getPDataType().toBytes(score.getScore()));
+        }
+
         return put;
-    }
-
-    private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
-        return Bytes.toBytes(getPopulationFrequencyColumnName(populationFrequency.getStudy(),
-                populationFrequency.getPopulation()));
-    }
-
-    private String getPopulationFrequencyColumnName(String study, String population) {
-        return (study + ":" + population).toUpperCase();
-    }
-
-    private byte[] getConservationColumnName(Score score) {
-        return Bytes.toBytes(score.getSource().toUpperCase());
     }
 
     public <T> void addNotNull(Collection<T> collection, T value) {
