@@ -34,29 +34,15 @@ public class Configuration {
     private String logLevel;
     private String logFile;
 
-    private ServerConfiguration server;
+    private RestServerConfiguration rest;
+    private GrpcServerConfiguration grpc;
 
     protected static Logger logger = LoggerFactory.getLogger(Configuration.class);
 
     /**
-     * This method attempts to find and load the configuration from installation directory,
-     * if not exists then loads JAR storage-configuration.yml
-     * @throws IOException
+     * This method loads the configuration from the InputStream.
+     * @throws IOException If any IO problem occurs
      */
-    @Deprecated
-    public static Configuration load() throws IOException {
-        String appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
-        Path path = Paths.get(appHome + "/conf/configuration.yml");
-        if (appHome != null && Files.exists(path)) {
-            logger.debug("Loading configuration from '{}'", appHome + "/conf/configuration.yml");
-            return Configuration.load(new FileInputStream(new File(appHome + "/conf/configuration.yml")));
-        } else {
-            logger.debug("Loading configuration from '{}'",
-                    Configuration.class.getClassLoader().getResourceAsStream("configuration.yml").toString());
-            return Configuration.load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
-        }
-    }
-
     public static Configuration load(InputStream configurationInputStream) throws IOException {
         return load(configurationInputStream, "yaml");
     }
@@ -84,7 +70,16 @@ public class Configuration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOututStream, this);
     }
 
-
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Configuration{");
+        sb.append("logLevel='").append(logLevel).append('\'');
+        sb.append(", logFile='").append(logFile).append('\'');
+        sb.append(", rest=").append(rest);
+        sb.append(", grpc=").append(grpc);
+        sb.append('}');
+        return sb.toString();
+    }
 
     public String getLogLevel() {
         return logLevel;
@@ -104,12 +99,21 @@ public class Configuration {
         return this;
     }
 
-    public ServerConfiguration getServer() {
-        return server;
+    public RestServerConfiguration getRest() {
+        return rest;
     }
 
-    public Configuration setServer(ServerConfiguration server) {
-        this.server = server;
+    public Configuration setRest(RestServerConfiguration rest) {
+        this.rest = rest;
+        return this;
+    }
+
+    public GrpcServerConfiguration getGrpc() {
+        return grpc;
+    }
+
+    public Configuration setGrpc(GrpcServerConfiguration grpc) {
+        this.grpc = grpc;
         return this;
     }
 }

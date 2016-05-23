@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.app.StorageMain;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +53,8 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         catalogManagerExternalResource.before();
         opencgaHome = isolateOpenCGA();
+        Files.createDirectory(opencgaHome.resolve("storage"));
+        VariantStorageManagerTestUtils.setRootDir(opencgaHome.resolve("storage"));
 
         AnalysisJobExecutor.localExecutor = new StorageLocalExecutorManager();
     }

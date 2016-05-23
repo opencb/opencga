@@ -38,7 +38,6 @@ public class RestServer extends AbstractStorageServer {
     private boolean exit;
 
     public RestServer() {
-//        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
     }
 
     public RestServer(int port, String defaultStorageEngine) {
@@ -63,8 +62,9 @@ public class RestServer extends AbstractStorageServer {
 
     private void init() {
         logger = LoggerFactory.getLogger(this.getClass());
+
         if (configuration != null) {
-            this.port = configuration.getServer().getRest();
+            this.port = configuration.getRest().getPort();
         }
     }
 
@@ -79,14 +79,12 @@ public class RestServer extends AbstractStorageServer {
         ServletContainer sc = new ServletContainer(resourceConfig);
         ServletHolder sh = new ServletHolder("opencga", sc);
 
-        logger.info("Server in port : {}", port);
-        server = new Server(9090);
+        server = new Server(port);
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
         context.setInitParameter("config-dir", configDir.toFile().toString());
 
-//        GenericRestWebService.setStorageConfiguration(storageConfiguration);
         server.start();
         logger.info("REST server started, listening on {}", port);
 
