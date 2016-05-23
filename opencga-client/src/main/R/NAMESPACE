@@ -2,7 +2,7 @@
 
 export(OpencgaCreateUser)
 export(OpencgaLogin)
-export(OpencgaParam)
+export(cgaVariantParam)
 exportMethods(OpencgaCohorts)
 exportMethods(OpencgaFiles)
 exportMethods(OpencgaIndividuals)

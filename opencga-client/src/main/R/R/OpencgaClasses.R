@@ -152,10 +152,10 @@ setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
   return(data)
 })
 #' @title A class to store Opencga parameters for filtering queries
-#' @aliases OpencgaParam
+#' @aliases cgaVariantParam
 #' @param chromosome the name of the chromosome to be returned
 #' @export
-OpencgaParam <- setClass("OpencgaParam", slots = c(region="character",
+cgaVariantParam <- setClass("cgaVariantParam", slots = c(region="character",
                           chromosome="character", type="character",
                           gene="character", maf="character", mgf="character",
                           genotype="character", polyphen="character",
@@ -175,7 +175,7 @@ OpencgaParam <- setClass("OpencgaParam", slots = c(region="character",
                           files=character()))
 
 
-OpencgaParam <- function(region=character(), chromosome=character(),
+cgaVariantParam <- function(region=character(), chromosome=character(),
                          type=character(), gene=character(), maf=character(),
                          mgf=character(), genotype=character(),
                          polyphen=character(), sift=character(),
@@ -185,7 +185,7 @@ OpencgaParam <- function(region=character(), chromosome=character(),
                          files=character())
 {
 
-  new("OpencgaParam", region=region, chromosome=chromosome, type=type,
+  new("cgaVariantParam", region=region, chromosome=chromosome, type=type,
       gene=gene, maf=maf, mgf=mgf, genotype=genotype, polyphen=polyphen,
       sift=sift, conservation=conservation, reference=reference,
       alternate=alternate, so=so, biotype=biotype, skip=0, limit=1000,

@@ -46,7 +46,7 @@ OpencgaLogin <- function(baseurl, userid=NULL, passwd=NULL, interactive=FALSE){
 # Workforce function
 excuteOpencga <- function(object, category, id, action, params){
   baseurl <- object@baseurl
-  sessionID <- paste0("sid=",object@sessionID)
+  sessionID <- paste0("?sid=",object@sessionID)
   id <- as.character(id)
   action <- paste0("/", action)
   category <- paste0("/", category, "/")
@@ -56,22 +56,41 @@ excuteOpencga <- function(object, category, id, action, params){
   skip=0
   num_results=1000
   container=list()
+  while(num_results==server_limit){
+    url <- createURL(baseurl, category, id, action,  sessionID, params, skip)
+    res_list <- parseJ(url)
+    num_results <- res_list$num_results
+    cell <- res_list$data
+    container[[i]] <- cell
+    skip=skip+1000
+    i = i + 1
+  }
+  ds <- rbind.pages(container)
   ##
-  url <- createURL(baseurl, category, id, action,  sessionID, params)
-  res <- parseJ(url)
-  return(list(data=res$data, num_results=res$num_results) )
+  # url <- createURL(baseurl, category, id, action,  sessionID, params)
+  # res <- parseJ(url)
+  return(ds)
 }
 
 
-createURL <- function(baseurl, category, id, action, sessionID, params){
-  params <- paste0("&merge=true")
-  url <- paste0(baseurl, category, id, action, "?", sessionID, params)
+createURL <- function(baseurl, category, id, action, sessionID, params, skip){
+  noIds <- c("create", "create-folder", "search", "link", "unlink", "content-example", "download-example", "load")
+  skip=paste0("skip=",skip)
+  baseParam <- paste(sessionID, skip, sep = "&")
+  extraParams <- params
+  allParams <- paste(baseParam,extraParams, sep="&")
+  if (action %in%noIds){
+    url <- paste0(baseurl, category, action, allParams)
+  }else{
+    url <- paste0(baseurl, category, id, action, allParams)
+  }
+
   return(url)
 }
 
 parseJ <- function(url){
   require(jsonlite)
-  res <- fromJSON(url)
+  res <- fromJSON(url, flatten = TRUE, simplifyVector = TRUE)
   num_results <- res$response$numResults
   return(list(num_results=num_results,data=as.data.frame(res$response$result)))
 }
