@@ -409,12 +409,9 @@ public class CatalogManagerTest extends GenericTest {
         options.put("alias", "newProjectAlias");
         catalogManager.modifyProject(projectId, options, sessionIdUser);
 
-        try {
-            catalogManager.modifyProject(projectId, options, sessionIdUser2);
-            fail("Expected 'Permission denied' exception");
-        } catch (CatalogAuthorizationException e) {
-            System.out.println(e);
-        }
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Permission denied");
+        catalogManager.modifyProject(projectId, options, sessionIdUser2);
 
     }
 
@@ -493,8 +490,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateFileFromUnsharedStudy() throws CatalogException {
         try {
-            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
-                    sessionIdUser2);
+            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description",
+                    true, -1, sessionIdUser2);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
@@ -505,10 +502,9 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        catalogManager.addUsersToGroup(studyId, AuthorizationManager.MEMBERS_ROLE, "user2", sessionIdUser);
-        catalogManager.shareFile(Long.toString(testFolder.getId()), "user2", new AclEntry("user2", false, true, false, false), sessionIdUser);
-        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
-                sessionIdUser2);
+        catalogManager.shareStudy(studyId, "user2", "analyst", sessionIdUser);
+        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true,
+                -1, sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), sessionIdUser).getNumResults());
     }
@@ -726,12 +722,12 @@ public class CatalogManagerTest extends GenericTest {
         Query query;
         QueryResult<File> result;
 
-        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~^data");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~data");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         //Get all files in data
-        query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^data/[^/]+/?")
+        query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~data/[^/]+/?")
                 .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(),"FILE");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(3, result.getNumResults());
@@ -1143,15 +1139,17 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.deleteFolder(deletable, sessionIdUser);
 
         File file = catalogManager.getFile(deletable, sessionIdUser).first();
+        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.DELETED));
+
         allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResult();
         allFilesInFolder = catalogManager.searchFile(
                 catalogManager.getStudyIdByFileId(deletable),
                 new Query("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
                 null, sessionIdUser).getResult();
 
-        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.TRASHED));
+
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.TRASHED));
+            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.DELETED));
         }
     }
 
@@ -1189,11 +1187,11 @@ public class CatalogManagerTest extends GenericTest {
                 outDir.getId(),
                 Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
-        String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
-        QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
+//        String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
+        QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionIdUser);
         assertEquals(2, unfinishedJobs.getNumResults());
 
-        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
         assertEquals(4, allJobs.getNumResults());
     }
 

@@ -172,7 +172,7 @@ public class CatalogManager implements AutoCloseable {
 
         auditManager = new CatalogAuditManager(catalogDBAdaptorFactory.getCatalogAuditDbAdaptor(), catalogDBAdaptorFactory
                 .getCatalogUserDBAdaptor(), authorizationManager, catalogConfiguration);
-        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory.getCatalogUserDBAdaptor(), catalogConfiguration);
+        authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
@@ -204,13 +204,13 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public void installIndexes() throws CatalogException {
-        catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+        authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
         catalogDBAdaptorFactory.createIndexes();
     }
 
     public void deleteCatalogDB(boolean force) throws CatalogException {
         if (!force) {
-            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
         }
         catalogDBAdaptorFactory.deleteCatalogDB();
         clearCatalog();
@@ -426,6 +426,7 @@ public class CatalogManager implements AutoCloseable {
         return userManager.create(id, name, email, password, organization, diskQuota, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
         return userManager.loginAsAnonymous(sessionIp);
@@ -440,6 +441,7 @@ public class CatalogManager implements AutoCloseable {
         return userManager.logout(userId, sessionId);
     }
 
+    @Deprecated
     public QueryResult logoutAnonymous(String sessionId) throws CatalogException {
         return userManager.logoutAnonymous(sessionId);
     }

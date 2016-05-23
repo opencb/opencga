@@ -28,6 +28,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
@@ -41,16 +42,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObject;
 
 /**
  * Created by imedina on 13/01/16.
  */
-public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
+public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements CatalogMetaDBAdaptor {
 
     private final MongoDBCollection metaCollection;
     private static final String VERSION = "v0.8";
 
-    public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaMongoDBCollection) {
+    public CatalogMongoMetaDBAdaptor(MongoDBCollection metaMongoDBCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
@@ -193,12 +195,32 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
         }
     }
 
+    @Override
     public boolean isRegisterOpen() {
-        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(MongoDBCollection.INCLUDE, "open")).first();
+        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(QueryOptions.INCLUDE, "open")).first();
         if (doc.getString("open").equals("public")) {
             return true;
         }
         return false;
     }
 
+//    private QueryResult<ObjectMap> addSession(Session session) {
+//        long startTime = startQuery();
+//        QueryResult<Long> countSessions = count(new Query(CatalogUserDBAdaptor.QueryParams.SESSION_ID.key(), session.getId()));
+//        if (countSessions.getResult().get(0) != 0) {
+//            throw new CatalogDBException("Already logged with this sessionId");
+//        } else {
+//            Bson query = new Document(CatalogUserDBAdaptor.QueryParams.ID.key(), userId);
+//            Bson updates = Updates.push("sessions", getMongoDBDocument(session, "session"));
+//            userCollection.update(query, updates, null);
+//            return endQuery("Login", startTime, Collections.singletonList(session));
+//        }
+//    }
+
+    @Override
+    public String getAdminPassword() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
+        return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
+    }
 }

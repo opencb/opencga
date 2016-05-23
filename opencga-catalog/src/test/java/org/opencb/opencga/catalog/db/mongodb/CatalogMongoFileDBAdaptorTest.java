@@ -230,7 +230,10 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
                 CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
-        assertEquals(Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
+        Collections.sort(distinctFormats);
+        List<String> expected = Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM");
+        Collections.sort(expected);
+        assertEquals(expected, distinctFormats);
     }
 
     @Test

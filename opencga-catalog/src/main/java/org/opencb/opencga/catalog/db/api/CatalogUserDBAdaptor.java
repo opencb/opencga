@@ -70,6 +70,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult<User> delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 
     QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
