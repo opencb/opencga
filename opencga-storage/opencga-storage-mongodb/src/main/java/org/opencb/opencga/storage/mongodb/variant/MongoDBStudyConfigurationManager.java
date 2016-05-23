@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +32,7 @@ import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConf
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.REPLACE;
@@ -128,6 +130,22 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         List<String> studyNames = coll.distinct("studyName", null).getResult();
 
         return studyNames.stream().map(Object::toString).collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Integer> getStudyIds(QueryOptions options) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+        return coll.distinct("_id", null, Integer.class).getResult();
+    }
+
+    @Override
+    public Map<String, Integer> getStudies(QueryOptions options) {
+        MongoDBCollection coll = db.getCollection(collectionName);
+        QueryResult<StudyConfiguration> queryResult = coll.find(new Document(), Projections.include("studyId", "studyName"),
+                studyConfigurationConverter, null);
+        return queryResult.getResult()
+                .stream()
+                .collect(Collectors.toMap(StudyConfiguration::getStudyName, StudyConfiguration::getStudyId));
     }
 
     @Override

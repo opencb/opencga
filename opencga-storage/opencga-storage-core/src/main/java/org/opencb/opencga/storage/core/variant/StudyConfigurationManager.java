@@ -26,10 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeoutException;
 
 /**
@@ -145,7 +142,15 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return null;
+        return new ArrayList<>(getStudies(options).keySet());
+    }
+
+    public List<Integer> getStudyIds(QueryOptions options) {
+        return new ArrayList<>(getStudies(options).values());
+    }
+
+    public Map<String, Integer> getStudies(QueryOptions options) {
+        return Collections.emptyMap();
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {

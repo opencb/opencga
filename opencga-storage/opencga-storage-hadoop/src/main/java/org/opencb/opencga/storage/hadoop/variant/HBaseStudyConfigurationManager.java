@@ -62,7 +62,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     @Override
     protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         logger.info("Get StudyConfiguration " + studyId + " from DB " + tableName);
-        return internalGetStudyConfiguration(getStudiesSummary(options).inverse().get(studyId), timeStamp, options);
+        return internalGetStudyConfiguration(getStudies(options).inverse().get(studyId), timeStamp, options);
     }
 
     @Override
@@ -158,11 +158,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     @Override
-    public List<String> getStudyNames(QueryOptions options) {
-        return new ArrayList<>(getStudiesSummary(options).keySet());
-    }
-
-    private BiMap<String, Integer> getStudiesSummary(QueryOptions options) {
+    public BiMap<String, Integer> getStudies(QueryOptions options) {
         Get get = new Get(studiesRow);
         get.addColumn(genomeHelper.getColumnFamily(), studiesSummaryColumn);
         try {
@@ -191,7 +187,7 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
     }
 
     private void updateStudiesSummary(String study, Integer studyId, QueryOptions options) {
-        BiMap<String, Integer> studiesSummary = getStudiesSummary(options);
+        BiMap<String, Integer> studiesSummary = getStudies(options);
         if (study.isEmpty()) {
             throw new IllegalStateException("Can't save an study with empty StudyName");
         }
