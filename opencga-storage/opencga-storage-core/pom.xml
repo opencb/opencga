@@ -49,11 +49,11 @@
             <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-core</artifactId>
         </dependency>
-
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
         </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
