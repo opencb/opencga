@@ -16,8 +16,11 @@
 
 package org.opencb.opencga.app.cli;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
+import org.opencb.opencga.app.cli.main.UserConfigFile;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -46,6 +49,7 @@ public abstract class CommandExecutor {
     protected String storageConfigFile;
 
     protected String appHome;
+    protected String sessionId;
 
     protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
@@ -79,6 +83,13 @@ public abstract class CommandExecutor {
         if (logLevel != null && !logLevel.isEmpty()) {
             // We must call to this method
             configureDefaultLog(logLevel);
+        }
+
+        try {
+            UserConfigFile userConfigFile = loadUserFile();
+            sessionId = userConfigFile.getSessionId();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -278,6 +289,14 @@ public abstract class CommandExecutor {
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
+    private static UserConfigFile loadUserFile() throws IOException {
+        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml").toFile();
+        if (file.exists()) {
+            return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
+        } else {
+            return new UserConfigFile();
+        }
+    }
 
     protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
             throws IOException, InterruptedException {

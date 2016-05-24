@@ -601,4 +601,23 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public MongoDBCollection getCohortCollection() {
         return cohortCollection;
     }
+
+    public QueryResult<Long> extractSamplesFromCohorts(Query query, List<Long> sampleIds) throws CatalogDBException {
+        long startTime = startQuery();
+        QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
+        if (cohortQueryResult.getNumResults() > 0) {
+            Bson bsonQuery = parseQuery(query);
+            Bson update = new Document("$pull", new Document(QueryParams.SAMPLES.key(), new Document("$in", sampleIds)));
+            QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+            QueryResult<UpdateResult> updateQueryResult = cohortCollection.update(bsonQuery, update, multi);
+
+            // Now we set all the cohorts where a sample has been taken out to status INVALID
+            List<Long> ids = cohortQueryResult.getResult().stream().map(Cohort::getId).collect(Collectors.toList());
+            setStatus(new Query(QueryParams.ID.key(), ids), Cohort.CohortStatus.INVALID);
+
+            return endQuery("Extract samples from cohorts", startTime,
+                    Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+        }
+        return endQuery("Extract samples from cohorts", startTime, Collections.singletonList(0L));
+    }
 }

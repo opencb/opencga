@@ -56,7 +56,13 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         throw new CatalogDBException("Non implemented action.");
     }
 
-    QueryResult<Long> updateStatus(Query query, Job.JobStatus status) throws CatalogDBException;
+    default QueryResult<Job> setStatus(long jobId, String status) throws CatalogDBException {
+        return update(jobId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    default QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
 
     @Deprecated
     default QueryResult<Job> deleteJob(long jobId) throws CatalogDBException {

@@ -182,7 +182,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogMongoMetaDBAdaptor getCatalogMongoMetaDBAdaptor() {
+    public CatalogMongoMetaDBAdaptor getCatalogMetaDBAdaptor() {
         return metaDBAdaptor;
     }
 
@@ -219,10 +219,6 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     @Override
     public CatalogMongoJobDBAdaptor getCatalogJobDBAdaptor() {
         return jobDBAdaptor;
-    }
-
-    public CatalogMongoMetaDBAdaptor getCatalogMetaDBAdaptor() {
-        return metaDBAdaptor;
     }
 
     @Override
@@ -278,7 +274,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         userDBAdaptor = new CatalogMongoUserDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CatalogMongoCohortDBAdaptor(cohortCollection, this);
         datasetDBAdaptor = new CatalogMongoDatasetDBAdaptor(datasetCollection, this);
-        metaDBAdaptor = new CatalogMongoMetaDBAdaptor(this, metaCollection);
+        metaDBAdaptor = new CatalogMongoMetaDBAdaptor(metaCollection, this);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 
     }

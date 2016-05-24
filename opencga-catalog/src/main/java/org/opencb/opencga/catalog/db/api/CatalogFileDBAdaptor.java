@@ -205,6 +205,16 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      */
     QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
 
+    /**
+     * Extract the sampleIds given from the files that matching the query.
+     *
+     * @param query query.
+     * @param sampleIds sample ids.
+     * @return A queryResult object containing the number of files matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
+
     /*
      * ACL methods
      * ***************************

@@ -167,7 +167,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public QueryResult<Job> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
-        int studyId = query.getInt(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
+        long studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
         return readAll(studyId, query, options, sessionId);
     }
 
@@ -179,7 +179,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         // If studyId is null, check if there is any on the query
         // Else, ensure that studyId is in the Query
         if (studyId < 0) {
-            studyId = query.getInt(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
+            studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
         } else {
             query.put(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }

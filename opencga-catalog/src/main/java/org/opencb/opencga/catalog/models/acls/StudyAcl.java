@@ -36,7 +36,8 @@ public class StudyAcl {
         }
     }
 
-    public StudyAcl(List<String> users, List<String> permissions) {
+    public StudyAcl(String role, List<String> users, List<String> permissions) {
+        this.role = role;
         this.users = users;
         this.permissions = EnumSet.noneOf(StudyPermissions.class);
         if (permissions.size() > 0) {

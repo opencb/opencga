@@ -23,6 +23,7 @@ import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -38,13 +39,13 @@ import static org.opencb.opencga.server.grpc.VariantServiceGrpc.VariantService;
  */
 public class VariantGrpcService extends GenericGrpcService implements VariantService {
 
-    public VariantGrpcService(StorageConfiguration storageConfiguration) {
-        super(storageConfiguration);
+    public VariantGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
+        super(catalogConfiguration, storageConfiguration);
     }
 
     @Deprecated
-    public VariantGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {
-        super(storageConfiguration, defaultStorageEngine);
+    public VariantGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
+        super(catalogConfiguration, storageConfiguration, defaultStorageEngine);
     }
 
 

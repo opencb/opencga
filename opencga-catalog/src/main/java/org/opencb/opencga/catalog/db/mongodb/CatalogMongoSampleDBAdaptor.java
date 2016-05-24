@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -95,21 +96,22 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-
-//        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        Query query1 = new Query(QueryParams.ID.key(), sampleId);
-        QueryResult<Sample> sampleQueryResult = get(query1, options);
-
-//        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
-//        List<Sample> samples = parseSamples(queryResult);
-
-        if (sampleQueryResult.getResult().size() == 0) {
-            throw CatalogDBException.idNotFound("Sample", sampleId);
-        }
-
-        return endQuery("getSample", startTime, sampleQueryResult);
+        return get(new Query(QueryParams.ID.key(), sampleId), options);
+//        long startTime = startQuery();
+//        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
+//
+////        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
+//        Query query1 = new Query(QueryParams.ID.key(), sampleId);
+//        QueryResult<Sample> sampleQueryResult = get(query1, options);
+//
+////        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
+////        List<Sample> samples = parseSamples(queryResult);
+//
+//        if (sampleQueryResult.getResult().size() == 0) {
+//            throw CatalogDBException.idNotFound("Sample", sampleId);
+//        }
+//
+//        return endQuery("getSample", startTime, sampleQueryResult);
     }
 
 //    @Override
@@ -796,7 +798,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Query query = new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
             List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor()
-                    .get(query, new QueryOptions(MongoDBCollection.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key())).getResult();
+                    .get(query, new QueryOptions(QueryOptions.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key())).getResult();
             throw new CatalogDBException("The sample {" + sampleId + "} cannot be deleted/removed. It is being used in "
                     + cohorts.size() + " cohorts: [" + cohorts.stream().map(Cohort::getId).collect(Collectors.toList()).toString() + "]");
         }
@@ -866,6 +868,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         final String[] acceptedMapParams = {"attributes"};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            sampleParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+        }
+
         if (!sampleParameters.isEmpty()) {
             QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query),
                     new Document("$set", sampleParameters), null);
@@ -899,12 +906,19 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
             Sample sample = get(query, options).first();
             throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getStatus());
         }
 
-        checkCanDelete(id);
+        // If we don't find the force parameter, we check first if the file could be deleted.
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            deleteReferencesToSample(id);
+        }
 
         // Change the status of the sample to deleted
         setStatus(id, Status.DELETED);
@@ -1079,5 +1093,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
         return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    private void deleteReferencesToSample(long sampleId) throws CatalogDBException {
+        // Remove references from files
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
+        QueryResult<Long> result = dbAdaptorFactory.getCatalogFileDBAdaptor()
+                .extractSampleFromFiles(query, Collections.singletonList(sampleId));
+        logger.debug("SampleId {} extracted from {} files", sampleId, result.first());
+
+        // Remove references from cohorts
+        query = new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+        result = dbAdaptorFactory.getCatalogCohortDBAdaptor().extractSamplesFromCohorts(query, Collections.singletonList(sampleId));
+        logger.debug("SampleId {} extracted from {} cohorts", sampleId, result.first());
     }
 }

@@ -993,6 +993,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
         return studyDBAdaptor.addMembersToGroup(studyId, groupId, members);
     }
 
@@ -1162,7 +1165,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     ====================================
      */
     private FileAcl transformStudyAclToFileAcl(StudyAcl studyAcl) {
-        FileAcl fileAcl = new FileAcl();
+        FileAcl fileAcl = new FileAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return fileAcl;
         }
@@ -1182,7 +1185,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private SampleAcl transformStudyAclToSampleAcl(StudyAcl studyAcl) {
-        SampleAcl sampleAcl = new SampleAcl();
+        SampleAcl sampleAcl = new SampleAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return sampleAcl;
         }
@@ -1202,7 +1205,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private IndividualAcl transformStudyAclToIndividualAcl(StudyAcl studyAcl) {
-        IndividualAcl individualAcl = new IndividualAcl();
+        IndividualAcl individualAcl = new IndividualAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return individualAcl;
         }
@@ -1222,7 +1225,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private JobAcl transformStudyAclToJobAcl(StudyAcl studyAcl) {
-        JobAcl jobAcl = new JobAcl();
+        JobAcl jobAcl = new JobAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return jobAcl;
         }
@@ -1242,7 +1245,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private CohortAcl transformStudyAclToCohortAcl(StudyAcl studyAcl) {
-        CohortAcl cohortAcl = new CohortAcl();
+        CohortAcl cohortAcl = new CohortAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return cohortAcl;
         }
@@ -1262,7 +1265,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private DatasetAcl transformStudyAclToDatasetAcl(StudyAcl studyAcl) {
-        DatasetAcl datasetAcl = new DatasetAcl();
+        DatasetAcl datasetAcl = new DatasetAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return datasetAcl;
         }
