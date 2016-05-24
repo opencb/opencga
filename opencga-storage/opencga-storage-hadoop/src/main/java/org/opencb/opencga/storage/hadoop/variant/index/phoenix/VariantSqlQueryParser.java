@@ -12,8 +12,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.Column;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -446,7 +445,32 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, ANNOT_CONSERVATION,
                 (keyOpValue, rawValue) -> getConservationScoreColumn(keyOpValue[0], rawValue, true), null, filters);
 
-        unsupportedFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
+        /*
+         * maf < 0.3 --> PF < 0.3 OR PF >= 0.7
+         * maf > 0.3 --> PF > 0.3 AND PF <= 0.7
+         */
+        addQueryFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY,
+                (keyOpValue, s) -> {
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    dynamicColumns.add(column);
+                    return column;
+                }, null, null,
+                keyOpValue -> {
+                    String op = keyOpValue[1];
+                    String invOp = inverseOperator(op);
+                    double value = Double.parseDouble(keyOpValue[2]);
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    if (op.startsWith("<")) {
+                        // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
+                        return " OR \"" + column.column() + "\" " + invOp + " " + (1 - value)
+                                + " OR \"" + column.column() + "\" IS NULL";
+                    } else if (op.startsWith(">")) {
+                        return " AND \"" + column.column() + "\" " + invOp + " " + (1 - value);
+                    } else {
+                        throw VariantQueryException.malformedParam(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, Arrays.toString(keyOpValue),
+                                "Unable to use operator " + op + " with this query.");
+                    }
+                }, filters);
 
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY,
                 (keyOpValue, s) -> {
@@ -454,7 +478,8 @@ public class VariantSqlQueryParser {
                     dynamicColumns.add(column);
                     return column;
                 }, null, null,
-                keyOpValue -> {         // If asking "less than", add "OR FIELD IS NULL"
+                keyOpValue -> {
+                    // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
                         return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
                     }
@@ -467,9 +492,10 @@ public class VariantSqlQueryParser {
                     dynamicColumns.add(column);
                     return column;
                 },
-                VariantSqlQueryParser::flipOperator,    // Flip operator
+                VariantSqlQueryParser::inverseOperator, // Inverse operator
                 s -> 1 - Double.parseDouble(s),         // Inverse frequency value
-                keyOpValue -> {                         // If asking "less than", add "OR FIELD IS NULL"
+                keyOpValue -> {
+                    // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
                         return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
                     }
@@ -646,6 +672,38 @@ public class VariantSqlQueryParser {
         }
         return sb.toString();
 //        return op.replace(">", "G").replace("<", ">").replace("G", "<");
+    }
+
+    /**
+     * Inverse the operator obtaining the opposite operator.
+     *
+     * ">" --> "<="
+     * "<" --> ">="
+     * ">=" --> "<"
+     * "<=" --> ">"
+     *
+     * @param op    Operation to inverse
+     * @return      Operation inverted
+     */
+    public static String inverseOperator(String op) {
+        switch (op) {
+            case ">":
+                return "<=";
+            case ">=":
+                return "<";
+            case "<":
+                return ">=";
+            case "<=":
+                return ">";
+            case "":
+            case "=":
+            case "==":
+                return "!=";
+            case "!=":
+                return "=";
+            default:
+                throw new VariantQueryException("Unknown operator " + op);
+        }
     }
 
     public static String parseOperator(String op) {

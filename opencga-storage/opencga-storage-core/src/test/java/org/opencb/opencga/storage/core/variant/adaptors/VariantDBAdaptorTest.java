@@ -193,40 +193,41 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_population_maf_no_indels() {
         final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
         Predicate<Variant> filterType = variant -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType());
+        Query baseQuery = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV);
 
-        Query query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
+        Query query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
         filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501");
         queryResult = dbAdaptor.get(query, options);
         filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
-                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.05), filterType);
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
         filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.05;1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501;1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
         filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
-                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.05
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501
                 && Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.05,1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501,1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
         filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
-                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.05
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501
                 || Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
     }
 
