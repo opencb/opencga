@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.util.HashMap;
@@ -28,10 +29,10 @@ import java.util.Map;
  */
 public class OpenCGAClient {
 
-    private Map<String, AbstractParentClient> clients;
-
     private String sessionId;
     private ClientConfiguration clientConfiguration;
+
+    private Map<String, AbstractParentClient> clients;
 
     public OpenCGAClient() {
         // create a default configuration to localhost
@@ -79,6 +80,31 @@ public class OpenCGAClient {
         return (FileClient) clients.get("FILE");
     }
 
+    public JobClient getJobClient() {
+        clients.putIfAbsent("JOB", new JobClient(sessionId, clientConfiguration));
+        return (JobClient) clients.get("JOB");
+    }
+
+    public IndividualClient getIndividualClient() {
+        clients.putIfAbsent("INDIVIDUAL", new IndividualClient(sessionId, clientConfiguration));
+        return (IndividualClient) clients.get("INDIVIDUAL");
+    }
+
+    public SampleClient getSampleClient() {
+        clients.putIfAbsent("SAMPLE", new SampleClient(sessionId, clientConfiguration));
+        return (SampleClient) clients.get("SAMPLE");
+    }
+
+    public VariableClient getVariableClient() {
+        clients.putIfAbsent("VARIABLE", new VariableClient(sessionId, clientConfiguration));
+        return (VariableClient) clients.get("VARIABLE");
+    }
+
+    public CohortClient getCohortClient() {
+        clients.putIfAbsent("COHORT", new CohortClient(sessionId, clientConfiguration));
+        return (CohortClient) clients.get("COHORT");
+    }
+
 
     public String login(String user, String password) {
         UserClient userClient = getUserClient();
@@ -86,21 +112,21 @@ public class OpenCGAClient {
         this.sessionId = login.firstResult().getString("sessionId");
 
         // Update sessionId for all clients
-        for (AbstractParentClient abstractParentClient : clients.values()) {
-            if (abstractParentClient != null) {
-                abstractParentClient.setSessionId(this.sessionId);
-            }
-        }
+        clients.values().stream()
+                .filter(abstractParentClient -> abstractParentClient != null)
+                .forEach(abstractParentClient -> {
+                    abstractParentClient.setSessionId(this.sessionId);
+                });
         return sessionId;
     }
 
     public void logout() {
         // Remove sessionId for all clients
-        for (AbstractParentClient abstractParentClient : clients.values()) {
-            if (abstractParentClient != null) {
-                abstractParentClient.setSessionId(null);
-            }
-        }
+        clients.values().stream()
+                .filter(abstractParentClient -> abstractParentClient != null)
+                .forEach(abstractParentClient -> {
+                    abstractParentClient.setSessionId(null);
+                });
     }
 
 }
