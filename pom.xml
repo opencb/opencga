@@ -48,9 +48,10 @@
         <hadoop.version>2.6.3</hadoop.version>
         <hbase.version>1.0.1</hbase.version>
         <avro.version>1.7.7</avro.version>
-        <google.protobuf>3.0.0-beta-2</google.protobuf>
+        <google.protobuf>3.0.0-beta-1</google.protobuf>
         <google.grpc>0.13.2</google.grpc>
         <junit.version>4.12</junit.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <scm>

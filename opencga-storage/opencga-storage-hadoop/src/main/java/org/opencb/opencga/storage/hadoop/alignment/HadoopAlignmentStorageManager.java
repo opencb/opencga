@@ -24,10 +24,10 @@ import org.opencb.biodata.tools.alignment.AlignmentFileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.hpg.bigdata.tools.alignment.Bam2AvroMR;
 import org.opencb.hpg.bigdata.tools.alignment.stats.ReadAlignmentDepthMR;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
@@ -150,7 +150,7 @@ public class HadoopAlignmentStorageManager extends AlignmentStorageManager {
 //                    throw new Exception("Calculating coverage cli error: Exit value = " + exitValue);
 //                }
 
-                ReadAlignmentDepthMR.run(alignmentAvroFile.toString() + "/part-r-00000.avro", coverageAvroFile.toString(), conf);
+                ReadAlignmentDepthMR.run(alignmentAvroFile.toString() + "/part-r-00000.avro", coverageAvroFile.toString(), null, 0, conf);
             } catch (Exception e) {
                 throw new StorageManagerException("Error while computing coverage", e);
             }
