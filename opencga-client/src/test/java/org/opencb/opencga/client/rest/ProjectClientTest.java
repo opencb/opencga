@@ -8,7 +8,6 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -81,7 +80,7 @@ public class ProjectClientTest {
     @Test
     public void delete() throws Exception {
         projectClient = openCGAClient.getProjectClient();
-        QueryResponse<ObjectMap> delete = projectClient.delete("28", null);
+        QueryResponse<Project> delete = projectClient.delete("28", null);
         assertEquals("PENDING", delete.getError());
     }
 

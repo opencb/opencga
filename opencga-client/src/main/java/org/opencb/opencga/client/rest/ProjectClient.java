@@ -29,31 +29,33 @@ import java.io.IOException;
 /**
  * Created by imedina on 09/05/16.
  */
-public class ProjectClient extends AbstractParentClient {
+public class ProjectClient extends AbstractParentClient<Project> {
 
     private static final String PROJECTS_URL = "projects";
 
     protected ProjectClient(String sessionId, ClientConfiguration configuration) {
         super(sessionId, configuration);
+
+        this.category = PROJECTS_URL;
+        this.clazz = Project.class;
     }
 
-    public QueryResponse<Project> get(String projectId, QueryOptions options) throws CatalogException, IOException {
-        QueryResponse<Project> project = execute(PROJECTS_URL, projectId, "info", options, Project.class);
-        return project;
+    public QueryResponse<Project> create(String userid, String projectName, String projectAlias, String projectDescription,
+                                         ObjectMap params) throws CatalogException, IOException {
+        addParamsToObjectMap(params, "userId", userid, "name", projectName, "alias", projectAlias, "description", projectDescription);
+        return execute(PROJECTS_URL, "create", params, Project.class);
     }
 
     public QueryResponse<Study> getStudies(String projectId, QueryOptions options) throws CatalogException, IOException {
-        QueryResponse<Study> studies = execute(PROJECTS_URL, projectId, "studies", options, Study.class);
-        return studies;
+        return execute(PROJECTS_URL, projectId, "studies", options, Study.class);
     }
 
-    public QueryResponse<Project> update(String projectId, QueryOptions options) throws CatalogException, IOException {
-        QueryResponse<Project> project = execute(PROJECTS_URL, projectId, "update", options, Project.class);
-        return project;
+    public QueryResponse<Project> update(String projectId, ObjectMap params) throws CatalogException, IOException {
+        return execute(PROJECTS_URL, projectId, "update", params, Project.class);
     }
 
-    public QueryResponse<ObjectMap> delete(String projectId, QueryOptions options) throws CatalogException, IOException {
-        QueryResponse<ObjectMap> project = execute(PROJECTS_URL, projectId, "delete", options, ObjectMap.class);
-        return project;
+    public QueryResponse<Project> delete(String projectId, ObjectMap params) throws CatalogException, IOException {
+        return execute(PROJECTS_URL, projectId, "delete", params, Project.class);
     }
+
 }

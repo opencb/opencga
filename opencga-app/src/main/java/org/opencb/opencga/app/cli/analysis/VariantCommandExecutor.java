@@ -82,6 +82,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         String subCommandString = variantCommandOptions.getParsedSubCommand();
         configure();
+
+        if (StringUtils.isNotEmpty(variantCommandOptions.commonOptions.sessionId)) {
+            sessionId = variantCommandOptions.commonOptions.sessionId;
+        }
+
         switch (subCommandString) {
             case "ibs":
                 ibs();
@@ -129,8 +134,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
     private void query() throws Exception {
 
         AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
-
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
 
         Map<Long, String> studyIds = getStudyIds(sessionId);
         Query query = VariantQueryCommandUtils.parseQuery(cliOptions, studyIds);
@@ -189,9 +192,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                 }
             }
             iterator.close();
-
         }
-
     }
 
 
@@ -203,7 +204,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             StorageManagerException, InstantiationException, IllegalAccessException {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Create, if not provided, an indexation job
@@ -262,15 +262,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
      * @throws InstantiationException
      * @throws StorageManagerException
      */
-    private void index(Job job)
-            throws CatalogException, IllegalAccessException, ClassNotFoundException,
-            InstantiationException, StorageManagerException {
+    private void index(Job job) throws CatalogException, IllegalAccessException, ClassNotFoundException, InstantiationException,
+            StorageManagerException {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
-
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
-
 
         // 1) Initialize VariantStorageManager
         long studyId = catalogManager.getStudyIdByFileId(inputFileId);
@@ -417,10 +413,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             throws ClassNotFoundException, InstantiationException, CatalogException, IllegalAccessException, IOException, StorageManagerException {
         AnalysisCliOptionsParser.StatsVariantCommandOptions cliOptions = variantCommandOptions.statsVariantCommandOptions;
 
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
-
-
 
         // 1) Initialize VariantStorageManager
         long studyId = catalogManager.getStudyId(cliOptions.studyId);
@@ -432,7 +425,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          */
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
-
 
 
         /*
@@ -539,8 +531,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
 
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
-
         // 1) Create, if not provided, an indexation job
         if (StringUtils.isEmpty(cliOptions.job.jobId)) {
             Job job;
@@ -592,11 +582,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             ClassNotFoundException, InstantiationException {
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
 
-
-        String sessionId = variantCommandOptions.commonOptions.sessionId;
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
-
-
 
         // 1) Initialize VariantStorageManager
         long studyId = catalogManager.getStudyId(cliOptions.studyId);
@@ -608,8 +594,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          */
         DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
-
-
 
         /*
          * Create DBAdaptor

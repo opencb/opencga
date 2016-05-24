@@ -993,6 +993,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
         return studyDBAdaptor.addMembersToGroup(studyId, groupId, members);
     }
 
