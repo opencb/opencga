@@ -78,7 +78,12 @@ createURL <- function(baseurl, category, id, action, sessionID, params, skip){
   noIds <- c("create", "create-folder", "search", "link", "unlink", "content-example", "download-example", "load")
   skip=paste0("skip=",skip)
   baseParam <- paste(sessionID, skip, sep = "&")
-  extraParams <- getCgaParam(params)
+  if(!is.null(params)){
+    extraParams <- getCgaParam(params)
+  }else{
+    extraParams <- NULL
+  }
+
   allParams <- paste(baseParam,extraParams, sep="&")
   if (action %in%noIds){
     url <- paste0(baseurl, category, action, allParams)
