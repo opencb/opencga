@@ -7,8 +7,8 @@ cga
 res1 <- OpencgaStudy(object = cga, id = 3, action = "files")
 library(rlist)
 library(pipeR)
-vfl%>>%
-  list.filter(annotation$consequenceTypes$geneName=="NOC2L")%>>%length
+# vfl%>>%
+#   list.filter(annotation$consequenceTypes$geneName=="NOC2L")%>>%length
 cga <- OpencgaLogin(baseurl = base,interactive = T)
 vardata <-OpencgaStudy(object = l1, id = 3, action = "variants")
 varainst <- vardata$data
@@ -28,10 +28,11 @@ system.time({
   test2 <- OpencgaFiles(object = l1, id = 32, action = "variants")
 })
 
+files <- OpencgaStudy(object = l1, id = 3, action = "files")
+info <- OpencgaStudy(object = l1, id = 3, action = "info")
+samples <- OpencgaStudy(object = l1, id = 3, action = "samples")
 
-
-
-
+filvar <- OpencgaFiles(object = l1, id = 32, action = "variants", params = filt)
 
 
 

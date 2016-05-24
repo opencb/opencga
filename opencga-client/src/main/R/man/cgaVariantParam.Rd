@@ -9,7 +9,8 @@ cgaVariantParam(region = character(), chromosome = character(),
   mgf = character(), genotype = character(), polyphen = character(),
   sift = character(), conservation = character(), reference = character(),
   alternate = character(), so = character(), biotype = character(),
-  skip = numeric(), limit = numeric(), files = character())
+  limit = character(), files = character(), returnedStudies = character(),
+  returnedSamples = character())
 }
 \arguments{
 \item{chromosome}{the name of the chromosome to be returned}

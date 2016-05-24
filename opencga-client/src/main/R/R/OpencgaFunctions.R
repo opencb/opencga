@@ -50,6 +50,7 @@ excuteOpencga <- function(object, category, id, action, params){
   id <- as.character(id)
   action <- paste0("/", action)
   category <- paste0("/", category, "/")
+  params <- params
   ## loop to get all the data to be finished
   i=1
   server_limit=1000
@@ -77,7 +78,7 @@ createURL <- function(baseurl, category, id, action, sessionID, params, skip){
   noIds <- c("create", "create-folder", "search", "link", "unlink", "content-example", "download-example", "load")
   skip=paste0("skip=",skip)
   baseParam <- paste(sessionID, skip, sep = "&")
-  extraParams <- params
+  extraParams <- getCgaParam(params)
   allParams <- paste(baseParam,extraParams, sep="&")
   if (action %in%noIds){
     url <- paste0(baseurl, category, action, allParams)
@@ -98,3 +99,36 @@ getParam <- function(object){
 
   return(param)
 }
+
+getCgaParam <- function(object){
+            region=object@region
+            chromosome=object@chromosome
+            gene=object@gene
+            maf=object@maf
+            mgf=object@mgf
+            genotype=object@genotype
+            polyphen=object@polyphen
+            sift=object@sift
+            conservation=object@conservation
+            reference=object@reference
+            alternate=object@alternate
+            so=object@so
+            biotype=object@biotype
+            limit=object@limit
+            files=object@files
+            returnedStudies=object@returnedStudies
+            returnedSamples=object@returnedSamples
+            param=c(region, chromosome, gene, maf,mgf, genotype, polyphen,
+                    sift,  conservation, reference, alternate, so, biotype,
+                    limit, files, returnedStudies, returnedSamples)
+            foundParam <- vector()
+            i=1
+            for (argument in param){
+              if(length(argument)>0){
+                foundParam[i] <- argument
+                i=i+1
+              }
+            }
+            return(paste(foundParam, collapse="&"))
+
+          }
