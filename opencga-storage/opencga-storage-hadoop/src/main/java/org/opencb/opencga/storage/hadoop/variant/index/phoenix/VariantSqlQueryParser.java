@@ -26,6 +26,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import static org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow.*;
+import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.*;
 
 /**
  * Created on 16/12/15.
@@ -429,7 +430,7 @@ public class VariantSqlQueryParser {
             } else {
                 return VariantColumn.SIFT_DESC;
             }
-        }, filters, null);
+        }, null, filters);
 
         addQueryFilter(query, ANNOT_POLYPHEN, (keyOpValue, rawValue) -> {
             if (StringUtils.isNotEmpty(keyOpValue[0])) {
@@ -440,24 +441,40 @@ public class VariantSqlQueryParser {
             } else {
                 return VariantColumn.POLYPHEN_DESC;
             }
-        }, filters, null);
+        }, null, filters);
 
         addQueryFilter(query, ANNOT_CONSERVATION,
-                (keyOpValue, rawValue) -> VariantPhoenixHelper.getConservationScoreColumn(keyOpValue[0], rawValue, true), filters, null);
+                (keyOpValue, rawValue) -> getConservationScoreColumn(keyOpValue[0], rawValue, true), null, filters);
 
         unsupportedFilter(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
 
-        addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
-            Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(keyOpValue[0]);
-            dynamicColumns.add(column);
-            return column;
-        }, filters, null);
+        addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY,
+                (keyOpValue, s) -> {
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    dynamicColumns.add(column);
+                    return column;
+                }, null, null,
+                keyOpValue -> {         // If asking "less than", add "OR FIELD IS NULL"
+                    if (keyOpValue[1].startsWith("<")) {
+                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
+                    }
+                    return "";
+                }, filters);
 
-        addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY, (keyOpValue, s) -> {
-            Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(keyOpValue[0]);
-            dynamicColumns.add(column);
-            return column;
-        }, filters, s -> 1 - Double.parseDouble(s));
+        addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY,
+                (keyOpValue, s) -> {
+                    Column column = getPopulationFrequencyColumn(keyOpValue[0]);
+                    dynamicColumns.add(column);
+                    return column;
+                },
+                VariantSqlQueryParser::flipOperator,    // Flip operator
+                s -> 1 - Double.parseDouble(s),         // Inverse frequency value
+                keyOpValue -> {                         // If asking "less than", add "OR FIELD IS NULL"
+                    if (keyOpValue[1].startsWith("<")) {
+                        return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
+                    }
+                    return "";
+                }, filters);
 
         addSimpleQueryFilter(query, ANNOT_TRANSCRIPTION_FLAGS, VariantColumn.TRANSCRIPTION_FLAGS, filters);
 
@@ -470,10 +487,10 @@ public class VariantSqlQueryParser {
         addSimpleQueryFilter(query, ANNOT_DRUG, VariantColumn.DRUG, filters);
 
         addQueryFilter(query, ANNOT_FUNCTIONAL_SCORE, (keyOpValue, rawValue) -> {
-            Column column = VariantPhoenixHelper.getFunctionalScoreColumn(keyOpValue[0]);
+            Column column = getFunctionalScoreColumn(keyOpValue[0]);
             dynamicColumns.add(column);
             return column;
-        }, filters, null);
+        }, null, filters);
     }
 
     protected void addStatsFilters(Query query, List<String> filters) {
@@ -508,17 +525,35 @@ public class VariantSqlQueryParser {
     }
 
 
-    public void addSimpleQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters) {
+    private void addSimpleQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters) {
         addQueryFilter(query, param, column, filters, null);
     }
 
-    public void addQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters,
-                               Function<String, Object> parser) {
-        addQueryFilter(query, param, (a, s) -> column, filters, parser);
+    private void addQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters,
+                                Function<String, Object> parser) {
+        addQueryFilter(query, param, (a, s) -> column, null, parser, null, filters);
     }
 
-    public void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Column> columnParser,
-                               List<String> filters, Function<String, Object> parser) {
+    private void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Column> columnParser,
+                                Function<String, Object> valueParser, List<String> filters) {
+        addQueryFilter(query, param, columnParser, null, valueParser, null, filters);
+    }
+
+    /**
+     * Transforms a Key-Value from a query into a valid SQL filter.
+     *
+     * @param query             Query with the values
+     * @param param             Param to read from the query
+     * @param columnParser      Column parser. Given the [key, op, value], returns a {@link Column}
+     * @param operatorParser    Operator parser. Given the [key, op, value], returns a valid SQL operator
+     * @param valueParser       Value parser. Given the [key, op, value], transforms the value to make the query.
+     * @param extraFilters      Provides extra filters to be concatenated to the filter.
+     * @param filters           List of filters to be modified.
+     */
+    private void addQueryFilter(Query query, VariantQueryParams param,
+                                BiFunction<String[], String, Column> columnParser,
+                                Function<String, String> operatorParser,
+                                Function<String, Object> valueParser, Function<String[], String> extraFilters, List<String> filters) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
             QueryOperation operation = checkOperator(query.getString(param.key()));
@@ -539,42 +574,51 @@ public class VariantSqlQueryParser {
                     negated = "";
                 }
 
+                String op = parseOperator(keyOpValue[1]);
+                if (operatorParser != null) {
+                    op = operatorParser.apply(op);
+                }
+
+                String extra = "";
+                if (extraFilters != null) {
+                    extra = extraFilters.apply(keyOpValue);
+                }
+
                 switch (column.sqlType()) {
                     case "VARCHAR":
-                        parsedValue = parser == null ? rawValue : parser.apply(rawValue);
-                        subFilters.add(negated + "\"" + column + "\" = '" + parsedValue + "'");
+                        parsedValue = valueParser == null ? rawValue : valueParser.apply(rawValue);
+                        subFilters.add(negated + "\"" + column + "\" " + op + " '" + parsedValue + "' " + extra);
                         break;
                     case "VARCHAR ARRAY":
-                        parsedValue = parser == null ? rawValue : parser.apply(rawValue);
-                        subFilters.add(negated + "'" + parsedValue + "' = ANY(\"" + column + "\")");
+                        parsedValue = valueParser == null ? rawValue : valueParser.apply(rawValue);
+                        subFilters.add(negated + "'" + parsedValue + "' " + op + " ANY(\"" + column + "\") " + extra);
                         break;
                     case "INTEGER ARRAY":
-                        parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        String operator = flipOperator(parseNumericOperator(keyOpValue[1]));
-                        subFilters.add(negated + parsedValue + " " + operator + " ANY(\"" + column + "\")");
+                        parsedValue = valueParser == null ? Integer.parseInt(keyOpValue[2]) : valueParser.apply(keyOpValue[2]);
+                        String operator = flipOperator(parseNumericOperator(op));
+                        subFilters.add(negated + parsedValue + " " + operator + " ANY(\"" + column + "\") " + extra);
                         break;
                     case "INTEGER":
-                        parsedValue = parser == null ? Integer.parseInt(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(negated + "\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        parsedValue = valueParser == null ? Integer.parseInt(keyOpValue[2]) : valueParser.apply(keyOpValue[2]);
+                        subFilters.add(negated + "\"" + column + "\" " + parseNumericOperator(op) + " " + parsedValue + " " + extra);
                         break;
                     case "FLOAT ARRAY":
                     case "DOUBLE ARRAY":
-                        parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        String flipOperator = flipOperator(parseNumericOperator(keyOpValue[1]));
-                        subFilters.add(negated + parsedValue + " " + flipOperator + " ANY(\"" + column + "\")");
+                        parsedValue = valueParser == null ? Double.parseDouble(keyOpValue[2]) : valueParser.apply(keyOpValue[2]);
+                        String flipOperator = flipOperator(parseNumericOperator(op));
+                        subFilters.add(negated + parsedValue + " " + flipOperator + " ANY(\"" + column + "\") " + extra);
                         break;
                     case "FLOAT":
                     case "DOUBLE":
-                        parsedValue = parser == null ? Double.parseDouble(keyOpValue[2]) : parser.apply(keyOpValue[2]);
-                        subFilters.add(negated + "\"" + column + "\" " + parseNumericOperator(keyOpValue[1]) + " " + parsedValue + " ");
+                        parsedValue = valueParser == null ? Double.parseDouble(keyOpValue[2]) : valueParser.apply(keyOpValue[2]);
+                        subFilters.add(negated + "\"" + column + "\" " + parseNumericOperator(op) + " " + parsedValue + " " + extra);
                         break;
                     default:
                         logger.warn("Unsupported column type " + column.getPDataType().getSqlTypeName() + " for column " + column);
                         break;
-
                 }
             }
-            filters.add(subFilters.stream().collect(Collectors.joining(" " + operation.name() + " ", " ( ", " ) ")));
+            filters.add(subFilters.stream().collect(Collectors.joining(" ) " + operation.name() + " ( ", " ( ", " ) ")));
         }
     }
 

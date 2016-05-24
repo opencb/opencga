@@ -50,6 +50,11 @@ import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
+ * Tests that all the VariantDBAdaptor filters and methods work correctly.
+ *
+ * Do not check that all the values are loaded correctly
+ * Do not check that variant annotation is correct
+ *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
@@ -141,73 +146,46 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
-    public void testGetAllVariants_populationFrequency() {
-        Query query = new Query(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(43, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(677, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(139, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05;" +
-                "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(22, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05 && map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05," +
-                "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(794, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American")
-                .getAltAlleleFreq() > 0.05
-                || map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
-
+    public void testGetAllVariants_populationFrequency_no_indels() {
+        testGetAllVariants_populationFrequency_filtered(new Query(TYPE.key(), VariantType.SNV), variant -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType()));
     }
 
     @Test
-    public void testGetAllVariants_populationFrequency_no_indels() {
+    public void testGetAllVariants_populationFrequency() {
+        testGetAllVariants_populationFrequency_filtered(new Query(), variant -> true);
+    }
+
+    public void testGetAllVariants_populationFrequency_filtered(Query baseQuery, Predicate<Variant> filter) {
         final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
-        Predicate<Variant> filterType = variant -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType());
+        Query query;
 
-        Query query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(42, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05),
-                filterType));
-        assertEquals(0, filterPopulation(map -> !(map.getOrDefault("1000GENOMES_phase_1:AFR",  defaultPopulation).getRefAlleleFreq() <= 0.05), filterType));
+        filterPopulation(map -> (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05001), filter);
+        filterPopulation(map -> (map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq() <= 0.05001), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(672, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(0, filterPopulation(map -> !(!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05), filterType));
+        filterPopulation(map -> (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05001), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05;1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001;1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05
-                && (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001
+                        && (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05001)), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05,1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001,1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05
-                || (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001
+                        || (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05001)), filter);
 
     }
 
@@ -219,86 +197,92 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Query query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(179, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+        filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
 
         query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:African_American>0.05");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.05");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(634, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && Math.min(map.get("ESP_6500:African_American").getRefAlleleFreq(),
-                map.get("ESP_6500:African_American").getAltAlleleFreq()) > 0.05), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.05), filterType);
 
         query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
                 .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(179, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+        filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
 
         query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:African_American>0.05;1000GENOMES_phase_1:AFR<=0.05");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.05;1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(32, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && Math.min(map.get("ESP_6500:African_American").getRefAlleleFreq(),
-                map.get("ESP_6500:African_American").getAltAlleleFreq()) > 0.05
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.05
                 && Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
 
         query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:African_American>0.05,1000GENOMES_phase_1:AFR<=0.05");
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.05,1000GENOMES_phase_1:AFR<=0.05");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(781, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && Math.min(map.get("ESP_6500:African_American").getRefAlleleFreq(),
-                map.get("ESP_6500:African_American").getAltAlleleFreq()) > 0.05
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.05
                 || Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType);
 
     }
 
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
-        return filterPopulation(queryResult, predicate, v -> true);
+        return filterPopulation(queryResult, v -> true, predicate.negate());
     }
 
-    public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate, Predicate<Variant> filterVariants) {
-        return filterPopulation(queryResult, predicate, filterVariants);
+    public long filterPopulation(Predicate<Map<String, PopulationFrequency>> negate, Predicate<Variant> filterVariants) {
+        return filterPopulation(queryResult, filterVariants, negate);
     }
 
-    public long filterPopulation(QueryResult<Variant> queryResult, Predicate<Map<String, PopulationFrequency>> predicate, Predicate<Variant> filterVariants) {
+    public long filterPopulation(QueryResult<Variant> queryResult, Predicate<Variant> filterVariants, Predicate<Map<String, PopulationFrequency>> predicate) {
         queryResult.getResult().forEach(variant -> {
             assertNotNull(variant);
-            assertNotNull("In" + variant, variant.getAnnotation());
-            assertNotNull("In" + variant, variant.getAnnotation().getPopulationFrequencies());
+            assertNotNull("In " + variant, variant.getAnnotation());
+//            assertNotNull("In " + variant, variant.getAnnotation().getPopulationFrequencies());
         });
-        Set<Variant> set = allVariants.getResult()
+        Set<String> expectedVariants = allVariants.getResult()
                 .stream()
                 .filter(filterVariants.and(variant -> variant.getAnnotation() != null))
-                .filter(variant -> predicate.negate().test(variant.getAnnotation().getPopulationFrequencies() == null
-                        ? Collections.<String, PopulationFrequency>emptyMap()
-                        : variant.getAnnotation().getPopulationFrequencies()
-                        .stream()
-                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p))))
+                .filter(variant -> {
+                    Map<String, PopulationFrequency> map = variant.getAnnotation().getPopulationFrequencies() == null
+                            ? Collections.emptyMap()
+                            : variant.getAnnotation().getPopulationFrequencies()
+                            .stream()
+                            .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p));
+                    return predicate.test(map);
+                })
+                .map(Variant::toString)
                 .collect(Collectors.toSet());
 
-        for (Variant variant : set) {
-            Set<Variant> result = new HashSet<>(queryResult.getResult());
+        assertTrue("Expect to get at least one result", expectedVariants.size() > 0);
+
+        for (String variant : expectedVariants) {
+            Set<String> result = queryResult.getResult().stream().map(Variant::toString).collect(Collectors.toSet());
             if (!result.contains(variant)) {
                 System.out.println("variant missing = " + variant);
             }
         }
         for (Variant variant : queryResult.getResult()) {
-            if (!set.contains(variant)) {
+            if (!expectedVariants.contains(variant.toString())) {
                 System.out.println("variant not suppose to be = " + variant);
             }
         }
 
-        assertEquals(set.size(), queryResult.getNumResults());
-        return queryResult.getResult().stream()
-                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream()
-                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p)))
-                .filter(predicate)
+        assertEquals(expectedVariants.size(), queryResult.getNumResults());
+        long count = queryResult.getResult().stream()
+                .map(variant -> (variant.getAnnotation().getPopulationFrequencies() == null
+                        ? Collections.<String, PopulationFrequency>emptyMap()
+                        : variant.getAnnotation().getPopulationFrequencies()
+                            .stream()
+                            .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p))))
+                .filter(predicate.negate())
                 .count();
+        assertEquals(0, count);
+        return count;
     }
 
     @Test
