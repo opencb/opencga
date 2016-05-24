@@ -20,8 +20,11 @@ public interface AuthorizationManager {
     String FILTER_ROUTE_FILES = "projects.studies.files.";
     String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
 
+    @Deprecated
     String ADMINS_ROLE = "@admins";
+    @Deprecated
     String DATA_MANAGERS_ROLE = "dataManagers";
+    @Deprecated
     String MEMBERS_ROLE = "@members";
 
     String OTHER_USERS_ID = "*";

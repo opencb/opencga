@@ -34,7 +34,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.ProjectConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -558,9 +557,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            ((Document) projectParameters).put("projects.$.attributes." + QueryParams.STATUS_STATUS.key(),
+            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_STATUS.key(),
                     parameters.get(QueryParams.STATUS_STATUS.key()));
-            ((Document) projectParameters).put("projects.$.attributes." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
 
         QueryResult<UpdateResult> updateResult = new QueryResult<>();
@@ -591,7 +590,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<Project> update(long id, ObjectMap parameters) throws CatalogDBException {
         long startTime = startQuery();
         checkProjectId(id);
-        QueryResult<Long> update = update(new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), id), parameters);
+        QueryResult<Long> update = update(new Query(QueryParams.ID.key(), id), parameters);
         if (update.getNumTotalResults() != 1) {
             throw new CatalogDBException("Could not update project with id " + id);
         }
@@ -607,7 +606,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
             Project project = get(query, options).first();
             throw new CatalogDBException("The project {" + id + "} was already " + project.getStatus().getStatus());
         }
@@ -755,7 +754,8 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
      */
     private void checkCanDelete(long projectId) throws CatalogDBException {
         checkProjectId(projectId);
-        Query query = new Query(PRIVATE_PROJECT_ID, projectId).append(CatalogStudyDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectId)
+                .append(CatalogStudyDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
         Long count = dbAdaptorFactory.getCatalogStudyDBAdaptor().count(query).first();
         if (count > 0) {
             throw new CatalogDBException("The project {" + projectId + "} cannot be deleted. The project has " + count

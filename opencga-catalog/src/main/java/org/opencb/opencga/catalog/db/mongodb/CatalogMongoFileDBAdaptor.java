@@ -104,6 +104,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -127,7 +130,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException {
         checkFileId(fileId);
-        Query query = new Query(QueryParams.ID.key(), fileId);
+        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
         return get(query, options);
     }
 
@@ -423,7 +426,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
         QueryResult fileQueryResult = null;
         if (parameters.containsKey(QueryParams.DISK_USAGE.key())) {
-            QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     FILTER_ROUTE_FILES + QueryParams.DISK_USAGE.key(), FILTER_ROUTE_FILES + PRIVATE_STUDY_ID));
             fileQueryResult = nativeGet(query, queryOptions);
         }
@@ -747,10 +750,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
 
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -766,7 +765,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                     case DIRECTORY:
                         // We add the regex in order to look for all the files under the given directory
                         String value = (String) query.get(queryParam.key());
-                        String regExPath = "~^" + value + "[^/]+/?$";
+                        String regExPath = "~" + value + "[^/]+/?$";
                         Query pathQuery = new Query(QueryParams.PATH.key(), regExPath);
                         addAutoOrQuery(QueryParams.PATH.key(), QueryParams.PATH.key(), pathQuery, QueryParams.PATH.type(), andBsonList);
                         break;
@@ -949,5 +948,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         // Remove references from jobs
         result = dbAdaptorFactory.getCatalogJobDBAdaptor().extractFilesFromJobs(Collections.singletonList(fileId));
         logger.debug("FileId {} extracted from {} jobs", fileId, result.first());
+    }
+
+    public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$pull", new Document(QueryParams.SAMPLE_IDS.key(), new Document("$in", sampleIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
+        return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 }

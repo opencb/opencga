@@ -100,6 +100,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Deprecated
     @Override
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException {
+        checkIndividualId(individualId);
         return get(new Query(QueryParams.ID.key(), individualId), options);
 //        long startQuery = startQuery();
 //

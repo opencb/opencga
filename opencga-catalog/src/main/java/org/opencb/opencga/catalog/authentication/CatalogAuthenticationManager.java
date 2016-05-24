@@ -4,6 +4,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -19,18 +21,13 @@ import java.util.Properties;
 public class CatalogAuthenticationManager implements AuthenticationManager {
 
     protected final CatalogUserDBAdaptor userDBAdaptor;
+    protected final CatalogMetaDBAdaptor metaDBAdaptor;
     protected final Properties catalogProperties;
     protected final CatalogConfiguration catalogConfiguration;
 
-    @Deprecated
-    public CatalogAuthenticationManager(CatalogUserDBAdaptor userDBAdaptor, Properties properties) {
-        this.userDBAdaptor = userDBAdaptor;
-        catalogProperties = properties;
-        this.catalogConfiguration = null;
-    }
-
-    public CatalogAuthenticationManager(CatalogUserDBAdaptor userDBAdaptor, CatalogConfiguration catalogConfiguration) {
-        this.userDBAdaptor = userDBAdaptor;
+    public CatalogAuthenticationManager(CatalogDBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
+        this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
+        this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
         catalogProperties = null;
         this.catalogConfiguration = catalogConfiguration;
     }
@@ -46,7 +43,12 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     @Override
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
         String cypherPassword = (password.length() != 40) ? cipherPassword(password) : password;
-        String storedPassword = userDBAdaptor.getUser(userId, new QueryOptions("include", "password"), null).first().getPassword();
+        String storedPassword;
+        if (userId.equals("admin")) {
+            storedPassword = metaDBAdaptor.getAdminPassword();
+        } else {
+            storedPassword = userDBAdaptor.getUser(userId, new QueryOptions("include", "password"), null).first().getPassword();
+        }
         if (storedPassword.equals(cypherPassword)) {
             return true;
         } else {
