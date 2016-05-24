@@ -292,7 +292,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
+        Session session = new Session(sessionIp, 20);
 
         String userId = "anonymous_" + session.getId();
 
@@ -309,18 +309,20 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     }
 
+    @Deprecated
     @Override
-    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
-            throws CatalogException, IOException {
+    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
 
+        authenticationManager.authenticate(userId, password, true);
+
+        Session session = new Session(sessionIp, 20);
 
         // FIXME This should code above
         return userDBAdaptor.login(userId, (password.length() != 40)
-                ? CatalogAuthenticationManager.cipherPassword(password)
+                ? CatalogAuthenticationManager.cypherPassword(password)
                 : password, session);
     }
 

@@ -81,16 +81,16 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //    }
     @Override
     public QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-//        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(PRIVATE_ID, jobId),
-//                          filterOptions(options, FILTER_ROUTE_JOBS));
-        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
-        Job job = parseJob(queryResult);
-        if (job != null) {
-            return endQuery("Get job", startTime, Arrays.asList(job));
-        } else {
-            throw CatalogDBException.idNotFound("Job", jobId);
-        }
+        checkJobId(jobId);
+        return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+//        long startTime = startQuery();
+//        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
+//        Job job = parseJob(queryResult);
+//        if (job != null) {
+//            return endQuery("Get job", startTime, Arrays.asList(job));
+//        } else {
+//            throw CatalogDBException.idNotFound("Job", jobId);
+//        }
     }
 
     @Override
@@ -592,6 +592,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         * */
 
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -606,6 +609,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -831,10 +837,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {

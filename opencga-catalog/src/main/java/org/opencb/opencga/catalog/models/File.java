@@ -328,7 +328,7 @@ public class File {
 
         public static final String STAGE = "STAGE";
         public static final String MISSING = "MISSING";
-        public static final String TRASHED = "TRASHED";
+//        public static final String TRASHED = "TRASHED";
 
         public FileStatus(String status, String message) {
             if (isValid(status)) {

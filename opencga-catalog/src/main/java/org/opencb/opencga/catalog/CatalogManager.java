@@ -39,6 +39,8 @@ import org.opencb.opencga.catalog.managers.*;
 import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.catalog.session.CatalogSessionManager;
+import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
@@ -86,8 +88,9 @@ public class CatalogManager implements AutoCloseable {
     private ISampleManager sampleManager;
     private Properties properties;
     private AuthenticationManager authenticationManager;
-    private AuthorizationManager authorizationManager;
     private CatalogAuditManager auditManager;
+    private SessionManager sessionManager;
+    private AuthorizationManager authorizationManager;
 
     private CatalogConfiguration catalogConfiguration;
 
@@ -174,6 +177,7 @@ public class CatalogManager implements AutoCloseable {
                 .getCatalogUserDBAdaptor(), authorizationManager, catalogConfiguration);
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
+        sessionManager = new CatalogSessionManager(catalogDBAdaptorFactory, catalogConfiguration);
         userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
@@ -432,9 +436,13 @@ public class CatalogManager implements AutoCloseable {
         return userManager.loginAsAnonymous(sessionIp);
     }
 
-    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
-            throws CatalogException, IOException {
-        return userManager.login(userId, password, sessionIp);
+    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
+        ParamUtils.checkParameter(userId, "userId");
+        ParamUtils.checkParameter(password, "password");
+        ParamUtils.checkParameter(sessionIp, "sessionIp");
+
+        authenticationManager.authenticate(userId, password, true);
+        return sessionManager.createToken(userId, sessionIp);
     }
 
     public QueryResult logout(String userId, String sessionId) throws CatalogException {

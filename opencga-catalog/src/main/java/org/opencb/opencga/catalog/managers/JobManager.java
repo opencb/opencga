@@ -184,7 +184,13 @@ public class JobManager extends AbstractManager implements IJobManager {
             query.put(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
         //query.putAll(options);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId;
+        if (sessionId.length() == 40) {
+            catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().checkValidAdminSession(sessionId);
+            userId = "admin";
+        } else {
+            userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        }
 
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
