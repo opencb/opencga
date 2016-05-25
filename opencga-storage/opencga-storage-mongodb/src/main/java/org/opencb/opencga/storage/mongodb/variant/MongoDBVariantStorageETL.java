@@ -437,8 +437,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         try {
             if (chromosomeToLoad != null) {
-                logger.info("Merging files {} in the the chromosomes: {}. IndexedFiles in this chromosome: {}",
-                        fileIds, chromosomeToLoad, indexedFiles);
+                logger.info("Merging files {} in chromosome: {}. Other indexed files in chromosome {}: {}",
+                        fileIds, chromosomeToLoad, chromosomeToLoad, indexedFiles);
             } else {
                 logger.info("Merging files " + fileIds);
             }
