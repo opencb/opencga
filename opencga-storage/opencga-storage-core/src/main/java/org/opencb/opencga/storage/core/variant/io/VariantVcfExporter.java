@@ -198,6 +198,13 @@ public class VariantVcfExporter {
                     if (StringUtils.isNumeric(returnedSample)) {
                         int sampleId = Integer.parseInt(returnedSample);
                         newReturnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
+                    } else {
+                        if (studyConfiguration.getSampleIds().containsKey(returnedSample)) {
+                            newReturnedSamples.add(returnedSample);
+                        } else {
+                            throw new IllegalArgumentException("Unknown sample " + returnedSample + " for study "
+                                    + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ")");
+                        }
                     }
                 }
                 returnedSamples = newReturnedSamples;
@@ -317,7 +324,6 @@ public class VariantVcfExporter {
             }
         }
 
-        List<String> ids = variant.getIds();
 
         if (originalAlleles == null) {
             originalAlleles = allelesArray;
@@ -341,11 +347,17 @@ public class VariantVcfExporter {
         }
 
 
-        if (ids != null) {
-            Optional<String> reduce = variant.getIds().stream().reduce((left, right) -> left + "," + right);
-            if (reduce.isPresent()) {
-                variantContextBuilder.id(reduce.get());
+        if (StringUtils.isNotEmpty(variant.getId()) && !variant.toString().equals(variant.getId())) {
+            StringBuilder ids = new StringBuilder();
+            ids.append(variant.getId());
+            if (variant.getNames() != null) {
+                for (String name : variant.getNames()) {
+                    ids.append(VCFConstants.ID_FIELD_SEPARATOR).append(name);
+                }
             }
+            variantContextBuilder.id(ids.toString());
+        } else {
+            variantContextBuilder.id(VCFConstants.EMPTY_ID_FIELD);
         }
 
         return variantContextBuilder.make();

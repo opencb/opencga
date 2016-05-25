@@ -4,6 +4,7 @@ import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteResult;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
@@ -359,6 +360,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         return executeMongoDBOperations(mongoDBOps);
     }
 
+//    public Integer getEnd(Variant variant) {
+//        return variant.getType().equals(VariantType.SYMBOLIC) || variant.getType().equals(VariantType.NO_VARIATION)
+//                ? variant.getEnd()
+//                : variant.getStart() + Math.max(variant.getReference().length() - 1, -1 /* 0 */);
+////        return variant.getEnd();
+//    }
+
     /**
      * Given a document from the stage collection, transforms the document into a set of MongoDB operations.
      *
@@ -402,7 +410,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     mongoDBOps.skipped++;
                     continue;
                 }
-                ids.addAll(variant.getIds());
+                if (StringUtils.isNotEmpty(variant.getId()) && !variant.getId().equals(variant.toString())) {
+                    ids.add(variant.getId());
+                }
+                if (variant.getNames() != null) {
+                    ids.addAll(variant.getNames());
+                }
                 emptyVar.setType(variant.getType());
                 variant.getStudies().get(0).setSamplesPosition(getSamplesPosition(fileId));
                 Document newDocument = studyConverter.convertToStorageType(variant.getStudies().get(0));
