@@ -279,8 +279,8 @@ public class JobWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Search jobs", position = 3)
     public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
-                           @ApiParam(value = "input", required = true) @DefaultValue("") @QueryParam("input") String input,
-                           @ApiParam(value = "output", required = true) @DefaultValue("") @QueryParam("output") String output) {
+                           @ApiParam(value = "input", required = false) @DefaultValue("") @QueryParam("input") String input,
+                           @ApiParam(value = "output", required = false) @DefaultValue("") @QueryParam("output") String output) {
         try {
             int studyIdNum = catalogManager.getStudyId(studyId);
 
