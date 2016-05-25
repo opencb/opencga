@@ -16,23 +16,27 @@
 
 
 db.getCollection('user').createIndex({"name": 1})
-db.getCollection('user').createIndex({"sessions.id": 1})
+db.getCollection('user').createIndex({"sessions.id": 1}, {"unique": true})
 
-db.getCollection('study').createIndex({"alias": 1})
+//db.getCollection('study').createIndex({"name": 1, "_projectId": 1}, {"unique": true}) ??
+db.getCollection('study').createIndex({"alias": 1, "_projectId": 1}, {"unique": true})
 db.getCollection('study').createIndex({"_projectId": 1})
 
-db.getCollection('sample').createIndex({"name": 1})
+db.getCollection('sample').createIndex({"name": 1, "_studyId": 1}, {"unique": true})
 db.getCollection('sample').createIndex({"annotationSets.variableSetId": 1})
 db.getCollection('sample').createIndex({"annotationSets.annotations.id": 1})
 db.getCollection('sample').createIndex({"annotationSets.annotations.value": 1})
 db.getCollection('sample').createIndex({"_studyId": 1})
 
+db.getCollection('individual').createIndex({"name": 1, "_studyId": 1}, {"unique": true})
 db.getCollection('individual').createIndex({"annotationSets.variableSetId": 1})
 db.getCollection('individual').createIndex({"annotationSets.annotations.id": 1})
 db.getCollection('individual').createIndex({"annotationSets.annotations.value": 1})
 db.getCollection('individual').createIndex({"_studyId": 1})
 
 db.getCollection('file').createIndex({"name": 1})
-db.getCollection('file').createIndex({"path": 1})
+db.getCollection('file').createIndex({"path": 1, "_studyId": 1}, {"unique": true})
 db.getCollection('file').createIndex({"jobId": 1})
 db.getCollection('file').createIndex({"_studyId": 1})
+
+db.getCollection('cohort').createIndex({"name": 1, "_studyId": 1}, {"unique": true})

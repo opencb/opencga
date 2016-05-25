@@ -16,10 +16,10 @@
 
 package org.opencb.opencga.catalog.client;
 
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
@@ -28,6 +28,7 @@ import java.io.IOException;
 /**
  * Created by jacobo on 10/02/15.
  */
+@Deprecated
 public class CatalogDBClient implements org.opencb.opencga.catalog.client.CatalogClient {
 
     private final CatalogManager catalogManager;
@@ -35,8 +36,8 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     private final ProjectManager catalogProjectClient;
     private String sessionId;
     private String userId;
-    private int projectId;
-    private int studyId;
+    private long projectId;
+    private long studyId;
 
     public CatalogDBClient(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
@@ -55,106 +56,6 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
         this(catalogManager);
         this.userId = userId;
         this.sessionId = catalogManager.login(userId, password, sessionIp).getResult().get(0).getString("sessionId");
-    }
-
-    public class UserManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogUserClient {
-
-        @Override
-        public String getUserId(String sessionId) {
-            return catalogManager.getUserIdBySessionId(sessionId);
-        }
-
-        @Override
-        public QueryResult<User> create(QueryOptions options) throws CatalogException {
-            return create(
-                    options.getString("id"),
-                    options.getString("name"),
-                    options.getString("email"),
-                    options.getString("password"),
-                    options.getString("organization"),
-                    options
-            );
-        }
-
-        @Override
-        public QueryResult<User> create(String id, String name, String email, String password, String organization, QueryOptions options) throws CatalogException {
-            return catalogManager.createUser(id, name, email, password, organization, options, getSessionId());
-        }
-
-        @Override
-        public QueryResult<User> read(QueryOptions options) throws CatalogException {
-            return catalogManager.getUser(userId, (options != null)? options.getString("lastActivity") : null, options, getSessionId());
-        }
-
-        @Override
-        public QueryResult<User> readAll(QueryOptions options) {
-            return null;
-        }
-
-        @Override
-        public QueryResult<User> update(QueryOptions params) throws CatalogException {
-            return catalogManager.modifyUser(userId, params, sessionId);
-        }
-
-        @Override
-        public QueryResult<User> delete() throws CatalogException {
-            catalogManager.deleteUser(userId, sessionId);
-            return new QueryResult<>("deleteUser");
-        }
-
-        @Override
-        public QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-            catalogManager.deleteUser(userId, sessionId);
-            return new QueryResult<>("changePassword");
-        }
-    }
-
-    class ProjectManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogProjectClient {
-
-        @Override
-        public String getUserId(int projectId) throws CatalogException {
-            return null;
-        }
-
-        @Override
-        public Integer getProjectId(String projectId) throws CatalogException {
-            return catalogManager.getProjectId(projectId);
-        }
-
-        @Override
-        public QueryResult<Project> create(QueryOptions options) throws CatalogException {
-            return create(options.getString("ownerId", userId),
-                    options.getString("name"),
-                    options.getString("alias"),
-                    options.getString("description"),
-                    options.getString("organization"),
-                    options);
-        }
-
-        @Override
-        public QueryResult<Project> create(String ownerId, String name, String alias, String description, String organization, QueryOptions options) throws CatalogException {
-            return catalogManager.createProject(ownerId, name, alias, description, organization, options, sessionId);
-        }
-
-        @Override
-        public QueryResult<Project> read(QueryOptions options) throws CatalogException {
-            return null;
-        }
-
-        @Override
-        public QueryResult<Project> readAll(QueryOptions options) throws CatalogException {
-            return null;
-        }
-
-        @Override
-        public QueryResult<Project> update(QueryOptions params) throws CatalogException {
-            return null;
-        }
-
-        @Override
-        public QueryResult<Project> delete() throws CatalogException {
-            return null;
-        }
     }
 
     @Override
@@ -194,7 +95,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogProjectClient projects(int projectId) {
+    public CatalogProjectClient projects(long projectId) {
         this.projectId = projectId;
         return null;
     }
@@ -205,7 +106,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogStudyClient studies(int studyId) {
+    public CatalogStudyClient studies(long studyId) {
         return null;
     }
 
@@ -215,7 +116,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogFileClient files(int fileId) {
+    public CatalogFileClient files(long fileId) {
         return null;
     }
 
@@ -225,7 +126,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     }
 
     @Override
-    public CatalogJobClient jobs(int jobId) {
+    public CatalogJobClient jobs(long jobId) {
         return null;
     }
 
@@ -233,5 +134,107 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
     public void close() throws CatalogException {
         catalogManager.logout(userId, sessionId);
 //        catalogManager.close();
+    }
+
+    public class UserManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogUserClient {
+
+        @Override
+        public String getUserId(String sessionId) {
+            return catalogManager.getUserIdBySessionId(sessionId);
+        }
+
+        @Override
+        public QueryResult<User> create(QueryOptions options) throws CatalogException {
+            return create(
+                    options.getString("id"),
+                    options.getString("name"),
+                    options.getString("email"),
+                    options.getString("password"),
+                    options.getString("organization"),
+                    options
+            );
+        }
+
+        @Override
+        public QueryResult<User> create(String id, String name, String email, String password, String organization, QueryOptions options)
+                throws CatalogException {
+            return catalogManager.createUser(id, name, email, password, organization, 0L, options, getSessionId());
+        }
+
+        @Override
+        public QueryResult<User> read(QueryOptions options) throws CatalogException {
+            return catalogManager.getUser(userId, (options != null) ? options.getString("lastActivity") : null, options, getSessionId());
+        }
+
+        @Override
+        public QueryResult<User> readAll(QueryOptions options) {
+            return null;
+        }
+
+        @Override
+        public QueryResult<User> update(QueryOptions params) throws CatalogException {
+            return catalogManager.modifyUser(userId, params, sessionId);
+        }
+
+        @Override
+        public QueryResult<User> delete() throws CatalogException {
+            catalogManager.deleteUser(userId, null, sessionId);
+            return new QueryResult<>("deleteUser");
+        }
+
+        @Override
+        public QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
+            catalogManager.deleteUser(userId, null, sessionId);
+            return new QueryResult<>("changePassword");
+        }
+    }
+
+    class ProjectManager implements org.opencb.opencga.catalog.client.CatalogClient.CatalogProjectClient {
+
+        @Override
+        public String getUserId(long projectId) throws CatalogException {
+            return null;
+        }
+
+        @Override
+        public Long getProjectId(String projectId) throws CatalogException {
+            return catalogManager.getProjectId(projectId);
+        }
+
+        @Override
+        public QueryResult<Project> create(QueryOptions options) throws CatalogException {
+            return create(options.getString("ownerId", userId),
+                    options.getString("name"),
+                    options.getString("alias"),
+                    options.getString("description"),
+                    options.getString("organization"),
+                    options);
+        }
+
+        @Override
+        public QueryResult<Project> create(String ownerId, String name, String alias, String description, String organization,
+                                           QueryOptions options) throws CatalogException {
+            return catalogManager.createProject(ownerId, name, alias, description, organization, options, sessionId);
+        }
+
+        @Override
+        public QueryResult<Project> read(QueryOptions options) throws CatalogException {
+            return null;
+        }
+
+        @Override
+        public QueryResult<Project> readAll(QueryOptions options) throws CatalogException {
+            return null;
+        }
+
+        @Override
+        public QueryResult<Project> update(QueryOptions params) throws CatalogException {
+            return null;
+        }
+
+        @Override
+        public QueryResult<Project> delete() throws CatalogException {
+            return null;
+        }
     }
 }

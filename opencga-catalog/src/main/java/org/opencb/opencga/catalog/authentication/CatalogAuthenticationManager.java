@@ -1,14 +1,16 @@
 package org.opencb.opencga.catalog.authentication;
 
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.StringUtils;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
-import org.opencb.opencga.core.common.StringUtils;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.Properties;
@@ -19,17 +21,34 @@ import java.util.Properties;
 public class CatalogAuthenticationManager implements AuthenticationManager {
 
     protected final CatalogUserDBAdaptor userDBAdaptor;
+    protected final CatalogMetaDBAdaptor metaDBAdaptor;
     protected final Properties catalogProperties;
+    protected final CatalogConfiguration catalogConfiguration;
 
-    public CatalogAuthenticationManager(CatalogUserDBAdaptor userDBAdaptor, Properties properties) {
-        this.userDBAdaptor = userDBAdaptor;
-        catalogProperties = properties;
+    public CatalogAuthenticationManager(CatalogDBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
+        this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
+        this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
+        catalogProperties = null;
+        this.catalogConfiguration = catalogConfiguration;
+    }
+
+    public static String cipherPassword(String password) throws CatalogException {
+        try {
+            return StringUtils.sha1(password);
+        } catch (NoSuchAlgorithmException e) {
+            throw new CatalogDBException("Could not encode password", e);
+        }
     }
 
     @Override
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
         String cypherPassword = (password.length() != 40) ? cipherPassword(password) : password;
-        String storedPassword = userDBAdaptor.getUser(userId, new QueryOptions("include", "password"), null).first().getPassword();
+        String storedPassword;
+        if (userId.equals("admin")) {
+            storedPassword = metaDBAdaptor.getAdminPassword();
+        } else {
+            storedPassword = userDBAdaptor.getUser(userId, new QueryOptions("include", "password"), null).first().getPassword();
+        }
         if (storedPassword.equals(cypherPassword)) {
             return true;
         } else {
@@ -66,22 +85,20 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 
+        /*
         String mailUser = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_USER);
         String mailPassword = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PASSWORD);
         String mailHost = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_HOST);
         String mailPort = catalogProperties.getProperty(CatalogManager.CATALOG_MAIL_PORT);
+*/
+        String mailUser = catalogConfiguration.getEmailServer().getFrom();
+        String mailPassword = catalogConfiguration.getEmailServer().getPassword();
+        String mailHost = catalogConfiguration.getEmailServer().getHost();
+        String mailPort = catalogConfiguration.getEmailServer().getPort();
 
         MailUtils.sendResetPasswordMail(email, newPassword, mailUser, mailPassword, mailHost, mailPort);
 
         return qr;
-    }
-
-    public static String cipherPassword(String password) throws CatalogException {
-        try {
-            return StringUtils.sha1(password);
-        } catch (NoSuchAlgorithmException e) {
-            throw new CatalogDBException("Could not encode password", e);
-        }
     }
 
 }

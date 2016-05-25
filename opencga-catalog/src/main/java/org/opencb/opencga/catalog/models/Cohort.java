@@ -16,84 +16,80 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.acls.CohortAcl;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
- *
- * Set of samples grouped according to criteria
+ *         <p>
+ *         Set of samples grouped according to criteria
  */
 public class Cohort {
 
-    private int id;
+    private long id;
     private String name;
     private Type type;
     private String creationDate;
-    private Status status;
+    private CohortStatus status;
     private String description;
 
-    private List<Integer> samples;
+    private List<Long> samples;
+    private List<CohortAcl> acls;
+    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    public enum Status {NONE, CALCULATING, READY, INVALID}
-
-    //Represents the criteria of grouping samples in the cohort
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
-
     public Cohort() {
     }
 
-    public Cohort(String name, Type type, String creationDate, String description, List<Integer> samples,
-                  Map<String, Object> attributes) {
-        this(-1, name, type, creationDate, Status.NONE, description, samples, Collections.emptyMap(), attributes);
+    public Cohort(String name, Type type, String creationDate, String description, List<Long> samples,
+                  Map<String, Object> attributes) throws CatalogException {
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, Collections.emptyMap(), attributes);
     }
 
-    public Cohort(int id, String name, Type type, String creationDate, Status status, String description, List<Integer> samples,
-                  Map<String, Object> stats, Map<String, Object> attributes) {
+    public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Long> samples,
+                  Map<String, Object> stats, Map<String, Object> attributes) throws CatalogException {
         this.id = id;
         this.name = name;
         this.type = type;
         this.creationDate = creationDate;
-        this.status = status;
+        this.status = cohortStatus;
         this.description = description;
         this.samples = samples;
+        this.acls = Collections.emptyList();
+        this.annotationSets = Collections.emptyList();
         this.stats = stats;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Cohort{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", type=" + type +
-                ", creationDate='" + creationDate + '\'' +
-                ", status=" + status +
-                ", description='" + description + '\'' +
-                ", samples=" + samples +
-                ", stats=" + stats +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Cohort{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", samples=").append(samples);
+        sb.append(", acls=").append(acls);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -121,11 +117,11 @@ public class Cohort {
         this.creationDate = creationDate;
     }
 
-    public Status getStatus() {
+    public CohortStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(CohortStatus status) {
         this.status = status;
     }
 
@@ -137,11 +133,11 @@ public class Cohort {
         this.description = description;
     }
 
-    public List<Integer> getSamples() {
+    public List<Long> getSamples() {
         return samples;
     }
 
-    public void setSamples(List<Integer> samples) {
+    public void setSamples(List<Long> samples) {
         this.samples = samples;
     }
 
@@ -159,5 +155,69 @@ public class Cohort {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public List<CohortAcl> getAcls() {
+        return acls;
+    }
+
+    public Cohort setAcls(List<CohortAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public static class CohortStatus extends Status {
+
+        public static final String NONE = "NONE";
+        public static final String CALCULATING = "CALCULATING";
+        public static final String INVALID = "INVALID";
+
+        public CohortStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public CohortStatus(String status) {
+            this(status, "");
+        }
+
+        public CohortStatus() {
+            this(NONE, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(NONE) || status.equals(CALCULATING) || status.equals(INVALID))) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+    //Represents the criteria of grouping samples in the cohort
+    @Deprecated
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        FAMILY,
+        TRIO,
+        COLLECTION
     }
 }

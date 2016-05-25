@@ -18,13 +18,13 @@ import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Created on 06/10/15
+ * Created on 06/10/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class VariantAvroReader implements VariantReader {
 
-    final private File metadataFile;
+    private final File metadataFile;
     private VariantSource source;
     private LinkedHashMap<String, Integer> samplesPosition;
     private final AvroDataReader<VariantAvro> avroDataReader;
@@ -50,8 +50,8 @@ public class VariantAvroReader implements VariantReader {
         try (InputStream inputStream = metadataFile.toString().endsWith("gz")
                 ? new GZIPInputStream(new FileInputStream(metadataFile))
                 : metadataFile.toString().endsWith("snappy")
-                ? new SnappyInputStream(new FileInputStream(metadataFile))
-                : new FileInputStream(metadataFile)) {
+                        ? new SnappyInputStream(new FileInputStream(metadataFile))
+                        : new FileInputStream(metadataFile)) {
             ObjectMapper jsonObjectMapper = new ObjectMapper();
 
             // Read global JSON file and copy its info into the already available VariantSource object
@@ -76,6 +76,7 @@ public class VariantAvroReader implements VariantReader {
         for (Map.Entry<String, Integer> entry : samplesPosition.entrySet()) {
             samples[entry.getValue()] = entry.getKey();
         }
+
         for (int i = 0; i < samples.length; i++) {
             this.samplesPosition.put(samples[i], i);
         }

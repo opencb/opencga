@@ -16,126 +16,104 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.JobAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
  */
 public class Job {
 
-    /**
-     * Catalog unique identifier
-     */
-    private int id;
-    /**
-     * User given job name
-     */
-    private String name;
-    /**
-     * UserId of the user that created the job
-     */
-    private String userId;
-    /**
-     * Name of the tool to be executed
-     */
-    private String toolName;
-    /**
-     * Job creation date
-     */
-    private String date;
-
-    private String description;
-    /**
-     * Start time in milliseconds
-     */
-    private long startTime;
-    /**
-     * End time in milliseconds
-     */
-    private long endTime;
-    private String outputError;
-    private String execution;
-    private Map<String, String> params;
-    private String commandLine;
-    private int visits;
-    private Status status;
-    private long diskUsage;
-
-    private int outDirId;
-    private URI tmpOutDirUri;
-
-    private List<Integer> input;    // input files to this job
-    private List<Integer> output;   // output files of this job
-
-    private List<String> tags;
-    private Map<String, Object> attributes;
-
-    private Map<String, Object> resourceManagerAttributes;
-
-    private String error;
-    private String errorDescription;
-
-    public enum Status {
-       PREPARED,              //Job is ready to be executed. Daemon will enqueue it.
-       ERROR,                 //Job with errors. See "error"
-       QUEUED,
-       RUNNING,
-       DONE,                  //Job finished, but output not ready. Daemon will process the output.
-//       PROCESSING_OUTPUT,     //Job finished, but output not ready. Daemon will process the output.
-       READY,                 //Job finished and ready
-    }
-
-    public enum Type {
-        ANALYSIS,
-        INDEX,
-        COHORT_STATS,
-    }
-
     /* Attributes known keys */
     public static final String TYPE = "type";
     public static final String INDEXED_FILE_ID = "indexedFileId";
-
     /* ResourceManagerAttributes known keys */
     public static final String JOB_SCHEDULER_NAME = "jobSchedulerName";
-
     /* Errors */
-    public static final Map<String, String> errorDescriptions;
-
+    public static final Map<String, String> ERROR_DESCRIPTIONS;
     public static final String ERRNO_NONE = null;
     public static final String ERRNO_NO_QUEUE = "ERRNO_NO_QUEUE";
     public static final String ERRNO_FINISH_ERROR = "ERRNO_FINISH_ERROR";
     public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
 
     static {
-        errorDescriptions = new HashMap<>();
-        errorDescriptions.put(ERRNO_NONE, null);
-        errorDescriptions.put(ERRNO_NO_QUEUE, "Unable to queue job");
-        errorDescriptions.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-        errorDescriptions.put(ERRNO_ABORTED, "Job aborted");
-
+        ERROR_DESCRIPTIONS = new HashMap<>();
+        ERROR_DESCRIPTIONS.put(ERRNO_NONE, null);
+        ERROR_DESCRIPTIONS.put(ERRNO_NO_QUEUE, "Unable to queue job");
+        ERROR_DESCRIPTIONS.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+        ERROR_DESCRIPTIONS.put(ERRNO_ABORTED, "Job aborted");
     }
+
+    /**
+     * Catalog unique identifier.
+     */
+    private long id;
+
+    /**
+     * User given job name.
+     */
+    private String name;
+
+    /**
+     * UserId of the user that created the job.
+     */
+    private String userId;
+
+    /**
+     * Name of the tool to be executed.
+     */
+    private String toolName;
+
+    /**
+     * Job creation date.
+     */
+    private String date;
+    private String description;
+
+    /**
+     * Start time in milliseconds.
+     */
+    private long startTime;
+
+    /**
+     * End time in milliseconds.
+     */
+    private long endTime;
+    private String outputError;
+    private String execution;
+    private Map<String, String> params;
+    private String commandLine;
+    private long visits;
+    private JobStatus status;
+    private long diskUsage;
+    private long outDirId;
+    private URI tmpOutDirUri;
+    private List<Long> input;    // input files to this job
+    private List<Long> output;   // output files of this job
+    private List<String> tags;
+    private List<JobAcl> acls;
+    private Map<String, Object> attributes;
+    private Map<String, Object> resourceManagerAttributes;
+    private String error;
+    private String errorDescription;
 
     public Job() {
     }
 
-
-    public Job(String name, String userId, String toolName, String description, String commandLine, int outDirId,
-               URI tmpOutDirUri, List<Integer> input) {
-        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1, Status.PREPARED, 0,
-                outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(), new HashMap<>(),
-                new HashMap<>());
+    public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId, URI tmpOutDirUri,
+               List<Long> input) {
+        this(-1, name, userId, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", commandLine, -1,
+                new JobStatus(JobStatus.PREPARED), 0, outDirId, tmpOutDirUri, input, new LinkedList<>(), new LinkedList<>(),
+                new HashMap<>(), new HashMap<>());
     }
 
-    public Job(int id, String name, String userId, String toolName, String date, String description,
-               long startTime, long endTime, String outputError, String commandLine, int visits, Status status,
-               long diskUsage, int outDirId, URI tmpOutDirUri, List<Integer> input,
-               List<Integer> output, List<String> tags, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+    public Job(long id, String name, String userId, String toolName, String date, String description, long startTime, long endTime,
+               String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId, URI tmpOutDirUri,
+               List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
+               Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
@@ -147,7 +125,7 @@ public class Job {
         this.outputError = outputError;
         this.commandLine = commandLine;
         this.visits = visits;
-        this.status = status;
+        this.status = jobStatus;
         this.diskUsage = diskUsage;
         this.outDirId = outDirId;
 //        this.tmpOutDirId = tmpOutDirId;
@@ -155,6 +133,7 @@ public class Job {
 //        this.outDir = outDir;
         this.input = input;
         this.output = output;
+        this.acls = new ArrayList<>();
         this.tags = tags;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
@@ -174,39 +153,41 @@ public class Job {
 
     @Override
     public String toString() {
-        return "Job{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", userId='" + userId + '\'' +
-                ", toolName='" + toolName + '\'' +
-                ", date='" + date + '\'' +
-                ", description='" + description + '\'' +
-                ", startTime=" + startTime +
-                ", endTime=" + endTime +
-                ", outputError='" + outputError + '\'' +
-                ", commandLine='" + commandLine + '\'' +
-                ", visits=" + visits +
-                ", status=" + status +
-                ", diskUsage=" + diskUsage +
-                ", execution='" + execution + '\'' +
-                ", params=" + params +
-                ", outDirId=" + outDirId +
-                ", tmpOutDirUri=" + tmpOutDirUri +
-                ", input=" + input +
-                ", output=" + output +
-                ", tags=" + tags +
-                ", attributes=" + attributes +
-                ", resourceManagerAttributes=" + resourceManagerAttributes +
-                ", error='" + error + '\'' +
-                ", errorDescription='" + errorDescription + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Job{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", userId='").append(userId).append('\'');
+        sb.append(", toolName='").append(toolName).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", startTime=").append(startTime);
+        sb.append(", endTime=").append(endTime);
+        sb.append(", outputError='").append(outputError).append('\'');
+        sb.append(", execution='").append(execution).append('\'');
+        sb.append(", params=").append(params);
+        sb.append(", commandLine='").append(commandLine).append('\'');
+        sb.append(", visits=").append(visits);
+        sb.append(", status=").append(status);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", outDirId=").append(outDirId);
+        sb.append(", tmpOutDirUri=").append(tmpOutDirUri);
+        sb.append(", input=").append(input);
+        sb.append(", output=").append(output);
+        sb.append(", tags=").append(tags);
+        sb.append(", acls=").append(acls);
+        sb.append(", attributes=").append(attributes);
+        sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
+        sb.append(", error='").append(error).append('\'');
+        sb.append(", errorDescription='").append(errorDescription).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 
@@ -282,19 +263,19 @@ public class Job {
         this.commandLine = commandLine;
     }
 
-    public int getVisits() {
+    public long getVisits() {
         return visits;
     }
 
-    public void setVisits(int visits) {
+    public void setVisits(long visits) {
         this.visits = visits;
     }
 
-    public Status getStatus() {
+    public JobStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(JobStatus status) {
         this.status = status;
     }
 
@@ -324,11 +305,11 @@ public class Job {
         return this;
     }
 
-    public int getOutDirId() {
+    public long getOutDirId() {
         return outDirId;
     }
 
-    public void setOutDirId(int outDirId) {
+    public void setOutDirId(long outDirId) {
         this.outDirId = outDirId;
     }
 
@@ -340,19 +321,19 @@ public class Job {
         this.tmpOutDirUri = tmpOutDirUri;
     }
 
-    public List<Integer> getInput() {
+    public List<Long> getInput() {
         return input;
     }
 
-    public void setInput(List<Integer> input) {
+    public void setInput(List<Long> input) {
         this.input = input;
     }
 
-    public List<Integer> getOutput() {
+    public List<Long> getOutput() {
         return output;
     }
 
-    public void setOutput(List<Integer> output) {
+    public void setOutput(List<Long> output) {
         this.output = output;
     }
 
@@ -371,7 +352,6 @@ public class Job {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
-
 
     public Map<String, Object> getResourceManagerAttributes() {
         return resourceManagerAttributes;
@@ -395,5 +375,72 @@ public class Job {
 
     public void setError(String error) {
         this.error = error;
+    }
+
+    public List<JobAcl> getAcls() {
+        return acls;
+    }
+
+    public Job setAcls(List<JobAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public static class JobStatus extends Status {
+
+        /**
+         * PREPARED status means that the job is ready to be put into the queue.
+         */
+        public static final String PREPARED = "PREPARED";
+        /**
+         * QUEUED status means that the job is waiting on the queue to have an available slot for execution.
+         */
+        public static final String QUEUED = "QUEUED";
+        /**
+         * RUNNING status means that the job is running.
+         */
+        public static final String RUNNING = "RUNNING";
+        /**
+         * DONE status means that the job has finished the execution, but the output is still not ready.
+         */
+        public static final String DONE = "DONE";
+        /**
+         * ERROR status means that the job finished with an error.
+         */
+        public static final String ERROR = "ERROR";
+
+        public JobStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public JobStatus(String status) {
+            this(status, "");
+        }
+
+        public JobStatus() {
+            this(PREPARED, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(PREPARED) || status.equals(QUEUED) || status.equals(RUNNING) || status.equals(DONE)
+                    || status.equals(ERROR))) {
+                return true;
+            }
+            return false;
+        }
+
+    }
+
+    public enum Type {
+        ANALYSIS,
+        INDEX,
+        COHORT_STATS
     }
 }

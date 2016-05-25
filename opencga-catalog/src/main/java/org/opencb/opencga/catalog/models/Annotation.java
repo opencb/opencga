@@ -17,12 +17,12 @@
 package org.opencb.opencga.catalog.models;
 
 /**
-* Created by jacobo on 12/12/14.
-*/
+ * Created by jacobo on 12/12/14.
+ */
 public class Annotation {
 
     /**
-     * This id must be a valid variable ID
+     * This id must be a valid variable ID.
      */
     private String id;
 
@@ -38,21 +38,30 @@ public class Annotation {
 
     @Override
     public String toString() {
-        return "SampleAnnotationEntry{" +
-                "id='" + id + '\'' +
-                ", value=" + value +
-                '}';
+        final StringBuilder sb = new StringBuilder("Annotation{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", value=").append(value);
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Annotation)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Annotation)) {
+            return false;
+        }
 
         Annotation that = (Annotation) o;
 
-        if (!id.equals(that.id)) return false;
-        if (!value.equals(that.value)) return false;
+        if (!id.equals(that.id)) {
+            return false;
+        }
+        if (!value.equals(that.value)) {
+            return false;
+        }
 
         return true;
     }

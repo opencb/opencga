@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class Tool {
 
-    private int id;
+    private long id;
     private String alias;
     private String name;
     private String description;
@@ -38,9 +38,10 @@ public class Tool {
     }
 
     public Tool(String alias, String name, String description, Object manifest, Object result, String path) {
-        this(-1 , alias, name, description, manifest, result, path, new LinkedList());
+        this(-1, alias, name, description, manifest, result, path, new LinkedList());
     }
-    public Tool(int id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
+
+    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -53,23 +54,24 @@ public class Tool {
 
     @Override
     public String toString() {
-        return "Tool{" +
-                "id=" + id +
-                "alias='" + alias + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", manifest=" + manifest +
-                ", result=" + result +
-                ", path='" + path + '\'' +
-                ", acl=" + acl +
-                '}';
+        final StringBuilder sb = new StringBuilder("Tool{");
+        sb.append("id=").append(id);
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", manifest=").append(manifest);
+        sb.append(", result=").append(result);
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", acl=").append(acl);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

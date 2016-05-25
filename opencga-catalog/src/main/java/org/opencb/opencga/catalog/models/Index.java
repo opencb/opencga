@@ -26,31 +26,32 @@ public class Index {
 
     private String userId;
     private String date;
-    private Status status;
-    private int jobId;
+    private IndexStatus status;
+    private long jobId;
 
     private Map<String, Object> attributes;
-
-    /**
-     * States
-     *
-     * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
-     *      \                                              /
-     *       ------------------> INDEXING ----------------/
-     *
-     */
-    public enum Status {NONE, TRANSFORMING, TRANSFORMED, LOADING, INDEXING, READY}
-
 
     public Index() {
     }
 
-    public Index(String userId, String date, Status status, int jobId, Map<String, Object> attributes) {
+    public Index(String userId, String date, IndexStatus status, long jobId, Map<String, Object> attributes) {
         this.userId = userId;
         this.date = date;
         this.status = status;
         this.jobId = jobId;
         this.attributes = attributes;
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Index{");
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", jobId=").append(jobId);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getUserId() {
@@ -69,19 +70,19 @@ public class Index {
         this.date = date;
     }
 
-    public int getJobId() {
+    public long getJobId() {
         return jobId;
     }
 
-    public void setJobId(int jobId) {
+    public void setJobId(long jobId) {
         this.jobId = jobId;
     }
 
-    public Status getStatus() {
+    public IndexStatus getStatus() {
         return status;
     }
 
-    public void setStatus(Status status) {
+    public void setStatus(IndexStatus status) {
         this.status = status;
     }
 
@@ -92,4 +93,49 @@ public class Index {
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
+
+    public static class IndexStatus extends Status {
+
+        /*
+         * States
+         *
+         * NONE --> TRANSFORMING --> TRANSFORMED --> LOADING --> READY
+         *      \                                              /
+         *       ------------------> INDEXING ----------------/
+         *
+         */
+        public static final String NONE = "NONE";
+        public static final String TRANSFORMING = "TRANSFORMING";
+        public static final String TRANSFORMED = "TRANSFORMED";
+        public static final String LOADING = "LOADING";
+        public static final String INDEXING = "INDEXING";
+
+        public IndexStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public IndexStatus(String status) {
+            this(status, "");
+        }
+
+        public IndexStatus() {
+            this(NONE, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(NONE) || status.equals(TRANSFORMING) || status.equals(TRANSFORMED)
+                    || status.equals(LOADING) || status.equals(INDEXING))) {
+                return true;
+            }
+            return false;
+        }
+    }
+
 }

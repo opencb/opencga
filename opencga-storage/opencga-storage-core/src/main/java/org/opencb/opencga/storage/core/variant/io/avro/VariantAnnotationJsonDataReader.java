@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.commons.io.DataReader;
-import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.io.json.VariantAnnotationMixin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ import java.util.List;
 import java.util.zip.GZIPInputStream;
 
 /**
- * Created on 09/11/15
+ * Created on 09/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -53,7 +52,6 @@ public class VariantAnnotationJsonDataReader implements DataReader<VariantAnnota
                 throw new RuntimeException(e);
             }
         }
-
 
         /** Innitialice Json parse**/
         JsonFactory factory = new JsonFactory();

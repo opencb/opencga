@@ -4,9 +4,10 @@ import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -16,7 +17,7 @@ import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -57,7 +59,7 @@ public class FileMetadataReader {
      * @return The created file with status <b>STAGE</b>
      * @throws CatalogException
      */
-    public QueryResult<File> create(int studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> create(long studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
 
         File.Type type = fileUri.getPath().endsWith("/") ? File.Type.FOLDER : File.Type.FILE;
         File.Format format = FormatDetector.detect(fileUri);
@@ -68,7 +70,7 @@ public class FileMetadataReader {
         }
 
         QueryResult<File> fileResult = catalogManager.createFile(studyId, type, format, bioformat, path, null, null, description,
-                File.Status.STAGE, 0, -1, null, -1, null, null, parents, options, sessionId);
+                new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, parents, options, sessionId);
 
         File modifiedFile = null;
 
@@ -102,7 +104,7 @@ public class FileMetadataReader {
      */
     public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
             throws CatalogException, StorageManagerException {
-        int studyId = catalogManager.getStudyIdByFileId(file.getId());
+        long studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (fileUri == null) {
             fileUri = catalogManager.getFileUri(file);
         }
@@ -171,7 +173,8 @@ public class FileMetadataReader {
             }
         }
 //        start = System.currentTimeMillis();
-        /*List<Sample> fileSamples = */getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
+        /*List<Sample> fileSamples = */
+        getFileSamples(study, file, fileUri, modifyParams, options.getBoolean(CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
 //        logger.trace("FileSamples = " + (System.currentTimeMillis() - start) / 1000.0);
 
 //        start = System.currentTimeMillis();
@@ -221,7 +224,7 @@ public class FileMetadataReader {
         List<String> includeSampleNameId = Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name");
         if (file.getSampleIds() == null || file.getSampleIds().isEmpty()) {
             //Read samples from file
-            List<String> sampleNames = null;
+            List<String> sortedSampleNames = null;
             switch (fileModifyParams.containsKey("bioformat") ? (File.Bioformat) fileModifyParams.get("bioformat") : file.getBioformat()) {
                 case VARIANT: {
                     Object variantSourceObj = null;
@@ -232,21 +235,21 @@ public class FileMetadataReader {
                     }
                     if (variantSourceObj != null) {
                         if (variantSourceObj instanceof VariantSource) {
-                            sampleNames = ((VariantSource) variantSourceObj).getSamples();
+                            sortedSampleNames = ((VariantSource) variantSourceObj).getSamples();
                         } else if (variantSourceObj instanceof Map) {
-                            sampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("samples");
+                            sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("samples");
                         } else {
                             logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}", variantSourceObj.getClass(), VariantSource.class, Map.class);
                         }
                     }
 
-                    if (sampleNames == null) {
+                    if (sortedSampleNames == null) {
                         VariantSource variantSource = readVariantSource(study, file, fileUri);
                         if (variantSource != null) {
                             attributes.put("variantSource", variantSource);
-                            sampleNames = variantSource.getSamples();
+                            sortedSampleNames = variantSource.getSamples();
                         } else {
-                            sampleNames = new LinkedList<>();
+                            sortedSampleNames = new LinkedList<>();
                         }
                     }
                     break;
@@ -260,20 +263,20 @@ public class FileMetadataReader {
                     }
                     if (alignmentHeaderObj != null) {
                         if (alignmentHeaderObj instanceof AlignmentHeader) {
-                            sampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
+                            sortedSampleNames = getSampleFromAlignmentHeader(((AlignmentHeader) alignmentHeaderObj));
                         } else if (alignmentHeaderObj instanceof Map) {
-                            sampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
+                            sortedSampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
                         } else {
                             logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}", alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
                         }
                     }
-                    if (sampleNames == null) {
+                    if (sortedSampleNames == null) {
                         AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
                         if (alignmentHeader != null) {
                             attributes.put("alignmentHeader", alignmentHeader);
-                            sampleNames = getSampleFromAlignmentHeader(alignmentHeader);
+                            sortedSampleNames = getSampleFromAlignmentHeader(alignmentHeader);
                         } else {
-                            sampleNames = new LinkedList<>();
+                            sortedSampleNames = new LinkedList<>();
                         }
                     }
                     break;
@@ -283,22 +286,23 @@ public class FileMetadataReader {
 //                    throw new CatalogException("Unknown to get samples names from bioformat " + file.getBioformat());
             }
 
-            if (sampleNames.isEmpty()) {
+            if (sortedSampleNames.isEmpty()) {
                 return new LinkedList<>();
             }
 
             //Find matching samples in catalog with the sampleName from the header.
             QueryOptions sampleQueryOptions = new QueryOptions("include", includeSampleNameId);
-            sampleQueryOptions.add("name", sampleNames);
-            sampleList = catalogManager.getAllSamples(study.getId(), sampleQueryOptions, sessionId).getResult();
+            Query sampleQuery = new Query("name", sortedSampleNames);
+            sampleList = catalogManager.getAllSamples(study.getId(), sampleQuery, sampleQueryOptions, sessionId).getResult();
 
             //check if all file samples exists on Catalog
-            if (sampleList.size() != sampleNames.size()) {   //Size does not match. Find the missing samples.
-                Set<String> set = new HashSet<>(sampleNames);
+            if (sampleList.size() != sortedSampleNames.size()) {   //Size does not match. Find the missing samples.
+                //Use a LinkedHashSet to keep the order
+                Set<String> set = new LinkedHashSet<>(sortedSampleNames);
                 for (Sample sample : sampleList) {
                     set.remove(sample.getName());
                 }
-                logger.warn("Missing samples: m{}", set);
+                logger.warn("Missing samples: {}", set);
                 if (createMissingSamples) {
                     for (String sampleName : set) {
                         if (simulate) {
@@ -307,9 +311,9 @@ public class FileMetadataReader {
                             try {
                                 sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
                             } catch (CatalogException e) {
-                                QueryOptions queryOptions = new QueryOptions("name", sampleName);
-                                queryOptions.add("include", includeSampleNameId);
-                                if (catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult().isEmpty()) {
+                                Query query = new Query("name", sampleName);
+                                QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);
+                                if (catalogManager.getAllSamples(study.getId(), query, queryOptions, sessionId).getResult().isEmpty()) {
                                     throw e; //Throw exception if sample does not exist.
                                 } else {
                                     logger.debug("Do not create the sample \"" + sampleName + "\". It has magically appeared");
@@ -321,14 +325,22 @@ public class FileMetadataReader {
                     throw new CatalogException("Can not find samples " + set + " in catalog"); //FIXME: Create missing samples??
                 }
             }
+
+            //Samples may not be sorted.
+            //Sort samples as they appear in the original file.
+            Map<String, Sample> sampleMap = sampleList.stream().collect(Collectors.toMap(Sample::getName, Function.identity()));
+            sampleList = new ArrayList<>(sampleList.size());
+            for (String sampleName : sortedSampleNames) {
+                sampleList.add(sampleMap.get(sampleName));
+            }
+
         } else {
             //Get samples from file.sampleIds
-            QueryOptions queryOptions = new QueryOptions(options);
-            queryOptions.add("id", file.getSampleIds());
-            sampleList = catalogManager.getAllSamples(study.getId(), queryOptions, sessionId).getResult();
+            Query query = new Query("id", file.getSampleIds());
+            sampleList = catalogManager.getAllSamples(study.getId(), query, options, sessionId).getResult();
         }
 
-        List<Integer> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
+        List<Long> sampleIdsList = sampleList.stream().map(Sample::getId).collect(Collectors.toList());
         fileModifyParams.put("sampleIds", sampleIdsList);
         if (!attributes.isEmpty()) {
             fileModifyParams.put("attributes", attributes);
@@ -361,7 +373,7 @@ public class FileMetadataReader {
             throws StorageManagerException {
         if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
             //TODO: Fix aggregate and studyType
-            VariantSource source = new VariantSource(file.getName(), Integer.toString(file.getId()), Integer.toString(study.getId()), study.getName());
+            VariantSource source = new VariantSource(file.getName(), Long.toString(file.getId()), Long.toString(study.getId()), study.getName());
             return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
         } else {
             return null;
@@ -394,20 +406,20 @@ public class FileMetadataReader {
      * @throws CatalogException
      */
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
-        int studyId = catalogManager.getStudyIdByJobId(job.getId());
-        QueryOptions queryOptions = new QueryOptions()
-                .append(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getInput())
-                .append(CatalogFileDBAdaptor.FileFilterOption.bioformat.toString(), File.Bioformat.VARIANT);
-        QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+        long studyId = catalogManager.getStudyIdByJobId(job.getId());
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getInput())
+                .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.VARIANT);
+        QueryResult<File> fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
         if (fileQueryResult.getResult().isEmpty()) {
             return;
         }
         File inputFile = fileQueryResult.first();
         if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
-            queryOptions = new QueryOptions()
-                    .append(CatalogFileDBAdaptor.FileFilterOption.id.toString(), job.getOutput())
-                    .append(CatalogFileDBAdaptor.FileFilterOption.name.toString(), "~" + inputFile.getName() + ".variants");
-            fileQueryResult = catalogManager.getAllFiles(studyId, queryOptions, sessionId);
+            query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
+                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
+            fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
             if (fileQueryResult.getResult().isEmpty()) {
                 return;
             }

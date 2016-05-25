@@ -25,7 +25,7 @@ import java.util.Set;
 public class VariableSet {
 
     //TODO Is this field really needed?
-    private int id;
+    private long id;
     private String name;
     private boolean unique;
     private String description;
@@ -36,7 +36,7 @@ public class VariableSet {
     public VariableSet() {
     }
 
-    public VariableSet(int id, String name, boolean unique, String description, Set<Variable> variables,
+    public VariableSet(long id, String name, boolean unique, String description, Set<Variable> variables,
                        Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -48,21 +48,22 @@ public class VariableSet {
 
     @Override
     public String toString() {
-        return "VariableSet{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", unique=" + unique +
-                ", description='" + description + '\'' +
-                ", variables=" + variables +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("VariableSet{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", unique=").append(unique);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", variables=").append(variables);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public void setId(long id) {
         this.id = id;
     }
 

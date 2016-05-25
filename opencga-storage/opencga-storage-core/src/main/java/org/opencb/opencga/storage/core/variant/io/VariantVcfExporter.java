@@ -2,23 +2,23 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import com.google.common.collect.BiMap;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.Genotype;
+import htsjdk.variant.variantcontext.GenotypeBuilder;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFFilterHeaderLine;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import htsjdk.variant.vcf.*;
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
-import org.opencb.cellbase.core.client.CellBaseClient;
-import org.opencb.datastore.core.Query;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
@@ -27,10 +27,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.OutputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.text.DecimalFormat;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -40,38 +38,38 @@ import java.util.stream.Collectors;
  */
 public class VariantVcfExporter {
 
-    private static final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
-//    private static final String ORI = "ori";    // attribute present in the variant to retrieve the reference base in indels. Reference base as T in TA	T
+    private final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
 
-    private static CellBaseClient cellbaseClient;
 
-    private static String DEFAULT_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop" +
-            "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
+    private static final String DEFAULT_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
+            + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
 
-    private static String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop" +
-            "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
+    private static final String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
+            + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
 
     private DecimalFormat df3 = new DecimalFormat("#.###");
 
-    static {
-        try {
-            cellbaseClient = new CellBaseClient("bioinfo.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-    }
+//    static {
+//        try {
+//            cellbaseClient = new CellBaseClient("bioinfo.hpc.cam.ac.uk", 80, "/cellbase/webservices/rest/", "v3", "hsapiens");
+//        } catch (URISyntaxException e) {
+//            e.printStackTrace();
+//        }
+//    }
 
     /**
-     * uses a reader and a writer to dump a vcf.
+     * Uses a reader and a writer to dump a vcf.
      * TODO jmmut: variantDBReader cannot get the header
-     * TODO jmmut: use studyConfiguration to know the order of 
+     * TODO jmmut: use studyConfiguration to know the order of
      *
-     * @param adaptor
-     * @param studyConfiguration
-     * @param outputUri
-     * @param options
+     * @param adaptor The query adaptor to execute the query
+     * @param studyConfiguration Configuration object
+     * @param outputUri The destination file
+     * @param query The query object
+     * @param options The options
      */
-    public static void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, Query query, QueryOptions options) {
+    public static void vcfExport(VariantDBAdaptor adaptor, StudyConfiguration studyConfiguration, URI outputUri, Query query,
+                                 QueryOptions options) {
 
         // Default objects
         VariantDBReader reader = new VariantDBReader(studyConfiguration, adaptor, query, options);
@@ -90,10 +88,15 @@ public class VariantVcfExporter {
         writer.pre();
 
         // actual loop
-        List<Variant> variants;
-        while (!(variants = reader.read(batchSize)).isEmpty()) {
+        List<Variant> variants = reader.read(batchSize);
+//        while (!(variants = reader.read(batchSize)).isEmpty()) {
+//            writer.write(variants);
+//        }
+        while (!variants.isEmpty()) {
             writer.write(variants);
+            variants = reader.read(batchSize);
         }
+
 
         // tear down
         reader.post();
@@ -102,19 +105,12 @@ public class VariantVcfExporter {
         writer.close();
     }
 
-    /**
-     *
-     * @param iterator
-     * @param studyConfiguration necessary for the header
-     * @param outputStream
-     * @param queryOptions TODO fill
-     * @return num variants not written due to errors
-     * @throws Exception
-     */
+
     public int export(VariantDBIterator iterator, StudyConfiguration studyConfiguration, OutputStream outputStream,
                       QueryOptions queryOptions) throws Exception {
 
         final VCFHeader header = getVcfHeader(studyConfiguration, queryOptions);
+        header.addMetaDataLine(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
         header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
 
@@ -135,7 +131,8 @@ public class VariantVcfExporter {
             }
 //            String annotationString = queryOptions.getString("annotations", DEFAULT_ANNOTATIONS).replaceAll(",", "|");
             annotations = Arrays.asList(annotationString.split("\\|"));
-            header.addMetaDataLine(new VCFInfoHeaderLine("CSQ", 1, VCFHeaderLineType.String, "Consequence annotations from CellBase. Format: " + annotationString));
+            header.addMetaDataLine(new VCFInfoHeaderLine("CSQ", 1, VCFHeaderLineType.String, "Consequence annotations from CellBase. "
+                    + "Format: " + annotationString));
         }
 
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
@@ -160,7 +157,7 @@ public class VariantVcfExporter {
                     writer.add(variantContext);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                e.printStackTrace(System.err);
                 failedVariants++;
             }
         }
@@ -190,11 +187,27 @@ public class VariantVcfExporter {
         if (lastLineIndex >= 0) {
             String substring = fileHeader.substring(0, lastLineIndex);
             if (returnedSamples.isEmpty()) {
-                BiMap<Integer, String> samplesPosition = StudyConfiguration.getSamplesPosition(studyConfiguration).inverse();
+                BiMap<Integer, String> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
                 returnedSamples = new ArrayList<>(samplesPosition.size());
                 for (int i = 0; i < samplesPosition.size(); i++) {
                     returnedSamples.add(samplesPosition.get(i));
                 }
+            } else {
+                List<String> newReturnedSamples = new ArrayList<>(returnedSamples.size());
+                for (String returnedSample : returnedSamples) {
+                    if (StringUtils.isNumeric(returnedSample)) {
+                        int sampleId = Integer.parseInt(returnedSample);
+                        newReturnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
+                    } else {
+                        if (studyConfiguration.getSampleIds().containsKey(returnedSample)) {
+                            newReturnedSamples.add(returnedSample);
+                        } else {
+                            throw new IllegalArgumentException("Unknown sample " + returnedSample + " for study "
+                                    + studyConfiguration.getStudyName() + " (" + studyConfiguration.getStudyId() + ")");
+                        }
+                    }
+                }
+                returnedSamples = newReturnedSamples;
             }
             String samples = String.join("\t", returnedSamples);
             logger.debug("export will be done on samples: [{}]", samples);
@@ -206,14 +219,17 @@ public class VariantVcfExporter {
     }
 
     /**
-     * converts org.opencb.biodata.models.variant.Variant into a htsjdk.variant.variantcontext.VariantContext
+     * Convert org.opencb.biodata.models.variant.Variant into a htsjdk.variant.variantcontext.VariantContext
      * some assumptions:
      * * splitted multiallelic variants will produce only one variantContexts. Merging is done
-     * * If some normalization have been done to the variant, the source entries may have an attribute ORI like: "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
-     * @param variant
-     * @return
+     * * If some normalization has been applied, the source entries may have an attribute ORI like: "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
+     *
+     * @param variant A variant object to be converted
+     * @param annotations Variant annotation
+     * @return The variant in HTSJDK format
      */
-    public VariantContext convertVariantToVariantContext(Variant variant, List<String> annotations) {//, StudyConfiguration studyConfiguration) {
+    public VariantContext convertVariantToVariantContext(Variant variant, List<String> annotations) { //, StudyConfiguration
+        // studyConfiguration) {
 
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
 
@@ -261,6 +277,7 @@ public class VariantVcfExporter {
 //            }
 //        }
 
+
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
         Integer originalPosition = null;
@@ -292,11 +309,12 @@ public class VariantVcfExporter {
                 Map<String, String> sampleData = studyEntry.getSampleData(sampleName);
                 String gt = sampleData.get("GT");
                 if (gt != null) {
-                    org.opencb.biodata.models.feature.Genotype genotype = new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
+                    org.opencb.biodata.models.feature.Genotype genotype =
+                            new org.opencb.biodata.models.feature.Genotype(gt, reference, alternate);
                     List<Allele> alleles = new ArrayList<>();
                     for (int gtIdx : genotype.getAllelesIdx()) {
                         if (gtIdx < originalAlleles.size() && gtIdx >= 0) {
-                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0));    // allele is reference if the alleleIndex is 0
+                            alleles.add(Allele.create(originalAlleles.get(gtIdx), gtIdx == 0)); // allele is ref. if the alleleIndex is 0
                         } else {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
@@ -306,16 +324,22 @@ public class VariantVcfExporter {
             }
         }
 
-        List<String> ids = variant.getIds();
 
+        if (originalAlleles == null) {
+            originalAlleles = allelesArray;
+        }
 
         variantContextBuilder.start(originalPosition == null ? start : originalPosition)
-                .stop((originalPosition == null ? start : originalPosition) + (originalAlleles == null ? allelesArray : originalAlleles).get(0).length() - 1)
+                .stop((originalPosition == null ? start : originalPosition) + originalAlleles.get(0).length() - 1)
                 .chr(variant.getChromosome())
-                .alleles(originalAlleles == null ? allelesArray : originalAlleles)
                 .filter(filter)
                 .genotypes(genotypes); // TODO jmmut: join attributes from different source entries? what to do on a collision?
 
+        if (variant.getType().equals(VariantType.NO_VARIATION) && alternate.isEmpty()) {
+            variantContextBuilder.alleles(reference);
+        } else {
+            variantContextBuilder.alleles(originalAlleles);
+        }
         // if asked variant annotations are exported
         if (annotations != null) {
             Map<String, Object> infoAnnotations = getAnnotations(variant, annotations);
@@ -323,11 +347,17 @@ public class VariantVcfExporter {
         }
 
 
-        if (ids != null) {
-            Optional<String> reduce = variant.getIds().stream().reduce((left, right) -> left + "," + right);
-            if (reduce.isPresent()) {
-                variantContextBuilder.id(reduce.get());
+        if (StringUtils.isNotEmpty(variant.getId()) && !variant.toString().equals(variant.getId())) {
+            StringBuilder ids = new StringBuilder();
+            ids.append(variant.getId());
+            if (variant.getNames() != null) {
+                for (String name : variant.getNames()) {
+                    ids.append(VCFConstants.ID_FIELD_SEPARATOR).append(name);
+                }
             }
+            variantContextBuilder.id(ids.toString());
+        } else {
+            variantContextBuilder.id(VCFConstants.EMPTY_ID_FIELD);
         }
 
         return variantContextBuilder.make();
@@ -352,16 +382,24 @@ public class VariantVcfExporter {
                                 .map(SequenceOntologyTerm::getName).collect(Collectors.joining(",")));
                         break;
                     case "gene":
-                        stringBuilder.append(consequenceType.getGeneName());
+                        if (consequenceType.getGeneName() != null) {
+                            stringBuilder.append(consequenceType.getGeneName());
+                        }
                         break;
                     case "ensemblGene":
-                        stringBuilder.append(consequenceType.getEnsemblGeneId());
+                        if (consequenceType.getEnsemblGeneId() != null) {
+                            stringBuilder.append(consequenceType.getEnsemblGeneId());
+                        }
                         break;
                     case "ensemblTranscript":
-                        stringBuilder.append(consequenceType.getEnsemblTranscriptId());
+                        if (consequenceType.getEnsemblTranscriptId() != null) {
+                            stringBuilder.append(consequenceType.getEnsemblTranscriptId());
+                        }
                         break;
                     case "biotype":
-                        stringBuilder.append(consequenceType.getBiotype());
+                        if (consequenceType.getBiotype() != null) {
+                            stringBuilder.append(consequenceType.getBiotype());
+                        }
                         break;
                     case "phastCons":
                         List<Double> phastCons = variant.getAnnotation().getConservation().stream()
@@ -383,7 +421,7 @@ public class VariantVcfExporter {
                         break;
                     case "populationFrequency":
                         stringBuilder.append(variant.getAnnotation().getPopulationFrequencies().stream()
-                                .map(t -> t.getSuperPopulation() + ":" + t.getPopulation() + ":" + t.getAltAlleleFreq())
+                                .map(t -> t.getPopulation() + ":" + t.getAltAlleleFreq())
                                 .collect(Collectors.joining(",")));
                         break;
                     case "cDnaPosition":
@@ -393,28 +431,36 @@ public class VariantVcfExporter {
                         stringBuilder.append(consequenceType.getCdsPosition());
                         break;
                     case "proteinPosition":
-                        stringBuilder.append(consequenceType.getProteinVariantAnnotation().getPosition());
+                        if (consequenceType.getProteinVariantAnnotation() != null) {
+                            stringBuilder.append(consequenceType.getProteinVariantAnnotation().getPosition());
+                        }
                         break;
                     case "sift":
-                        List<Double> sift = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
-                                .filter(t -> t.getSource().equalsIgnoreCase("sift"))
-                                .map(Score::getScore)
-                                .collect(Collectors.toList());
-                        if (sift.size() > 0) {
-                            stringBuilder.append(df3.format(sift.get(0)));
+                        if (consequenceType.getProteinVariantAnnotation() != null
+                                && consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            List<Double> sift = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
+                                    .filter(t -> t.getSource().equalsIgnoreCase("sift"))
+                                    .map(Score::getScore)
+                                    .collect(Collectors.toList());
+                            if (sift.size() > 0) {
+                                stringBuilder.append(df3.format(sift.get(0)));
+                            }
                         }
                         break;
                     case "polyphen":
-                        List<Double> polyphen = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
-                                .filter(t -> t.getSource().equalsIgnoreCase("polyphen"))
-                                .map(Score::getScore)
-                                .collect(Collectors.toList());
-                        if (polyphen.size() > 0) {
-                            stringBuilder.append(df3.format(polyphen.get(0)));
+                        if (consequenceType.getProteinVariantAnnotation() != null
+                                && consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            List<Double> polyphen = consequenceType.getProteinVariantAnnotation().getSubstitutionScores().stream()
+                                    .filter(t -> t.getSource().equalsIgnoreCase("polyphen"))
+                                    .map(Score::getScore)
+                                    .collect(Collectors.toList());
+                            if (polyphen.size() > 0) {
+                                stringBuilder.append(df3.format(polyphen.get(0)));
+                            }
                         }
                         break;
                     case "clinvar":
-                        if(variant.getAnnotation().getVariantTraitAssociation() != null
+                        if (variant.getAnnotation().getVariantTraitAssociation() != null
                                 && variant.getAnnotation().getVariantTraitAssociation().getClinvar() != null) {
                             stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getClinvar().stream()
                                     .map(ClinVar::getTraits).flatMap(Collection::stream)
@@ -422,7 +468,7 @@ public class VariantVcfExporter {
                         }
                         break;
                     case "cosmic":
-                        if(variant.getAnnotation().getVariantTraitAssociation() != null
+                        if (variant.getAnnotation().getVariantTraitAssociation() != null
                                 && variant.getAnnotation().getVariantTraitAssociation().getCosmic() != null) {
                             stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getCosmic().stream()
                                     .map(Cosmic::getPrimarySite)
@@ -430,7 +476,7 @@ public class VariantVcfExporter {
                         }
                         break;
                     case "gwas":
-                        if(variant.getAnnotation().getVariantTraitAssociation() != null
+                        if (variant.getAnnotation().getVariantTraitAssociation() != null
                                 && variant.getAnnotation().getVariantTraitAssociation().getGwas() != null) {
                             stringBuilder.append(variant.getAnnotation().getVariantTraitAssociation().getGwas().stream()
                                     .map(Gwas::getTraits).flatMap(Collection::stream)
@@ -460,10 +506,11 @@ public class VariantVcfExporter {
     }
 
     /**
-     * assumes that ori is in the form "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
+     * Assumes that ori is in the form "POS:REF:ALT_0(,ALT_N)*:ALT_IDX".
      * ALT_N is the n-th allele if this is the n-th variant resultant of a multiallelic vcf row
-     * @return
+     *
      * @param ori
+     * @return
      */
     private static List<String> getOriginalAlleles(String[] ori) {
         if (ori != null && ori.length == 4) {
@@ -489,9 +536,10 @@ public class VariantVcfExporter {
     }
 
     /**
-     * assumes that ori is in the form "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
-     * @return
+     * Assumes that ori is in the form "POS:REF:ALT_0(,ALT_N)*:ALT_IDX".
+     *
      * @param ori
+     * @return
      */
     private static Integer getOriginalPosition(String[] ori) {
 

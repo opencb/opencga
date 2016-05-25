@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis.execution.executors;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.execution.plugins.PluginExecutor;
@@ -55,7 +55,8 @@ public class LocalExecutorManager implements ExecutorManager {
      * @return          Modified job
      * @throws CatalogException
      */
-    private QueryResult<Job> runThreadLocal(Job job) throws CatalogException {
+    private QueryResult<Job> runThreadLocal(Job job) throws CatalogException, AnalysisExecutionException {
+
         Command com = new Command(job.getCommandLine());
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
         URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
@@ -63,7 +64,23 @@ public class LocalExecutorManager implements ExecutorManager {
         URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
         com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
 
-        final int jobId = job.getId();
+        final long jobId = job.getId();
+
+        String status = job.getStatus().getStatus();
+        switch (status) {
+            case Job.JobStatus.QUEUED:
+            case Job.JobStatus.PREPARED:
+                // change to RUNNING
+                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
+                break;
+            case Job.JobStatus.RUNNING:
+                //nothing
+                break;
+            default:
+                throw new AnalysisExecutionException("Unable to execute job in status " + status);
+        }
+
+
         Thread hook = new Thread(() -> {
             try {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
@@ -106,7 +123,7 @@ public class LocalExecutorManager implements ExecutorManager {
         PluginExecutor pluginExecutor = new PluginExecutor(catalogManager, sessionId);
         final ObjectMap executionInfo = new ObjectMap();
 
-        final int jobId = job.getId();
+        final long jobId = job.getId();
         Thread hook = new Thread(() -> {
             try {
                 logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
@@ -115,6 +132,20 @@ public class LocalExecutorManager implements ExecutorManager {
                 e.printStackTrace();
             }
         });
+
+        String status = job.getStatus().getStatus();
+        switch (status) {
+            case Job.JobStatus.QUEUED:
+            case Job.JobStatus.PREPARED:
+                // change to RUNNING
+                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
+                break;
+            case Job.JobStatus.RUNNING:
+                //nothing
+                break;
+            default:
+                throw new AnalysisExecutionException("Unable to execute job in status " + status);
+        }
 
         logger.info("==========================================");
         logger.info("Executing job {}({})", job.getName(), job.getId());
@@ -171,7 +202,7 @@ public class LocalExecutorManager implements ExecutorManager {
         if (executionInfo != null) {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
         }
-        parameters.put("status", Job.Status.DONE);
+        parameters.put("status.status", Job.JobStatus.DONE);
         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
         /** Record output **/
@@ -180,15 +211,15 @@ public class LocalExecutorManager implements ExecutorManager {
 
         /** Change status to READY or ERROR **/
         if (exitValue == 0 && error == null) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.READY), sessionId);
+            catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.READY), sessionId);
         } else {
             if (error == null) {
                 error = Job.ERRNO_FINISH_ERROR;
             }
             parameters = new ObjectMap();
-            parameters.put("status", Job.Status.ERROR);
+            parameters.put("status.status", Job.JobStatus.ERROR);
             parameters.put("error", error);
-            parameters.put("errorDescription", Job.errorDescriptions.get(error));
+            parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
         }
 

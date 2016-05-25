@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.execution.executors;
 
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
@@ -31,26 +31,26 @@ public class SgeExecutorManager implements ExecutorManager {
         // TODO: Lock job before submit. Avoid double submission
         SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
                 -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
-        return catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.Status.QUEUED), sessionId);
+        return catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.QUEUED), sessionId);
     }
 
     @Override
-    public Job.Status status(Job job) throws Exception {
+    public String status(Job job) throws Exception {
         String status = SgeManager.status(Objects.toString(job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME)));
         switch (status) {
             case SgeManager.ERROR:
             case SgeManager.EXECUTION_ERROR:
-                return Job.Status.ERROR;
+                return Job.JobStatus.ERROR;
             case SgeManager.FINISHED:
-                return Job.Status.READY;
+                return Job.JobStatus.READY;
             case SgeManager.QUEUED:
-                return Job.Status.QUEUED;
+                return Job.JobStatus.QUEUED;
             case SgeManager.RUNNING:
             case SgeManager.TRANSFERRED:
-                return Job.Status.RUNNING;
+                return Job.JobStatus.RUNNING;
             case SgeManager.UNKNOWN:
             default:
-                return job.getStatus();
+                return job.getStatus().getStatus();
         }
     }
 }

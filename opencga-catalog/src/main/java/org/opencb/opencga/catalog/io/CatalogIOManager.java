@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.io;
 
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,102 +24,110 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.attribute.FileTime;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Stream;
 
 public abstract class CatalogIOManager {
 
-    //    private Path opencgaRootDirPath;
-    protected URI rootDir;
-    protected URI jobsDir;
-//    protected URI rootDir;
-    protected URI tmp;
-
-
     /**
-     * OpenCGA folders are created in the ROOTDIR:
-     *  OPENCGA_USERS_FOLDER contains users workspaces organized by 'userId'
-     *  OPENCGA_ANONYMOUS_USERS_FOLDER contains anonymous users workspaces organized by 'randomStringId'
-     *  OPENCGA_BIN_FOLDER contains all packaged binaries delivered within OpenCGA
+     * OpenCGA folders are created in the ROOTDIR.
+     * OPENCGA_USERS_FOLDER contains users workspaces organized by 'userId'
+     * OPENCGA_ANONYMOUS_USERS_FOLDER contains anonymous users workspaces organized by 'randomStringId'
+     * OPENCGA_BIN_FOLDER contains all packaged binaries delivered within OpenCGA
      */
     protected static final String OPENCGA_USERS_FOLDER = "users/";
     protected static final String OPENCGA_ANONYMOUS_USERS_FOLDER = "anonymous/";
     protected static final String OPENCGA_BIN_FOLDER = "bin/";
-
     /**
-     * Users folders are created inside user workspace:
-     *  USER_PROJECTS_FOLDER this folder stores all the projects with the studies and files
-     *  USER_BIN_FOLDER contains user specific binaries
+     * Users folders are created inside user workspace.
+     * USER_PROJECTS_FOLDER this folder stores all the projects with the studies and files
+     * USER_BIN_FOLDER contains user specific binaries
      */
     protected static final String USER_PROJECTS_FOLDER = "projects/";
     protected static final String USER_BIN_FOLDER = "bin/";
     protected static final String SHARED_DATA_FOLDER = "shared_data/";
     protected static final String DEFAULT_OPENCGA_JOBS_FOLDER = "jobs/";
-
-    protected Properties properties;
     protected static Logger logger;
+    //    private Path opencgaRootDirPath;
+    protected URI rootDir;
+    protected URI jobsDir;
+    //    protected URI rootDir;
+    protected URI tmp;
+    @Deprecated
+    protected Properties properties;
+    protected CatalogConfiguration catalogConfiguration;
 
     private CatalogIOManager() {
         logger = LoggerFactory.getLogger(this.getClass());
     }
 
-    public CatalogIOManager(String propertiesFile) throws CatalogIOException {
+    public CatalogIOManager(String catalogConfigurationFile) throws CatalogIOException {
         this();
-        this.properties = new Properties();
+        this.catalogConfiguration = new CatalogConfiguration();
+        //this.properties = new Properties();
         try {
-            this.properties.load(new FileInputStream(propertiesFile));
+            this.catalogConfiguration.load(new FileInputStream(catalogConfigurationFile));
+            //this.properties.load(new FileInputStream(propertiesFile));
         } catch (IOException e) {
-            throw new CatalogIOException("Error loading properties file", e);
+            throw new CatalogIOException("Error loading Catalog Configuration file", e);
         }
         setup();
     }
 
+    @Deprecated
     public CatalogIOManager(Properties properties) throws CatalogIOException {
         this();
         this.properties = properties;
         setup();
     }
 
+    public CatalogIOManager(CatalogConfiguration catalogConfiguration) throws CatalogIOException {
+        this();
+        this.catalogConfiguration = catalogConfiguration;
+        setup();
+    }
+
+    @Deprecated
     protected abstract void setProperties(Properties properties) throws CatalogIOException;
+    protected abstract void setProperties(CatalogConfiguration catalogConfiguration) throws CatalogIOException;
 
     /**
      * This method creates the folders and workspace structure for storing the OpenCGA data. I
-     * @throws IOException
+     *
+     * @throws CatalogIOException CatalogIOException
      */
     public void setup() throws CatalogIOException {
-        setProperties(properties);
+        setProperties(catalogConfiguration);
         if (!exists(rootDir)) {
             logger.info("Initializing CatalogIOManager. Creating main folder '" + rootDir + "'");
             createDirectory(rootDir, true);
         }
         checkDirectoryUri(rootDir, true);
 
-        if(!exists(jobsDir)) {
+        if (!exists(jobsDir)) {
             logger.info("Initializing CatalogIOManager. Creating jobs folder '" + jobsDir + "'");
             createDirectory(jobsDir);
         }
         checkDirectoryUri(jobsDir, true);
 
-        if(!exists(rootDir.resolve(OPENCGA_USERS_FOLDER))) {
+        if (!exists(rootDir.resolve(OPENCGA_USERS_FOLDER))) {
             createDirectory(rootDir.resolve(OPENCGA_USERS_FOLDER));
         }
 
-        if(!exists(rootDir.resolve(OPENCGA_ANONYMOUS_USERS_FOLDER))) {
+        if (!exists(rootDir.resolve(OPENCGA_ANONYMOUS_USERS_FOLDER))) {
             createDirectory(rootDir.resolve(OPENCGA_ANONYMOUS_USERS_FOLDER));
         }
 
-        if(!exists(rootDir.resolve(OPENCGA_BIN_FOLDER))) {
+        if (!exists(rootDir.resolve(OPENCGA_BIN_FOLDER))) {
             createDirectory(rootDir.resolve(OPENCGA_BIN_FOLDER));
         }
 
     }
 
     protected void checkParam(String param) throws CatalogIOException {
-        if(param == null || param.equals("")) {
+        if (param == null || param.equals("")) {
             throw new CatalogIOException("Parameter '" + param + "' not valid");
         }
     }
@@ -161,16 +170,17 @@ public abstract class CatalogIOManager {
     public URI getUserUri(String userId) throws CatalogIOException {
         checkParam(userId);
         try {
-            return getUsersUri().resolve(new URI(null, userId.endsWith("/")? userId: (userId + "/"), null));
+            return getUsersUri().resolve(new URI(null, userId.endsWith("/") ? userId : (userId + "/"), null));
         } catch (URISyntaxException e) {
             throw CatalogIOException.uriSyntaxException(userId, e);
         }
     }
 
-    public URI getAnonymousUserUri(String userId) throws CatalogIOException { // FIXME: Should replicate to getAnonymousPojectUri, ...Study..., etc ?
+    public URI getAnonymousUserUri(String userId) throws CatalogIOException { // FIXME: Should replicate to getAnonymousPojectUri,
+        // ...Study..., etc ?
         checkParam(userId);
         try {
-            return getAnonymousUsersUri().resolve(new URI(null, userId.endsWith("/")? userId: (userId + "/"), null));
+            return getAnonymousUsersUri().resolve(new URI(null, userId.endsWith("/") ? userId : (userId + "/"), null));
         } catch (URISyntaxException e) {
             throw CatalogIOException.uriSyntaxException(userId, e);
         }
@@ -182,7 +192,7 @@ public abstract class CatalogIOManager {
 
     public URI getProjectUri(String userId, String projectId) throws CatalogIOException {
         try {
-            return getProjectsUri(userId).resolve(new URI(null, projectId.endsWith("/")? projectId: (projectId + "/"), null));
+            return getProjectsUri(userId).resolve(new URI(null, projectId.endsWith("/") ? projectId : (projectId + "/"), null));
         } catch (URISyntaxException e) {
             throw CatalogIOException.uriSyntaxException(userId, e);
         }
@@ -192,7 +202,7 @@ public abstract class CatalogIOManager {
     public URI getStudyUri(String userId, String projectId, String studyId) throws CatalogIOException {
         checkParam(studyId);
         try {
-            return getProjectUri(userId, projectId).resolve(new URI(null, studyId.endsWith("/")? studyId: (studyId + "/"), null));
+            return getProjectUri(userId, projectId).resolve(new URI(null, studyId.endsWith("/") ? studyId : (studyId + "/"), null));
         } catch (URISyntaxException e) {
             throw CatalogIOException.uriSyntaxException(studyId, e);
         }
@@ -215,7 +225,6 @@ public abstract class CatalogIOManager {
     }
 
     public abstract URI getTmpUri();    // FIXME Still used?
-
 
 
     public URI createUser(String userId) throws CatalogIOException {
@@ -246,7 +255,7 @@ public abstract class CatalogIOManager {
 
         URI userPath = getUserUri(userId);
         try {
-            if(!exists(userPath)) {
+            if (!exists(userPath)) {
                 createDirectory(userPath);
                 createDirectory(userPath.resolve(CatalogIOManager.USER_PROJECTS_FOLDER));
                 createDirectory(userPath.resolve(CatalogIOManager.USER_BIN_FOLDER));
@@ -265,7 +274,7 @@ public abstract class CatalogIOManager {
         deleteDirectory(userUri);
     }
 
-    public  URI createAnonymousUser(String anonymousUserId) throws CatalogIOException {
+    public URI createAnonymousUser(String anonymousUserId) throws CatalogIOException {
         checkParam(anonymousUserId);
 
         URI usersUri = getAnonymousUsersUri();
@@ -273,7 +282,7 @@ public abstract class CatalogIOManager {
 
         URI userUri = getAnonymousUserUri(anonymousUserId);
         try {
-            if(!exists(userUri)) {
+            if (!exists(userUri)) {
                 createDirectory(userUri);
                 createDirectory(userUri.resolve(USER_PROJECTS_FOLDER));
                 createDirectory(userUri.resolve(USER_BIN_FOLDER));
@@ -286,7 +295,7 @@ public abstract class CatalogIOManager {
         return null;
     }
 
-    public  void deleteAnonymousUser(String anonymousUserId) throws CatalogIOException {
+    public void deleteAnonymousUser(String anonymousUserId) throws CatalogIOException {
         URI anonymousUserUri = getAnonymousUserUri(anonymousUserId);
         checkUriExists(anonymousUserUri);
 
@@ -302,7 +311,7 @@ public abstract class CatalogIOManager {
 //        URI projectUri = projectRootUri.resolve(projectId);
         URI projectUri = getProjectUri(userId, projectId);
         try {
-            if(!exists(projectUri)) {
+            if (!exists(projectUri)) {
                 projectUri = createDirectory(projectUri, true);
                 //createDirectory(projectUri.resolve(SHARED_DATA_FOLDER));
             }
@@ -346,7 +355,7 @@ public abstract class CatalogIOManager {
     public URI createStudy(URI studyUri) throws CatalogIOException {
         checkUriScheme(studyUri);
         try {
-            if(!exists(studyUri)) {
+            if (!exists(studyUri)) {
                 studyUri = createDirectory(studyUri);
             }
         } catch (CatalogIOException e) {
@@ -388,7 +397,7 @@ public abstract class CatalogIOManager {
         } catch (URISyntaxException e) {
             throw CatalogIOException.uriSyntaxException(folderName, e);
         }
-        if(!exists(jobUri)) {
+        if (!exists(jobUri)) {
             try {
                 jobUri = createDirectory(jobUri, true);
             } catch (CatalogIOException e) {
@@ -404,7 +413,7 @@ public abstract class CatalogIOManager {
     public URI createFolder(URI studyUri, String folderName, boolean parent)
             throws CatalogIOException {
         checkParam(folderName);
-        if(!folderName.endsWith("/")) {
+        if (!folderName.endsWith("/")) {
             folderName += "/";
         }
         checkDirectoryUri(studyUri, true);
@@ -417,8 +426,8 @@ public abstract class CatalogIOManager {
             throw CatalogIOException.uriSyntaxException(folderName, e);
         }
         try {
-            if(!exists(folderUri)) {
-                if(parent) {
+            if (!exists(folderUri)) {
+                if (parent) {
                     createDirectory(folderUri, true);
                 } else {
                     checkDirectoryUri(folderUri.resolve(".."), true);
@@ -447,7 +456,7 @@ public abstract class CatalogIOManager {
         checkUriExists(fileUri);
 
         logger.debug("Deleting {}", fileUri.toString());
-        if(isDirectory(fileUri)) {
+        if (isDirectory(fileUri)) {
             deleteDirectory(fileUri);
         } else {
             deleteFile(fileUri);
@@ -455,13 +464,13 @@ public abstract class CatalogIOManager {
     }
 
 
-    public DataInputStream getFileObject(URI studyUri, String objectId,int start, int limit)
+    public DataInputStream getFileObject(URI studyUri, String objectId, int start, int limit)
             throws CatalogIOException {
         URI fileUri = getFileUri(studyUri, objectId);
         return getFileObject(fileUri, start, limit);
     }
 
-    public abstract DataInputStream getFileObject(URI fileUri ,int start, int limit)
+    public abstract DataInputStream getFileObject(URI fileUri, int start, int limit)
             throws CatalogIOException;
 
     public DataInputStream getGrepFileObject(URI studyUri, String objectId, String pattern,

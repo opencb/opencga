@@ -37,7 +37,7 @@ public class SqliteSequenceDBAdaptorTest extends GenericTest {
     @Test
     public void queryDB() throws IOException, SQLException {
         Path input = Paths.get("/home/jacobo/Documentos/bioinfo/opencga/sequence/human_g1k_v37.fasta.gz.sqlite.db");
-        if(!input.toFile().exists()){
+        if (!input.toFile().exists()) {
             return;
         }
         SequenceDBAdaptor sql = new SqliteSequenceDBAdaptor(input);
@@ -68,7 +68,7 @@ public class SqliteSequenceDBAdaptorTest extends GenericTest {
     public void indexDB() throws IOException, SQLException, FileFormatException {
         SqliteSequenceDBAdaptor sql = new SqliteSequenceDBAdaptor();
         File file = Paths.get("/home/jacobo/Documentos/bioinfo/human_g1k_v37.fasta.gz").toFile();
-        if(!file.exists()){
+        if (!file.exists()) {
             return;
         }
         sql.index(file, null);

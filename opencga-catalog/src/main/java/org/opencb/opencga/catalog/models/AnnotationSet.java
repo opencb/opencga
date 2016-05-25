@@ -19,13 +19,15 @@ package org.opencb.opencga.catalog.models;
 import java.util.Map;
 import java.util.Set;
 
+import static java.lang.Math.toIntExact;
+
 /**
  * Created by imedina on 25/11/14.
  */
 public class AnnotationSet {
 
     private String id;
-    private int variableSetId;
+    private long variableSetId;
     private Set<Annotation> annotations;
     private String date;
 
@@ -35,7 +37,7 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String id, int variableSetId, Set<Annotation> annotations, String date,
+    public AnnotationSet(String id, long variableSetId, Set<Annotation> annotations, String date,
                          Map<String, Object> attributes) {
         this.id = id;
         this.variableSetId = variableSetId;
@@ -46,26 +48,39 @@ public class AnnotationSet {
 
     @Override
     public String toString() {
-        return "AnnotationSet{" +
-                "id='" + id + '\'' +
-                ", variableSetId=" + variableSetId +
-                ", annotations=" + annotations +
-                ", date='" + date + '\'' +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("AnnotationSet{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", variableSetId=").append(variableSetId);
+        sb.append(", annotations=").append(annotations);
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AnnotationSet)) return false;
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof AnnotationSet)) {
+            return false;
+        }
 
         AnnotationSet that = (AnnotationSet) o;
 
-        if (variableSetId != that.variableSetId) return false;
-        if (id != null ? !id.equals(that.id) : that.id != null) return false;
-        if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) return false;
-        if (date != null ? !date.equals(that.date) : that.date != null) return false;
+        if (variableSetId != that.variableSetId) {
+            return false;
+        }
+        if (id != null ? !id.equals(that.id) : that.id != null) {
+            return false;
+        }
+        if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) {
+            return false;
+        }
+        if (date != null ? !date.equals(that.date) : that.date != null) {
+            return false;
+        }
         return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
 
     }
@@ -73,7 +88,7 @@ public class AnnotationSet {
     @Override
     public int hashCode() {
         int result = id != null ? id.hashCode() : 0;
-        result = 31 * result + variableSetId;
+        result = 31 * result + toIntExact(variableSetId);
         result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
         result = 31 * result + (date != null ? date.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
@@ -88,11 +103,11 @@ public class AnnotationSet {
         this.id = id;
     }
 
-    public int getVariableSetId() {
+    public long getVariableSetId() {
         return variableSetId;
     }
 
-    public void setVariableSetId(int variableSetId) {
+    public void setVariableSetId(long variableSetId) {
         this.variableSetId = variableSetId;
     }
 

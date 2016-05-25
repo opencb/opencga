@@ -1,6 +1,6 @@
 package org.opencb.opencga.analysis.execution.executors;
 
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -48,7 +48,7 @@ public interface ExecutorManager {
 
     QueryResult<Job> run(Job job) throws Exception;
 
-    default Job.Status status(Job job) throws Exception {
+    default Job.JobStatus status(Job job) throws Exception {
         return job.getStatus();
     }
 

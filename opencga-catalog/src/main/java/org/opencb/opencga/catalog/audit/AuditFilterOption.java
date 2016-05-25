@@ -1,23 +1,24 @@
 package org.opencb.opencga.catalog.audit;
 
-import org.opencb.datastore.core.QueryParam;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption;
+//import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption;
+//
+//import static org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption.Type.TEXT;
 
-import static org.opencb.opencga.catalog.db.api.CatalogDBAdaptor.FilterOption.Type.TEXT;
+import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
+
+import static org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor.FilterOption.Type.TEXT;
 
 /**
- * Created on 18/08/15
+ * Created on 18/08/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public enum AuditFilterOption implements FilterOption {
+public enum AuditFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
     id("id", "", TEXT),
     timeStamp("timeStamp", "", TEXT),
     resource("resource", "", TEXT),
     action("action", "", TEXT),
-    userId("userId", "", TEXT),
-            ;
+    userId("userId", "", TEXT);
 
     private final String _key;
     private final String _description;
@@ -29,8 +30,19 @@ public enum AuditFilterOption implements FilterOption {
         _type = type;
     }
 
-    @Override public String getKey() { return _key;}
-    @Override public String getDescription() { return _description;}
-    @Override public Type getType() { return _type;}
+    @Override
+    public String getKey() {
+        return _key;
+    }
+
+    @Override
+    public String getDescription() {
+        return _description;
+    }
+
+    @Override
+    public Type getType() {
+        return _type;
+    }
 
 }

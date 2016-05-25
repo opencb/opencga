@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.zip.GZIPOutputStream;
 
 /**
- * Created on 09/11/15
+ * Created on 09/11/15.
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
@@ -37,7 +37,7 @@ public class VariantAnnotationJsonDataWriter implements DataWriter<VariantAnnota
 
         /** Open output stream **/
         try {
-            if(gzip) {
+            if (gzip) {
                 outputStream = new GZIPOutputStream(new FileOutputStream(outputPath.toFile()));
             } else {
                 outputStream = new FileOutputStream(outputPath.toFile());

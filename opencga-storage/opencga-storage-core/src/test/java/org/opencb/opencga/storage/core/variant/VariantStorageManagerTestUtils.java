@@ -1,14 +1,16 @@
 package org.opencb.opencga.storage.core.variant;
 
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.core.common.IOUtils;
-import org.opencb.opencga.storage.core.StorageManagerException;
+import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +22,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
+import java.util.Objects;
 
 /**
  * Created by jacobo on 31/05/15.
@@ -35,6 +39,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     public static final int STUDY_ID = 1;
     public static final String STUDY_NAME = "1000g";
     public static final String DB_NAME = "opencga_variants_test";
+    public static final int FILE_ID = 6;
 
     protected static URI inputUri;
     protected static URI smallInputUri;
@@ -42,6 +47,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     protected static URI outputUri;
     protected VariantStorageManager variantStorageManager;
     public static Logger logger;
+    private static Path rootDir = null;
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -57,9 +63,12 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         Path inputPath = rootDir.resolve(VCF_TEST_FILE_NAME);
         Path smallInputPath = rootDir.resolve(SMALL_VCF_TEST_FILE_NAME);
         Path corruptedInputPath = rootDir.resolve(VCF_CORRUPTED_FILE_NAME);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath, StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath, StandardCopyOption.REPLACE_EXISTING);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath, StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_TEST_FILE_NAME), inputPath,
+                StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(SMALL_VCF_TEST_FILE_NAME), smallInputPath,
+                StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(VCF_CORRUPTED_FILE_NAME), corruptedInputPath,
+                StandardCopyOption.REPLACE_EXISTING);
 
         inputUri = inputPath.toUri();
         smallInputUri = smallInputPath.toUri();
@@ -72,15 +81,44 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     public static URI getResourceUri(String resourceName) throws IOException {
         Path rootDir = getTmpRootDir();
         Path resourcePath = rootDir.resolve(resourceName);
-        Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption.REPLACE_EXISTING);
+        if (!resourcePath.getParent().toFile().exists()) {
+            Files.createDirectory(resourcePath.getParent());
+        }
+        if (!resourcePath.toFile().exists()) {
+            Files.copy(VariantStorageManagerTest.class.getClassLoader().getResourceAsStream(resourceName), resourcePath, StandardCopyOption
+                    .REPLACE_EXISTING);
+        }
         return resourcePath.toUri();
     }
 
     protected static Path getTmpRootDir() throws IOException {
-        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
-        Files.createDirectories(rootDir);
+//        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
+
+        if (rootDir == null) {
+            rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+RandomStringUtils.randomAlphanumeric(10));
+            Files.createDirectories(rootDir);
+        }
         return rootDir;
     }
+
+    public static void setRootDir(Path rootDir) {
+        VariantStorageManagerTestUtils.rootDir = rootDir;
+    }
+
+//    private static File tempFile = null;
+//    protected static Path getTmpRootDir() throws IOException {
+//        if (tempFile == null) {
+//            tempFile = File.createTempFile("opencga-variants-storage-test-", null);
+//        }
+//        return tempFile.toPath();
+//    }
+
+//    @ClassRule
+//    public static TemporaryFolder temporaryFolder = new TemporaryFolder();
+//
+//    protected static Path getTmpRootDir() throws IOException {
+//        return temporaryFolder.getRoot().toPath();
+//    }
 
     @Before
     public void before() throws Exception {
@@ -97,83 +135,66 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     /* Static methods to run a simple ETL to index Variants */
     /* ---------------------------------------------------- */
 
-    /**
-     * Simple class to store the output URIs generated by the ETL
-     */
-    public static class ETLResult {
 
-        public URI extractResult;
-        public URI preTransformResult;
-        public URI transformResult;
-        public URI postTransformResult;
-        public URI preLoadResult;
-        public URI loadResult;
-        //        public URI postLoadResult;
-    }
-
-    public static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap options)
+    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap options)
             throws IOException, FileFormatException, StorageManagerException {
         return runETL(variantStorageManager, options, true, true, true);
     }
 
-    public static ETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap options,
+    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, ObjectMap options,
                                    boolean doExtract,
                                    boolean doTransform,
                                    boolean doLoad)
             throws IOException, FileFormatException, StorageManagerException {
-        return runETL(variantStorageManager, inputUri, outputUri, options, options, options, options, options, options, options, doExtract, doTransform, doLoad);
+        return runETL(variantStorageManager, inputUri, outputUri, options, options, options, options, options, options, options,
+                doExtract, doTransform, doLoad);
     }
 
-    public static ETLResult runDefaultETL(VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
+    public static StorageETLResult runDefaultETL(VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
         return runDefaultETL(inputUri, variantStorageManager, studyConfiguration);
     }
 
-    public static ETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
+    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager, StudyConfiguration studyConfiguration)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
         return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap());
     }
 
-    public static ETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
+    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
                                           StudyConfiguration studyConfiguration, ObjectMap params)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
-        ObjectMap extractParams = new ObjectMap(params);
+        ObjectMap newParams = new ObjectMap(params);
 
-        ObjectMap preTransformParams = new ObjectMap(params);
-        preTransformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        preTransformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
+        newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
+        newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
+        newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
+        newParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), FILE_ID);
+        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        newParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
+        newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
+        newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
+        newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
-        ObjectMap transformParams = new ObjectMap(params);
-        transformParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        transformParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
-        transformParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
-        transformParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
+                newParams, newParams, newParams, newParams, true, true, true);
 
-        ObjectMap postTransformParams = new ObjectMap(params);
+        try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
+            StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            studyConfiguration.setFileIds(newStudyConfiguration.getFileIds());
+            studyConfiguration.setCohortIds(newStudyConfiguration.getCohortIds());
+            studyConfiguration.setCohorts(newStudyConfiguration.getCohorts());
+            studyConfiguration.setSampleIds(newStudyConfiguration.getSampleIds());
+            studyConfiguration.setSamplesInFiles(newStudyConfiguration.getSamplesInFiles());
+            studyConfiguration.setIndexedFiles(newStudyConfiguration.getIndexedFiles());
+            studyConfiguration.setHeaders(newStudyConfiguration.getHeaders());
+        }
 
-        ObjectMap preLoadParams = new ObjectMap(params);
-        preLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
-        ObjectMap loadParams = new ObjectMap(params);
-        loadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        loadParams.putIfAbsent(VariantStorageManager.Options.INCLUDE_GENOTYPES.key(), true);
-        loadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
-        loadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-
-        ObjectMap postLoadParams = new ObjectMap(params);
-        postLoadParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), 6);
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
-        postLoadParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
-        postLoadParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
-        postLoadParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
-
-        return runETL(variantStorageManager, inputUri, outputUri, extractParams, preTransformParams, transformParams, postTransformParams, preLoadParams, loadParams, postLoadParams, true, true, true);
+        return storageETLResult;
     }
 
-    public static ETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
+    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
                                    ObjectMap extractParams,
                                    ObjectMap preTransformParams, ObjectMap transformParams, ObjectMap postTransformParams,
                                    ObjectMap preLoadParams, ObjectMap loadParams, ObjectMap postLoadParams,
@@ -181,50 +202,45 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
                                    boolean doTransform,
                                    boolean doLoad)
             throws IOException, FileFormatException, StorageManagerException {
-        ETLResult etlResult = new ETLResult();
+        ObjectMap params = new ObjectMap();
+        params.putAll(extractParams);
+        params.putAll(preTransformParams);
+        params.putAll(transformParams);
+        params.putAll(postTransformParams);
+        params.putAll(preLoadParams);
+        params.putAll(loadParams);
+        params.putAll(postLoadParams);
+        return runETL(variantStorageManager, inputUri, outputUri, params, doExtract, doTransform, doLoad);
+    }
 
-        if (doExtract) {
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(extractParams);
-            inputUri = variantStorageManager.extract(inputUri, outputUri);
-            etlResult.extractResult = inputUri;
+    public static StorageETLResult runETL(VariantStorageManager variantStorageManager, URI inputUri, URI outputUri,
+                                   ObjectMap params,
+                                   boolean doExtract,
+                                   boolean doTransform,
+                                   boolean doLoad)
+            throws IOException, FileFormatException, StorageManagerException {
+
+
+        variantStorageManager.getConfiguration()
+                .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
+        StorageETLResult storageETLResult =
+                variantStorageManager.index(Collections.singletonList(inputUri), outputUri, doExtract, doTransform, doLoad).get(0);
+
+        checkFileExists(storageETLResult.getExtractResult());
+        checkFileExists(storageETLResult.getPreTransformResult());
+        checkFileExists(storageETLResult.getTransformResult());
+        checkFileExists(storageETLResult.getPostTransformResult());
+        checkFileExists(storageETLResult.getPreLoadResult());
+        checkFileExists(storageETLResult.getLoadResult());
+        checkFileExists(storageETLResult.getPostLoadResult());
+
+        return storageETLResult;
+    }
+
+    public static void checkFileExists(URI uri) {
+        if (uri != null && ( uri.getScheme() == null || Objects.equals(uri.getScheme(), "file") )) {
+            Assert.assertTrue("Intermediary file " + uri + " does not exist", Paths.get(uri).toFile().exists());
         }
-
-        if (doTransform) {
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(preTransformParams);
-            inputUri = variantStorageManager.preTransform(inputUri);
-            etlResult.preTransformResult = inputUri;
-            Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
-
-
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(transformParams);
-            inputUri = variantStorageManager.transform(inputUri, null, outputUri);
-            etlResult.transformResult = inputUri;
-            Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
-
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(postTransformParams);
-            inputUri = variantStorageManager.postTransform(inputUri);
-            etlResult.postTransformResult = inputUri;
-            Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
-        }
-
-        if (doLoad) {
-
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(preLoadParams);
-            inputUri = variantStorageManager.preLoad(inputUri, outputUri);
-            etlResult.preLoadResult = inputUri;
-            Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
-
-
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(loadParams);
-            inputUri = variantStorageManager.load(inputUri);
-            etlResult.loadResult = inputUri;
-            Assert.assertTrue("Intermediary file " + inputUri + " does not exist", Paths.get(inputUri).toFile().exists());
-
-
-            variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(postLoadParams);
-            variantStorageManager.postLoad(inputUri, outputUri);
-        }
-        return etlResult;
     }
 
     protected static StudyConfiguration newStudyConfiguration() {

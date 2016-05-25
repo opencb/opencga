@@ -1,0 +1,8 @@
+---
+rest:
+  host: "http://localhost:8080/opencga/webservices/rest"
+  batchQuerySize: 200
+  timeout: 10000
+  defaultLimit: 2000
+grpc:
+  host: "localhost:9091"

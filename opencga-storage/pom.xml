@@ -22,13 +22,13 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.7-dev</version>
+        <version>0.8-dev</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
     <!-- Version must be set to a literal, variables cannot be used in nested modules -->
     <artifactId>opencga-storage</artifactId>
-    <version>0.7-dev</version>
+    <version>0.8-dev</version>
     <packaging>pom</packaging>
 
     <properties>
@@ -40,6 +40,7 @@
         <module>opencga-storage-core</module>
         <module>opencga-storage-mongodb</module>
         <module>opencga-storage-hadoop</module>
+        <module>opencga-storage-server</module>
     </modules>
 
     <dependencyManagement>
@@ -49,10 +50,34 @@
                 <artifactId>opencga-storage-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-storage-server</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${google.protobuf}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-all</artifactId>
+                <version>${google.grpc}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
+        <extensions>
+            <extension>
+                <groupId>kr.motd.maven</groupId>
+                <artifactId>os-maven-plugin</artifactId>
+                <version>1.4.0.Final</version>
+            </extension>
+        </extensions>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -64,15 +89,61 @@
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
                     <encoding>UTF-8</encoding>
-                    <excludes>
-                        <exclude>org/opencb/opencga/storage/variant/hbase/*.java</exclude>
-                        <exclude>org/opencb/opencga/storage/variant/sqlite/*.java</exclude>
-                    </excludes>
-                    <testExcludes>
-                        <exclude>org/opencb/opencga/storage/variant/hbase/*.java</exclude>
-                        <exclude>org/opencb/opencga/storage/variant/VariantSqliteQueryBuilderTest.java</exclude>
-                    </testExcludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.xolstice.maven.plugins</groupId>
+                <artifactId>protobuf-maven-plugin</artifactId>
+                <version>0.5.0</version>
+                <configuration>
+                    <!--
+                      The version of protoc must match protobuf-java. If you don't depend on
+                      protobuf-java directly, you will be transitively depending on the
+                      protobuf-java version that grpc depends on.
+                    -->
+                    <protocArtifact>com.google.protobuf:protoc:3.0.0-beta-2:exe:${os.detected.classifier}</protocArtifact>
+                    <pluginId>grpc-java</pluginId>
+                    <pluginArtifact>io.grpc:protoc-gen-grpc-java:0.13.2:exe:${os.detected.classifier}</pluginArtifact>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>compile-custom</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>2.16</version>
+                <executions>
+                    <execution>
+                        <id>validate</id>
+                        <phase>validate</phase>
+                        <configuration>
+                            <configLocation>checkstyle.xml</configLocation>
+                            <excludes>
+                                org/opencb/opencga/storage/app/cli/client/CliOptionsParser.java,
+                                org/opencb/opencga/storage/app/cli/server/ServerCliOptionsParser.java,
+                                org/opencb/opencga/storage/app/cli/OptionsParser.java,
+                                org/opencb/opencga/storage/core/variant/io/VariantFieldsProtos.java,
+                                org/opencb/opencga/storage/core/variant/io/VariantEffectProtos.java,
+                                org/opencb/opencga/storage/mongodb/utils/TabixReader.java,
+                                org/opencb/opencga/storage/mongodb/alignment/BamManager.java,
+                                org/opencb/opencga/storage/mongodb/alignment/TabixAlignmentDBAdaptor.java,
+                                org/opencb/opencga/storage/alignment/**,
+                                org/opencb/opencga/storage/variant/**,
+                                org/opencb/opencga/storage/datamanagers/**,
+                                org/opencb/opencga/storage/app/service/OptionParser.java
+                            </excludes>
+                        </configuration>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

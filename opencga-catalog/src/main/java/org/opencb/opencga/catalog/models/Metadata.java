@@ -27,7 +27,7 @@ public class Metadata {
     private String date;
     private String open;
 
-    private int idCounter;
+    private long idCounter;
 
 
     public Metadata() {
@@ -38,7 +38,7 @@ public class Metadata {
         this(version, date, open, 0);
     }
 
-    public Metadata(String version, String date, String open, int idCounter) {
+    public Metadata(String version, String date, String open, long idCounter) {
         this.version = version;
         this.date = date;
         this.open = open;
@@ -47,43 +47,48 @@ public class Metadata {
 
     @Override
     public String toString() {
-        return "Metadata{" +
-                "version='" + version + '\'' +
-                ", date='" + date + '\'' +
-                ", open='" + open + '\'' +
-                ", idCounter=" + idCounter +
-                '}';
+        final StringBuilder sb = new StringBuilder("Metadata{");
+        sb.append("version='").append(version).append('\'');
+        sb.append(", date='").append(date).append('\'');
+        sb.append(", open='").append(open).append('\'');
+        sb.append(", idCounter=").append(idCounter);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getVersion() {
         return version;
     }
 
-    public void setVersion(String version) {
+    public Metadata setVersion(String version) {
         this.version = version;
+        return this;
     }
 
     public String getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public Metadata setDate(String date) {
         this.date = date;
+        return this;
     }
 
     public String getOpen() {
         return open;
     }
 
-    public void setOpen(String open) {
+    public Metadata setOpen(String open) {
         this.open = open;
+        return this;
     }
 
-    public int getIdCounter() {
+    public long getIdCounter() {
         return idCounter;
     }
 
-    public void setIdCounter(int idCounter) {
+    public Metadata setIdCounter(long idCounter) {
         this.idCounter = idCounter;
+        return this;
     }
 }

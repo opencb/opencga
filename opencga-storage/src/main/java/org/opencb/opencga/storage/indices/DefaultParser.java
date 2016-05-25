@@ -23,7 +23,7 @@ import java.util.Set;
 public class DefaultParser {
 
     private String fieldSeparator;
-    XObject columns;
+    private XObject columns;
 
 
     public DefaultParser(XObject indices) {

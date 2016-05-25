@@ -16,6 +16,9 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.DatasetAcl;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -24,85 +27,117 @@ import java.util.Map;
  */
 public class Dataset {
 
-    private int id;
+    private long id;
     private String name;
     private String creationDate;
     private String description;
 
-    private List<Integer> files;
+    private List<Long> files;
+    private List<DatasetAcl> acls;
+
+    private Status status;
 
     private Map<String, Object> attributes;
 
     public Dataset() {
     }
 
-    public Dataset(int id, String name, String creationDate, String description, List<Integer> files,
+    public Dataset(int id, String name, String creationDate, String description, List<Long> files, Status status,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.creationDate = creationDate;
         this.description = description;
         this.files = files;
+        this.acls = new ArrayList<>();
+        this.status = status;
         this.attributes = attributes;
     }
 
     @Override
     public String toString() {
-        return "Dataset{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", creationDate='" + creationDate + '\'' +
-                ", description='" + description + '\'' +
-                ", files=" + files +
-                ", attributes=" + attributes +
-                '}';
+        final StringBuilder sb = new StringBuilder("Dataset{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", files=").append(files);
+        sb.append(", acls=").append(acls);
+        sb.append(", status=").append(status);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
-    public int getId() {
+    public long getId() {
         return id;
     }
 
-    public void setId(int id) {
+    public Dataset setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Dataset setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public Dataset setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Dataset setDescription(String description) {
         this.description = description;
+        return this;
     }
 
-    public List<Integer> getFiles() {
+    public List<Long> getFiles() {
         return files;
     }
 
-    public void setFiles(List<Integer> files) {
+    public Dataset setFiles(List<Long> files) {
         this.files = files;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Dataset setStatus(Status status) {
+        this.status = status;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Dataset setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
+    }
+
+    public List<DatasetAcl> getAcls() {
+        return acls;
+    }
+
+    public Dataset setAcls(List<DatasetAcl> acls) {
+        this.acls = acls;
+        return this;
     }
 }

@@ -16,8 +16,8 @@
 
 package org.opencb.opencga.catalog.client;
 
-import org.opencb.datastore.core.QueryOptions;
-import org.opencb.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 
@@ -27,85 +27,118 @@ import java.util.Map;
 /**
  * Created by jacobo on 10/02/15.
  */
+@Deprecated
 public interface CatalogClient {
 
-    interface CatalogResourceClient <R>{
-        public QueryResult<R> create(QueryOptions options) throws CatalogException;
-        public QueryResult<R> read(QueryOptions options) throws CatalogException;
-        public QueryResult<R> readAll(QueryOptions options) throws CatalogException;
-        public QueryResult<R> update(QueryOptions options) throws CatalogException;
-        public QueryResult<R> delete() throws CatalogException;
-    }
-
-    interface CatalogUserClient extends CatalogResourceClient <User>{
-        public String  getUserId(String sessionId);
-
-        public QueryResult<User> update(QueryOptions options) throws CatalogException;
-        public QueryResult<User> read(QueryOptions options) throws CatalogException;
-        public QueryResult<User> create(String id, String name, String email, String password, String organization,
-                                        QueryOptions options) throws CatalogException;
-        public QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
-    }
-
-    interface CatalogProjectClient extends CatalogResourceClient <Project>{
-        public String  getUserId(int projectId) throws CatalogException;
-        public Integer getProjectId(String projectId) throws CatalogException;
-
-        public QueryResult<Project> create(String ownerId, String name, String alias, String description,
-                                           String organization, QueryOptions options) throws CatalogException;
-    }
-    interface CatalogStudyClient extends CatalogResourceClient <Study>{
-        public String  getUserId(int studyId) throws CatalogException;
-        public Integer getProjectId(int studyId) throws CatalogException;
-        public Integer getStudyId(String studyId) throws CatalogException;
-
-        public QueryResult<Study> create(int projectId, String name, String alias, Study.Type type,
-                                         String creatorId, String creationDate, String description, String status,
-                                         String cipher, String uriScheme, Map<String, Object> stats,
-                                         Map<String, Object> attributes) throws CatalogException;
-        public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
-    }
-    interface CatalogFileClient extends CatalogResourceClient <File>{
-        public String  getUserId(int fileId) throws CatalogException;
-        public Integer getProjectId(int fileId) throws CatalogException;
-        public Integer getStudyId(int fileId) throws CatalogException;
-        public Integer getFileId(String fileId) throws CatalogException;
-        public QueryResult<File> create(int studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
-                                        String ownerId, String creationDate, String description, File.Status status,
-                                        long diskUsage, int experimentId, List<Integer> sampleIds, int jobId,
-                                        Map<String, Object> stats, Map<String, Object> attributes,
-                                        boolean parents) throws CatalogException;
-    }
-    interface CatalogJobClient extends CatalogResourceClient <Job>{
-        public Integer getStudyId(int jobId);
-
-        public QueryResult<Job> visit(int jobId);
-    }
-    interface CatalogSampleClient extends CatalogResourceClient <Project>{
-        public Integer getProjectId(String projectId);
-
-        public QueryResult<Annotation> annotate(int sampleId);
-    }
-    interface CatalogExperimentClient extends CatalogResourceClient <Project>{
-        public Integer getProjectId(String projectId);
-    }
-
     String getSessionId();
+
     void setSessionId(String sessionId);
 
     String getUserId();
+
     void setUserId(String userId);
 
     CatalogUserClient users();
+
     CatalogUserClient users(String userId);
+
     CatalogProjectClient projects();
-    CatalogProjectClient projects(int projectId);
+
+    CatalogProjectClient projects(long projectId);
+
     CatalogStudyClient studies();
-    CatalogStudyClient studies(int studyId);
+
+    CatalogStudyClient studies(long studyId);
+
     CatalogFileClient files();
-    CatalogFileClient files(int fileId);
+
+    CatalogFileClient files(long fileId);
+
     CatalogJobClient jobs();
-    CatalogJobClient jobs(int jobId);
+
+    CatalogJobClient jobs(long jobId);
+
     void close() throws CatalogException;
+
+    interface CatalogResourceClient<R> {
+        QueryResult<R> create(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> read(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> readAll(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> update(QueryOptions options) throws CatalogException;
+
+        QueryResult<R> delete() throws CatalogException;
+    }
+
+    interface CatalogUserClient extends CatalogResourceClient<User> {
+        String getUserId(String sessionId);
+
+        QueryResult<User> update(QueryOptions options) throws CatalogException;
+
+        QueryResult<User> read(QueryOptions options) throws CatalogException;
+
+        QueryResult<User> create(String id, String name, String email, String password, String organization,
+                                 QueryOptions options) throws CatalogException;
+
+        QueryResult<User> changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
+    }
+
+    interface CatalogProjectClient extends CatalogResourceClient<Project> {
+        String getUserId(long projectId) throws CatalogException;
+
+        Long getProjectId(String projectId) throws CatalogException;
+
+        QueryResult<Project> create(String ownerId, String name, String alias, String description,
+                                    String organization, QueryOptions options) throws CatalogException;
+    }
+
+    interface CatalogStudyClient extends CatalogResourceClient<Study> {
+        String getUserId(long studyId) throws CatalogException;
+
+        Long getProjectId(long studyId) throws CatalogException;
+
+        Long getStudyId(String studyId) throws CatalogException;
+
+        QueryResult<Study> create(long projectId, String name, String alias, Study.Type type,
+                                  String creatorId, String creationDate, String description, String status,
+                                  String cipher, String uriScheme, Map<String, Object> stats,
+                                  Map<String, Object> attributes) throws CatalogException;
+
+        QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
+    }
+
+    interface CatalogFileClient extends CatalogResourceClient<File> {
+        String getUserId(long fileId) throws CatalogException;
+
+        Long getProjectId(long fileId) throws CatalogException;
+
+        Long getStudyId(long fileId) throws CatalogException;
+
+        Long getFileId(String fileId) throws CatalogException;
+
+        QueryResult<File> create(long studyId, File.Type type, File.Format format, File.Bioformat bioformat, String path,
+                                 String ownerId, String creationDate, String description, File.FileStatus status,
+                                 long diskUsage, long experimentId, List<Integer> sampleIds, long jobId,
+                                 Map<String, Object> stats, Map<String, Object> attributes,
+                                 boolean parents) throws CatalogException;
+    }
+
+    interface CatalogJobClient extends CatalogResourceClient<Job> {
+        Long getStudyId(long jobId);
+
+        QueryResult<Job> visit(long jobId);
+    }
+
+    interface CatalogSampleClient extends CatalogResourceClient<Project> {
+        Long getProjectId(String projectId);
+
+        QueryResult<Annotation> annotate(long sampleId);
+    }
+
+    interface CatalogExperimentClient extends CatalogResourceClient<Project> {
+        Long getProjectId(String projectId);
+    }
 
 }
