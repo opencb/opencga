@@ -35,9 +35,6 @@ import java.util.*;
 
 public class ToolManager {
 
-    public static final String EXECUTE = "execute";
-    public static final String SIMULATE = "simulate";
-    public static final String OPENCGA_ANALYSIS_JOB_EXECUTOR = "OPENCGA.ANALYSIS.JOB.EXECUTOR";
     protected static Logger logger = LoggerFactory.getLogger(ToolManager.class);
     protected final Properties analysisProperties;
     protected final String home;

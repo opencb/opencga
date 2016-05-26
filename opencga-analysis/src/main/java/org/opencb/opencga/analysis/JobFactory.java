@@ -2,15 +2,13 @@ package org.opencb.opencga.analysis;
 
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
-import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
-import org.opencb.opencga.analysis.executors.LocalThreadExecutorManager;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,24 +23,22 @@ import java.util.stream.Collectors;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class JobFactory {
+
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(JobFactory.class);
-
-    // Just for test purposes. Do not use in production!
-    public static ExecutorManager localExecutor = null;
 
     public JobFactory(CatalogManager catalogManager) {
         this.catalogManager = catalogManager;
     }
 
-    public QueryResult<Job> createJob(ToolManager toolManager, Map<String, List<String>> params, int studyId, String jobName, String description,
-                                      File outDir, List<Integer> inputFiles, String sessionId)
+    public QueryResult<Job> createJob(ToolManager toolManager, Map<String, List<String>> params, long studyId, String jobName, String description,
+                                      File outDir, List<Long> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
         return createJob(toolManager, params, studyId, jobName, description, outDir, inputFiles, sessionId, false);
     }
 
-    public QueryResult<Job> createAndExecuteJob(ToolManager toolManager, Map<String, List<String>> params, int studyId, String jobName, String description,
-                                      File outDir, List<Integer> inputFiles, String sessionId)
+    public QueryResult<Job> createAndExecuteJob(ToolManager toolManager, Map<String, List<String>> params, long studyId, String jobName, String description,
+                                      File outDir, List<Long> inputFiles, String sessionId)
             throws AnalysisExecutionException, CatalogException {
         return createJob(toolManager, params, studyId, jobName, description, outDir, inputFiles, sessionId, true);
     }
@@ -65,8 +61,8 @@ public class JobFactory {
      * @throws AnalysisExecutionException
      * @throws CatalogException
      */
-    public QueryResult<Job> createJob(ToolManager toolManager, Map<String, List<String>> params, int studyId, String jobName, String description,
-                                      File outDir, List<Integer> inputFiles, String sessionId, boolean execute)
+    public QueryResult<Job> createJob(ToolManager toolManager, Map<String, List<String>> params, long studyId, String jobName, String description,
+                                      File outDir, List<Long> inputFiles, String sessionId, boolean execute)
             throws AnalysisExecutionException, CatalogException {
         Execution execution = toolManager.getExecution();
         String executable = execution.getExecutable();
@@ -94,8 +90,8 @@ public class JobFactory {
     }
 
     @Deprecated
-    public QueryResult<Job> createJob(int studyId, String jobName, String toolName, String description,
-                                      File outDir, List<Integer> inputFiles, final String sessionId,
+    public QueryResult<Job> createJob(long studyId, String jobName, String toolName, String description,
+                                      File outDir, List<Long> inputFiles, final String sessionId,
                                       String randomString, URI temporalOutDirUri, String commandLine,
                                       boolean execute, boolean simulate, Map<String, Object> attributes,
                                       Map<String, Object> resourceManagerAttributes)
@@ -140,8 +136,8 @@ public class JobFactory {
             resourceManagerAttributes = new HashMap<>();
         }
 
+        resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
         if (simulate) { //Simulate a job. Do not create it.
-            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
             jobQueryResult = new QueryResult<>("simulatedJob", (int) (System.currentTimeMillis() - start), 1, 1, "", "", Collections.singletonList(
                     new Job(-10, jobName, catalogManager.getUserIdBySessionId(sessionId), toolName,
                             TimeUtils.getTime(), description, start, System.currentTimeMillis(), "", commandLine, -1,
@@ -156,27 +152,18 @@ public class JobFactory {
                 Job job = jobQueryResult.first();
 
                 //Execute job in local
-                LocalExecutorManager executorManager = new LocalExecutorManager(catalogManager, sessionId);
-                jobQueryResult = executorManager.run(job);
+//                LocalExecutorManager executorManager = new LocalExecutorManager(catalogManager, sessionId);
+//                jobQueryResult = executorManager.run(job);
+                ExecutorManager.execute(catalogManager, job, sessionId, "LOCAL");
+                jobQueryResult = catalogManager.getJob(job.getId(), null, sessionId);
 
             } else {
                 /** Create a PREPARED job in CatalogManager **/
-                resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, jobSchedulerName);
                 jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, new Job.JobStatus(Job.JobStatus.PREPARED), 0, 0, null, sessionId);
             }
         }
         return jobQueryResult;
-    }
-
-    private static void executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException, AnalysisExecutionException {
-        if (localExecutor != null) {
-            logger.debug("AnalysisJobExecuter: execute, running by " + localExecutor.getClass());
-            localExecutor.run(job); //TODO: Set sessionID?
-        } else {
-            logger.debug("AnalysisJobExecuter: execute, running by SingleProcess");
-            new LocalExecutorManager(catalogManager, sessionId).run(job);
-        }
     }
 
     public static Map<String, String> getParamsFromCommandLine(String commandLine) {

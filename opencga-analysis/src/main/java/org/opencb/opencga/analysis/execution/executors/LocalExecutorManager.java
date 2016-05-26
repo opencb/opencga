@@ -1,5 +1,6 @@
 package org.opencb.opencga.analysis.execution.executors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -27,8 +28,8 @@ import java.util.Objects;
 public class LocalExecutorManager implements ExecutorManager {
     protected static Logger logger = LoggerFactory.getLogger(LocalExecutorManager.class);
 
-    private final CatalogManager catalogManager;
-    private final String sessionId;
+    protected final CatalogManager catalogManager;
+    protected final String sessionId;
 
     public LocalExecutorManager(CatalogManager catalogManager, String sessionId) {
         this.catalogManager = catalogManager;
@@ -37,6 +38,21 @@ public class LocalExecutorManager implements ExecutorManager {
 
     @Override
     public QueryResult<Job> run(Job job) throws CatalogException, AnalysisExecutionException {
+
+        String status = job.getStatus().getStatus();
+        switch (status) {
+            case Job.JobStatus.QUEUED:
+            case Job.JobStatus.PREPARED:
+                // change to RUNNING
+                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
+                break;
+            case Job.JobStatus.RUNNING:
+                //nothing
+                break;
+            default:
+                throw new AnalysisExecutionException("Unable to execute job in status " + status);
+        }
+
         if (isPlugin(job)) {
             return runPlugin(job);
         } else {
@@ -55,7 +71,7 @@ public class LocalExecutorManager implements ExecutorManager {
      * @return          Modified job
      * @throws CatalogException
      */
-    private QueryResult<Job> runThreadLocal(Job job) throws CatalogException, AnalysisExecutionException {
+    protected QueryResult<Job> runThreadLocal(Job job) throws CatalogException, AnalysisExecutionException {
 
         Command com = new Command(job.getCommandLine());
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
@@ -66,19 +82,6 @@ public class LocalExecutorManager implements ExecutorManager {
 
         final long jobId = job.getId();
 
-        String status = job.getStatus().getStatus();
-        switch (status) {
-            case Job.JobStatus.QUEUED:
-            case Job.JobStatus.PREPARED:
-                // change to RUNNING
-                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
-                break;
-            case Job.JobStatus.RUNNING:
-                //nothing
-                break;
-            default:
-                throw new AnalysisExecutionException("Unable to execute job in status " + status);
-        }
 
 
         Thread hook = new Thread(() -> {
@@ -118,7 +121,7 @@ public class LocalExecutorManager implements ExecutorManager {
      * @throws AnalysisExecutionException
      * @throws CatalogException
      */
-    private QueryResult<Job> runPlugin(Job job) throws AnalysisExecutionException, CatalogException {
+    protected QueryResult<Job> runPlugin(Job job) throws AnalysisExecutionException, CatalogException {
 
         PluginExecutor pluginExecutor = new PluginExecutor(catalogManager, sessionId);
         final ObjectMap executionInfo = new ObjectMap();
@@ -132,20 +135,6 @@ public class LocalExecutorManager implements ExecutorManager {
                 e.printStackTrace();
             }
         });
-
-        String status = job.getStatus().getStatus();
-        switch (status) {
-            case Job.JobStatus.QUEUED:
-            case Job.JobStatus.PREPARED:
-                // change to RUNNING
-                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
-                break;
-            case Job.JobStatus.RUNNING:
-                //nothing
-                break;
-            default:
-                throw new AnalysisExecutionException("Unable to execute job in status " + status);
-        }
 
         logger.info("==========================================");
         logger.info("Executing job {}({})", job.getName(), job.getId());
@@ -175,7 +164,7 @@ public class LocalExecutorManager implements ExecutorManager {
     /**
      * Closes command output and executes {@link LocalExecutorManager#postExecuteLocal(Job, int, Object, String)}
      */
-    private QueryResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError)
+    protected QueryResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError)
             throws CatalogException {
         closeOutputStreams(com);
         return postExecuteLocal(job, com.getExitValue(), com, errnoFinishError);
@@ -193,7 +182,7 @@ public class LocalExecutorManager implements ExecutorManager {
      * @return              QueryResult with the modifier Job
      * @throws CatalogException
      */
-    private QueryResult<Job> postExecuteLocal(Job job, int exitValue, Object executionInfo, String error)
+    protected QueryResult<Job> postExecuteLocal(Job job, int exitValue, Object executionInfo, String error)
             throws CatalogException {
 
         /** Change status to DONE  - Add the execution information to the job entry **/
@@ -210,7 +199,7 @@ public class LocalExecutorManager implements ExecutorManager {
         outputRecorder.recordJobOutputAndPostProcess(job, exitValue != 0);
 
         /** Change status to READY or ERROR **/
-        if (exitValue == 0 && error == null) {
+        if (exitValue == 0 && StringUtils.isEmpty(error)) {
             catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.READY), sessionId);
         } else {
             if (error == null) {
@@ -226,7 +215,7 @@ public class LocalExecutorManager implements ExecutorManager {
         return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);
     }
 
-    private void closeOutputStreams(Command com) {
+    protected void closeOutputStreams(Command com) {
         /** Close output streams **/
         if (com.getOutputOutputStream() != null) {
             try {

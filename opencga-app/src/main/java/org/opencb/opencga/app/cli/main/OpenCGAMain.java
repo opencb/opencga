@@ -37,6 +37,7 @@ import org.opencb.opencga.analysis.AnalysisOutputRecorder;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
 import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -449,7 +450,7 @@ public class OpenCGAMain {
                         long outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
 
-                        queryOptions.put(ToolManager.EXECUTE, !c.enqueue);
+                        queryOptions.put(ExecutorManager.EXECUTE, !c.enqueue);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
@@ -653,12 +654,12 @@ public class OpenCGAMain {
                         String sid = sessionId;
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                         if (c.enqueue) {
-                            queryOptions.put(ToolManager.EXECUTE, false);
+                            queryOptions.put(ExecutorManager.EXECUTE, false);
                             if (c.up.sessionId == null || c.up.sessionId.isEmpty()) {
                                 sid = login(c.up);
                             }
                         } else {
-                            queryOptions.add(ToolManager.EXECUTE, true);
+                            queryOptions.add(ExecutorManager.EXECUTE, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
@@ -827,9 +828,9 @@ public class OpenCGAMain {
                         long outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                         if (c.enqueue) {
-                            queryOptions.put(ToolManager.EXECUTE, false);
+                            queryOptions.put(ExecutorManager.EXECUTE, false);
                         } else {
-                            queryOptions.add(ToolManager.EXECUTE, true);
+                            queryOptions.add(ExecutorManager.EXECUTE, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
@@ -956,9 +957,9 @@ public class OpenCGAMain {
                     case "run": {
                         OptionsParser.JobsCommands.RunJobCommand c = optionsParser.getJobsCommands().runJobCommand;
 
-                        int studyId = catalogManager.getStudyId(c.studyId);
-                        int outdirId = catalogManager.getFileId(c.outdir);
-                        int toolId = catalogManager.getToolId(c.toolId);
+                        long studyId = catalogManager.getStudyId(c.studyId);
+                        long outdirId = catalogManager.getFileId(c.outdir);
+                        long toolId = catalogManager.getToolId(c.toolId);
                         String toolName;
                         ToolManager toolManager;
                         if (toolId < 0) {
@@ -971,7 +972,7 @@ public class OpenCGAMain {
                         }
 
 
-                        List<Integer> inputFiles = new LinkedList<>();
+                        List<Long> inputFiles = new LinkedList<>();
                         Map<String, List<String>> localParams = new HashMap<>();
 
                         for (String key : c.params.keySet()) {
@@ -1030,7 +1031,7 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
-                        int toolId = catalogManager.getToolId(c.id);
+                        long toolId = catalogManager.getToolId(c.id);
                         ToolManager toolManager;
                         String toolName;
                         if (toolId < 0) {

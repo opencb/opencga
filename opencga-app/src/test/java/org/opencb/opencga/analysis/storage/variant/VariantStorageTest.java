@@ -15,7 +15,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
@@ -179,7 +179,7 @@ public class VariantStorageTest {
 //        cohorts.put("all", null);
         checkCalculatedStats(cohorts);
 
-        Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh2), sessionId, new QueryOptions(AnalysisJobExecutor.EXECUTE, true)).first();
+        Job job = variantStorage.calculateStats(outputId, Collections.singletonList(coh2), sessionId, new QueryOptions(ExecutorManager.EXECUTE, true)).first();
         assertEquals(Status.READY, job.getStatus().getStatus());
         cohorts.put("coh2", catalogManager.getCohort(coh2, null, sessionId).first());
         checkCalculatedStats(cohorts);

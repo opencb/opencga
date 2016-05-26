@@ -163,7 +163,7 @@ public class AnalysisOutputRecorder {
     public void postProcessIndexJob(Job job, StorageETLResult storageETLResult, Exception e, String sessionId) throws CatalogException {
         boolean jobFailed = storageETLResult == null || storageETLResult.getLoadError() != null || storageETLResult.getTransformError() != null;
 
-        Integer indexedFileId = (Integer) job.getAttributes().get(Job.INDEXED_FILE_ID);
+        Long indexedFileId = ((Number) job.getAttributes().get(Job.INDEXED_FILE_ID)).longValue();
         File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
         final Index index;
 

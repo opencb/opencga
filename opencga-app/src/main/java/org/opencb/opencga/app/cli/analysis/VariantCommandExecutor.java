@@ -25,8 +25,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -224,8 +224,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
                     .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
                     .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)
@@ -284,7 +284,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyId);
         // Use the INDEXED_FILE_ID instead of the given fileID. It may be the transformed file.
-        options.put(VariantStorageManager.Options.FILE_ID.key(), job.getAttributes().containsKey(Job.INDEXED_FILE_ID));
+        options.put(VariantStorageManager.Options.FILE_ID.key(), job.getAttributes().get(Job.INDEXED_FILE_ID));
         options.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
         options.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
         options.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
@@ -374,8 +374,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)
@@ -550,8 +550,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)

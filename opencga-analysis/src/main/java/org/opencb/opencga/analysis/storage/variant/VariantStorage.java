@@ -22,8 +22,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -65,8 +65,8 @@ public class VariantStorage {
      *      {@link VariantStorageManager.Options#FILE_ID}
      *      {@link VariantStorageManager.Options#UPDATE_STATS}
      *      {@link VariantStorageManager.Options#AGGREGATION_MAPPING_PROPERTIES}
-     *      {@link ToolManager#EXECUTE}
-     *      {@link ToolManager#SIMULATE}
+     *      {@link ExecutorManager#EXECUTE}
+     *      {@link ExecutorManager#SIMULATE}
      *      {@link AnalysisFileIndexer#LOG_LEVEL}
      *      {@link AnalysisFileIndexer#PARAMETERS}
      *
@@ -85,8 +85,8 @@ public class VariantStorage {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(ToolManager.EXECUTE);
-        final boolean simulate = options.getBoolean(ToolManager.SIMULATE);
+        final boolean execute = options.getBoolean(ExecutorManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ExecutorManager.SIMULATE);
         String fileIdStr = options.getString(VariantStorageManager.Options.FILE_ID.key(), null);
         boolean updateStats = options.getBoolean(VariantStorageManager.Options.UPDATE_STATS.key(), false);
         final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
@@ -245,8 +245,8 @@ public class VariantStorage {
     /**
      *
      * Accepts options:
-     *      {@link ToolManager#EXECUTE}
-     *      {@link ToolManager#SIMULATE}
+     *      {@link ExecutorManager#EXECUTE}
+     *      {@link ExecutorManager#SIMULATE}
      *      {@link AnalysisFileIndexer#LOG_LEVEL}
      *      {@link AnalysisFileIndexer#PARAMETERS}
      *      {@link VariantDBAdaptor.VariantQueryParams#REGION}
@@ -272,8 +272,8 @@ public class VariantStorage {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(ToolManager.EXECUTE);
-        final boolean simulate = options.getBoolean(ToolManager.SIMULATE);
+        final boolean execute = options.getBoolean(ExecutorManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ExecutorManager.SIMULATE);
         final long start = System.currentTimeMillis();
 
         File outDir = catalogManager.getFile(outDirId, null, sessionId).first();

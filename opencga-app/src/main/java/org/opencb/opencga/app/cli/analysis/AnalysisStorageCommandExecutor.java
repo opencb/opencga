@@ -1,8 +1,8 @@
 package org.opencb.opencga.app.cli.analysis;
 
-import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
@@ -11,7 +11,6 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 
-import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -44,7 +43,12 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
 
 
     protected Job getJob(long studyId, String jobId, String sessionId) throws CatalogException {
-        return catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, jobId), null, sessionId).first();
+        Query query = new Query(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, jobId);
+        QueryResult<Job> result = catalogManager.getAllJobs(studyId, query, null, sessionId);
+        if (result.getResult().isEmpty()) {
+            throw new IllegalArgumentException("Unknown job. Can't find job " + jobId);
+        }
+        return result.first();
     }
 
     protected Map<Long, String> getStudyIds(String sessionId) throws CatalogException {

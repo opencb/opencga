@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
@@ -106,8 +106,8 @@ public class AnalysisFileIndexer {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(ToolManager.EXECUTE);
-        final boolean simulate = options.getBoolean(ToolManager.SIMULATE);
+        final boolean execute = options.getBoolean(ExecutorManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ExecutorManager.SIMULATE);
         final long start = System.currentTimeMillis();
         final boolean transform;
         final boolean load;

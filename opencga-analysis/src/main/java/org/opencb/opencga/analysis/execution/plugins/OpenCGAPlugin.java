@@ -26,7 +26,7 @@ public abstract class OpenCGAPlugin {
     private String sessionId;
     private boolean initialized;
     private StorageManagerFactory storageManagerFactory;
-    private int studyId;
+    private long studyId;
 
     public abstract Analysis getManifest();
 
@@ -39,7 +39,7 @@ public abstract class OpenCGAPlugin {
      */
 
     final void init(Logger logger, ObjectMap configuration, CatalogManager catalogManager,
-                    StorageManagerFactory storageManagerFactory, int studyId, String sessionId) {
+                    StorageManagerFactory storageManagerFactory, long studyId, String sessionId) {
         if (initialized) {
             throw new IllegalStateException("The plugin was already initialized! Can't init twice");
         }
@@ -68,7 +68,7 @@ public abstract class OpenCGAPlugin {
         return sessionId;
     }
 
-    protected final VariantDBAdaptor getVariantDBAdaptor(int studyId) 
+    protected final VariantDBAdaptor getVariantDBAdaptor(long studyId)
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException, 
             StorageManagerException {
 
@@ -81,11 +81,11 @@ public abstract class OpenCGAPlugin {
         return storageManagerFactory.getVariantStorageManager(storageEngine).getDBAdaptor(dbName);
     }
 
-    protected final AlignmentDBAdaptor getAlignmentDBAdaptor(int studyId) {
+    protected final AlignmentDBAdaptor getAlignmentDBAdaptor(long studyId) {
         throw new UnsupportedOperationException();
     }
 
-    protected final int getStudyId() {
+    protected final long getStudyId() {
         return studyId;
     }
 }

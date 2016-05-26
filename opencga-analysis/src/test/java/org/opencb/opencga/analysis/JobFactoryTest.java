@@ -50,7 +50,7 @@ public class JobFactoryTest {
     @Test
     public void executeLocalSuccess() throws Exception {
         String helloWorld = "Hello World!";
-        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "echo " + helloWorld, true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
@@ -67,7 +67,7 @@ public class JobFactoryTest {
 
     @Test
     public void executeLocalError1() throws Exception {
-        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "unexisting_tool ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
@@ -77,7 +77,7 @@ public class JobFactoryTest {
 
     @Test
     public void executeLocalError2() throws Exception {
-        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "false ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
@@ -88,7 +88,7 @@ public class JobFactoryTest {
     public void executeLocalInterrupt() throws Exception {
         Thread thread = new Thread(() -> {
             try {
-                new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.<Integer>emptyList(), sessionId,
+                new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                         StringUtils.randomString(5), temporalOutDirUri, "sleep 20 ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
             } catch (Exception e) {
                 e.printStackTrace();

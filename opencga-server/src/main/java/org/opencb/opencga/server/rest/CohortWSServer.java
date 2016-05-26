@@ -19,11 +19,11 @@ package org.opencb.opencga.server.rest;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
-import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
@@ -223,7 +223,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (calculate) {
                 VariantStorage variantStorage = new VariantStorage(catalogManager);
                 Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
-                queryOptions.put(ToolManager.EXECUTE, false);
+                queryOptions.put(ExecutorManager.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                 QueryResult<Job> jobQueryResult =
                         variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
