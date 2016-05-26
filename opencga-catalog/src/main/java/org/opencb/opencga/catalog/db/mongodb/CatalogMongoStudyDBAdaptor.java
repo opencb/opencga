@@ -28,10 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -490,11 +487,17 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
-        Bson pull = Updates.pull("groups.$.userIds", members);
+        Bson pull = Updates.pullAll("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
         if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId);
         }
+
+        // Remove the group in case there are no users in it
+        Bson queryBson = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_ID.key(), groupId).append(
+                QueryParams.GROUP_USER_IDS.key(), new Document("$eq", Collections.emptyList()));
+        pull = new Document("$pull", new Document("groups", new Document("userIds", Collections.emptyList())));
+        studyCollection.update(queryBson, pull, null);
     }
 
     @Override

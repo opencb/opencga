@@ -42,6 +42,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String externalUser = "external";
     private final String password = "1234";
 
+    private final String groupAdmin = "@admins";
+    private final String groupMember = "@members";
+
     private final List ALL_FILE_PERMISSIONS = EnumSet.allOf(FileAcl.FilePermissions.class)
             .stream()
             .map(FileAcl.FilePermissions::name)
@@ -112,19 +115,23 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         data_d1_d2_d3_d4_txt = catalogManager.createFile(s1, File.Format.PLAIN, File.Bioformat.NONE, "data/d1/d2/d3/d4/my.txt", ("file " +
                 "content").getBytes(), "", false, ownerSessionId).first().getId();
 
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.MEMBERS_ROLE, memberUser, ownerSessionId);
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.ADMINS_ROLE, studyAdminUser1, ownerSessionId);
+        // Add studyAdminUser1 and studyAdminUser2 to admin group and admin role.
+        catalogManager.addUsersToGroup(s1, groupAdmin, studyAdminUser1 + "," + studyAdminUser2, ownerSessionId);
+        catalogManager.shareStudy(s1, groupAdmin, AuthorizationManager.ROLE_ADMIN, ownerSessionId);
+
+        catalogManager.shareStudy(s1, memberUser, AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
+        catalogManager.shareStudy(s1, externalUser, AuthorizationManager.ROLE_LOCKED, studyAdmin1SessionId);
 
         catalogManager.shareFile(Long.toString(data_d1), memberUser, ALL_FILE_PERMISSIONS, ownerSessionId);
         catalogManager.shareFile(Long.toString(data_d1), studyAdminUser1, ALL_FILE_PERMISSIONS, ownerSessionId);
         catalogManager.shareFile(Long.toString(data_d1_d2_d3), memberUser, DENY_FILE_PERMISSIONS, ownerSessionId);
         catalogManager.shareFile(Long.toString(data_d1_d2_d3_d4_txt), memberUser, ALL_FILE_PERMISSIONS, ownerSessionId);
 //        catalogManager.shareFile(Long.toString(data_d1), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
-//        catalogManager.shareFile(Long.toString(data_d1), "@" + AuthorizationManager.ADMINS_ROLE, new AclEntry("@" + AuthorizationManager.ADMINS_ROLE, false, false, false, false), ownerSessionId);
+//        catalogManager.shareFile(Long.toString(data_d1), "@" + groupAdmin, new AclEntry("@" + groupAdmin, false, false, false, false), ownerSessionId);
 //        catalogManager.shareFile(Long.toString(data_d1), studyAdminUser1, new AclEntry(studyAdminUser1, true, true, true, true), ownerSessionId);
-//        catalogManager.shareFile(Long.toString(data_d1_d2), "@" + AuthorizationManager.ADMINS_ROLE, new AclEntry("@" + AuthorizationManager.ADMINS_ROLE, false, false, false, false), ownerSessionId);
+//        catalogManager.shareFile(Long.toString(data_d1_d2), "@" + groupAdmin, new AclEntry("@" + groupAdmin, false, false, false, false), ownerSessionId);
 //        catalogManager.shareFile(Long.toString(data_d1_d2_d3), memberUser, new AclEntry(memberUser, false, false, false, false), ownerSessionId);
-//        catalogManager.shareFile(Long.toString(data_d1_d2_d3_d4), "@" + AuthorizationManager.ADMINS_ROLE, new AclEntry("@" + AuthorizationManager.ADMINS_ROLE, true, true, true, true), ownerSessionId);
+//        catalogManager.shareFile(Long.toString(data_d1_d2_d3_d4), "@" + groupAdmin, new AclEntry("@" + groupAdmin, true, true, true, true), ownerSessionId);
 //        catalogManager.shareFile(Long.toString(data_d1_d2_d3_d4_txt), memberUser, new AclEntry(memberUser, true, true, true, true), ownerSessionId);
 
         smp1 = catalogManager.createSample(s1, "smp1", null, null, null, null, ownerSessionId).first().getId();
@@ -150,10 +157,10 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 //        catalogManager.shareSample(Long.toString(smp3), memberUser, new AclEntry(memberUser, false, false, false, false),
 //                ownerSessionId);
 //        catalogManager.shareSample(Long.toString(smp2), studyAdminUser1, new AclEntry(studyAdminUser1, false, false, false, false), ownerSessionId);
-//        catalogManager.shareSample(Long.toString(smp4), "@" + AuthorizationManager.MEMBERS_ROLE,
-//                new AclEntry("@" + AuthorizationManager.MEMBERS_ROLE, true, true, true, true), ownerSessionId);
-//        catalogManager.shareSample(Long.toString(smp5), "@" + AuthorizationManager.MEMBERS_ROLE,
-//                new AclEntry("@" + AuthorizationManager.MEMBERS_ROLE, true, true, true, true), ownerSessionId);
+//        catalogManager.shareSample(Long.toString(smp4), "@" + groupMember,
+//                new AclEntry("@" + groupMember, true, true, true, true), ownerSessionId);
+//        catalogManager.shareSample(Long.toString(smp5), "@" + groupMember,
+//                new AclEntry("@" + groupMember, true, true, true, true), ownerSessionId);
 //        catalogManager.shareSample(Long.toString(smp5), memberUser, new AclEntry(memberUser, false, false, false, false),
 //                ownerSessionId);
 //        catalogManager.shareSample(Long.toString(smp6), AclEntry.USER_OTHERS_ID,
@@ -172,36 +179,35 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void addMemberToGroup() throws CatalogException {
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.ADMINS_ROLE, externalUser, ownerSessionId);
+        catalogManager.addUsersToGroup(s1, groupAdmin, externalUser, ownerSessionId);
         Map<String, Group> groups = getGroupMap();
-        assertTrue(groups.get(AuthorizationManager.ADMINS_ROLE).getUserIds().contains(externalUser));
+        assertTrue(groups.get(groupAdmin).getUserIds().contains(externalUser));
     }
 
     @Test
     public void addMemberToGroupExistingNoPermission() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.ADMINS_ROLE, externalUser, externalSessionId);
+        catalogManager.addUsersToGroup(s1, groupAdmin, externalUser, externalSessionId);
     }
 
     @Test
-    public void addMemberToGroupInOtherGroup() throws CatalogException {
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.ADMINS_ROLE, externalUser, ownerSessionId);
-        thrown.expect(CatalogException.class);
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.MEMBERS_ROLE, externalUser, ownerSessionId);
+    public void changeGroupMembership() throws CatalogException {
+        catalogManager.addUsersToGroup(s1, groupAdmin, externalUser, ownerSessionId);
+        Map<String, Group> groups = getGroupMap();
+        assertTrue(groups.get(groupAdmin).getUserIds().contains(externalUser));
+//        thrown.expect(CatalogException.class);
+        catalogManager.addUsersToGroup(s1, groupMember, externalUser, ownerSessionId);
+        groups = getGroupMap();
+        assertTrue(groups.get(groupMember).getUserIds().contains(externalUser));
+        assertTrue(!groups.get(groupAdmin).getUserIds().contains(externalUser));
     }
 
-    @Test
-    public void addMemberToTheBelongingGroup() throws CatalogException {
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.ADMINS_ROLE, externalUser, ownerSessionId);
-        thrown.expect(CatalogException.class);
-        catalogManager.addUsersToGroup(s1, AuthorizationManager.ADMINS_ROLE, externalUser, ownerSessionId);
-    }
-
-    @Test
-    public void addMemberToNonExistingGroup() throws CatalogException {
-        thrown.expect(CatalogDBException.class);
-        catalogManager.addUsersToGroup(s1, "NO_GROUP", externalUser, ownerSessionId);
-    }
+//    @Test
+//    public void addMemberToTheBelongingGroup() throws CatalogException {
+//        catalogManager.addUsersToGroup(s1, groupAdmin, externalUser, ownerSessionId);
+//        thrown.expect(CatalogException.class);
+//        catalogManager.addUsersToGroup(s1, groupAdmin, externalUser, ownerSessionId);
+//    }
 
     /*--------------------------*/
     // Remove group members
@@ -209,14 +215,18 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void removeMemberFromGroup() throws CatalogException {
-        catalogManager.removeUsersFromGroup(s1, AuthorizationManager.ADMINS_ROLE, ownerUser, ownerSessionId);
-        assertFalse(getGroupMap().get(AuthorizationManager.ADMINS_ROLE).getUserIds().contains(ownerUser));
+        // Remove one of the users
+        catalogManager.removeUsersFromGroup(s1, groupAdmin, studyAdminUser1, ownerSessionId);
+        assertFalse(getGroupMap().get(groupAdmin).getUserIds().contains(studyAdminUser1));
+        // Remove the last user in the admin group
+        catalogManager.removeUsersFromGroup(s1, groupAdmin, studyAdminUser2, ownerSessionId);
+        assertFalse(getGroupMap().containsKey(groupAdmin));
     }
 
     @Test
     public void removeMemberFromGroupNoPermission() throws CatalogException {
         thrown.expect(CatalogAuthorizationException.class);
-        catalogManager.removeUsersFromGroup(s1, AuthorizationManager.ADMINS_ROLE, ownerUser, externalSessionId);
+        catalogManager.removeUsersFromGroup(s1, groupAdmin, ownerUser, externalSessionId);
     }
 
     @Test
@@ -228,9 +238,80 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void removeMemberFromNonBelongingGroup() throws CatalogException {
         thrown.expect(CatalogException.class);
-        catalogManager.removeUsersFromGroup(s1, AuthorizationManager.MEMBERS_ROLE, ownerUser, ownerSessionId);
+        catalogManager.removeUsersFromGroup(s1, groupMember, ownerUser, ownerSessionId);
     }
 
+    /*--------------------------*/
+    // Add users/groups to roles
+    /*--------------------------*/
+
+    // A user with proper permissions adds an existing user to a role
+    @Test
+    public void addExistingUserToRole() throws CatalogException {
+        String newUser = "newUser";
+        catalogManager.createUser(newUser, newUser, "email@ccc.ccc", password, "ASDF", null, null);
+        catalogManager.shareStudy(s1, newUser, AuthorizationManager.ROLE_ANALYST, ownerSessionId);
+
+    }
+
+    // A user with no permissions tries to add an existing user to a role
+    @Test
+    public void addExistingUserToRole2() throws CatalogException {
+
+    }
+
+    @Test
+    public void addExistingGroupToRole() throws CatalogException {
+
+    }
+
+    @Test
+    public void addNonExistingUserToRole() throws CatalogException {
+
+    }
+
+    @Test
+    public void addNonExistingGroupToRole() throws CatalogException {
+
+    }
+
+    @Test
+    public void changeUserRole() throws CatalogException {
+
+    }
+
+     /*--------------------------*/
+    // Remove users/groups from roles
+    /*--------------------------*/
+
+    // A user with proper permissions removes an existing user from a role
+    @Test
+    public void removeUserFromRole() throws CatalogException {
+
+    }
+
+    // A user with no permissions tries to remove an existing user from a role
+    @Test
+    public void removeUserFromRole2() throws CatalogException {
+
+    }
+
+    @Test
+    public void removeGroupFromRole() throws CatalogException {
+
+    }
+
+    @Test
+    public void removeNonExistingUserFromRole() throws CatalogException {
+
+    }
+
+    @Test
+    public void removeNonExistingGroupFromRole() throws CatalogException {
+
+    }
+
+    // TODO: Revision por aqui !!!
     /*--------------------------*/
     // Read Project
     /*--------------------------*/
@@ -282,7 +363,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void readFileByOwnerNoGroups() throws CatalogException {
-        catalogManager.removeUsersFromGroup(s1, AuthorizationManager.ADMINS_ROLE, ownerUser, ownerSessionId);
+        catalogManager.removeUsersFromGroup(s1, groupAdmin, ownerUser, ownerSessionId);
         catalogManager.getFile(data_d1, ownerSessionId);
     }
 
@@ -357,7 +438,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void createFileByOwnerNoGroups() throws CatalogException {
-        catalogManager.removeUsersFromGroup(s1, AuthorizationManager.ADMINS_ROLE, ownerUser, ownerSessionId);
+        catalogManager.removeUsersFromGroup(s1, groupAdmin, ownerUser, ownerSessionId);
         catalogManager.createFolder(s1, Paths.get("data/newFolder"), true, null, ownerSessionId);
     }
 
