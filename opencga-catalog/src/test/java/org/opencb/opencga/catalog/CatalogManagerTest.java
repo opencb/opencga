@@ -23,7 +23,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -235,14 +234,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        catalogManager.login("admin", "admin", "localhost");
-    }
-
-    @Test
-    public void testAdminUserExists2() throws Exception {
-        QueryResult<ObjectMap> login = catalogManager.login("admin", CatalogAuthenticationManager.cipherPassword("admin"), "localhost");
-        User admin = catalogManager.getUser("admin", null, login.first().getString("sessionId")).first();
-        assertEquals(User.Role.ADMIN, admin.getRole());
+        QueryResult<ObjectMap> login = catalogManager.login("admin", "admin", "localhost");
+        assertTrue(login.first().getString("sessionId").length() == 40);
     }
 
     @Test
@@ -319,7 +312,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(!userPre.getLastActivity().equals(userPost.getLastActivity()));
         assertEquals(userPost.getName(), newName);
         assertEquals(userPost.getEmail(), newEmail);
-        assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cipherPassword(newPassword));
+        assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cypherPassword(newPassword));
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
@@ -1054,7 +1047,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.DELETED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1066,7 +1059,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.DELETED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1187,11 +1180,11 @@ public class CatalogManagerTest extends GenericTest {
                 outDir.getId(),
                 Collections.emptyList(), null, new HashMap<>(), null, new Job.JobStatus(Job.JobStatus.ERROR), 0, 0, null, sessionIdUser);
 
-//        String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
-        QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionIdUser);
+        String sessionId = catalogManager.login("admin", "admin", "localhost").first().get("sessionId").toString();
+        QueryResult<Job> unfinishedJobs = catalogManager.getUnfinishedJobs(sessionId);
         assertEquals(2, unfinishedJobs.getNumResults());
 
-        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionIdUser);
+        QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId, sessionId);
         assertEquals(4, allJobs.getNumResults());
     }
 
@@ -1827,8 +1820,8 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(sampleId, queryResult.first().getId());
 
-        thrown.expect(CatalogDBException.class);
-        catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+        QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+        assertEquals(Status.DELETED, sample.first().getStatus().getStatus());
     }
 
     /*
@@ -1982,8 +1975,8 @@ public class CatalogManagerTest extends GenericTest {
 
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
-        thrown.expect(CatalogDBException.class);
-        catalogManager.getCohort(myCohort.getId(), null, sessionIdUser);
+        Cohort cohort = catalogManager.getCohort(myCohort.getId(), null, sessionIdUser).first();
+        assertEquals(Status.DELETED, cohort.getStatus().getStatus());
     }
 
     /**

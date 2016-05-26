@@ -73,7 +73,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException {
-        return get(new Query(QueryParams.ID.key(), cohortId), options);
+        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
     }
 
     @Override
@@ -298,6 +298,9 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Cohort> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -313,6 +316,9 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         QueryOptions qOptions;
         if (options != null) {
             qOptions = options;
@@ -342,7 +348,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         filterEnumParams(parameters, cohortParams, acceptedEnums);
 
         String[] acceptedLongListParams = {QueryParams.SAMPLES.key()};
-        filterLongParams(parameters, cohortParams, acceptedLongListParams);
+        filterLongListParams(parameters, cohortParams, acceptedLongListParams);
         if (parameters.containsKey(QueryParams.SAMPLES.key())) {
             for (Long sampleId : parameters.getAsLongList(QueryParams.SAMPLES.key())) {
                 if (!dbAdaptorFactory.getCatalogSampleDBAdaptor().sampleExists(sampleId)) {
@@ -534,10 +540,6 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
         Map<String, Variable> variableMap = null;
-
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

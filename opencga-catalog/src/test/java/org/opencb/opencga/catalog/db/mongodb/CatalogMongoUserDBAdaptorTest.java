@@ -98,7 +98,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void loginTest() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -109,7 +109,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void loginTest2() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -120,7 +120,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void logoutTest() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -136,11 +136,11 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void getUserIdBySessionId() throws CatalogDBException {
         String userId = user1.getId();
 
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1")); //Having multiple conections
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1"));
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1"));
+        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20)); //Having multiple conections
+        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20));
+        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20));
 
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 

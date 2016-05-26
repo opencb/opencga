@@ -144,17 +144,23 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException {
+    public QueryResult<ObjectMap> addSession(String userId, Session session) throws CatalogDBException {
         long startTime = startQuery();
-        QueryResult<Long> countSessions = count(new Query(QueryParams.SESSION_ID.key(), session.getId()));
-        if (countSessions.getResult().get(0) != 0) {
-            throw new CatalogDBException("Already logged with this sessionId");
-        } else {
-            Bson query = new Document(QueryParams.ID.key(), userId);
-            Bson updates = Updates.push("sessions", getMongoDBDocument(session, "session"));
-            userCollection.update(query, updates, null);
-            return endQuery("Login", startTime, Collections.singletonList(session));
+
+        Bson query = new Document(QueryParams.ID.key(), userId);
+        Bson updates = Updates.push("sessions",
+                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session")))
+                        .append("$slice", -50));
+        QueryResult<UpdateResult> update = userCollection.update(query, updates, null);
+
+        if (update.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("An internal error occurred when logging the user" + userId);
         }
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        resultObjectMap.put("sessionId", session.getId());
+        resultObjectMap.put("userId", userId);
+        return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
     }
 
     @Override
@@ -229,7 +235,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            return endQuery("Get user", startTime, Collections.singletonList(user));
 //        }
         checkUserExists(userId);
-        Query query = new Query(QueryParams.ID.key(), userId);
+        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED);
         query.append(QueryParams.LAST_ACTIVITY.key(), "!=" + lastActivity);
         return get(query, options);
     }
@@ -402,6 +408,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
 
@@ -421,6 +430,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
 
@@ -659,9 +671,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {

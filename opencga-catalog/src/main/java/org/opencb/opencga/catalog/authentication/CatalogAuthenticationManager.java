@@ -32,7 +32,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
         this.catalogConfiguration = catalogConfiguration;
     }
 
-    public static String cipherPassword(String password) throws CatalogException {
+    public static String cypherPassword(String password) throws CatalogException {
         try {
             return StringUtils.sha1(password);
         } catch (NoSuchAlgorithmException e) {
@@ -42,12 +42,12 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public boolean authenticate(String userId, String password, boolean throwException) throws CatalogException {
-        String cypherPassword = (password.length() != 40) ? cipherPassword(password) : password;
+        String cypherPassword = (password.length() != 40) ? cypherPassword(password) : password;
         String storedPassword;
         if (userId.equals("admin")) {
             storedPassword = metaDBAdaptor.getAdminPassword();
         } else {
-            storedPassword = userDBAdaptor.getUser(userId, new QueryOptions("include", "password"), null).first().getPassword();
+            storedPassword = userDBAdaptor.getUser(userId, new QueryOptions(QueryOptions.INCLUDE, "password"), null).first().getPassword();
         }
         if (storedPassword.equals(cypherPassword)) {
             return true;
@@ -62,14 +62,14 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
     @Override
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
-        String oldCryptPass = (oldPassword.length() != 40) ? cipherPassword(oldPassword) : oldPassword;
-        String newCryptPass = (newPassword.length() != 40) ? cipherPassword(newPassword) : newPassword;
+        String oldCryptPass = (oldPassword.length() != 40) ? cypherPassword(oldPassword) : oldPassword;
+        String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;
         userDBAdaptor.changePassword(userId, oldCryptPass, newCryptPass);
     }
 
     @Override
     public void newPassword(String userId, String newPassword) throws CatalogException {
-        String newCryptPass = (newPassword.length() != 40) ? cipherPassword(newPassword) : newPassword;
+        String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;
         userDBAdaptor.changePassword(userId, "", newCryptPass);
     }
 
@@ -81,7 +81,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
 
         String newPassword = StringUtils.randomString(6);
 
-        String newCryptPass = cipherPassword(newPassword);
+        String newCryptPass = cypherPassword(newPassword);
 
         QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 

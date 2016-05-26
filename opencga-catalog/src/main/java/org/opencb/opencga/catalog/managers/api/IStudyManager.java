@@ -6,6 +6,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 
 import java.net.URI;
@@ -21,6 +22,17 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
     String getUserId(long studyId) throws CatalogException;
 
     Long getProjectId(long studyId) throws CatalogException;
+
+    /**
+     * Obtains the numeric study id given a string.
+     *
+     * @param userId User id of the user asking for the project id.
+     * @param studyStr Study id in string format. Could be one of [id | user@aliasProject:aliasStudy | user@aliasStudy |
+     *                 aliasProject:aliasStudy | aliasStudy ].
+     * @return the numeric study id.
+     * @throws CatalogException CatalogDBException when more than one study id are found.
+     */
+    Long getStudyId(String userId, String studyStr) throws CatalogException;
 
     Long getStudyId(String studyId) throws CatalogException;
 
@@ -50,6 +62,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
                               Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes,
                               QueryOptions options, String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException;
 
 
@@ -152,4 +165,16 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @throws CatalogException CatalogException
      */
     QueryResult<StudySummary> getSummary(long studyId, String sessionId, QueryOptions queryOptions) throws CatalogException;
+
+    /**
+     * Retrieve the study Acls for the given members.
+     *
+     * @param studyStr Study id of which the acls will be obtained.
+     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
+     * @param sessionId Session of the user that wants to retrieve the acls.
+     * @return A queryResult containing the study acls.
+     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
+     * the study id is not valid or the members given do not exist.
+     */
+    QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
 }

@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 
@@ -16,6 +17,17 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
 
     String getUserId(long projectId) throws CatalogException;
 
+    /**
+     * Obtains the numeric project id given a string.
+     *
+     * @param userId User id of the user asking for the project id.
+     * @param projectStr Project id in string format. Could be one of [id | user@project | project].
+     * @return the numeric project id.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    long getProjectId(String userId, String projectStr) throws CatalogDBException;
+
+    @Deprecated
     long getProjectId(String projectId) throws CatalogException;
 
     QueryResult<Project> create(String name, String alias, String description, String organization, QueryOptions options,

@@ -526,7 +526,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String fileId : fileIdArray) {
             long studyId = fileDBAdaptor.getStudyIdByFileId(Long.valueOf(fileId));
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share file with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -577,7 +577,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String sampleId : sampleIdArray) {
             long studyId = sampleDBAdaptor.getStudyIdBySampleId(Long.valueOf(sampleId));
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share sample with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -627,7 +627,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String cohortId : cohortIdArray) {
             long studyId = cohortDBAdaptor.getStudyIdByCohortId(Long.valueOf(cohortId));
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share cohort with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -677,7 +677,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String individualId : individualIdArray) {
             long studyId = individualDBAdaptor.getStudyIdByIndividualId(Long.valueOf(individualId));
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share individual with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -727,7 +727,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String jobId : jobIdArray) {
             long studyId = jobDBAdaptor.getStudyIdByJobId(Long.valueOf(jobId));
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share job with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -777,7 +777,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String datasetId : datasetArray) {
             long studyId = datasetDBAdaptor.getStudyIdByDatasetId(Long.valueOf(datasetId));
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share dataset with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -817,6 +817,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (projects == null || projects.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         Iterator<Project> projectIt = projects.iterator();
         while (projectIt.hasNext()) {
             Project p = projectIt.next();
@@ -833,6 +836,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterStudies(String userId, List<Study> studies) throws CatalogException {
         if (studies == null || studies.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         Iterator<Study> studyIt = studies.iterator();
@@ -864,6 +870,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (files == null || files.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -883,6 +892,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException {
         if (samples == null || samples.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -909,6 +921,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (individuals == null || individuals.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -931,6 +946,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException {
         if (cohorts == null || cohorts.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -957,6 +975,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -974,6 +995,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException {
         if (datasets == null || datasets.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -1024,6 +1048,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> memberList = new ArrayList<>();
         memberList.add(member);
         if (!member.startsWith("@")) { // User
+            if (member.equals("admin") || isStudyOwner(studyId, member)) {
+                return true;
+            }
             QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
             if (groupBelonging.getNumResults() > 0) {
                 memberList.add(groupBelonging.first().getId()); // Add the groupId to the memberList

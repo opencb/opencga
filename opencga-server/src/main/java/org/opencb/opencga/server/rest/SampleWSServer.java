@@ -199,6 +199,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/update")
     @ApiOperation(value = "Update some sample attributes using GET method", position = 6)
     public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
+                           @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = true) @QueryParam("source") String source,
                            @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId) {
@@ -211,6 +212,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     public static class UpdateSample {
+        public String name;
         public String description;
         public String source;
         public long individualId;
@@ -224,7 +226,8 @@ public class SampleWSServer extends OpenCGAWSServer {
     public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
                                  @ApiParam(value = "params", required = true) UpdateSample params) {
         try {
-            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId,
+                    new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

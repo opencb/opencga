@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -58,6 +59,62 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     @Override
     public Long getProjectId(long studyId) throws CatalogException {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
+    }
+
+    @Override
+    public Long getStudyId(String userId, String studyStr) throws CatalogException {
+        if (StringUtils.isNumeric(studyStr)) {
+            return Long.parseLong(studyStr);
+        }
+
+        String ownerId = userId;
+        String aliasProject = null;
+        String aliasStudy;
+
+        String[] split = studyStr.split("@");
+        if (split.length == 2) {
+            // user@project:study
+            ownerId = split[0];
+            studyStr = split[1];
+        }
+
+        split = studyStr.split(":", 2);
+        if (split.length == 2) {
+            aliasProject = split[0];
+            aliasStudy = split[1];
+        } else {
+            aliasStudy = studyStr;
+        }
+
+        List<Long> projectIds = new ArrayList<>();
+        if (aliasProject != null) {
+            long projectId = projectDBAdaptor.getProjectId(ownerId, aliasProject);
+            if (projectId == -1) {
+                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
+            }
+            projectIds.add(projectId);
+        } else {
+            QueryResult<Project> allProjects = projectDBAdaptor.getAllProjects(ownerId,
+                    new QueryOptions(QueryOptions.INCLUDE, "projects.id"));
+            if (allProjects.getNumResults() > 0) {
+                projectIds.addAll(allProjects.getResult().stream().map(Project::getId).collect(Collectors.toList()));
+            } else {
+                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
+            }
+        }
+
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds)
+                .append(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), aliasStudy);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.id");
+
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, qOptions);
+        if (studyQueryResult.getNumResults() == 0) {
+            return -1L;
+        } else if (studyQueryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: Found more than one study id based on " + studyStr);
+        } else {
+            return studyQueryResult.first().getId();
+        }
     }
 
     @Override
@@ -187,6 +244,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return result;
     }
 
+    @Deprecated
     @Override
     public QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
@@ -420,6 +478,108 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         return new QueryResult<>("Study summary", (int) (System.currentTimeMillis() - startTime), 1, 1, "", "",
                 Collections.singletonList(studySummary));
+    }
+
+    @Override
+    public QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+
+
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getId());
+
+                            if (!groupUsers.containsKey(group.getId())) {
+                                groupUsers.put(group.getId(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getId()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, memberList);
+
+        if (members.size() == 0) {
+            return studyAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        // We loop over the results and recreate one studyAcl per member
+        Map<String, StudyAcl> studyAclHashMap = new HashMap<>();
+        for (StudyAcl studyAcl : studyAclQueryResult.getResult()) {
+            for (String tmpMember : studyAcl.getUsers()) {
+                if (memberList.contains(tmpMember)) {
+                    if (tmpMember.startsWith("@")) {
+                        // Check if the user was demanding the group directly or a user belonging to the group
+                        if (groupIds.contains(tmpMember)) {
+                            studyAclHashMap.put(tmpMember,
+                                    new StudyAcl(studyAcl.getRole(), Collections.singletonList(tmpMember), studyAcl.getPermissions()));
+                        } else {
+                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                            if (groupUsers.containsKey(tmpMember)) {
+                                for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                    if (userIds.contains(tmpUserId)) {
+                                        studyAclHashMap.put(tmpUserId, new StudyAcl(studyAcl.getRole(),
+                                                Collections.singletonList(tmpUserId), studyAcl.getPermissions()));
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Add the user
+                        studyAclHashMap.put(tmpMember,
+                                new StudyAcl(studyAcl.getRole(), Collections.singletonList(tmpMember), studyAcl.getPermissions()));
+                    }
+                }
+            }
+        }
+
+        // We recreate the output that is in studyAclHashMap but in the same order the members were queried.
+        List<StudyAcl> studyAclList = new ArrayList<>(studyAclHashMap.size());
+        for (String member : members) {
+            if (studyAclHashMap.containsKey(member)) {
+                studyAclList.add(studyAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        studyAclQueryResult.setId(studyStr);
+        studyAclQueryResult.setNumResults(studyAclList.size());
+        studyAclQueryResult.setNumTotalResults(studyAclList.size());
+        studyAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        studyAclQueryResult.setResult(studyAclList);
+
+        return studyAclQueryResult;
     }
 
 

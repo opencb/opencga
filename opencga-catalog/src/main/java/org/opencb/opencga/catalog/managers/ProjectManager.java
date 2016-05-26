@@ -51,6 +51,29 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
+    public long getProjectId(String userId, String projectStr) throws CatalogDBException {
+        if (StringUtils.isNumeric(projectStr)) {
+            return Long.parseLong(projectStr);
+        }
+
+        String userOwner;
+        String projectAlias;
+
+        String[] split = projectStr.split("@");
+        if (split.length == 2) {
+            // user@project
+            userOwner = split[0];
+            projectAlias = split[1];
+        } else {
+            // project
+            userOwner = userId;
+            projectAlias = projectStr;
+        }
+        return projectDBAdaptor.getProjectId(userOwner, projectAlias);
+    }
+
+    @Deprecated
+    @Override
     public long getProjectId(String projectId) throws CatalogException {
         if (StringUtils.isNumeric(projectId)) {
             return Long.parseLong(projectId);

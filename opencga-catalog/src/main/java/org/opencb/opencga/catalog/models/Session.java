@@ -16,8 +16,9 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.core.common.StringUtils;
+import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+
 
 /**
  * Created by jacobo on 11/09/14.
@@ -33,8 +34,8 @@ public class Session {
         this(StringUtils.randomString(20), "", TimeUtils.getTime(), "");
     }
 
-    public Session(String ip) {
-        this(StringUtils.randomString(20), ip, TimeUtils.getTime(), "");
+    public Session(String ip, int length) {
+        this(StringUtils.randomString(length), ip, TimeUtils.getTime(), "");
     }
 
     public Session(String id, String ip, String logout) {
@@ -89,5 +90,10 @@ public class Session {
 
     public void setLogout(String logout) {
         this.logout = logout;
+    }
+
+    public String generateNewId(int length) {
+        this.id = StringUtils.randomString(length);
+        return id;
     }
 }

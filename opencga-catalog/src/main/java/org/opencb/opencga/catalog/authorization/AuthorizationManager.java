@@ -20,6 +20,10 @@ public interface AuthorizationManager {
     String FILTER_ROUTE_FILES = "projects.studies.files.";
     String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
 
+    String ROLE_ADMIN = "admin";
+    String ROLE_ANALYST = "analyst";
+    String ROLE_LOCKED = "locked";
+
     @Deprecated
     String ADMINS_ROLE = "@admins";
     @Deprecated
@@ -41,8 +45,8 @@ public interface AuthorizationManager {
      */
     static List<StudyAcl> getDefaultAcls(Collection<String> adminUsers) {
         List<StudyAcl> studyAcls = new ArrayList<>(3);
-        studyAcls.add(new StudyAcl("admin", new ArrayList<>(adminUsers), EnumSet.allOf(StudyAcl.StudyPermissions.class)));
-        studyAcls.add(new StudyAcl("analyst", Collections.emptyList(), EnumSet.of(StudyAcl.StudyPermissions.VIEW_STUDY,
+        studyAcls.add(new StudyAcl(ROLE_ADMIN, new ArrayList<>(adminUsers), EnumSet.allOf(StudyAcl.StudyPermissions.class)));
+        studyAcls.add(new StudyAcl(ROLE_ANALYST, Collections.emptyList(), EnumSet.of(StudyAcl.StudyPermissions.VIEW_STUDY,
                 StudyAcl.StudyPermissions.UPDATE_STUDY, StudyAcl.StudyPermissions.CREATE_VARIABLE_SET,
                 StudyAcl.StudyPermissions.VIEW_VARIABLE_SET, StudyAcl.StudyPermissions.UPDATE_VARIABLE_SET,
                 StudyAcl.StudyPermissions.CREATE_FILES, StudyAcl.StudyPermissions.VIEW_FILE_HEADERS,
@@ -59,7 +63,7 @@ public interface AuthorizationManager {
                 StudyAcl.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
                 StudyAcl.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_DATASETS,
                 StudyAcl.StudyPermissions.VIEW_DATASETS, StudyAcl.StudyPermissions.UPDATE_DATASETS)));
-        studyAcls.add(new StudyAcl("locked", Collections.emptyList(), EnumSet.noneOf(StudyAcl.StudyPermissions.class)));
+        studyAcls.add(new StudyAcl(ROLE_LOCKED, Collections.emptyList(), EnumSet.noneOf(StudyAcl.StudyPermissions.class)));
         // TODO: Add all the default roles and permissions.
         return studyAcls;
     }

@@ -125,40 +125,25 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult<Project> getProject(long projectId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-
-        /*
-        DBObject query = new BasicDBObject("projects.id", projectId);
-        DBObject projection = new BasicDBObject(
-                "projects",
-                new BasicDBObject(
-                        "$elemMatch",
-                        new BasicDBObject("id", projectId)
-                )
-        );
-        QueryResult<DBObject> result = userCollection.find(query, projection, options);
-        User user = parseUser(result);
-        */
-//        Bson query = new BsonDocument("projects.id", new BsonInt32(projectId));
-        Bson query = Filters.eq("projects.id", projectId);
-        Bson projection = Projections.elemMatch("projects", Filters.eq("id", projectId));
-
-        QueryResult<Document> result = userCollection.find(query, projection, options);
-
-        User user = parseUser(result);
-        /* We are parsing the document to the user class because, as far as we know, there is no way to return a Document
-         with the project structure. Instead, we are always receiving a document with {projects:[{}]} that the User class
-         understands.
-        */
-
-        if (user == null || user.getProjects().isEmpty()) {
-            throw CatalogDBException.idNotFound("Project", projectId);
-        }
-        // Fixme: Check the code below
-        List<Project> projects = user.getProjects();
-        joinFields(projects.get(0), options);
-
-        return endQuery("Get project", startTime, projects);
+        checkProjectId(projectId);
+        return get(new Query(QueryParams.ID.key(), projectId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+//
+//        long startTime = startQuery();
+//        Bson query = Filters.eq("projects.id", projectId);
+//        Bson projection = Projections.elemMatch("projects", Filters.eq("id", projectId));
+//
+//        QueryResult<Document> result = userCollection.find(query, projection, options);
+//
+//        User user = parseUser(result);
+//
+//        if (user == null || user.getProjects().isEmpty()) {
+//            throw CatalogDBException.idNotFound("Project", projectId);
+//        }
+//        // Fixme: Check the code below
+//        List<Project> projects = user.getProjects();
+//        joinFields(projects.get(0), options);
+//
+//        return endQuery("Get project", startTime, projects);
     }
 
     /**
@@ -482,6 +467,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Project> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> aggregates = new ArrayList<>();
 
         aggregates.add(Aggregates.unwind("$projects"));
@@ -504,6 +492,9 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         List<Bson> aggregates = new ArrayList<>();
         aggregates.add(Aggregates.match(parseQuery(query)));
         aggregates.add(Aggregates.unwind("$projects"));
@@ -702,10 +693,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];

@@ -411,6 +411,14 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static void filterLongListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedLongListParams) {
+        for (String s : acceptedLongListParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getAsLongList(s));
+            }
+        }
+    }
+
     static void filterMapParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
