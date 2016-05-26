@@ -1,0 +1,37 @@
+{
+  "author" : null,
+  "version" : "0.1.0",
+  "id" : "test_plugin2",
+  "name" : "Test plugin 2",
+  "description" : "",
+  "website" : "",
+  "publication" : "",
+  "icon" : null,
+  "globalParams" : [ ],
+  "executions" : [ {
+    "id" : "default",
+    "name" : "default",
+    "executable" : "",
+    "outputParam" : "outdir",
+    "testCmd" : null,
+    "result" : null,
+    "inputParams" : [ ],
+    "inputParamsFromTxt" : [ ],
+    "validParams" : [ {
+      "name" : "outdir",
+      "description" : "",
+      "required" : true
+    }, {
+      "name" : "param1",
+      "description" : "",
+      "required" : false
+    }, {
+      "name" : "error",
+      "description" : "",
+      "required" : false
+    } ],
+    "configAttr" : [ ]
+  } ],
+  "examples" : null,
+  "acl" : null
+}
