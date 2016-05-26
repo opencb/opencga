@@ -173,8 +173,19 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
 
         Map<String, Object> sampleParams = new HashMap<>();
 
-        String[] acceptedParams = {"source", "description"};
+        String[] acceptedParams = {"source", "description", "name"};
         filterStringParams(parameters, sampleParams, acceptedParams);
+
+        if (sampleParams.containsKey("name")) {
+            // Check that the new sample name is still unique
+            int studyId = getStudyIdBySampleId(sampleId);
+
+            QueryResult<Long> count = sampleCollection.count(
+                    new BasicDBObject("name", sampleParams.get("name")).append(_STUDY_ID, studyId));
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Sample { name: '" + sampleParams.get("name") + "'} already exists.");
+            }
+        }
 
         String[] acceptedIntParams = {"individualId"};
         filterIntParams(parameters, sampleParams, acceptedIntParams);
@@ -197,7 +208,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogDBAdaptor implements Cat
             }
         }
 
-        return endQuery("Modify cohort", startTime, getSample(sampleId, parameters));
+        return endQuery("Modify sample", startTime, getSample(sampleId, parameters));
     }
 
     public QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException {
