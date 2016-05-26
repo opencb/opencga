@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
@@ -78,7 +79,14 @@ public class VcfVariantReader implements DataReader<Variant> {
     public List<Variant> read(int batchSize) {
         long curr = System.currentTimeMillis();
         try {
-            return processLines(this.reader.read(batchSize));
+            List<Variant> variants = new ArrayList<>();
+            List<String> lines;
+            do {
+                lines = this.reader.read(batchSize);
+                List<Variant> processed = processLines(lines);
+                variants.addAll(processed);
+            } while (variants.size() < batchSize && !lines.isEmpty());
+            return variants;
         } finally {
             this.timesOverall.addAndGet(System.currentTimeMillis() - curr);
         }
@@ -88,7 +96,7 @@ public class VcfVariantReader implements DataReader<Variant> {
     public List<Variant> read() {
         long curr = System.currentTimeMillis();
         try {
-            return processLines(this.reader.read());
+            return read(1);
         } finally {
             this.timesOverall.addAndGet(System.currentTimeMillis() - curr);
         }

@@ -336,10 +336,6 @@ public class GenomeHelper implements AutoCloseable {
         return put;
     }
 
-    public <T extends MessageLite> Put wrapMetaAsPut(byte[] column, T meta) {
-        return wrapAsPut(column, getMetaRowKey(), meta);
-    }
-
     @Override
     public void close() throws IOException {
         this.hBaseManager.close();

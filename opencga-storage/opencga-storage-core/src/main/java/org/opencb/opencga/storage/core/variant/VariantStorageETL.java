@@ -163,7 +163,7 @@ public abstract class VariantStorageETL implements StorageETL {
     }
 
 
-    protected Pair<VCFHeader, VCFHeaderVersion> readHtsHeader(Path input) throws StorageManagerException {
+    public static Pair<VCFHeader, VCFHeaderVersion> readHtsHeader(Path input) throws StorageManagerException {
         try (InputStream fileInputStream = input.toString().endsWith("gz")
                 ? new GZIPInputStream(new FileInputStream(input.toFile()))
                 : new FileInputStream(input.toFile())) {
