@@ -840,12 +840,24 @@ public class CatalogMongoDBAdaptor extends CatalogDBAdaptor
             query.remove("ready");
         }
 
+        if (query.containsKey("id")) {
+            addQueryIntegerListFilter("id", query, _STUDY_ID, mongoQuery);
+        }
+
         if (query.containsKey("studyId")) {
             addQueryIntegerListFilter("studyId", query, _STUDY_ID, mongoQuery);
         }
 
         if (query.containsKey("status")) {
             addQueryStringListFilter("status", query, mongoQuery);
+        }
+
+        if (query.containsKey("input")) {
+            addQueryIntegerListFilter("input", query, mongoQuery);
+        }
+
+        if (query.containsKey("output")) {
+            addQueryIntegerListFilter("output", query, mongoQuery);
         }
 
 //        System.out.println("query = " + query);

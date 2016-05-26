@@ -275,8 +275,32 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/search")
+    @ApiOperation(value = "Search jobs", position = 3)
+    public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                           @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "input", required = false) @DefaultValue("") @QueryParam("input") String input,
+                           @ApiParam(value = "output", required = false) @DefaultValue("") @QueryParam("output") String output) {
+        try {
+            int studyIdNum = catalogManager.getStudyId(studyId);
+
+            // TODO this must be changed: only one queryOptions need to be passed
+            QueryOptions query = new QueryOptions();
+            for (String param : params.keySet()) {
+                query.put(param, params.getFirst(param));
+            }
+
+            System.out.println("query = " + query.toJson());
+            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{jobId}/visit")
-    @ApiOperation(value = "Increment job visits", position = 3)
+    @ApiOperation(value = "Increment job visits", position = 4)
     public Response visit(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId) {
         try {
             return createOkResponse(catalogManager.incJobVisites(jobId, sessionId));
@@ -287,7 +311,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/delete")
-    @ApiOperation(value = "Delete job", position = 4)
+    @ApiOperation(value = "Delete job", position = 5)
     public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") int jobId,
                            @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
