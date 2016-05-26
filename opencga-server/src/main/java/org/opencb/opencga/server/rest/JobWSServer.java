@@ -23,9 +23,11 @@ import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -41,7 +43,10 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Path("/{version}/jobs")
@@ -55,16 +60,6 @@ public class JobWSServer extends OpenCGAWSServer {
         super(version, uriInfo, httpServletRequest);
     }
 
-//    @GET
-//    @Path("/search")
-//    @Produces("application/json")
-//    @ApiOperation(value = "Search jobs")
-//
-//    public Response search(
-//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-//    ) {
-//        catalogManager.search
-//    }
 
     public static class InputJob {
         public InputJob() {
@@ -283,6 +278,47 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/search")
+    @ApiOperation(value = "File info", position = 12)
+    public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                           @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
+                           @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                           @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                           @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+        try {
+            long studyIdNum = catalogManager.getStudyId(studyId);
+            // TODO this must be changed: only one queryOptions need to be passed
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
+                logger.debug("Name attribute empty, it's been removed");
+            }
+
+            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
+                qOptions.put(MongoDBCollection.LIMIT, 1000);
+                logger.debug("Adding a limit of 1000");
+            }
+            logger.debug("query = " + query.toJson());
+            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
