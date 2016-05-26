@@ -142,8 +142,19 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Map<String, Object> sampleParams = new HashMap<>();
         //List<Bson> sampleParams = new ArrayList<>();
 
-        String[] acceptedParams = {"source", "description"};
+        String[] acceptedParams = {"source", "description", "name"};
         filterStringParams(parameters, sampleParams, acceptedParams);
+
+        if (sampleParams.containsKey("name")) {
+            // Check that the new sample name is still unique
+            long studyId = getStudyIdBySampleId(sampleId);
+
+            QueryResult<Long> count = sampleCollection.count(
+                    new Document("name", sampleParams.get("name")).append(PRIVATE_STUDY_ID, studyId));
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Sample { name: '" + sampleParams.get("name") + "'} already exists.");
+            }
+        }
 
         String[] acceptedIntParams = {"individualId"};
         filterIntParams(parameters, sampleParams, acceptedIntParams);
