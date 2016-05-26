@@ -241,15 +241,13 @@ class Methods:
         try:
             individualId = individual.create(args.studyId, args.name, args.family, args.fatherId,
                                              args.motherId, args.gender)[0]["id"]
-            print(individualId)
             well_ids = args.wellIds.split(",")
             for well in well_ids:
                 try:
                     sampleId = sample.search(args.studyId, name=well)[0]["id"]
                     print(sampleId)
                     try:
-                        print("hello")
-                        result = sample.update(str(sampleId), str(individualId))
+                        sample.update(str(sampleId), individualId=str(individualId))
                     except ServerResponseException as e:
                         print(str(e), file=sys.stderr)
                 except ServerResponseException as e:
