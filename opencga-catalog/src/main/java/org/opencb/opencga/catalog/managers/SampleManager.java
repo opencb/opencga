@@ -556,8 +556,8 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!sampleIds.isEmpty() && readAll(studyId, new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds)
-                , null, sessionId).getResult().size() != sampleIds.size()) {
+        if (!sampleIds.isEmpty() && readAll(studyId, new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), null, sessionId)
+                .getResult().size() != sampleIds.size()) {
             throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
         }
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
