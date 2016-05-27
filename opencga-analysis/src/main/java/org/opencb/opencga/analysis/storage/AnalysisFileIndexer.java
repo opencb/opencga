@@ -295,7 +295,7 @@ public class AnalysisFileIndexer {
 
             ObjectMap updateParams = new ObjectMap();
 
-            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
+            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key()) && load) {
                 updateParams.append("status.status", Cohort.CohortStatus.CALCULATING);
             }
             //Samples are the already indexed plus those that are going to be indexed
@@ -499,7 +499,7 @@ public class AnalysisFileIndexer {
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
             }
-            if (StringUtils.isNotEmpty(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), ""))) {
+            if (StringUtils.isNotEmpty(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()))) {
                 sb.append(" --include-extra-fields ").append(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
             }
             if (options.getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {
