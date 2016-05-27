@@ -46,7 +46,7 @@ public abstract class AnalysisStorageCommandExecutor extends AnalysisCommandExec
         Query query = new Query(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key() + "." + Job.JOB_SCHEDULER_NAME, jobId);
         QueryResult<Job> result = catalogManager.getAllJobs(studyId, query, null, sessionId);
         if (result.getResult().isEmpty()) {
-            throw new IllegalArgumentException("Unknown job. Can't find job " + jobId);
+            throw new IllegalArgumentException("Unknown job. Can't find job " + jobId + " in study " + studyId);
         }
         return result.first();
     }
