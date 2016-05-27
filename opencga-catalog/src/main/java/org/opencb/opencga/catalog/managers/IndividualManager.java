@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -16,10 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IIndividualManager;
-import org.opencb.opencga.catalog.models.Annotation;
-import org.opencb.opencga.catalog.models.AnnotationSet;
-import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
@@ -124,6 +122,157 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.filterIndividuals(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
+    }
+
+    @Override
+    public QueryResult<IndividualAcl> getIndividualAcls(String individualStr, List<String> members, String sessionId)
+            throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long individualId = getIndividualId(userId, individualStr);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAcl.IndividualPermissions.SHARE);
+        Long studyId = getStudyId(individualId);
+
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+
+
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getId());
+
+                            if (!groupUsers.containsKey(group.getId())) {
+                                groupUsers.put(group.getId(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getId()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<IndividualAcl> individualAclQueryResult = individualDBAdaptor.getIndividualAcl(individualId, memberList);
+
+        if (members.size() == 0) {
+            return individualAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        // We loop over the results and recreate one individualAcl per member
+        Map<String, IndividualAcl> individualAclHashMap = new HashMap<>();
+        for (IndividualAcl individualAcl : individualAclQueryResult.getResult()) {
+            for (String tmpMember : individualAcl.getUsers()) {
+                if (memberList.contains(tmpMember)) {
+                    if (tmpMember.startsWith("@")) {
+                        // Check if the user was demanding the group directly or a user belonging to the group
+                        if (groupIds.contains(tmpMember)) {
+                            individualAclHashMap.put(tmpMember,
+                                    new IndividualAcl(Collections.singletonList(tmpMember), individualAcl.getPermissions()));
+                        } else {
+                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                            if (groupUsers.containsKey(tmpMember)) {
+                                for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                    if (userIds.contains(tmpUserId)) {
+                                        individualAclHashMap.put(tmpUserId, new IndividualAcl(Collections.singletonList(tmpUserId),
+                                                individualAcl.getPermissions()));
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Add the user
+                        individualAclHashMap.put(tmpMember, new IndividualAcl(Collections.singletonList(tmpMember),
+                                individualAcl.getPermissions()));
+                    }
+                }
+            }
+        }
+
+        // We recreate the output that is in fileAclHashMap but in the same order the members were queried.
+        List<IndividualAcl> individualAclList = new ArrayList<>(individualAclHashMap.size());
+        for (String member : members) {
+            if (individualAclHashMap.containsKey(member)) {
+                individualAclList.add(individualAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        individualAclQueryResult.setId(individualStr);
+        individualAclQueryResult.setNumResults(individualAclList.size());
+        individualAclQueryResult.setNumTotalResults(individualAclList.size());
+        individualAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        individualAclQueryResult.setResult(individualAclList);
+
+        return individualAclQueryResult;
+    }
+
+    @Override
+    public Long getStudyId(long individualId) throws CatalogException {
+        return individualDBAdaptor.getStudyIdByIndividualId(individualId);
+    }
+
+    @Override
+    public Long getIndividualId(String userId, String individualStr) throws CatalogException {
+        if (StringUtils.isNumeric(individualStr)) {
+            return Long.parseLong(individualStr);
+        }
+
+        // Resolve the studyIds and filter the individualName
+        ObjectMap parsedSampleStr = parseFeatureId(userId, individualStr);
+        List<Long> studyIds = getStudyIds(parsedSampleStr);
+        String individualName = parsedSampleStr.getString("featureName");
+
+        Query query = new Query(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), individualName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.individuals.id");
+        QueryResult<Individual> queryResult = individualDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one individual id found based on " + individualName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Deprecated
+    @Override
+    public Long getIndividualId(String id) throws CatalogDBException {
+        if (StringUtils.isNumeric(id)) {
+            return Long.parseLong(id);
+        }
+
+        Query query = new Query(CatalogIndividualDBAdaptor.QueryParams.NAME.key(), id);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CatalogIndividualDBAdaptor.QueryParams.ID.key());
+
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, options);
+        if (individualQueryResult.getNumResults() == 1) {
+            return individualQueryResult.first().getId();
+        } else {
+            return -1L;
+        }
     }
 
     @Override

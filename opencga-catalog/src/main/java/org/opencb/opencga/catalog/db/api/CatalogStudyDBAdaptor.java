@@ -155,7 +155,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      */
     void unsetStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
-//    QueryResult<StudyAcl> getStudyAcl(long studyId, String userId, String groupId) throws CatalogDBException;
+//    QueryResult<StudyAcl> getStudyAcls(long studyId, String userId, String groupId) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options) throws CatalogDBException;

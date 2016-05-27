@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -54,6 +55,47 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     @Override
     public Long getStudyId(long sampleId) throws CatalogException {
         return sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+    }
+
+    @Override
+    public Long getSampleId(String userId, String sampleStr) throws CatalogException {
+        if (StringUtils.isNumeric(sampleStr)) {
+            return Long.parseLong(sampleStr);
+        }
+
+        ObjectMap parsedSampleStr = parseFeatureId(userId, sampleStr);
+        List<Long> studyIds = getStudyIds(parsedSampleStr);
+        String sampleName = parsedSampleStr.getString("featureName");
+
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), sampleName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.samples.id");
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one sample id found based on " + sampleName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Deprecated
+    @Override
+    public Long getSampleId(String id) throws CatalogException {
+        if (StringUtils.isNumeric(id)) {
+            return Long.parseLong(id);
+        }
+
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.NAME.key(), id);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, CatalogSampleDBAdaptor.QueryParams.ID.key());
+
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, options);
+        if (sampleQueryResult.getNumResults() == 1) {
+            return sampleQueryResult.first().getId();
+        } else {
+            return -1L;
+        }
     }
 
     @Override
@@ -228,6 +270,109 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public QueryResult<SampleAcl> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long sampleId = getSampleId(userId, sampleStr);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+        Long studyId = getStudyId(sampleId);
+
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+
+
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getId());
+
+                            if (!groupUsers.containsKey(group.getId())) {
+                                groupUsers.put(group.getId(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getId()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<SampleAcl> sampleAclQueryResult = sampleDBAdaptor.getSampleAcl(sampleId, memberList);
+
+        if (members.size() == 0) {
+            return sampleAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        // We loop over the results and recreate one sampleAcl per member
+        Map<String, SampleAcl> sampleAclHashMap = new HashMap<>();
+        for (SampleAcl sampleAcl : sampleAclQueryResult.getResult()) {
+            for (String tmpMember : sampleAcl.getUsers()) {
+                if (memberList.contains(tmpMember)) {
+                    if (tmpMember.startsWith("@")) {
+                        // Check if the user was demanding the group directly or a user belonging to the group
+                        if (groupIds.contains(tmpMember)) {
+                            sampleAclHashMap.put(tmpMember,
+                                    new SampleAcl(Collections.singletonList(tmpMember), sampleAcl.getPermissions()));
+                        } else {
+                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                            if (groupUsers.containsKey(tmpMember)) {
+                                for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                    if (userIds.contains(tmpUserId)) {
+                                        sampleAclHashMap.put(tmpUserId, new SampleAcl(Collections.singletonList(tmpUserId),
+                                                sampleAcl.getPermissions()));
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Add the user
+                        sampleAclHashMap.put(tmpMember, new SampleAcl(Collections.singletonList(tmpMember), sampleAcl.getPermissions()));
+                    }
+                }
+            }
+        }
+
+        // We recreate the output that is in sampleAclHashMap but in the same order the members were queried.
+        List<SampleAcl> sampleAclList = new ArrayList<>(sampleAclHashMap.size());
+        for (String member : members) {
+            if (sampleAclHashMap.containsKey(member)) {
+                sampleAclList.add(sampleAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        sampleAclQueryResult.setId(sampleStr);
+        sampleAclQueryResult.setNumResults(sampleAclList.size());
+        sampleAclQueryResult.setNumTotalResults(sampleAclList.size());
+        sampleAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        sampleAclQueryResult.setResult(sampleAclList);
+
+        return sampleAclQueryResult;
+
+    }
+
+    @Override
     public QueryResult<Sample> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(query, "query");
         QueryResult<Sample> result =
@@ -346,6 +491,30 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public Long getCohortId(String userId, String cohortStr) throws CatalogException {
+        if (StringUtils.isNumeric(cohortStr)) {
+            return Long.parseLong(cohortStr);
+        }
+
+        // Resolve the studyIds and filter the cohortName
+        ObjectMap parsedSampleStr = parseFeatureId(userId, cohortStr);
+        List<Long> studyIds = getStudyIds(parsedSampleStr);
+        String cohortName = parsedSampleStr.getString("featureName");
+
+        Query query = new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.cohorts.id");
+        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one cohort id found based on " + cohortName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Override
     public QueryResult<Cohort> readCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         //options = ParamUtils.defaultObject(options, QueryOptions::new);
@@ -441,4 +610,108 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
         return queryResult;
     }
+
+    @Override
+    public QueryResult<CohortAcl> getCohortAcls(String cohortStr, List<String> members, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long cohortId = getCohortId(userId, cohortStr);
+        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.SHARE);
+        Long studyId = getStudyIdByCohortId(cohortId);
+
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+
+
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getId());
+
+                            if (!groupUsers.containsKey(group.getId())) {
+                                groupUsers.put(group.getId(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getId()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<CohortAcl> cohortAclQueryResult = cohortDBAdaptor.getCohortAcl(cohortId, memberList);
+
+        if (members.size() == 0) {
+            return cohortAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        // We loop over the results and recreate one sampleAcl per member
+        Map<String, CohortAcl> cohortAclHashMap = new HashMap<>();
+        for (CohortAcl cohortAcl : cohortAclQueryResult.getResult()) {
+            for (String tmpMember : cohortAcl.getUsers()) {
+                if (memberList.contains(tmpMember)) {
+                    if (tmpMember.startsWith("@")) {
+                        // Check if the user was demanding the group directly or a user belonging to the group
+                        if (groupIds.contains(tmpMember)) {
+                            cohortAclHashMap.put(tmpMember,
+                                    new CohortAcl(Collections.singletonList(tmpMember), cohortAcl.getPermissions()));
+                        } else {
+                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                            if (groupUsers.containsKey(tmpMember)) {
+                                for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                    if (userIds.contains(tmpUserId)) {
+                                        cohortAclHashMap.put(tmpUserId, new CohortAcl(Collections.singletonList(tmpUserId),
+                                                cohortAcl.getPermissions()));
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Add the user
+                        cohortAclHashMap.put(tmpMember, new CohortAcl(Collections.singletonList(tmpMember), cohortAcl.getPermissions()));
+                    }
+                }
+            }
+        }
+
+        // We recreate the output that is in cohortAclHashMap but in the same order the members were queried.
+        List<CohortAcl> cohortAclList = new ArrayList<>(cohortAclHashMap.size());
+        for (String member : members) {
+            if (cohortAclHashMap.containsKey(member)) {
+                cohortAclList.add(cohortAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        cohortAclQueryResult.setId(cohortStr);
+        cohortAclQueryResult.setNumResults(cohortAclList.size());
+        cohortAclQueryResult.setNumTotalResults(cohortAclList.size());
+        cohortAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        cohortAclQueryResult.setResult(cohortAclList);
+
+        return cohortAclQueryResult;
+    }
+
 }
