@@ -372,7 +372,7 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.InfoCommand c = optionsParser.getStudyCommands().infoCommand;
 
                         long studyId = catalogManager.getStudyId(c.id);
-                        QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId, new QueryOptions(c.cOpt.getQueryOptions()));
+                        QueryResult<Study> study = catalogManager.getStudy(studyId, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, study, null));
 
                         break;
@@ -772,7 +772,7 @@ public class OpenCGAMain {
 //                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
 //                            queryOptions.put("annotation", c.annotation);
                             if (c.variableSetId == 0) {
-                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.variableSets")).first().getVariableSets();
+                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.variableSets"), sessionId).first().getVariableSets();
                                 if (variableSets.isEmpty()) {
                                     logger.error("Expected variableSetId");
                                 } else {

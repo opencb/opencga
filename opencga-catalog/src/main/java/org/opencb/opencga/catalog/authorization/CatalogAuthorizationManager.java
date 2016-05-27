@@ -1040,6 +1040,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     public void removeMembersFromRole(String userId, long studyId, List<String> members)
             throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
+        if (members.contains(studyOwnerId)) {
+            throw new CatalogException("Error: It is not allowed removing the permissions to the owner of the study.");
+        }
         studyDBAdaptor.unsetStudyAcl(studyId, members);
     }
 

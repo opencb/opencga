@@ -8,6 +8,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
@@ -106,7 +107,7 @@ public class CatalogManagerDemo {
     private static File createPedigreeFile(CatalogManager catalogManager, long studyId, String sessionId)
             throws URISyntaxException, CatalogException, IOException, StorageManagerException {
         String path = "data/peds";
-        Path inputFile = Paths.get(System.getenv("OPENCGA_HOME") + "/examples/20130606_g1k.ped");
+        Path inputFile = Paths.get(Config.getOpenCGAHome() + "/examples/20130606_g1k.ped");
         URI sourceUri = inputFile.toUri();
         File file = catalogManager.createFile(studyId, File.Format.PED, File.Bioformat.PEDIGREE,
                 Paths.get(path, inputFile.getFileName().toString()).toString(), "Description", true, -1, sessionId).first();
@@ -118,7 +119,7 @@ public class CatalogManagerDemo {
     private static File createVariantFile(CatalogManager catalogManager, long studyId, String sessionId)
             throws URISyntaxException, CatalogException, IOException, StorageManagerException {
         String path = "data/vcfs";
-        Path inputFile = Paths.get(System.getenv("OPENCGA_HOME")
+        Path inputFile = Paths.get(Config.getOpenCGAHome()
                 + "/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         URI sourceUri = inputFile.toUri();
         File file = catalogManager.createFile(studyId, File.Format.VCF, File.Bioformat.VARIANT,

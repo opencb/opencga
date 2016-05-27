@@ -54,9 +54,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
                 .getClass().getResource("/catalog-configuration-test.yml").openStream());
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
-
 
         String pedFileName = "20130606_g1k.ped";
         URL pedFileURL = CatalogSampleAnnotationsLoader.class.getClassLoader().getResource(pedFileName);
