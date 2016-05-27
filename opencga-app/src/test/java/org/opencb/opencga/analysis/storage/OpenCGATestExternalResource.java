@@ -24,10 +24,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -93,6 +90,16 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
+        // Example files
+        Files.createDirectories(opencgaHome.resolve("examples"));
+
+        inputStream = new FileInputStream("app/examples/20130606_g1k.ped");
+        Files.copy(inputStream, opencgaHome.resolve("examples").resolve("20130606_g1k.ped"), StandardCopyOption.REPLACE_EXISTING);
+
+        inputStream = new FileInputStream("app/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        Files.copy(inputStream, opencgaHome.resolve("examples")
+                .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
         return opencgaHome;
     }

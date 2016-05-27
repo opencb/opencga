@@ -3,11 +3,6 @@ package org.opencb.opencga.app.demo;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.opencga.analysis.storage.OpenCGATestExternalResource;
-import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
-
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 /**
  * Created by pfurio on 20/05/16.
