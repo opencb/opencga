@@ -153,7 +153,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
             List<QueryResult<Study>> queryResults = new LinkedList<>();
             for (String studyIdStr : studyIdArray) {
                 long studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(catalogManager.getStudy(studyId, sessionId, queryOptions));
+                queryResults.add(catalogManager.getStudy(studyId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {

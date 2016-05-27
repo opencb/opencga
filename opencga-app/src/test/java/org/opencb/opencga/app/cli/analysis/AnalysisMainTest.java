@@ -70,10 +70,6 @@ public class AnalysisMainTest {
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE),
                 null, sessionId).first().getId();
         outdirId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
-
-
-
-
     }
 
     @Test

@@ -187,7 +187,7 @@ public class VariantStorage {
 
         // if the study is aggregated and a mapping file is provided, pass it to storage 
         // and create in catalog the cohorts described in the mapping file
-        Study study = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.attributes")).first();
+        Study study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.attributes"), sessionId).first();
         VariantSource.Aggregation studyAggregation = VariantSource.Aggregation.valueOf(study.getAttributes()
                 .getOrDefault(VariantStorageManager.Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.NONE).toString());
         if (VariantSource.Aggregation.isAggregated(studyAggregation)
