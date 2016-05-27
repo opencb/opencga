@@ -1661,6 +1661,31 @@ public class CatalogManagerTest extends GenericTest {
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
+
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".unexisting", "lo,lu,LL");
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not found in variableSet");
+        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+    }
+
+    @Test
+    public void testQuerySampleAnnotationFail1() throws CatalogException {
+        Query query = new Query();
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ":nestedObject.stringList", "lo,lu,LL");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("annotation:nestedObject does not exist");
+        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+    }
+
+    @Test
+    public void testQuerySampleAnnotationFail2() throws CatalogException {
+        Query query = new Query();
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), "nestedObject.stringList:lo,lu,LL");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("Error parsing query");
+        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 
     @Test

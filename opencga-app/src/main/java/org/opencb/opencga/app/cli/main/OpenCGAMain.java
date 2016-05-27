@@ -785,7 +785,7 @@ public class OpenCGAMain {
                                 if (variable.getId().equals(c.variable)) {
                                     for (String value : variable.getAllowedValues()) {
                                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-                                        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.variable + ":" + value)
+                                        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + c.variable, value)
                                                 .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
                                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                                         cohorts.put(c.name + value, sampleQueryResult.getResult());
