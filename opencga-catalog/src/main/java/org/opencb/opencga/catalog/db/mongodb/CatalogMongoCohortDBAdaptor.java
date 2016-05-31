@@ -6,6 +6,7 @@ import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
@@ -19,10 +20,7 @@ import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Group;
-import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.CohortAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
@@ -32,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static java.lang.Math.toIntExact;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
 public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implements CatalogCohortDBAdaptor {
@@ -91,6 +90,221 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException {
         return delete(cohortId, queryOptions);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> annotateCohort(long cohortId, AnnotationSet annotationSet, boolean overwrite)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Long> count = cohortCollection.count(new Document("annotationSets.id", annotationSet.getId())
+                .append(PRIVATE_ID, cohortId));
+        if (overwrite) {
+            if (count.getResult().get(0) == 0) {
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+            }
+        } else {
+            if (count.getResult().get(0) > 0) {
+                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            }
+        }
+
+        Document object = getMongoDBDocument(annotationSet, "AnnotationSet");
+
+        Bson query = new Document(PRIVATE_ID, cohortId);
+        if (overwrite) {
+            ((Document) query).put("annotationSets.id", annotationSet.getId());
+        } else {
+            ((Document) query).put("annotationSets.id", new Document("$ne", annotationSet.getId()));
+        }
+
+        Bson update;
+        if (overwrite) {
+            update = Updates.set("annotationSets.$", object);
+        } else {
+            update = Updates.push("annotationSets", object);
+        }
+
+        QueryResult<UpdateResult> queryResult = cohortCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+        }
+
+        return endQuery("", startTime, Collections.singletonList(annotationSet));
+    }
+
+    /**
+     * The method will add the new variable to each annotation using the default value.
+     * @param variableSetId id of the variableSet.
+     * @param variable new variable that will be pushed to the annotations.
+     */
+    @Override
+    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Annotation annotation = new Annotation(variable.getId(), variable.getDefaultValue());
+        // Obtain the annotation ids of the annotations that are using the variableSet variableSetId
+        List<Bson> aggregation = new ArrayList<>(4);
+        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
+        aggregation.add(Aggregates.unwind("$annotationSets"));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets.id", "annotationSets.variableSetId")));
+        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
+        QueryResult<Document> aggregationResult = cohortCollection.aggregate(aggregation, null);
+
+        Set<String> annotationIds = new HashSet<>(aggregationResult.getNumResults());
+        for (Document document : aggregationResult.getResult()) {
+            annotationIds.add((String) ((Document) document.get("annotationSets")).get("id"));
+        }
+
+        Bson bsonQuery;
+        Bson update = Updates.push("annotationSets.$." + CatalogSampleDBAdaptor.AnnotationSetParams.ANNOTATIONS.key(),
+                getMongoDBDocument(annotation, "annotation"));
+        long modifiedCount = 0;
+        for (String annotationId : annotationIds) {
+            bsonQuery = Filters.elemMatch("annotationSets", Filters.and(
+                    Filters.eq("variableSetId", variableSetId),
+                    Filters.eq("id", annotationId)
+            ));
+
+            modifiedCount += cohortCollection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
+                    .getModifiedCount();
+        }
+
+        return endQuery("Add new variable to annotations", startTime, Collections.singletonList(modifiedCount));
+    }
+
+    @Override
+    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
+        long renamedAnnotations = 0;
+
+        // 1. we obtain the variable
+        List<Cohort> cohortAnnotations = getAnnotation(variableSetId, oldName);
+
+        if (cohortAnnotations.size() > 0) {
+            // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
+            for (Cohort cohort : cohortAnnotations) {
+                for (AnnotationSet annotationSet : cohort.getAnnotationSets()) {
+                    Bson bsonQuery = Filters.and(
+                            Filters.eq(QueryParams.ID.key(), cohort.getId()),
+                            Filters.eq("annotationSets.id", annotationSet.getId()),
+                            Filters.eq("annotationSets.annotations.id", oldName)
+                    );
+
+                    // 1. We extract the annotation.
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", oldName));
+                    QueryResult<UpdateResult> queryResult = cohortCollection.update(bsonQuery, update, null);
+                    if (queryResult.first().getModifiedCount() != 1) {
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
+                                + annotationSet.getId() + "} - An unexpected error happened when extracting the annotation " + oldName
+                                + ". Please, report this error to the OpenCGA developers.");
+                    }
+
+                    // 2. We change the id and push it again
+                    Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator();
+                    Annotation annotation = iterator.next();
+                    annotation.setId(newName);
+                    bsonQuery = Filters.and(
+                            Filters.eq(QueryParams.ID.key(), cohort.getId()),
+                            Filters.eq("annotationSets.id", annotationSet.getId())
+                    );
+                    update = Updates.push("annotationSets.$.annotations", getMongoDBDocument(annotation, "Annotation"));
+                    queryResult = cohortCollection.update(bsonQuery, update, null);
+
+                    if (queryResult.first().getModifiedCount() != 1) {
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
+                                + annotationSet.getId() + "} - A critical error happened when trying to rename the annotation " + oldName
+                                + ". Please, report this error to the OpenCGA developers.");
+                    }
+                    renamedAnnotations += 1;
+                }
+            }
+        }
+
+        return new QueryResult<>("Rename annotation field", -1, toIntExact(renamedAnnotations), renamedAnnotations, "", "",
+                Collections.singletonList(renamedAnnotations));
+    }
+
+    /**
+     * The method will return the list of cohorts containing the annotation.
+     * @param variableSetId Id of the variableSet.
+     * @param annotationFieldId Name of the field of the annotation from all the annotationSets.
+     * @return list of cohorts containing an array of annotationSets, containing just the annotation that matches with annotationFieldId.
+     */
+    private List<Cohort> getAnnotation(long variableSetId, String annotationFieldId) {
+        // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.elemMatch("annotationSets", Filters.eq("variableSetId", variableSetId))));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets", "id")));
+        aggregation.add(Aggregates.unwind("$annotationSets"));
+        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
+        aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
+        aggregation.add(Aggregates.match(
+                Filters.eq("annotationSets.annotations.id", annotationFieldId)));
+
+        return cohortCollection.aggregate(aggregation, cohortConverter, new QueryOptions()).getResult();
+    }
+
+    @Override
+    public QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException {
+        long renamedAnnotations = 0;
+
+        // 1. we obtain the variable
+        List<Cohort> cohortAnnotations = getAnnotation(variableSetId, fieldId);
+
+        if (cohortAnnotations.size() > 0) {
+            // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
+            for (Cohort cohort : cohortAnnotations) {
+                for (AnnotationSet annotationSet : cohort.getAnnotationSets()) {
+                    Bson bsonQuery = Filters.and(
+                            Filters.eq(QueryParams.ID.key(), cohort.getId()),
+                            Filters.eq("annotationSets.id", annotationSet.getId()),
+                            Filters.eq("annotationSets.annotations.id", fieldId)
+                    );
+
+                    // We extract the annotation.
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", fieldId));
+                    QueryResult<UpdateResult> queryResult = cohortCollection.update(bsonQuery, update, null);
+                    if (queryResult.first().getModifiedCount() != 1) {
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
+                                + annotationSet.getId() + "} - An unexpected error happened when extracting the annotation " + fieldId
+                                + ". Please, report this error to the OpenCGA developers.");
+                    }
+
+                    renamedAnnotations += 1;
+                }
+            }
+        }
+
+        return new QueryResult<>("Remove annotation field", -1, toIntExact(renamedAnnotations), renamedAnnotations, "", "",
+                Collections.singletonList(renamedAnnotations));
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Cohort cohort = getCohort(cohortId, new QueryOptions("include", "projects.studies.cohorts.annotationSets")).first();
+        AnnotationSet annotationSet = null;
+        for (AnnotationSet as : cohort.getAnnotationSets()) {
+            if (as.getId().equals(annotationId)) {
+                annotationSet = as;
+                break;
+            }
+        }
+
+        if (annotationSet == null) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        Bson query = new Document(PRIVATE_ID, cohortId);
+        Bson update = Updates.pull("annotationSets", new Document("id", annotationId));
+        QueryResult<UpdateResult> resultQueryResult = cohortCollection.update(query, update, null);
+        if (resultQueryResult.first().getModifiedCount() < 1) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
     @Override

@@ -186,7 +186,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
 
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.DELETE_ANNOTATIONS);
 
@@ -608,6 +607,104 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         QueryResult<Cohort> queryResult = cohortDBAdaptor.deleteCohort(cohortId, options);
         auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetId, long variableSetId,
+                                                     Map<String, Object> annotations, Map<String, Object> attributes,
+                                                     boolean checkAnnotationSet, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkObj(annotations, "annotations");
+        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long cohortId = getCohortId(userId, cohortStr);
+        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.CREATE_ANNOTATIONS);
+
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
+
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+
+        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
+            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
+        }
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.getCohort(cohortId,
+                new QueryOptions("include", Collections.singletonList("projects.studies.cohorts.annotationSets")));
+
+        List<AnnotationSet> annotationSets = cohortQueryResult.first().getAnnotationSets();
+        if (checkAnnotationSet) {
+            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+        }
+
+        QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.annotateCohort(cohortId, annotationSet, false);
+        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets", queryResult.first()),
+                "annotate", null);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetId, Map<String, Object> newAnnotations,
+                                                             String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkObj(newAnnotations, "newAnnotations");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long cohortId = getCohortId(userId, cohortStr);
+        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.UPDATE_ANNOTATIONS);
+
+        // Get sample
+        QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.cohorts.annotationSets"));
+        Cohort cohort = cohortDBAdaptor.getCohort(cohortId, queryOptions).first();
+
+        List<AnnotationSet> annotationSets = cohort.getAnnotationSets();
+
+        // Get annotation set
+        AnnotationSet annotationSet = null;
+        for (AnnotationSet annotationSetAux : cohort.getAnnotationSets()) {
+            if (annotationSetAux.getId().equals(annotationSetId)) {
+                annotationSet = annotationSetAux;
+                cohort.getAnnotationSets().remove(annotationSet);
+                break;
+            }
+        }
+
+        if (annotationSet == null) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetId);
+        }
+
+        // Get variable set
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null).first();
+
+        // Update and validate annotations
+        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
+        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
+
+        // Commit changes
+        QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.annotateCohort(cohortId, annotationSet, true);
+
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+                newAnnotations.entrySet().stream()
+                        .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toSet()), annotationSet.getDate(), null);
+        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets",
+                Collections.singletonList(annotationSetUpdate)), "update annotation", null);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortStr, String annotationId, String sessionId)
+            throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long cohortId = getCohortId(userId, cohortStr);
+
+        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.DELETE_ANNOTATIONS);
+
+        QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.deleteAnnotation(cohortId, annotationId);
+        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets", queryResult.first()),
+                "deleteAnnotation", null);
         return queryResult;
     }
 

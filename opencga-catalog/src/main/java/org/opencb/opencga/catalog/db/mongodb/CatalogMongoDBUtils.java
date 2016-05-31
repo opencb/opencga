@@ -209,8 +209,8 @@ class CatalogMongoDBUtils {
         ObjectReader objectReader = getObjectReader(tClass);
         try {
             for (Document document : result.getResult()) {
-                document.remove("_id");
-                document.remove("_projectId");
+//                document.remove("_id");
+//                document.remove("_projectId");
                 objects.add(objectReader.<T>readValue(restoreDotsInKeys(jsonObjectWriter.writeValueAsString(document))));
             }
         } catch (IOException e) {
@@ -224,9 +224,8 @@ class CatalogMongoDBUtils {
             return null;
         }
         try {
-            result.first().remove("_id");
-            result.first().remove("_studyId");
-//            String s = result.first().toJson();
+//            result.first().remove("_id");
+//            result.first().remove("_studyId");
             String s = jsonObjectWriter.writeValueAsString(result.first());
 //            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first().toJson()));
             return getObjectReader(tClass).readValue(restoreDotsInKeys(s));

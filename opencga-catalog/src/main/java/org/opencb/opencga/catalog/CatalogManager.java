@@ -1179,6 +1179,27 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("unshareCohorts");
     }
 
+    public long getCohortId(String cohortStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return sampleManager.getCohortId(userId, cohortStr);
+    }
+
+    public QueryResult<AnnotationSet> annotateCohort(String cohortId, String annotationSetId, long variableSetId,
+                                                     Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
+            throws CatalogException {
+        return sampleManager.annotateCohort(cohortId, annotationSetId, variableSetId, annotations, attributes, true, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortId, String annotationSetId, Map<String, Object> annotations,
+                                                             String sessionId) throws CatalogException {
+        return sampleManager.updateCohortAnnotation(cohortId, annotationSetId, annotations, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortId, String annotationId, String sessionId)
+            throws CatalogException {
+        return sampleManager.deleteCohortAnnotation(cohortId, annotationId, sessionId);
+    }
+
     /*
      * Tools methods
      * ***************************
@@ -1196,4 +1217,5 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return jobManager.readAllTools(query, queryOptions, sessionId);
     }
+
 }
