@@ -1077,7 +1077,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         private final long studyId;
         private final Map<String, Map<String, FileAcl>> pathUserAclMap;
 
-        public StudyAuthenticationContext(long studyId) {
+        StudyAuthenticationContext(long studyId) {
             this.studyId = studyId;
             pathUserAclMap = new HashMap<>();
         }

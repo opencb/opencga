@@ -331,7 +331,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     private static class HdfsVariantReaderUtils extends VariantReaderUtils {
         private final Configuration conf;
 
-        public HdfsVariantReaderUtils(Configuration conf) {
+        HdfsVariantReaderUtils(Configuration conf) {
             this.conf = conf;
         }
 
