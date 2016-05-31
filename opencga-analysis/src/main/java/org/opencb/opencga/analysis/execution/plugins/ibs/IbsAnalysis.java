@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAPlugin;
+import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -27,13 +27,13 @@ import java.util.zip.GZIPOutputStream;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class IbsPlugin extends OpenCGAPlugin {
+public class IbsAnalysis extends OpenCGAAnalysis {
 
     public static final String OUTDIR = "outdir";
     public static final String PLUGIN_ID = "ibs_plugin";
     private final Analysis manifest;
 
-    public IbsPlugin() {
+    public IbsAnalysis() {
         List<Option> validParams = Arrays.asList(
                 new Option(OUTDIR, "", true)
         );

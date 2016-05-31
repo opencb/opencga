@@ -3,7 +3,7 @@ package org.opencb.opencga.analysis.execution.plugins;
 import org.junit.Test;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.execution.plugins.test.TestPlugin;
+import org.opencb.opencga.analysis.execution.plugins.test.TestAnalysis;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
  */
 public class PluginFactoryTest {
 
-    public static class TestPlugin2 extends TestPlugin {
+    public static class TestAnalysis2 extends TestAnalysis {
 
         public static final String ID = "test_plugin2";
 
@@ -39,27 +39,27 @@ public class PluginFactoryTest {
 
     @Test
     public void testGetPlugin() throws Exception {
-        Class<? extends OpenCGAPlugin> testClass = PluginFactory.get().getPluginClass(TestPlugin.PLUGIN_ID);
-        assertEquals(TestPlugin.class, testClass);
+        Class<? extends OpenCGAAnalysis> testClass = PluginFactory.get().getPluginClass(TestAnalysis.PLUGIN_ID);
+        assertEquals(TestAnalysis.class, testClass);
 
-        OpenCGAPlugin testPlugin = PluginFactory.get().getPlugin(TestPlugin.PLUGIN_ID);
-        assertEquals(TestPlugin.class, testPlugin.getClass());
-        testPlugin.init(LoggerFactory.getLogger(OpenCGAPlugin.class), new ObjectMap(TestPlugin.PARAM_1, "Hello").append(TestPlugin.ERROR, false), null, null, -1, null);
+        OpenCGAAnalysis testPlugin = PluginFactory.get().getPlugin(TestAnalysis.PLUGIN_ID);
+        assertEquals(TestAnalysis.class, testPlugin.getClass());
+        testPlugin.init(LoggerFactory.getLogger(OpenCGAAnalysis.class), new ObjectMap(TestAnalysis.PARAM_1, "Hello").append(TestAnalysis.ERROR, false), null, null, -1, null);
         int run = testPlugin.run();
         assertEquals(run, 0);
     }
 
     @Test
     public void testGetPlugin2() throws Exception {
-        Class<? extends OpenCGAPlugin> testClass = PluginFactory.get().getPluginClass(TestPlugin2.ID);
-        assertEquals(TestPlugin2.class, testClass);
+        Class<? extends OpenCGAAnalysis> testClass = PluginFactory.get().getPluginClass(TestAnalysis2.ID);
+        assertEquals(TestAnalysis2.class, testClass);
 
-        OpenCGAPlugin testPlugin = PluginFactory.get().getPlugin(TestPlugin2.ID);
-        assertEquals(TestPlugin2.class, testPlugin.getClass());
-        testPlugin.init(LoggerFactory.getLogger(OpenCGAPlugin.class), new ObjectMap(TestPlugin.PARAM_1, "Hello World!").append(TestPlugin.ERROR, false), null, null, -1, null);
+        OpenCGAAnalysis testPlugin = PluginFactory.get().getPlugin(TestAnalysis2.ID);
+        assertEquals(TestAnalysis2.class, testPlugin.getClass());
+        testPlugin.init(LoggerFactory.getLogger(OpenCGAAnalysis.class), new ObjectMap(TestAnalysis.PARAM_1, "Hello World!").append(TestAnalysis.ERROR, false), null, null, -1, null);
         int run = testPlugin.run();
         assertEquals(run, 0);
-        assertEquals(TestPlugin2.ID, testPlugin.getManifest().getId());
+        assertEquals(TestAnalysis2.ID, testPlugin.getManifest().getId());
     }
 
 }

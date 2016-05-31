@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAPlugin;
+import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -16,7 +16,7 @@ import java.util.List;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class TestPlugin extends OpenCGAPlugin {
+public class TestAnalysis extends OpenCGAAnalysis {
 
     public static final String OUTDIR = "outdir";
     public static final String PARAM_1 = "param1";
@@ -24,7 +24,7 @@ public class TestPlugin extends OpenCGAPlugin {
     public static final String PLUGIN_ID = "test_plugin";
     private final Analysis manifest;
 
-    public TestPlugin() {
+    public TestAnalysis() {
         List<Option> validParams = Arrays.asList(
                 new Option(OUTDIR, "", true),
                 new Option(PARAM_1, "", false),

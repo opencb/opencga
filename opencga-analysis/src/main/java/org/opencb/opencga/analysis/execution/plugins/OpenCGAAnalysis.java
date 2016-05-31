@@ -27,7 +27,7 @@ import java.io.InputStream;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public abstract class OpenCGAPlugin {
+public abstract class OpenCGAAnalysis {
 
     private Logger logger;
     private ObjectMap configuration;
@@ -49,19 +49,19 @@ public abstract class OpenCGAPlugin {
     public static Analysis loadManifest(String identifier) throws IOException {
         final String file;
         JsonFactory factory;
-        if (OpenCGAPlugin.class.getResource("/" + identifier + "/manifest.yml") != null) {
+        if (OpenCGAAnalysis.class.getResource("/" + identifier + "/manifest.yml") != null) {
             file = "/" + identifier + "/manifest.yml";
             factory = new YAMLFactory();
-        } else if (OpenCGAPlugin.class.getResource("/" + identifier + "/manifest.json") != null) {
+        } else if (OpenCGAAnalysis.class.getResource("/" + identifier + "/manifest.json") != null) {
             file = "/" + identifier + "/manifest.json";
             factory = new JsonFactory();
-        } else if (OpenCGAPlugin.class.getResource("/" + identifier + "/manifest.xml") != null) {
+        } else if (OpenCGAAnalysis.class.getResource("/" + identifier + "/manifest.xml") != null) {
             file = "/" + identifier + "/manifest.xml";
             factory = new XmlFactory();
         } else {
             return null;
         }
-        try (InputStream stream = OpenCGAPlugin.class.getResourceAsStream(file)) {
+        try (InputStream stream = OpenCGAAnalysis.class.getResourceAsStream(file)) {
             return new ObjectMapper(factory).readValue(stream, Analysis.class);
         }
     }
