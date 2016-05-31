@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
-import org.opencb.opencga.analysis.execution.plugins.OpenCGAPlugin;
+import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
 import org.opencb.opencga.core.common.Config;
 import org.slf4j.Logger;
@@ -95,7 +95,7 @@ public class ToolManager {
 
         if (!analysisPath.toFile().exists()) {
             //Search for a plugin
-            OpenCGAPlugin plugin = PluginFactory.get().getPlugin(analysisName);
+            OpenCGAAnalysis plugin = PluginFactory.get().getPlugin(analysisName);
             if (plugin == null) {
                 throw new IllegalArgumentException("Plugin  '" + analysisName + "' does not exist");
             }
