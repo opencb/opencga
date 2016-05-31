@@ -553,25 +553,29 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups")
-    @ApiOperation(value = "Modify group members", position = 9)
+    @ApiOperation(value = "Creates a group, adds/removes users to/from group", position = 9, notes =
+            "If <b>groupId</b> does not exist, it will create it with the list of users given in <b>addUsers</b><br>."
+                    + "If the <b>groupId</b> exists, it will add the users given in <b>addUsers</b> and/or remove the users listed "
+                    + "in <b>removeUsers</b><br><br>"
+                    + "In both cases, the users should have been previously registered in catalog.")
     public Response groups(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
-                           @ApiParam(value = "User to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUser") String addUser,
-                           @ApiParam(value = "User to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUser") String removeUser) {
+                           @ApiParam(value = "Comma separated list of users to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
+                           @ApiParam(value = "Comma separated list of users to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
             List<QueryResult> queryResults = new LinkedList<>();
-            if (!addUser.isEmpty() && !removeUser.isEmpty()) {
-                return createErrorResponse("groups", "Must specify only one user to add or remove from one group");
+            if (!addUsers.isEmpty() && !removeUsers.isEmpty()) {
+                return createErrorResponse("groups", "Must specify at least one user to add or remove from one group");
             }
-            if (!addUser.isEmpty()) {
-                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUser, sessionId));
+            if (!addUsers.isEmpty()) {
+                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUsers, sessionId));
             }
-            if (!removeUser.isEmpty()) {
-                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUser, sessionId));
+            if (!removeUsers.isEmpty()) {
+                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUsers, sessionId));
             }
             if (queryResults.isEmpty()) {
-                return createErrorResponse("groups", "Must specify a user to add or remove from one group");
+                return createErrorResponse("groups", "Must specify at least a user to add or remove from one group");
             }
             return createOkResponse(queryResults);
         } catch (Exception e) {
