@@ -126,6 +126,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         TOOL_ALIAS("tools.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check whether login, logout makes sense.
+        SESSIONS("sessions", TEXT_ARRAY, ""),
         SESSION_ID("sessions.id", TEXT_ARRAY, ""),
         SESSION_IP("sessions.ip", TEXT_ARRAY, ""),
         SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),

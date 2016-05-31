@@ -475,15 +475,19 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         aggregates.add(Aggregates.unwind("$projects"));
         aggregates.add(Aggregates.match(parseQuery(query)));
 
-        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
+        QueryOptions qOptions = filterOptions(options, FILTER_ROUTE_PROJECTS);
+        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, qOptions);
 
-        for (Project project : projectQueryResult.getResult()) {
-            Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
-            try {
-                QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
-                project.setStudies(studyQueryResult.getResult());
-            } catch (CatalogDBException e) {
-                e.printStackTrace();
+        if (qOptions == null || !qOptions.containsKey(QueryOptions.EXCLUDE)
+                || !qOptions.getAsStringList(QueryOptions.EXCLUDE).contains("study")) {
+            for (Project project : projectQueryResult.getResult()) {
+                Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
+                try {
+                    QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, qOptions);
+                    project.setStudies(studyQueryResult.getResult());
+                } catch (CatalogDBException e) {
+                    e.printStackTrace();
+                }
             }
         }
 

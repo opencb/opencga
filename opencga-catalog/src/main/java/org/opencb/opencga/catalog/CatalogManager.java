@@ -504,9 +504,8 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
-                                              String organization, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Project> createProject(String name, String alias, String description, String organization, QueryOptions options,
+                                              String sessionId) throws CatalogException {
         return projectManager.create(name, alias, description, organization, options, sessionId);
     }
 

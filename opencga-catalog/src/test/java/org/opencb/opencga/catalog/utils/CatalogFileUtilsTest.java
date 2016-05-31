@@ -28,7 +28,6 @@ import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManagerTest;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
@@ -85,7 +84,7 @@ public class CatalogFileUtilsTest {
         catalogManager.createUser("user", "name", "mi@mail.com", "asdf", "", null, null);
         userSessionId = catalogManager.login("user", "asdf", "--").getResult().get(0).getString("sessionId");
 //        adminSessionId = catalogManager.login("admin", "admin", "--").getResult().get(0).getString("sessionId");
-        long projectId = catalogManager.createProject("user", "proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
+        long projectId = catalogManager.createProject("proj", "proj", "", "", null, userSessionId).getResult().get(0).getId();
         studyId = catalogManager.createStudy(projectId, "std", "std", Study.Type.CONTROL_SET, "", userSessionId).getResult().get(0).getId();
 
         catalogFileUtils = new CatalogFileUtils(catalogManager);

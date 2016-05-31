@@ -55,7 +55,7 @@ public class CatalogManagerDemo {
         // Create one project per user
         Map<String, Long> projects = new HashMap<>(5);
         for (Map.Entry<String, String> userSession : userSessions.entrySet()) {
-            projects.put(userSession.getKey(), catalogManager.createProject(userSession.getKey(), "DefaultProject", "default",
+            projects.put(userSession.getKey(), catalogManager.createProject("DefaultProject", "default",
                     "Description", "Organization", null, userSession.getValue()).first().getId());
         }
 

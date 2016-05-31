@@ -214,7 +214,7 @@ public class CatalogDBClient implements org.opencb.opencga.catalog.client.Catalo
         @Override
         public QueryResult<Project> create(String ownerId, String name, String alias, String description, String organization,
                                            QueryOptions options) throws CatalogException {
-            return catalogManager.createProject(ownerId, name, alias, description, organization, options, sessionId);
+            return catalogManager.createProject(name, alias, description, organization, options, sessionId);
         }
 
         @Override
