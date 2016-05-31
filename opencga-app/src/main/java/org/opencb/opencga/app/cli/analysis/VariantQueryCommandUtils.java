@@ -22,12 +22,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -255,7 +254,8 @@ public class VariantQueryCommandUtils {
         // output format has priority over output name
         OutputStream outputStream;
         if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
-            outputStream = System.out;
+            // Unclosable OutputStream
+            outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
         } else {
             if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
                 queryVariantsOptions.output += ".gz";
