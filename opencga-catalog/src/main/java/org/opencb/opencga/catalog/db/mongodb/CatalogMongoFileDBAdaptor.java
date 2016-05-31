@@ -765,7 +765,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                     case DIRECTORY:
                         // We add the regex in order to look for all the files under the given directory
                         String value = (String) query.get(queryParam.key());
-                        String regExPath = "~" + value + "[^/]+/?$";
+                        String regExPath = "~^" + value + "[^/]+/?$";
                         Query pathQuery = new Query(QueryParams.PATH.key(), regExPath);
                         addAutoOrQuery(QueryParams.PATH.key(), QueryParams.PATH.key(), pathQuery, QueryParams.PATH.type(), andBsonList);
                         break;

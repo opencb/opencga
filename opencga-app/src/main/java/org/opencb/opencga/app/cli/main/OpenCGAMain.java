@@ -1252,18 +1252,21 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId)
+            throws CatalogException {
         if (level > 0) {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
-                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
+                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                        study.getId(), study.getName(), study.getAlias()));
                 listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext() ? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
     }
 
-    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb,
+                                    String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), path),
                     sessionId).getResult();
@@ -1272,7 +1275,8 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb,
+                                    String sessionId) throws CatalogException {
         if (level > 0) {
             files.sort((file1, file2) -> file1.getName().compareTo(file2.getName()));
 //            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));

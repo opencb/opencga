@@ -1684,7 +1684,7 @@ public class CatalogManagerTest extends GenericTest {
         query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), "nestedObject.stringList:lo,lu,LL");
 
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("Error parsing query");
+        thrown.expectMessage("Wrong annotation query");
         catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 
