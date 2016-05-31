@@ -592,10 +592,10 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Study> getStudy(long studyId, String sessionId)
             throws CatalogException {
-        return getStudy(studyId, sessionId, null);
+        return getStudy(studyId, null, sessionId);
     }
 
-    public QueryResult<Study> getStudy(long studyId, String sessionId, QueryOptions options)
+    public QueryResult<Study> getStudy(long studyId, QueryOptions options, String sessionId)
             throws CatalogException {
         return studyManager.read(studyId, options, sessionId);
     }
@@ -639,6 +639,10 @@ public class CatalogManager implements AutoCloseable {
         String userId = getUserIdBySessionId(sessionId);
         authorizationManager.removeMembersFromRole(userId, studyId, members);
         return new QueryResult("unshareStudy");
+    }
+
+    public QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
+        return studyManager.getStudyAcls(studyStr, members, sessionId);
     }
 
     /**

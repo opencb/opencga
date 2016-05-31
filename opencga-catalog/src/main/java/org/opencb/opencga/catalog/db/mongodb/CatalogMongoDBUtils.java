@@ -494,7 +494,12 @@ class CatalogMongoDBUtils {
         // Annotation Filter
         final String sepOr = ",";
 
-        String annotationKey = optionKey.replaceFirst("annotation.", "");
+        String annotationKey;
+        if (optionKey.startsWith("annotation.")) {
+            annotationKey = optionKey.substring("annotation.".length());
+        } else {
+            throw new CatalogDBException("Wrong annotation query. Expects: {\"annotation.<variable>\" , <operator><value> } ");
+        }
         String annotationValue = query.getString(optionKey);
 
         final String variableId;
@@ -513,6 +518,9 @@ class CatalogMongoDBUtils {
 
         if (variableMap != null) {
             Variable variable = variableMap.get(variableId);
+            if (variable == null) {
+                throw new CatalogDBException("Variable \"" + variableId + "\" not found in variableSet ");
+            }
             Variable.VariableType variableType = variable.getType();
             if (variable.getType() == Variable.VariableType.OBJECT) {
                 String[] routes = route.split("\\.");

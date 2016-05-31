@@ -372,7 +372,7 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.InfoCommand c = optionsParser.getStudyCommands().infoCommand;
 
                         long studyId = catalogManager.getStudyId(c.id);
-                        QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId, new QueryOptions(c.cOpt.getQueryOptions()));
+                        QueryResult<Study> study = catalogManager.getStudy(studyId, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, study, null));
 
                         break;
@@ -772,7 +772,7 @@ public class OpenCGAMain {
 //                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
 //                            queryOptions.put("annotation", c.annotation);
                             if (c.variableSetId == 0) {
-                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.variableSets")).first().getVariableSets();
+                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.variableSets"), sessionId).first().getVariableSets();
                                 if (variableSets.isEmpty()) {
                                     logger.error("Expected variableSetId");
                                 } else {
@@ -785,7 +785,7 @@ public class OpenCGAMain {
                                 if (variable.getId().equals(c.variable)) {
                                     for (String value : variable.getAllowedValues()) {
                                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-                                        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.variable + ":" + value)
+                                        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + c.variable, value)
                                                 .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
                                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                                         cohorts.put(c.name + value, sampleQueryResult.getResult());

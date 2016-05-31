@@ -224,7 +224,7 @@ public abstract class CatalogVariantDBAdaptor implements VariantDBAdaptor {
         QueryOptions options = new QueryOptions("include", Collections.singletonList("projects.studies.id"));
         studyMap = new HashMap<>();
         for (Integer studyId : studies) {
-            QueryResult<Study> fileQueryResult = catalogManager.getStudy(studyId, sessionId, options);
+            QueryResult<Study> fileQueryResult = catalogManager.getStudy(studyId, options, sessionId);
             Study s = fileQueryResult.getResult().get(0);
             studyMap.put(studyId, s);
         }

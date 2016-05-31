@@ -1040,8 +1040,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
-            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+            QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                throw CatalogDBException.queryParamNotFound(key, "Samples");
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -1082,7 +1085,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                         break;
                 }
             } catch (Exception e) {
-                throw new CatalogDBException(e);
+                if (e instanceof CatalogDBException) {
+                    throw e;
+                } else {
+                    throw new CatalogDBException("Error parsing query : " + query.toJson(), e);
+                }
             }
         }
 

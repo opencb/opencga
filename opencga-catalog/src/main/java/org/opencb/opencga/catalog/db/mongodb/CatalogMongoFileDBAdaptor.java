@@ -294,8 +294,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             Bson update = new Document("$pull", new Document("acls.$.users", member));
             QueryResult<UpdateResult> updateResult = fileCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("unsetFileAcl: An error occurred when trying to stop sharing file " + fileId
-                        + " with other " + member + ".");
+                throw new CatalogDBException("unsetFileAcl: An error occurred when trying to remove the ACL in file " + fileId
+                        + " for member " + member + ".");
             }
         }
 
@@ -343,9 +343,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
-        Bson unwind = Aggregates.unwind("$acl");
-        Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
-        Bson project = Aggregates.project(Projections.include("id", "path", "acl"));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), userIds));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACLS.key()));
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(result);
