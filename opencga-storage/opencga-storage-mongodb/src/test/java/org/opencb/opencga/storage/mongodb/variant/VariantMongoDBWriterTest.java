@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertFalse;
 
 /**
  * @author Alejandro Aleman Ramos <aaleman@cipf.es>
@@ -88,6 +89,20 @@ public class VariantMongoDBWriterTest {
         writers.add(new VariantMongoDBWriter(study2, credentials));
         vr = new VariantRunner(study2, reader, null, writers, taskList);
         vr.run();
+
+
+        // test
+        MongoDataStoreManager mongoDataStoreManager = new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
+        MongoDataStore mongoDataStore = mongoDataStoreManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
+        DB db = mongoDataStore.getDb();
+        DBCollection collection = db.getCollection("variants");
+
+        // no ids present on id=.
+        BasicDBObject find = new BasicDBObject(DBObjectToVariantConverter.START_FIELD, 9009406);
+        DBCursor dbObjects = collection.find(find);
+        assertEquals(1, dbObjects.count()); // there's only one matching document
+        assertFalse(dbObjects.next().containsField(DBObjectToVariantConverter.IDS_FIELD));
+
     }
 
     /**

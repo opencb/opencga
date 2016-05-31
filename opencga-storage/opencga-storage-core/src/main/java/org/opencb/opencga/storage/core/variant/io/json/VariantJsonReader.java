@@ -97,6 +97,7 @@ public class VariantJsonReader implements VariantReader {
         jsonObjectMapper.addMixInAnnotations(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(Genotype.class, GenotypeJsonMixin.class);
         jsonObjectMapper.addMixInAnnotations(VariantStats.class, VariantStatsJsonMixin.class);
+        jsonObjectMapper.addMixInAnnotations(Variant.class, VariantMixin.class);
         try {
             variantsParser = factory.createParser(variantsStream);
             globalParser = factory.createParser(globalStream);

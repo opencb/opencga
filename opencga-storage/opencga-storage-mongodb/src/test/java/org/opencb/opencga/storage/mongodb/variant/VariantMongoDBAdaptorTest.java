@@ -6,19 +6,21 @@ import com.mongodb.MongoClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.opencb.biodata.formats.variant.io.VariantWriter;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.feature.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.tools.variant.tasks.VariantRunner;
+import org.opencb.biodata.tools.variant.tasks.VariantStatsTask;
+import org.opencb.commons.run.Task;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -49,9 +51,9 @@ public class VariantMongoDBAdaptorTest {
         vdw.includeSamples(true);
         vdw.includeEffect(true);
         vdw.includeStats(true);
-//        List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
-//        VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.asList(new VariantEffectTask(), new VariantStatsTask(reader, study)));
-//        vr.run();
+        List<VariantWriter> writers = new LinkedList<>(); writers.add(vdw);
+        VariantRunner vr = new VariantRunner(study, reader, null, writers, Arrays.<Task<Variant>>asList(new VariantStatsTask(reader, study)));
+        vr.run();
         
         // Initialize query builder
         vqb = new VariantMongoDBAdaptor(credentials, "variants", "files");
@@ -65,7 +67,7 @@ public class VariantMongoDBAdaptorTest {
         // Delete Mongo collection
         MongoClient mongoClient = new MongoClient("localhost");
         DB db = mongoClient.getDB(credentials.getMongoDbName());
-//        db.dropDatabase();
+        db.dropDatabase();
         mongoClient.close();
     }
 
