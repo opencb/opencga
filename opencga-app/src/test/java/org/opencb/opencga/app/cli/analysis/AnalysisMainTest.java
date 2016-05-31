@@ -23,7 +23,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Created on 09/05/16
@@ -154,6 +155,26 @@ public class AnalysisMainTest {
         assertEquals(Cohort.CohortStatus.NONE, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "coh2"), null, sessionId).first().getStatus().getStatus());
 
 //        AnalysisMain.privateMain(new String[]{"variant", "query", "--session-id", sessionId, "--study", String.valueOf(studyId), "--limit", "10"});
+    }
+
+    @Test
+    public void testVariantIndexAndQuery() throws CatalogException, IOException {
+        Job job;
+
+        File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+
+        // Index file1
+        AnalysisMain.privateMain(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats"});
+        assertEquals(Index.IndexStatus.READY, catalogManager.getFile(file1.getId(), sessionId).first().getIndex().getStatus().getStatus());
+        assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
+        job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
+        assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
+
+        AnalysisMain.privateMain(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "35,36", "--limit", "10"});
+
+
+        AnalysisMain.privateMain(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "HG00096,HG00097", "--limit", "10"});
+
     }
 
     @Test
