@@ -55,8 +55,8 @@ public class CatalogAuditManager implements AuditManager {
     @Override
     public AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
-        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.CREATE, null, toObjectMap(object), System.currentTimeMillis()
-                , userId, description, attributes);
+        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.CREATE, null, toObjectMap(object), System.currentTimeMillis(),
+                userId, description, attributes);
         logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
@@ -79,8 +79,8 @@ public class CatalogAuditManager implements AuditManager {
     @Override
     public AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
-        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.DELETE, toObjectMap(object), null, System.currentTimeMillis()
-                , userId, description, attributes);
+        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.DELETE, toObjectMap(object), null, System.currentTimeMillis(),
+                userId, description, attributes);
         logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }

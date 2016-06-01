@@ -139,5 +139,5 @@ public class AuditRecord {
         return this;
     }
 
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, tool, variableSet}
+    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, tool, variableSet}
 }

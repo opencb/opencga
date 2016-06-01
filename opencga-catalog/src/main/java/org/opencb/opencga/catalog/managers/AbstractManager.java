@@ -47,6 +47,7 @@ public abstract class AbstractManager {
     protected final CatalogCohortDBAdaptor cohortDBAdaptor;
     protected final CatalogDatasetDBAdaptor datasetDBAdaptor;
     protected final CatalogJobDBAdaptor jobDBAdaptor;
+    protected final CatalogPanelDBAdaptor panelDBAdaptor;
 
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                            AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
@@ -63,6 +64,7 @@ public abstract class AbstractManager {
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
+        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
 
@@ -85,6 +87,7 @@ public abstract class AbstractManager {
         this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
         this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
+        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();

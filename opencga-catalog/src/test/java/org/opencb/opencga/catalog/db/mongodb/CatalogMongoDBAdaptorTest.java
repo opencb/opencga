@@ -57,6 +57,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     CatalogJobDBAdaptor catalogJobDBAdaptor;
     CatalogStudyDBAdaptor catalogStudyDBAdaptor;
     CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
+    CatalogPanelDBAdaptor catalogPanelDBAdaptor;
 
     private CatalogConfiguration catalogConfiguration;
 
@@ -96,6 +97,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
         catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
+        catalogPanelDBAdaptor = catalogDBAdaptor.getCatalogPanelDBAdaptor();
         initDefaultCatalogDB();
     }
 
@@ -122,7 +124,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, new User.UserStatus(), "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
-                        Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "imedina", "", "", new Status(), "", 0, "", null,
+                        Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
                                         null, Collections.<Experiment>emptyList(),
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/",
@@ -143,7 +145,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
 
         user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, new User.UserStatus(), "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
-                                new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "pfurio", "", "", new Status(), "", 0, "", null, null,
+                                new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
@@ -159,7 +161,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                                 ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new
                                         LinkedList<>(), new LinkedList<>(), null, null, Collections.emptyMap(),
                                         Collections.emptyMap()),
-                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "pfurio", "", "", new Status(), "", 0, "", null, null, null,
+                                new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null, null,
                                         Arrays.asList(
                                                 new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),

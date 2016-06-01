@@ -116,11 +116,11 @@ public class CatalogManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getString("sessionId");
         sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getString("sessionId");
 
-        Project project1 = catalogManager.createProject("user", "Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
+        Project project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
                 .first();
-        Project project2 = catalogManager.createProject("user2", "Project Management Project", "pmp", "life art intelligent system",
+        Project project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system",
                 "myorg", null, sessionIdUser2).first();
-        Project project3 = catalogManager.createProject("user3", "project 1", "p1", "", "", null, sessionIdUser3).first();
+        Project project3 = catalogManager.createProject("project 1", "p1", "", "", null, sessionIdUser3).first();
 
         studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
         studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
@@ -349,7 +349,7 @@ public class CatalogManagerTest extends GenericTest {
 
         String userId = catalogManager.getUserIdBySessionId(sessionId);
 
-        catalogManager.createProject(userId, "Project", "project", "", "", null, sessionId);
+        catalogManager.createProject("Project", "project", "", "", null, sessionId);
 
         catalogManager.logoutAnonymous(sessionId);
 
@@ -369,11 +369,11 @@ public class CatalogManagerTest extends GenericTest {
 
         String projectAlias = "projectAlias_ASDFASDF";
 
-        catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
+        catalogManager.createProject("Project", projectAlias, "", "", null, sessionIdUser);
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
+        catalogManager.createProject("Project", projectAlias, "", "", null, sessionIdUser);
     }
 
     @Test
@@ -440,13 +440,13 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testGetAllStudies() throws CatalogException {
         long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
-        catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
+        catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
+        catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
+        catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        long study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate",
+        long study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "creationDate",
                 "description", new Status(), null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
@@ -1684,7 +1684,7 @@ public class CatalogManagerTest extends GenericTest {
         query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), "nestedObject.stringList:lo,lu,LL");
 
         thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("Error parsing query");
+        thrown.expectMessage("Wrong annotation query");
         catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 

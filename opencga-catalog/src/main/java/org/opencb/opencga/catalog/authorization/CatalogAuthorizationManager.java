@@ -1026,6 +1026,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void removeUsersFromGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
         studyDBAdaptor.removeMembersFromGroup(studyId, groupId, members);
     }
 
@@ -1077,7 +1080,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         private final long studyId;
         private final Map<String, Map<String, FileAcl>> pathUserAclMap;
 
-        public StudyAuthenticationContext(long studyId) {
+        StudyAuthenticationContext(long studyId) {
             this.studyId = studyId;
             pathUserAclMap = new HashMap<>();
         }

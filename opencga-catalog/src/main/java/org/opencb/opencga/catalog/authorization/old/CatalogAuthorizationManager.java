@@ -941,7 +941,7 @@ return null;
          */
         private final Map<String, Map<String, AclEntry>> pathUserAclMap;
 
-        public StudyAuthenticationContext(long studyId) {
+        StudyAuthenticationContext(long studyId) {
             this.studyId = studyId;
             pathUserAclMap = new HashMap<>();
         }

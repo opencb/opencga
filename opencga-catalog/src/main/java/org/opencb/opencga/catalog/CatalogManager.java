@@ -504,9 +504,8 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
-    public QueryResult<Project> createProject(String ownerId, String name, String alias, String description,
-                                              String organization, QueryOptions options, String sessionId)
-            throws CatalogException {
+    public QueryResult<Project> createProject(String name, String alias, String description, String organization, QueryOptions options,
+                                              String sessionId) throws CatalogException {
         return projectManager.create(name, alias, description, organization, options, sessionId);
     }
 
@@ -550,7 +549,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Study> createStudy(long projectId, String name, String alias, Study.Type type, String description,
                                           String sessionId)
             throws CatalogException {
-        return createStudy(projectId, name, alias, type, null, null, description, null, null, null, null, null, null, null, null,
+        return createStudy(projectId, name, alias, type, null, description, null, null, null, null, null, null, null, null,
                 sessionId);
     }
 
@@ -561,7 +560,6 @@ public class CatalogManager implements AutoCloseable {
      * @param name         Study Name
      * @param alias        Study Alias. Must be unique in the project's studies
      * @param type         Study type: CONTROL_CASE, CONTROL_SET, ... (see org.opencb.opencga.catalog.models.Study.Type)
-     * @param creatorId    Creator user id. If null, user by sessionId
      * @param creationDate Creation date. If null, now
      * @param description  Study description. If null, empty string
      * @param status       Unused
@@ -576,11 +574,9 @@ public class CatalogManager implements AutoCloseable {
      * @return Generated study
      * @throws CatalogException CatalogException
      */
-    public QueryResult<Study> createStudy(long projectId, String name, String alias, Study.Type type,
-                                          String creatorId, String creationDate, String description, Status status,
-                                          String cipher, String uriScheme, URI uri,
-                                          Map<File.Bioformat, DataStore> datastores, Map<String, Object> stats,
-                                          Map<String, Object> attributes, QueryOptions options, String sessionId)
+    public QueryResult<Study> createStudy(long projectId, String name, String alias, Study.Type type, String creationDate,
+                                          String description, Status status, String cipher, String uriScheme, URI uri, Map<File.Bioformat,
+            DataStore> datastores, Map<String, Object> stats, Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
         QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status,
                 cipher, uriScheme,
@@ -1216,6 +1212,21 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Tool> getAllTools(Query query, QueryOptions queryOptions, String sessionId) throws CatalogException {
         return jobManager.readAllTools(query, queryOptions, sessionId);
+    }
+
+    /*
+    * Disease panel methods
+    * ***************************
+     */
+
+    public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
+                                                        String genes, String regions, String variants,
+                                                        QueryOptions options, String sessionId) throws CatalogException {
+        return studyManager.createDiseasePanel(studyStr, name, disease, description, genes, regions, variants, options, sessionId);
+    }
+
+    public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
+        return studyManager.getDiseasePanel(panelStr, options, sessionId);
     }
 
 }
