@@ -177,4 +177,23 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * the study id is not valid or the members given do not exist.
      */
     QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
+
+    // DISEASE PANEL METHODS
+    /**
+     * Obtains the numeric panel id given a string.
+     *
+     * @param userId User id of the user asking for the panel id.
+     * @param panelStr Panel id in string format. Could be one of [id | user@aliasProject:aliasStudy:panelName
+     *                | user@aliasStudy:panelName | aliasStudy:panelName | panelName].
+     * @return the numeric panel id.
+     * @throws CatalogException when more than one panel id is found.
+     */
+    Long getDiseasePanelId(String userId, String panelStr) throws CatalogException;
+
+    QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description, String genes,
+                                                 String regions, String variants, QueryOptions options, String sessionId)
+            throws CatalogException;
+
+    QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException;
+
 }

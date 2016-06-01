@@ -65,7 +65,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         ObjectMap session = catalogManager.loginAsAnonymous("localHost").getResult().get(0);
         sessionId = session.getString("sessionId");
         userId = session.getString("userId");
-        Project project = catalogManager.createProject(userId, "default", "def", "", "ACME", null, sessionId).getResult().get(0);
+        Project project = catalogManager.createProject("default", "def", "", "ACME", null, sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
         pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1,

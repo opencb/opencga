@@ -221,7 +221,7 @@ public class VariantStatisticsManager {
         private Properties tagmap;
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
-        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
+        VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
                                        StudyConfiguration studyConfiguration, String fileId,
                                        VariantSourceStats variantSourceStats, Properties tagmap) {
             this.overwrite = overwrite;

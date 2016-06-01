@@ -292,8 +292,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
 
                         String user = c.up.user == null || c.up.user.isEmpty() ? catalogManager.getUserIdBySessionId(sessionId) : c.up.user;
-                        QueryResult<Project> project = catalogManager.createProject(
-                                user, c.name, c.alias, c.description, c.organization, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
+                        QueryResult<Project> project = catalogManager.createProject(c.name, c.alias, c.description, c.organization, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -334,8 +333,7 @@ public class OpenCGAMain {
                         long projectId = catalogManager.getProjectId(c.projectId);
                         ObjectMap attributes = new ObjectMap();
                         attributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated.toString());
-                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
-                                null, c.description, null, null, null, uri, dataStoreMap, null, attributes,
+                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null, c.description, null, null, null, uri, dataStoreMap, null, attributes,
                                 new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         if (uri != null) {
                             File root = catalogManager.searchFile(study.first().getId(),
@@ -1252,18 +1250,21 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId)
+            throws CatalogException {
         if (level > 0) {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
-                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
+                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                        study.getId(), study.getName(), study.getAlias()));
                 listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext() ? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
     }
 
-    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb,
+                                    String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), path),
                     sessionId).getResult();
@@ -1272,7 +1273,8 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb,
+                                    String sessionId) throws CatalogException {
         if (level > 0) {
             files.sort((file1, file2) -> file1.getName().compareTo(file2.getName()));
 //            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));
