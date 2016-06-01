@@ -36,6 +36,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final CatalogIndividualDBAdaptor individualDBAdaptor;
     private final CatalogCohortDBAdaptor cohortDBAdaptor;
     private final CatalogDatasetDBAdaptor datasetDBAdaptor;
+    private final CatalogPanelDBAdaptor panelDBAdaptor;
     private final AuditManager auditManager;
 
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
@@ -49,6 +50,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
         cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
+        panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
     }
 
     @Override
@@ -512,6 +514,70 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    public void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAcl.DiseasePanelPermissions permission)
+            throws CatalogException {
+        long studyId = panelDBAdaptor.getStudyIdByPanelId(panelId);
+        if (isStudyOwner(studyId, userId)) {
+            return;
+        }
+
+        DiseasePanelAcl panelAcl = resolveDiseasePanelPermissions(studyId, panelId, userId);
+
+        if (!panelAcl.getPermissions().contains(permission)) {
+            throw CatalogAuthorizationException.deny(userId, permission.toString(), "DiseasePanel", panelId, null);
+        }
+    }
+
+    private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, DiseasePanel panel, String userId) throws CatalogException {
+        if (panel.getAcls() == null) {
+            return resolveDiseasePanelPermissions(studyId, panel.getId(), userId);
+        } else {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+
+            Map<String, DiseasePanelAcl> userAclMap = new HashMap<>();
+            for (DiseasePanelAcl panelAcl : panel.getAcls()) {
+                for (String user : panelAcl.getUsers()) {
+                    userAclMap.put(user, panelAcl);
+                }
+            }
+            return resolveDiseasePanelPermissions(studyId, userId, groupId, userAclMap);
+        }
+    }
+
+    private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, long panelId, String userId) throws CatalogException {
+        QueryResult<Group> group = getGroupBelonging(studyId, userId);
+        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+
+        List<String> userIds = (groupId == null)
+                ? Arrays.asList(userId, OTHER_USERS_ID)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+        List<DiseasePanelAcl> panelAcls = panelDBAdaptor.getPanelAcl(panelId, userIds).getResult();
+
+        Map<String, DiseasePanelAcl> userAclMap = new HashMap<>();
+        for (DiseasePanelAcl panelAcl : panelAcls) {
+            for (String member : panelAcl.getUsers()) {
+                userAclMap.put(member, panelAcl);
+            }
+        }
+
+        return resolveDiseasePanelPermissions(studyId, userId, groupId, userAclMap);
+    }
+
+    private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, String userId, String groupId,
+                                                           Map<String, DiseasePanelAcl> userAclMap) throws CatalogException {
+        if (userAclMap.containsKey(userId)) {
+            return userAclMap.get(userId);
+        } else if (groupId != null && userAclMap.containsKey(groupId)) {
+            return userAclMap.get(groupId);
+        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            return userAclMap.get(OTHER_USERS_ID);
+        } else {
+            return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
+        }
+    }
+
+    @Override
     public QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<String> permissions)
             throws CatalogException {
         long startTime = System.currentTimeMillis();
@@ -809,6 +875,56 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String datasetId : datasetArray) {
             datasetDBAdaptor.unsetDatasetAcl(Long.parseLong(datasetId), Arrays.asList(userIdArray));
+        }
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, String panelIds, String userIds, List<String> permissions)
+            throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String[] panelIdArray = panelIds.split(",");
+        // Check if the userId has proper permissions for all the panels.
+        for (String panelId : panelIdArray) {
+            checkDiseasePanelPermission(Long.valueOf(panelId), userId, DiseasePanelAcl.DiseasePanelPermissions.SHARE);
+        }
+
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (String panelId : panelIdArray) {
+            long studyId = panelDBAdaptor.getStudyIdByPanelId(Long.valueOf(panelId));
+            for (String member : userArray) {
+                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share panel with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
+        }
+
+        // Set the permissions
+        List<DiseasePanelAcl> panelAclList = new ArrayList<>(panelIdArray.length);
+        String[] userIdArray = userIds.split(",");
+        for (String panelId : panelIdArray) {
+            DiseasePanelAcl panelAcl = new DiseasePanelAcl(Arrays.asList(userIdArray), permissions);
+            panelAclList.add(panelDBAdaptor.setPanelAcl(Long.parseLong(panelId), panelAcl).first());
+        }
+
+        return new QueryResult<>("Set panel permissions", (int) (System.currentTimeMillis() - startTime), panelAclList.size(),
+                panelAclList.size(), "", "", panelAclList);
+    }
+
+    @Override
+    public void unsetDiseasePanelPermissions(String userId, String panelIds, String userIds) throws CatalogException {
+        String[] panelArray = panelIds.split(",");
+        // Check if the userId has proper permissions for all the disease panels.
+        for (String panelId : panelArray) {
+            checkDiseasePanelPermission(Long.valueOf(panelId), userId, DiseasePanelAcl.DiseasePanelPermissions.SHARE);
+        }
+
+        // Set the permissions
+        String[] userIdArray = userIds.split(",");
+        for (String panelId : panelArray) {
+            panelDBAdaptor.unsetPanelAcl(Long.parseLong(panelId), Arrays.asList(userIdArray));
         }
     }
 
@@ -1316,5 +1432,25 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         datasetAcl.setPermissions(datasetPermissions);
         return datasetAcl;
+    }
+
+    private DiseasePanelAcl transformStudyAclToDiseasePanelAcl(StudyAcl studyAcl) {
+        DiseasePanelAcl panelAcl = new DiseasePanelAcl(Collections.emptyList(), Collections.emptyList());
+        if (studyAcl == null) {
+            return panelAcl;
+        }
+
+        panelAcl.setUsers(studyAcl.getUsers());
+        EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
+        EnumSet<DiseasePanelAcl.DiseasePanelPermissions> datasetPermissions = EnumSet.noneOf(DiseasePanelAcl.DiseasePanelPermissions.class);
+
+        for (StudyAcl.StudyPermissions studyPermission : studyPermissions) {
+            DiseasePanelAcl.DiseasePanelPermissions aux = studyPermission.getDiseasePanelPermission();
+            if (aux != null) {
+                datasetPermissions.add(aux);
+            }
+        }
+        panelAcl.setPermissions(datasetPermissions);
+        return panelAcl;
     }
 }

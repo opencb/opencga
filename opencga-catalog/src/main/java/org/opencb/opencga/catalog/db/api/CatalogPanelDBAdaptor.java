@@ -6,13 +6,14 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
+import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
-import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
  * Created by pfurio on 01/06/16.
@@ -32,6 +33,10 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, "");
 
@@ -93,5 +98,19 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
     QueryResult<DiseasePanel> createPanel(long studyId, DiseasePanel diseasePanel, QueryOptions options) throws CatalogDBException;
 
     QueryResult<DiseasePanel> getPanel(long diseasePanelId, QueryOptions options) throws CatalogDBException;
+
+    default QueryResult<DiseasePanelAcl> getPanelAcl(long panelId, String member) throws CatalogDBException {
+        return getPanelAcl(panelId, Arrays.asList(member));
+    }
+
+    QueryResult<DiseasePanelAcl> getPanelAcl(long panelId, List<String> members) throws CatalogDBException;
+
+    QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl) throws CatalogDBException;
+
+    void unsetPanelAcl(long panelId, List<String> members) throws CatalogDBException;
+
+    void unsetPanelAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
+    long getStudyIdByPanelId(long panelId) throws CatalogDBException;
 
 }

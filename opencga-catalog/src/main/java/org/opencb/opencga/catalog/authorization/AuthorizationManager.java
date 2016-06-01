@@ -88,6 +88,9 @@ public interface AuthorizationManager {
 
     void checkDatasetPermission(long datasetId, String userId, DatasetAcl.DatasetPermissions permission) throws CatalogException;
 
+    void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAcl.DiseasePanelPermissions permission)
+            throws CatalogException;
+
     //User.Role getUserRole(String userId) throws CatalogException;
 
     /**
@@ -227,6 +230,29 @@ public interface AuthorizationManager {
      * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
      */
     void unsetDatasetPermissions(String userId, String datasetIds, String userIds) throws CatalogException;
+
+    /**
+     * Set the permissions given for all the users and panel ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param panelIds Comma separated list of panel ids.
+     * @param userIds Comma separated list of user ids which the panel will be shared with.
+     * @param permissions List of panel permissions.
+     * @return A queryResult containing the DiseasePanelAcl applied to the different panel ids.
+     * @throws CatalogException when the user ordering the action does not have permission to share the panels.
+     */
+    QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, String panelIds, String userIds, List<String> permissions)
+            throws CatalogException;
+
+    /**
+     * Remove the permissions given for all the users in the panel ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param panelIds Comma separated list of panel ids.
+     * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @throws CatalogException when the user ordering the action does not have permission to share the panels.
+     */
+    void unsetDiseasePanelPermissions(String userId, String panelIds, String userIds) throws CatalogException;
 
     /**
      * Removes from the list the projects that the user can not read.

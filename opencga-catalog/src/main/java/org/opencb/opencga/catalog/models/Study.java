@@ -55,6 +55,8 @@ public class Study {
     private List<Dataset> datasets;
     private List<Cohort> cohorts;
 
+    private List<DiseasePanel> panels;
+
     private List<VariableSet> variableSets;
 
     private URI uri;
@@ -71,7 +73,6 @@ public class Study {
         sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
-//        sb.append(", ownerId='").append(ownerId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
@@ -79,7 +80,6 @@ public class Study {
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", cipher='").append(cipher).append('\'');
         sb.append(", groups=").append(groups);
-        sb.append(", roles=").append(roles);
         sb.append(", acls=").append(acls);
         sb.append(", experiments=").append(experiments);
         sb.append(", files=").append(files);
@@ -88,6 +88,7 @@ public class Study {
         sb.append(", samples=").append(samples);
         sb.append(", datasets=").append(datasets);
         sb.append(", cohorts=").append(cohorts);
+        sb.append(", panels=").append(panels);
         sb.append(", variableSets=").append(variableSets);
         sb.append(", uri=").append(uri);
         sb.append(", dataStores=").append(dataStores);
@@ -97,41 +98,20 @@ public class Study {
         return sb.toString();
     }
 
-    public List<StudyAcl> getAcls() {
-        return acls;
-    }
-
-    public Study setAcls(List<StudyAcl> acls) {
-        this.acls = acls;
-        return this;
-    }
-
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        AGGREGATE,
-        TIME_SERIES,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
-
     public Study() {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri) {
         this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 null, new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(), new HashMap<>());
+                new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
     public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastActivity,
                  long diskUsage, String cipher, List<Group> groups, List<StudyAcl> acls, List<Experiment> experiments, List<File> files,
-                 List<Job> jobs, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts, List<VariableSet> variableSets,
-                 URI uri, Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
+                 List<Job> jobs, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts, List<DiseasePanel> panels,
+                 List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats,
+                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -143,6 +123,7 @@ public class Study {
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
+        this.panels = panels;
 //        this.roles = roles;
         this.acls = acls;
         this.groups = groups;
@@ -157,6 +138,37 @@ public class Study {
         this.dataStores = dataStores;
         this.stats = stats;
         this.attributes = attributes;
+    }
+
+    public List<StudyAcl> getAcls() {
+        return acls;
+    }
+
+    public Study setAcls(List<StudyAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public List<DiseasePanel> getPanels() {
+        return panels;
+    }
+
+    public Study setPanels(List<DiseasePanel> panels) {
+        this.panels = panels;
+        return this;
+    }
+
+    public enum Type {
+        CASE_CONTROL,
+        CASE_SET,
+        CONTROL_SET,
+        PAIRED,
+        PAIRED_TUMOR,
+        AGGREGATE,
+        TIME_SERIES,
+        FAMILY,
+        TRIO,
+        COLLECTION
     }
 
     public long getId() {

@@ -121,6 +121,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         List<Dataset> datasets = study.getDatasets();
         study.setDatasets(Collections.emptyList());
 
+        List<DiseasePanel> panels = study.getPanels();
+        study.setPanels(Collections.emptyList());
+
         //Create DBObject
         Document studyObject = getMongoDBDocument(study, "Study");
         studyObject.put(PRIVATE_ID, newId);
@@ -166,6 +169,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                     .getErrorMsg();
             if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
                 errorMsg += dataset.getName() + ":" + fileErrorMsg + ", ";
+            }
+        }
+
+        for (DiseasePanel diseasePanel : panels) {
+            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().createPanel(study.getId(), diseasePanel, options)
+                    .getErrorMsg();
+            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
+                errorMsg += diseasePanel.getName() + ":" + fileErrorMsg + ", ";
             }
         }
 
@@ -593,6 +604,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         dbAdaptorFactory.getCatalogDatasetDBAdaptor().unsetDatasetAclsInStudy(studyId, members);
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().unsetIndividualAclsInStudy(studyId, members);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().unsetCohortAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogPanelDBAdaptor().unsetPanelAclsInStudy(studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
