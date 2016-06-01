@@ -27,6 +27,7 @@ import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -89,14 +90,14 @@ public class CohortWSServer extends OpenCGAWSServer {
                     }
                 }
                 if (variable == null) {
-                    return createErrorResponse("", "Variable " + variable  + " does not exist. ");
+                    return createErrorResponse("", "Variable " + variableName + " does not exist in variableSet " + variableSet.getName());
                 }
                 if (variable.getType() != Variable.VariableType.CATEGORICAL) {
                     return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");
                 }
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
-                    Query samplesQuery = new Query("annotation." + variableName, s)
+                    Query samplesQuery = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSetId);
                     cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
@@ -253,6 +254,82 @@ public class CohortWSServer extends OpenCGAWSServer {
             return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
-        }    }
+        }
+    }
+
+    @POST
+    @Path("/{cohortId}/annotate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "annotate cohort", position = 6)
+    public Response annotateSamplePOST(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
+                                       @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
+                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
+                                       Map<String, Object> annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+            if (delete && update) {
+                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
+            } else if (delete) {
+                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
+            } else if (update) {
+                queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
+            } else {
+                queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations, Collections.emptyMap(),
+                        sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/annotate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Annotate cohort", position = 6)
+    public Response annotateSampleGET(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
+                                      @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+
+            if (delete && update) {
+                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
+            } else if (delete) {
+                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
+            } else {
+                if (update) {
+                    long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
+                    for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
+                        if (annotationSet.getId().equals(annotateSetName)) {
+                            variableSetId = annotationSet.getVariableSetId();
+                        }
+                    }
+                }
+                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+                if(variableSetResult.getResult().isEmpty()) {
+                    return createErrorResponse("cohort - annotate", "VariableSet not found.");
+                }
+                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+                        .filter(variable -> params.containsKey(variable.getId()))
+                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+
+                if (update) {
+                    queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
+                } else {
+                    queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations,
+                            Collections.emptyMap(), sessionId);
+                }
+            }
+
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
 }

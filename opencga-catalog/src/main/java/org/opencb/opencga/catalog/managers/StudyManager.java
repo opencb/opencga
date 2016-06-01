@@ -214,7 +214,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         rootFile.setUri(uri);
         files.add(rootFile);
 
-        Study study = new Study(-1, name, alias, type, userId, creationDate, description, status, TimeUtils.getTime(),
+        Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), AuthorizationManager.getDefaultAcls(new HashSet<>(Arrays.asList(userId))),
                 experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), null, datastores,
                 stats, attributes);

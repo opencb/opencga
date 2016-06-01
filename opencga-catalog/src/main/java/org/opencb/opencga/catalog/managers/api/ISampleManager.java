@@ -168,6 +168,15 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
 
     QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException;
 
+    QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetId, long variableSetId, Map<String, Object> annotations,
+                                        Map<String, Object> attributes, boolean checkAnnotationSet, String sessionId)
+            throws CatalogException;
+
+    QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetId, Map<String, Object> newAnnotations,
+                                                String sessionId) throws CatalogException;
+
+    QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortStr, String annotationId, String sessionId) throws CatalogException;
+
     /**
      * Retrieve the cohort Acls for the given members in the cohort.
      *

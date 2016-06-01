@@ -220,7 +220,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT, ""),
-        OWNER_ID("ownerId", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
         STATUS_STATUS("status.status", TEXT, ""),

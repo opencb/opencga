@@ -28,10 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -224,8 +221,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public String getStudyOwnerId(long studyId) throws CatalogDBException {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FILTER_ROUTE_STUDIES + QueryParams.OWNER_ID.key());
-        return getStudy(studyId, queryOptions).first().getOwnerId();
+        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getProjectOwnerId(getProjectIdByStudyId(studyId));
     }
 
     @Override
@@ -669,6 +665,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         if (variable.isRequired()) {
             dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(variableSetId, variable);
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(variableSetId, variable);
         }
         return endQuery("Add field to variable set", startTime, getVariableSet(variableSetId, null));
     }
@@ -711,6 +708,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // 4. Change the field id in the annotations
         dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
 
         return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
     }
@@ -736,6 +734,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Remove all the annotations from that field
         dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(variableSetId, name);
 
         return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
     }
@@ -925,10 +924,20 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
                 new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
-        if (samples.getNumResults() != 0) {
+        if (individuals.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
             for (Individual individual : individuals.getResult()) {
                 msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+        QueryResult<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
+                new Query(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+        if (cohorts.getNumResults() != 0) {
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
+            for (Cohort cohort : cohorts.getResult()) {
+                msg += " { id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -1101,8 +1110,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.OWNER_ID.key(),
-                QueryParams.DESCRIPTION.key(), QueryParams.CIPHER.key(), };
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.CIPHER.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
         String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};

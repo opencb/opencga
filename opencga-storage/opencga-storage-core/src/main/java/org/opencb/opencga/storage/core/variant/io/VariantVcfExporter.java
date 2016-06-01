@@ -25,6 +25,8 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.FilterOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.text.DecimalFormat;
@@ -563,5 +565,23 @@ public class VariantVcfExporter {
     }
 
 
+    /**
+     * Unclosable output stream.
+     *
+     * Avoid passing System.out directly to HTSJDK, because it will close it at the end.
+     *
+     * http://stackoverflow.com/questions/8941298/system-out-closed-can-i-reopen-it/23791138#23791138
+     */
+    public static class UnclosableOutputStream extends FilterOutputStream {
+
+        public UnclosableOutputStream(OutputStream os) {
+            super(os);
+        }
+
+        @Override
+        public void close() throws IOException {
+            super.flush();
+        }
+    }
 }
 

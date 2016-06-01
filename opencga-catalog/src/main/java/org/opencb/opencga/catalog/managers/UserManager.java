@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -180,14 +181,11 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkSessionId(userId, sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (!options.containsKey("include") && !options.containsKey("exclude")) {
-            options.put("exclude", Arrays.asList("password", "sessions"));
+        if ((!options.containsKey(QueryOptions.INCLUDE) || options.getAsStringList(QueryOptions.INCLUDE).isEmpty())
+                && (!options.containsKey(QueryOptions.EXCLUDE) || options.getAsStringList(QueryOptions.EXCLUDE).isEmpty())) {
+            options.put(QueryOptions.EXCLUDE, Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(),
+                    CatalogUserDBAdaptor.QueryParams.SESSIONS.key(), "projects.studies.variableSets"));
         }
-//        if(options.containsKey("exclude")) {
-//            options.getListAs("exclude", String.class).add("sessions");
-//        }
-        //FIXME: Should other users get access to other user information? (If so, then filter projects)
-        //FIXME: Should setPassword(null)??
         QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastActivity);
         return user;
     }
