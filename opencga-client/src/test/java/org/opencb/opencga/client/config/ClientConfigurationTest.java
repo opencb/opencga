@@ -17,13 +17,9 @@
 package org.opencb.opencga.client.config;
 
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by imedina on 04/05/16.
