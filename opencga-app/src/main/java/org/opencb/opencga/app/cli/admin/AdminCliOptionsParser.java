@@ -290,8 +290,8 @@ public class AdminCliOptionsParser {
     @Parameters(commandNames = {"demo"}, commandDescription = "Install and populate a catalog database with demonstration purposes.")
     public class DemoCatalogCommandOptions {
 
-//        @ParametersDelegate
-//        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+        @ParametersDelegate
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--database-name"}, description = "Database name for the catalog metadata. If not present, it will be set to opencga_catalog_demo")
         public String database;

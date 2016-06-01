@@ -47,7 +47,7 @@ import java.util.stream.Collectors;
  */
 @Path("/{version}/cohorts")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Cohorts", position = 8, description = "Methods for working with 'cohorts' endpoint")
+@Api(value = "Cohorts", position = 9, description = "Methods for working with 'cohorts' endpoint")
 public class CohortWSServer extends OpenCGAWSServer {
 
 

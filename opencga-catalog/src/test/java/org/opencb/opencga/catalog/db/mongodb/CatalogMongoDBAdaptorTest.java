@@ -57,6 +57,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
     CatalogJobDBAdaptor catalogJobDBAdaptor;
     CatalogStudyDBAdaptor catalogStudyDBAdaptor;
     CatalogIndividualDBAdaptor catalogIndividualDBAdaptor;
+    CatalogPanelDBAdaptor catalogPanelDBAdaptor;
 
     private CatalogConfiguration catalogConfiguration;
 
@@ -96,6 +97,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         catalogFileDBAdaptor = catalogDBAdaptor.getCatalogFileDBAdaptor();
         catalogJobDBAdaptor = catalogDBAdaptor.getCatalogJobDBAdaptor();
         catalogIndividualDBAdaptor = catalogDBAdaptor.getCatalogIndividualDBAdaptor();
+        catalogPanelDBAdaptor = catalogDBAdaptor.getCatalogPanelDBAdaptor();
         initDefaultCatalogDB();
     }
 
