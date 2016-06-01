@@ -180,9 +180,27 @@ public class AnalysisMainTest {
 //        execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "35,36", "--limit", "10"});
 
 
+
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: vcf");
+        System.out.println("------------------------------------------------------");
         execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "HG00096,HG00097", "--limit", "10", "--output-format", "vcf"});
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: cellbase (populationFrequencies)");
+        System.out.println("------------------------------------------------------");
         execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "HG00096,HG00097", "--limit", "10", "--output-format", "cellbase"});
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: tsv");
+        System.out.println("------------------------------------------------------");
         execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "HG00096,HG00097", "--limit", "10", "--output-format", "stats"});
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: tsv");
+        System.out.println("------------------------------------------------------");
+        execute(new String[]{"variant", "export-frequencies", "--session-id", sessionId, "--limit", "10"});
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: vcf");
+        System.out.println("------------------------------------------------------");
+        execute(new String[]{"variant", "export-frequencies", "--session-id", sessionId, "--limit", "10", "--output-format", "vcf"});
 
     }
 

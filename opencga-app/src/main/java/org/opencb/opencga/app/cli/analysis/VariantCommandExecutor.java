@@ -101,6 +101,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             case "query":
                 query();
                 break;
+            case "export-frequencies":
+                exportFrequencies();
+                break;
             case "index":
                 index();
                 break;
@@ -133,6 +136,26 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
     private void ibs() {
         throw new UnsupportedOperationException();
+    }
+
+
+    private void exportFrequencies() throws Exception {
+
+        AnalysisCliOptionsParser.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
+        AnalysisCliOptionsParser.QueryVariantCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
+
+        queryCliOptions.outputFormat = exportCliOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.study = exportCliOptions.studies;
+        queryCliOptions.returnStudy = exportCliOptions.studies;
+        queryCliOptions.limit = exportCliOptions.queryOptions.limit;
+        queryCliOptions.skip = exportCliOptions.queryOptions.skip;
+        queryCliOptions.region = exportCliOptions.queryOptions.region;
+        queryCliOptions.regionFile = exportCliOptions.queryOptions.regionFile;
+        queryCliOptions.output = exportCliOptions.queryOptions.output;
+        queryCliOptions.gene = exportCliOptions.queryOptions.gene;
+        queryCliOptions.count = exportCliOptions.queryOptions.count;
+
+        query();
     }
 
     private void query() throws Exception {
