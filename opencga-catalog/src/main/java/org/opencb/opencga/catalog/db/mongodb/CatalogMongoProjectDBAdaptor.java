@@ -43,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 
@@ -475,15 +476,25 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         aggregates.add(Aggregates.unwind("$projects"));
         aggregates.add(Aggregates.match(parseQuery(query)));
 
-        QueryOptions qOptions = filterOptions(options, FILTER_ROUTE_PROJECTS);
-        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, qOptions);
+        // Check include
+        if (options != null && options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
+            includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
 
-        if (qOptions == null || !qOptions.containsKey(QueryOptions.EXCLUDE)
-                || !qOptions.getAsStringList(QueryOptions.EXCLUDE).contains("study")) {
+            if (includeList.size() > 0) {
+                aggregates.add(Aggregates.project(Projections.include(includeList)));
+            }
+        }
+
+        QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
+
+        if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
+                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("study")) {
             for (Project project : projectQueryResult.getResult()) {
                 Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
                 try {
-                    QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, qOptions);
+                    QueryResult<Study> studyQueryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().get(studyQuery, options);
                     project.setStudies(studyQueryResult.getResult());
                 } catch (CatalogDBException e) {
                     e.printStackTrace();
@@ -502,6 +513,17 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         List<Bson> aggregates = new ArrayList<>();
         aggregates.add(Aggregates.match(parseQuery(query)));
         aggregates.add(Aggregates.unwind("$projects"));
+
+        // Check include & excludes
+        if (options != null && options.containsKey(QueryOptions.INCLUDE)) {
+            List<String> includeList = new ArrayList<>();
+            List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
+            includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
+
+            if (includeList.size() > 0) {
+                aggregates.add(Aggregates.project(Projections.include(includeList)));
+            }
+        }
 
         QueryResult<Document> projectQueryResult = userCollection.aggregate(aggregates, options);
         ArrayList<Document> returnedProjectList = new ArrayList<>();

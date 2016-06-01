@@ -333,8 +333,7 @@ public class OpenCGAMain {
                         long projectId = catalogManager.getProjectId(c.projectId);
                         ObjectMap attributes = new ObjectMap();
                         attributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated.toString());
-                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
-                                null, c.description, null, null, null, uri, dataStoreMap, null, attributes,
+                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null, c.description, null, null, null, uri, dataStoreMap, null, attributes,
                                 new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         if (uri != null) {
                             File root = catalogManager.searchFile(study.first().getId(),

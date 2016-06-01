@@ -69,8 +69,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
                                 @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
                                 @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
-                                @ApiParam(value = "creatorId",    required = false) @QueryParam("creatorId") String creatorId,
-                                @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
+//                                @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
                                 @ApiParam(value = "description",  required = false) @QueryParam("description") String description,
                                 @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
                                 @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
@@ -78,10 +77,12 @@ public class StudiesWSServer extends OpenCGAWSServer {
             long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult;
             if (status != null && !status.isEmpty()) {
-                queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId, creationDate, description,
+//                queryResult = catalogManager.createStudy(projectId, name, alias, type, creationDate, description,
+                queryResult = catalogManager.createStudy(projectId, name, alias, type, null, description,
                         new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
             } else {
-                queryResult = catalogManager.createStudy(projectId, name, alias, type, creatorId, creationDate, description, new Status(),
+//                queryResult = catalogManager.createStudy(projectId, name, alias, type, creationDate, description, new Status(),
+                queryResult = catalogManager.createStudy(projectId, name, alias, type, null, description, new Status(),
                         cipher, null, null, null, null, null, queryOptions, sessionId);
             }
             return createOkResponse(queryResult);
@@ -119,10 +120,10 @@ public class StudiesWSServer extends OpenCGAWSServer {
             System.out.println("study = " + study);
             try {
                 QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getOwnerId(), study.getCreationDate(),
+                        study.getAlias(), study.getType(), study.getCreationDate(),
                         study.getDescription(), study.getStatus(), study.getCipher(), null, null, null, study.getStats(),
                         study.getAttributes(), queryOptions, sessionId);
-                Study studyAdded = queryResult.getResult().get(0);
+//                Study studyAdded = queryResult.getResult().get(0);
                 queryResults.add(queryResult);
 //                List<File> files = study.getFiles();
 //                if(files != null) {
@@ -430,9 +431,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/status")
+    @Path("/{studyId}/scanFiles")
     @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 8)
-    public Response status(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+    public Response scanFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
             Study study = catalogManager.getStudy(studyId, sessionId).first();

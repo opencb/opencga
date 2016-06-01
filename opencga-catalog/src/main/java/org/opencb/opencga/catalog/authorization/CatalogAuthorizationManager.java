@@ -1026,6 +1026,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void removeUsersFromGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
         studyDBAdaptor.removeMembersFromGroup(studyId, groupId, members);
     }
 

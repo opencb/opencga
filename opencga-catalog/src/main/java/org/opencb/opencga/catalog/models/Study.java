@@ -32,7 +32,7 @@ public class Study {
     private String name;
     private String alias;
     private Type type;
-    private String ownerId;
+//    private String ownerId;
     private String creationDate;
     private String description;
     private Status status;
@@ -71,7 +71,7 @@ public class Study {
         sb.append(", name='").append(name).append('\'');
         sb.append(", alias='").append(alias).append('\'');
         sb.append(", type=").append(type);
-        sb.append(", ownerId='").append(ownerId).append('\'');
+//        sb.append(", ownerId='").append(ownerId).append('\'');
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
@@ -123,21 +123,20 @@ public class Study {
     }
 
     public Study(String name, String alias, Type type, String description, Status status, URI uri) {
-        this(-1, name, alias, type, null, TimeUtils.getTime(), description, status, null, 0, "",
+        this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 null, new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
                 new LinkedList<>(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(), new HashMap<>());
     }
 
-    public Study(long id, String name, String alias, Type type, String ownerId, String creationDate,
-                 String description, Status status, String lastActivity, long diskUsage, String cipher, List<Group> groups,
-                 List<StudyAcl> acls, List<Experiment> experiments, List<File> files, List<Job> jobs, List<Sample> samples,
-                 List<Dataset> datasets, List<Cohort> cohorts, List<VariableSet> variableSets, URI uri,
-                 Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
+    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastActivity,
+                 long diskUsage, String cipher, List<Group> groups, List<StudyAcl> acls, List<Experiment> experiments, List<File> files,
+                 List<Job> jobs, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts, List<VariableSet> variableSets,
+                 URI uri, Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.type = type;
-        this.ownerId = ownerId;
+//        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
@@ -193,15 +192,6 @@ public class Study {
 
     public Study setType(Type type) {
         this.type = type;
-        return this;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public Study setOwnerId(String ownerId) {
-        this.ownerId = ownerId;
         return this;
     }
 

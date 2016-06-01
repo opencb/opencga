@@ -53,7 +53,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create project", position = 1)
     public Response createProject(@ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
-                                  @ApiParam(value = "description", required = true) @QueryParam("description") String description,
+                                  @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                                   @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
         try {
             QueryResult queryResult = catalogManager.createProject(name, alias, description, organization, queryOptions, sessionId);
