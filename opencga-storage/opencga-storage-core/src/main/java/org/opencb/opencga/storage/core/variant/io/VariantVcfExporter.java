@@ -2,11 +2,8 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import com.google.common.collect.BiMap;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.variant.variantcontext.*;
 import htsjdk.variant.variantcontext.Genotype;
-import htsjdk.variant.variantcontext.GenotypeBuilder;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.Allele;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -16,6 +13,7 @@ import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -115,6 +113,18 @@ public class VariantVcfExporter {
         header.addMetaDataLine(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
         header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
+
+        for (String cohortName : studyConfiguration.getCohortIds().keySet()) {
+            if (cohortName.equals(StudyEntry.DEFAULT_COHORT)) {
+                continue;
+            }
+//            header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + VCFConstants.ALLELE_COUNT_KEY, VCFHeaderLineCount.A, VCFHeaderLineType.Integer,
+//                    "Total number of alternate alleles in called genotypes"));
+            header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + "_" + VCFConstants.ALLELE_FREQUENCY_KEY, VCFHeaderLineCount.A, VCFHeaderLineType.Float,
+                    "Allele frequency in the " + cohortName + " cohort calculated from AC and AN, in the range (0,1)"));
+//            header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + VCFConstants.ALLELE_NUMBER_KEY, 1, VCFHeaderLineType.Integer,
+//                    "Total number of alleles in called genotypes"));
+        }
 
         // check if variant annotations are exported in the INFO column
         List<String> annotations = null;
@@ -280,6 +290,9 @@ public class VariantVcfExporter {
 //        }
 
 
+        //Attributes for INFO column
+        HashMap<String, Object> attributes = new HashMap<>();
+
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
         Integer originalPosition = null;
@@ -324,6 +337,8 @@ public class VariantVcfExporter {
                     genotypes.add(new GenotypeBuilder().name(sampleName).alleles(alleles).phased(genotype.isPhased()).make());
                 }
             }
+
+            addStats(studyEntry, attributes);
         }
 
 
@@ -342,11 +357,13 @@ public class VariantVcfExporter {
         } else {
             variantContextBuilder.alleles(originalAlleles);
         }
+
         // if asked variant annotations are exported
         if (annotations != null) {
-            Map<String, Object> infoAnnotations = getAnnotations(variant, annotations);
-            variantContextBuilder.attributes(infoAnnotations);
+            addAnnotations(variant, annotations, attributes);
         }
+
+        variantContextBuilder.attributes(attributes);
 
 
         if (StringUtils.isNotEmpty(variant.getId()) && !variant.toString().equals(variant.getId())) {
@@ -365,11 +382,10 @@ public class VariantVcfExporter {
         return variantContextBuilder.make();
     }
 
-    private Map<String, Object> getAnnotations(Variant variant, List<String> annotations) {
-        Map<String, Object> infoAnnotations = new HashMap<>();
+    private Map<String, Object> addAnnotations(Variant variant, List<String> annotations, Map<String, Object> attributes) {
         StringBuilder stringBuilder = new StringBuilder();
         if (variant.getAnnotation() == null) {
-            return infoAnnotations;
+            return attributes;
         }
 //        for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
         for (int i = 0; i < variant.getAnnotation().getConsequenceTypes().size(); i++) {
@@ -502,9 +518,28 @@ public class VariantVcfExporter {
             }
         }
 
-        infoAnnotations.put("CSQ", stringBuilder.toString());
+        attributes.put("CSQ", stringBuilder.toString());
 //        infoAnnotations.put("CSQ", stringBuilder.toString().replaceAll("&|$", ""));
-        return infoAnnotations;
+        return attributes;
+    }
+
+    private void addStats(StudyEntry studyEntry, HashMap<String, Object> attributes) {
+        if (studyEntry.getStats() == null) {
+            return;
+        }
+        for (Map.Entry<String, VariantStats> entry : studyEntry.getStats().entrySet()) {
+            String cohortName = entry.getKey();
+            VariantStats stats = entry.getValue();
+
+            if (cohortName.equals(StudyEntry.DEFAULT_COHORT)) {
+                cohortName = "";
+                attributes.put(cohortName + VCFConstants.ALLELE_NUMBER_KEY, String.valueOf(stats.getAltAlleleCount() + stats.getRefAlleleCount()));
+                attributes.put(cohortName + VCFConstants.ALLELE_COUNT_KEY, String.valueOf(stats.getAltAlleleCount()));
+            } else {
+                cohortName = cohortName + "_";
+            }
+            attributes.put(cohortName + VCFConstants.ALLELE_FREQUENCY_KEY, String.valueOf(stats.getAltAlleleFreq()));
+        }
     }
 
     /**
