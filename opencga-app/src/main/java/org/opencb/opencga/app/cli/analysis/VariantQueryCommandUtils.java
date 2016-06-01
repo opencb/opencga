@@ -183,7 +183,8 @@ public class VariantQueryCommandUtils {
             }
         }
 
-        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
+        outputFormat = outputFormat.toLowerCase();
+        if (returnVariants && (outputFormat.startsWith("vcf") || outputFormat.startsWith("stats"))) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
@@ -238,12 +239,14 @@ public class VariantQueryCommandUtils {
         if (queryVariantsOptions.outputFormat != null && !queryVariantsOptions.outputFormat.isEmpty()) {
             switch (queryVariantsOptions.outputFormat) {
                 case "vcf":
+                case "json":
+                case "stats":
+                case "cellbase":
                     gzip = false;
                 case "vcf.gz":
-                    break;
-                case "json":
-                    gzip = false;
                 case "json.gz":
+                case "stats.gz":
+                case "cellbase.gz":
                     break;
                 default:
                     logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
