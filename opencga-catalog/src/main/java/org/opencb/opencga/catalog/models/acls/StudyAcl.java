@@ -80,6 +80,7 @@ public class StudyAcl {
     private static final int COHORT = 4;
     private static final int INDIVIDUAL = 5;
     private static final int DATASET = 6;
+    private static final int DISEASE_PANEL = 7;
 
     public enum StudyPermissions {
         VIEW_STUDY,
@@ -145,7 +146,14 @@ public class StudyAcl {
         VIEW_DATASETS(DatasetAcl.DatasetPermissions.VIEW.name(), DATASET),
         UPDATE_DATASETS(DatasetAcl.DatasetPermissions.UPDATE.name(), DATASET),
         DELETE_DATASETS(DatasetAcl.DatasetPermissions.DELETE.name(), DATASET),
-        SHARE_DATASETS(DatasetAcl.DatasetPermissions.SHARE.name(), DATASET);
+        SHARE_DATASETS(DatasetAcl.DatasetPermissions.SHARE.name(), DATASET),
+
+        // DISEASE PANELS
+        CREATE_PANELS,
+        VIEW_PANELS(DiseasePanelAcl.DiseasePanelPermissions.VIEW.name(), DISEASE_PANEL),
+        UPDATE_PANELS(DiseasePanelAcl.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
+        DELETE_PANELS(DiseasePanelAcl.DiseasePanelPermissions.DELETE.name(), DISEASE_PANEL),
+        SHARE_PANELS(DiseasePanelAcl.DiseasePanelPermissions.SHARE.name(), DISEASE_PANEL);
 
         private String permission;
         private int type;
@@ -197,6 +205,13 @@ public class StudyAcl {
         public DatasetAcl.DatasetPermissions getDatasetPermission() {
             if (this.type == DATASET) {
                 return DatasetAcl.DatasetPermissions.valueOf(this.permission);
+            }
+            return null;
+        }
+
+        public DiseasePanelAcl.DiseasePanelPermissions getDiseasePanelPermission() {
+            if (this.type == DISEASE_PANEL) {
+                return DiseasePanelAcl.DiseasePanelPermissions.valueOf(this.permission);
             }
             return null;
         }

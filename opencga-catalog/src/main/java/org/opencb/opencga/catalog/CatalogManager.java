@@ -1214,4 +1214,19 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.readAllTools(query, queryOptions, sessionId);
     }
 
+    /*
+    * Disease panel methods
+    * ***************************
+     */
+
+    public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
+                                                        String genes, String regions, String variants,
+                                                        QueryOptions options, String sessionId) throws CatalogException {
+        return studyManager.createDiseasePanel(studyStr, name, disease, description, genes, regions, variants, options, sessionId);
+    }
+
+    public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
+        return studyManager.getDiseasePanel(panelStr, options, sessionId);
+    }
+
 }

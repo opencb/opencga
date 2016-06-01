@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  */
 @Path("/{version}/samples")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Samples", position = 6, description = "Methods for working with 'samples' endpoint")
+@Api(value = "Samples", position = 7, description = "Methods for working with 'samples' endpoint")
 public class SampleWSServer extends OpenCGAWSServer {
 
 

@@ -582,6 +582,78 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return studyAclQueryResult;
     }
 
+    @Override
+    public Long getDiseasePanelId(String userId, String panelStr) throws CatalogException {
+        if (StringUtils.isNumeric(panelStr)) {
+            return Long.parseLong(panelStr);
+        }
+
+        // Resolve the studyIds and filter the panelName
+        ObjectMap parsedPanelStr = parseFeatureId(userId, panelStr);
+        List<Long> studyIds = getStudyIds(parsedPanelStr);
+        String panelName = parsedPanelStr.getString("featureName");
+
+        Query query = new Query(CatalogPanelDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogPanelDBAdaptor.QueryParams.NAME.key(), panelName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.panels.id");
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one panel id found based on " + panelName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Override
+    public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
+                                                        String genes, String regions, String variants,
+                                                        QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        ParamUtils.checkParameter(disease, "disease");
+        description = ParamUtils.defaultString(description, "");
+        List<String> geneList = Collections.emptyList();
+        List<String> regionList = Collections.emptyList();
+        List<String> variantList = Collections.emptyList();
+        if (genes != null) {
+            geneList = Arrays.asList(genes.split(","));
+        }
+        if (regions != null) {
+            regionList = Arrays.asList(regions.split(","));
+        }
+        if (variants != null) {
+            variantList = Arrays.asList(variants.split(","));
+        }
+
+        if (geneList.size() == 0 && regionList.size() == 0 && variantList.size() == 0) {
+            throw new CatalogException("Cannot create a new disease panel with no genes, regions and variants. At least, one of them should"
+                    + " be provided.");
+        }
+
+//        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_JOBS);
+        DiseasePanel diseasePanel = new DiseasePanel(-1, name, disease, description, geneList, regionList, variantList,
+                new DiseasePanel.PanelStatus());
+
+        long studyId = getStudyId(studyStr);
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.createPanel(studyId, diseasePanel, options);
+        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        return queryResult;
+
+    }
+
+    @Override
+    public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long panelId = getDiseasePanelId(userId, panelStr);
+//        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.VIEW);
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.getPanel(panelId, options);
+        return queryResult;
+    }
+
 
 
     /*

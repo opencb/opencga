@@ -41,7 +41,7 @@ import java.util.Map;
  */
 @Path("/{version}/variables")
 @Produces("application/json")
-@Api(value = "Variables", position = 7, description = "Methods for working with 'variables' endpoint")
+@Api(value = "Variables", position = 8, description = "Methods for working with 'variables' endpoint")
 public class VariableWSServer extends OpenCGAWSServer {
 
 

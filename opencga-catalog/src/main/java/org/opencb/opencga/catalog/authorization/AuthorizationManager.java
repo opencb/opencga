@@ -62,7 +62,8 @@ public interface AuthorizationManager {
                 StudyAcl.StudyPermissions.VIEW_COHORTS, StudyAcl.StudyPermissions.UPDATE_COHORTS,
                 StudyAcl.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
                 StudyAcl.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_DATASETS,
-                StudyAcl.StudyPermissions.VIEW_DATASETS, StudyAcl.StudyPermissions.UPDATE_DATASETS)));
+                StudyAcl.StudyPermissions.VIEW_DATASETS, StudyAcl.StudyPermissions.UPDATE_DATASETS,
+                StudyAcl.StudyPermissions.CREATE_PANELS, StudyAcl.StudyPermissions.VIEW_PANELS, StudyAcl.StudyPermissions.UPDATE_PANELS)));
         studyAcls.add(new StudyAcl(ROLE_LOCKED, Collections.emptyList(), EnumSet.noneOf(StudyAcl.StudyPermissions.class)));
         // TODO: Add all the default roles and permissions.
         return studyAcls;
