@@ -84,7 +84,7 @@ public class OpenCGAWSServer {
     @DefaultValue("-1")
     @QueryParam("limit")
     @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
-    protected long limit;
+    protected int limit;
 
     @DefaultValue("0")
     @QueryParam("skip")
@@ -128,6 +128,9 @@ public class OpenCGAWSServer {
 
     protected static StorageConfiguration storageConfiguration;
     protected static StorageManagerFactory storageManagerFactory;
+
+    private static final int DEFAULT_LIMIT = 2000;
+    private static final int MAX_LIMIT = 5000;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -302,11 +305,8 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-        String limit = multivaluedMap.getFirst("limit");
-        if (limit != null) {
-            this.limit = Integer.parseInt(limit);
-            queryOptions.put("limit", this.limit);
-        }
+
+        queryOptions.put("limit", (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
 
         String skip = multivaluedMap.getFirst("skip");
         if (skip != null) {
