@@ -692,11 +692,19 @@ public class OpenCGAMain {
 
                         long studyId = catalogManager.getStudyId(c.studyId);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-                        Query query = new Query()
-                                .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), c.sampleIds)
-                                .append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), c.sampleNames)
-                                .append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation)
-                                .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
+                        Query query = new Query();
+                        if (c.sampleIds != null && !c.sampleIds.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.ID.key(), c.sampleIds);
+                        }
+                        if (c.sampleNames != null && !c.sampleNames.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), c.sampleNames);
+                        }
+                        if (c.annotation != null && !c.annotation.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation);
+                        }
+                        if (c.variableSetId != null && !c.variableSetId.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
+                        }
                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                         System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
 
