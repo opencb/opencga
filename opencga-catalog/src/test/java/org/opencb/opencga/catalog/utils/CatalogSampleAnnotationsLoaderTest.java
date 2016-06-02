@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -86,6 +87,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Pedigree pedigree = loader.readPedigree(pedFile.getPath());
         VariableSet variableSet = loader.getVariableSetFromPedFile(pedigree);
 
+        System.out.println(new ObjectMapper().defaultPrettyPrintingWriter().writeValueAsString(variableSet));
         validate(pedigree, variableSet);
     }
 

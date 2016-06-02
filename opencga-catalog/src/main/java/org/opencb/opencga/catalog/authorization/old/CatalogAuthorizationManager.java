@@ -522,8 +522,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             for (String sampleIdValue : sampleIdArray) {
                 int sampleId = Integer.valueOf(sampleIdValue);
                 aclEntries.add(sampleDBAdaptor.unsetSampleAcl(sampleId, userId).first());
-                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
-                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
+//                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
+//                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
 
             }
         }

@@ -581,8 +581,10 @@ public class CatalogManager implements AutoCloseable {
         QueryResult<Study> result = studyManager.create(projectId, name, alias, type, creationDate, description, status,
                 cipher, uriScheme,
                 uri, datastores, stats, attributes, options, sessionId);
-        createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
-        createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
+        //if (uri != null) {
+            createFolder(result.getResult().get(0).getId(), Paths.get("data"), true, null, sessionId);
+            createFolder(result.getResult().get(0).getId(), Paths.get("analysis"), true, null, sessionId);
+        //}
         return result;
     }
 

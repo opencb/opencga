@@ -9,14 +9,13 @@ import org.opencb.commons.datastore.core.ObjectMap;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AuditRecord {
-    public static final String CREATE = "create";
-    //    public enum Status {running, done, fail}
-    public static final String UPDATE = "update";
-    public static final String DELETE = "delete";
-    public static final String INDEX = "index";
+
+    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, tool, variableSet}
+    public enum Action {create, update, view, delete, index, login, logout, share}
+
     private Object id;
     private Resource resource;
-    private String action;
+    private Action action;
     private ObjectMap before;
     private ObjectMap after;
     /*
@@ -30,7 +29,7 @@ public class AuditRecord {
     public AuditRecord() {
     }
 
-    public AuditRecord(Object id, Resource resource, String action, ObjectMap before, ObjectMap after, long timeStamp, String userId,
+    public AuditRecord(Object id, Resource resource, Action action, ObjectMap before, ObjectMap after, long timeStamp, String userId,
                        String description, ObjectMap attributes) {
         this.id = id;
         this.resource = resource;
@@ -76,11 +75,11 @@ public class AuditRecord {
         return this;
     }
 
-    public String getAction() {
+    public Action getAction() {
         return action;
     }
 
-    public AuditRecord setAction(String action) {
+    public AuditRecord setAction(Action action) {
         this.action = action;
         return this;
     }
@@ -139,5 +138,4 @@ public class AuditRecord {
         return this;
     }
 
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, tool, variableSet}
 }

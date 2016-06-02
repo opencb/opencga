@@ -29,6 +29,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -43,6 +44,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordRead(Resource resource, Object id, String userId, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -58,6 +60,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -73,6 +76,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -90,7 +94,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
-    AuditRecord recordAction(Resource resource, String action, Object id, String userId, ObjectMap before, ObjectMap after,
+    AuditRecord recordAction(Resource resource, AuditRecord.Action action, Object id, String userId, ObjectMap before, ObjectMap after,
                              String description, ObjectMap attributes)
             throws CatalogException;
 

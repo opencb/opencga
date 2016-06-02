@@ -9,6 +9,11 @@ toolsDir: "tools"
 admin:
   password: "admin"
   email: "admin@admin.com"
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
 monitor:
   daysToRemove: 0
   executionSleepTime: 0

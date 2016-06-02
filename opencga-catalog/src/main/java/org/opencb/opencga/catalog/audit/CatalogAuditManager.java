@@ -52,43 +52,46 @@ public class CatalogAuditManager implements AuditManager {
         this.catalogProperties = null;
     }
 
+    @Deprecated
     @Override
     public AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
-        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.CREATE, null, toObjectMap(object), System.currentTimeMillis(),
-                userId, description, attributes);
+        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.Action.create, null, toObjectMap(object),
+                System.currentTimeMillis(), userId, description, attributes);
         logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
+    @Deprecated
     @Override
     public AuditRecord recordRead(Resource resource, Object id, String userId, String description, ObjectMap attributes)
             throws CatalogException {
         return null;
     }
 
+    @Deprecated
     @Override
     public AuditRecord recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
             throws CatalogException {
-        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.UPDATE, null, update, System.currentTimeMillis(), userId,
+        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.Action.update, null, update, System.currentTimeMillis(), userId,
                 description, attributes);
         logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
+    @Deprecated
     @Override
     public AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException {
-        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.DELETE, toObjectMap(object), null, System.currentTimeMillis(),
-                userId, description, attributes);
+        AuditRecord auditRecord = new AuditRecord(id, resource, AuditRecord.Action.delete, toObjectMap(object), null,
+                System.currentTimeMillis(), userId, description, attributes);
         logger.debug("{}", auditRecord);
         return auditDBAdaptor.insertAuditRecord(auditRecord).first();
     }
 
     @Override
-    public AuditRecord recordAction(Resource resource, String action, Object id, String userId, ObjectMap before, ObjectMap after, String
-            description, ObjectMap attributes)
-            throws CatalogException {
+    public AuditRecord recordAction(Resource resource, AuditRecord.Action action, Object id, String userId, ObjectMap before,
+                                    ObjectMap after, String description, ObjectMap attributes) throws CatalogException {
         AuditRecord auditRecord = new AuditRecord(id, resource, action, before, after, System.currentTimeMillis(), userId, description,
                 attributes);
         logger.debug("{}", action, auditRecord);
