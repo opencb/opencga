@@ -151,12 +151,14 @@ public class VariantVcfExporter {
         final SAMSequenceDictionary sequenceDictionary = header.getSequenceDictionary();
 
         // setup writer
-        VariantContextWriterBuilder builder = new VariantContextWriterBuilder();
-        VariantContextWriter writer = builder
+        VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
                 .setOutputStream(outputStream)
                 .setReferenceDictionary(sequenceDictionary)
-                .unsetOption(Options.INDEX_ON_THE_FLY)
-                .build();
+                .unsetOption(Options.INDEX_ON_THE_FLY);
+        if (header.getSampleNamesInOrder().isEmpty()) {
+            builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
+        }
+        VariantContextWriter writer = builder.build();
 
         writer.writeHeader(header);
 
@@ -186,7 +188,7 @@ public class VariantVcfExporter {
     private VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws Exception {
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
-        List<String> returnedSamples = new ArrayList<>();
+        List<String> returnedSamples = null;
         if (options != null) {
             returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
@@ -199,16 +201,19 @@ public class VariantVcfExporter {
         int lastLineIndex = fileHeader.lastIndexOf("#CHROM");
         if (lastLineIndex >= 0) {
             String substring = fileHeader.substring(0, lastLineIndex);
-            if (returnedSamples.isEmpty()) {
+            if (returnedSamples == null) {
                 BiMap<Integer, String> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration).inverse();
                 returnedSamples = new ArrayList<>(samplesPosition.size());
                 for (int i = 0; i < samplesPosition.size(); i++) {
                     returnedSamples.add(samplesPosition.get(i));
                 }
             } else {
+                System.out.println(returnedSamples);
                 List<String> newReturnedSamples = new ArrayList<>(returnedSamples.size());
                 for (String returnedSample : returnedSamples) {
-                    if (StringUtils.isNumeric(returnedSample)) {
+                    if (returnedSample.isEmpty()) {
+                        continue;
+                    } else if (StringUtils.isNumeric(returnedSample)) {
                         int sampleId = Integer.parseInt(returnedSample);
                         newReturnedSamples.add(studyConfiguration.getSampleIds().inverse().get(sampleId));
                     } else {
@@ -225,7 +230,11 @@ public class VariantVcfExporter {
             String samples = String.join("\t", returnedSamples);
             logger.debug("export will be done on samples: [{}]", samples);
 
-            fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
+            if (returnedSamples.isEmpty()) {
+                fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\t";
+            } else {
+                fileHeader = substring + "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t" + samples;
+            }
         }
 
         return VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(fileHeader);
@@ -350,8 +359,13 @@ public class VariantVcfExporter {
         variantContextBuilder.start(originalPosition == null ? start : originalPosition)
                 .stop((originalPosition == null ? start : originalPosition) + originalAlleles.get(0).length() - 1)
                 .chr(variant.getChromosome())
-                .filter(filter)
-                .genotypes(genotypes); // TODO jmmut: join attributes from different source entries? what to do on a collision?
+                .filter(filter); // TODO jmmut: join attributes from different source entries? what to do on a collision?
+
+        if (genotypes.isEmpty()) {
+            variantContextBuilder.noGenotypes();
+        } else {
+            variantContextBuilder.genotypes(genotypes);
+        }
 
         if (variant.getType().equals(VariantType.NO_VARIATION) && alternate.isEmpty()) {
             variantContextBuilder.alleles(reference);

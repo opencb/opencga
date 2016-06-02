@@ -154,6 +154,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryCliOptions.output = exportCliOptions.queryOptions.output;
         queryCliOptions.gene = exportCliOptions.queryOptions.gene;
         queryCliOptions.count = exportCliOptions.queryOptions.count;
+        queryCliOptions.returnSample = "";
 
         query();
     }

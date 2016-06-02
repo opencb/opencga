@@ -108,7 +108,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         int[] alleleCounts = {0, 0};
         for (Map.Entry<Genotype, Integer> entry : stats.getGenotypesCount().entrySet()) {
             for (int i : entry.getKey().getAllelesIdx()) {
-                if (i <= 1) {
+                if (i == 0 || i == 1) {
                     alleleCounts[i] += entry.getValue();
                 }
             }
