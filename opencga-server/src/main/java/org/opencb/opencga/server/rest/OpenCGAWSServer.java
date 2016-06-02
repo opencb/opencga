@@ -306,16 +306,16 @@ public class OpenCGAWSServer {
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
 
-        queryOptions.put("limit", (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
 
-        String skip = multivaluedMap.getFirst("skip");
+        String skip = multivaluedMap.getFirst(QueryOptions.SKIP);
         if (skip != null) {
             this.skip = Integer.parseInt(skip);
-            queryOptions.put("skip", this.skip);
+            queryOptions.put(QueryOptions.SKIP, this.skip);
         }
 
-        parseIncludeExclude(multivaluedMap, "exclude", exclude);
-        parseIncludeExclude(multivaluedMap, "include", include);
+        parseIncludeExclude(multivaluedMap, QueryOptions.EXCLUDE, exclude);
+        parseIncludeExclude(multivaluedMap, QueryOptions.INCLUDE, include);
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
         // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute
