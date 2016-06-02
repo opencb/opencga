@@ -19,6 +19,7 @@
 <link rel="import" href="opencga-study-summary.html">
 <link rel="import" href="files/opencga-files-panel.html">
 <link rel="import" href="samples/opencga-samples-panel.html">
+<link rel="import" href="panels/opencga-panels-panel.html">
 
 <link rel="import" href="opencga-shared-styles.html">
 
@@ -53,6 +54,7 @@
                     <li role="presentation"><a href="#dashboardFiles" role="tab" data-toggle="tab">Files</a></li>
                     <li role="presentation"><a href="#dashboardSamples" role="tab" data-toggle="tab">Samples</a></li>
                     <li role="presentation"><a href="#dashboardJobs" role="tab" data-toggle="tab">Jobs</a></li>
+                    <li role="presentation"><a href="#dashboardPanels" role="tab" data-toggle="tab">Panels</a></li>
                 </ul>
 
                 <div class="tab-content">
@@ -66,6 +68,10 @@
 
                     <div id="dashboardSamples" role="tabpanel" class="tab-pane">
                         <opencga-samples-panel opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-samples-panel>
+                    </div>
+
+                    <div id="dashboardPanels" role="tabpanel" class="tab-pane">
+                        <opencga-panels-panel opencga-client="{{opencgaClient}}" study-id="{{studyId}}"></opencga-panels-panel>
                     </div>
 
                     <div role="tabpanel" class="tab-pane" id="dashboardJobs">
