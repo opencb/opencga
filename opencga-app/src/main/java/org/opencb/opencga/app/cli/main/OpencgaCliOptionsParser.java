@@ -204,12 +204,14 @@ public class OpencgaCliOptionsParser {
     }
 
     class UserAndPasswordOptions {
+
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
         String user;
 
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = false)
         String password;
 
+        @Deprecated
         @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
         String hiddenPassword;
 
@@ -770,35 +772,19 @@ public class OpencgaCliOptionsParser {
 
     @Parameters(commandNames = {"cohorts"}, commandDescription = "Cohorts methods")
     public class CohortCommands {
-        final InfoCommand infoCommand;
         final CreateCommand createCommand;
+        final InfoCommand infoCommand;
         final SamplesCommand samplesCommand;
         final StatsCommand statsCommand;
 
         public CohortCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander files = jcommander.getCommands().get("cohorts");
-            files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.createCommand = new CreateCommand());
+            files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.samplesCommand = new SamplesCommand());
             files.addCommand(this.statsCommand = new StatsCommand());
         }
-
-        @Parameters(commandNames = {InfoCommand.COMMAND_NAME}, commandDescription = "Get cohort information")
-        class InfoCommand {
-
-            public static final String COMMAND_NAME = "info";
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            long id;
-        }
-
         @Parameters(commandNames = {CreateCommand.COMMAND_NAME}, commandDescription = "Create a cohort")
         class CreateCommand {
 
@@ -834,6 +820,22 @@ public class OpencgaCliOptionsParser {
             @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
             String tagmap = null;
         }
+        @Parameters(commandNames = {InfoCommand.COMMAND_NAME}, commandDescription = "Get cohort information")
+        class InfoCommand {
+
+            public static final String COMMAND_NAME = "info";
+
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
+
+            @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
+            long id;
+        }
+
+
 
         @Parameters(commandNames = {SamplesCommand.COMMAND_NAME}, commandDescription = "List samples belonging to a cohort")
         class SamplesCommand {
@@ -895,17 +897,17 @@ public class OpencgaCliOptionsParser {
     @Parameters(commandNames = {"samples"}, commandDescription = "Samples commands")
     public class SampleCommands {
 
+        final LoadCommand loadCommand;
         final InfoCommand infoCommand;
         final SearchCommand searchCommand;
-        final LoadCommand loadCommand;
         final DeleteCommand deleteCommand;
 
         public SampleCommands(JCommander jcommander) {
             jcommander.addCommand(this);
             JCommander files = jcommander.getCommands().get("samples");
+            files.addCommand(this.loadCommand = new LoadCommand());
             files.addCommand(this.infoCommand = new InfoCommand());
             files.addCommand(this.searchCommand = new SearchCommand());
-            files.addCommand(this.loadCommand = new LoadCommand());
             files.addCommand(this.deleteCommand = new DeleteCommand());
 //            files.addCommand(this.samplesCommand = new SamplesCommand());
         }
@@ -921,6 +923,20 @@ public class OpencgaCliOptionsParser {
             long id;
         }
 
+        @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
+        class LoadCommand {
+            @ParametersDelegate
+            UserAndPasswordOptions up = userAndPasswordOptions;
+
+            @ParametersDelegate
+            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
+
+            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
+            long variableSetId;
+
+            @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
+            String pedigreeFileId;
+        }
         @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
         class InfoCommand extends BaseSampleCommand {
         }
@@ -949,20 +965,7 @@ public class OpencgaCliOptionsParser {
             List<String> annotation;
         }
 
-        @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
-        class LoadCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
 
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
-            long variableSetId;
-
-            @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
-            String pedigreeFileId;
-        }
 
         @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
         class DeleteCommand extends BaseSampleCommand {

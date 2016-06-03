@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.CommandExecutor;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 
 /**
  * Created on 27/05/16.
@@ -27,10 +28,11 @@ import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected String adminPassword;
-
+     OpenCGAClient openCGAClient;
 
     public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
         super(options);
+        openCGAClient = new OpenCGAClient();
     }
 
     protected void init(AdminCliOptionsParser.AdminCommonCommandOptions options) {

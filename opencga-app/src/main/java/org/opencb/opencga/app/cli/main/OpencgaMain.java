@@ -77,6 +77,27 @@ public class OpencgaMain {
 //                        case "server":
 //                            commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
 //                            break;
+                        case "projects":
+                            commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
+                        case "studies":
+                            commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
+                        case "files":
+                            commandExecutor = new FilesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
+                        case "cohorts":
+                            commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
+                        case "samples":
+                            commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
+                        case "jobs":
+                            commandExecutor = new JobsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
+                        case "tools":
+                            commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

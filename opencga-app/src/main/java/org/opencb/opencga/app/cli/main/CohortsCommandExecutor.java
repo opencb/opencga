@@ -22,39 +22,37 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import java.io.IOException;
 
 /**
- * Created by imedina on 02/03/15.
+ * Created by imedina on 03/06/16.
  */
-public class UsersCommandExecutor extends OpencgaCommandExecutor {
+public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions usersCommandOptions;
+    private OpencgaCliOptionsParser.UsersCommandOptions cohortsCommandOptions;
 
-    public UsersCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions usersCommandOptions) {
-        super(usersCommandOptions.commonOptions);
-        this.usersCommandOptions = usersCommandOptions;
+    public CohortsCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions cohortsCommandOptions) {
+        super(cohortsCommandOptions.commonOptions);
+        this.cohortsCommandOptions = cohortsCommandOptions;
     }
 
 
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing variant command line");
+        logger.debug("Executing cohorts command line");
 
-        String subCommandString = usersCommandOptions.getParsedSubCommand();
+        String subCommandString = cohortsCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
             case "create":
                 create();
                 break;
+
             case "info":
                 info();
                 break;
-            case "list":
-                list();
+            case "samples":
+                samples();
                 break;
-            case "login":
-                login();
-                break;
-            case "logout":
-                logout();
+            case "calculate-stats":
+                calculateStats();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -64,26 +62,19 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void create() throws CatalogException, IOException {
-        logger.debug("Creating user");
-
+        logger.debug("Creating a new cohort");
     }
-
     private void info() throws CatalogException {
-        logger.debug("User info");
-       // logger.debug(openCGAClient.getUserClient().getConfiguration().toString());
+        logger.debug("Getting cohort information");
+    }
+    private void samples() throws CatalogException {
+        logger.debug("Listing samples belonging to a cohort");
+    }
+    private void calculateStats() throws CatalogException {
+        logger.debug("Calculating variant stats for a set of cohorts");
     }
 
-    private void list() throws CatalogException {
-        logger.debug("List all projects and studies of user");
-    }
-    private void login() throws CatalogException, IOException {
-        logger.debug("Login");
-      //  "hgva", "hgva_cafeina", clientConfiguration
-        openCGAClient.login("hgva","hgva_cafeina");
 
-    }
-    private void logout() throws CatalogException, IOException {
-        logger.debug("Logout");
-    }
+
 
 }

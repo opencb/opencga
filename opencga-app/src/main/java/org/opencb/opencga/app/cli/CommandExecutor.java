@@ -289,6 +289,8 @@ public abstract class CommandExecutor {
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
+
+
     private static UserConfigFile loadUserFile() throws IOException {
         java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml").toFile();
         if (file.exists()) {
@@ -298,41 +300,41 @@ public abstract class CommandExecutor {
         }
     }
 
-    protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
-            throws IOException, InterruptedException {
-        ProcessBuilder builder = getProcessBuilder(workingDirectory, binPath, args, logFilePath);
-
-        logger.debug("Executing command: " + StringUtils.join(builder.command(), " "));
-        Process process = builder.start();
-        process.waitFor();
-
-        // Check process output
-        boolean executedWithoutErrors = true;
-        int genomeInfoExitValue = process.exitValue();
-        if (genomeInfoExitValue != 0) {
-            logger.warn("Error executing {}, error code: {}. More info in log file: {}", binPath, genomeInfoExitValue, logFilePath);
-            executedWithoutErrors = false;
-        }
-        return executedWithoutErrors;
-    }
-
-    private ProcessBuilder getProcessBuilder(File workingDirectory, String binPath, List<String> args, String logFilePath) {
-        List<String> commandArgs = new ArrayList<>();
-        commandArgs.add(binPath);
-        commandArgs.addAll(args);
-        ProcessBuilder builder = new ProcessBuilder(commandArgs);
-
-        // working directoy and error and output log outputs
-        if (workingDirectory != null) {
-            builder.directory(workingDirectory);
-        }
-        builder.redirectErrorStream(true);
-        if (logFilePath != null) {
-            builder.redirectOutput(ProcessBuilder.Redirect.appendTo(new File(logFilePath)));
-        }
-
-        return builder;
-    }
+//    protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
+//            throws IOException, InterruptedException {
+//        ProcessBuilder builder = getProcessBuilder(workingDirectory, binPath, args, logFilePath);
+//
+//        logger.debug("Executing command: " + StringUtils.join(builder.command(), " "));
+//        Process process = builder.start();
+//        process.waitFor();
+//
+//        // Check process output
+//        boolean executedWithoutErrors = true;
+//        int genomeInfoExitValue = process.exitValue();
+//        if (genomeInfoExitValue != 0) {
+//            logger.warn("Error executing {}, error code: {}. More info in log file: {}", binPath, genomeInfoExitValue, logFilePath);
+//            executedWithoutErrors = false;
+//        }
+//        return executedWithoutErrors;
+//    }
+//
+//    private ProcessBuilder getProcessBuilder(File workingDirectory, String binPath, List<String> args, String logFilePath) {
+//        List<String> commandArgs = new ArrayList<>();
+//        commandArgs.add(binPath);
+//        commandArgs.addAll(args);
+//        ProcessBuilder builder = new ProcessBuilder(commandArgs);
+//
+//        // working directoy and error and output log outputs
+//        if (workingDirectory != null) {
+//            builder.directory(workingDirectory);
+//        }
+//        builder.redirectErrorStream(true);
+//        if (logFilePath != null) {
+//            builder.redirectOutput(ProcessBuilder.Redirect.appendTo(new File(logFilePath)));
+//        }
+//
+//        return builder;
+//    }
 
     public CatalogConfiguration getCatalogConfiguration() {
         return catalogConfiguration;

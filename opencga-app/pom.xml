@@ -169,7 +169,7 @@
                             </platforms>
                         </program>
                         <program>
-                            <name>opencga2.sh</name>
+                            <name>opencga-rest.sh</name>
                             <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
