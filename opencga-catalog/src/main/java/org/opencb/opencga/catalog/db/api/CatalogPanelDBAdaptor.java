@@ -105,7 +105,7 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
 
     QueryResult<DiseasePanelAcl> getPanelAcl(long panelId, List<String> members) throws CatalogDBException;
 
-    QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl) throws CatalogDBException;
+    QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl, boolean override) throws CatalogDBException;
 
     void unsetPanelAcl(long panelId, List<String> members) throws CatalogDBException;
 

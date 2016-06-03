@@ -74,7 +74,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     @Deprecated
     QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException;
 
-    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException;
+    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException;
 
     QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException;
 

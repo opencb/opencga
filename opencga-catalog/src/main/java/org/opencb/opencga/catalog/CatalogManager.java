@@ -628,9 +628,9 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("removeUsersFromGroup");
     }
 
-    public QueryResult shareStudy(long studyId, String members, String roleId, String sessionId) throws CatalogException {
+    public QueryResult shareStudy(long studyId, String members, String roleId, String sessionId, boolean override) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.addMembersToRole(userId, studyId, members, roleId);
+        return authorizationManager.addMembersToRole(userId, studyId, members, roleId, override);
     }
 
     public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
@@ -818,9 +818,10 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
     }
 
-    public QueryResult shareFile(String fileIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+    public QueryResult shareFile(String fileIds, String members, List<String> permissions, String sessionId, boolean override)
+            throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.setFilePermissions(userId, fileIds, members, permissions);
+        return authorizationManager.setFilePermissions(userId, fileIds, members, permissions, override);
     }
 
 //    public QueryResult unshareFile(String fileIds, String userIds, String sessionId) throws CatalogException {
@@ -866,10 +867,10 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.unlink(fileId, sessionId);
     }
 
-    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId)
+    public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId, boolean override)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.setDatasetPermissions(userId, datasetIds, members, permissions);
+        return authorizationManager.setDatasetPermissions(userId, datasetIds, members, permissions, override);
     }
 
     public QueryResult unshareDatasets(String datasetIds, String userIds, String sessionId) throws CatalogException {
@@ -939,9 +940,10 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
 
-    public QueryResult shareJob(String jobIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+    public QueryResult shareJob(String jobIds, String members, List<String> permissions, String sessionId, boolean override)
+            throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.setJobPermissions(userId, jobIds, members, permissions);
+        return authorizationManager.setJobPermissions(userId, jobIds, members, permissions, override);
     }
 
     public QueryResult unshareJob(String jobIds, String userIds, String sessionId) throws CatalogException {
@@ -979,10 +981,10 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.delete(individualId, options, sessionId);
     }
 
-    public QueryResult shareIndividual(String individualIds, String members, List<String> permissions, String sessionId)
+    public QueryResult shareIndividual(String individualIds, String members, List<String> permissions, String sessionId, boolean override)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.setIndividualPermissions(userId, individualIds, members, permissions);
+        return authorizationManager.setIndividualPermissions(userId, individualIds, members, permissions, override);
     }
 
     public QueryResult unshareIndividual(String individualIds, String userIds, String sessionId) throws CatalogException {
@@ -1022,9 +1024,10 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
     }
 
-    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, String sessionId, boolean override)
+            throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.setSamplePermissions(userId, sampleIds, members, permissions);
+        return authorizationManager.setSamplePermissions(userId, sampleIds, members, permissions, override);
     }
 
     public QueryResult unshareSample(String sampleIds, String userIds, String sessionId)
@@ -1166,9 +1169,10 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
-    public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, String sessionId) throws CatalogException {
+    public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, String sessionId, boolean override)
+            throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.setCohortPermissions(userId, cohortIds, members, permissions);
+        return authorizationManager.setCohortPermissions(userId, cohortIds, members, permissions, override);
     }
 
     public QueryResult unshareCohorts(String cohortIds, String userIds, String sessionId) throws CatalogException {
@@ -1229,6 +1233,18 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
         return studyManager.getDiseasePanel(panelStr, options, sessionId);
+    }
+
+    public QueryResult sharePanel(String panelIds, String members, List<String> permissions, String sessionId, boolean override)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return authorizationManager.setDiseasePanelPermissions(userId, panelIds, members, permissions, override);
+    }
+
+    public QueryResult unsharePanel(String panelIds, String userIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        authorizationManager.unsetDatasetPermissions(userId, panelIds, userIds);
+        return new QueryResult("unsharePanel");
     }
 
 }

@@ -308,7 +308,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException {
+    public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(individualId);
         long studyId = getStudyIdByIndividualId(individualId);
@@ -356,7 +356,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<IndividualAcl> individualAcls = getIndividualAcl(individualId, acl.getUsers());
-        if (individualAcls.getNumResults() > 0) {
+        if (individualAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -372,6 +372,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetIndividualAcl(individualId, usersToOverride);
+        }  else if (individualAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setIndividualAcl: " + individualAcls.getNumResults() + " of the members already had an Acl set. "
+                    + "If you still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.

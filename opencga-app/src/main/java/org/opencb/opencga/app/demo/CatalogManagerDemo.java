@@ -80,13 +80,13 @@ public class CatalogManagerDemo {
         String sessionId = userSessions.get("user5");
 
         // user5 will have the role "admin"
-        catalogManager.shareStudy(studyId, "user5", "admin", userSessions.get("user1"));
+        catalogManager.shareStudy(studyId, "user5", "admin", userSessions.get("user1"), false);
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
         catalogManager.addUsersToGroup(studyId, "members", "user2,user3,user4", sessionId);
 //        // @members will have the role "analyst"
-        catalogManager.shareStudy(studyId, "@members", "analyst", sessionId);
+        catalogManager.shareStudy(studyId, "@members", "analyst", sessionId, false);
 //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
-        catalogManager.shareStudy(studyId, "anonymous", "locked", sessionId);
+        catalogManager.shareStudy(studyId, "anonymous", "locked", sessionId, false);
 
         /*
         CREATE FILES

@@ -178,7 +178,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl) throws CatalogDBException {
+    public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
         checkFileId(fileId);
@@ -228,7 +228,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<FileAcl> fileAcls = getFileAcl(fileId, acl.getUsers());
-        if (fileAcls.getNumResults() > 0) {
+        if (fileAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -244,6 +244,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetFileAcl(fileId, usersToOverride);
+        } else if (fileAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setFileAcl: " + fileAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.

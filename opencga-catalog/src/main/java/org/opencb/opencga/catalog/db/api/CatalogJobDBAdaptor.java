@@ -96,7 +96,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException;
 
-    QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException;
+    QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException;
 
     void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException;
 

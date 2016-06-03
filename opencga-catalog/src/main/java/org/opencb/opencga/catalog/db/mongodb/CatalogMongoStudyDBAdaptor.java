@@ -511,7 +511,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members) throws CatalogDBException {
+    public QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members, boolean override)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -559,7 +560,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<StudyAcl> studyAcls = getStudyAcl(studyId, null, membersAcl);
-        if (studyAcls.getNumResults() > 0) {
+        if (studyAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(membersAcl.size());
             usersSet.addAll(membersAcl.stream().collect(Collectors.toList()));
 
@@ -575,6 +576,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetStudyAcl(studyId, usersToOverride);
+        } else if (studyAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setStudyAcl: " + studyAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Check if the permissions found on acl already exist on cohort id

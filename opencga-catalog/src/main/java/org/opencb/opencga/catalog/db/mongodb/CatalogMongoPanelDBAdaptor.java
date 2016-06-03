@@ -76,7 +76,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl) throws CatalogDBException {
+    public QueryResult<DiseasePanelAcl> setPanelAcl(long panelId, DiseasePanelAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
         checkPanelId(panelId);
@@ -126,7 +126,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<DiseasePanelAcl> panelAcls = getPanelAcl(panelId, acl.getUsers());
-        if (panelAcls.getNumResults() > 0) {
+        if (panelAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -142,6 +142,9 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetPanelAcl(panelId, usersToOverride);
+        } else if (panelAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setPanelAcl: " + panelAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.

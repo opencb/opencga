@@ -578,8 +578,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<String> permissions,
+                                                   boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] fileIdArray = fileIds.split(",");
         // Check if the userId has proper permissions for all the files.
@@ -605,7 +605,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String fileId : fileIdArray) {
             FileAcl fileAcl = new FileAcl(Arrays.asList(userIdArray), permissions);
-            fileAclList.add(fileDBAdaptor.setFileAcl(Long.parseLong(fileId), fileAcl).first());
+            fileAclList.add(fileDBAdaptor.setFileAcl(Long.parseLong(fileId), fileAcl, override).first());
         }
 
         return new QueryResult<>("Set file permissions", (int) (System.currentTimeMillis() - startTime), fileAclList.size(),
@@ -629,8 +629,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<SampleAcl> setSamplePermissions(String userId, String sampleIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<SampleAcl> setSamplePermissions(String userId, String sampleIds, String userIds, List<String> permissions,
+                                                       boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] sampleIdArray = sampleIds.split(",");
         // Check if the userId has proper permissions for all the samples.
@@ -656,7 +656,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String sampleId : sampleIdArray) {
             SampleAcl sampleAcl = new SampleAcl(Arrays.asList(userIdArray), permissions);
-            sampleAclList.add(sampleDBAdaptor.setSampleAcl(Long.parseLong(sampleId), sampleAcl).first());
+            sampleAclList.add(sampleDBAdaptor.setSampleAcl(Long.parseLong(sampleId), sampleAcl, override).first());
         }
 
         return new QueryResult<>("Set sample permissions", (int) (System.currentTimeMillis() - startTime), sampleAclList.size(),
@@ -679,8 +679,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<CohortAcl> setCohortPermissions(String userId, String cohortIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<CohortAcl> setCohortPermissions(String userId, String cohortIds, String userIds, List<String> permissions,
+                                                       boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] cohortIdArray = cohortIds.split(",");
         // Check if the userId has proper permissions for all the cohorts.
@@ -706,7 +706,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String cohortId : cohortIdArray) {
             CohortAcl cohortAcl = new CohortAcl(Arrays.asList(userIdArray), permissions);
-            cohortAclList.add(cohortDBAdaptor.setCohortAcl(Long.parseLong(cohortId), cohortAcl).first());
+            cohortAclList.add(cohortDBAdaptor.setCohortAcl(Long.parseLong(cohortId), cohortAcl, override).first());
         }
 
         return new QueryResult<>("Set cohort permissions", (int) (System.currentTimeMillis() - startTime), cohortAclList.size(),
@@ -730,7 +730,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     @Override
     public QueryResult<IndividualAcl> setIndividualPermissions(String userId, String individualIds, String userIds,
-                                                               List<String> permissions) throws CatalogException {
+                                                               List<String> permissions, boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] individualIdArray = individualIds.split(",");
         // Check if the userId has proper permissions for all the individuals.
@@ -756,7 +756,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String individualId : individualIdArray) {
             IndividualAcl individualAcl = new IndividualAcl(Arrays.asList(userIdArray), permissions);
-            individualAclList.add(individualDBAdaptor.setIndividualAcl(Long.parseLong(individualId), individualAcl).first());
+            individualAclList.add(individualDBAdaptor.setIndividualAcl(Long.parseLong(individualId), individualAcl, override).first());
         }
 
         return new QueryResult<>("Set individual permissions", (int) (System.currentTimeMillis() - startTime), individualAclList.size(),
@@ -779,7 +779,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<JobAcl> setJobPermissions(String userId, String jobIds, String userIds, List<String> permissions)
+    public QueryResult<JobAcl> setJobPermissions(String userId, String jobIds, String userIds, List<String> permissions, boolean override)
             throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] jobIdArray = jobIds.split(",");
@@ -806,7 +806,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String jobId : jobIdArray) {
             JobAcl jobAcl = new JobAcl(Arrays.asList(userIdArray), permissions);
-            jobAclList.add(jobDBAdaptor.setJobAcl(Long.parseLong(jobId), jobAcl).first());
+            jobAclList.add(jobDBAdaptor.setJobAcl(Long.parseLong(jobId), jobAcl, override).first());
         }
 
         return new QueryResult<>("Set job permissions", (int) (System.currentTimeMillis() - startTime), jobAclList.size(),
@@ -829,8 +829,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<DatasetAcl> setDatasetPermissions(String userId, String datasetIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<DatasetAcl> setDatasetPermissions(String userId, String datasetIds, String userIds, List<String> permissions,
+                                                         boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] datasetArray = datasetIds.split(",");
         // Check if the userId has proper permissions for all the datasets.
@@ -856,7 +856,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String datasetId : datasetArray) {
             DatasetAcl datasetAcl = new DatasetAcl(Arrays.asList(userIdArray), permissions);
-            datasetAclList.add(datasetDBAdaptor.setDatasetAcl(Long.parseLong(datasetId), datasetAcl).first());
+            datasetAclList.add(datasetDBAdaptor.setDatasetAcl(Long.parseLong(datasetId), datasetAcl, override).first());
         }
 
         return new QueryResult<>("Set dataset permissions", (int) (System.currentTimeMillis() - startTime), datasetAclList.size(),
@@ -879,8 +879,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, String panelIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, String panelIds, String userIds, List<String> permissions,
+                                                                   boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String[] panelIdArray = panelIds.split(",");
         // Check if the userId has proper permissions for all the panels.
@@ -906,7 +906,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         String[] userIdArray = userIds.split(",");
         for (String panelId : panelIdArray) {
             DiseasePanelAcl panelAcl = new DiseasePanelAcl(Arrays.asList(userIdArray), permissions);
-            panelAclList.add(panelDBAdaptor.setPanelAcl(Long.parseLong(panelId), panelAcl).first());
+            panelAclList.add(panelDBAdaptor.setPanelAcl(Long.parseLong(panelId), panelAcl, override).first());
         }
 
         return new QueryResult<>("Set panel permissions", (int) (System.currentTimeMillis() - startTime), panelAclList.size(),
@@ -1149,10 +1149,10 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId)
+    public QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId, boolean override)
             throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-        return studyDBAdaptor.setStudyAcl(studyId, roleId, members);
+        return studyDBAdaptor.setStudyAcl(studyId, roleId, members, override);
     }
 
     @Override

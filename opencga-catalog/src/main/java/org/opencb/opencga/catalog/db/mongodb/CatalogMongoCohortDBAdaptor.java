@@ -330,7 +330,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl) throws CatalogDBException {
+    public QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
         checkCohortId(cohortId);
@@ -380,7 +380,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<CohortAcl> cohortAcls = getCohortAcl(cohortId, acl.getUsers());
-        if (cohortAcls.getNumResults() > 0) {
+        if (cohortAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -396,6 +396,9 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetCohortAcl(cohortId, usersToOverride);
+        } else if (cohortAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setCohortAcl: " + cohortAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.
