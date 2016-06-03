@@ -1,6 +1,6 @@
 ---
 rest:
-  host: "http://localhost:8080/opencga/webservices/rest"
+  host: "http://bioinfo.hpc.cam.ac.uk/hgva/webservices/rest"
   batchQuerySize: 200
   timeout: 10000
   defaultLimit: 2000

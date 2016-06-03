@@ -45,7 +45,7 @@ public class UserClientTest {
         try {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
-            openCGAClient = new OpenCGAClient("swaathi", "swaathi", clientConfiguration);
+            openCGAClient = new OpenCGAClient("hgva", "hgva_cafeina", clientConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -79,24 +79,24 @@ public class UserClientTest {
 //        openCGAClient = new OpenCGAClient("imedina", "pepe", clientConfiguration);
     }
 
-    @Test
-    public void login() throws Exception {
-        userClient = openCGAClient.getUserClient();
-        QueryResponse<ObjectMap> login = userClient.login("swaathi", "swaathi");
-        assertNotNull(login.firstResult());
-    }
+//    @Test
+//    public void login() throws Exception {
+//        userClient = openCGAClient.getUserClient();
+//        QueryResponse<ObjectMap> login = userClient.login("hgva", "hgva_cafeina");
+//        assertNotNull(login.firstResult());
+//    }
 
     @Test
     public void get() throws Exception {
         userClient = openCGAClient.getUserClient();
-        QueryResponse<User> login = userClient.get("swaathi", null);
+        QueryResponse<User> login = userClient.get("hgva", null);
         assertNotNull(login.firstResult());
     }
 
     @Test
     public void getProjects() throws Exception {
         userClient = openCGAClient.getUserClient();
-        QueryResponse<Project> login = userClient.getProjects("swaathi", null);
+        QueryResponse<Project> login = userClient.getProjects("hgva", null);
         assertNotNull(login.firstResult());
     }
 

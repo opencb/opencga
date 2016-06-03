@@ -306,6 +306,10 @@ public class OpenCGAWSServer {
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
 
+        String limitStr = multivaluedMap.getFirst(QueryOptions.LIMIT);
+        if (StringUtils.isNotEmpty(limitStr)) {
+            limit = Integer.parseInt(limitStr);
+        }
         queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
 
         String skip = multivaluedMap.getFirst(QueryOptions.SKIP);
