@@ -1127,6 +1127,13 @@ public class CatalogManagerTest extends GenericTest {
         }
     }
 
+    @Test
+    public void getAllFilesInFolder() throws CatalogException {
+        long fileId = catalogManager.getFileId("user@1000G/phase1/data/test/folder/");
+        List<File> allFilesInFolder = catalogManager.getAllFilesInFolder(fileId, null, sessionIdUser).getResult();
+        assertEquals(3, allFilesInFolder.size());
+    }
+
     private void deleteFolderAndCheck(long deletable) throws CatalogException, IOException {
         List<File> allFilesInFolder;
         catalogManager.deleteFolder(deletable, sessionIdUser);

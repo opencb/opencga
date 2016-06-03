@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.authorization.CatalogAuthorizationManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -792,8 +793,8 @@ public class CatalogManager implements AutoCloseable {
         if (!folder.getType().equals(File.Type.FOLDER)) {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
-        options.put("directory", folder.getPath());
-        return fileManager.readAll(studyId, new Query(options), options, sessionId);
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
+        return fileManager.readAll(studyId, query, options, sessionId);
     }
 
     public DataInputStream downloadFile(long fileId, String sessionId) throws IOException, CatalogException {
