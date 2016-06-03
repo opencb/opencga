@@ -592,7 +592,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String fileId : fileIdArray) {
             long studyId = fileDBAdaptor.getStudyIdByFileId(Long.valueOf(fileId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share file with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -643,7 +643,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String sampleId : sampleIdArray) {
             long studyId = sampleDBAdaptor.getStudyIdBySampleId(Long.valueOf(sampleId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share sample with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -693,7 +693,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String cohortId : cohortIdArray) {
             long studyId = cohortDBAdaptor.getStudyIdByCohortId(Long.valueOf(cohortId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share cohort with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -743,7 +743,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String individualId : individualIdArray) {
             long studyId = individualDBAdaptor.getStudyIdByIndividualId(Long.valueOf(individualId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share individual with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -793,7 +793,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String jobId : jobIdArray) {
             long studyId = jobDBAdaptor.getStudyIdByJobId(Long.valueOf(jobId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share job with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -843,7 +843,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String datasetId : datasetArray) {
             long studyId = datasetDBAdaptor.getStudyIdByDatasetId(Long.valueOf(datasetId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share dataset with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -893,7 +893,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         for (String panelId : panelIdArray) {
             long studyId = panelDBAdaptor.getStudyIdByPanelId(Long.valueOf(panelId));
             for (String member : userArray) {
-                if (!member.equals("*") && !memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share panel with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
