@@ -585,8 +585,36 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{studyId}/assignRole")
+    @ApiOperation(value = "Assigns a role for a list of members", position = 10)
+    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "Role.", allowableValues = "admin, analyst, locked", required = true) @DefaultValue("") @QueryParam("role") String roleId,
+                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                           @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+        try {
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            return createOkResponse(catalogManager.shareStudy(studyId, members, roleId, override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/removeRole")
+    @ApiOperation(value = "Removes a list of members from the roles they had", position = 11)
+    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            return createOkResponse(catalogManager.unshareStudy(studyId, members, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{studyId}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", position = 10)
+    @ApiOperation(value = "Delete a study [PENDING]", position = 12)
     public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
         return createOkResponse("PENDING");
     }

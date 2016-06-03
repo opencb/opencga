@@ -628,7 +628,7 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("removeUsersFromGroup");
     }
 
-    public QueryResult shareStudy(long studyId, String members, String roleId, String sessionId, boolean override) throws CatalogException {
+    public QueryResult shareStudy(long studyId, String members, String roleId, boolean override, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.addMembersToRole(userId, studyId, members, roleId, override);
     }
@@ -818,7 +818,7 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
     }
 
-    public QueryResult shareFile(String fileIds, String members, List<String> permissions, String sessionId, boolean override)
+    public QueryResult shareFile(String fileIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.setFilePermissions(userId, fileIds, members, permissions, override);
@@ -940,7 +940,7 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.update(jobId, parameters, null, sessionId); //TODO: Add query options
     }
 
-    public QueryResult shareJob(String jobIds, String members, List<String> permissions, String sessionId, boolean override)
+    public QueryResult shareJob(String jobIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.setJobPermissions(userId, jobIds, members, permissions, override);
@@ -981,7 +981,7 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.delete(individualId, options, sessionId);
     }
 
-    public QueryResult shareIndividual(String individualIds, String members, List<String> permissions, String sessionId, boolean override)
+    public QueryResult shareIndividual(String individualIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.setIndividualPermissions(userId, individualIds, members, permissions, override);
@@ -1024,7 +1024,7 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.setSampleACL(sampleIds, userIds, acl, sessionId);
     }
 
-    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, String sessionId, boolean override)
+    public QueryResult shareSample(String sampleIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.setSamplePermissions(userId, sampleIds, members, permissions, override);
@@ -1169,7 +1169,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
-    public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, String sessionId, boolean override)
+    public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.setCohortPermissions(userId, cohortIds, members, permissions, override);
@@ -1235,7 +1235,7 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getDiseasePanel(panelStr, options, sessionId);
     }
 
-    public QueryResult sharePanel(String panelIds, String members, List<String> permissions, String sessionId, boolean override)
+    public QueryResult sharePanel(String panelIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.setDiseasePanelPermissions(userId, panelIds, members, permissions, override);

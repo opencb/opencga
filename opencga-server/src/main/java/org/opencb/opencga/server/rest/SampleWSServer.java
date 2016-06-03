@@ -33,6 +33,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -236,33 +237,34 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleIds}/share")
-    @ApiOperation(value = "Update some sample attributes using GET method", position = 7)
+    @ApiOperation(value = "Share samples with other members", position = 7)
     public Response share(@PathParam(value = "sampleIds") String sampleIds,
-                          @ApiParam(value = "User you want to share the sample with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userIds") String userIds,
-                          @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
-                          @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
-                          @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
-                          @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
-                          /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
-
-        QueryResult queryResult;
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
         try {
-            if (unshare) {
-                queryResult = catalogManager.unshareSample(sampleIds, userIds, sessionId);
-            } else {
-                queryResult = catalogManager.shareSample(sampleIds, userIds, new AclEntry("", read, write, false, delete), sessionId);
-            }
-
-            return createOkResponse(queryResult);
+            return createOkResponse(catalogManager.shareSample(sampleIds, members, Arrays.asList(permissions.split(",")), override,
+                    sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
 
+    @GET
+    @Path("/{sampleIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
+    public Response unshare(@PathParam(value = "sampleIds") String sampleIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(catalogManager.unshareSample(sampleIds, members, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/{sampleId}/delete")
-    @ApiOperation(value = "Delete a sample", position = 8)
+    @ApiOperation(value = "Delete a sample", position = 9)
     public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId) {
         try {
             QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
