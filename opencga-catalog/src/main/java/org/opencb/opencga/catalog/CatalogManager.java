@@ -1268,7 +1268,7 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult unsharePanel(String panelIds, String userIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> panelList = studyManager.getDiseasePanelIds(userId, panelIds);
-        authorizationManager.unsetDatasetPermissions(userId, panelList, userIds);
+        authorizationManager.unsetDiseasePanelPermissions(userId, panelList, userIds);
         return new QueryResult("unsharePanel");
     }
 
