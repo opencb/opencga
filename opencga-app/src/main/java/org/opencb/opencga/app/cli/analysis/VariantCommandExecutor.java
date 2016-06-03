@@ -509,6 +509,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         options.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), cliOptions.overwriteStats);
         options.put(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats);
+        if (cliOptions.region != null) {
+            options.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.region);
+        }
         if (cliOptions.fileId != 0) {
             options.put(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
         }

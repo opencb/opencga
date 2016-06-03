@@ -432,6 +432,9 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         public boolean overwriteStats = false;
 
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
+
         @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
                 + "Assumes that existing stats are correct")
         public boolean updateStats = false;
