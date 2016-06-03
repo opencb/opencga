@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -190,6 +191,22 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @throws CatalogException when more than one panel id is found.
      */
     Long getDiseasePanelId(String userId, String panelStr) throws CatalogException;
+
+    /**
+     * Obtains the list of panel ids corresponding to the comma separated list of panel strings given in panelStr.
+     *
+     * @param userId User demanding the action.
+     * @param panelStr Comma separated list of panel ids.
+     * @return A list of panel ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getDiseasePanelIds(String userId, String panelStr) throws CatalogException {
+        List<Long> panelIds = new ArrayList<>();
+        for (String panelId : panelStr.split(",")) {
+            panelIds.add(getDiseasePanelId(userId, panelId));
+        }
+        return panelIds;
+    }
 
     QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description, String genes,
                                                  String regions, String variants, QueryOptions options, String sessionId)

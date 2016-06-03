@@ -31,6 +31,22 @@ public interface IIndividualManager extends ResourceManager<Long, Individual> {
      */
     Long getIndividualId(String userId, String individualStr) throws CatalogException;
 
+    /**
+     * Obtains the list of individualIds corresponding to the comma separated list of individual strings given in individualStr.
+     *
+     * @param userId User demanding the action.
+     * @param individualStr Comma separated list of individual ids.
+     * @return A list of individual ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getIndividualIds(String userId, String individualStr) throws CatalogException {
+        List<Long> individualIds = new ArrayList<>();
+        for (String individualId : individualStr.split(",")) {
+            individualIds.add(getIndividualId(userId, individualId));
+        }
+        return individualIds;
+    }
+
     @Deprecated
     Long getIndividualId(String individualId) throws CatalogException;
 

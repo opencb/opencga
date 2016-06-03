@@ -688,6 +688,18 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void getFileIdByString() throws CatalogException {
+        catalogManager.shareStudy(studyId, "user2", "analyst", false, sessionIdUser);
+        File file = catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt",
+                "My description", true, -1, sessionIdUser2).first();
+        long fileId = catalogManager.getFileId(file.getPath(), sessionIdUser);
+        assertEquals(file.getId(), fileId);
+
+        fileId = catalogManager.getFileId(Long.toString(file.getId()), sessionIdUser);
+        assertEquals(file.getId(), fileId);
+    }
+
+    @Test
     public void renameFileEmptyName() throws CatalogException {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("null or empty"));
