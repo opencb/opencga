@@ -273,7 +273,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.createJob(studyId, job, options);
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -477,7 +479,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
 
         QueryResult<Tool> queryResult = jobDBAdaptor.createTool(userId, tool);
-        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.tool, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

@@ -430,7 +430,9 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, file, options);
-        auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.file, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -865,7 +867,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, new Status(), attributes);
         QueryResult<Dataset> queryResult = datasetDBAdaptor.createDataset(studyId, dataset, options);
-        auditManager.recordCreation(AuditRecord.Resource.dataset, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.dataset, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.dataset, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

@@ -80,7 +80,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         QueryResult<Individual> queryResult = individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId,
                 family, gender, null, null, null, Collections.emptyList(), null), options);
-        auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -394,9 +396,9 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         String userId = super.userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkIndividualPermission(individualId, userId, IndividualAcl.IndividualPermissions.DELETE);
 
-        QueryResult<Individual> queryResult = individualDBAdaptor.deleteIndividual(individualId, options);
-        auditManager.recordCreation(AuditRecord.Resource.individual, individualId, userId, queryResult.first(), null, null);
-        return queryResult;
+        QueryResult<Individual> queryResultBefore = individualDBAdaptor.deleteIndividual(individualId, options);
+//        auditManager.recordCreation(AuditRecord.Resource.individual, individualId, userId, queryResultBefore.first(), null, null);
+        return queryResultBefore;
     }
 
     @Override
