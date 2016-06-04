@@ -115,7 +115,9 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             projectDBAdaptor.delete(project.getId(), new QueryOptions());
         }
         userDBAdaptor.updateUserLastActivity(userId);
-        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.project, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

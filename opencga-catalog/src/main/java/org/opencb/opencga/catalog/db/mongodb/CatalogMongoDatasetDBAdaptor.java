@@ -287,7 +287,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException {
+    public QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
         checkDatasetId(datasetId);
@@ -336,7 +336,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<DatasetAcl> datasetAcls = getDatasetAcl(datasetId, acl.getUsers());
-        if (datasetAcls.getNumResults() > 0) {
+        if (datasetAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -352,6 +352,9 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetDatasetAcl(datasetId, usersToOverride);
+        } else if (datasetAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setDatasetAcl: " + datasetAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.

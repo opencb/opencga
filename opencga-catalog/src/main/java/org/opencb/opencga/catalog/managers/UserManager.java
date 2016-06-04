@@ -156,7 +156,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insertUser(user, options);
-            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
+//            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
+            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), userId,
+                    null, queryResult.first(), null, null);
             authenticationManager.newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {

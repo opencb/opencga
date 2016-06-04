@@ -54,6 +54,22 @@ public interface IFileManager extends ResourceManager<Long, File> {
      */
     Long getFileId(String userId, String fileStr) throws CatalogException;
 
+    /**
+     * Obtains the list of fileIds corresponding to the comma separated list of file strings given in fileStr.
+     *
+     * @param userId User demanding the action.
+     * @param fileStr Comma separated list of file ids.
+     * @return A list of file ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getFileIds(String userId, String fileStr) throws CatalogException {
+        List<Long> fileIds = new ArrayList<>();
+        for (String fileId : fileStr.split(",")) {
+            fileIds.add(getFileId(userId, fileId));
+        }
+        return fileIds;
+    }
+
     @Deprecated
     Long getFileId(String fileId) throws CatalogException;
 
@@ -186,6 +202,22 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException when more than one dataset id is found.
      */
     Long getDatasetId(String userId, String datasetStr) throws CatalogException;
+
+    /**
+     * Obtains the list of dataset ids corresponding to the comma separated list of dataset strings given in datasetStr.
+     *
+     * @param userId User demanding the action.
+     * @param datasetStr Comma separated list of dataset ids.
+     * @return A list of dataset ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getDatasetIds(String userId, String datasetStr) throws CatalogException {
+        List<Long> datasetIds = new ArrayList<>();
+        for (String datasetId : datasetStr.split(",")) {
+            datasetIds.add(getDatasetId(userId, datasetId));
+        }
+        return datasetIds;
+    }
 
     /**
      * Retrieve the dataset Acls for the given members in the dataset.

@@ -32,6 +32,22 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
      */
     Long getSampleId(String userId, String sampleStr) throws CatalogException;
 
+    /**
+     * Obtains the list of sampleIds corresponding to the comma separated list of sample strings given in sampleStr.
+     *
+     * @param userId User demanding the action.
+     * @param sampleStr Comma separated list of sample ids.
+     * @return A list of sample ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getSampleIds(String userId, String sampleStr) throws CatalogException {
+        List<Long> sampleIds = new ArrayList<>();
+        for (String sampleId : sampleStr.split(",")) {
+            sampleIds.add(getSampleId(userId, sampleId));
+        }
+        return sampleIds;
+    }
+
     @Deprecated
     Long getSampleId(String fileId) throws CatalogException;
 
@@ -156,6 +172,22 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
      * @throws CatalogException when more than one cohort id is found or .
      */
     Long getCohortId(String userId, String cohortStr) throws CatalogException;
+
+    /**
+     * Obtains the list of cohort ids corresponding to the comma separated list of cohort strings given in cohortStr.
+     *
+     * @param userId User demanding the action.
+     * @param cohortStr Comma separated list of cohort ids.
+     * @return A list of cohort ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getCohortIds(String userId, String cohortStr) throws CatalogException {
+        List<Long> cohortIds = new ArrayList<>();
+        for (String cohortId : cohortStr.split(",")) {
+            cohortIds.add(getCohortId(userId, cohortId));
+        }
+        return cohortIds;
+    }
 
     QueryResult<Cohort> readCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException;
 

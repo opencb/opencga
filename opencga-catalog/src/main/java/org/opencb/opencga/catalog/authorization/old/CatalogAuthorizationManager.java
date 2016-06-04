@@ -1,12 +1,10 @@
 package org.opencb.opencga.catalog.authorization.old;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.audit.AuditManager;
-import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -470,6 +468,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 //                "", "", aclEntries);
     }
 
+    @Deprecated
     @Override
     public QueryResult<AclEntry> setSampleACL(String sampleIds, String userIds, AclEntry acl, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
@@ -493,7 +492,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             for (String sampleIdValue : sampleIdArray) {
                 int sampleId = Integer.valueOf(sampleIdValue);
                 aclEntries.add(sampleDBAdaptor.setSampleAcl(sampleId, acl).first());
-                auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userSessionId, new ObjectMap("acl", acl), "setAcls", null);
+//              auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userSessionId, new ObjectMap("acl", acl), "setAcls", null);
             }
         }
 
@@ -522,8 +521,8 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             for (String sampleIdValue : sampleIdArray) {
                 int sampleId = Integer.valueOf(sampleIdValue);
                 aclEntries.add(sampleDBAdaptor.unsetSampleAcl(sampleId, userId).first());
-                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
-                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
+//                auditManager.recordAction(AuditRecord.Resource.sample, AuditRecord.UPDATE, sampleId, userId, new ObjectMap("acl",
+//                        aclEntries.get(aclEntries.size() - 1)), null, "unsetAcl", null);
 
             }
         }

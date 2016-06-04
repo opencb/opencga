@@ -135,7 +135,7 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
 
     QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
 
-    QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException;
+    QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl, boolean override) throws CatalogDBException;
 
     void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
 

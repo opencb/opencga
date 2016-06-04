@@ -44,10 +44,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.nio.file.Paths;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Path("/{version}/jobs")
@@ -331,6 +328,32 @@ public class JobWSServer extends OpenCGAWSServer {
             results.add(catalogManager.deleteJob(jobId, sessionId));
             return createOkResponse(results);
         } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobIds}/share")
+    @ApiOperation(value = "Share jobs with other members", position = 5)
+    public Response share(@PathParam(value = "jobIds") String jobIds,
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+        try {
+            return createOkResponse(catalogManager.shareJob(jobIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 6)
+    public Response unshare(@PathParam(value = "jobIds") String jobIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(catalogManager.unshareJob(jobIds, members, sessionId));
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

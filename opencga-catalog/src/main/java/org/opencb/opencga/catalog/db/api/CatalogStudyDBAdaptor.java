@@ -140,11 +140,13 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param studyId study id.
      * @param roleId Role that will be applied to the members.
      * @param members List of members (users and/or groups).
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult with the studyAcl after the update.
      * @throws CatalogDBException when any of the studyId, roleId or members do not exist or if there is a user inside a group defined in
      * members that already have a permission created.
      */
-    QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members) throws CatalogDBException;
+    QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members, boolean override) throws CatalogDBException;
 
     /**
      * Remove the permissions for the members.
