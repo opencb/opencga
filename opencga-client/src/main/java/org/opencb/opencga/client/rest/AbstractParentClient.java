@@ -89,9 +89,12 @@ abstract class AbstractParentClient<T> {
     protected <T> QueryResponse<T> execute(String category, String id, String action, Map<String, Object> params, Class<T> clazz)
             throws IOException {
 
+        System.out.println("configuration = " + configuration);
         // Build the basic URL
         WebTarget path = client
                 .target(configuration.getRest().getHost())
+                .path("webservices")
+                .path("rest")
                 .path("v1")
                 .path(category);
 

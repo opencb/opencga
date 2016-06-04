@@ -1,6 +1,6 @@
 ---
 rest:
-  host: "http://bioinfo.hpc.cam.ac.uk/hgva/"
+  host: "${OPENCGA.CLIENT.HOST}"
   batchQuerySize: 200
   timeout: 10000
   defaultLimit: 2000

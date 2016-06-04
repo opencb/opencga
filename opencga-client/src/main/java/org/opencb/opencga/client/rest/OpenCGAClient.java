@@ -110,13 +110,7 @@ public class OpenCGAClient {
         UserClient userClient = getUserClient();
         QueryResponse<ObjectMap> login = userClient.login(user, password);
         this.sessionId = login.firstResult().getString("sessionId");
-
-        // Update sessionId for all clients
-        clients.values().stream()
-                .filter(abstractParentClient -> abstractParentClient != null)
-                .forEach(abstractParentClient -> {
-                    abstractParentClient.setSessionId(this.sessionId);
-                });
+        setSessionId(sessionId);
         return sessionId;
     }
 
@@ -126,6 +120,22 @@ public class OpenCGAClient {
                 .filter(abstractParentClient -> abstractParentClient != null)
                 .forEach(abstractParentClient -> {
                     abstractParentClient.setSessionId(null);
+                });
+    }
+
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
+
+        // Update sessionId for all clients
+        clients.values().stream()
+                .filter(abstractParentClient -> abstractParentClient != null)
+                .forEach(abstractParentClient -> {
+                    abstractParentClient.setSessionId(this.sessionId);
                 });
     }
 

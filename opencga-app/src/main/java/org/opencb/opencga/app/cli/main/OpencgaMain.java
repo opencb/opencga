@@ -104,15 +104,7 @@ public class OpencgaMain {
                     }
 
                     if (commandExecutor != null) {
-                        try {
-                            commandExecutor.loadCatalogConfiguration();
-                        } catch (IOException ex) {
-                            if (commandExecutor.getLogger() == null) {
-                                ex.printStackTrace();
-                            } else {
-                                commandExecutor.getLogger().error("Error reading OpenCGA Storage configuration: " + ex.getMessage());
-                            }
-                        }
+                        commandExecutor.loadConfigurations();
                         try {
                             commandExecutor.execute();
                         } catch (Exception e) {

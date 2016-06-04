@@ -32,7 +32,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
         super(options);
-        openCGAClient = new OpenCGAClient();
+        openCGAClient = new OpenCGAClient(clientConfiguration);
     }
 
     protected void init(AdminCliOptionsParser.AdminCommonCommandOptions options) {

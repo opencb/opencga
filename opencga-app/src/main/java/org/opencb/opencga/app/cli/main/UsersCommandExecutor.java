@@ -17,7 +17,9 @@
 package org.opencb.opencga.app.cli.main;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 
 import java.io.IOException;
 
@@ -38,6 +40,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     @Override
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
+        openCGAClient = new OpenCGAClient(clientConfiguration);
 
         String subCommandString = usersCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
@@ -78,8 +81,34 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
     private void login() throws CatalogException, IOException {
         logger.debug("Login");
-      //  "hgva", "hgva_cafeina", clientConfiguration
-        openCGAClient.login("hgva","hgva_cafeina");
+
+        String user = usersCommandOptions.loginCommand.up.user;
+        String password = usersCommandOptions.loginCommand.up.password;
+
+        if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
+            //  "hgva", "hgva_cafeina", clientConfiguration
+            String session = openCGAClient.login(user, password);
+            // write session file
+            saveUserFile(user, session);
+
+            try {
+                Thread.sleep(5000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+
+        } else {
+            String sessionId = usersCommandOptions.loginCommand.up.sessionId;
+            if (StringUtils.isNotEmpty(sessionId)) {
+                openCGAClient.setSessionId(sessionId);
+            } else {
+                // load user session file
+
+//                openCGAClient.setSessionId(sessionId);
+            }
+        }
+
 
     }
     private void logout() throws CatalogException, IOException {
