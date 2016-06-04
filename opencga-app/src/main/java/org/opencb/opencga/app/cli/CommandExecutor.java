@@ -91,6 +91,20 @@ public abstract class CommandExecutor {
             e.printStackTrace();
         }
 
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                try {
+                    UserConfigFile userConfigFile = loadUserFile();
+                    userConfigFile.setTimestamp(System.currentTimeMillis());
+                    java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "session.json").toFile();
+                    new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(file, userConfigFile);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     public abstract void execute() throws Exception;
@@ -285,9 +299,9 @@ public abstract class CommandExecutor {
     }
 
     private static UserConfigFile loadUserFile() throws IOException {
-        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "session.yml").toFile();
+        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "session.json").toFile();
         if (file.exists()) {
-            return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
+            return new ObjectMapper().readValue(file, UserConfigFile.class);
         } else {
             return new UserConfigFile();
         }
