@@ -260,7 +260,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetJobAcl(jobId, usersToOverride);
+            unsetJobAcl(jobId, usersToOverride, Collections.emptyList());
         } else if (jobAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setJobAcl: " + jobAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -300,7 +300,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException {
+    public void unsetJobAcl(long jobId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkJobId(jobId);
 
         // Check that all the members (users) are correct and exist.
@@ -310,7 +310,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, jobId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = jobCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetJobAcl: An error occurred when trying to stop sharing job " + jobId

@@ -245,9 +245,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualIds}/unshare")
     @ApiOperation(value = "Remove the permissions for the list of members", position = 9)
     public Response unshare(@PathParam(value = "individualIds") String individualIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
         try {
-            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, sessionId));
+            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

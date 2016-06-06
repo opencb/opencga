@@ -243,7 +243,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetFileAcl(fileId, usersToOverride);
+            unsetFileAcl(fileId, usersToOverride, Collections.emptyList());
         } else if (fileAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setFileAcl: " + fileAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -284,7 +284,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException {
+    public void unsetFileAcl(long fileId, List<String> members, List<String> permissions) throws CatalogDBException {
 
         checkFileId(fileId);
         // Check that all the members (users) are correct and exist.
@@ -294,7 +294,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, fileId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = fileCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetFileAcl: An error occurred when trying to remove the ACL in file " + fileId

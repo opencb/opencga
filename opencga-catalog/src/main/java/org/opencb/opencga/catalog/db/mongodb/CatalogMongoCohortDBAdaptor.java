@@ -395,7 +395,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetCohortAcl(cohortId, usersToOverride);
+            unsetCohortAcl(cohortId, usersToOverride, Collections.emptyList());
         } else if (cohortAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setCohortAcl: " + cohortAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -435,7 +435,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
+    public void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkCohortId(cohortId);
 
         // Check that all the members (users) are correct and exist.
@@ -445,7 +445,12 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, cohortId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = cohortCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetCohortAcl: An error occurred when trying to stop sharing cohort " + cohortId

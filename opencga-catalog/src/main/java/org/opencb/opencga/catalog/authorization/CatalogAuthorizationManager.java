@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.models.acls.*;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -613,16 +614,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetFilePermissions(String userId, List<Long> fileIds, String userIds) throws CatalogException {
+    public void unsetFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions) throws CatalogException {
         // Check if the userId has proper permissions for all the files.
         for (Long fileId : fileIds) {
             checkFilePermission(fileId, userId, FileAcl.FilePermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, FileAcl.FilePermissions::valueOf);
+
         // Unset the permissions
         String[] userIdArray = userIds.split(",");
         for (Long fileId : fileIds) {
-            fileDBAdaptor.unsetFileAcl(fileId, Arrays.asList(userIdArray));
+            fileDBAdaptor.unsetFileAcl(fileId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -661,16 +665,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds) throws CatalogException {
+    public void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the samples.
         for (Long sampleId : sampleIds) {
             checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, SampleAcl.SamplePermissions::valueOf);
+
         // Unset the permissions
         String[] userIdArray = userIds.split(",");
         for (Long sampleId : sampleIds) {
-            sampleDBAdaptor.unsetSampleAcl(sampleId, Arrays.asList(userIdArray));
+            sampleDBAdaptor.unsetSampleAcl(sampleId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -709,16 +717,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds) throws CatalogException {
+    public void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the cohorts.
         for (Long cohortId : cohortIds) {
             checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, CohortAcl.CohortPermissions::valueOf);
+
         // Unset the permissions
         String[] userIdArray = userIds.split(",");
         for (Long cohortId : cohortIds) {
-            cohortDBAdaptor.unsetCohortAcl(cohortId, Arrays.asList(userIdArray));
+            cohortDBAdaptor.unsetCohortAcl(cohortId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -757,16 +769,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds) throws CatalogException {
+    public void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the individuals.
         for (Long individualId : individualIds) {
             checkIndividualPermission(individualId, userId, IndividualAcl.IndividualPermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, IndividualAcl.IndividualPermissions::valueOf);
+
         // Set the permissions
         String[] userIdArray = userIds.split(",");
         for (Long individualId : individualIds) {
-            individualDBAdaptor.unsetIndividualAcl(individualId, Arrays.asList(userIdArray));
+            individualDBAdaptor.unsetIndividualAcl(individualId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -805,16 +821,19 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetJobPermissions(String userId, List<Long> jobIds, String userIds) throws CatalogException {
+    public void unsetJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions) throws CatalogException {
         // Check if the userId has proper permissions for all the jobs.
         for (Long jobId : jobIds) {
             checkJobPermission(jobId, userId, JobAcl.JobPermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, JobAcl.JobPermissions::valueOf);
+
         // Set the permissions
         String[] userIdArray = userIds.split(",");
         for (Long jobId : jobIds) {
-            jobDBAdaptor.unsetJobAcl(jobId, Arrays.asList(userIdArray));
+            jobDBAdaptor.unsetJobAcl(jobId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -853,16 +872,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds) throws CatalogException {
+    public void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the datasets.
         for (Long datasetId : datasetIds) {
             checkDatasetPermission(datasetId, userId, DatasetAcl.DatasetPermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, DatasetAcl.DatasetPermissions::valueOf);
+
         // Set the permissions
         String[] userIdArray = userIds.split(",");
         for (Long datasetId : datasetIds) {
-            datasetDBAdaptor.unsetDatasetAcl(datasetId, Arrays.asList(userIdArray));
+            datasetDBAdaptor.unsetDatasetAcl(datasetId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -901,16 +924,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds) throws CatalogException {
+    public void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the disease panels.
         for (Long panelId : panelIds) {
             checkDiseasePanelPermission(panelId, userId, DiseasePanelAcl.DiseasePanelPermissions.SHARE);
         }
 
+        // Check if the permissions are correct
+        checkPermissions(permissions, DiseasePanelAcl.DiseasePanelPermissions::valueOf);
+
         // Set the permissions
         String[] userIdArray = userIds.split(",");
         for (Long panelId : panelIds) {
-            panelDBAdaptor.unsetPanelAcl(panelId, Arrays.asList(userIdArray));
+            panelDBAdaptor.unsetPanelAcl(panelId, Arrays.asList(userIdArray), permissions);
         }
     }
 
@@ -1294,6 +1321,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return null;
     }
 
+    public static void checkPermissions(List<String> permissions, Function<String, Enum> getValue) throws CatalogException {
+        for (String permission : permissions) {
+            try {
+                getValue.apply(permission);
+            } catch (IllegalArgumentException e) {
+                throw new CatalogException("The permission " + permission + " is not a correct permission.");
+            }
+        }
+    }
 
     /*
     ====================================

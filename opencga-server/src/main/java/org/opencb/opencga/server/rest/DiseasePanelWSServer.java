@@ -79,9 +79,10 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     @Path("/{panelIds}/unshare")
     @ApiOperation(value = "Remove the permissions for the list of members", position = 4)
     public Response unshare(@PathParam(value = "panelIds") String panelIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of panel permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
         try {
-            return createOkResponse(catalogManager.unsharePanel(panelIds, members, sessionId));
+            return createOkResponse(catalogManager.unsharePanel(panelIds, members, sessionId, permissions));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

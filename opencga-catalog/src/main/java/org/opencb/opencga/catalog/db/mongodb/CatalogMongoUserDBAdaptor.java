@@ -265,7 +265,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public void updateUserLastActivity(String userId) throws CatalogDBException {
-        update(userId, new ObjectMap("lastActivity", TimeUtils.getTime()));
+        update(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
     }
 
     @Override

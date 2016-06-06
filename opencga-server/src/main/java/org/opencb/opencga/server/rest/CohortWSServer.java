@@ -350,9 +350,10 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortIds}/unshare")
     @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
     public Response unshare(@PathParam(value = "cohortIds") String cohortIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
         try {
-            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, sessionId));
+            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

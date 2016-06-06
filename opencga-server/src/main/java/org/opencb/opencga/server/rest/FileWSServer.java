@@ -863,9 +863,10 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/{fileIds}/unshare")
     @ApiOperation(value = "Remove the permissions for the list of members", position = 18)
     public Response unshare(@PathParam(value = "fileIds") String fileIds,
-                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of file permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
         try {
-            return createOkResponse(catalogManager.unshareFile(fileIds, members, sessionId));
+            return createOkResponse(catalogManager.unshareFile(fileIds, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

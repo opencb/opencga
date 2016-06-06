@@ -350,9 +350,10 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/{jobIds}/unshare")
     @ApiOperation(value = "Remove the permissions for the list of members", position = 6)
     public Response unshare(@PathParam(value = "jobIds") String jobIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
         try {
-            return createOkResponse(catalogManager.unshareJob(jobIds, members, sessionId));
+            return createOkResponse(catalogManager.unshareJob(jobIds, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
