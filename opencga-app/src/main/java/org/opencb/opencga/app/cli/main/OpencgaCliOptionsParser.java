@@ -208,14 +208,14 @@ public class OpencgaCliOptionsParser {
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
         String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = false)
+        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = true)
         String password;
 
         @Deprecated
         @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
         String hiddenPassword;
 
-        @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false)
+        @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
         String sessionId;
     }
 
@@ -223,17 +223,6 @@ public class OpencgaCliOptionsParser {
 
     //    class CommonOptions {
     public class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
-//        @Parameter(names = {"-C", "--conf"}, description = "This parameter sets the level of the logging", required = false, arity = 1)
-//        public String conf;
-//
-//        @Parameter(names = {"-h", "--help"}, help = true)
-//        public boolean help;
-
-//        @Parameter(names = {"--verbose"}, description = "log-level to debug")
-//        boolean verbose;
-//
-//        @Parameter(names = {"--log-level"}, description = "This parameter sets the level of the logging. One of {error, warn, info, debug, trace}")
-//        String logLevel = null; // TODO add validation?
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
         Map<String, String> dynamic = new HashMap<String, String>();
@@ -430,7 +419,7 @@ public class OpencgaCliOptionsParser {
     }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Study commands")
-    class StudyCommands {
+    class StudyCommands extends CommandOptions {
 
         final CreateCommand createCommand;
         final InfoCommand infoCommand;
@@ -439,6 +428,8 @@ public class OpencgaCliOptionsParser {
         final CheckCommand checkCommand;
         final StatusCommand statusCommand;
         final AnnotationCommand annotationCommand;
+
+        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
 
         public StudyCommands(JCommander jcommander) {
             jcommander.addCommand(this);
@@ -1149,12 +1140,12 @@ public class OpencgaCliOptionsParser {
         String parsedCommand = getCommand();
         if (parsedCommand.isEmpty()) {
             System.err.println("");
-            System.err.println("Program:     OpenCGA Catalog (OpenCB)");
+            System.err.println("Program:     OpenCGA (OpenCB)");
             System.err.println("Version:     " + GitRepositoryState.get().getBuildVersion());
             System.err.println("Git commit:  " + GitRepositoryState.get().getCommitId());
             System.err.println("Description: Big Data platform for processing and analysing NGS data");
             System.err.println("");
-            System.err.println("Usage:       opencga-admin.sh [-h|--help] [--version] <command> [options]");
+            System.err.println("Usage:       opencga.sh [-h|--help] [--version] <command> [options]");
             System.err.println("");
             System.err.println("Commands:");
             printMainUsage();
@@ -1163,14 +1154,14 @@ public class OpencgaCliOptionsParser {
             String parsedSubCommand = getSubCommand();
             if (parsedSubCommand.isEmpty()) {
                 System.err.println("");
-                System.err.println("Usage:   opencga-admin.sh " + parsedCommand + " <subcommand> [options]");
+                System.err.println("Usage:   opencga.sh " + parsedCommand + " <subcommand> [options]");
                 System.err.println("");
                 System.err.println("Subcommands:");
                 printCommands(jCommander.getCommands().get(parsedCommand));
                 System.err.println("");
             } else {
                 System.err.println("");
-                System.err.println("Usage:   opencga-admin.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
+                System.err.println("Usage:   opencga.sh " + parsedCommand + " " + parsedSubCommand + " [options]");
                 System.err.println("");
                 System.err.println("Options:");
                 CommandLineUtils.printCommandUsage(jCommander.getCommands().get(parsedCommand).getCommands().get(parsedSubCommand));

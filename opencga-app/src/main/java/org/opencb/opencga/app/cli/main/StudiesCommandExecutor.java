@@ -26,9 +26,9 @@ import java.io.IOException;
  */
 public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions studiesCommandOptions;
+    private OpencgaCliOptionsParser.StudyCommands studiesCommandOptions;
 
-    public StudiesCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions studiesCommandOptions) {
+    public StudiesCommandExecutor(OpencgaCliOptionsParser.StudyCommands studiesCommandOptions) {
         super(studiesCommandOptions.commonOptions);
         this.studiesCommandOptions = studiesCommandOptions;
     }
@@ -71,6 +71,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating a new project");
+        String alias = studiesCommandOptions.createCommand.alias;
+
+//        openCGAClient.getStudyClient().create()
     }
 
     private void info() throws CatalogException {

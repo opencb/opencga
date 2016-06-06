@@ -32,7 +32,7 @@ import java.util.Map;
 /**
  * Created by imedina on 04/05/16.
  */
-abstract class AbstractParentClient<T> {
+public abstract class AbstractParentClient<T> {
 
     protected Client client;
 
@@ -60,15 +60,15 @@ abstract class AbstractParentClient<T> {
     }
 
 
-    protected QueryResponse<Long> count(Query query) throws IOException {
+    public QueryResponse<Long> count(Query query) throws IOException {
         return execute(category, "count", query, Long.class);
     }
 
-    protected QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
+    public QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
         return execute(category, id, "info", options, clazz);
     }
 
-    protected QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
+    public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
         return execute(category, "search", query, clazz);
     }
 

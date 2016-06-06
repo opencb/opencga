@@ -114,13 +114,18 @@ public class OpenCGAClient {
         return sessionId;
     }
 
-    public void logout() {
+    public void logout(String user) {
+        UserClient userClient = getUserClient();
+        userClient.logout(user);
+
         // Remove sessionId for all clients
         clients.values().stream()
                 .filter(abstractParentClient -> abstractParentClient != null)
                 .forEach(abstractParentClient -> {
                     abstractParentClient.setSessionId(null);
                 });
+
+        this.sessionId = null;
     }
 
 

@@ -86,7 +86,7 @@ public class OpenCGAMain {
     private static boolean sessionIdFromFile = false;
 
     private static Logger logger;
-    private static UserConfigFile userConfigFile;
+    private static SessionFile sessionFile;
     private static String logLevel;
 
     public static void main(String[] args) throws IOException {
@@ -125,7 +125,7 @@ public class OpenCGAMain {
             System.exit(0);
         }
 
-        userConfigFile = loadUserFile();
+        sessionFile = loadUserFile();
 
         // Interactive mode
         interactive = optionsParser.getGeneralOptions().interactive;
@@ -134,9 +134,9 @@ public class OpenCGAMain {
 
             reader = new BufferedReader(new InputStreamReader(System.in));
 
-            if (userConfigFile != null) {
-                shellUserId = userConfigFile.getUserId();
-                shellSessionId = userConfigFile.getSessionId();
+            if (sessionFile != null) {
+                shellUserId = sessionFile.getUserId();
+                shellSessionId = sessionFile.getSessionId();
                 sessionIdFromFile = true;
             }
             do {
@@ -248,12 +248,12 @@ public class OpenCGAMain {
                         if (shellSessionId != null) {
                             shellUserId = c.up.user;
                         }
-                        if (userConfigFile == null) {
-                            userConfigFile = new UserConfigFile();
+                        if (sessionFile == null) {
+                            sessionFile = new SessionFile();
                         }
-                        userConfigFile.setSessionId(sessionId);
-                        userConfigFile.setUserId(catalogManager.getUserIdBySessionId(sessionId));
-                        saveUserFile(userConfigFile);
+                        sessionFile.setSessionId(sessionId);
+                        sessionFile.setUserId(catalogManager.getUserIdBySessionId(sessionId));
+                        saveUserFile(sessionFile);
 
                         System.out.println(shellSessionId);
 
@@ -268,9 +268,9 @@ public class OpenCGAMain {
                             shellUserId = null;
                             shellSessionId = null;
                             if (sessionIdFromFile) {
-                                userConfigFile.setSessionId(null);
-                                userConfigFile.setUserId(null);
-                                saveUserFile(userConfigFile);
+                                sessionFile.setSessionId(null);
+                                sessionFile.setUserId(null);
+                                saveUserFile(sessionFile);
                             }
                         } else {
                             String userId = catalogManager.getUserIdBySessionId(c.sessionId);
@@ -1340,10 +1340,10 @@ public class OpenCGAMain {
             sessionId = shellSessionId;
             logoutAtExit = false;
         } else {
-            if (userConfigFile != null && userConfigFile.getSessionId() != null && !userConfigFile.getSessionId().isEmpty()) {
-                shellSessionId = userConfigFile.getSessionId();
-                shellUserId = userConfigFile.getUserId();
-                sessionId = userConfigFile.getSessionId();
+            if (sessionFile != null && sessionFile.getSessionId() != null && !sessionFile.getSessionId().isEmpty()) {
+                shellSessionId = sessionFile.getSessionId();
+                shellUserId = sessionFile.getUserId();
+                sessionId = sessionFile.getSessionId();
                 logoutAtExit = false;
                 sessionIdFromFile = true;
             }
@@ -1375,16 +1375,16 @@ public class OpenCGAMain {
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 
-    private static UserConfigFile loadUserFile() throws IOException {
+    private static SessionFile loadUserFile() throws IOException {
         java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml").toFile();
         if (file.exists()) {
-            return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
+            return new ObjectMapper(new YAMLFactory()).readValue(file, SessionFile.class);
         } else {
-            return new UserConfigFile();
+            return new SessionFile();
         }
     }
 
-    private static void saveUserFile(UserConfigFile userConfigFile) throws IOException {
+    private static void saveUserFile(SessionFile sessionFile) throws IOException {
         Path opencgaDirectoryPath = Paths.get(System.getProperty("user.home"), ".opencga");
         if (!opencgaDirectoryPath.toFile().exists()) {
             Files.createDirectory(opencgaDirectoryPath);
@@ -1392,7 +1392,7 @@ public class OpenCGAMain {
         FileUtils.checkDirectory(opencgaDirectoryPath, true);
         java.io.File file = opencgaDirectoryPath.resolve("opencga.yml").toFile();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        objectMapper.writeValue(file, userConfigFile);
+        objectMapper.writeValue(file, sessionFile);
     }
 
 }

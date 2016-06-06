@@ -30,6 +30,8 @@ public class ClientConfigurationTest {
     public void testDefault() {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
 
+        clientConfiguration.setSessionDuration(120);
+
         RestConfig restConfig = new RestConfig("localhost:9090/opencga", 200, 10000, 2000);
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
 

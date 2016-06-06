@@ -50,10 +50,10 @@ public class UserClient extends AbstractParentClient<User> {
         return response;
     }
 
-    QueryResponse<ObjectMap> logout(String password) {
+    QueryResponse<ObjectMap> logout(String user) {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, null, "logout", null, ObjectMap.class);
+            response = execute(USERS_URL, user, "logout", null, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();
         }

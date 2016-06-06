@@ -104,7 +104,7 @@ public class OpencgaMain {
                     }
 
                     if (commandExecutor != null) {
-                        commandExecutor.loadConfigurations();
+//                        commandExecutor.loadConfigurations();
                         try {
                             commandExecutor.execute();
                         } catch (Exception e) {
