@@ -149,8 +149,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         Bson query = new Document(QueryParams.ID.key(), userId);
         Bson updates = Updates.push("sessions",
-                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session")))
-                        .append("$slice", -50));
+                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session"))));
+//                        .append("$slice", -50));
         QueryResult<UpdateResult> update = userCollection.update(query, updates, null);
 
         if (update.first().getModifiedCount() == 0) {
