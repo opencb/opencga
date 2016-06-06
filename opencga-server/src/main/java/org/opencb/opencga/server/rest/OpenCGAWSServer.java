@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -199,6 +200,10 @@ public class OpenCGAWSServer {
         if (configDirPath != null && Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
+
+            // Required for reading the analysis.properties file.
+            // TODO: Remove when analysis.properties is totally migrated to configuration.yml
+            Config.setOpenCGAHome(configDirPath.getParent().toString());
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
