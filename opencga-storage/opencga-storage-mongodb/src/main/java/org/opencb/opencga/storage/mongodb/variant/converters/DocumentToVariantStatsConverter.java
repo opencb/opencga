@@ -85,12 +85,39 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         stats.setMissingGenotypes((int) object.get(MISSGENOTYPE_FIELD));
 
         // Genotype counts
+        int alleleNumber = 0;
+        int gtNumber = 0;
         Document genotypes = (Document) object.get(NUMGT_FIELD);
+        HashMap<Genotype, Integer> genotypesCount = new HashMap<>();
         for (Map.Entry<String, Object> o : genotypes.entrySet()) {
             String genotypeStr = o.getKey().replace("-1", ".");
-            stats.addGenotype(new Genotype(genotypeStr), (int) o.getValue());
+            int value = (int) o.getValue();
+            Genotype g = new Genotype(genotypeStr);
+            genotypesCount.put(g, value);
+            alleleNumber += value * g.getAllelesIdx().length;
+            gtNumber += value;
+        }
+        stats.setGenotypesCount(genotypesCount);
+
+        HashMap<Genotype, Float> genotypesFreq = new HashMap<>();
+        for (Map.Entry<Genotype, Integer> entry : genotypesCount.entrySet()) {
+            genotypesFreq.put(entry.getKey(), entry.getValue().floatValue() / gtNumber);
+        }
+        stats.setGenotypesFreq(genotypesFreq);
+
+        int[] alleleCounts = {0, 0};
+        for (Map.Entry<Genotype, Integer> entry : stats.getGenotypesCount().entrySet()) {
+            for (int i : entry.getKey().getAllelesIdx()) {
+                if (i == 0 || i == 1) {
+                    alleleCounts[i] += entry.getValue();
+                }
+            }
         }
 
+        stats.setRefAlleleCount(alleleCounts[0]);
+        stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
+        stats.setAltAlleleCount(alleleCounts[1]);
+        stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
         return stats;
     }
 

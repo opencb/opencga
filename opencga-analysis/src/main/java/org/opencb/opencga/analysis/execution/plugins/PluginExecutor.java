@@ -26,7 +26,7 @@ public class PluginExecutor {
 
     public int run(Job job) throws Exception {
 
-        OpenCGAPlugin plugin = PluginFactory.get().getPlugin(job.getToolName());
+        OpenCGAAnalysis plugin = PluginFactory.get().getPlugin(job.getToolName());
         ObjectMap configuration = new ObjectMap();
         configuration.putAll(job.getParams());
 

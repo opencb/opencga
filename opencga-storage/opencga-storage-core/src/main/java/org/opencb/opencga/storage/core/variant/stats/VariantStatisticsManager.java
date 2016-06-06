@@ -168,6 +168,10 @@ public class VariantStatisticsManager {
         if (options.containsKey(Options.FILE_ID.key())) {
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(Options.FILE_ID.key()));
         }
+        if (options.containsKey(VariantDBAdaptor.VariantQueryParams.REGION.key())) {
+            Object region = options.get(VariantDBAdaptor.VariantQueryParams.REGION.key());
+            readerQuery.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
+        }
         if (updateStats) {
             //Get all variants that not contain any of the required cohorts
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.COHORTS.key(),

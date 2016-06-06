@@ -11,7 +11,7 @@ import java.util.*;
 
 /**
  * This class scans all the classpath using the library {@link Reflections} and find all the
- * implementations of the plugin interface {@link OpenCGAPlugin}.
+ * implementations of the plugin interface {@link OpenCGAAnalysis}.
  *
  * Implements singleton pattern. Use {@link #get()} to obtain instance
  *
@@ -24,7 +24,7 @@ public class PluginFactory {
 
     private static PluginFactory pluginFactory;
     private final Reflections reflections;
-    private final Map<String, Class<? extends OpenCGAPlugin>> pluginsIdMap = new HashMap<>();
+    private final Map<String, Class<? extends OpenCGAAnalysis>> pluginsIdMap = new HashMap<>();
 
     private PluginFactory() {
 //        Reflections.log = null; // Uncomment to skip logs
@@ -36,14 +36,14 @@ public class PluginFactory {
     }
 
     /**
-     * Initialize the pluginsIdMap. Find all the subtypes of {@link OpenCGAPlugin}
+     * Initialize the pluginsIdMap. Find all the subtypes of {@link OpenCGAAnalysis}
      */
     private void init() {
-        Set<Class<? extends OpenCGAPlugin>> plugins = reflections.getSubTypesOf(OpenCGAPlugin.class);
+        Set<Class<? extends OpenCGAAnalysis>> plugins = reflections.getSubTypesOf(OpenCGAAnalysis.class);
         List<String> duplicatedPlugins = new LinkedList<>();
-        for (Class<? extends OpenCGAPlugin> pluginClazz : plugins) {
+        for (Class<? extends OpenCGAAnalysis> pluginClazz : plugins) {
             try {
-                OpenCGAPlugin plugin = pluginClazz.newInstance();
+                OpenCGAAnalysis plugin = pluginClazz.newInstance();
                 String pluginId = plugin.getIdentifier();
                 if (pluginsIdMap.containsKey(pluginId)) {
                     logger.error("Duplicated ID for class {} and {}", pluginClazz, pluginsIdMap.get(pluginId));
@@ -75,7 +75,7 @@ public class PluginFactory {
      *
      * @return  Map between plugin id and plugin class
      */
-    public Map<String, Class<? extends OpenCGAPlugin>> getAllPlugins() {
+    public Map<String, Class<? extends OpenCGAAnalysis>> getAllPlugins() {
         return Collections.unmodifiableMap(pluginsIdMap);
     }
 
@@ -85,7 +85,7 @@ public class PluginFactory {
      * @param id    Plugin id
      * @return      Plugin class
      */
-    public Class<? extends OpenCGAPlugin> getPluginClass(String id) {
+    public Class<? extends OpenCGAAnalysis> getPluginClass(String id) {
         return pluginsIdMap.get(id);
     }
 
@@ -95,9 +95,9 @@ public class PluginFactory {
      * @param id    Plugin id
      * @return      New instance of the plugin
      */
-    public OpenCGAPlugin getPlugin(String id) {
+    public OpenCGAAnalysis getPlugin(String id) {
         try {
-            Class<? extends OpenCGAPlugin> pluginClass = getPluginClass(id);
+            Class<? extends OpenCGAAnalysis> pluginClass = getPluginClass(id);
             if (pluginClass == null) {
                 return null;
             } else {
