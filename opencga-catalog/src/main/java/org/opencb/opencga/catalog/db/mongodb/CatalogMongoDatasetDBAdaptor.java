@@ -177,7 +177,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             datasetParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!datasetParams.isEmpty()) {

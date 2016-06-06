@@ -265,7 +265,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public void updateUserLastActivity(String userId) throws CatalogDBException {
-        update(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
+        update(userId, new ObjectMap("lastActivity", TimeUtils.getTime()));
     }
 
     @Override
@@ -465,7 +465,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);

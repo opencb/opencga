@@ -451,7 +451,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
        // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);

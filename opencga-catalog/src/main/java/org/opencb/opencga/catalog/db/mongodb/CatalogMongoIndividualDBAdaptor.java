@@ -594,7 +594,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             individualParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         // Obtain all the possible individual Ids that satisfies the query

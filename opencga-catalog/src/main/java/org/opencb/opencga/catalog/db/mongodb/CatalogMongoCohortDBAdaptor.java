@@ -582,7 +582,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         //filterEnumParams(parameters, cohortParams, acceptedEnumParams);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             cohortParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey("status")) {
             throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_STATUS.key()

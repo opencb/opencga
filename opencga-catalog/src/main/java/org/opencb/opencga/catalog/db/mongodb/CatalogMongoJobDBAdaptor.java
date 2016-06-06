@@ -643,7 +643,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //        filterEnumParams(parameters, jobParameters, acceptedEnums);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             jobParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
 

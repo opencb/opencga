@@ -890,7 +890,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             sampleParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!sampleParameters.isEmpty()) {
