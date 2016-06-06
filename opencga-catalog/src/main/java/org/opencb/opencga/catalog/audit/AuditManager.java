@@ -29,6 +29,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordCreation(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -43,6 +44,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordRead(Resource resource, Object id, String userId, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -58,6 +60,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordUpdate(Resource resource, Object id, String userId, ObjectMap update, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -73,6 +76,7 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
+    @Deprecated
     AuditRecord recordDeletion(Resource resource, Object id, String userId, Object object, String description, ObjectMap attributes)
             throws CatalogException;
 
@@ -81,6 +85,7 @@ public interface AuditManager {
      *
      * @param resource    Resource type
      * @param action      Executed action
+     * @param importance  Importance of the document being audited (high, medium or low)
      * @param id          Resource id (either String or Integer)
      * @param userId      User who performs the action
      * @param before      Optional Previous object state
@@ -90,8 +95,8 @@ public interface AuditManager {
      * @return Generated AuditRecord
      * @throws CatalogException CatalogException
      */
-    AuditRecord recordAction(Resource resource, String action, Object id, String userId, ObjectMap before, ObjectMap after,
-                             String description, ObjectMap attributes)
+    AuditRecord recordAction(Resource resource, AuditRecord.Action action, AuditRecord.Magnitude importance, Object id, String userId,
+                             Object before, Object after, String description, ObjectMap attributes)
             throws CatalogException;
 
     /**

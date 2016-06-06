@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
@@ -216,8 +217,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), AuthorizationManager.getDefaultAcls(new HashSet<>(Arrays.asList(userId))),
-                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), null, datastores,
-                stats, attributes);
+                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(),
+                new LinkedList<>(), null, datastores, stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -235,11 +236,14 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri)).first();
-        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
+        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.Action.create, AuditRecord.Magnitude.low, study.getId(), userId,
+                null, study, null, null);
         long rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
         rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
-        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
-
+//        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
+                null, rootFile, null, null);
         userDBAdaptor.updateUserLastActivity(userId);
         return result;
     }
@@ -613,6 +617,8 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(name, "name");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_PANELS);
         ParamUtils.checkParameter(disease, "disease");
         description = ParamUtils.defaultString(description, "");
         List<String> geneList = Collections.emptyList();
@@ -633,13 +639,13 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                     + " be provided.");
         }
 
-//        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_JOBS);
         DiseasePanel diseasePanel = new DiseasePanel(-1, name, disease, description, geneList, regionList, variantList,
                 new DiseasePanel.PanelStatus());
 
-        long studyId = getStudyId(studyStr);
         QueryResult<DiseasePanel> queryResult = panelDBAdaptor.createPanel(studyId, diseasePanel, options);
-        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.panel, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
 
     }
@@ -649,12 +655,29 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Long panelId = getDiseasePanelId(userId, panelStr);
-//        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.VIEW);
+        authorizationManager.checkDiseasePanelPermission(panelId, userId, DiseasePanelAcl.DiseasePanelPermissions.VIEW);
         QueryResult<DiseasePanel> queryResult = panelDBAdaptor.getPanel(panelId, options);
         return queryResult;
     }
 
+    @Override
+    public QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(parameters, "Parameters");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long diseasePanelId = getDiseasePanelId(userId, panelStr);
+        authorizationManager.checkDiseasePanelPermission(diseasePanelId, userId, DiseasePanelAcl.DiseasePanelPermissions.UPDATE);
 
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|disease")) {
+                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+            }
+        }
+
+        QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.panel, diseasePanelId, userId, parameters, null, null);
+        return result;
+    }
 
     /*
      * Variables Methods
@@ -701,7 +724,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
-        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//      auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.variableSet, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

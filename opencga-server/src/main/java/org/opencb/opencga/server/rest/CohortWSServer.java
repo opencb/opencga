@@ -332,4 +332,30 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{cohortIds}/share")
+    @ApiOperation(value = "Share cohorts with other members", position = 7)
+    public Response share(@PathParam(value = "cohortIds") String cohortIds,
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+        try {
+            return createOkResponse(catalogManager.shareCohorts(cohortIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
+    public Response unshare(@PathParam(value = "cohortIds") String cohortIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 }

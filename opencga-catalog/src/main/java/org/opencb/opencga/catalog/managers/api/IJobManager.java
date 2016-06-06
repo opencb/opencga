@@ -34,6 +34,22 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     Long getJobId(String userId, String jobStr) throws CatalogException;
 
     /**
+     * Obtains the list of job ids corresponding to the comma separated list of job strings given in jobStr.
+     *
+     * @param userId User demanding the action.
+     * @param jobStr Comma separated list of job ids.
+     * @return A list of job ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getJobIds(String userId, String jobStr) throws CatalogException {
+        List<Long> jobIds = new ArrayList<>();
+        for (String jobId : jobStr.split(",")) {
+            jobIds.add(getJobId(userId, jobId));
+        }
+        return jobIds;
+    }
+
+    /**
      * Retrieve the job Acls for the given members in the job.
      *
      * @param jobStr Job id of which the acls will be obtained.

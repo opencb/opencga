@@ -197,7 +197,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException {
+    public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         checkJobId(jobId);
         long studyId = getStudyIdByJobId(jobId);
@@ -245,7 +245,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getUsers());
-        if (jobAcls.getNumResults() > 0) {
+        if (jobAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -261,6 +261,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetJobAcl(jobId, usersToOverride);
+        } else if (jobAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setJobAcl: " + jobAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.

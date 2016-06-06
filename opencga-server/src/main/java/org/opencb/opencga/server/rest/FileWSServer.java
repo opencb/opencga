@@ -847,33 +847,33 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileIds}/share")
-    @ApiOperation(value = "Share file with other user", position = 16)
+    @ApiOperation(value = "Share files with other members", position = 17)
     public Response share(@PathParam(value = "fileIds") String fileIds,
-                          @ApiParam(value = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userIds") String userIds,
-                          @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
-                          @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
-                          @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
-                          @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
-                          /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
-
-        QueryResult queryResult;
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of file permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
         try {
-            if (unshare) {
-                queryResult = catalogManager.unshareFile(fileIds, userIds, sessionId);
-            } else {
-                queryResult = catalogManager.shareFile(fileIds, userIds, new AclEntry("", read, write, false, delete), sessionId);
-            }
-
-            return createOkResponse(queryResult);
+            return createOkResponse(catalogManager.shareFile(fileIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
 
+    @GET
+    @Path("/{fileIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 18)
+    public Response unshare(@PathParam(value = "fileIds") String fileIds,
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(catalogManager.unshareFile(fileIds, members, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/link")
-    @ApiOperation(value = "Link an external file into catalog.", position = 17)
+    @ApiOperation(value = "Link an external file into catalog.", position = 19)
     public Response link(@ApiParam(required = true) @QueryParam("uri") String uriStr,
                          @ApiParam(required = true) @QueryParam("studyId") String studyIdStr,
                          @ApiParam(required = true) @QueryParam("path") String path,
@@ -920,7 +920,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/unlink")
-    @ApiOperation(value = "Unlink an external file from catalog.", position = 17)
+    @ApiOperation(value = "Unlink an external file from catalog.", position = 20)
     public Response link(@ApiParam(required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
         try {
             QueryResult<File> queryResult = catalogManager.unlink(Integer.parseInt(fileIdStr), sessionId);
@@ -933,7 +933,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/relink")
-    @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", position = 17)
+    @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", position = 21)
     public Response relink(@ApiParam(value = "File ID") @PathParam("fileId") @DefaultValue("") String fileIdStr,
                            @ApiParam(value = "new URI" ,required = true) @QueryParam("uri") String uriStr,
                            @ApiParam(value = "Do calculate checksum for new files", required = false) @DefaultValue("false") @QueryParam("calculateChecksum") boolean calculateChecksum ) {
@@ -960,7 +960,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/refresh")
-    @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", position = 17)
+    @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", position = 22)
     public Response refresh(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr) {
         try {
             long fileId = catalogManager.getFileId(fileIdStr);
@@ -995,7 +995,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/delete")
-    @ApiOperation(value = "Delete file", position = 17)
+    @ApiOperation(value = "Delete file", position = 23)
     public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr) {
         try {
             long fileId = catalogManager.getFileId(fileIdStr);

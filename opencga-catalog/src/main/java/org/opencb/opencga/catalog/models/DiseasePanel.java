@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -34,6 +35,7 @@ public class DiseasePanel {
         this.genes = genes;
         this.regions = regions;
         this.variants = variants;
+        this.acls = Collections.emptyList();
         this.status = status;
     }
 

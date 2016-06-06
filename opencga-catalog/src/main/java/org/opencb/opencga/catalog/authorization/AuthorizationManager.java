@@ -88,53 +88,60 @@ public interface AuthorizationManager {
 
     void checkDatasetPermission(long datasetId, String userId, DatasetAcl.DatasetPermissions permission) throws CatalogException;
 
+    void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAcl.DiseasePanelPermissions permission)
+            throws CatalogException;
+
     //User.Role getUserRole(String userId) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and file ids given.
      *
      * @param userId User id of the user that is performing the action.
-     * @param fileIds Comma separated list of file ids.
+     * @param fileIds List of file ids.
      * @param userIds Comma separated list of user ids which the files will be shared with.
      * @param permissions List of file permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult containing the FileAcl applied to the different file ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the files.
      */
-    QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<String> permissions)
+    QueryResult<FileAcl> setFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions, boolean override)
             throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the file ids given.
      *
      * @param userId User id of the user that is performing the action.
-     * @param fileIds Comma separated list of file ids.
+     * @param fileIds list of file ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
      * @throws CatalogException when the user ordering the action does not have permission to share the files.
      */
-    void unsetFilePermissions(String userId, String fileIds, String userIds) throws CatalogException;
+    void unsetFilePermissions(String userId, List<Long> fileIds, String userIds) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and sample ids given.
      *
      * @param userId User id of the user that is performing the action.
-     * @param sampleIds Comma separated list of sample ids.
+     * @param sampleIds list of sample ids.
      * @param userIds Comma separated list of user ids which the samples will be shared with.
      * @param permissions List of sample permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult containing the SampleAcl applied to the different sample ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the samples.
      */
-    QueryResult<SampleAcl> setSamplePermissions(String userId, String sampleIds, String userIds, List<String> permissions)
-            throws CatalogException;
+    QueryResult<SampleAcl> setSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions,
+                                                boolean override) throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the sample ids given.
      *
      * @param userId User id of the user that is performing the action.
-     * @param sampleIds Comma separated list of sample ids.
+     * @param sampleIds list of sample ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
      * @throws CatalogException when the user ordering the action does not have permission to share the samples.
      */
-    void unsetSamplePermissions(String userId, String sampleIds, String userIds) throws CatalogException;
+    void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and cohort ids given.
@@ -143,11 +150,13 @@ public interface AuthorizationManager {
      * @param cohortIds Comma separated list of cohort ids.
      * @param userIds Comma separated list of user ids which the cohort will be shared with.
      * @param permissions List of cohort permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult containing the CohortAcl applied to the different cohort ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
-    QueryResult<CohortAcl> setCohortPermissions(String userId, String cohortIds, String userIds, List<String> permissions)
-            throws CatalogException;
+    QueryResult<CohortAcl> setCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions,
+                                                boolean override) throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the cohort ids given.
@@ -157,7 +166,7 @@ public interface AuthorizationManager {
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
-    void unsetCohortPermissions(String userId, String cohortIds, String userIds) throws CatalogException;
+    void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and individual ids given.
@@ -166,11 +175,13 @@ public interface AuthorizationManager {
      * @param individualIds Comma separated list of individual ids.
      * @param userIds Comma separated list of user ids which the individual will be shared with.
      * @param permissions List of individual permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult containing the IndividualAcl applied to the different individual ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the individuals.
      */
-    QueryResult<IndividualAcl> setIndividualPermissions(String userId, String individualIds, String userIds, List<String> permissions)
-            throws CatalogException;
+    QueryResult<IndividualAcl> setIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions,
+                                                        boolean override) throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the individual ids given.
@@ -180,7 +191,7 @@ public interface AuthorizationManager {
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
      * @throws CatalogException when the user ordering the action does not have permission to share the individuals.
      */
-    void unsetIndividualPermissions(String userId, String individualIds, String userIds) throws CatalogException;
+    void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and job ids given.
@@ -189,10 +200,12 @@ public interface AuthorizationManager {
      * @param jobIds Comma separated list of job ids.
      * @param userIds Comma separated list of user ids which the job will be shared with.
      * @param permissions List of job permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult containing the JobAcl applied to the different job ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
-    QueryResult<JobAcl> setJobPermissions(String userId, String jobIds, String userIds, List<String> permissions)
+    QueryResult<JobAcl> setJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions, boolean override)
             throws CatalogException;
 
     /**
@@ -203,7 +216,7 @@ public interface AuthorizationManager {
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
-    void unsetJobPermissions(String userId, String jobIds, String userIds) throws CatalogException;
+    void unsetJobPermissions(String userId, List<Long> jobIds, String userIds) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and dataset ids given.
@@ -212,11 +225,13 @@ public interface AuthorizationManager {
      * @param datasetIds Comma separated list of dataset ids.
      * @param userIds Comma separated list of user ids which the dataset will be shared with.
      * @param permissions List of dataset permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult containing the DatasetAcl applied to the different dataset ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
      */
-    QueryResult<DatasetAcl> setDatasetPermissions(String userId, String datasetIds, String userIds, List<String> permissions)
-            throws CatalogException;
+    QueryResult<DatasetAcl> setDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions,
+                                                  boolean override) throws CatalogException;
 
     /**
      * Remove the permissions given for all the users in the dataset ids given.
@@ -226,7 +241,32 @@ public interface AuthorizationManager {
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
      * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
      */
-    void unsetDatasetPermissions(String userId, String datasetIds, String userIds) throws CatalogException;
+    void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds) throws CatalogException;
+
+    /**
+     * Set the permissions given for all the users and panel ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param panelIds Comma separated list of panel ids.
+     * @param userIds Comma separated list of user ids which the panel will be shared with.
+     * @param permissions List of panel permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
+     * @return A queryResult containing the DiseasePanelAcl applied to the different panel ids.
+     * @throws CatalogException when the user ordering the action does not have permission to share the panels.
+     */
+    QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions,
+                                                            boolean override) throws CatalogException;
+
+    /**
+     * Remove the permissions given for all the users in the panel ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param panelIds Comma separated list of panel ids.
+     * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @throws CatalogException when the user ordering the action does not have permission to share the panels.
+     */
+    void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds) throws CatalogException;
 
     /**
      * Removes from the list the projects that the user can not read.
@@ -343,13 +383,16 @@ public interface AuthorizationManager {
      * @param studyId Study id under which the members will be added to the role.
      * @param members List of member ids (users and/or groups).
      * @param roleId Role id where the members will be added to.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return a queryResult containing the complete studyAcl where the members have been added to.
      * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
      */
-    QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId) throws CatalogException;
-    default QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, String members, String roleId)
+    QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId, boolean override)
+            throws CatalogException;
+    default QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, String members, String roleId, boolean override)
             throws CatalogException {
-        return addMembersToRole(userId, studyId, Arrays.asList(members.split(",")), roleId);
+        return addMembersToRole(userId, studyId, Arrays.asList(members.split(",")), roleId, override);
     }
     /**
      * Removes the members from the roleId specified.

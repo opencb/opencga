@@ -244,7 +244,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
     QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
 
-    QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl) throws CatalogDBException;
+    QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException;
 
     void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException;
 

@@ -9,14 +9,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class AuditRecord {
-    public static final String CREATE = "create";
-    //    public enum Status {running, done, fail}
-    public static final String UPDATE = "update";
-    public static final String DELETE = "delete";
-    public static final String INDEX = "index";
+
+    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, tool, variableSet}
+    public enum Action {create, update, view, delete, index, login, logout, share}
+    public enum Magnitude {low, medium, high}
+
     private Object id;
     private Resource resource;
-    private String action;
+    private Action action;
+    private Magnitude importance;
     private ObjectMap before;
     private ObjectMap after;
     /*
@@ -30,11 +31,12 @@ public class AuditRecord {
     public AuditRecord() {
     }
 
-    public AuditRecord(Object id, Resource resource, String action, ObjectMap before, ObjectMap after, long timeStamp, String userId,
-                       String description, ObjectMap attributes) {
+    public AuditRecord(Object id, Resource resource, Action action, Magnitude importance, ObjectMap before, ObjectMap after, long timeStamp,
+                       String userId, String description, ObjectMap attributes) {
         this.id = id;
         this.resource = resource;
         this.action = action;
+        this.importance = importance;
         this.before = before;
         this.after = after;
         this.timeStamp = timeStamp;
@@ -45,17 +47,19 @@ public class AuditRecord {
 
     @Override
     public String toString() {
-        return "AuditRecord{"
-                + "id=" + id
-                + ", resource=" + resource
-                + ", action=" + action
-                + ", before=" + (before == null ? "null" : before)
-                + ", after=" + (after == null ? "null" : after)
-                + ", timeStamp=" + timeStamp
-                + ", userId='" + userId + '\''
-                + ", description='" + description + '\''
-                + ", attributes=" + attributes
-                + '}';
+        final StringBuilder sb = new StringBuilder("AuditRecord{");
+        sb.append("id=").append(id);
+        sb.append(", resource=").append(resource);
+        sb.append(", action=").append(action);
+        sb.append(", importance=").append(importance);
+        sb.append(", before=").append(before);
+        sb.append(", after=").append(after);
+        sb.append(", timeStamp=").append(timeStamp);
+        sb.append(", userId='").append(userId).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Object getId() {
@@ -76,11 +80,11 @@ public class AuditRecord {
         return this;
     }
 
-    public String getAction() {
+    public Action getAction() {
         return action;
     }
 
-    public AuditRecord setAction(String action) {
+    public AuditRecord setAction(Action action) {
         this.action = action;
         return this;
     }
@@ -139,5 +143,12 @@ public class AuditRecord {
         return this;
     }
 
-    public enum Resource {user, project, study, file, sample, job, individual, cohort, dataset, panel, tool, variableSet}
+    public Magnitude getImportance() {
+        return importance;
+    }
+
+    public AuditRecord setImportance(Magnitude importance) {
+        this.importance = importance;
+        return this;
+    }
 }

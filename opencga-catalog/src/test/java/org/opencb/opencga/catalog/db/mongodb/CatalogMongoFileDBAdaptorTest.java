@@ -188,12 +188,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         ));
 
 //        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
-        catalogFileDBAdaptor.setFileAcl(fileId, granted);
+        catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
         granted.setUsers(Arrays.asList("imedina"));
-        catalogFileDBAdaptor.setFileAcl(fileId, granted);
+        catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
         try {
             granted.setUsers(Arrays.asList("noUser"));
-            catalogFileDBAdaptor.setFileAcl(fileId, granted);
+            catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
             fail("error: expected exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
