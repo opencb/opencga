@@ -81,7 +81,7 @@ public class OpencgaMain {
                             commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
                             break;
                         case "studies":
-                            commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudyCommands());
                             break;
                         case "files":
                             commandExecutor = new FilesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
