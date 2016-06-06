@@ -27,10 +27,10 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
@@ -46,6 +46,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -187,18 +188,18 @@ public class VariantStatisticsManager {
         }
         Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStatsPath);
-        StringDataWriter writer = new StringDataWriter(variantStatsPath);
+        StringDataWriter writer = new StringDataWriter(variantStatsPath, true);
 
         // runner
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
+        ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
         try {
-            ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
-            ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
 
             logger.info("starting stats creation for cohorts {}", cohorts.keySet());
             long start = System.currentTimeMillis();
             runner.run();
             logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
-        } catch (Exception e) {
+        } catch (ExecutionException e) {
             throw new StorageManagerException("Unable to calculate statistics.", e);
         }
         // source stats
@@ -254,7 +255,6 @@ public class VariantStatisticsManager {
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
-                    strings.add("\n");
                     if (variantStatsWrapper.getCohortStats().get(StudyEntry.DEFAULT_COHORT) == null) {
                         defaultCohortAbsent = true;
                     }

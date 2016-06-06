@@ -65,6 +65,7 @@ public class VariantStorage {
      *      {@link VariantStorageManager.Options#FILE_ID}
      *      {@link VariantStorageManager.Options#UPDATE_STATS}
      *      {@link VariantStorageManager.Options#AGGREGATION_MAPPING_PROPERTIES}
+     *      {@link VariantDBAdaptor.VariantQueryParams#REGION}
      *      {@link ExecutorManager#EXECUTE}
      *      {@link ExecutorManager#SIMULATE}
      *      {@link AnalysisFileIndexer#LOG_LEVEL}
@@ -92,12 +93,13 @@ public class VariantStorage {
         final Long fileId = fileIdStr == null ? null : catalogManager.getFileId(fileIdStr);
         final long start = System.currentTimeMillis();
 
-        if ((cohortIds == null || cohortIds.isEmpty()) 
-                && !options.containsKey(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())) {
-            throw new CatalogException("Cohort list empty");
+        if (cohortIds == null || cohortIds.isEmpty()) {
+            if (!options.containsKey(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key())) {
+                throw new CatalogException("Cohort list empty");
+            }
+            cohortIds = Collections.emptyList();
         }
 
-        StringBuilder outputFileName = new StringBuilder();
         Map<Cohort, List<Sample>> cohorts = new HashMap<>(cohortIds.size());
         Set<Long> studyIdSet = new HashSet<>();
         Map<Long, Cohort> cohortMap = new HashMap<>(cohortIds.size());
@@ -124,11 +126,18 @@ public class VariantStorage {
             cohorts.put(cohort, sampleQueryResult.getResult());
             cohortMap.put(cohortId, cohort);
         }
-        for (Long cohortId : cohortIds) {
-            if (outputFileName.length() > 0) {
+
+        String region = options.getString(VariantDBAdaptor.VariantQueryParams.REGION.key());
+        StringBuilder outputFileName = new StringBuilder("stats_");
+        if (org.apache.commons.lang.StringUtils.isNotEmpty(region)) {
+            outputFileName.append(region).append("_");
+        }
+        for (Iterator<Long> iterator = cohortIds.iterator(); iterator.hasNext(); ) {
+            Long cohortId = iterator.next();
+            outputFileName.append(cohortMap.get(cohortId).getName());
+            if (iterator.hasNext()) {
                 outputFileName.append('_');
             }
-            outputFileName.append(cohortMap.get(cohortId).getName());
 
             /** Modify cohort status to "CALCULATING" **/
             catalogManager.modifyCohort(cohortId, new ObjectMap("status.status", Cohort.CohortStatus.CALCULATING), new QueryOptions(), sessionId);
@@ -172,7 +181,7 @@ public class VariantStorage {
                 .append(" --study-id ").append(studyId)
                 .append(" --session-id ").append(sessionId)
 //                .append(" --output-filename ").append(temporalOutDirUri.resolve("stats_" + outputFileName).toString())
-                .append(" --output-filename ").append("stats_").append(outputFileName)
+                .append(" --output-filename ").append(outputFileName)
                 .append(" --job-id ").append(randomString)
                 ;
         if (fileId != null) {
@@ -180,6 +189,9 @@ public class VariantStorage {
         }
         if (options.containsKey(AnalysisFileIndexer.LOG_LEVEL)) {
             sb.append(" --log-level ").append(options.getString(AnalysisFileIndexer.LOG_LEVEL));
+        }
+        if (org.apache.commons.lang3.StringUtils.isNotEmpty(region)) {
+            sb.append(" --region ").append(region);
         }
         if (updateStats) {
             sb.append(" --update-stats ");

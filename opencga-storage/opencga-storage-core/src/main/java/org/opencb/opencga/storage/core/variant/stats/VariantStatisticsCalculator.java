@@ -135,13 +135,13 @@ public class VariantStatisticsCalculator {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {
                     if (overwrite || study.getStats(cohort.getKey()) == null) {
 
-                        Map<String, Map<String, String>> samplesData = filterSamples(study.getSamplesDataAsMap(), cohort.getValue());
                         VariantStats variantStats = new VariantStats(variant);
                         Map<String, String> attributes = study.getAttributes();
                         attributes = attributes == null
                                 ? Collections.emptyMap()
                                 : attributes;
-                        VariantStatsCalculator.calculate(samplesData, attributes, null, variantStats);
+
+                        VariantStatsCalculator.calculate(study, cohort.getValue(), attributes, null, variantStats);
                         study.setStats(cohort.getKey(), variantStats);
 
                     }

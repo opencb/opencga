@@ -900,11 +900,11 @@ public class OpenCGAMain {
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
                         if (c.error) {
-                            parameters.put("status", Job.JobStatus.ERROR);
+                            parameters.put("status.status", Job.JobStatus.ERROR);
                             parameters.put("error", Job.ERRNO_ABORTED);
                             parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_ABORTED));
                         } else {
-                            parameters.put("status", Job.JobStatus.READY);
+                            parameters.put("status.status", Job.JobStatus.READY);
                         }
                         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 

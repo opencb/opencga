@@ -322,7 +322,7 @@ public abstract class VariantStorageETL implements StorageETL {
             StringDataReader dataReader = new StringDataReader(input);
 
             //Writers
-            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile);
+            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);
 
             final VariantSource finalSource = source;
             final Path finalOutputFileJsonFile = outputMetaFile;
