@@ -135,8 +135,8 @@ public class OpenCGAMain {
             reader = new BufferedReader(new InputStreamReader(System.in));
 
             if (userConfigFile != null) {
-                shellUserId = userConfigFile.userId;
-                shellSessionId = userConfigFile.sessionId;
+                shellUserId = userConfigFile.getUserId();
+                shellSessionId = userConfigFile.getSessionId();
                 sessionIdFromFile = true;
             }
             do {
@@ -251,8 +251,8 @@ public class OpenCGAMain {
                         if (userConfigFile == null) {
                             userConfigFile = new UserConfigFile();
                         }
-                        userConfigFile.sessionId = sessionId;
-                        userConfigFile.userId = catalogManager.getUserIdBySessionId(sessionId);
+                        userConfigFile.setSessionId(sessionId);
+                        userConfigFile.setUserId(catalogManager.getUserIdBySessionId(sessionId));
                         saveUserFile(userConfigFile);
 
                         System.out.println(shellSessionId);
@@ -268,8 +268,8 @@ public class OpenCGAMain {
                             shellUserId = null;
                             shellSessionId = null;
                             if (sessionIdFromFile) {
-                                userConfigFile.sessionId = null;
-                                userConfigFile.userId = null;
+                                userConfigFile.setSessionId(null);
+                                userConfigFile.setUserId(null);
                                 saveUserFile(userConfigFile);
                             }
                         } else {
@@ -1340,10 +1340,10 @@ public class OpenCGAMain {
             sessionId = shellSessionId;
             logoutAtExit = false;
         } else {
-            if (userConfigFile != null && userConfigFile.sessionId != null && !userConfigFile.sessionId.isEmpty()) {
-                shellSessionId = userConfigFile.sessionId;
-                shellUserId = userConfigFile.userId;
-                sessionId = userConfigFile.sessionId;
+            if (userConfigFile != null && userConfigFile.getSessionId() != null && !userConfigFile.getSessionId().isEmpty()) {
+                shellSessionId = userConfigFile.getSessionId();
+                shellUserId = userConfigFile.getUserId();
+                sessionId = userConfigFile.getSessionId();
                 logoutAtExit = false;
                 sessionIdFromFile = true;
             }

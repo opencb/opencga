@@ -22,15 +22,13 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.*;
 import org.opencb.opencga.app.cli.main.UserConfigFile;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -53,6 +51,7 @@ public abstract class CommandExecutor {
 
     protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
+    protected ClientConfiguration clientConfiguration;
 
     protected Logger logger;
 
@@ -91,6 +90,21 @@ public abstract class CommandExecutor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                try {
+                    UserConfigFile userConfigFile = loadUserFile();
+                    userConfigFile.setTimestamp(System.currentTimeMillis());
+                    java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "session.json").toFile();
+                    new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(file, userConfigFile);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
     }
 
     public abstract void execute() throws Exception;
@@ -161,6 +175,7 @@ public abstract class CommandExecutor {
         }
         try {
             loadStorageConfiguration();
+            loadClientConfiguration();
         } catch (IOException ex) {
             if (getLogger() == null) {
                 ex.printStackTrace();
@@ -255,84 +270,78 @@ public abstract class CommandExecutor {
                         .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
             }
         }
-//
-//        // logLevel parameter has preference in CLI over configuration file
-//        if (this.logLevel == null || this.logLevel.isEmpty()) {
-//            this.logLevel = this.configuration.getLogLevel();
-//            configureDefaultLog(this.logLevel);
-//        } else {
-//            if (!this.logLevel.equalsIgnoreCase(this.configuration.getLogLevel())) {
-//                this.configuration.setLogLevel(this.logLevel);
-//                configureDefaultLog(this.logLevel);
-//            }
-//        }
-//
-//        // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
-//        if (this.logFile != null && !this.logFile.isEmpty()) {
-//            this.configuration.setLogFile(logFile);
-//        }
-//
-//        // If user has set up a logFile we redirect logs to it
-//        if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
-//            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
-//
-//            // If a log file is used then console log is removed
-//            rootLogger.removeAppender("stderr");
-//
-//            // Creating a RollingFileAppender to output the log
-//            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - "
-//                    + "%m%n"), this.configuration.getLogFile(), true);
-//            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
-//            rootLogger.addAppender(rollingFileAppender);
-//        }
-
         logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
+    /**
+     * This method attempts to first data configuration from CLI parameter, if not present then uses
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
+     */
+    public void loadClientConfiguration() throws IOException {
+        // We load configuration file either from app home folder or from the JAR
+        Path path = Paths.get(appHome + "/conf/client-configuration.yml");
+        if (appHome != null && Files.exists(path)) {
+            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
+        } else {
+            logger.debug("Loading configuration from JAR file");
+            this.clientConfiguration = ClientConfiguration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
+        }
+    }
+
+
+    protected void saveUserFile(String user, String session) throws IOException {
+        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "session.json").toFile();
+        new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(file, new UserConfigFile(user, session));
+    }
+
     private static UserConfigFile loadUserFile() throws IOException {
-        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml").toFile();
+        java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "session.json").toFile();
         if (file.exists()) {
-            return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
+            return new ObjectMapper().readValue(file, UserConfigFile.class);
         } else {
             return new UserConfigFile();
         }
     }
 
-    protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
-            throws IOException, InterruptedException {
-        ProcessBuilder builder = getProcessBuilder(workingDirectory, binPath, args, logFilePath);
-
-        logger.debug("Executing command: " + StringUtils.join(builder.command(), " "));
-        Process process = builder.start();
-        process.waitFor();
-
-        // Check process output
-        boolean executedWithoutErrors = true;
-        int genomeInfoExitValue = process.exitValue();
-        if (genomeInfoExitValue != 0) {
-            logger.warn("Error executing {}, error code: {}. More info in log file: {}", binPath, genomeInfoExitValue, logFilePath);
-            executedWithoutErrors = false;
-        }
-        return executedWithoutErrors;
-    }
-
-    private ProcessBuilder getProcessBuilder(File workingDirectory, String binPath, List<String> args, String logFilePath) {
-        List<String> commandArgs = new ArrayList<>();
-        commandArgs.add(binPath);
-        commandArgs.addAll(args);
-        ProcessBuilder builder = new ProcessBuilder(commandArgs);
-
-        // working directoy and error and output log outputs
-        if (workingDirectory != null) {
-            builder.directory(workingDirectory);
-        }
-        builder.redirectErrorStream(true);
-        if (logFilePath != null) {
-            builder.redirectOutput(ProcessBuilder.Redirect.appendTo(new File(logFilePath)));
-        }
-
-        return builder;
-    }
+//    protected boolean runCommandLineProcess(File workingDirectory, String binPath, List<String> args, String logFilePath)
+//            throws IOException, InterruptedException {
+//        ProcessBuilder builder = getProcessBuilder(workingDirectory, binPath, args, logFilePath);
+//
+//        logger.debug("Executing command: " + StringUtils.join(builder.command(), " "));
+//        Process process = builder.start();
+//        process.waitFor();
+//
+//        // Check process output
+//        boolean executedWithoutErrors = true;
+//        int genomeInfoExitValue = process.exitValue();
+//        if (genomeInfoExitValue != 0) {
+//            logger.warn("Error executing {}, error code: {}. More info in log file: {}", binPath, genomeInfoExitValue, logFilePath);
+//            executedWithoutErrors = false;
+//        }
+//        return executedWithoutErrors;
+//    }
+//
+//    private ProcessBuilder getProcessBuilder(File workingDirectory, String binPath, List<String> args, String logFilePath) {
+//        List<String> commandArgs = new ArrayList<>();
+//        commandArgs.add(binPath);
+//        commandArgs.addAll(args);
+//        ProcessBuilder builder = new ProcessBuilder(commandArgs);
+//
+//        // working directoy and error and output log outputs
+//        if (workingDirectory != null) {
+//            builder.directory(workingDirectory);
+//        }
+//        builder.redirectErrorStream(true);
+//        if (logFilePath != null) {
+//            builder.redirectOutput(ProcessBuilder.Redirect.appendTo(new File(logFilePath)));
+//        }
+//
+//        return builder;
+//    }
 
     public CatalogConfiguration getCatalogConfiguration() {
         return catalogConfiguration;

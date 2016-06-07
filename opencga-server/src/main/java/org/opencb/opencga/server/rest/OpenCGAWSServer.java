@@ -85,7 +85,7 @@ public class OpenCGAWSServer {
     @DefaultValue("-1")
     @QueryParam("limit")
     @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
-    protected long limit;
+    protected int limit;
 
     @DefaultValue("0")
     @QueryParam("skip")
@@ -129,6 +129,9 @@ public class OpenCGAWSServer {
 
     protected static StorageConfiguration storageConfiguration;
     protected static StorageManagerFactory storageManagerFactory;
+
+    private static final int DEFAULT_LIMIT = 2000;
+    private static final int MAX_LIMIT = 5000;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -307,20 +310,21 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-        String limit = multivaluedMap.getFirst("limit");
-        if (limit != null) {
-            this.limit = Integer.parseInt(limit);
-            queryOptions.put("limit", this.limit);
-        }
 
-        String skip = multivaluedMap.getFirst("skip");
+        String limitStr = multivaluedMap.getFirst(QueryOptions.LIMIT);
+        if (StringUtils.isNotEmpty(limitStr)) {
+            limit = Integer.parseInt(limitStr);
+        }
+        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+
+        String skip = multivaluedMap.getFirst(QueryOptions.SKIP);
         if (skip != null) {
             this.skip = Integer.parseInt(skip);
-            queryOptions.put("skip", this.skip);
+            queryOptions.put(QueryOptions.SKIP, this.skip);
         }
 
-        parseIncludeExclude(multivaluedMap, "exclude", exclude);
-        parseIncludeExclude(multivaluedMap, "include", include);
+        parseIncludeExclude(multivaluedMap, QueryOptions.EXCLUDE, exclude);
+        parseIncludeExclude(multivaluedMap, QueryOptions.INCLUDE, include);
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
         // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import javax.ws.rs.client.Client;
@@ -45,7 +44,8 @@ abstract class AbstractParentClient<T> {
 
     protected static ObjectMapper jsonObjectMapper;
 
-    private final static int DEFAULT_LIMIT = 2000;
+    private final static int BATCH_SIZE = 2000;
+    private final static int DEFAULT_SKIP = 0;
 
     protected AbstractParentClient(String sessionId, ClientConfiguration configuration) {
         this.sessionId = sessionId;
@@ -89,13 +89,69 @@ abstract class AbstractParentClient<T> {
     protected <T> QueryResponse<T> execute(String category, String id, String action, Map<String, Object> params, Class<T> clazz)
             throws IOException {
 
+        System.out.println("configuration = " + configuration);
         // Build the basic URL
         WebTarget path = client
                 .target(configuration.getRest().getHost())
+                .path("webservices")
+                .path("rest")
                 .path("v1")
                 .path(category);
 
-        // TODO we sttill have to check if there are multiple IDs, the limit is 200 pero query, this can be parallelized
+        if (params == null) {
+            params = new HashMap<>();
+        }
+
+        int numRequiredFeatures = (int) params.getOrDefault(QueryOptions.LIMIT, Integer.MAX_VALUE);
+        int limit = Math.min(numRequiredFeatures, BATCH_SIZE);
+
+        int skip = (int) params.getOrDefault(QueryOptions.SKIP, DEFAULT_SKIP);
+
+        // Session ID is needed almost always, the only exceptions are 'create/user' and 'login'
+        if (this.sessionId != null && !this.sessionId.isEmpty()) {
+            path = path.queryParam("sid", this.sessionId);
+        }
+
+        QueryResponse<T> finalQueryResponse = null;
+        QueryResponse<T> queryResponse;
+
+        while (true) {
+            params.put(QueryOptions.SKIP, skip);
+            params.put(QueryOptions.LIMIT, limit);
+
+            queryResponse = (QueryResponse<T>) callRest(path, id, action, params, clazz);
+            int numResults = queryResponse.getResponse().get(0).getNumResults();
+
+            if (finalQueryResponse == null) {
+                finalQueryResponse = queryResponse;
+            } else {
+                if (numResults > 0) {
+                    finalQueryResponse.getResponse().get(0).getResult().addAll(queryResponse.getResponse().get(0).getResult());
+                    finalQueryResponse.getResponse().get(0).setNumResults(finalQueryResponse.getResponse().get(0).getResult().size());
+                }
+            }
+
+            int numTotalResults = finalQueryResponse.getResponse().get(0).getNumResults();
+            if (numResults < limit || numTotalResults == numRequiredFeatures || numResults == 0) {
+                break;
+            }
+
+            // DO NOT CHANGE THE ORDER OF THE FOLLOWING CODE
+            skip += numResults;
+            if (skip + BATCH_SIZE < numRequiredFeatures) {
+                limit = BATCH_SIZE;
+            } else {
+                limit = numRequiredFeatures - numTotalResults;
+            }
+
+        }
+        return finalQueryResponse;
+    }
+
+    protected QueryResponse<T> callRest(WebTarget path, String id, String action, Map<String, Object> params, Class clazz)
+            throws IOException {
+
+        // TODO we still have to check if there are multiple IDs, the limit is 200 pero query, this can be parallelized
         // Some WS do not have IDs such as 'create'
         if (id != null && !id.isEmpty()) {
             path = path.path(id);
@@ -111,23 +167,19 @@ abstract class AbstractParentClient<T> {
             }
         }
 
-        // Session ID is needed almost always, the only exceptions are 'create/user' and 'login'
-        if (this.sessionId != null && !this.sessionId.isEmpty()) {
-            path = path.queryParam("sid", this.sessionId);
-        }
-
         System.out.println("REST URL: " + path.getUri().toURL());
         String jsonString = path.request().get(String.class);
-        System.out.println("jsonString = " + jsonString);
-        QueryResponse<T> queryResponse = parseResult(jsonString, clazz);
-        System.out.println("queryResponse = " + queryResponse);
-        return queryResponse;
+        return parseResult(jsonString, clazz);
     }
 
     public static <T> QueryResponse<T> parseResult(String json, Class<T> clazz) throws IOException {
-        ObjectReader reader = jsonObjectMapper
-                .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));
-        return reader.readValue(json);
+        if (json != null && !json.isEmpty()) {
+            ObjectReader reader = jsonObjectMapper
+                    .readerFor(jsonObjectMapper.getTypeFactory().constructParametrizedType(QueryResponse.class, QueryResult.class, clazz));
+            return reader.readValue(json);
+        } else {
+            return new QueryResponse<>();
+        }
     }
 
     @Deprecated

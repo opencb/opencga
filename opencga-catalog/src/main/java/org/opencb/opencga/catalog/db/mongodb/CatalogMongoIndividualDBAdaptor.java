@@ -371,7 +371,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetIndividualAcl(individualId, usersToOverride);
+            unsetIndividualAcl(individualId, usersToOverride, Collections.emptyList());
         }  else if (individualAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setIndividualAcl: " + individualAcls.getNumResults() + " of the members already had an Acl set. "
                     + "If you still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -415,7 +415,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
+    public void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkIndividualId(individualId);
 
         // Check that all the members (users) are correct and exist.
@@ -425,7 +425,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, individualId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = individualCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetIndividualAcl: An error occurred when trying to stop sharing individual " + individualId
@@ -594,7 +599,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             individualParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         // Obtain all the possible individual Ids that satisfies the query

@@ -1146,7 +1146,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             studyParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!studyParameters.isEmpty()) {
