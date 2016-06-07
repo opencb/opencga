@@ -502,6 +502,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("Update user", startTime, get(query, null));
     }
 
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
     public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
         return update(userId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
@@ -603,10 +607,32 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore users", startTime, setStatus(query, Status.READY));
     }
 
+    @Override
+    public QueryResult<User> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new CatalogDBException("Delete user by int id. The id should be a string.");
+    }
+
+    public QueryResult<User> restore(String id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkUserExists(id);
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The user {" + id + "} is not deleted");
+        }
+
+        setStatus(id, Status.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore user", startTime, get(query, null));
+    }
 
     /***
      * Removes completely the user from the database.
