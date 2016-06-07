@@ -405,6 +405,11 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getStudyId(id);
     }
 
+    public long getStudyId(String studyId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return studyManager.getStudyId(userId, studyId);
+    }
+
     public long getFileId(String id) throws CatalogException {
         return fileManager.getFileId(id);
     }
@@ -898,6 +903,10 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("unshareDatasets");
     }
 
+    public QueryResult fileGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return fileManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
+    }
+
     /*
      * **************************
      * Job methods
@@ -973,6 +982,10 @@ public class CatalogManager implements AutoCloseable {
                 ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
         authorizationManager.unsetJobPermissions(userId, jobList, userIds, permissionList);
         return new QueryResult("unshareJob");
+    }
+
+    public QueryResult jobGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return jobManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*
@@ -1092,6 +1105,11 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.updateAnnotation(sampleId, annotationSetId, annotations, sessionId);
     }
 
+    public QueryResult sampleGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return sampleManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
+    }
+
+
     public QueryResult<AnnotationSet> annotateIndividual(long individualId, String annotationSetId, long variableSetId,
                                                          Map<String, Object> annotations,
                                                          Map<String, Object> attributes,
@@ -1119,6 +1137,10 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Sample> deleteSample(long sampleId, QueryOptions options, String sessionId) throws CatalogException {
         return sampleManager.delete(sampleId, options, sessionId);
+    }
+
+    public QueryResult individualGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return individualManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*
@@ -1236,6 +1258,10 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortId, String annotationId, String sessionId)
             throws CatalogException {
         return sampleManager.deleteCohortAnnotation(cohortId, annotationId, sessionId);
+    }
+
+    public QueryResult cohortGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return sampleManager.cohortGroupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*

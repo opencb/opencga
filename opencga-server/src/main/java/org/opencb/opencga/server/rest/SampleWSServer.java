@@ -19,8 +19,10 @@ package org.opencb.opencga.server.rest;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -270,6 +272,32 @@ public class SampleWSServer extends OpenCGAWSServer {
         try {
             QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group samples by several fields", position = 10)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyIdStr,
+                            @ApiParam(value = "Comma separated list of ids.") @QueryParam("id") String id,
+                            @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
+                            @ApiParam(value = "source") @QueryParam("source") String source,
+                            @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
+                            @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
+                            @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
+                            @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.sampleGroupBy(query, qOptions, by, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

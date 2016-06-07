@@ -3,6 +3,7 @@ package org.opencb.opencga.server.rest;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
@@ -249,6 +250,37 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
         try {
             return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group individuals by several fields", position = 10)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                            @ApiParam(value = "id", required = false) @QueryParam("id") String ids,
+                            @ApiParam(value = "name", required = false) @QueryParam("name") String names,
+                            @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
+                            @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
+                            @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+                            @ApiParam(value = "gender", required = false) @QueryParam("gender") String gender,
+                            @ApiParam(value = "race", required = false) @QueryParam("race") String race,
+                            @ApiParam(value = "species", required = false) @QueryParam("species") String species,
+                            @ApiParam(value = "population", required = false) @QueryParam("population") String population,
+                            @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+                            @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
+                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.individualGroupBy(query, qOptions, by, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
