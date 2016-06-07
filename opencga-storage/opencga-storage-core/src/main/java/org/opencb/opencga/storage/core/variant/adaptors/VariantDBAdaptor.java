@@ -110,6 +110,8 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
                 "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\""),
         ANNOT_GENE_TRAITS_NAME("annot-gene-trait-name", TEXT_ARRAY,
                 "List of gene trait association names. e.g. \"Cardiovascular Diseases\""),
+        ANNOT_HPO("annot-hpo", TEXT_ARRAY,
+                "List of HPO terms. e.g. \"HP:0000545\""),
         ANNOT_PROTEIN_KEYWORDS("annot-protein-keywords", TEXT_ARRAY,
                 "List of protein variant annotation keywords"),
         ANNOT_DRUG("annot-drug", TEXT_ARRAY,

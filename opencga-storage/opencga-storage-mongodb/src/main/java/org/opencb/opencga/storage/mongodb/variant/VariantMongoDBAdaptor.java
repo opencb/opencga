@@ -983,6 +983,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 addCompQueryFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_NAME_FIELD, value, geneTraitBuilder);
             }
 
+            if (query.containsKey(VariantQueryParams.ANNOT_HPO.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_HPO.key());
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder, QueryOperation.AND);
+            }
+
             DBObject geneTraitQuery = geneTraitBuilder.get();
             if (geneTraitQuery.keySet().size() != 0) {
                 builder.and(DocumentToVariantConverter.ANNOTATION_FIELD

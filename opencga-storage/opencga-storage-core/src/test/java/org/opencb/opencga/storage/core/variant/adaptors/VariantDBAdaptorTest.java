@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -379,13 +380,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Query query;
         Map<String, Integer> idsMap = new HashMap<>();
         Map<String, Integer> namesMap = new HashMap<>();
+        Map<String, Integer> hposMap = new HashMap<>();
         for (Variant variant : allVariants.getResult()) {
             Set<String> ids = new HashSet<>();
             Set<String> names = new HashSet<>();
+            Set<String> hpos = new HashSet<>();
             if (variant.getAnnotation().getGeneTraitAssociation() != null) {
                 for (GeneTraitAssociation geneTrait : variant.getAnnotation().getGeneTraitAssociation()) {
                     ids.add(geneTrait.getId());
                     names.add(geneTrait.getName());
+                    if (StringUtils.isNotEmpty(geneTrait.getHpo())) {
+                        hpos.add(geneTrait.getHpo());
+                    }
                 }
             }
             for (String id : ids) {
@@ -394,10 +400,14 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             for (String name : names) {
                 namesMap.put(name, namesMap.getOrDefault(name, 0) + 1);
             }
+            for (String hpo : hpos) {
+                hposMap.put(hpo, hposMap.getOrDefault(hpo, 0) + 1);
+            }
         }
 
         System.out.println(idsMap.size());
         System.out.println(namesMap.size());
+        System.out.println(hposMap.size());
 //        for (Map.Entry<String, Integer> entry : namesMap.entrySet()) {
 //            query = new Query(VariantDBAdaptor.VariantQueryParams.ANNOT_GENE_TRAITS_NAME.key(), "~="+entry.getKey());
 //            queryResult = dbAdaptor.get(query, null);
@@ -409,6 +419,16 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             query = new Query(ANNOT_GENE_TRAITS_ID.key(), entry.getKey());
             queryResult = dbAdaptor.get(query, null);
             assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+            if (i++ == 400) {
+                break;
+            }
+        }
+
+        i = 0;
+        for (Map.Entry<String, Integer> entry : hposMap.entrySet()) {
+            query = new Query(ANNOT_HPO.key(), entry.getKey());
+            queryResult = dbAdaptor.get(query, null);
+            assertEquals(entry.getKey(), entry.getValue().intValue(), queryResult.getNumResults());
             if (i++ == 400) {
                 break;
             }
