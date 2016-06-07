@@ -53,15 +53,17 @@ public interface IUserManager extends ResourceManager<String, User> {
 
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
-
+    @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
     QueryResult resetPassword(String userId, String email) throws CatalogException;
 
+    @Deprecated
     QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;
 
     QueryResult logout(String userId, String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
     void addQueryFilter(String sessionId, Filter filter) throws CatalogException;

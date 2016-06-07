@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.utils;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -54,9 +55,9 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         CatalogConfiguration catalogConfiguration = CatalogConfiguration.load(CatalogSampleAnnotationsLoaderTest.class.getClassLoader()
                 .getClass().getResource("/catalog-configuration-test.yml").openStream());
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();
         loader = new CatalogSampleAnnotationsLoader(catalogManager);
-
 
         String pedFileName = "20130606_g1k.ped";
         URL pedFileURL = CatalogSampleAnnotationsLoader.class.getClassLoader().getResource(pedFileName);
@@ -65,7 +66,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         ObjectMap session = catalogManager.loginAsAnonymous("localHost").getResult().get(0);
         sessionId = session.getString("sessionId");
         userId = session.getString("userId");
-        Project project = catalogManager.createProject(userId, "default", "def", "", "ACME", null, sessionId).getResult().get(0);
+        Project project = catalogManager.createProject("default", "def", "", "ACME", null, sessionId).getResult().get(0);
         Study study = catalogManager.createStudy(project.getId(), "default", "def", Study.Type.FAMILY, "", sessionId).getResult().get(0);
         studyId = study.getId();
         pedFile = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.OTHER_PED, "data/" + pedFileName, "", false, -1,
@@ -86,6 +87,7 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
         Pedigree pedigree = loader.readPedigree(pedFile.getPath());
         VariableSet variableSet = loader.getVariableSetFromPedFile(pedigree);
 
+        System.out.println(new ObjectMapper().defaultPrettyPrintingWriter().writeValueAsString(variableSet));
         validate(pedigree, variableSet);
     }
 

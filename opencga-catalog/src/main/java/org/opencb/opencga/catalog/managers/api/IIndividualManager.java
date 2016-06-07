@@ -7,7 +7,9 @@ import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -16,10 +18,62 @@ import java.util.Map;
  */
 public interface IIndividualManager extends ResourceManager<Long, Individual> {
 
+    Long getStudyId(long individualId) throws CatalogException;
+
+    /**
+     * Obtains the numeric individual id given a string.
+     *
+     * @param userId User id of the user asking for the individual id.
+     * @param individualStr Individual id in string format. Could be one of [id | user@aliasProject:aliasStudy:individualName
+     *                | user@aliasStudy:individualName | aliasStudy:individualName | individualName].
+     * @return the numeric individual id.
+     * @throws CatalogException when more than one individual id is found or the study or project ids cannot be resolved.
+     */
+    Long getIndividualId(String userId, String individualStr) throws CatalogException;
+
+    /**
+     * Obtains the list of individualIds corresponding to the comma separated list of individual strings given in individualStr.
+     *
+     * @param userId User demanding the action.
+     * @param individualStr Comma separated list of individual ids.
+     * @return A list of individual ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getIndividualIds(String userId, String individualStr) throws CatalogException {
+        List<Long> individualIds = new ArrayList<>();
+        for (String individualId : individualStr.split(",")) {
+            individualIds.add(getIndividualId(userId, individualId));
+        }
+        return individualIds;
+    }
+
+    @Deprecated
+    Long getIndividualId(String individualId) throws CatalogException;
+
     QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Gender gender,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Individual> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Retrieve the individual Acls for the given members in the individual.
+     *
+     * @param individualStr Individual id of which the acls will be obtained.
+     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
+     * @param sessionId Session of the user that wants to retrieve the acls.
+     * @return A queryResult containing the individual acls.
+     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
+     * the individual id is not valid or the members given do not exist.
+     */
+    QueryResult<IndividualAcl> getIndividualAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<IndividualAcl>> getIndividualAcls(List<String> individualIds, List<String> members, String sessionId)
+            throws CatalogException {
+        List<QueryResult<IndividualAcl>> result = new ArrayList<>(individualIds.size());
+        for (String individualStr : individualIds) {
+            result.add(getIndividualAcls(individualStr, members, sessionId));
+        }
+        return result;
+    }
 
     QueryResult<AnnotationSet> annotate(long individualId, String annotationSetId, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, String sessionId) throws CatalogException;

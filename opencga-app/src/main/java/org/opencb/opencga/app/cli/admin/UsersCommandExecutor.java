@@ -127,7 +127,7 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
             projectOrganization = usersCommandOptions.createUserCommandOptions.projectOrganization;
         }
 
-        Project project = catalogManager.createProject(usersCommandOptions.createUserCommandOptions.userId, projectName, projectAlias,
+        Project project = catalogManager.createProject(projectName, projectAlias,
                 projectDescription, projectOrganization, null, login.getString("sessionId")).first();
         System.out.println("A default project has been created for the user: " + project.toString() + "\n");
 

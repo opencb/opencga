@@ -32,7 +32,8 @@ public class ConfigurationTest {
     public void testDefault() {
         Configuration configuration = new Configuration();
 
-        configuration.setServer(new ServerConfiguration(8081, 8082));
+        configuration.setRest(new RestServerConfiguration(9090));
+        configuration.setGrpc(new GrpcServerConfiguration(9091));
 
         try {
             configuration.serialize(new FileOutputStream("/tmp/configuration-test.yml"));

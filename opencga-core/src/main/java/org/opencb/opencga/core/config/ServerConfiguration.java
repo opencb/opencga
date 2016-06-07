@@ -16,56 +16,46 @@
 
 package org.opencb.opencga.core.config;
 
-import java.util.Map;
-
 /**
  * Created by imedina on 25/04/16.
  */
-public class ServerConfiguration {
+public abstract class ServerConfiguration {
 
-    private int rest;
-    private int grpc;
-    private Map<String, String> options;
+    protected int port;
+    protected String logFile;
 
-    public ServerConfiguration(int rest, int grpc) {
-        this.rest = rest;
-        this.grpc = grpc;
+    public ServerConfiguration() {
+    }
+
+    public ServerConfiguration(int port) {
+        this.port = port;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("ServerConfiguration{");
-        sb.append("rest=").append(rest);
-        sb.append(", grpc=").append(grpc);
-        sb.append(", options=").append(options);
+        sb.append("port=").append(port);
+        sb.append(", logFile='").append(logFile).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public int getRest() {
-        return rest;
+    public int getPort() {
+        return port;
     }
 
-    public ServerConfiguration setRest(int rest) {
-        this.rest = rest;
+    public ServerConfiguration setPort(int port) {
+        this.port = port;
         return this;
     }
 
-    public int getGrpc() {
-        return grpc;
+    public String getLogFile() {
+        return logFile;
     }
 
-    public ServerConfiguration setGrpc(int grpc) {
-        this.grpc = grpc;
+    public ServerConfiguration setLogFile(String logFile) {
+        this.logFile = logFile;
         return this;
     }
 
-    public Map<String, String> getOptions() {
-        return options;
-    }
-
-    public ServerConfiguration setOptions(Map<String, String> options) {
-        this.options = options;
-        return this;
-    }
 }

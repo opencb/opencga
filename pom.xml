@@ -31,22 +31,28 @@
         <module>opencga-catalog</module>
         <module>opencga-analysis</module>
         <module>opencga-storage</module>
+        <module>opencga-client</module>
         <module>opencga-server</module>
     </modules>
 
     <properties>
-        <java.version>1.8</java.version>
         <opencga.version>0.8-dev</opencga.version>
-        <biodata.version>0.7.0-SNAPSHOT</biodata.version>
+        <java.version>1.8</java.version>
+        <biodata.version>0.8.0-SNAPSHOT</biodata.version>
         <datastore.version>0.5.0</datastore.version>
         <cellbase.version>4.1.0-beta</cellbase.version>
         <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
-        <jackson.version>2.6.4</jackson.version>
-        <jersey.version>2.19</jersey.version>
+        <jackson.version>2.6.6</jackson.version>
+        <jersey.version>2.23</jersey.version>
         <hadoop.version>2.6.3</hadoop.version>
         <hbase.version>1.0.1</hbase.version>
         <avro.version>1.7.7</avro.version>
+        <google.protobuf>3.0.0-beta-2</google.protobuf>
+        <google.grpc>0.13.2</google.grpc>
+        <slf4j.version>1.7.21</slf4j.version>
+        <junit.version>4.12</junit.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <scm>
@@ -113,11 +119,6 @@
             <name>Roberto</name>
             <email>roalva1@gmail.com</email>
         </developer>
-        <developer>
-            <id>mh11</id>
-            <name>Matthias</name>
-            <email>mh719+git@cam.ac.uk</email>
-        </developer>
     </developers>
 
     <mailingLists>
@@ -149,6 +150,11 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-catalog</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
                 <artifactId>opencga-analysis</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
@@ -164,7 +170,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.opencga</groupId>
-                <artifactId>opencga-catalog</artifactId>
+                <artifactId>opencga-client</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
 
@@ -241,23 +247,34 @@
                 <groupId>org.opencb.hpg-bigdata</groupId>
                 <artifactId>hpg-bigdata-core</artifactId>
                 <version>${hpg-bigdata.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <groupId>org.mortbay.jetty</groupId>
+                        <artifactId>servlet-api</artifactId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
+                <groupId>org.opencb.hpg-bigdata</groupId>
+                <artifactId>hpg-bigdata-tools</artifactId>
+                <version>0.6-SNAPSHOT</version>
             </dependency>
 
             <!-- General dependencies -->
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>15.0</version>
+                <version>18.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>1.7.12</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-log4j12</artifactId>
-                <version>1.7.12</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.beust</groupId>
@@ -280,19 +297,14 @@
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.amazonaws</groupId>
                 <artifactId>aws-java-sdk</artifactId>
                 <version>1.3.19</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-core</artifactId>
-                <version>7.0.63</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.tomcat.embed</groupId>
-                <artifactId>tomcat-embed-logging-juli</artifactId>
-                <version>7.0.63</version>
             </dependency>
             <dependency>
                 <groupId>org.xerial</groupId>
@@ -319,110 +331,112 @@
                 <artifactId>jetty-webapp</artifactId>
                 <version>9.3.6.v20151106</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-common</artifactId>
-                <version>${hbase.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>jetty</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>jetty-util</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>jsp-2.1</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>jsp-api-2.1</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>servlet-api-2.5</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jersey</groupId>
-                        <artifactId>jersey-core</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jersey</groupId>
-                        <artifactId>jersey-json</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>com.sun.jersey</groupId>
-                        <artifactId>jersey-server</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-api</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-log4j12</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-client</artifactId>
-                <version>${hbase.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-annotations</artifactId>
-                <version>${hbase.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-protocol</artifactId>
-                <version>${hbase.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-common</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-hdfs</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-mapreduce-client-core</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-auth</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-client</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hadoop</groupId>
-                <artifactId>hadoop-core</artifactId>
-                <version>${hadoop.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-testing-util</artifactId>
-                <version>${hbase.version}</version>
-                <scope>test</scope>
-                <optional>true</optional>
-            </dependency>
+
+
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hbase</groupId>-->
+                <!--<artifactId>hbase-common</artifactId>-->
+                <!--<version>${hbase.version}</version>-->
+                <!--<exclusions>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.mortbay.jetty</groupId>-->
+                        <!--<artifactId>jetty</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.mortbay.jetty</groupId>-->
+                        <!--<artifactId>jetty-util</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.mortbay.jetty</groupId>-->
+                        <!--<artifactId>jsp-2.1</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.mortbay.jetty</groupId>-->
+                        <!--<artifactId>jsp-api-2.1</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.mortbay.jetty</groupId>-->
+                        <!--<artifactId>servlet-api-2.5</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>com.sun.jersey</groupId>-->
+                        <!--<artifactId>jersey-core</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>com.sun.jersey</groupId>-->
+                        <!--<artifactId>jersey-json</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>com.sun.jersey</groupId>-->
+                        <!--<artifactId>jersey-server</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.slf4j</groupId>-->
+                        <!--<artifactId>slf4j-api</artifactId>-->
+                    <!--</exclusion>-->
+                    <!--<exclusion>-->
+                        <!--<groupId>org.slf4j</groupId>-->
+                        <!--<artifactId>slf4j-log4j12</artifactId>-->
+                    <!--</exclusion>-->
+                <!--</exclusions>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hbase</groupId>-->
+                <!--<artifactId>hbase-client</artifactId>-->
+                <!--<version>${hbase.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hbase</groupId>-->
+                <!--<artifactId>hbase-server</artifactId>-->
+                <!--<version>${hbase.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hbase</groupId>-->
+                <!--<artifactId>hbase-annotations</artifactId>-->
+                <!--<version>${hbase.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hbase</groupId>-->
+                <!--<artifactId>hbase-protocol</artifactId>-->
+                <!--<version>${hbase.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hadoop</groupId>-->
+                <!--<artifactId>hadoop-common</artifactId>-->
+                <!--<version>${hadoop.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hadoop</groupId>-->
+                <!--<artifactId>hadoop-hdfs</artifactId>-->
+                <!--<version>${hadoop.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hadoop</groupId>-->
+                <!--<artifactId>hadoop-mapreduce-client-core</artifactId>-->
+                <!--<version>${hadoop.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hadoop</groupId>-->
+                <!--<artifactId>hadoop-auth</artifactId>-->
+                <!--<version>${hadoop.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hadoop</groupId>-->
+                <!--<artifactId>hadoop-client</artifactId>-->
+                <!--<version>${hadoop.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hadoop</groupId>-->
+                <!--<artifactId>hadoop-core</artifactId>-->
+                <!--<version>${hadoop.version}</version>-->
+            <!--</dependency>-->
+            <!--<dependency>-->
+                <!--<groupId>org.apache.hbase</groupId>-->
+                <!--<artifactId>hbase-testing-util</artifactId>-->
+                <!--<version>${hbase.version}</version>-->
+                <!--<scope>test</scope>-->
+                <!--<optional>true</optional>-->
+            <!--</dependency>-->
             <dependency>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
@@ -448,18 +462,8 @@
             <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
-                <version>4.12</version>
+                <version>${junit.version}</version>
                 <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.hpg-bigdata</groupId>
-                <artifactId>hpg-bigdata-core</artifactId>
-                <version>0.6-SNAPSHOT</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.hpg-bigdata</groupId>
-                <artifactId>hpg-bigdata-tools</artifactId>
-                <version>0.6-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -472,16 +476,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.5.1</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
                     <showDeprecation>true</showDeprecation>
                     <showWarnings>true</showWarnings>
                     <encoding>UTF-8</encoding>
-                    <excludes>
-                        <exclude>**/serverold/**</exclude>
-                    </excludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -529,6 +530,9 @@
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
                 <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+
+                <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
+                <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>
 
                 <OPENCGA.CELLBASE.HOST>http://bioinfodev.hpc.cam.ac.uk/cellbase/webservices/rest/</OPENCGA.CELLBASE.HOST>
                 <OPENCGA.CELLBASE.VERSION>v3</OPENCGA.CELLBASE.VERSION>

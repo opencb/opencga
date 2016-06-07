@@ -26,6 +26,11 @@
 
     <display-name>OpenCGA</display-name>
 
+    <context-param>
+        <param-name>OPENCGA_HOME</param-name>
+        <param-value>${OPENCGA.INSTALLATION.DIR}</param-value>
+    </context-param>
+
     <servlet>
         <servlet-name>OpenCGA</servlet-name>
         <servlet-class>org.glassfish.jersey.servlet.ServletContainer</servlet-class>
@@ -36,7 +41,7 @@
         <!--</init-param>-->
         <init-param>
             <param-name>jersey.config.server.provider.packages</param-name>
-            <param-value>org.opencb.opencga.server.ws;com.wordnik.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
+            <param-value>org.opencb.opencga.server.rest;com.wordnik.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json</param-value>
         </init-param>
 
         <init-param>

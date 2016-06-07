@@ -70,9 +70,10 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult<User> delete(String userId, QueryOptions queryOptions) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 
-    QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
+    QueryResult<ObjectMap> addSession(String userId, Session session) throws CatalogDBException;
 
     QueryResult logout(String userId, String sessionId) throws CatalogDBException;
 
@@ -125,6 +126,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         TOOL_ALIAS("tools.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check whether login, logout makes sense.
+        SESSIONS("sessions", TEXT_ARRAY, ""),
         SESSION_ID("sessions.id", TEXT_ARRAY, ""),
         SESSION_IP("sessions.ip", TEXT_ARRAY, ""),
         SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),

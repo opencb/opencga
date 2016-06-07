@@ -64,6 +64,7 @@ public class RestStorageServer extends AbstractStorageServer {
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
+        context.setInitParameter("testparam", "testparamvalue");
 
         GenericRestWebService.setStorageConfiguration(storageConfiguration);
         server.start();

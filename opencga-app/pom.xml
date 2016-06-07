@@ -50,9 +50,13 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
             <version>${opencga.version}</version>
-            <type>war</type>
+            <!--<type>war</type>-->
         </dependency>
 
         <dependency>
@@ -74,14 +78,6 @@
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tomcat.embed</groupId>
-            <artifactId>tomcat-embed-logging-juli</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -159,6 +155,11 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
+                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
+                    <!--Do we need to include the configuration folder in the classpath?-->
+                    <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
                     <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
                     <programs>
                         <program>
@@ -258,17 +259,23 @@
                                     <arg value="${app.dir}/examples"/>
                                     <arg value="${app.dir}/tools"/>
                                     <arg value="${project.basedir}/../opencga-storage/build/bin"/>
-                                    <arg value="${project.basedir}/../opencga-storage/build/conf"/>
-                                    <arg value="${project.basedir}/../opencga-server/target/opencga.war"/>
                                     <arg value="${project.basedir}/../LICENSE"/>
                                     <arg value="${project.basedir}/../README.md"/>
                                     <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Coping configuration file</echo>
+                                <echo>Coping configuration files</echo>
                                 <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
+                                </exec>
+
+                                <echo>Coping war file</echo>
+                                <exec executable="cp">
+                                    <arg value="${project.basedir}/../opencga-server/target/opencga-server-${opencga.version}.war"/>
+                                    <arg value="${build.dir}/opencga.war"/>
                                 </exec>
                             </target>
                         </configuration>

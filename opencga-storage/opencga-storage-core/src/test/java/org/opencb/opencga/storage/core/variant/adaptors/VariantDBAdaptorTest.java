@@ -692,12 +692,18 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         checkSamplesData("NA19600,NA19685", variants, query, options);
         checkSamplesData("NA19685,NA19600", variants, query, options);
         checkSamplesData("NA19660,NA19661,NA19600", variants, query, options);
+        checkSamplesData("", variants, query, options);
     }
 
     public void checkSamplesData(String samples, List<Variant> allVariants, Query query, QueryOptions options) {
         query.put(RETURNED_SAMPLES.key(), samples);
         queryResult = dbAdaptor.get(query, options);
-        List<String> samplesName = query.getAsStringList(RETURNED_SAMPLES.key());
+        List<String> samplesName;
+        if (samples.isEmpty()) {
+            samplesName = Collections.emptyList();
+        } else {
+            samplesName = query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
+        }
 
         Iterator<Variant> it_1 = allVariants.iterator();
         Iterator<Variant> it_2 = queryResult.getResult().iterator();

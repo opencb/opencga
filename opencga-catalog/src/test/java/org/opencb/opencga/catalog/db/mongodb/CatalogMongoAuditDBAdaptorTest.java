@@ -7,14 +7,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDBConfiguration;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogAuditDBAdaptor;
 
-import java.io.InputStream;
 import java.util.Collections;
-import java.util.Properties;
 
 /**
  * Created on 18/08/15
@@ -55,12 +52,15 @@ public class CatalogMongoAuditDBAdaptorTest {
 
     @Test
     public void testInsertAuditRecord() throws Exception {
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", new ObjectMap("name", "HG0001"), new
-                ObjectMap("name", "HG0002"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", new ObjectMap("name", "HG0002"), new
-                ObjectMap("name", "HG0003"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
-        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, "update", new ObjectMap("description", ""), new
-                ObjectMap("description", "New sample"), System.currentTimeMillis(), "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, AuditRecord.Action.update,
+                AuditRecord.Magnitude.medium, new ObjectMap("name", "HG0001"), new ObjectMap("name", "HG0002"), System.currentTimeMillis(),
+                "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, AuditRecord.Action.update,
+                AuditRecord.Magnitude.medium, new ObjectMap("name", "HG0002"), new ObjectMap("name", "HG0003"), System.currentTimeMillis(),
+                "admin", "", new ObjectMap()));
+        auditDbAdaptor.insertAuditRecord(new AuditRecord(23, AuditRecord.Resource.sample, AuditRecord.Action.update,
+                AuditRecord.Magnitude.medium, new ObjectMap("description", ""), new ObjectMap("description", "New sample"),
+                System.currentTimeMillis(), "admin", "", new ObjectMap()));
     }
 
 //    @Test

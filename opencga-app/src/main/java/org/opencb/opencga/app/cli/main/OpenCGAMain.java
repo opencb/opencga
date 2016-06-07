@@ -32,8 +32,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.utils.FileUtils;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.beans.Execution;
+import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
@@ -288,8 +292,7 @@ public class OpenCGAMain {
                         OptionsParser.ProjectCommands.CreateCommand c = optionsParser.getProjectCommands().createCommand;
 
                         String user = c.up.user == null || c.up.user.isEmpty() ? catalogManager.getUserIdBySessionId(sessionId) : c.up.user;
-                        QueryResult<Project> project = catalogManager.createProject(
-                                user, c.name, c.alias, c.description, c.organization, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
+                        QueryResult<Project> project = catalogManager.createProject(c.name, c.alias, c.description, c.organization, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, project, null));
 
                         break;
@@ -330,8 +333,7 @@ public class OpenCGAMain {
                         long projectId = catalogManager.getProjectId(c.projectId);
                         ObjectMap attributes = new ObjectMap();
                         attributes.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), c.aggregated.toString());
-                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null,
-                                null, c.description, null, null, null, uri, dataStoreMap, null, attributes,
+                        QueryResult<Study> study = catalogManager.createStudy(projectId, c.name, c.alias, c.type, null, c.description, null, null, null, uri, dataStoreMap, null, attributes,
                                 new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         if (uri != null) {
                             File root = catalogManager.searchFile(study.first().getId(),
@@ -368,7 +370,7 @@ public class OpenCGAMain {
                         OptionsParser.StudyCommands.InfoCommand c = optionsParser.getStudyCommands().infoCommand;
 
                         long studyId = catalogManager.getStudyId(c.id);
-                        QueryResult<Study> study = catalogManager.getStudy(studyId, sessionId, new QueryOptions(c.cOpt.getQueryOptions()));
+                        QueryResult<Study> study = catalogManager.getStudy(studyId, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(c.cOpt, study, null));
 
                         break;
@@ -446,7 +448,7 @@ public class OpenCGAMain {
                         long outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
 
-                        queryOptions.put(AnalysisJobExecutor.EXECUTE, !c.enqueue);
+                        queryOptions.put(ExecutorManager.EXECUTE, !c.enqueue);
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                         System.out.println(createOutput(c.cOpt, variantStorage.annotateVariants(studyId, outdirId, sessionId, queryOptions), null));
@@ -650,12 +652,12 @@ public class OpenCGAMain {
                         String sid = sessionId;
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                            queryOptions.put(ExecutorManager.EXECUTE, false);
                             if (c.up.sessionId == null || c.up.sessionId.isEmpty()) {
                                 sid = login(c.up);
                             }
                         } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+                            queryOptions.add(ExecutorManager.EXECUTE, true);
                         }
                         queryOptions.put(AnalysisFileIndexer.TRANSFORM, c.transform);
                         queryOptions.put(AnalysisFileIndexer.LOAD, c.load);
@@ -690,11 +692,19 @@ public class OpenCGAMain {
 
                         long studyId = catalogManager.getStudyId(c.studyId);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-                        Query query = new Query()
-                                .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), c.sampleIds)
-                                .append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), c.sampleNames)
-                                .append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation)
-                                .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
+                        Query query = new Query();
+                        if (c.sampleIds != null && !c.sampleIds.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.ID.key(), c.sampleIds);
+                        }
+                        if (c.sampleNames != null && !c.sampleNames.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), c.sampleNames);
+                        }
+                        if (c.annotation != null && !c.annotation.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation);
+                        }
+                        if (c.variableSetId != null && !c.variableSetId.isEmpty()) {
+                            query.append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
+                        }
                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                         System.out.println(createOutput(c.cOpt, sampleQueryResult, null));
 
@@ -768,7 +778,7 @@ public class OpenCGAMain {
 //                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
 //                            queryOptions.put("annotation", c.annotation);
                             if (c.variableSetId == 0) {
-                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.variableSets")).first().getVariableSets();
+                                List<VariableSet> variableSets = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.variableSets"), sessionId).first().getVariableSets();
                                 if (variableSets.isEmpty()) {
                                     logger.error("Expected variableSetId");
                                 } else {
@@ -781,7 +791,7 @@ public class OpenCGAMain {
                                 if (variable.getId().equals(c.variable)) {
                                     for (String value : variable.getAllowedValues()) {
                                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
-                                        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.variable + ":" + value)
+                                        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + c.variable, value)
                                                 .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
                                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                                         cohorts.put(c.name + value, sampleQueryResult.getResult());
@@ -824,9 +834,9 @@ public class OpenCGAMain {
                         long outdirId = catalogManager.getFileId(c.outdir);
                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                         if (c.enqueue) {
-                            queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                            queryOptions.put(ExecutorManager.EXECUTE, false);
                         } else {
-                            queryOptions.add(AnalysisJobExecutor.EXECUTE, true);
+                            queryOptions.add(ExecutorManager.EXECUTE, true);
                         }
                         queryOptions.add(AnalysisFileIndexer.PARAMETERS, c.dashDashParameters);
                         queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
@@ -890,11 +900,11 @@ public class OpenCGAMain {
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
                         if (c.error) {
-                            parameters.put("status", Job.JobStatus.ERROR);
+                            parameters.put("status.status", Job.JobStatus.ERROR);
                             parameters.put("error", Job.ERRNO_ABORTED);
                             parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_ABORTED));
                         } else {
-                            parameters.put("status", Job.JobStatus.READY);
+                            parameters.put("status.status", Job.JobStatus.READY);
                         }
                         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
@@ -950,6 +960,59 @@ public class OpenCGAMain {
                         }
                         break;
                     }
+                    case "run": {
+                        OptionsParser.JobsCommands.RunJobCommand c = optionsParser.getJobsCommands().runJobCommand;
+
+                        long studyId = catalogManager.getStudyId(c.studyId);
+                        long outdirId = catalogManager.getFileId(c.outdir);
+                        long toolId = catalogManager.getToolId(c.toolId);
+                        String toolName;
+                        ToolManager toolManager;
+                        if (toolId < 0) {
+                            toolManager = new ToolManager(c.toolId, c.execution);    //LEGACY MODE, AVOID USING
+                            toolName = c.toolId;
+                        } else {
+                            Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
+                            toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), c.execution);
+                            toolName = tool.getName();
+                        }
+
+
+                        List<Long> inputFiles = new LinkedList<>();
+                        Map<String, List<String>> localParams = new HashMap<>();
+
+                        for (String key : c.params.keySet()) {
+                            localParams.put(key, c.params.getAsStringList(key));
+                        }
+
+
+                        Execution ex = toolManager.getExecution();
+                        // Set input param
+                        for (InputParam inputParam : ex.getInputParams()) {
+                            if (c.params.containsKey(inputParam.getName())) {
+                                List<String> filePaths = new LinkedList<>();
+                                for (String fileId : c.params.getAsStringList(inputParam.getName())) {
+                                    File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
+                                    filePaths.add(catalogManager.getFileUri(file).getPath());
+                                    inputFiles.add(file.getId());
+                                }
+                                localParams.put(inputParam.getName(), filePaths);
+                            }
+                        }
+
+                        // Set outdir
+                        String outputParam = toolManager.getExecution().getOutputParam();
+                        File outdir = catalogManager.getFile(outdirId, sessionId).first();
+                        localParams.put(outputParam, Collections.singletonList(catalogManager.getFileUri(outdir).getPath()));
+
+
+                        QueryResult<Job> jobQueryResult = new JobFactory(catalogManager).createJob(toolManager, localParams, studyId,
+                                c.name, c.description, outdir, inputFiles, sessionId, true);
+
+                        System.out.println(createOutput(c.cOpt, jobQueryResult, null));
+
+                        break;
+                    }
                     default: {
                         optionsParser.printUsage();
                         break;
@@ -974,8 +1037,19 @@ public class OpenCGAMain {
                     case "info": {
                         OptionsParser.ToolCommands.InfoCommand c = optionsParser.getToolCommands().infoCommand;
 
-                        QueryResult<Tool> tool = catalogManager.getTool(catalogManager.getToolId(c.id), sessionId);
-                        System.out.println(createOutput(c.cOpt, tool, null));
+                        long toolId = catalogManager.getToolId(c.id);
+                        ToolManager toolManager;
+                        String toolName;
+                        if (toolId < 0) {
+                            toolManager = new ToolManager(c.id, null);    //LEGACY MODE, AVOID USING
+                            toolName = c.id;
+                            System.out.println(createOutput(c.cOpt, toolManager.getAnalysis(), null));
+                        } else {
+                            Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
+                            toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), null);
+                            toolName = tool.getName();
+                            System.out.println(createOutput(c.cOpt, tool, null));
+                        }
                         break;
                     }
                     default: {
@@ -1184,18 +1258,21 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listStudies(List<Study> studies, int level, String indent, boolean showUries, StringBuilder sb, String sessionId)
+            throws CatalogException {
         if (level > 0) {
             for (Iterator<Study> iterator = studies.iterator(); iterator.hasNext(); ) {
                 Study study = iterator.next();
-                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"), study.getId(), study.getName(), study.getAlias()));
+                sb.append(String.format("%s (%d) - %s : %s\n", indent.isEmpty()? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
+                        study.getId(), study.getName(), study.getAlias()));
                 listFiles(study.getId(), ".", level - 1, indent + (iterator.hasNext() ? "│   " : "    "), showUries, sb, sessionId);
             }
         }
         return sb;
     }
 
-    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(long studyId, String path, int level, String indent, boolean showUries, StringBuilder sb,
+                                    String sessionId) throws CatalogException {
         if (level > 0) {
             List<File> files = catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), path),
                     sessionId).getResult();
@@ -1204,7 +1281,8 @@ public class OpenCGAMain {
         return sb;
     }
 
-    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb, String sessionId) throws CatalogException {
+    private StringBuilder listFiles(List<File> files, long studyId, int level, String indent, boolean showUries, StringBuilder sb,
+                                    String sessionId) throws CatalogException {
         if (level > 0) {
             files.sort((file1, file2) -> file1.getName().compareTo(file2.getName()));
 //            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));

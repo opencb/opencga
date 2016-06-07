@@ -54,7 +54,7 @@ public class FileScanner {
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
         query.put(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), Arrays.asList(
-                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
+                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.DELETED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();

@@ -52,10 +52,10 @@ class CatalogMongoDBUtils {
      */
     public static final String FORCE = "force";
     /**
-     * KEEP_OUTPUT is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been generated
-     * with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
+     * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
+     * generated with the job going to be deleted/removed will be kept. Otherwise, those files will be also deleted/removed.
      */
-    public static final String KEEP_OUTPUT = "keepOutput";
+    public static final String KEEP_OUTPUT_FILES = "keepOutputFiles";
 
     public static final Set<String> DATASTORE_OPTIONS = Arrays.asList("include", "exclude", "sort", "limit", "skip").stream()
             .collect(Collectors.toSet());
@@ -104,6 +104,55 @@ class CatalogMongoDBUtils {
     ********************/
 
     /**
+     * Checks if the list of members are all valid.
+     *
+     * The "members" can be:
+     *  - '*' referring to all the users.
+     *  - 'anonymous' referring to the anonymous user.
+     *  - '@{groupId}' referring to a {@link Group}.
+     *  - '{userId}' referring to a specific user.
+     * @param dbAdaptorFactory dbAdaptorFactory
+     * @param studyId studyId
+     * @param members List of members
+     * @throws CatalogDBException CatalogDBException
+     */
+    public static void checkMembers(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
+            throws CatalogDBException {
+        for (String member : members) {
+            checkMember(dbAdaptorFactory, studyId, member);
+        }
+    }
+
+    /**
+     * Checks if the member is valid.
+     *
+     * The "member" can be:
+     *  - '*' referring to all the users.
+     *  - 'anonymous' referring to the anonymous user.
+     *  - '@{groupId}' referring to a {@link Group}.
+     *  - '{userId}' referring to a specific user.
+     * @param dbAdaptorFactory dbAdaptorFactory
+     * @param studyId studyId
+     * @param member member
+     * @throws CatalogDBException CatalogDBException
+     */
+    public static void checkMember(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, String member)
+            throws CatalogDBException {
+        if (member.equals("*") || member.equals("anonymous")) {
+            return;
+        } else if (member.startsWith("@")) {
+            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member,
+                    Collections.emptyList());
+            if (queryResult.getNumResults() == 0) {
+                throw CatalogDBException.idNotFound("Group", member);
+            }
+        } else {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
+        }
+    }
+
+
+    /**
      * Checks if the field {@link AclEntry#userId} is valid.
      *
      * The "userId" can be:
@@ -116,6 +165,7 @@ class CatalogMongoDBUtils {
      * @param studyId studyId
      * @throws CatalogDBException CatalogDBException
      */
+    @Deprecated
     public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, long studyId) throws CatalogDBException {
         if (userId.equals(AclEntry.USER_OTHERS_ID)) {
             return;
@@ -159,8 +209,8 @@ class CatalogMongoDBUtils {
         ObjectReader objectReader = getObjectReader(tClass);
         try {
             for (Document document : result.getResult()) {
-                document.remove("_id");
-                document.remove("_projectId");
+//                document.remove("_id");
+//                document.remove("_projectId");
                 objects.add(objectReader.<T>readValue(restoreDotsInKeys(jsonObjectWriter.writeValueAsString(document))));
             }
         } catch (IOException e) {
@@ -174,9 +224,8 @@ class CatalogMongoDBUtils {
             return null;
         }
         try {
-            result.first().remove("_id");
-            result.first().remove("_studyId");
-//            String s = result.first().toJson();
+//            result.first().remove("_id");
+//            result.first().remove("_studyId");
             String s = jsonObjectWriter.writeValueAsString(result.first());
 //            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first().toJson()));
             return getObjectReader(tClass).readValue(restoreDotsInKeys(s));
@@ -361,6 +410,14 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static void filterLongListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedLongListParams) {
+        for (String s : acceptedLongListParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getAsLongList(s));
+            }
+        }
+    }
+
     static void filterMapParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
@@ -436,7 +493,12 @@ class CatalogMongoDBUtils {
         // Annotation Filter
         final String sepOr = ",";
 
-        String annotationKey = optionKey.replaceFirst("annotation.", "");
+        String annotationKey;
+        if (optionKey.startsWith("annotation.")) {
+            annotationKey = optionKey.substring("annotation.".length());
+        } else {
+            throw new CatalogDBException("Wrong annotation query. Expects: {\"annotation.<variable>\" , <operator><value> } ");
+        }
         String annotationValue = query.getString(optionKey);
 
         final String variableId;
@@ -455,6 +517,9 @@ class CatalogMongoDBUtils {
 
         if (variableMap != null) {
             Variable variable = variableMap.get(variableId);
+            if (variable == null) {
+                throw new CatalogDBException("Variable \"" + variableId + "\" not found in variableSet ");
+            }
             Variable.VariableType variableType = variable.getType();
             if (variable.getType() == Variable.VariableType.OBJECT) {
                 String[] routes = route.split("\\.");

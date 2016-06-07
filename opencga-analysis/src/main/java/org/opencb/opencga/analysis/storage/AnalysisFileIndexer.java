@@ -19,15 +19,18 @@ package org.opencb.opencga.analysis.storage;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.common.Config;
@@ -36,6 +39,7 @@ import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,8 +110,8 @@ public class AnalysisFileIndexer {
         if (options == null) {
             options = new QueryOptions();
         }
-        final boolean execute = options.getBoolean(AnalysisJobExecutor.EXECUTE);
-        final boolean simulate = options.getBoolean(AnalysisJobExecutor.SIMULATE);
+        final boolean execute = options.getBoolean(ExecutorManager.EXECUTE);
+        final boolean simulate = options.getBoolean(ExecutorManager.SIMULATE);
         final long start = System.currentTimeMillis();
         final boolean transform;
         final boolean load;
@@ -127,29 +131,89 @@ public class AnalysisFileIndexer {
         File originalFile;
         File outDir = catalogManager.getFile(outDirId, sessionId).first();
         long studyIdByOutDirId = catalogManager.getStudyIdByFileId(outDirId);
+        long studyIdByInputFileId = catalogManager.getStudyIdByFileId(inputFile.getId());
         Study study = catalogManager.getStudy(studyIdByOutDirId, sessionId).getResult().get(0);
 
         if (inputFile.getType() != File.Type.FILE) {
             throw new CatalogException("Expected file type = " + File.Type.FILE + " instead of " + inputFile.getType());
         }
 
+        if (studyIdByInputFileId != studyIdByOutDirId) {
+            logger.warn("Indexing a file from the study " + studyIdByInputFileId + " in the study " + studyIdByOutDirId);
+            // TODO: Raise an exception?
+        }
+
+        // The file is already transformed, but the transformation job is not registered in Catalog.
+        boolean externalTransformed = false;
+
         /** Get the original file. **/
         if (!transform && load) { //Don't transform. Just load. Select the original file
+            final long indexedFileId;
+            // FIXME: What if the original VCF contains a jobId ?
             if (inputFile.getJobId() <= 0) {
-                throw new CatalogException("Error: can't load this file. JobId unknown. Need jobId to know origin file. " +
-                        "Only transformed files can be loaded.");
-            }
-            Job job = catalogManager.getJob(inputFile.getJobId(), null, sessionId).first();
-            long indexedFileId;
-            if (job.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
-                indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
-            } else {
-                logger.warn("INDEXED_FILE_ID missing in job " + job.getId());
-                List<Long> jobInputFiles = job.getInput();
-                if (jobInputFiles.size() != 1) {
-                    throw new CatalogException("Error: Job {id: " + job.getId() + "} input is empty");
+
+                // TODO: Move this code to an external class for relating Transformed and Original files.
+                // If the input file is the original file, read from the Index object
+                if (inputFile.getIndex() != null) {
+                    long jobId = inputFile.getIndex().getJobId();
+                    Query query;
+                    if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
+                        query = new Query(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), jobId)
+                                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
+                    } else {
+                        throw new CatalogException("Error: can't load this file. Only transformed files can be loaded.");
+                    }
+                    QueryResult<File> result = catalogManager.searchFile(studyIdByOutDirId, query, sessionId);
+                    indexedFileId = inputFile.getId();
+                    inputFile = result.first();
+                } else if (inputFile.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
+                    indexedFileId = new ObjectMap(inputFile.getAttributes()).getInt(Job.INDEXED_FILE_ID);
+                } else {
+
+                    // If the input file is an externally transformed file, find the original file.
+                    if (inputFile.getBioformat().equals(File.Bioformat.VARIANT) && !(inputFile.getFormat() == File.Format.VCF)) {
+                        VariantReaderUtils utils = new VariantReaderUtils();
+                        try {
+                            // Read the VariantSource to get the source file
+                            VariantSource variantSource = utils.readVariantSource(catalogManager.getFileUri(inputFile));
+                            Query query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), variantSource.getFileName());
+                            QueryResult<File> result = catalogManager.searchFile(studyIdByOutDirId, query, sessionId);
+                            if (result.getResult().size() == 0) {
+                                // TODO: Continue with the transformed file as indexed file?
+                                throw new CatalogException("Unable to find file \"" + variantSource.getFileName() + "\" "
+                                        + "as source file from \"" + inputFile.getName() + "\"");
+                            } else if (result.getResult().size() > 1) {
+                                List<String> foundFilesSummary = result.getResult().stream().map(File::getPath).collect(Collectors.toList());
+                                throw new CatalogException("Unable to find single file \"" + variantSource.getFileName() + "\" "
+                                        + "as source file from \"" + inputFile.getName() + "\". Got multiple versions: " + foundFilesSummary);
+                            } else {
+                                externalTransformed = true;
+                                indexedFileId = result.first().getId();
+//                                inputFile = result.first();
+                            }
+                        } catch (StorageManagerException e) {
+                            throw new CatalogException("Unable to find source file from \"" + inputFile.getName() + "\"", e);
+                        }
+                    } else {
+                        // TODO: Solve for other bioformats
+                        throw new CatalogException("Unable to find source file from \"" + inputFile.getName() + "\"");
+                    }
                 }
-                indexedFileId = jobInputFiles.get(0);
+
+//                throw new CatalogException("Error: can't load this file. JobId unknown. Need jobId to know origin file. " +
+//                        "Only transformed files can be loaded.");
+            } else {
+                Job job = catalogManager.getJob(inputFile.getJobId(), null, sessionId).first();
+                if (job.getAttributes().containsKey(Job.INDEXED_FILE_ID)) {
+                    indexedFileId = new ObjectMap(job.getAttributes()).getInt(Job.INDEXED_FILE_ID);
+                } else {
+                    logger.warn("INDEXED_FILE_ID missing in job " + job.getId());
+                    List<Long> jobInputFiles = job.getInput();
+                    if (jobInputFiles.size() != 1) {
+                        throw new CatalogException("Error: Job {id: " + job.getId() + "} input is empty");
+                    }
+                    indexedFileId = jobInputFiles.get(0);
+                }
             }
             originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
             if (!originalFile.getStatus().getStatus().equals(File.FileStatus.READY)) {
@@ -182,7 +246,9 @@ public class AnalysisFileIndexer {
             }
         } else {
             if (!transform && load) {
-                throw new CatalogException("File '" + originalFile.getId() + "' need to be transformed before loading");
+                if (!externalTransformed) {
+                    throw new CatalogException("File '" + originalFile.getId() + "' need to be transformed before loading");
+                }
             }
         }
 
@@ -230,7 +296,7 @@ public class AnalysisFileIndexer {
 
             ObjectMap updateParams = new ObjectMap();
 
-            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key())) {
+            if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key()) && load) {
                 updateParams.append("status.status", Cohort.CohortStatus.CALCULATING);
             }
             //Samples are the already indexed plus those that are going to be indexed
@@ -272,7 +338,8 @@ public class AnalysisFileIndexer {
         /** Create index information **/
         Index indexInformation = originalFile.getIndex();
         if (indexInformation == null) {
-            indexInformation = new Index(userId, TimeUtils.getTime(), new Index.IndexStatus(Index.IndexStatus.NONE), -1, indexAttributes);
+            String status = externalTransformed ? Index.IndexStatus.TRANSFORMED : Index.IndexStatus.NONE;
+            indexInformation = new Index(userId, TimeUtils.getTime(), new Index.IndexStatus(status), -1, indexAttributes);
         }
         if (transform && !load) {
             indexInformation.getStatus().setStatus(Index.IndexStatus.TRANSFORMING);
@@ -316,7 +383,8 @@ public class AnalysisFileIndexer {
                 jobDescription = "Transforming file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
         }
-        final Job job = AnalysisJobExecutor.createJob(catalogManager, studyIdByOutDirId, jobName,
+        JobFactory jobFactory = new JobFactory(catalogManager);
+        final Job job = jobFactory.createJob(studyIdByOutDirId, jobName,
                 OPENCGA_ANALYSIS_BIN_NAME, jobDescription, outDir, Collections.singletonList(inputFile.getId()),
                 sessionId, randomString, temporalOutDirUri, commandLine, execute, simulate, jobAttributes, null).first();
 
@@ -432,7 +500,7 @@ public class AnalysisFileIndexer {
             if (options.getBoolean(TRANSFORM, false)) {
                 sb.append(" --transform ");
             }
-            if (StringUtils.isNotEmpty(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), ""))) {
+            if (StringUtils.isNotEmpty(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()))) {
                 sb.append(" --include-extra-fields ").append(options.getString(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key()));
             }
             if (options.getBoolean(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), VariantStorageManager.Options.EXCLUDE_GENOTYPES.defaultValue())) {

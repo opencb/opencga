@@ -278,7 +278,7 @@ public class SqliteManager {
         private boolean didNext;
         private boolean hasNext;
 
-        public QueryIterator(String queryString) throws SQLException {
+        QueryIterator(String queryString) throws SQLException {
 
             stmt = connection.createStatement();
             rs = stmt.executeQuery(queryString);
