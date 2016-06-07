@@ -51,14 +51,14 @@ public class AlignmentRegionCoverageCalculatorTask extends Task<AlignmentRegion>
         private int accumulator;
         private long next;
 
-        public MeanCoverageCalculator(String name) {
+        MeanCoverageCalculator(String name) {
             this.accumulator = 0;
             this.next = 0;
             this.size = MeanCoverage.nameToSizeConvert(name);
             this.name = name;
         }
 
-        public MeanCoverageCalculator(int size, String name) {
+        MeanCoverageCalculator(int size, String name) {
             this.accumulator = 0;
             this.next = 0;
             this.size = size;

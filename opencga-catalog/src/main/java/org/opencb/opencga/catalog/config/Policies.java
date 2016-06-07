@@ -21,7 +21,7 @@ public class Policies {
         return this;
     }
 
-    public static enum UserCreation {
+    public enum UserCreation {
         ONLY_ADMIN, ANY_LOGGED_USER, ALWAYS
     }
 

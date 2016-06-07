@@ -43,6 +43,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
     static final String PRIVATE_ID = "_id";
     static final String PRIVATE_PROJECT_ID = "_projectId";
     static final String PRIVATE_STUDY_ID = "_studyId";
+    static final String FILTER_ROUTE_PROJECTS = "projects.";
     static final String FILTER_ROUTE_STUDIES = "projects.studies.";
     static final String FILTER_ROUTE_COHORTS = "projects.studies.cohorts.";
     static final String FILTER_ROUTE_DATASETS = "projects.studies.datasets.";
@@ -50,6 +51,7 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
     static final String FILTER_ROUTE_SAMPLES = "projects.studies.samples.";
     static final String FILTER_ROUTE_FILES = "projects.studies.files.";
     static final String FILTER_ROUTE_JOBS = "projects.studies.jobs.";
+    static final String FILTER_ROUTE_PANELS = "projects.studies.panels.";
 
     protected CatalogMongoDBAdaptorFactory dbAdaptorFactory;
 

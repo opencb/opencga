@@ -11,17 +11,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
@@ -112,8 +110,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
                     .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
                     .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)

@@ -78,6 +78,10 @@ public class CatalogDBException extends CatalogException {
         return new CatalogDBException(name + ": The query used to delete did not report any result.");
     }
 
+    public static CatalogDBException queryParamNotFound(String name, String resource) {
+        return new CatalogDBException("The query param " + name + " does not exist for searching over " + resource + ".");
+    }
+
     public static CatalogDBException fileInUse(long id, long count) {
         return new CatalogDBException("The file { id: " + id + "} cannot be removed as it is being used as input in " + count + " job(s).");
     }

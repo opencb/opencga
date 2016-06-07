@@ -3,11 +3,12 @@ package org.opencb.opencga.analysis.storage;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDataStore;
 import org.opencb.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.analysis.executors.LocalThreadExecutorManager;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.app.cli.analysis.AnalysisMain;
 import org.opencb.opencga.catalog.CatalogManager;
@@ -19,13 +20,11 @@ import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.app.StorageMain;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -52,8 +51,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         catalogManagerExternalResource.before();
         opencgaHome = isolateOpenCGA();
+        Files.createDirectory(opencgaHome.resolve("storage"));
+        VariantStorageManagerTestUtils.setRootDir(opencgaHome.resolve("storage"));
 
-        AnalysisJobExecutor.localExecutor = new StorageLocalExecutorManager();
+        ExecutorManager.localExecutorFactory.set((c, s) -> new StorageLocalExecutorManager(s));
     }
 
     @Override
@@ -84,11 +85,21 @@ public class OpenCGATestExternalResource extends ExternalResource {
         InputStream inputStream;
         catalogManagerExternalResource.getCatalogConfiguration().serialize(
                 new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
-        inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+        inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
+        // Example files
+        Files.createDirectories(opencgaHome.resolve("examples"));
+
+        inputStream = new FileInputStream("app/examples/20130606_g1k.ped");
+        Files.copy(inputStream, opencgaHome.resolve("examples").resolve("20130606_g1k.ped"), StandardCopyOption.REPLACE_EXISTING);
+
+        inputStream = new FileInputStream("app/examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        Files.copy(inputStream, opencgaHome.resolve("examples")
+                .resolve("1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"), StandardCopyOption.REPLACE_EXISTING);
 
         return opencgaHome;
     }
@@ -103,12 +114,12 @@ public class OpenCGATestExternalResource extends ExternalResource {
     }
 
     public static Job runStorageJob(CatalogManager catalogManager, Job job, Logger logger, String sessionId)
-            throws AnalysisExecutionException, CatalogException {
-        AnalysisJobExecutor.execute(catalogManager, job, sessionId);
+            throws AnalysisExecutionException, CatalogException, IOException {
+        ExecutorManager.execute(catalogManager, job, sessionId);
         return catalogManager.getJob(job.getId(), null, sessionId).first();
     }
 
-    public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, AnalysisExecutionException {
+    public Job runStorageJob(Job storageJob, String sessionId) throws CatalogException, AnalysisExecutionException, IOException {
         return runStorageJob(getCatalogManager(), storageJob, logger, sessionId);
     }
 
@@ -123,15 +134,15 @@ public class OpenCGATestExternalResource extends ExternalResource {
         }
     }
 
-    private class StorageLocalExecutorManager extends LocalThreadExecutorManager {
+    private class StorageLocalExecutorManager extends LocalExecutorManager {
 
-        public StorageLocalExecutorManager() {
-            super(OpenCGATestExternalResource.this.catalogManagerExternalResource.getCatalogManager());
+        public StorageLocalExecutorManager(String sessionId) {
+            super(OpenCGATestExternalResource.this.catalogManagerExternalResource.getCatalogManager(), sessionId);
         }
         protected final Logger logger = LoggerFactory.getLogger(StorageLocalExecutorManager.class);
 
         @Override
-        public void execute(Job job, String sessionId) throws CatalogException, AnalysisExecutionException {
+        public QueryResult<Job> run(Job job) throws CatalogException, AnalysisExecutionException {
 
             String[] args = Commandline.translateCommandline(job.getCommandLine());
             int exitValue;
@@ -153,11 +164,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
                 logger.info("==========================================");
             } else {
                 logger.info("Executing external job!");
-                super.execute(job, sessionId);
-                return;
+                return super.run(job);
             }
 
-            this.updateStatus(job, exitValue, new ObjectMap(), sessionId);
+            return this.postExecuteLocal(job, exitValue, new ObjectMap(), null);
         }
     }
 }

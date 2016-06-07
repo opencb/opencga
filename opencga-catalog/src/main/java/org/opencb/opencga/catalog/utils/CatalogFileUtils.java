@@ -411,17 +411,17 @@ public class CatalogFileUtils {
     public void delete(File file, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
 
-        if (!file.getStatus().getStatus().equals(File.FileStatus.TRASHED)) {
-            throw new CatalogIOException("Only trashed files can be deleted");
+        if (!file.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
+            throw new CatalogIOException("Only deleted files can be physically deleted");
         }
         long studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (file.getType().equals(File.Type.FOLDER)) {
-            List<File> files = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
-                    "~" + file.getPath() + "..*"), new QueryOptions(), sessionId).getResult();
+            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
+            List<File> files = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId).getResult();
             for (File f : files) {
-                if (!f.getStatus().getStatus().equals(File.FileStatus.TRASHED)
-                        && !f.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
-                    throw new CatalogIOException("Only trashed files can be deleted");
+                if (!f.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
+                    throw new CatalogIOException("Only deleted files can be physically deleted");
                 }
             }
             for (File f : files) {
@@ -457,7 +457,7 @@ public class CatalogFileUtils {
      * <p>
      * For READY files with a non existing file, set status to MISSING. "Lost file"
      * For MISSING files who recover the file, set status to READY. "Found file"
-     * For TRASHED files with a non existing file, set status to DELETED.
+     * For DELETED files with a non existing file, set status to REMOVED.
      *
      * @param file              File to check
      * @param calculateChecksum Calculate checksum for "found files"
@@ -488,11 +488,13 @@ public class CatalogFileUtils {
                 }
                 break;
             }
-            case File.FileStatus.TRASHED: {
+            case File.FileStatus.DELETED: {
                 URI fileUri = catalogManager.getFileUri(file);
                 if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
-                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.DELETED), sessionId);
-                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
+                    modifiedFile = file;
+                    // TODO: Change status to remove.
+//                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.REMOVED), sessionId);
+//                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
                     break;
                 }
             }

@@ -21,7 +21,9 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,12 +57,14 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
-        // TOCHECK: Pedro. Check parameter user_others_id.
-        ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),
-        ACL_READ("acl.read", BOOLEAN, ""),
-        ACL_WRITE("acl.write", BOOLEAN, ""),
-        ACL_EXECUTE("acl.execute", BOOLEAN, ""),
-        ACL_DELETE("acl.delete", BOOLEAN, ""),
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+//        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
+//        ACL_READ("acls.read", BOOLEAN, ""),
+//        ACL_WRITE("acls.write", BOOLEAN, ""),
+//        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
+//        ACL_DELETE("acls.delete", BOOLEAN, ""),
 
         //INDEX("index", TEXT, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
@@ -201,20 +205,20 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      */
     QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
 
+    /**
+     * Extract the sampleIds given from the files that matching the query.
+     *
+     * @param query query.
+     * @param sampleIds sample ids.
+     * @return A queryResult object containing the number of files matching the query.
+     * @throws CatalogDBException CatalogDBException.
+     */
+    QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
+
     /*
      * ACL methods
      * ***************************
      */
-
-    /***
-     * Retrieve the AclEntry of the user in the given file.
-     *
-     * @param fileId File id where the permissions will be checked.
-     * @param userId User id of the user to be checked.
-     * @return AclEntry of the user in the file if any.
-     * @throws CatalogDBException when the userId or the fileId does not exist.
-     */
-    QueryResult<AclEntry> getFileAcl(long fileId, String userId) throws CatalogDBException;
 
     /***
      * Retrieves the AclEntries of the files and users given.
@@ -225,12 +229,26 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @return A map of files containing a map of user - AclEntries.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<Map<String, Map<String, AclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+    QueryResult<Map<String, Map<String, FileAcl>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> setFileAcl(long fileId, AclEntry newAcl) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
+
+    default QueryResult<FileAcl> getFileAcl(long fileId, String member) throws CatalogDBException {
+        return getFileAcl(fileId, Arrays.asList(member));
+    }
+
+    QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
+
+    QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException;
+
+    void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException;
+
+    void unsetFileAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     enum FileFilterOption implements AbstractCatalogDBAdaptor.FilterOption {

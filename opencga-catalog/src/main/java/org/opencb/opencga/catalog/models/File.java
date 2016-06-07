@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -70,7 +71,7 @@ public class File {
      * This field values -1 when file has been uploaded.
      */
     private long jobId;
-    private List<AclEntry> acl;
+    private List<FileAcl> acls;
     private Index index;
     private List<AnnotationSet> annotationSets;
 
@@ -88,20 +89,20 @@ public class File {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String description, FileStatus status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<String, Object>(),
                 new HashMap<>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, FileStatus status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<>(), -1, new LinkedList<AclEntry>(), new HashMap<String, Object>(),
+                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<String, Object>(),
                 new HashMap<>());
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, FileStatus status, long diskUsage, long experimentId,
-                List<Long> sampleIds, long jobId, List<AclEntry> acl, Map<String, Object> stats,
+                List<Long> sampleIds, long jobId, List<FileAcl> acls, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -119,7 +120,7 @@ public class File {
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
         this.jobId = jobId;
-        this.acl = acl;
+        this.acls = acls;
         this.index = null;
         this.annotationSets = new LinkedList<>();
         this.stats = stats;
@@ -145,7 +146,7 @@ public class File {
         sb.append(", experimentId=").append(experimentId);
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", jobId=").append(jobId);
-        sb.append(", acl=").append(acl);
+        sb.append(", acls=").append(acls);
         sb.append(", index=").append(index);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
@@ -290,12 +291,13 @@ public class File {
         this.jobId = jobId;
     }
 
-    public List<AclEntry> getAcl() {
-        return acl;
+    public List<FileAcl> getAcls() {
+        return acls;
     }
 
-    public void setAcl(List<AclEntry> acl) {
-        this.acl = acl;
+    public File setAcls(List<FileAcl> acls) {
+        this.acls = acls;
+        return this;
     }
 
     public Index getIndex() {
@@ -326,7 +328,7 @@ public class File {
 
         public static final String STAGE = "STAGE";
         public static final String MISSING = "MISSING";
-        public static final String TRASHED = "TRASHED";
+//        public static final String TRASHED = "TRASHED";
 
         public FileStatus(String status, String message) {
             if (isValid(status)) {

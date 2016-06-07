@@ -42,7 +42,7 @@ public class FileScannerTest {
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
         sessionIdUser = catalogManager.login("user", PASSWORD, "127.0.0.1").first().getString("sessionId");
-        project = catalogManager.createProject("user", "Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
+        project = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();
         folder = catalogManager.createFolder(study.getId(), Paths.get("data/test/folder/"), true, null, sessionIdUser).first();
 
@@ -88,7 +88,7 @@ public class FileScannerTest {
         List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
-        assertEquals(File.FileStatus.TRASHED, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus().getStatus());
+        assertEquals(File.FileStatus.DELETED, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus().getStatus());
     }
 
     @Test
@@ -100,7 +100,7 @@ public class FileScannerTest {
         catalogManager.deleteFile(file.getId(), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
-        assertEquals(File.FileStatus.TRASHED, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.DELETED, file.getStatus().getStatus());
 
         Files.delete(Paths.get(catalogManager.getFileUri(file)));
         List<File> files = new FileScanner(catalogManager).checkStudyFiles(study, false, sessionIdUser);

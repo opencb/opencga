@@ -73,6 +73,7 @@ public class AnalysisCliOptionsParser {
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
+        variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions();
@@ -211,6 +212,7 @@ public class AnalysisCliOptionsParser {
         final StatsVariantCommandOptions statsVariantCommandOptions;
         final AnnotateVariantCommandOptions annotateVariantCommandOptions;
         final QueryVariantCommandOptions queryVariantCommandOptions;
+        final ExportVariantStatsCommandOptions exportVariantStatsCommandOptions;
         final IbsVariantCommandOptions ibsVariantCommandOptions;
         final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
@@ -221,6 +223,7 @@ public class AnalysisCliOptionsParser {
             this.statsVariantCommandOptions = new StatsVariantCommandOptions();
             this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
             this.queryVariantCommandOptions = new QueryVariantCommandOptions();
+            this.exportVariantStatsCommandOptions = new ExportVariantStatsCommandOptions();
             this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
             this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
         }
@@ -428,6 +431,9 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         public boolean overwriteStats = false;
+
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
 
         @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
                 + "Assumes that existing stats are correct")
@@ -679,6 +685,23 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
+
+    }
+
+    @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
+    public class ExportVariantStatsCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public QueryCommandOptions queryOptions = new QueryCommandOptions();
+
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", required = false, arity = 1)
+        public String outputFormat = "tsv";
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned", required = false)
+        public String studies;
 
     }
 

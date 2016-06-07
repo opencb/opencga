@@ -12,7 +12,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogPanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
@@ -40,6 +40,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
             "individual",
             "cohort",
             "dataset",
+            "panel",
             "metadata",
             "audit"
     );
@@ -52,6 +53,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     protected static final String INDIVIDUAL_COLLECTION = "individual";
     protected static final String COHORT_COLLECTION = "cohort";
     protected static final String DATASET_COLLECTION = "dataset";
+    protected static final String PANEL_COLLECTION = "panel";
     protected static final String METADATA_COLLECTION = "metadata";
     protected static final String AUDIT_COLLECTION = "audit";
     static final String METADATA_OBJECT_ID = "METADATA";
@@ -70,6 +72,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private MongoDBCollection jobCollection;
     private MongoDBCollection cohortCollection;
     private MongoDBCollection datasetCollection;
+    private MongoDBCollection panelCollection;
     private MongoDBCollection auditCollection;
     private Map<String, MongoDBCollection> collections;
     private CatalogMongoUserDBAdaptor userDBAdaptor;
@@ -81,6 +84,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     private CatalogMongoProjectDBAdaptor projectDBAdaptor;
     private CatalogMongoCohortDBAdaptor cohortDBAdaptor;
     private CatalogMongoDatasetDBAdaptor datasetDBAdaptor;
+    private CatalogMongoPanelDBAdaptor panelDBAdaptor;
     private CatalogMongoAuditDBAdaptor auditDBAdaptor;
     private CatalogMongoMetaDBAdaptor metaDBAdaptor;
 
@@ -183,7 +187,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
     }
 
     @Override
-    public CatalogMongoMetaDBAdaptor getCatalogMongoMetaDBAdaptor() {
+    public CatalogMongoMetaDBAdaptor getCatalogMetaDBAdaptor() {
         return metaDBAdaptor;
     }
 
@@ -222,18 +226,19 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         return jobDBAdaptor;
     }
 
-    public CatalogMongoMetaDBAdaptor getCatalogMetaDBAdaptor() {
-        return metaDBAdaptor;
-    }
-
     @Override
     public CatalogMongoCohortDBAdaptor getCatalogCohortDBAdaptor() {
         return cohortDBAdaptor;
     }
 
     @Override
-    public CatalogDatasetDBAdaptor getCatalogDatasetDBAdaptor() {
+    public CatalogMongoDatasetDBAdaptor getCatalogDatasetDBAdaptor() {
         return datasetDBAdaptor;
+    }
+
+    @Override
+    public CatalogPanelDBAdaptor getCatalogPanelDBAdaptor() {
+        return panelDBAdaptor;
     }
 
     @Override
@@ -257,6 +262,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         cohortCollection = db.getCollection(COHORT_COLLECTION);
         datasetCollection = db.getCollection(DATASET_COLLECTION);
         auditCollection = db.getCollection(AUDIT_COLLECTION);
+        panelCollection = db.getCollection(PANEL_COLLECTION);
 
         collections = new HashMap<>();
         collections.put(METADATA_COLLECTION, metaCollection);
@@ -269,6 +275,7 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         collections.put(COHORT_COLLECTION, cohortCollection);
         collections.put(DATASET_COLLECTION, datasetCollection);
         collections.put(AUDIT_COLLECTION, auditCollection);
+        collections.put(PANEL_COLLECTION, panelCollection);
 
         fileDBAdaptor = new CatalogMongoFileDBAdaptor(fileCollection, this);
         individualDBAdaptor = new CatalogMongoIndividualDBAdaptor(individualCollection, this);
@@ -279,7 +286,8 @@ public class CatalogMongoDBAdaptorFactory implements CatalogDBAdaptorFactory {
         userDBAdaptor = new CatalogMongoUserDBAdaptor(userCollection, this);
         cohortDBAdaptor = new CatalogMongoCohortDBAdaptor(cohortCollection, this);
         datasetDBAdaptor = new CatalogMongoDatasetDBAdaptor(datasetCollection, this);
-        metaDBAdaptor = new CatalogMongoMetaDBAdaptor(this, metaCollection);
+        panelDBAdaptor = new CatalogMongoPanelDBAdaptor(panelCollection, this);
+        metaDBAdaptor = new CatalogMongoMetaDBAdaptor(metaCollection, this);
         auditDBAdaptor = new CatalogMongoAuditDBAdaptor(auditCollection);
 
     }

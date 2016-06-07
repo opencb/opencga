@@ -22,12 +22,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -94,7 +93,13 @@ public class VariantQueryCommandUtils {
 
         addParam(query, FILES, queryVariantsOptions.file);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
-        addParam(query, RETURNED_SAMPLES, queryVariantsOptions.returnSample);
+        if (queryVariantsOptions.returnSample != null) {
+            if (queryVariantsOptions.returnSample.isEmpty() || queryVariantsOptions.returnSample.equals(".")) {
+                query.put(RETURNED_SAMPLES.key(), Collections.emptyList());
+            } else {
+                query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.returnSample);
+            }
+        }
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
 
 
@@ -165,7 +170,8 @@ public class VariantQueryCommandUtils {
             }
         }
 
-        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
+        outputFormat = outputFormat.toLowerCase();
+        if (returnVariants && (outputFormat.startsWith("vcf") || outputFormat.startsWith("stats"))) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
@@ -220,12 +226,14 @@ public class VariantQueryCommandUtils {
         if (queryVariantsOptions.outputFormat != null && !queryVariantsOptions.outputFormat.isEmpty()) {
             switch (queryVariantsOptions.outputFormat) {
                 case "vcf":
+                case "json":
+                case "stats":
+                case "cellbase":
                     gzip = false;
                 case "vcf.gz":
-                    break;
-                case "json":
-                    gzip = false;
                 case "json.gz":
+                case "stats.gz":
+                case "cellbase.gz":
                     break;
                 default:
                     logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
@@ -236,7 +244,8 @@ public class VariantQueryCommandUtils {
         // output format has priority over output name
         OutputStream outputStream;
         if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
-            outputStream = System.out;
+            // Unclosable OutputStream
+            outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
         } else {
             if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
                 queryVariantsOptions.output += ".gz";

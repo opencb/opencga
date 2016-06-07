@@ -18,6 +18,9 @@ package org.opencb.opencga.server.grpc;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
@@ -29,9 +32,11 @@ import org.slf4j.LoggerFactory;
  */
 public class GenericGrpcService {
 
+    protected CatalogConfiguration catalogConfiguration;
     protected StorageConfiguration storageConfiguration;
     protected String defaultStorageEngine;
 
+    protected CatalogManager catalogManager;
     protected static StorageManagerFactory storageManagerFactory;
 
 //    protected AuthManager authManager;
@@ -40,17 +45,25 @@ public class GenericGrpcService {
     private Logger privLogger;
     protected Logger logger;
 
-    public GenericGrpcService(StorageConfiguration storageConfiguration) {
-        this(storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
+    public GenericGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration) {
+        this(catalogConfiguration, storageConfiguration, storageConfiguration.getDefaultStorageEngineId());
     }
 
-    public GenericGrpcService(StorageConfiguration storageConfiguration, String defaultStorageEngine) {
+    public GenericGrpcService(CatalogConfiguration catalogConfiguration, StorageConfiguration storageConfiguration, String defaultStorageEngine) {
 
-        privLogger = LoggerFactory.getLogger("org.opencb.opencga.server.grpc.GenericGrpcService");
-        logger = LoggerFactory.getLogger(this.getClass());
+        privLogger = LoggerFactory.getLogger(this.getClass().toString());
+        logger = LoggerFactory.getLogger(this.getClass().toString());
 
+        this.catalogConfiguration = catalogConfiguration;
         this.storageConfiguration = storageConfiguration;
         this.defaultStorageEngine = defaultStorageEngine;
+
+
+        try {
+            catalogManager = new CatalogManager(catalogConfiguration);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+        }
 
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageManagerFactory == null) {

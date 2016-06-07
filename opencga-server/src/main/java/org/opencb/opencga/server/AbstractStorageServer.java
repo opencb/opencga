@@ -17,6 +17,8 @@
 package org.opencb.opencga.server;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,6 +26,9 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 02/01/16.
@@ -31,27 +36,56 @@ import java.io.IOException;
 public abstract class AbstractStorageServer {
 
     protected int port;
+    protected Path configDir;
+
+    protected Configuration configuration;
+    protected CatalogConfiguration catalogConfiguration;
+    protected StorageConfiguration storageConfiguration;
 
     /**
      * This is the default StorageEngine to use when it is not provided by the client.
      */
+    @Deprecated
     protected String defaultStorageEngine;
-    protected static StorageConfiguration storageConfiguration;
 
-    protected static Logger logger;
+    protected static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.server.AbstractStorageServer");
 
-    static {
-        logger = LoggerFactory.getLogger("org.opencb.opencga.storage.server.common.StorageServer");
-        logger.info("Static block, loading StorageConfiguration");
+
+    public AbstractStorageServer() {
+        initDefaultConfigurationFiles();
+    }
+
+    public AbstractStorageServer(int port, String defaultStorageEngine) {
+        initDefaultConfigurationFiles();
+
+        this.port = port;
+        if (StringUtils.isNotEmpty(defaultStorageEngine)) {
+            this.defaultStorageEngine = defaultStorageEngine;
+        } else {
+            this.defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
+        }
+    }
+
+    public AbstractStorageServer(Path configDir) {
+        this.configDir = configDir;
+        initConfigurationFiles(configDir);
+
+        this.port = 0;
+
+        if (storageConfiguration != null) {
+            this.defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
+        }
+    }
+
+    private void initDefaultConfigurationFiles() {
         try {
             if (System.getenv("OPENCGA_HOME") != null) {
-                logger.info("Loading storage configuration from OPENCGA_HOME at '{}'",
-                        System.getenv("OPENCGA_HOME") + "/conf/storage-configuration.yml");
-                storageConfiguration = StorageConfiguration
-                        .load(new FileInputStream(new File(System.getenv("OPENCGA_HOME") + "/conf/storage-configuration.yml")));
+                initConfigurationFiles(Paths.get(System.getenv("OPENCGA_HOME") + "/conf"));
             } else {
-                logger.info("Loading storage configuration from JAR at '{}'",
-                        StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml").toString());
+                logger.info("Loading configuration files from inside JAR file");
+                configuration = Configuration.load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                catalogConfiguration = CatalogConfiguration
+                        .load(CatalogConfiguration.class.getClassLoader().getResourceAsStream("catalog-configuration.yml"));
                 storageConfiguration = StorageConfiguration
                         .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
             }
@@ -60,16 +94,18 @@ public abstract class AbstractStorageServer {
         }
     }
 
-    public AbstractStorageServer() {
-//        this(storageConfiguration.getServer().getGrpc(), storageConfiguration.getDefaultStorageEngineId());
-    }
-
-    public AbstractStorageServer(int port, String defaultStorageEngine) {
-        this.port = port;
-        if (StringUtils.isNotEmpty(defaultStorageEngine)) {
-            this.defaultStorageEngine = defaultStorageEngine;
-        } else {
-            this.defaultStorageEngine = storageConfiguration.getDefaultStorageEngineId();
+    private void initConfigurationFiles(Path configDir) {
+        try {
+            if (configDir != null && Files.exists(configDir) && Files.isDirectory(configDir)) {
+                logger.info("Loading configuration files from '{}'", configDir.toString());
+                configuration = Configuration.load(Configuration.class.getClassLoader().getResourceAsStream("configuration.yml"));
+                catalogConfiguration = CatalogConfiguration
+                        .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/catalog-configuration.yml")));
+                storageConfiguration = StorageConfiguration
+                        .load(new FileInputStream(new File(configDir.toFile().getAbsolutePath() + "/storage-configuration.yml")));
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -102,14 +138,6 @@ public abstract class AbstractStorageServer {
 
     public void setDefaultStorageEngine(String defaultStorageEngine) {
         this.defaultStorageEngine = defaultStorageEngine;
-    }
-
-    public static StorageConfiguration getStorageConfiguration() {
-        return storageConfiguration;
-    }
-
-    public static void setStorageConfiguration(StorageConfiguration storageConfiguration) {
-        AbstractStorageServer.storageConfiguration = storageConfiguration;
     }
 
 }

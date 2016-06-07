@@ -144,7 +144,7 @@ public class FileMetadataReader {
             switch (bioformat) {
                 case ALIGNMENT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias")).first();
+                    study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias"), sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
@@ -157,7 +157,7 @@ public class FileMetadataReader {
                 }
                 case VARIANT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudy(studyId, sessionId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias")).first();
+                    study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias"), sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     VariantSource variantSource = readVariantSource(study, file, fileUri);

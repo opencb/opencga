@@ -50,7 +50,6 @@ public class VariantJsonTransformTask extends VariantTransformTask<String> {
             try {
                 String e = variant.toJson();
                 outputBatch.add(e);
-                outputBatch.add("\n");
             }  catch (Exception e) {
                 logger.error("Error parsing variant: {}", variant);
                 throw e;

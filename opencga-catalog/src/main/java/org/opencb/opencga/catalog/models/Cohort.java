@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.acls.CohortAcl;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,6 +38,8 @@ public class Cohort {
     private String description;
 
     private List<Long> samples;
+    private List<CohortAcl> acls;
+    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -58,6 +61,8 @@ public class Cohort {
         this.status = cohortStatus;
         this.description = description;
         this.samples = samples;
+        this.acls = Collections.emptyList();
+        this.annotationSets = Collections.emptyList();
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -72,6 +77,8 @@ public class Cohort {
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
+        sb.append(", acls=").append(acls);
+        sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -148,6 +155,24 @@ public class Cohort {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+    }
+
+    public List<CohortAcl> getAcls() {
+        return acls;
+    }
+
+    public Cohort setAcls(List<CohortAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
     }
 
     public static class CohortStatus extends Status {

@@ -20,13 +20,9 @@ import com.mongodb.BasicDBObject;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.mongodb.MongoDataStore;
-import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -120,11 +116,11 @@ public class CatalogManagerTest extends GenericTest {
         sessionIdUser2 = catalogManager.login("user2", PASSWORD, "127.0.0.1").first().getString("sessionId");
         sessionIdUser3 = catalogManager.login("user3", PASSWORD, "127.0.0.1").first().getString("sessionId");
 
-        Project project1 = catalogManager.createProject("user", "Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
+        Project project1 = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser)
                 .first();
-        Project project2 = catalogManager.createProject("user2", "Project Management Project", "pmp", "life art intelligent system",
+        Project project2 = catalogManager.createProject("Project Management Project", "pmp", "life art intelligent system",
                 "myorg", null, sessionIdUser2).first();
-        Project project3 = catalogManager.createProject("user3", "project 1", "p1", "", "", null, sessionIdUser3).first();
+        Project project3 = catalogManager.createProject("project 1", "p1", "", "", null, sessionIdUser3).first();
 
         studyId = catalogManager.createStudy(project1.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first().getId();
         studyId2 = catalogManager.createStudy(project1.getId(), "Phase 3", "phase3", Study.Type.CASE_CONTROL, "d", sessionIdUser).first().getId();
@@ -149,7 +145,7 @@ public class CatalogManagerTest extends GenericTest {
         attributes.put("boolean", false);
         catalogManager.modifyFile(fileTest1k.getId(), new ObjectMap("attributes", attributes), sessionIdUser);
 
-        File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+        File fileTest05k = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.DATAMATRIX_EXPRESSION,
                 testFolder.getPath() + "test_0.5K.txt",
                 StringUtils.randomString(500).getBytes(), "", false, sessionIdUser).first();
         attributes = new ObjectMap();
@@ -238,14 +234,8 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testAdminUserExists() throws Exception {
-        catalogManager.login("admin", "admin", "localhost");
-    }
-
-    @Test
-    public void testAdminUserExists2() throws Exception {
-        QueryResult<ObjectMap> login = catalogManager.login("admin", CatalogAuthenticationManager.cipherPassword("admin"), "localhost");
-        User admin = catalogManager.getUser("admin", null, login.first().getString("sessionId")).first();
-        assertEquals(User.Role.ADMIN, admin.getRole());
+        QueryResult<ObjectMap> login = catalogManager.login("admin", "admin", "localhost");
+        assertTrue(login.first().getString("sessionId").length() == 40);
     }
 
     @Test
@@ -322,7 +312,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(!userPre.getLastActivity().equals(userPost.getLastActivity()));
         assertEquals(userPost.getName(), newName);
         assertEquals(userPost.getEmail(), newEmail);
-        assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cipherPassword(newPassword));
+        assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cypherPassword(newPassword));
         for (Map.Entry<String, Object> entry : attributes.entrySet()) {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
@@ -359,7 +349,7 @@ public class CatalogManagerTest extends GenericTest {
 
         String userId = catalogManager.getUserIdBySessionId(sessionId);
 
-        catalogManager.createProject(userId, "Project", "project", "", "", null, sessionId);
+        catalogManager.createProject("Project", "project", "", "", null, sessionId);
 
         catalogManager.logoutAnonymous(sessionId);
 
@@ -379,11 +369,11 @@ public class CatalogManagerTest extends GenericTest {
 
         String projectAlias = "projectAlias_ASDFASDF";
 
-        catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
+        catalogManager.createProject("Project", projectAlias, "", "", null, sessionIdUser);
 
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage(containsString("already exists"));
-        catalogManager.createProject("user", "Project", projectAlias, "", "", null, sessionIdUser);
+        catalogManager.createProject("Project", projectAlias, "", "", null, sessionIdUser);
     }
 
     @Test
@@ -412,12 +402,9 @@ public class CatalogManagerTest extends GenericTest {
         options.put("alias", "newProjectAlias");
         catalogManager.modifyProject(projectId, options, sessionIdUser);
 
-        try {
-            catalogManager.modifyProject(projectId, options, sessionIdUser2);
-            fail("Expected 'Permission denied' exception");
-        } catch (CatalogAuthorizationException e) {
-            System.out.println(e);
-        }
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("Permission denied");
+        catalogManager.modifyProject(projectId, options, sessionIdUser2);
 
     }
 
@@ -453,20 +440,20 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testGetAllStudies() throws CatalogException {
         long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
-        catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
+        catalogManager.createStudy(projectId, "study_1", "study_1", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
+        catalogManager.createStudy(projectId, "study_2", "study_2", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "user", "creationDate", "description",
+        catalogManager.createStudy(projectId, "study_3", "study_3", Study.Type.CASE_CONTROL, "creationDate", "description",
                 new Status(), null, null, null, null, null, null, null, sessionIdUser);
-        long study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "user", "creationDate",
+        long study_4 = catalogManager.createStudy(projectId, "study_4", "study_4", Study.Type.CASE_CONTROL, "creationDate",
                 "description", new Status(), null, null, null, null, null, null, null, sessionIdUser).first().getId();
 
         assertEquals(new HashSet<>(Collections.emptyList()), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
-        catalogManager.addMemberToGroup(study_4, "admins", "user3", sessionIdUser);
+        catalogManager.addUsersToGroup(study_4, "admins", "user3", sessionIdUser);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
@@ -496,8 +483,8 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void testCreateFileFromUnsharedStudy() throws CatalogException {
         try {
-            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
-                    sessionIdUser2);
+            catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description",
+                    true, -1, sessionIdUser2);
             fail("The file could be created despite not having the proper permissions.");
         } catch (CatalogAuthorizationException e) {
             assertTrue(e.getMessage().contains("Permission denied"));
@@ -508,10 +495,9 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        catalogManager.addMemberToGroup(studyId, AuthorizationManager.MEMBERS_ROLE, "user2", sessionIdUser);
-        catalogManager.shareFile(Long.toString(testFolder.getId()), "user2", new AclEntry("user2", false, true, false, false), sessionIdUser);
-        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true, -1,
-                sessionIdUser2);
+        catalogManager.shareStudy(studyId, "user2", "analyst", false, sessionIdUser);
+        catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true,
+                -1, sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), sessionIdUser).getNumResults());
     }
@@ -702,6 +688,18 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void getFileIdByString() throws CatalogException {
+        catalogManager.shareStudy(studyId, "user2", "analyst", false, sessionIdUser);
+        File file = catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt",
+                "My description", true, -1, sessionIdUser2).first();
+        long fileId = catalogManager.getFileId(file.getPath(), sessionIdUser);
+        assertEquals(file.getId(), fileId);
+
+        fileId = catalogManager.getFileId(Long.toString(file.getId()), sessionIdUser);
+        assertEquals(file.getId(), fileId);
+    }
+
+    @Test
     public void renameFileEmptyName() throws CatalogException {
         thrown.expect(CatalogParameterException.class);
         thrown.expectMessage(containsString("null or empty"));
@@ -729,12 +727,12 @@ public class CatalogManagerTest extends GenericTest {
         Query query;
         QueryResult<File> result;
 
-        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~^data");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~data");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(1, result.getNumResults());
 
         //Get all files in data
-        query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^data/[^/]+/?")
+        query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~data/[^/]+/?")
                 .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(),"FILE");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(3, result.getNumResults());
@@ -1061,7 +1059,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.DELETED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1073,7 +1071,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.DELETED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1141,20 +1139,29 @@ public class CatalogManagerTest extends GenericTest {
         }
     }
 
+    @Test
+    public void getAllFilesInFolder() throws CatalogException {
+        long fileId = catalogManager.getFileId("user@1000G/phase1/data/test/folder/");
+        List<File> allFilesInFolder = catalogManager.getAllFilesInFolder(fileId, null, sessionIdUser).getResult();
+        assertEquals(3, allFilesInFolder.size());
+    }
+
     private void deleteFolderAndCheck(long deletable) throws CatalogException, IOException {
         List<File> allFilesInFolder;
         catalogManager.deleteFolder(deletable, sessionIdUser);
 
         File file = catalogManager.getFile(deletable, sessionIdUser).first();
+        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.DELETED));
+
         allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResult();
         allFilesInFolder = catalogManager.searchFile(
                 catalogManager.getStudyIdByFileId(deletable),
                 new Query("directory", catalogManager.getFile(deletable, sessionIdUser).first().getPath() + ".*"),
                 null, sessionIdUser).getResult();
 
-        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.TRASHED));
+
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.TRASHED));
+            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.DELETED));
         }
     }
 
@@ -1673,6 +1680,31 @@ public class CatalogManagerTest extends GenericTest {
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
+
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".unexisting", "lo,lu,LL");
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("not found in variableSet");
+        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+    }
+
+    @Test
+    public void testQuerySampleAnnotationFail1() throws CatalogException {
+        Query query = new Query();
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ":nestedObject.stringList", "lo,lu,LL");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("annotation:nestedObject does not exist");
+        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+    }
+
+    @Test
+    public void testQuerySampleAnnotationFail2() throws CatalogException {
+        Query query = new Query();
+        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), "nestedObject.stringList:lo,lu,LL");
+
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("Wrong annotation query");
+        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 
     @Test
@@ -1832,8 +1864,8 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, new QueryOptions(), sessionIdUser);
         assertEquals(sampleId, queryResult.first().getId());
 
-        thrown.expect(CatalogDBException.class);
-        catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+        QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
+        assertEquals(Status.DELETED, sample.first().getStatus().getStatus());
     }
 
     /*
@@ -1987,8 +2019,8 @@ public class CatalogManagerTest extends GenericTest {
 
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
-        thrown.expect(CatalogDBException.class);
-        catalogManager.getCohort(myCohort.getId(), null, sessionIdUser);
+        Cohort cohort = catalogManager.getCohort(myCohort.getId(), null, sessionIdUser).first();
+        assertEquals(Status.DELETED, cohort.getStatus().getStatus());
     }
 
     /**

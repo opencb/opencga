@@ -17,11 +17,16 @@
 package org.opencb.opencga.catalog.db.api;
 
 import org.apache.commons.collections.map.LinkedMap;
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryParam;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 
@@ -82,13 +87,80 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     String getStudyOwnerId(long studyId) throws CatalogDBException;
 
+    /**
+     * Obtains the studyAcl given the following parameters. If only the studyId is given, a list containing all the studyAcls will be
+     * returned.
+     *
+     * @param studyId Study id.
+     * @param roleId Role id to look for studyAcls.
+     * @param members List of members to look for permissions. Can only be existing users or groups.
+     * @return A queryResult object containing a list of studyAcls that satisfies the query.
+     * @throws CatalogDBException when the studyId does not exist, or the roleId or the members introduced do not exist in the database.
+     */
+    QueryResult<StudyAcl> getStudyAcl(long studyId, @Nullable String roleId, List<String> members) throws CatalogDBException;
+
+    @Deprecated
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
 
+    /**
+     * Obtains the groups that satisfies the query.
+     *
+     * @param studyId study id.
+     * @param groupId group id.
+     * @param userIds List of user ids.
+     * @return the list of groups satisfying the query.
+     * @throws CatalogDBException when any of the studyId, groupId (if any) or userIds do not exist.
+     */
+    QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException;
+
+    /**
+     * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
+     *
+     * @param studyId studyId
+     * @param groupId Group id.
+     * @param members List of members that will be added to the group.
+     * @return The group that has been updated/created.
+     * @throws CatalogDBException when any of the studyId or the members do not exist.
+     */
+    QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
+     * Removes the list of members from the group.
+     *
+     * @param studyId study id.
+     * @param groupId Group id where the user members belong to.
+     * @param members List of members that are going to be removed from the group.
+     * @throws CatalogDBException when any of the studyId, groupId or members do not exist.
+     */
+    void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
+     * Adds the permissions defined in the roleId to the list of members.
+     *
+     * @param studyId study id.
+     * @param roleId Role that will be applied to the members.
+     * @param members List of members (users and/or groups).
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
+     * @return A queryResult with the studyAcl after the update.
+     * @throws CatalogDBException when any of the studyId, roleId or members do not exist or if there is a user inside a group defined in
+     * members that already have a permission created.
+     */
+    QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members, boolean override) throws CatalogDBException;
+
+    /**
+     * Remove the permissions for the members.
+     *
+     * @param studyId study id.
+     * @param members List of members whose permissions will be removed.
+     * @throws CatalogDBException when any of the studyId or the members do not exist.
+     */
+    void unsetStudyAcl(long studyId, List<String> members) throws CatalogDBException;
+
+//    QueryResult<StudyAcl> getStudyAcls(long studyId, String userId, String groupId) throws CatalogDBException;
+
+    @Deprecated
     QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<Group> addMemberToGroup(long studyId, String groupId, String userId) throws CatalogDBException;
-
-    QueryResult<Group> removeMemberFromGroup(long studyId, String groupId, String userId) throws CatalogDBException;
 
     /*
      * VariableSet Methods
@@ -145,22 +217,28 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
-    QueryResult<Long> removeCohortDependencies(List<Long> cohortIds) throws CatalogDBException;
-
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
-        CREATOR_ID("creatorId", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT, ""),
+        DESCRIPTION("description", TEXT, ""),
+        CIPHER("cipher", TEXT, ""),
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
+        URI("uri", TEXT_ARRAY, ""),
+        ACLS("acls", TEXT_ARRAY, ""),
+        ACLS_ROLE("acls.role", TEXT, ""),
+        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
-        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
+        ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
+        STATS("stats", TEXT, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_ID("groups.id", TEXT_ARRAY, ""),
@@ -181,40 +259,40 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         EXPERIMENT_CENTER("experiments.center", TEXT_ARRAY, ""),
         EXPERIMENT_RESPONSIBLE("experiments.responsible", TEXT_ARRAY, ""),
 
-        FILE_ID("files.id", INTEGER_ARRAY, ""),
-        FILE_NAME("files.name", TEXT_ARRAY, ""),
-        FILE_TYPE("files.type", TEXT_ARRAY, ""),
-        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
-        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
-        FILE_DISK_USAGE("files.diskUsage", INTEGER_ARRAY, ""),
+//        FILE_ID("files.id", INTEGER_ARRAY, ""),
+//        FILE_NAME("files.name", TEXT_ARRAY, ""),
+//        FILE_TYPE("files.type", TEXT_ARRAY, ""),
+//        FILE_FORMAT("files.format", TEXT_ARRAY, ""),
+//        FILE_BIOFORMAT("files.bioformat", TEXT_ARRAY, ""),
+//        FILE_DISK_USAGE("files.diskUsage", INTEGER_ARRAY, ""),
 
-        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
-        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
-        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
-        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
-        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
-        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
-        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
+//        JOB_ID("jobs.id", INTEGER_ARRAY, ""),
+//        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
+//        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
+//        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
+//        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
+//        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
+//        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
 
-        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
-        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
-        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
-        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
-        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
-        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
+//        INDIVIDUAL_ID("individuals.id", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_NAME("individuals.name", TEXT_ARRAY, ""),
+//        INDIVIDUAL_FATHER_ID("individuals.fatherId", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_MOTHER_ID("individuals.motherId", INTEGER_ARRAY, ""),
+//        INDIVIDUAL_FAMILY("individuals.family", TEXT_ARRAY, ""),
+//        INDIVIDUAL_RACE("individuals.race", TEXT_ARRAY, ""),
 
-        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
-        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
-        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
-        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),
+//        SAMPLE_ID("samples.id", INTEGER_ARRAY, ""),
+//        SAMPLE_NAME("samples.name", TEXT_ARRAY, ""),
+//        SAMPLE_SOURCE("samples.source", TEXT_ARRAY, ""),
+//        SAMPLE_INDIVIDUAL_ID("samples.individualId", INTEGER_ARRAY, ""),
 
-        DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
-        DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
+//        DATASET_ID("datasets.id", INTEGER_ARRAY, ""),
+//        DATASET_NAME("datasets.name", TEXT_ARRAY, ""),
 
         COHORTS("cohorts", TEXT_ARRAY, ""),
-        COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
-        COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
-        COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
+//        COHORT_ID("cohorts.id", INTEGER_ARRAY, ""),
+//        COHORT_NAME("cohorts.name", TEXT_ARRAY, ""),
+//        COHORT_TYPE("cohorts.type", TEXT_ARRAY, ""),
 
         VARIABLE_SET("variableSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSets.id", INTEGER_ARRAY, ""),

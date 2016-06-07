@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -8,18 +9,20 @@ import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
-import org.opencb.opencga.catalog.authorization.CatalogPermission;
-import org.opencb.opencga.catalog.authorization.StudyPermission;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -56,10 +60,134 @@ public class JobManager extends AbstractManager implements IJobManager {
     }
 
     @Override
+    public Long getJobId(String userId, String jobStr) throws CatalogException {
+        if (StringUtils.isNumeric(jobStr)) {
+            return Long.parseLong(jobStr);
+        }
+
+        // Resolve the studyIds and filter the jobName
+        ObjectMap parsedSampleStr = parseFeatureId(userId, jobStr);
+        List<Long> studyIds = getStudyIds(parsedSampleStr);
+        String jobName = parsedSampleStr.getString("featureName");
+
+        Query query = new Query(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogJobDBAdaptor.QueryParams.NAME.key(), jobName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.jobs.id");
+        QueryResult<Job> queryResult = jobDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one job id found based on " + jobName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Override
+    public QueryResult<JobAcl> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long jobId = getJobId(userId, jobStr);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.SHARE);
+        Long studyId = getStudyId(jobId);
+
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getId());
+
+                            if (!groupUsers.containsKey(group.getId())) {
+                                groupUsers.put(group.getId(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getId()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<JobAcl> jobAclQueryResult = jobDBAdaptor.getJobAcl(jobId, memberList);
+
+        if (members.size() == 0) {
+            return jobAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        // We loop over the results and recreate one sampleAcl per member
+        Map<String, JobAcl> jobAclHashMap = new HashMap<>();
+        for (JobAcl jobAcl : jobAclQueryResult.getResult()) {
+            for (String tmpMember : jobAcl.getUsers()) {
+                if (memberList.contains(tmpMember)) {
+                    if (tmpMember.startsWith("@")) {
+                        // Check if the user was demanding the group directly or a user belonging to the group
+                        if (groupIds.contains(tmpMember)) {
+                            jobAclHashMap.put(tmpMember,
+                                    new JobAcl(Collections.singletonList(tmpMember), jobAcl.getPermissions()));
+                        } else {
+                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                            if (groupUsers.containsKey(tmpMember)) {
+                                for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                    if (userIds.contains(tmpUserId)) {
+                                        jobAclHashMap.put(tmpUserId, new JobAcl(Collections.singletonList(tmpUserId),
+                                                jobAcl.getPermissions()));
+                                    }
+                                }
+                            }
+                        }
+                    } else {
+                        // Add the user
+                        jobAclHashMap.put(tmpMember, new JobAcl(Collections.singletonList(tmpMember), jobAcl.getPermissions()));
+                    }
+                }
+            }
+        }
+
+        // We recreate the output that is in jobAclHashMap but in the same order the members were queried.
+        List<JobAcl> jobAclList = new ArrayList<>(jobAclHashMap.size());
+        for (String member : members) {
+            if (jobAclHashMap.containsKey(member)) {
+                jobAclList.add(jobAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        jobAclQueryResult.setId(jobStr);
+        jobAclQueryResult.setNumResults(jobAclList.size());
+        jobAclQueryResult.setNumTotalResults(jobAclList.size());
+        jobAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        jobAclQueryResult.setResult(jobAclList);
+
+        return jobAclQueryResult;
+    }
+
+    @Override
     public QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkReadJob(userId, jobId);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.VIEW);
         return jobDBAdaptor.incJobVisits(jobId);
     }
 
@@ -110,13 +238,14 @@ public class JobManager extends AbstractManager implements IJobManager {
         inputFiles = ParamUtils.defaultObject(inputFiles, Collections.<Long>emptyList());
         outputFiles = ParamUtils.defaultObject(outputFiles, Collections.<Long>emptyList());
 
-        // FIXME check inputFiles? is a null conceptually valid?
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_JOBS);
 
+        // FIXME check inputFiles? is a null conceptually valid?
 //        URI tmpOutDirUri = createJobOutdir(studyId, randomString, sessionId);
 
-        authorizationManager.checkFilePermission(outDirId, userId, CatalogPermission.WRITE);
+        authorizationManager.checkFilePermission(outDirId, userId, FileAcl.FilePermissions.CREATE);
         for (Long inputFile : inputFiles) {
-            authorizationManager.checkFilePermission(inputFile, userId, CatalogPermission.READ);
+            authorizationManager.checkFilePermission(inputFile, userId, FileAcl.FilePermissions.VIEW);
         }
         QueryOptions fileQueryOptions = new QueryOptions("include", Arrays.asList(
                 "projects.studies.files.id",
@@ -144,7 +273,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.createJob(studyId, job, options);
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -153,15 +284,15 @@ public class JobManager extends AbstractManager implements IJobManager {
             throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.VIEW);
         QueryResult<Job> queryResult = jobDBAdaptor.getJob(jobId, options);
-        authorizationManager.checkReadJob(userId, queryResult.first());
         return queryResult;
     }
 
     @Override
     public QueryResult<Job> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         query = ParamUtils.defaultObject(query, Query::new);
-        int studyId = query.getInt(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
+        long studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
         return readAll(studyId, query, options, sessionId);
     }
 
@@ -173,21 +304,25 @@ public class JobManager extends AbstractManager implements IJobManager {
         // If studyId is null, check if there is any on the query
         // Else, ensure that studyId is in the Query
         if (studyId < 0) {
-            studyId = query.getInt(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
+            studyId = query.getLong(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), -1);
         } else {
             query.put(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
         //query.putAll(options);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            if (studyId < 0) {
-                throw new CatalogException("Permission denied. Can't get jobs without specifying an StudyId");
-            } else {
-                authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
-            }
+        String userId;
+        if (sessionId.length() == 40) {
+            catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().checkValidAdminSession(sessionId);
+            userId = "admin";
+        } else {
+            userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         }
+
+        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
+            throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
+        }
+
         QueryResult<Job> queryResult = jobDBAdaptor.get(query, options);
-        authorizationManager.filterJobs(userId, queryResult.getResult(), studyId);
+        authorizationManager.filterJobs(userId, studyId, queryResult.getResult());
         queryResult.setNumResults(queryResult.getResult().size());
         return queryResult;
     }
@@ -197,10 +332,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
-            authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.LAUNCH_JOBS);
-        }
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.UPDATE);
         QueryResult<Job> queryResult = jobDBAdaptor.update(jobId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
         return queryResult;
@@ -210,8 +342,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> delete(Long jobId, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.MANAGE_STUDY);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.DELETE);
 
         QueryResult<Job> queryResult = jobDBAdaptor.delete(jobId, new QueryOptions());
         // Delete the output files of the job if they are not in use.
@@ -237,7 +368,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -260,7 +391,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -284,7 +415,7 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.READ_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_JOBS);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -304,8 +435,6 @@ public class JobManager extends AbstractManager implements IJobManager {
         ParamUtils.checkParameter(dirName, "dirName");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-
-        authorizationManager.checkStudyPermission(studyId, userId, StudyPermission.DELETE_JOBS);
 
         URI uri = studyDBAdaptor.getStudy(studyId, new QueryOptions("include", Collections.singletonList("projects.studies.uri")))
                 .first().getUri();
@@ -350,7 +479,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
 
         QueryResult<Tool> queryResult = jobDBAdaptor.createTool(userId, tool);
-        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.tool, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

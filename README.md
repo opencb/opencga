@@ -40,6 +40,7 @@ OpenCGA is mainly developed in Java and it uses [Apache Maven](http://maven.apac
 Stable releases are merged and tagged at **_master_** branch, you are encourage to use latest stable release for production. Current active development is carried out at **_develop_** branch and need **Java 8**, only compilation is guaranteed and bugs are expected, use this branch for development or for testing new functionalities. Only dependencies of **_master_** branch are ensured to be deployed at [Maven Central Repository](http://search.maven.org/), **_develop_** branch may require users to download and install other active OpenCB repositories:
 * _biodata_: https://github.com/opencb/biodata (branch 'develop')
 * _datastore_: https://github.com/opencb/datastore (branch 'develop')
+* _java-common-libs_: https://github.com/opencb/java-common-libs (branch 'develop')
 * _cellbase_: https://github.com/opencb/cellbase (branch 'develop')
 
 ### Cloning

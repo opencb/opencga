@@ -40,6 +40,7 @@ public class AdminCliOptionsParser {
     private UsersCommandOptions usersCommandOptions;
     private AuditCommandOptions auditCommandOptions;
     private ToolsCommandOptions toolsCommandOptions;
+    private ServerCommandOptions serverCommandOptions;
 
 
     public AdminCliOptionsParser() {
@@ -53,6 +54,7 @@ public class AdminCliOptionsParser {
         catalogCommandOptions = new CatalogCommandOptions();
         jCommander.addCommand("catalog", catalogCommandOptions);
         JCommander catalogSubCommands = jCommander.getCommands().get("catalog");
+        catalogSubCommands.addCommand("demo", catalogCommandOptions.demoCatalogCommandOptions);
         catalogSubCommands.addCommand("install", catalogCommandOptions.installCatalogCommandOptions);
         catalogSubCommands.addCommand("delete", catalogCommandOptions.deleteCatalogCommandOptions);
         catalogSubCommands.addCommand("index", catalogCommandOptions.indexCatalogCommandOptions);
@@ -82,6 +84,12 @@ public class AdminCliOptionsParser {
         toolsSubCommands.addCommand("install", toolsCommandOptions.installToolCommandOptions);
         toolsSubCommands.addCommand("list", toolsCommandOptions.listToolCommandOptions);
         toolsSubCommands.addCommand("show", toolsCommandOptions.showToolCommandOptions);
+
+        serverCommandOptions = new ServerCommandOptions();
+        jCommander.addCommand("server", serverCommandOptions);
+        JCommander serverSubCommands = jCommander.getCommands().get("server");
+        serverSubCommands.addCommand("rest", serverCommandOptions.restServerCommandOptions);
+        serverSubCommands.addCommand("grpc", serverCommandOptions.grpcServerCommandOptions);
     }
 
     public void parse(String[] args) throws ParameterException {
@@ -155,6 +163,7 @@ public class AdminCliOptionsParser {
     @Parameters(commandNames = {"catalog"}, commandDescription = "Implements different tools interact with Catalog database")
     public class CatalogCommandOptions extends CommandOptions {
 
+        DemoCatalogCommandOptions demoCatalogCommandOptions;
         InstallCatalogCommandOptions installCatalogCommandOptions;
         DeleteCatalogCommandOptions deleteCatalogCommandOptions;
         IndexCatalogCommandOptions indexCatalogCommandOptions;
@@ -166,6 +175,7 @@ public class AdminCliOptionsParser {
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         public CatalogCommandOptions() {
+            this.demoCatalogCommandOptions = new DemoCatalogCommandOptions();
             this.installCatalogCommandOptions = new InstallCatalogCommandOptions();
             this.deleteCatalogCommandOptions = new DeleteCatalogCommandOptions();
             this.indexCatalogCommandOptions = new IndexCatalogCommandOptions();
@@ -234,6 +244,24 @@ public class AdminCliOptionsParser {
         }
     }
 
+    /*
+     * Server CLI options
+     */
+    @Parameters(commandNames = {"server"}, commandDescription = "Manage REST and gRPC servers")
+    public class ServerCommandOptions extends CommandOptions {
+
+        RestServerCommandOptions restServerCommandOptions;
+        GrpcServerCommandOptions grpcServerCommandOptions;
+
+        AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        public ServerCommandOptions() {
+            this.restServerCommandOptions = new RestServerCommandOptions();
+            this.grpcServerCommandOptions = new GrpcServerCommandOptions();
+        }
+    }
+
+
 
     /**
      * Auxiliary class for Database connection.
@@ -258,6 +286,20 @@ public class AdminCliOptionsParser {
     /*
      *  CATALOG SUB-COMMANDS
      */
+
+    @Parameters(commandNames = {"demo"}, commandDescription = "Install and populate a catalog database with demonstration purposes.")
+    public class DemoCatalogCommandOptions {
+
+        @ParametersDelegate
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--database-name"}, description = "Database name for the catalog metadata. If not present, it will be set to opencga_catalog_demo")
+        public String database;
+
+        @Parameter(names = {"--force"}, description = "If this parameters is set, it will override the database installation.")
+        public boolean force;
+
+    }
 
     @Parameters(commandNames = {"install"}, commandDescription = "Install Catalog database and collections together with the indexes")
     public class InstallCatalogCommandOptions extends CatalogDatabaseCommandOptions {
@@ -443,7 +485,6 @@ public class AdminCliOptionsParser {
     /*
      * TOOL SUB-COMMANDS
      */
-
     @Parameters(commandNames = {"install"}, commandDescription = "Install and check a new tool")
     public class InstallToolCommandOptions extends CatalogDatabaseCommandOptions {
 
@@ -480,6 +521,35 @@ public class AdminCliOptionsParser {
 
     }
 
+
+    /*
+     * SERVER SUB-COMMANDS
+     */
+    @Parameters(commandNames = {"rest"}, commandDescription = "Install and check a new tool")
+    public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+
+        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean start;
+
+        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean stop;
+    }
+
+    @Parameters(commandNames = {"grpc"}, commandDescription = "Print a summary list of all tools")
+    public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+
+        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean start;
+
+        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean stop;
+    }
 
 
     public void printUsage() {
@@ -551,5 +621,9 @@ public class AdminCliOptionsParser {
 
     public ToolsCommandOptions getToolsCommandOptions() {
         return toolsCommandOptions;
+    }
+
+    public ServerCommandOptions getServerCommandOptions() {
+        return serverCommandOptions;
     }
 }

@@ -74,6 +74,9 @@ public class AdminMain {
                         case "audit":
                             commandExecutor = new AuditCommandExecutor(cliOptionsParser.getAuditCommandOptions());
                             break;
+                        case "server":
+                            commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;
