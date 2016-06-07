@@ -60,6 +60,8 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Opti
  */
 public class VariantStatisticsManager {
 
+    public static final String OUTPUT_FILE_NAME = "output.file.name";
+
     private String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
     private String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
     private final JsonFactory jsonFactory;

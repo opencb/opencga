@@ -443,6 +443,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             QueryOptions options = new QueryOptions()
                     .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
                     .append(ExecutorManager.SIMULATE, false)
+                    .append(VariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)
