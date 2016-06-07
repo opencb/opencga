@@ -587,6 +587,9 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"", required = false, arity = 1)
         public String geneTraitName;
 
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\" , \"HP:0002812\"", required = false, arity = 1)
+        public String hpo;
+
         @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", required = false, arity = 1)
         public String proteinKeywords;
 

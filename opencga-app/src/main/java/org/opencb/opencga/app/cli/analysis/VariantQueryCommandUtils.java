@@ -114,6 +114,7 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.flags);
         addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
         addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
+        addParam(query, ANNOT_HPO, queryVariantsOptions.hpo);
         addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
         addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
 

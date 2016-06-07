@@ -985,7 +985,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
             if (query.containsKey(VariantQueryParams.ANNOT_HPO.key())) {
                 String value = query.getString(VariantQueryParams.ANNOT_HPO.key());
-                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder, QueryOperation.AND);
+                addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
+                        QueryOperation.AND);
             }
 
             DBObject geneTraitQuery = geneTraitBuilder.get();
