@@ -79,7 +79,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl, boolean override) throws CatalogDBException;
 
-    void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+    void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetIndividualAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 

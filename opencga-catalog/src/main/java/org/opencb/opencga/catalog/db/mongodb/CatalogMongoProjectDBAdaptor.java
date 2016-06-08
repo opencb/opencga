@@ -576,7 +576,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_STATUS.key(),
                     parameters.get(QueryParams.STATUS_STATUS.key()));
-            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         QueryResult<UpdateResult> updateResult = new QueryResult<>();
