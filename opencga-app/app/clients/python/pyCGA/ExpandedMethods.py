@@ -123,7 +123,6 @@ def get_annotation(study_id, individual_id, variable_set_name):
         individual_annotations.append(extract_annotation(individual_info, variableSetId))
     return individual_annotations
 
-
 def extract_annotation(individual_info, variableSetId):
     individual_annotations = []
     if "annotationSets" in individual_info:
@@ -132,6 +131,32 @@ def extract_annotation(individual_info, variableSetId):
                                        str(r["variableSetId"]) == str(variableSetId)]
     return individual_annotations
 
+def get_annotation_sample(study_id, sample_id, variable_set_name):
+    """
+    :param study_id:
+    :param sample_id:
+    :param variable_set_name:
+    :return:
+
+    """
+    variable = Variables()
+    sample = Samples()
+
+    samples_info = sample.search(studyId=study_id, id=sample_id)
+
+    sample_annotations = []
+    variableSetId = variable.search(studyId=study_id, name=variable_set_name)[0]["id"]
+    for sample_info in samples_info:
+        sample_annotations.append(extract_annotation(sample_info, variableSetId))
+    return sample_annotations
+
+def extract_annotation(sample_info, variableSetId):
+    sample_annotations = []
+    if "annotationSets" in sample_info:
+
+        sample_annotations = [r["annotations"] for r in sample_info["annotationSets"] if
+                                  str(r["variableSetId"]) == str(variableSetId)]
+    return sample_annotations
 
 def link_file_and_update_sample(uri, path, study_id, *sample_ids):
     file = Files()
