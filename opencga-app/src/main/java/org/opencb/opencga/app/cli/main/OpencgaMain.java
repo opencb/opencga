@@ -78,25 +78,27 @@ public class OpencgaMain {
 //                            commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
 //                            break;
                         case "projects":
-                            commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectCommands());
                             break;
                         case "studies":
                             commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudyCommands());
                             break;
                         case "files":
-                            commandExecutor = new FilesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFileCommands());
                             break;
                         case "cohorts":
-                            commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortCommands());
                             break;
                         case "samples":
-                            commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSampleCommands());
                             break;
                         case "jobs":
-                            commandExecutor = new JobsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommands());
                             break;
+                        case "individuals":
+                            commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommands());
                         case "tools":
-                            commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getUsersCommandOptions());
+                            commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolCommands());
                             break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
