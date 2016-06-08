@@ -942,7 +942,7 @@ public class OpenCGAMain {
                         }
                         for (Long studyId : studyIds) {
                             QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
-                                    new Query(CatalogJobDBAdaptor.QueryParams.JOB_STATUS.key(),
+                                    new Query(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(),
                                             Collections.singletonList(Job.JobStatus.RUNNING.toString())), new QueryOptions(), sessionId);
 
                             for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
@@ -1377,6 +1377,8 @@ public class OpenCGAMain {
     }
 
     private static void setLogLevel(String logLevel) {
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);

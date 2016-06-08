@@ -150,7 +150,6 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        JOB_STATUS("jobStatus", TEXT, ""),
         DISK_USAGE("diskUsage", DECIMAL, ""),
         OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),

@@ -525,6 +525,17 @@ public class CatalogManagerTest extends GenericTest {
 
         URI uri = catalogManager.getFileUri(folder);
         assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+
+        folder = catalogManager.createFolder(studyId, Paths.get("WOLOLO"), true, null, sessionIdUser2).first();
+
+        Path myStudy = Files.createDirectory(catalogManagerResource.getOpencgaHome().resolve("myStudy"));
+        long id = catalogManager.createStudy(projectId, "name", "alias", Study.Type.CASE_CONTROL, "", "",
+                null, null, null, myStudy.toUri(), null, null, null, null, sessionIdUser2).first().getId();
+        System.out.println("studyId = " + id);
+        folder = catalogManager.createFolder(id, Paths.get("WOLOLO"), true, null, sessionIdUser2).first();
+        System.out.println("folder = " + folder);
+        System.out.println(catalogManager.getFileUri(folder));
+
     }
 
     @Test
