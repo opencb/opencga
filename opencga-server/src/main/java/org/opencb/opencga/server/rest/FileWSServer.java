@@ -472,8 +472,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 logger.debug("Name attribute empty, it's been removed");
             }
 
-            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
-                qOptions.put(MongoDBCollection.LIMIT, 1000);
+            if (!qOptions.containsKey(QueryOptions.LIMIT)) {
+                qOptions.put(QueryOptions.LIMIT, 1000);
                 logger.debug("Adding a limit of 1000");
             }
             logger.debug("query = " + query.toJson());

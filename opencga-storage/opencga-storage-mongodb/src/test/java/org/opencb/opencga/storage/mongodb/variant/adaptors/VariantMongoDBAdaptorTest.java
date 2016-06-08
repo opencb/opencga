@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.mongodb.variant;
+package org.opencb.opencga.storage.mongodb.variant.adaptors;
 
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
+import org.opencb.opencga.storage.mongodb.variant.MongoVariantStorageManagerTestUtils;
 
 import java.util.Map;
 

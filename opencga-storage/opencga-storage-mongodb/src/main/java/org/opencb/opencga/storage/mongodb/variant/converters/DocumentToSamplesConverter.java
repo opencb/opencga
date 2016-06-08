@@ -284,7 +284,10 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                         extraFieldPosition = 1; //Skip GT
                     }
                     for (String extraField : extraFields) {
-                        byte[] byteArray = sampleDatas == null ? null : sampleDatas.get(extraField.toLowerCase(), Binary.class).getData();
+                        extraField = extraField.toLowerCase();
+                        byte[] byteArray = sampleDatas == null || !sampleDatas.containsKey(extraField)
+                                ? null
+                                : sampleDatas.get(extraField, Binary.class).getData();
 
                         VariantMongoDBProto.OtherFields otherFields = null;
                         if (compressExtraParams && byteArray != null) {
@@ -321,7 +324,10 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
                             Integer samplePosition = samplesPositionToReturn.get(sampleName);
-                            if (samplePosition != null) {
+                            if (samplePosition == null) {
+                                // The sample on this position is not returned. Skip this value.
+                                supplier.get();
+                            } else {
                                 samplesData.get(samplePosition).set(extraFieldPosition, supplier.get());
                             }
                         }
@@ -521,17 +527,17 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                             break;
                     }
                 }
-            } // else { Don't set that field }
 
-            byte[] byteArray = builder.build().toByteArray();
-            if (compressExtraParams) {
-                try {
-                    byteArray = CompressionUtils.compress(byteArray);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                byte[] byteArray = builder.build().toByteArray();
+                if (compressExtraParams) {
+                    try {
+                        byteArray = CompressionUtils.compress(byteArray);
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
-            }
-            otherFields.append(extraField.toLowerCase(), byteArray);
+                otherFields.append(extraField.toLowerCase(), byteArray);
+            } // else { Don't set this field }
         }
 
         return mongoSamples;
