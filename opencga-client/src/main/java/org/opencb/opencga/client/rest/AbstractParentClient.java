@@ -44,8 +44,8 @@ public abstract class AbstractParentClient<T> {
 
     protected static ObjectMapper jsonObjectMapper;
 
-    private final static int BATCH_SIZE = 2000;
-    private final static int DEFAULT_SKIP = 0;
+    private static final int BATCH_SIZE = 2000;
+    private static final int DEFAULT_SKIP = 0;
 
     protected AbstractParentClient(String sessionId, ClientConfiguration configuration) {
         this.sessionId = sessionId;
@@ -201,7 +201,7 @@ public abstract class AbstractParentClient<T> {
         objectMap.put(key, value);
         if (params != null && params.length > 0) {
             for (int i = 0; i < params.length; i += 2) {
-                objectMap.put(params[i].toString(), params[i+1]);
+                objectMap.put(params[i].toString(), params[i + 1]);
             }
         }
     }

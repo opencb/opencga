@@ -64,7 +64,8 @@ public class UserClient extends AbstractParentClient<User> {
         return execute(USERS_URL, userId, "projects", options, Project.class);
     }
 
-    public QueryResponse<User> changePassword(String userId, String currentPassword, String newPassword, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<User> changePassword(String userId, String currentPassword, String newPassword, ObjectMap params)
+            throws CatalogException, IOException {
         addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
         return execute(USERS_URL, userId, "change-password", params, User.class);
     }

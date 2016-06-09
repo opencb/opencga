@@ -43,7 +43,8 @@ public class IndividualClient extends AbstractParentClient<Individual> {
         return execute(INDIVIDUALS_URL, "create", params, Individual.class);
     }
 
-    public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
+            throws CatalogException, IOException {
         addParamsToObjectMap(params, "annotateSetName", annotateSetName);
         return execute(INDIVIDUALS_URL, individualId, "annotate", params, Individual.class);
     }

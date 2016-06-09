@@ -2,11 +2,9 @@ package org.opencb.opencga.client.rest;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.AfterClass;
-import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -92,11 +90,11 @@ public class SampleClientTest {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
             openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
 
-//            AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"), openCGAClient.getSessionId());
+            AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
+                    openCGAClient.getSessionId());
 //            AnalysisDemo.insertVariantFile(catalogManager, 6L,
 //                    opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
 //                    openCGAClient.getSessionId());
-
 
         } catch (IOException e) {
             e.printStackTrace();

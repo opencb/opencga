@@ -84,6 +84,11 @@ public class FileClient extends AbstractParentClient<File> {
 
     /**
      * @deprecated  As of release 0.8, replaced by {@link #get(String id, QueryOptions options)}
+     * @param fileId fileId.
+     * @param options options.
+     * @return queryResponse.
+     * @throws CatalogException catalogException.
+     * @throws IOException IOException.
      */
     @Deprecated
     public QueryResponse<URI> getURI(String fileId, QueryOptions options) throws CatalogException, IOException {
