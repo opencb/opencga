@@ -32,8 +32,8 @@ public class SampleClient extends AbstractParentClient<Sample> {
 
     private static final String SAMPLES_URL = "samples";
 
-    protected SampleClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected SampleClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = SAMPLES_URL;
         this.clazz = Sample.class;

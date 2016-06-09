@@ -28,6 +28,7 @@ import java.util.Map;
  */
 public class OpenCGAClient {
 
+    private String userId;
     private String sessionId;
     private ClientConfiguration clientConfiguration;
 
@@ -44,7 +45,7 @@ public class OpenCGAClient {
     public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) {
         init(null, clientConfiguration);
 
-        this.sessionId = login(user, password);
+        login(user, password);
     }
 
     public OpenCGAClient(String sessionId, ClientConfiguration clientConfiguration) {
@@ -60,47 +61,47 @@ public class OpenCGAClient {
 
 
     public UserClient getUserClient() {
-        clients.putIfAbsent("USER", new UserClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("USER", new UserClient(userId, sessionId, clientConfiguration));
         return (UserClient) clients.get("USER");
     }
 
     public ProjectClient getProjectClient() {
-        clients.putIfAbsent("PROJECT", new ProjectClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("PROJECT", new ProjectClient(userId, sessionId, clientConfiguration));
         return (ProjectClient) clients.get("PROJECT");
     }
 
     public StudyClient getStudyClient() {
-        clients.putIfAbsent("STUDY", new StudyClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("STUDY", new StudyClient(userId, sessionId, clientConfiguration));
         return (StudyClient) clients.get("STUDY");
     }
 
     public FileClient getFileClient() {
-        clients.putIfAbsent("FILE", new FileClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("FILE", new FileClient(userId, sessionId, clientConfiguration));
         return (FileClient) clients.get("FILE");
     }
 
     public JobClient getJobClient() {
-        clients.putIfAbsent("JOB", new JobClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("JOB", new JobClient(userId, sessionId, clientConfiguration));
         return (JobClient) clients.get("JOB");
     }
 
     public IndividualClient getIndividualClient() {
-        clients.putIfAbsent("INDIVIDUAL", new IndividualClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("INDIVIDUAL", new IndividualClient(userId, sessionId, clientConfiguration));
         return (IndividualClient) clients.get("INDIVIDUAL");
     }
 
     public SampleClient getSampleClient() {
-        clients.putIfAbsent("SAMPLE", new SampleClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("SAMPLE", new SampleClient(userId, sessionId, clientConfiguration));
         return (SampleClient) clients.get("SAMPLE");
     }
 
     public VariableClient getVariableClient() {
-        clients.putIfAbsent("VARIABLE", new VariableClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("VARIABLE", new VariableClient(sessionId, clientConfiguration, userId));
         return (VariableClient) clients.get("VARIABLE");
     }
 
     public CohortClient getCohortClient() {
-        clients.putIfAbsent("COHORT", new CohortClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("COHORT", new CohortClient(userId, sessionId, clientConfiguration));
         return (CohortClient) clients.get("COHORT");
     }
 
@@ -110,6 +111,8 @@ public class OpenCGAClient {
         QueryResponse<ObjectMap> login = userClient.login(user, password);
         this.sessionId = login.firstResult().getString("sessionId");
         setSessionId(sessionId);
+        setUserId(user);
+
         return sessionId;
     }
 
@@ -143,4 +146,18 @@ public class OpenCGAClient {
                 });
     }
 
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+
+        // Update userId for all clients
+        clients.values().stream()
+                .filter(abstractParentClient -> abstractParentClient != null)
+                .forEach(abstractParentClient -> {
+                    abstractParentClient.setUserId(this.userId);
+                });
+    }
 }

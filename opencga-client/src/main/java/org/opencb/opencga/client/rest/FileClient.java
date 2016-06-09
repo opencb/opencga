@@ -33,8 +33,8 @@ public class FileClient extends AbstractParentClient<File> {
 
     private static final String FILES_URL = "files";
 
-    protected FileClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected FileClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = FILES_URL;
         this.clazz = File.class;

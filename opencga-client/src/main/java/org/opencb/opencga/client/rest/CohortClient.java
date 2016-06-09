@@ -33,8 +33,8 @@ public class CohortClient extends AbstractParentClient<Cohort> {
 
     private static final String COHORT_URL = "cohorts";
 
-    protected CohortClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected CohortClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = COHORT_URL;
         this.clazz = Cohort.class;

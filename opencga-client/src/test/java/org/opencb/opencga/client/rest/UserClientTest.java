@@ -16,18 +16,20 @@
 
 package org.opencb.opencga.client.rest;
 
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Created by imedina on 04/05/16.
@@ -35,11 +37,32 @@ import static org.junit.Assert.assertNotNull;
 public class UserClientTest extends WorkEnvironmentTest {
 
     private UserClient userClient;
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
 
     @Before
     public void before() throws Throwable {
         super.before();
         userClient = openCGAClient.getUserClient();
+    }
+
+    @Test
+    public void login() {
+        QueryResponse<ObjectMap> login = userClient.login("user1", "user1_pass");
+        assertNotNull(login);
+        assertEquals(1, login.first().getNumResults());
+        assertNotNull(login.first().first().getString("sessionId"));
+        login = userClient.login("user1", "wrong_password");
+        assertEquals(-1, login.first().getNumResults());
+        assertTrue(login.getError().contains("Bad user or password"));
+    }
+
+    @Test
+    public void logout() {
+        System.out.println("sessionId = " + userClient.login("user1", "user1_pass").first().first().getString("sessionId"));
+        QueryResponse<ObjectMap> user1 = userClient.logout("user1");
+        user1 = userClient.logout("user1");
+        assertTrue(1==1);
     }
 
     @Test

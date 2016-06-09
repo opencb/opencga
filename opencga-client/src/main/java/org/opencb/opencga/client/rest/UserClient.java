@@ -33,8 +33,8 @@ public class UserClient extends AbstractParentClient<User> {
 
     private static final String USERS_URL = "users";
 
-    UserClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    UserClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = USERS_URL;
         this.clazz = User.class;
@@ -50,9 +50,33 @@ public class UserClient extends AbstractParentClient<User> {
         return response;
     }
 
+    /**
+     * Logout the user given, whose sessionId must be stored internally in the OpencgaClient.
+     *
+     * @param user userId.
+     * @return ObjectMap.
+     */
     QueryResponse<ObjectMap> logout(String user) {
         QueryResponse<ObjectMap> response = null;
         try {
+            response = execute(USERS_URL, user, "logout", null, ObjectMap.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return response;
+    }
+
+    /**
+     * Logout the user using the sessionId given.
+     *
+     * @param user user.
+     * @param sessionId sessionId.
+     * @return ObjectMap.
+     */
+    QueryResponse<ObjectMap> logout(String user, String sessionId) {
+        QueryResponse<ObjectMap> response = null;
+        try {
+
             response = execute(USERS_URL, user, "logout", null, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();

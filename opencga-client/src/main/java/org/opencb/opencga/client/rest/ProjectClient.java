@@ -33,8 +33,8 @@ public class ProjectClient extends AbstractParentClient<Project> {
 
     private static final String PROJECTS_URL = "projects";
 
-    protected ProjectClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected ProjectClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = PROJECTS_URL;
         this.clazz = Project.class;

@@ -31,8 +31,8 @@ public class IndividualClient extends AbstractParentClient<Individual> {
 
     private static final String INDIVIDUALS_URL = "individuals";
 
-    protected IndividualClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected IndividualClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = INDIVIDUALS_URL;
         this.clazz = Individual.class;

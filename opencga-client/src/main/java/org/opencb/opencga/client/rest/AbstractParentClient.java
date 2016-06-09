@@ -36,6 +36,7 @@ public abstract class AbstractParentClient<T> {
 
     protected Client client;
 
+    private String userId;
     private String sessionId;
     private ClientConfiguration configuration;
 
@@ -47,7 +48,8 @@ public abstract class AbstractParentClient<T> {
     private static final int BATCH_SIZE = 2000;
     private static final int DEFAULT_SKIP = 0;
 
-    protected AbstractParentClient(String sessionId, ClientConfiguration configuration) {
+    protected AbstractParentClient(String userId, String sessionId, ClientConfiguration configuration) {
+        this.userId = userId;
         this.sessionId = sessionId;
         this.configuration = configuration;
 
@@ -168,7 +170,8 @@ public abstract class AbstractParentClient<T> {
         }
 
         System.out.println("REST URL: " + path.getUri().toURL());
-        String jsonString = path.request().get(String.class);
+        String jsonString = path.request().get().readEntity(String.class);
+
         return parseResult(jsonString, clazz);
     }
 
@@ -222,6 +225,15 @@ public abstract class AbstractParentClient<T> {
 
     public AbstractParentClient setConfiguration(ClientConfiguration configuration) {
         this.configuration = configuration;
+        return this;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public AbstractParentClient setUserId(String userId) {
+        this.userId = userId;
         return this;
     }
 }

@@ -32,8 +32,8 @@ public class StudyClient extends AbstractParentClient<Study> {
 
     private static final String STUDY_URL = "studies";
 
-    protected StudyClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = STUDY_URL;
         this.clazz = Study.class;

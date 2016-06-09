@@ -31,8 +31,8 @@ public class JobClient extends AbstractParentClient<Job> {
 
     private static final String JOBS_URL = "jobs";
 
-    protected JobClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected JobClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = JOBS_URL;
         this.clazz = Job.class;

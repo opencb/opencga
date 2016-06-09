@@ -31,8 +31,8 @@ public class VariableClient extends AbstractParentClient<Variable> {
 
     private static final String VARIABLES_URL = "variables";
 
-    protected VariableClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected VariableClient(String sessionId, ClientConfiguration configuration, String userId) {
+        super(userId, sessionId, configuration);
 
         this.category = VARIABLES_URL;
         this.clazz = Variable.class;
