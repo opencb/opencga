@@ -7,6 +7,7 @@ import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -139,6 +140,25 @@ public class VariantDBAdaptorUtils {
         } else {    // !containsOr && !containsAnd
             return null;
         }
+    }
+
+    /**
+     * Splits the string with the specified operation.
+     *
+     * @param value     Value to split
+     * @param operation Operation that defines the split delimiter
+     * @return          List of values, without the delimiter
+     */
+    public static List<String> splitValue(String value, QueryOperation operation) {
+        List<String> list;
+        if (operation == null) {
+            list = Collections.singletonList(value);
+        } else if (operation == QueryOperation.AND) {
+            list = Arrays.asList(value.split(QueryOperation.AND.separator()));
+        } else {
+            list = Arrays.asList(value.split(QueryOperation.OR.separator()));
+        }
+        return list;
     }
 
     public static String[] splitOperator(String value) {

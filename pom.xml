@@ -209,7 +209,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-core</artifactId>
+                <artifactId>cellbase-client</artifactId>
                 <version>${cellbase.version}</version>
                 <exclusions>
                     <exclusion>

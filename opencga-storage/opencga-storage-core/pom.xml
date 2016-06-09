@@ -37,7 +37,7 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
-            <artifactId>cellbase-core</artifactId>
+            <artifactId>cellbase-client</artifactId>
             <exclusions>
                 <exclusion>
                     <groupId>org.slf4j</groupId>

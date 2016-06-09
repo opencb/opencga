@@ -28,12 +28,16 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.cellbase.client.config.ClientConfiguration;
+import org.opencb.cellbase.client.config.RestConfig;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -43,6 +47,8 @@ import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -55,6 +61,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -78,13 +85,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     public static final String DEFAULT_TIMEOUT = "dbadaptor.default_timeout";
     public static final String MAX_TIMEOUT = "dbadaptor.max_timeout";
+    private final CellBaseClient cellBaseClient;
     private boolean closeConnection;
     private final MongoDataStoreManager mongoManager;
     private final MongoDataStore db;
     private final String collectionName;
     private final MongoDBCollection variantsCollection;
     private final VariantSourceMongoDBAdaptor variantSourceMongoDBAdaptor;
-    private final ObjectMap configuration;
     private final StorageEngineConfiguration storageEngineConfiguration;
     private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
     private final VariantDBAdaptorUtils utils;
@@ -92,6 +99,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     private static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
 
     private StudyConfigurationManager studyConfigurationManager;
+    private final ObjectMap configuration;
+    private final CellBaseConfiguration cellbaseConfiguration;
 
     @Deprecated
     private DataWriter dataWriter;
@@ -99,16 +108,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     protected static Logger logger = LoggerFactory.getLogger(VariantMongoDBAdaptor.class);
 
     public VariantMongoDBAdaptor(MongoCredentials credentials, String variantsCollectionName, String filesCollectionName,
-                                 StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
+                                 StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
             throws UnknownHostException {
         this(new MongoDataStoreManager(credentials.getDataStoreServerAddresses()), credentials, variantsCollectionName, filesCollectionName,
-                studyConfigurationManager, storageEngineConfiguration);
+                studyConfigurationManager, storageConfiguration);
         this.closeConnection = true;
     }
 
     public VariantMongoDBAdaptor(MongoDataStoreManager mongoManager, MongoCredentials credentials,
                                  String variantsCollectionName, String filesCollectionName,
-                                 StudyConfigurationManager studyConfigurationManager, StorageEngineConfiguration storageEngineConfiguration)
+                                 StudyConfigurationManager studyConfigurationManager, StorageConfiguration storageConfiguration)
             throws UnknownHostException {
         // MongoDB configuration
         this.closeConnection = false;
@@ -119,11 +128,13 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         collectionName = variantsCollectionName;
         variantsCollection = db.getCollection(collectionName);
         this.studyConfigurationManager = studyConfigurationManager;
-        this.storageEngineConfiguration = storageEngineConfiguration;
+        cellbaseConfiguration = storageConfiguration.getCellbase();
+        this.storageEngineConfiguration = storageConfiguration.getStorageEngine(MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
         this.configuration = storageEngineConfiguration == null || this.storageEngineConfiguration.getVariant().getOptions() == null
                 ? new ObjectMap()
                 : this.storageEngineConfiguration.getVariant().getOptions();
         this.utils = new VariantDBAdaptorUtils(this);
+        cellBaseClient = new CellBaseClient(toClientConfiguration(cellbaseConfiguration));
     }
 
     protected MongoDBCollection getVariantsCollection() {
@@ -987,6 +998,41 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String value = query.getString(VariantQueryParams.ANNOT_HPO.key());
                 addQueryStringFilter(DocumentToVariantAnnotationConverter.GENE_TRAIT_HPO_FIELD, value, geneTraitBuilder,
                         QueryOperation.AND);
+            }
+
+            if (query.containsKey(VariantQueryParams.ANNOT_GO.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_GO.key());
+
+                CellBaseClient cellBaseClient = getCellBaseClient();
+
+                // Check if comma separated of semi colon separated (AND or OR)
+                QueryOperation queryOperation = checkOperator(value);
+                // Split by comma or semi colon
+                List<String> goValues = splitValue(value, queryOperation);
+
+
+                if (queryOperation == QueryOperation.AND) {
+                    throw VariantQueryException.malformedParam(VariantQueryParams.ANNOT_GO, value, "Unimplemented AND operator");
+                }
+
+                Set<String> genes = new HashSet<>();
+                QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+                try {
+                    List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().get(goValues, params)
+                            .getResponse();
+                    for (QueryResult<Gene> response : responses) {
+                        for (Gene gene : response.getResult()) {
+                            genes.add(gene.getName());
+                        }
+                    }
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+
+                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(genes);
+
             }
 
             DBObject geneTraitQuery = geneTraitBuilder.get();
@@ -2242,21 +2288,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return value;
     }
 
-    /**
-     * Splits the string with the specified operation.
-     */
-    private List<String> splitValue(String value, QueryOperation operation) {
-        List<String> list;
-        if (operation == null) {
-            list = Collections.singletonList(value);
-        } else if (operation == QueryOperation.AND) {
-            list = Arrays.asList(value.split(AND));
-        } else {
-            list = Arrays.asList(value.split(OR));
-        }
-        return list;
-    }
-
     void createIndexes(QueryOptions options) {
         createIndexes(options, variantsCollection);
     }
@@ -2470,6 +2501,24 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager = studyConfigurationManager;
+    }
+
+    @Override
+    public CellBaseClient getCellBaseClient() {
+        return cellBaseClient;
+    }
+
+    private ClientConfiguration toClientConfiguration(CellBaseConfiguration configuration) {
+        ClientConfiguration clientConfiguration = new ClientConfiguration();
+        clientConfiguration.setVersion(configuration.getVersion());
+        RestConfig rest = new RestConfig();
+        List<String> hosts = new ArrayList<>(configuration.getHosts().size());
+        for (String host : configuration.getHosts()) {
+            hosts.add(host.replace("/webservices/rest", ""));
+        }
+        rest.setHosts(hosts);
+        clientConfiguration.setRest(rest);
+        return clientConfiguration;
     }
 
     public static List<Integer> getLoadedSamples(int fileId, StudyConfiguration studyConfiguration) {

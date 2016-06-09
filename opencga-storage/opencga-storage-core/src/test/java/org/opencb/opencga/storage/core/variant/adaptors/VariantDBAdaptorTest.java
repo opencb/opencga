@@ -433,8 +433,42 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 break;
             }
         }
+    }
 
+    @Test
+    public void testGoQuery() {
 
+        // MMP26 -> GO:0004222,GO:0005578,GO:0006508
+        // CEBPA -> GO:0000050
+
+        int totalResults = 0;
+
+        Query query = new Query(ANNOT_GO.key(), "GO:0006508");
+        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        totalResults = result.getNumResults();
+
+        query = new Query(ANNOT_GO.key(), "GO:0000050");
+        result = dbAdaptor.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        totalResults += result.getNumResults();
+
+        query = new Query(ANNOT_GO.key(), "GO:0006508,GO:0000050");
+        result = dbAdaptor.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        assertEquals(result.getNumResults(), totalResults);
     }
 
     @Test
