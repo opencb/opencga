@@ -38,6 +38,7 @@ import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.cellbase.client.config.ClientConfiguration;
 import org.opencb.cellbase.client.config.RestConfig;
 import org.opencb.cellbase.client.rest.CellBaseClient;
+import org.opencb.cellbase.core.api.GeneDBAdaptor;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -1027,6 +1028,49 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     }
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
+                }
+
+                builder.and(DocumentToVariantConverter.ANNOTATION_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
+                        + "." + DocumentToVariantAnnotationConverter.XREF_ID_FIELD).in(genes);
+
+            }
+
+            if (query.containsKey(VariantQueryParams.ANNOT_EXPRESSION.key())) {
+                String value = query.getString(VariantQueryParams.ANNOT_EXPRESSION.key());
+
+                CellBaseClient cellBaseClient = getCellBaseClient();
+
+                // Check if comma separated of semi colon separated (AND or OR)
+                QueryOperation queryOperation = checkOperator(value);
+                // Split by comma or semi colon
+                List<String> expressionValues = splitValue(value, queryOperation);
+
+
+                if (queryOperation == QueryOperation.AND) {
+                    throw VariantQueryException.malformedParam(VariantQueryParams.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+                }
+
+                Set<String> genes = new HashSet<>();
+                QueryOptions params = new QueryOptions(QueryOptions.INCLUDE, "name,chromosome,start,end");
+
+                // The number of results for each expression value may be huge. Query one by one
+                for (String expressionValue : expressionValues) {
+                    try {
+                        String[] split = expressionValue.split(":");
+                        expressionValue = split[0];
+                        // TODO: Add expression value {UP, DOWN}. See https://github.com/opencb/cellbase/issues/245
+                        Query cellbaseQuery = new Query(GeneDBAdaptor.QueryParams.ANNOTATION_EXPRESSION_TISSUE.key(), expressionValue);
+                        List<QueryResult<Gene>> responses = cellBaseClient.getGeneClient().search(cellbaseQuery, params)
+                                .getResponse();
+                        for (QueryResult<Gene> response : responses) {
+                            for (Gene gene : response.getResult()) {
+                                genes.add(gene.getName());
+                            }
+                        }
+                    } catch (IOException e) {
+                        throw new UncheckedIOException(e);
+                    }
                 }
 
                 builder.and(DocumentToVariantConverter.ANNOTATION_FIELD

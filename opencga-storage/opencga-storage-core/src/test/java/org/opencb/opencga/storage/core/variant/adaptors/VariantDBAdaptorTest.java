@@ -471,6 +471,41 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         assertEquals(result.getNumResults(), totalResults);
     }
 
+
+    @Test
+    public void testExpressionQuery() {
+        Query query = new Query(ANNOT_EXPRESSION.key(), "non_existing_tissue");
+        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        assertEquals(0, result.getNumResults());
+
+
+        query = new Query(ANNOT_EXPRESSION.key(), "skin");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+        query = new Query(ANNOT_EXPRESSION.key(), "brain");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+        query = new Query(ANNOT_EXPRESSION.key(), "tongue");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+        query = new Query(ANNOT_EXPRESSION.key(), "pancreas");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+    }
+
+
     @Test
     public void testGetAllVariants_proteinKeywords() {
         //ANNOT_PROTEIN_KEYWORDS

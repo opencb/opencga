@@ -115,6 +115,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
                 "List of HPO terms. e.g. \"HP:0000545\""),
         ANNOT_GO("annot-go", TEXT_ARRAY,
                 "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\""),
+        ANNOT_EXPRESSION("annot-expression", TEXT_ARRAY, "List of tissues of interest. e.g. \"tongue\""),
         ANNOT_PROTEIN_KEYWORDS("annot-protein-keywords", TEXT_ARRAY,
                 "List of protein variant annotation keywords"),
         ANNOT_DRUG("annot-drug", TEXT_ARRAY,

@@ -116,6 +116,7 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
         addParam(query, ANNOT_HPO, queryVariantsOptions.hpo);
         addParam(query, ANNOT_GO, queryVariantsOptions.go);
+        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.expression);
         addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
         addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
 
