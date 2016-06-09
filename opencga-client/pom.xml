@@ -82,6 +82,18 @@
             <version>${opencga.version}</version>
         </dependency>
         <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-analysis</artifactId>
+            <scope>test</scope>
+            <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-server</artifactId>
+            <scope>test</scope>
+            <version>${opencga.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <scope>test</scope>
@@ -104,6 +116,21 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.6</version>
+                <executions>
+                    <execution>
+                        <id>test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
     </build>
 
 </project>

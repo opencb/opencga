@@ -22,7 +22,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import java.io.IOException;
 
 /**
- * Created by susi on 6/06/16.
+ * Created by agaor on 6/06/16.
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 

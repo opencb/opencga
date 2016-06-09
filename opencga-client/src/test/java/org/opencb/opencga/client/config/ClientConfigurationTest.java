@@ -47,7 +47,7 @@ public class ClientConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        ClientConfiguration storageConfiguration = ClientConfiguration.load(getClass().getResource("/client-configuration-test.yml").openStream());
+        ClientConfiguration storageConfiguration = ClientConfiguration.load(getClass().getResource("/client-configuration.yml").openStream());
         System.out.println("clientConfiguration = " + storageConfiguration);
     }
 }

@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  * Created by jacobo on 10/02/15.

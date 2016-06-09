@@ -18,14 +18,18 @@ package org.opencb.opencga.app.cli.admin;
 
 
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.opencga.analysis.demo.AnalysisDemo;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.app.demo.CatalogManagerDemo;
+import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -77,8 +81,10 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         }
         catalogConfiguration.setOpenRegister(true);
         catalogConfiguration.getAdmin().setPassword("demo");
+        CatalogDemo.createDemoDatabase(catalogConfiguration, catalogCommandOptions.demoCatalogCommandOptions.force);
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
-        CatalogManagerDemo.createDemoDatabase(catalogManager, catalogCommandOptions.demoCatalogCommandOptions.force);
+        sessionId = catalogManager.login("user1", "user1_pass", "localhost").first().getString("sessionId");
+        AnalysisDemo.insertPedigreeFile(catalogManager, 6L, Paths.get(this.appHome).resolve("examples/20130606_g1k.ped"), sessionId);
     }
 
     private void install() throws CatalogException {

@@ -20,7 +20,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
@@ -43,7 +42,7 @@ public class UserClientTest {
 
     public UserClientTest() {
         try {
-            clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
+            clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
             openCGAClient = new OpenCGAClient("hgva", "hgva_cafeina", clientConfiguration);
         } catch (IOException e) {
