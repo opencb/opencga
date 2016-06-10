@@ -22,14 +22,17 @@ import org.opencb.commons.utils.CryptoUtils;
  */
 public class VariantStringIdComplexTypeConverter implements ComplexTypeConverter<Variant, Document> {
 
+    public static final String SEPARATOR = ":";
+    public static final char SEPARATOR_CHAR = ':';
+
     public Variant convertToDataModelType(String object) {
-        String[] split = object.split(":", -1);
+        String[] split = object.split(SEPARATOR, -1);
         return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()), split[2], split[3]);
     }
 
     @Override
     public Variant convertToDataModelType(Document object) {
-        String[] split = object.getString("_id").split(":", -1);
+        String[] split = object.getString("_id").split(SEPARATOR, -1);
         return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()),
                 object.getInteger("end"),
                 object.getString("ref"),
@@ -52,25 +55,33 @@ public class VariantStringIdComplexTypeConverter implements ComplexTypeConverter
     public String buildId(String chromosome, int start, String reference, String alternate) {
         StringBuilder stringBuilder = new StringBuilder();
 
-        if (chromosome.length() == 1 && Character.isDigit(chromosome.charAt(0))) {
-            stringBuilder.append(' ');
-        }
-        stringBuilder.append(chromosome)
-                .append(':')
+        appendChromosome(chromosome, stringBuilder)
+                .append(SEPARATOR_CHAR)
                 .append(StringUtils.leftPad(Integer.toString(start), 10, " "))
-                .append(':');
+                .append(SEPARATOR_CHAR);
 
         if (reference.length() > Variant.SV_THRESHOLD) {
             stringBuilder.append(new String(CryptoUtils.encryptSha1(reference)));
         } else if (!reference.equals("-")) {
             stringBuilder.append(reference);
         }
-        stringBuilder.append(':');
+        stringBuilder.append(SEPARATOR_CHAR);
         if (alternate.length() > Variant.SV_THRESHOLD) {
             stringBuilder.append(new String(CryptoUtils.encryptSha1(alternate)));
         } else if (!alternate.equals("-")) {
             stringBuilder.append(alternate);
         }
         return stringBuilder.toString();
+    }
+
+    public static String convertChromosome(String chromosome) {
+        return appendChromosome(chromosome, new StringBuilder()).toString();
+    }
+
+    protected static StringBuilder appendChromosome(String chromosome, StringBuilder stringBuilder) {
+        if (chromosome.length() == 1 && Character.isDigit(chromosome.charAt(0))) {
+            stringBuilder.append(' ');
+        }
+        return stringBuilder.append(chromosome);
     }
 }
