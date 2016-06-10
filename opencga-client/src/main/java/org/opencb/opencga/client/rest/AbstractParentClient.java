@@ -199,7 +199,7 @@ public abstract class AbstractParentClient<T> {
         return objectMap;
     }
 
-    protected void addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object ... params) {
+    protected ObjectMap addParamsToObjectMap(ObjectMap objectMap, String key, Object value, Object ... params) {
         objectMap = createIfNull(objectMap);
         objectMap.put(key, value);
         if (params != null && params.length > 0) {
@@ -207,6 +207,7 @@ public abstract class AbstractParentClient<T> {
                 objectMap.put(params[i].toString(), params[i + 1]);
             }
         }
+        return objectMap;
     }
 
 

@@ -63,7 +63,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         if ((now - timestamp) >= sessionDuration) {
                             logger.warn("Session expired, too much time with not action");
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                            openCGAClient.logout(sessionFile.getUserId());
+                            openCGAClient.logout();
                             logoutSessionFile();
 //                        logoutSession();
                         } else {
@@ -124,7 +124,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     @Deprecated
     protected void logoutSession() throws IOException {
         SessionFile sessionFile = loadSessionFile();
-        openCGAClient.logout(sessionFile.getUserId());
+        openCGAClient.logout();
 
         super.logoutSessionFile();
     }

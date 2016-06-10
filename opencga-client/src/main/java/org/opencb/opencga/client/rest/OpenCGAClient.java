@@ -18,6 +18,7 @@ package org.opencb.opencga.client.rest;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.util.HashMap;
@@ -42,7 +43,7 @@ public class OpenCGAClient {
         this(null, clientConfiguration);
     }
 
-    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) {
+    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws CatalogException {
         init(null, clientConfiguration);
 
         login(user, password);
@@ -106,28 +107,42 @@ public class OpenCGAClient {
     }
 
 
-    public String login(String user, String password) {
+    /**
+     * Logins the user.
+     *
+     * @param user userId.
+     * @param password Password.
+     * @return the sessionId of the user logged in. Null if the user or password is incorrect.
+     */
+    public String login(String user, String password) throws CatalogException {
         UserClient userClient = getUserClient();
         QueryResponse<ObjectMap> login = userClient.login(user, password);
-        this.sessionId = login.firstResult().getString("sessionId");
-        setSessionId(sessionId);
-        setUserId(user);
+        String sessionId = null;
+        if (login.allResultsSize() == 1) {
+            sessionId = login.firstResult().getString("sessionId");
+
+            if (this.sessionId != null) { // If the latest sessionId is still active
+                userClient.logout();
+            }
+
+            setSessionId(sessionId);
+            setUserId(user);
+        } else {
+            throw new CatalogException(login.getError());
+        }
 
         return sessionId;
     }
 
-    public void logout(String user) {
-        UserClient userClient = getUserClient();
-        userClient.logout(user);
+    public void logout() {
+        if (this.sessionId != null) {
+            UserClient userClient = getUserClient();
+            userClient.logout();
 
-        // Remove sessionId for all clients
-        clients.values().stream()
-                .filter(abstractParentClient -> abstractParentClient != null)
-                .forEach(abstractParentClient -> {
-                    abstractParentClient.setSessionId(null);
-                });
-
-        this.sessionId = null;
+            // Remove sessionId and userId for all clients
+            setSessionId(null);
+            setUserId(null);
+        }
     }
 
 
