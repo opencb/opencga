@@ -20,6 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -27,7 +28,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class IndividualClient extends AbstractParentClient<Individual> {
+public class IndividualClient extends AbstractParentClient<Individual, IndividualAcl> {
 
     private static final String INDIVIDUALS_URL = "individuals";
 
@@ -36,16 +37,17 @@ public class IndividualClient extends AbstractParentClient<Individual> {
 
         this.category = INDIVIDUALS_URL;
         this.clazz = Individual.class;
+        this.aclClass = IndividualAcl.class;
     }
 
     public QueryResponse<Individual> create(String studyId, String individualName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "name", individualName);
+        params = addParamsToObjectMap(params, "studyId", studyId, "name", individualName);
         return execute(INDIVIDUALS_URL, "create", params, Individual.class);
     }
 
     public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
             throws CatalogException, IOException {
-        addParamsToObjectMap(params, "annotateSetName", annotateSetName);
+        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
         return execute(INDIVIDUALS_URL, individualId, "annotate", params, Individual.class);
     }
 

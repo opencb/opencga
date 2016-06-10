@@ -294,7 +294,7 @@ public class OpencgaCliOptionsParser {
 //            @ParametersDelegate
 //            UserAndPasswordOptions up = userAndPasswordOptions;
 
-            @Parameter(names = {"-u", "--user"}, description = "UserId", arity = 1)
+            @Parameter(names = {"-u", "--user"}, description = "User id", arity = 1)
             String user;
 
             @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, password = true)

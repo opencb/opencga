@@ -74,12 +74,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void create() throws CatalogException, IOException {
-        logger.debug("Creating a new project");
+        logger.debug("Creating a new study");
         String alias = studiesCommandOptions.createCommand.alias;
         String name = studiesCommandOptions.createCommand.name;
-        String description = studiesCommandOptions.createCommand.description;
+//        String description = studiesCommandOptions.createCommand.description;
         String projectId = studiesCommandOptions.createCommand.projectId;
-        openCGAClient.getStudyClient().create(projectId,name,alias,description,null);
+        openCGAClient.getStudyClient().create(projectId,name,alias,null);
         /************************************************************************************************ OJO, ULTIMO PARAMETRO PARAMS NULL JUM */
         System.out.println("Done.");
     }

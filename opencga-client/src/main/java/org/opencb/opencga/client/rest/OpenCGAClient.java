@@ -96,9 +96,9 @@ public class OpenCGAClient {
         return (SampleClient) clients.get("SAMPLE");
     }
 
-    public VariableClient getVariableClient() {
-        clients.putIfAbsent("VARIABLE", new VariableClient(sessionId, clientConfiguration, userId));
-        return (VariableClient) clients.get("VARIABLE");
+    public VariableSetClient getVariableClient() {
+        clients.putIfAbsent("VARIABLE", new VariableSetClient(sessionId, clientConfiguration, userId));
+        return (VariableSetClient) clients.get("VARIABLE");
     }
 
     public CohortClient getCohortClient() {
@@ -108,16 +108,17 @@ public class OpenCGAClient {
 
 
     /**
-     * Logins the user.
+     * Logs in the user.
      *
      * @param user userId.
      * @param password Password.
      * @return the sessionId of the user logged in. Null if the user or password is incorrect.
+     * @throws CatalogException when it is not possible logging in.
      */
     public String login(String user, String password) throws CatalogException {
         UserClient userClient = getUserClient();
         QueryResponse<ObjectMap> login = userClient.login(user, password);
-        String sessionId = null;
+        String sessionId;
         if (login.allResultsSize() == 1) {
             sessionId = login.firstResult().getString("sessionId");
 

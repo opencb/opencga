@@ -90,8 +90,8 @@ public class SampleClientTest {
             clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
             openCGAClient = new OpenCGAClient("user1", "user1_pass", clientConfiguration);
 
-            AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
-                    openCGAClient.getSessionId());
+//            AnalysisDemo.insertPedigreeFile(catalogManager, 6L, opencgaHome.resolve("examples/20130606_g1k.ped"),
+//                    openCGAClient.getSessionId());
 //            AnalysisDemo.insertVariantFile(catalogManager, 6L,
 //                    opencgaHome.resolve("examples/1k.chr1.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz"),
 //                    openCGAClient.getSessionId());
@@ -105,11 +105,5 @@ public class SampleClientTest {
     static public void shutdownServer() throws Exception {
         restServer.stop();
     }
-
-@Test
-    public void hola() {
-
-    System.out.println("HOLAAA");
-}
 
 }

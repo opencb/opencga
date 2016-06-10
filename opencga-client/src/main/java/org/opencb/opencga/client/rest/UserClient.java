@@ -29,7 +29,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 04/05/16.
  */
-public class UserClient extends AbstractParentClient<User> {
+public class UserClient extends AbstractParentClient<User, User> {
 
     private static final String USERS_URL = "users";
 
@@ -87,7 +87,7 @@ public class UserClient extends AbstractParentClient<User> {
         return execute(USERS_URL, getUserId(), "update", params, User.class);
     }
 
-    public QueryResponse<User> delete(ObjectMap params) throws CatalogException, IOException {
-        return super.delete(getUserId(), params);
-    }
+//    public QueryResponse<User> delete(ObjectMap params) throws CatalogException, IOException {
+//        return super.delete(getUserId(), params);
+//    }
 }

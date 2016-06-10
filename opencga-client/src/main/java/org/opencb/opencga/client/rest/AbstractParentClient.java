@@ -27,12 +27,13 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Created by imedina on 04/05/16.
  */
-public abstract class AbstractParentClient<T> {
+public abstract class AbstractParentClient<T, A> {
 
     protected Client client;
 
@@ -42,6 +43,7 @@ public abstract class AbstractParentClient<T> {
 
     protected String category;
     protected Class<T> clazz;
+    protected Class<A> aclClass;
 
     protected static ObjectMapper jsonObjectMapper;
 
@@ -71,7 +73,9 @@ public abstract class AbstractParentClient<T> {
     }
 
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
-        return execute(category, "search", query, clazz);
+        ObjectMap myQuery = new ObjectMap(query);
+        myQuery.putAll(options);
+        return execute(category, "search", myQuery, clazz);
     }
 
     public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
@@ -82,7 +86,25 @@ public abstract class AbstractParentClient<T> {
         return execute(category, id, "delete", params, clazz);
     }
 
+    /**
+     * Shares the document with the list of members.
+     *
+     * @param ids Comma separated list of ids.
+     * @param members Comma separated list of members (groups and/or users).
+     * @param permissions Comma separated list of permissions.
+     * @param params Non mandatory parameters.
+     * @return a QueryResponse containing all the permissions set.
+     * @throws IOException in case of any error.
+     */
+    public QueryResponse<A> share(String ids, String members, List<String> permissions, ObjectMap params) throws IOException {
+        params = addParamsToObjectMap(params, "permissions", permissions, "members", members);
+        return execute(category, ids, "share", params, aclClass);
+    }
 
+    public QueryResponse<Object> unshare(String ids, String members, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "members", members);
+        return execute(category, ids, "unshare", params, Object.class);
+    }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, Class<T> clazz) throws IOException {
         return execute(category, null, action, params, clazz);
