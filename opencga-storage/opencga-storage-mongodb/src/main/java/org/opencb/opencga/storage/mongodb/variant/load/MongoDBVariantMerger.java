@@ -920,10 +920,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     synchronized (futureNumTotalVariants) {
                         if (this.numTotalVariants <= 0) {
                             numTotalVariants = futureNumTotalVariants.get();
-                            System.out.println("GET FUTURE VALUE!! aprox: " + aproxNumTotalVariants + " real: " + numTotalVariants);
                             this.numTotalVariants = numTotalVariants;
                             loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
-                            System.out.println("New batch size: " + loggingBatchSize);
                         }
                     }
                 }

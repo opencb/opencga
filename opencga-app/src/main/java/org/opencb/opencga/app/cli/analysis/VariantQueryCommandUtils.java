@@ -34,6 +34,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
+import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.AVRO;
+import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.VCF;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
@@ -42,6 +44,31 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
+
+    public enum VariantOutputFormat {
+        VCF,
+        JSON,
+        AVRO,
+        STATS,
+        CELLBASE;
+
+        static boolean isGzip(String value) {
+            return value.endsWith(".gz");
+        }
+
+        static VariantOutputFormat value(String value) {
+            int index = value.indexOf(".");
+            if (index >= 0) {
+                value = value.substring(0, index);
+            }
+            try {
+                return VariantOutputFormat.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException ignore) {
+                return null;
+            }
+        }
+
+    }
 
     public static Query parseQuery(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
             throws Exception {
@@ -224,22 +251,17 @@ public class VariantQueryCommandUtils {
          * Output parameters
          */
         boolean gzip = true;
-        if (queryVariantsOptions.outputFormat != null && !queryVariantsOptions.outputFormat.isEmpty()) {
-            switch (queryVariantsOptions.outputFormat) {
-                case "vcf":
-                case "json":
-                case "stats":
-                case "cellbase":
-                    gzip = false;
-                case "vcf.gz":
-                case "json.gz":
-                case "stats.gz":
-                case "cellbase.gz":
-                    break;
-                default:
-                    logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
-                    throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
+        VariantOutputFormat outputFormat;
+        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
+            outputFormat = VariantOutputFormat.value(queryVariantsOptions.outputFormat);
+            if (outputFormat == null) {
+                logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
+                throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
+            } else {
+                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.outputFormat);
             }
+        } else {
+            outputFormat = VCF;
         }
 
         // output format has priority over output name
@@ -256,7 +278,7 @@ public class VariantQueryCommandUtils {
         }
 
         // If compressed a GZip output stream is used
-        if (gzip) {
+        if (gzip && outputFormat != AVRO) {
             outputStream = new GZIPOutputStream(outputStream);
         }
 
