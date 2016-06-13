@@ -11,13 +11,11 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
-import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.hadoop.utils.HBaseLock;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -218,25 +216,6 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
 
     public Connection getConnection() throws IOException {
         return this.getHBaseManager().getConnection();
-    }
-
-    public HBaseVariantStudyConfiguration toHBaseStudyConfiguration(StudyConfiguration studyConfiguration) throws IOException {
-        if (studyConfiguration instanceof HBaseVariantStudyConfiguration) {
-            return ((HBaseVariantStudyConfiguration) studyConfiguration);
-        } else {
-            List<BatchFileOperation> batches = new ArrayList<>();
-
-            if (studyConfiguration.getAttributes() != null) {
-                List<Object> batchesObj = studyConfiguration.getAttributes().getList(HBaseVariantStudyConfiguration.BATCHES_FIELD,
-                        Collections.emptyList());
-                for (Object o : batchesObj) {
-                    batches.add(objectMapper.readValue(objectMapper.writeValueAsString(o), BatchFileOperation.class));
-                }
-                studyConfiguration.getAttributes().remove(HBaseVariantStudyConfiguration.BATCHES_FIELD);
-            }
-
-            return new HBaseVariantStudyConfiguration(studyConfiguration).setBatches(batches);
-        }
     }
 
     @Override

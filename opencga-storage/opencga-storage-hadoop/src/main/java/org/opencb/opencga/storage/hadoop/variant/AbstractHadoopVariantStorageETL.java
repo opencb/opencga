@@ -23,7 +23,7 @@ import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;

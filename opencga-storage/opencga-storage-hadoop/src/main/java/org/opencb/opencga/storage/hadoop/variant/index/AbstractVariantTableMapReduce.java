@@ -17,7 +17,7 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
