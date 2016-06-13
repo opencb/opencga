@@ -156,7 +156,7 @@ getOpencgaDocs <- function(category, action,  requiredOnly=FALSE){
   action <- action
   index <- grep(action, Data$path)
   operations <- Data$operations[[index]]$parameters[[1]]
-  if(required==TRUE){
+  if(requiredOnly==TRUE){
    operations <- subset(operations, required==TRUE)
   }else{
     operations <- operations
