@@ -27,7 +27,6 @@ OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization
 #' @param logical whether to launch a graphical interface, FALSE by default
 #' @return an Opencga class object
 #' @export
-
 OpencgaLogin <- function(baseurl, userid=NULL, passwd=NULL, interactive=FALSE){
   require(jsonlite)
   if(interactive==TRUE){
@@ -137,3 +136,31 @@ getCgaParam <- function(object){
             return(paste(foundParam, collapse="&"))
 
           }
+#' A method to fetch documentation about Opencga Methods
+#' @details This method allow users to lookup required 
+#' to query Opencga Data
+#' @param category the Opencga category being queried
+#' @param action action intended on that category
+#' @return A dataframe
+#' @export
+getOpencgaDocs <- function(category, action,  requiredOnly=FALSE){
+  # take name of the category 'users
+  # construct the url by pasting docsurl and the category
+  docurl <- 'http://localhost:8080/opencga/webservices/rest/api-docs/'
+  category <- stringi::stri_trans_totitle(category)
+  drl <- paste0(docurl,category)
+  # get the json api docs
+  Data <- fromJSON(drl)
+  Data <- Data$apis
+  # take the name of the action exctract the operations and the parameters
+  action <- action
+  index <- grep(action, Data$path)
+  operations <- Data$operations[[index]]$parameters[[1]]
+  if(required==TRUE){
+   operations <- subset(operations, required==TRUE)
+  }else{
+    operations <- operations
+  }
+   operations
+}
+

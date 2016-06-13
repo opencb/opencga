@@ -275,5 +275,3 @@ cgaVariantParam <- function(region=character(), chromosome=character(),
       returnedSamples=returnedSamples)
 }
 
-#setGeneric("getCgaParam", function(object, ...) standardGeneric("getCgaParam"))
-
