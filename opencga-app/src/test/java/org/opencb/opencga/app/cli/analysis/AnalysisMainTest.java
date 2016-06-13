@@ -170,6 +170,9 @@ public class AnalysisMainTest {
         List<Long> sampleIds = allSamples.getResult().stream().map(Sample::getId).collect(Collectors.toList());
         Long c1 = catalogManager.createCohort(studyId, "C1", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, sampleIds.size() / 2), null, sessionId).first().getId();
         Long c2 = catalogManager.createCohort(studyId, "C2", Cohort.Type.CONTROL_SET, "", sampleIds.subList(sampleIds.size() / 2 + 1, sampleIds.size()), null, sessionId).first().getId();
+        Long c3 = catalogManager.createCohort(studyId, "C3", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, 1), null, sessionId).first().getId();
+        Sample sample = catalogManager.createSample(studyId, "Sample", "", "", null, null, sessionId).first();
+        Long c4 = catalogManager.createCohort(studyId, "C4", Cohort.Type.CONTROL_SET, "", Collections.singletonList(sample.getId()), null, sessionId).first().getId();
 
         // Index file1
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats", "--annotate"});
@@ -178,12 +181,15 @@ public class AnalysisMainTest {
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
 
-        execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", "user@p1:s1", "--cohort-ids", c1 + "," + c2});
+        execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", "user@p1:s1", "--cohort-ids", c1 + "," + c2 + "," + c3 + "," + c4});
 
 //        execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "35,36", "--limit", "10"});
 
 
-
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: cellbase");
+        System.out.println("------------------------------------------------------");
+        execute(new String[]{"variant", "export-frequencies", "--session-id", sessionId, "--limit", "1000", "--output-format", "cellbase"});
 //        System.out.println("------------------------------------------------------");
 //        System.out.println("Export output format: avro");
 //        System.out.println("------------------------------------------------------");
