@@ -74,11 +74,12 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     @Deprecated
     QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException;
 
-    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException;
+    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
-    void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
+    void unsetSampleAcl(long sampleId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetSampleAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
@@ -110,7 +111,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
 
     /**
-     * This method will rename the id of all the annotations corresponding to the variableSetId changin oldName per newName.
+     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
      * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
      * from a variableSet.
      * @param variableSetId Id of the variable to be renamed.

@@ -3,6 +3,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
+import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
@@ -72,7 +73,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         boolean newSampleBatch = checkCanLoadSampleBatch(studyConfiguration, fileId);
 
-        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())) {
+        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
+                && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
             List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
             if (studyConfiguration.getIndexedFiles().isEmpty()) {
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
@@ -437,8 +439,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         try {
             if (chromosomeToLoad != null) {
-                logger.info("Merging files {} in the the chromosomes: {}. IndexedFiles in this chromosome: {}",
-                        fileIds, chromosomeToLoad, indexedFiles);
+                logger.info("Merging files {} in chromosome: {}. Other indexed files in chromosome {}: {}",
+                        fileIds, chromosomeToLoad, chromosomeToLoad, indexedFiles);
             } else {
                 logger.info("Merging files " + fileIds);
             }

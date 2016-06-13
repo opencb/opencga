@@ -25,7 +25,7 @@ import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -112,12 +112,13 @@ public class WSServerTestUtils {
         Files.createDirectories(opencgaHome);
         Files.createDirectories(opencgaHome.resolve("conf"));
 
+
         CatalogManagerTest catalogManagerTest =  new CatalogManagerTest();
         catalogManagerResource = catalogManagerTest.catalogManagerResource;
         catalogManagerResource.before();
 
         catalogManagerResource.getCatalogConfiguration().serialize(new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
-        InputStream inputStream = new ByteArrayInputStream((AnalysisJobExecutor.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
+        InputStream inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + DATABASE_PREFIX).getBytes());
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = OpenCGAWSServerTest.class.getClassLoader().getResourceAsStream("storage-configuration.yml");

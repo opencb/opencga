@@ -26,12 +26,12 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -190,7 +189,7 @@ public class DaemonLoop implements Runnable {
                             break;
                         case Job.JobStatus.PREPARED:
                             try {
-                                AnalysisJobExecutor.execute(catalogManager, job, sessionId);
+                                ExecutorManager.execute(catalogManager, job, sessionId);
                             } catch (AnalysisExecutionException e) {
                                 ObjectMap params = new ObjectMap("status", Job.JobStatus.ERROR);
                                 String error = Job.ERRNO_NO_QUEUE;
@@ -216,7 +215,7 @@ public class DaemonLoop implements Runnable {
             logger.info("----- Pending deletions -----");
             try {
                 QueryResult<File> files = catalogManager.searchFile(-1, new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
-                        File.FileStatus.TRASHED), new QueryOptions(), sessionId);
+                        File.FileStatus.DELETED), new QueryOptions(), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
                     try {       //TODO: skip if the file is a non-empty folder

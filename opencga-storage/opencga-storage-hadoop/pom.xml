@@ -40,7 +40,7 @@
             <artifactId>opencga-storage-core</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.opencb.hpg</groupId>
+            <groupId>org.opencb.hpg-bigdata</groupId>
             <artifactId>hpg-bigdata-tools</artifactId>
             <version>${hpg-bigdata.version}</version>
             <exclusions>
@@ -49,14 +49,22 @@
                     <groupId>org.apache.hadoop</groupId>
                 </exclusion>
                 <exclusion>
-                    <artifactId>hbase-server</artifactId>
                     <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-server</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-client</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-common</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.hbase</groupId>
+                    <artifactId>hbase-annotations</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.opencb.hpg-bigdata</groupId>
-            <artifactId>hpg-bigdata-tools</artifactId>
         </dependency>
 
         <dependency>
@@ -80,8 +88,8 @@
             <version>${hadoop.version}</version>
         </dependency>
         <dependency>
-            <artifactId>hbase-server</artifactId>
             <groupId>org.apache.hbase</groupId>
+            <artifactId>hbase-server</artifactId>
             <version>${hbase.version}</version>
         </dependency>
         <dependency>
@@ -136,6 +144,7 @@
                 </exclusion>
             </exclusions>
         </dependency>
+
     </dependencies>
 
     <profiles>

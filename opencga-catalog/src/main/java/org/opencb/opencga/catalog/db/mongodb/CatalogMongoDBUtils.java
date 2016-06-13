@@ -209,8 +209,8 @@ class CatalogMongoDBUtils {
         ObjectReader objectReader = getObjectReader(tClass);
         try {
             for (Document document : result.getResult()) {
-                document.remove("_id");
-                document.remove("_projectId");
+//                document.remove("_id");
+//                document.remove("_projectId");
                 objects.add(objectReader.<T>readValue(restoreDotsInKeys(jsonObjectWriter.writeValueAsString(document))));
             }
         } catch (IOException e) {
@@ -224,9 +224,8 @@ class CatalogMongoDBUtils {
             return null;
         }
         try {
-            result.first().remove("_id");
-            result.first().remove("_studyId");
-//            String s = result.first().toJson();
+//            result.first().remove("_id");
+//            result.first().remove("_studyId");
             String s = jsonObjectWriter.writeValueAsString(result.first());
 //            return getObjectReader(tClass).readValue(restoreDotsInKeys(result.first().toJson()));
             return getObjectReader(tClass).readValue(restoreDotsInKeys(s));
@@ -411,6 +410,14 @@ class CatalogMongoDBUtils {
         }
     }
 
+    static void filterLongListParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedLongListParams) {
+        for (String s : acceptedLongListParams) {
+            if (parameters.containsKey(s)) {
+                filteredParams.put(s, parameters.getAsLongList(s));
+            }
+        }
+    }
+
     static void filterMapParams(ObjectMap parameters, Map<String, Object> filteredParams, String[] acceptedMapParams) {
         for (String s : acceptedMapParams) {
             if (parameters.containsKey(s)) {
@@ -486,7 +493,12 @@ class CatalogMongoDBUtils {
         // Annotation Filter
         final String sepOr = ",";
 
-        String annotationKey = optionKey.replaceFirst("annotation.", "");
+        String annotationKey;
+        if (optionKey.startsWith("annotation.")) {
+            annotationKey = optionKey.substring("annotation.".length());
+        } else {
+            throw new CatalogDBException("Wrong annotation query. Expects: {\"annotation.<variable>\" , <operator><value> } ");
+        }
         String annotationValue = query.getString(optionKey);
 
         final String variableId;
@@ -505,6 +517,9 @@ class CatalogMongoDBUtils {
 
         if (variableMap != null) {
             Variable variable = variableMap.get(variableId);
+            if (variable == null) {
+                throw new CatalogDBException("Variable \"" + variableId + "\" not found in variableSet ");
+            }
             Variable.VariableType variableType = variable.getType();
             if (variable.getType() == Variable.VariableType.OBJECT) {
                 String[] routes = route.split("\\.");

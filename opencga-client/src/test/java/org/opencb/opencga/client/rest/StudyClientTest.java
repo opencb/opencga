@@ -4,8 +4,9 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
@@ -26,11 +27,11 @@ public class StudyClientTest {
 
     private static WSTestServer wsTestServer;
 
-    public StudyClientTest() {
+    public StudyClientTest() throws CatalogException {
         try {
-            clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration-test.yml"));
+            clientConfiguration = ClientConfiguration.load(getClass().getResourceAsStream("/client-configuration.yml"));
 //            clientConfiguration.getRest().setHost("http://localhost:8890/opencga/webservices/rest");
-            openCGAClient = new OpenCGAClient("swaathi", "swaathi", clientConfiguration);
+            openCGAClient = new OpenCGAClient("hgva", "hgva_cafeina", clientConfiguration);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -67,21 +68,26 @@ public class StudyClientTest {
     @Test
     public void get() throws Exception {
         studyClient = openCGAClient.getStudyClient();
-        QueryResponse<Study> info = studyClient.get("26", null);
+        QueryResponse<Study> info = studyClient.get("2", null);
         assertNotNull(info.firstResult());
     }
 
     @Test
     public void getSamples() throws Exception {
         studyClient = openCGAClient.getStudyClient();
-        QueryResponse<Sample> info = studyClient.getSamples("26", null);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.LIMIT, 1361);
+        queryOptions.put(QueryOptions.SKIP, 11);
+        QueryResponse<Sample> info = studyClient.getSamples("2", queryOptions);
+        System.out.println(info.first().getNumResults());
+        System.out.println(info.first().getResult().size());
+        System.out.println(info.first().getNumTotalResults());
         assertNotNull(info.firstResult());
     }
 
     @Test
     public void getFiles() throws Exception {
         studyClient = openCGAClient.getStudyClient();
-        QueryResponse<File> info = studyClient.getFiles("26", null);
+        QueryResponse<File> info = studyClient.getFiles("2", null);
         assertNotNull(info.firstResult());
     }
 

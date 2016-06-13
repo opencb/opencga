@@ -44,7 +44,7 @@ public class Status {
 
     protected void init(String status, String message) {
         this.status = status;
-        this.date = TimeUtils.getTimeMillis();
+        this.date = TimeUtils.getTime();
         this.message = message;
     }
 
@@ -65,7 +65,7 @@ public class Status {
     }
 
     public void setCurrentDate() {
-        this.date = TimeUtils.getTimeMillis();
+        this.date = TimeUtils.getTime();
     }
 
     public String getMessage() {

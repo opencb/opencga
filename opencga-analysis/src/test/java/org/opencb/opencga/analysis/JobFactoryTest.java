@@ -7,8 +7,6 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
-import org.opencb.opencga.catalog.CatalogManagerTest;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.models.*;
 
 import java.io.BufferedReader;
@@ -24,7 +22,7 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
 /**
  * Created by hpccoll1 on 21/07/15.
  */
-public class AnalysisJobExecutorTest {
+public class JobFactoryTest {
     private CatalogManager catalogManager;
     private String sessionId;
     private final String userId = "user";
@@ -42,8 +40,8 @@ public class AnalysisJobExecutorTest {
 
         User user = catalogManager.createUser(userId, "User", "user@email.org", "user", "ACME", null, null).first();
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
-        projectId = catalogManager.createProject(userId, "p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
-        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
+        projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
+        studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", DB_NAME)), null, null, null, sessionId).first().getId();
         output = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first();
 
         temporalOutDirUri = catalogManager.createJobOutDir(studyId, "JOB_TMP", sessionId);
@@ -52,7 +50,7 @@ public class AnalysisJobExecutorTest {
     @Test
     public void executeLocalSuccess() throws Exception {
         String helloWorld = "Hello World!";
-        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
+        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "echo " + helloWorld, true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
@@ -69,7 +67,7 @@ public class AnalysisJobExecutorTest {
 
     @Test
     public void executeLocalError1() throws Exception {
-        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
+        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "unexisting_tool ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
@@ -79,7 +77,7 @@ public class AnalysisJobExecutorTest {
 
     @Test
     public void executeLocalError2() throws Exception {
-        Job job = AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
+        Job job = new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                 StringUtils.randomString(5), temporalOutDirUri, "false ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
 
         assertEquals(Job.JobStatus.ERROR, job.getStatus().getStatus());
@@ -90,7 +88,7 @@ public class AnalysisJobExecutorTest {
     public void executeLocalInterrupt() throws Exception {
         Thread thread = new Thread(() -> {
             try {
-                AnalysisJobExecutor.createJob(catalogManager, studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
+                new JobFactory(catalogManager).createJob(studyId, "myJob", "bash", "A simple success job", output, Collections.emptyList(), sessionId,
                         StringUtils.randomString(5), temporalOutDirUri, "sleep 20 ", true, false, Collections.emptyMap(), Collections.emptyMap()).first();
             } catch (Exception e) {
                 e.printStackTrace();

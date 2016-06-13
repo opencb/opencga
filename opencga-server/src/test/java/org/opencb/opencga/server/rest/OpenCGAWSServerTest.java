@@ -30,7 +30,7 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -215,7 +215,7 @@ public class OpenCGAWSServerTest {
         storageJob.setCommandLine("Executing Storage CLI " + storageJob.getCommandLine());
         StorageMain.privateMain((Arrays.copyOfRange(args, 1, args.length)));
         storageJob.setCommandLine("echo 'Executing fake job CLI' " + storageJob.getCommandLine());
-        AnalysisJobExecutor.execute(OpenCGAWSServer.catalogManager, storageJob, sessionId);
+        ExecutorManager.execute(OpenCGAWSServer.catalogManager, storageJob, sessionId);
         return OpenCGAWSServer.catalogManager.getJob(storageJob.getId(), null, sessionId).first();
     }
 

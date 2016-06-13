@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
@@ -95,21 +96,23 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
-
-//        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
-        Query query1 = new Query(QueryParams.ID.key(), sampleId);
-        QueryResult<Sample> sampleQueryResult = get(query1, options);
-
-//        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
-//        List<Sample> samples = parseSamples(queryResult);
-
-        if (sampleQueryResult.getResult().size() == 0) {
-            throw CatalogDBException.idNotFound("Sample", sampleId);
-        }
-
-        return endQuery("getSample", startTime, sampleQueryResult);
+        checkSampleId(sampleId);
+        return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+//        long startTime = startQuery();
+//        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
+//
+////        DBObject query = new BasicDBObject(PRIVATE_ID, sampleId);
+//        Query query1 = new Query(QueryParams.ID.key(), sampleId);
+//        QueryResult<Sample> sampleQueryResult = get(query1, options);
+//
+////        QueryResult<Document> queryResult = sampleCollection.find(bson, filteredOptions);
+////        List<Sample> samples = parseSamples(queryResult);
+//
+//        if (sampleQueryResult.getResult().size() == 0) {
+//            throw CatalogDBException.idNotFound("Sample", sampleId);
+//        }
+//
+//        return endQuery("getSample", startTime, sampleQueryResult);
     }
 
 //    @Override
@@ -139,8 +142,19 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Map<String, Object> sampleParams = new HashMap<>();
         //List<Bson> sampleParams = new ArrayList<>();
 
-        String[] acceptedParams = {"source", "description"};
+        String[] acceptedParams = {"source", "description", "name"};
         filterStringParams(parameters, sampleParams, acceptedParams);
+
+        if (sampleParams.containsKey("name")) {
+            // Check that the new sample name is still unique
+            long studyId = getStudyIdBySampleId(sampleId);
+
+            QueryResult<Long> count = sampleCollection.count(
+                    new Document("name", sampleParams.get("name")).append(PRIVATE_STUDY_ID, studyId));
+            if (count.getResult().get(0) > 0) {
+                throw new CatalogDBException("Sample { name: '" + sampleParams.get("name") + "'} already exists.");
+            }
+        }
 
         String[] acceptedIntParams = {"individualId"};
         filterIntParams(parameters, sampleParams, acceptedIntParams);
@@ -258,7 +272,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl) throws CatalogDBException {
+    public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
         long studyId = getStudyIdBySampleId(sampleId);
@@ -307,7 +321,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<SampleAcl> sampleAcls = getSampleAcl(sampleId, acl.getUsers());
-        if (sampleAcls.getNumResults() > 0) {
+        if (sampleAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -322,7 +336,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetSampleAcl(sampleId, usersToOverride);
+            unsetSampleAcl(sampleId, usersToOverride, Collections.emptyList());
+        }  else if (sampleAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setSampleAcl: " + sampleAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.
@@ -385,7 +402,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     }
 
-    public void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+    public void unsetSampleAcl(long sampleId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkSampleId(sampleId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), members);
@@ -394,7 +411,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, sampleId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetSampleAcl: An error occurred when trying to stop sharing sample " + sampleId
@@ -796,7 +818,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Query query = new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
         if (dbAdaptorFactory.getCatalogCohortDBAdaptor().count(query).first() > 0) {
             List<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor()
-                    .get(query, new QueryOptions(MongoDBCollection.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key())).getResult();
+                    .get(query, new QueryOptions(QueryOptions.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ID.key())).getResult();
             throw new CatalogDBException("The sample {" + sampleId + "} cannot be deleted/removed. It is being used in "
                     + cohorts.size() + " cohorts: [" + cohorts.stream().map(Cohort::getId).collect(Collectors.toList()).toString() + "]");
         }
@@ -823,7 +845,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -840,6 +864,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -857,7 +884,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
         Map<String, Object> sampleParameters = new HashMap<>();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
+        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 
         final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
@@ -865,6 +892,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         final String[] acceptedMapParams = {"attributes"};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
+
+        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
+            sampleParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
+        }
 
         if (!sampleParameters.isEmpty()) {
             QueryResult<UpdateResult> update = sampleCollection.update(parseQuery(query),
@@ -899,12 +931,19 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
             Sample sample = get(query, options).first();
             throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getStatus());
         }
 
-        checkCanDelete(id);
+        // If we don't find the force parameter, we check first if the file could be deleted.
+        if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+            checkCanDelete(id);
+        }
+
+        if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+            deleteReferencesToSample(id);
+        }
 
         // Change the status of the sample to deleted
         setStatus(id, Status.DELETED);
@@ -1002,9 +1041,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries
@@ -1012,8 +1048,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
-            QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
+            QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
                     : QueryParams.getParam(key);
+            if (queryParam == null) {
+                throw CatalogDBException.queryParamNotFound(key, "Samples");
+            }
             try {
                 switch (queryParam) {
                     case ID:
@@ -1054,7 +1093,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                         break;
                 }
             } catch (Exception e) {
-                throw new CatalogDBException(e);
+                if (e instanceof CatalogDBException) {
+                    throw e;
+                } else {
+                    throw new CatalogDBException("Error parsing query : " + query.toJson(), e);
+                }
             }
         }
 
@@ -1079,5 +1122,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
         return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
+    private void deleteReferencesToSample(long sampleId) throws CatalogDBException {
+        // Remove references from files
+        Query query = new Query(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId);
+        QueryResult<Long> result = dbAdaptorFactory.getCatalogFileDBAdaptor()
+                .extractSampleFromFiles(query, Collections.singletonList(sampleId));
+        logger.debug("SampleId {} extracted from {} files", sampleId, result.first());
+
+        // Remove references from cohorts
+        query = new Query(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), sampleId);
+        result = dbAdaptorFactory.getCatalogCohortDBAdaptor().extractSamplesFromCohorts(query, Collections.singletonList(sampleId));
+        logger.debug("SampleId {} extracted from {} cohorts", sampleId, result.first());
     }
 }

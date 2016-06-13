@@ -20,6 +20,8 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.opencb.commons.datastore.core.QueryResult;
+
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 import org.opencb.opencga.core.exception.VersionException;
@@ -39,7 +41,7 @@ import java.util.Map;
  */
 @Path("/{version}/variables")
 @Produces("application/json")
-@Api(value = "Variables", position = 7, description = "Methods for working with 'variables' endpoint")
+@Api(value = "Variables", position = 8, description = "Methods for working with 'variables' endpoint")
 public class VariableWSServer extends OpenCGAWSServer {
 
 
@@ -59,8 +61,8 @@ public class VariableWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "variables", required = true) List<Variable> variables) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
-            QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId,
-                    name, unique, description, null, variables, sessionId);
+            QueryResult<VariableSet> queryResult = catalogManager.createVariableSet(studyId, name, unique, description, null, variables,
+                    sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -84,12 +86,14 @@ public class VariableWSServer extends OpenCGAWSServer {
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Get VariableSet info", position = 2)
-    public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") long studyId,
+    public Response search(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                            @ApiParam(value = "CSV list of variableSetIds", required = false) @QueryParam("id") String id,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) {
         try {
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            queryOptions.put(CatalogSampleDBAdaptor.VariableSetFilterOption.studyId.toString(), studyId);
             QueryResult<VariableSet> queryResult = catalogManager.getAllVariableSet(studyId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {

@@ -133,7 +133,7 @@ public class Job {
 //        this.outDir = outDir;
         this.input = input;
         this.output = output;
-        this.acls = new ArrayList<>();
+        this.acls = Collections.emptyList();
         this.tags = tags;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;

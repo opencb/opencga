@@ -21,7 +21,6 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.commons.utils.CryptoUtils;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBWriter;
 
@@ -81,18 +80,22 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
     private DocumentToStudyVariantEntryConverter variantSourceEntryConverter;
     private DocumentToVariantAnnotationConverter variantAnnotationConverter;
     private DocumentToVariantStatsConverter statsConverter;
+    private final VariantStringIdComplexTypeConverter idConverter = new VariantStringIdComplexTypeConverter();
+
+    // Add default variant ID if it is missing. Use CHR:POS:REF:ALT
+    private boolean addDefaultId;
 
     /**
-     * Create a converter between Variant and DBObject entities when there is
-     * no need to convert the files the variant was read from.
+     * Create a converter between {@link Variant} and {@link Document} entities when there is
+     * no need to convert the studies the variant was read from.
      */
     public DocumentToVariantConverter() {
         this(null, null);
     }
 
     /**
-     * Create a converter between Variant and DBObject entities. A converter for
-     * the files the variant was read from can be provided in case those
+     * Create a converter between {@link Variant} and {@link Document} entities. A converter for
+     * the studies the variant was read from can be provided in case those
      * should be processed during the conversion.
      *
      * @param variantSourceEntryConverter The object used to convert the files
@@ -103,6 +106,7 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         this.variantSourceEntryConverter = variantSourceEntryConverter;
         this.variantAnnotationConverter = new DocumentToVariantAnnotationConverter();
         this.statsConverter = statsConverter;
+        addDefaultId = true;
     }
 
 
@@ -115,8 +119,16 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         String alternate = (String) object.get(ALTERNATE_FIELD);
         Variant variant = new Variant(chromosome, start, end, reference, alternate);
         if (object.containsKey(IDS_FIELD)) {
-            Object ids = object.get(IDS_FIELD);
-            variant.setIds(new LinkedList<>(((Collection<String>) ids)));
+            LinkedList<String> ids = new LinkedList<>(object.get(IDS_FIELD, Collection.class));
+            if (ids.isEmpty()) {
+                if (addDefaultId) {
+                    variant.setId(variant.toString());
+                }
+                variant.setNames(Collections.emptyList());
+            } else {
+                variant.setId(ids.get(0));
+                variant.setNames(ids.subList(1, ids.size()));
+            }
         }
         if (object.containsKey(TYPE_FIELD)) {
             variant.setType(VariantType.valueOf(object.get(TYPE_FIELD).toString()));
@@ -235,33 +247,36 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
     }
 
     public String buildStorageId(Variant v) {
-        return buildStorageId(v.getChromosome(), v.getStart(), v.getReference(), v.getAlternate());
+        return idConverter.buildId(v);
+//        return buildStorageId(v.getChromosome(), v.getStart(), v.getReference(), v.getAlternate());
     }
 
     public String buildStorageId(String chromosome, int start, String reference, String alternate) {
-        StringBuilder builder = new StringBuilder(chromosome);
-        builder.append("_");
-        builder.append(start);
-        builder.append("_");
-        if (reference.equals("-")) {
-            System.out.println("Empty block");
-        } else if (reference.length() < Variant.SV_THRESHOLD) {
-            builder.append(reference);
-        } else {
-            builder.append(new String(CryptoUtils.encryptSha1(reference)));
-        }
-
-        builder.append("_");
-
-        if (alternate.equals("-")) {
-            System.out.println("Empty block");
-        } else if (alternate.length() < Variant.SV_THRESHOLD) {
-            builder.append(alternate);
-        } else {
-            builder.append(new String(CryptoUtils.encryptSha1(alternate)));
-        }
-
-        return builder.toString();
+        return idConverter.buildId(chromosome, start, reference, alternate);
+//
+//        StringBuilder builder = new StringBuilder(chromosome);
+//        builder.append("_");
+//        builder.append(start);
+//        builder.append("_");
+//        if (reference.equals("-")) {
+//            System.out.println("Empty block");
+//        } else if (reference.length() < Variant.SV_THRESHOLD) {
+//            builder.append(reference);
+//        } else {
+//            builder.append(new String(CryptoUtils.encryptSha1(reference)));
+//        }
+//
+//        builder.append("_");
+//
+//        if (alternate.equals("-")) {
+//            System.out.println("Empty block");
+//        } else if (alternate.length() < Variant.SV_THRESHOLD) {
+//            builder.append(alternate);
+//        } else {
+//            builder.append(new String(CryptoUtils.encryptSha1(alternate)));
+//        }
+//
+//        return builder.toString();
     }
 
 

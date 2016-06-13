@@ -81,16 +81,16 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //    }
     @Override
     public QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {
-        long startTime = startQuery();
-//        QueryResult<DBObject> queryResult = jobCollection.find(new BasicDBObject(PRIVATE_ID, jobId),
-//                          filterOptions(options, FILTER_ROUTE_JOBS));
-        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
-        Job job = parseJob(queryResult);
-        if (job != null) {
-            return endQuery("Get job", startTime, Arrays.asList(job));
-        } else {
-            throw CatalogDBException.idNotFound("Job", jobId);
-        }
+        checkJobId(jobId);
+        return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+//        long startTime = startQuery();
+//        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
+//        Job job = parseJob(queryResult);
+//        if (job != null) {
+//            return endQuery("Get job", startTime, Arrays.asList(job));
+//        } else {
+//            throw CatalogDBException.idNotFound("Job", jobId);
+//        }
     }
 
     @Override
@@ -197,7 +197,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException {
+    public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         checkJobId(jobId);
         long studyId = getStudyIdByJobId(jobId);
@@ -245,7 +245,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getUsers());
-        if (jobAcls.getNumResults() > 0) {
+        if (jobAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -260,7 +260,10 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetJobAcl(jobId, usersToOverride);
+            unsetJobAcl(jobId, usersToOverride, Collections.emptyList());
+        } else if (jobAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setJobAcl: " + jobAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.
@@ -297,7 +300,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException {
+    public void unsetJobAcl(long jobId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkJobId(jobId);
 
         // Check that all the members (users) are correct and exist.
@@ -307,7 +310,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, jobId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = jobCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetJobAcl: An error occurred when trying to stop sharing job " + jobId
@@ -592,6 +600,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         * */
 
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -606,6 +617,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -623,9 +637,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         long startTime = startQuery();
         Map<String, Object> jobParameters = new HashMap<>();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(), QueryParams.DATE.key()
-                , QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(), QueryParams.COMMAND_LINE.key()
-                , QueryParams.JOB_STATUS.key(), QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(), QueryParams.DATE.key(),
+                QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(), QueryParams.COMMAND_LINE.key(),
+                QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
@@ -634,7 +648,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 //        filterEnumParams(parameters, jobParameters, acceptedEnums);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             jobParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            jobParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
 
@@ -750,13 +764,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         return endQuery("Delete job", startTime, Collections.singletonList(jobQueryResult.getNumTotalResults()));
     }
 
-    QueryResult<Job> setStatus(long jobId, String status) throws CatalogDBException {
-        return update(jobId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
-    }
-
-    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
-    }
 
     /**
      * Checks whether the files created by the jobId can be deleted.
@@ -766,13 +773,16 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
      */
     private void checkCanDelete(long jobId) throws CatalogDBException {
         Query query = new Query(QueryParams.ID.key(), jobId);
-        QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.OUTPUT);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.OUTPUT);
 
         Job job = get(query, queryOptions).first();
-        query = new Query(QueryParams.INPUT.key(), job.getOutput());
-        if (count(query).first() > 0) {
-            throw new CatalogDBException("Cannot delete/remove the job {" + jobId + "}. The files generated by the job have been used as "
-                    + "input of other(s). You might want to make use of force/keepOutputFiles parameters.");
+        List<Long> output = job.getOutput();
+        if (output != null && output.size() > 0) {
+            query = new Query(QueryParams.INPUT.key(), job.getOutput());
+            if (count(query).first() > 0) {
+                throw new CatalogDBException("Cannot delete/remove the job {" + jobId + "}. The files generated by the job have been used "
+                        + "as input of other(s). You might want to make use of force/keepOutputFiles parameters.");
+            }
         }
     }
 
@@ -791,10 +801,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         return null;
     }
 
-    @Override
-    public QueryResult<Long> updateStatus(Query query, Job.JobStatus status) throws CatalogDBException {
-        return null;
-    }
 
     @Override
     public CatalogDBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {
@@ -839,10 +845,6 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {

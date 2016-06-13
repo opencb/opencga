@@ -17,9 +17,11 @@
 package org.opencb.opencga.client.rest;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.models.acls.JobAcl;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -27,20 +29,25 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class JobClient extends AbstractParentClient<Job> {
+public class JobClient extends AbstractParentClient<Job, JobAcl> {
 
     private static final String JOBS_URL = "jobs";
 
-    protected JobClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected JobClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = JOBS_URL;
         this.clazz = Job.class;
+        this.aclClass = JobAcl.class;
     }
 
     public QueryResponse<Job> create(String studyId, String jobName, String toolId, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "name", jobName, "toolId", toolId);
+        params = addParamsToObjectMap(params, "studyId", studyId, "name", jobName, "toolId", toolId);
         return execute(JOBS_URL, "create", params, Job.class);
+    }
+
+    public QueryResponse<Job> visit(String jobId, QueryOptions options) throws CatalogException, IOException {
+        return execute(JOBS_URL, jobId, "visit", options, Job.class);
     }
 
 }

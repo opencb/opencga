@@ -100,7 +100,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Deprecated
     @Override
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException {
-        return get(new Query(QueryParams.ID.key(), individualId), options);
+        checkIndividualId(individualId);
+        return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
 //        long startQuery = startQuery();
 //
 //        QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
@@ -307,7 +308,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException {
+    public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(individualId);
         long studyId = getStudyIdByIndividualId(individualId);
@@ -355,7 +356,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<IndividualAcl> individualAcls = getIndividualAcl(individualId, acl.getUsers());
-        if (individualAcls.getNumResults() > 0) {
+        if (individualAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -370,7 +371,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetIndividualAcl(individualId, usersToOverride);
+            unsetIndividualAcl(individualId, usersToOverride, Collections.emptyList());
+        }  else if (individualAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setIndividualAcl: " + individualAcls.getNumResults() + " of the members already had an Acl set. "
+                    + "If you still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.
@@ -411,7 +415,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
+    public void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkIndividualId(individualId);
 
         // Check that all the members (users) are correct and exist.
@@ -421,7 +425,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, individualId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = individualCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetIndividualAcl: An error occurred when trying to stop sharing individual " + individualId
@@ -526,6 +535,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -540,6 +552,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -584,7 +599,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             individualParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         // Obtain all the possible individual Ids that satisfies the query
@@ -827,10 +842,6 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
-
         List<Bson> andBsonList = new ArrayList<>();
         List<Bson> annotationList = new ArrayList<>();
         // We declare variableMap here just in case we have different annotation queries

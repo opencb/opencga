@@ -3,7 +3,9 @@ package org.opencb.opencga.catalog.db.api;
 import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.acls.CohortAcl;
 
 import java.util.Arrays;
@@ -118,15 +120,35 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
 
     QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException;
 
+    QueryResult<AnnotationSet> annotateCohort(long cohortId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
+
+    QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
+
+    /**
+     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
+     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
+     * from a variableSet.
+     * @param variableSetId Id of the variable to be renamed.
+     * @param oldName Name of the field to be renamed.
+     * @param newName New name that will be set.
+     * @return a QueryResult containing the number of annotations that have been changed.
+     * @throws CatalogDBException when there is an error with database transactions.
+     */
+    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
+
+    QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException;
+
+    QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException;
+
     default QueryResult<CohortAcl> getCohortAcl(long cohortId, String member) throws CatalogDBException {
         return getCohortAcl(cohortId, Arrays.asList(member));
     }
 
     QueryResult<CohortAcl> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
 
-    QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl) throws CatalogDBException;
+    QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl, boolean override) throws CatalogDBException;
 
-    void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
+    void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 

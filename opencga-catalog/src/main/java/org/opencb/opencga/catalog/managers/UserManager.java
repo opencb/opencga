@@ -11,6 +11,7 @@ import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -70,6 +71,13 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public String getUserId(String sessionId) {
+        // TODO: Review the commented code
+//        if (sessionId.length() == 40) {
+//            return "admin";
+//        }
+        if (sessionId.equals("anonymous")) {
+            return "anonymous";
+        }
         return userDBAdaptor.getUserIdBySessionId(sessionId);
     }
 
@@ -102,9 +110,9 @@ public class UserManager extends AbstractManager implements IUserManager {
                                     QueryOptions options, String adminPassword) throws CatalogException {
 
         // Check if the users can be registered publicly or just the admin.
-        if (!catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().isRegisterOpen()) {
+        if (!catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().isRegisterOpen()) {
             if (adminPassword != null && !adminPassword.isEmpty()) {
-                catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(adminPassword);
+                authenticationManager.authenticate("admin", adminPassword, true);
             } else {
                 throw new CatalogException("The registration is closed to the public: Please talk to your administrator.");
             }
@@ -115,10 +123,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(name, "name");
         checkEmail(email);
         organization = organization != null ? organization : "";
-
-        if (userDBAdaptor.userExists(id)) {
-            throw new CatalogException("The user " + id + " is already in use in our database. Please, choose another one.");
-        }
+        checkUserExists(id);
 
         User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
 
@@ -158,7 +163,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insertUser(user, options);
-            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
+//            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
+            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), userId,
+                    null, queryResult.first(), null, null);
             authenticationManager.newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
@@ -183,14 +190,11 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkSessionId(userId, sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (!options.containsKey("include") && !options.containsKey("exclude")) {
-            options.put("exclude", Arrays.asList("password", "sessions"));
+        if ((!options.containsKey(QueryOptions.INCLUDE) || options.getAsStringList(QueryOptions.INCLUDE).isEmpty())
+                && (!options.containsKey(QueryOptions.EXCLUDE) || options.getAsStringList(QueryOptions.EXCLUDE).isEmpty())) {
+            options.put(QueryOptions.EXCLUDE, Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(),
+                    CatalogUserDBAdaptor.QueryParams.SESSIONS.key(), "projects.studies.variableSets"));
         }
-//        if(options.containsKey("exclude")) {
-//            options.getListAs("exclude", String.class).add("sessions");
-//        }
-        //FIXME: Should other users get access to other user information? (If so, then filter projects)
-        //FIXME: Should setPassword(null)??
         QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastActivity);
         return user;
     }
@@ -229,7 +233,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
                         + "updated.");
             }
-            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
         }
 
         if (parameters.containsKey("email")) {
@@ -253,7 +257,7 @@ public class UserManager extends AbstractManager implements IUserManager {
                 throw new CatalogException("Nor the administrator password nor the session id could be found. The user could not be "
                         + "deleted.");
             }
-            catalogDBAdaptorFactory.getCatalogMongoMetaDBAdaptor().checkAdmin(catalogConfiguration.getAdmin().getPassword());
+            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
         }
 
         QueryResult<User> deletedUser = userDBAdaptor.delete(userId, options);
@@ -295,7 +299,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
+        Session session = new Session(sessionIp, 20);
 
         String userId = "anonymous_" + session.getId();
 
@@ -312,22 +316,20 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     }
 
+    @Deprecated
     @Override
-    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
-            throws CatalogException, IOException {
+    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
 
-//        Session login = sessionManager.login(userId, password, sessionIp);
-//        ObjectMap objectMap = new ObjectMap("sessionId", login.getId());
-//        objectMap.put("userId", userId);
-//        return new QueryResult<>("login", 0, 1, 1, null, null, Collections.singletonList(objectMap));
+        authenticationManager.authenticate(userId, password, true);
+
+        Session session = new Session(sessionIp, 20);
 
         // FIXME This should code above
         return userDBAdaptor.login(userId, (password.length() != 40)
-                ? CatalogAuthenticationManager.cipherPassword(password)
+                ? CatalogAuthenticationManager.cypherPassword(password)
                 : password, session);
     }
 
@@ -386,6 +388,18 @@ public class UserManager extends AbstractManager implements IUserManager {
         String userIdBySessionId = userDBAdaptor.getUserIdBySessionId(sessionId);
         if (!userIdBySessionId.equals(userId)) {
             throw new CatalogException("Invalid sessionId for user: " + userId);
+        }
+    }
+
+    private void checkUserExists(String userId) throws CatalogException {
+        if (userId.equals("admin")) {
+            throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
+        } else if (userId.equals("anonymous") || userId.equals("*")) {
+            throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
+        }
+
+        if (userDBAdaptor.userExists(userId)) {
+            throw new CatalogException("The user already exists in our database. Please, choose a different one.");
         }
     }
 

@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
+import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -28,9 +29,11 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
+import org.opencb.opencga.catalog.models.Session;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
@@ -41,16 +44,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.getMongoDBDocument;
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.parseObject;
 
 /**
  * Created by imedina on 13/01/16.
  */
-public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
+public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements CatalogMetaDBAdaptor {
 
     private final MongoDBCollection metaCollection;
     private static final String VERSION = "v0.8";
 
-    public CatalogMongoMetaDBAdaptor(CatalogMongoDBAdaptorFactory dbAdaptorFactory, MongoDBCollection metaMongoDBCollection) {
+    public CatalogMongoMetaDBAdaptor(MongoDBCollection metaMongoDBCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoProjectDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.metaCollection = metaMongoDBCollection;
@@ -167,7 +171,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
 
     public void initializeMetaCollection(CatalogConfiguration catalogConfiguration) throws CatalogException {
         Admin admin = catalogConfiguration.getAdmin();
-        admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
+        admin.setPassword(CatalogAuthenticationManager.cypherPassword(admin.getPassword()));
 
         Metadata metadata = new Metadata().setIdCounter(0).setVersion(VERSION);
 
@@ -187,18 +191,51 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor {
     }
 
     public void checkAdmin(String password) throws CatalogException {
-        Bson query = Filters.eq("admin.password", CatalogAuthenticationManager.cipherPassword(password));
+        Bson query = Filters.eq("admin.password", CatalogAuthenticationManager.cypherPassword(password));
         if (metaCollection.count(query).getResult().get(0) == 0) {
             throw new CatalogDBException("The admin password is incorrect.");
         }
     }
 
+    @Override
     public boolean isRegisterOpen() {
-        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(MongoDBCollection.INCLUDE, "open")).first();
+        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(QueryOptions.INCLUDE, "open")).first();
         if (doc.getString("open").equals("public")) {
             return true;
         }
         return false;
     }
 
+    @Override
+    public QueryResult<ObjectMap> addAdminSession(Session session) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson query = new Document("_id", "METADATA");
+        Bson updates = Updates.push("admin.sessions",
+                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session")))
+                        .append("$slice", -5));
+        QueryResult<UpdateResult> update = metaCollection.update(query, updates, null);
+
+        if (update.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("An internal error occurred when logging the admin");
+        }
+
+        ObjectMap resultObjectMap = new ObjectMap();
+        resultObjectMap.put("sessionId", session.getId());
+        resultObjectMap.put("userId", "admin");
+        return endQuery("Login", startTime, Collections.singletonList(resultObjectMap));
+    }
+
+    @Override
+    public String getAdminPassword() throws CatalogDBException {
+        Bson query = Filters.eq("_id", "METADATA");
+        QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
+        return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
+    }
+
+    @Override
+    public boolean checkValidAdminSession(String id) {
+        Document query = new Document("_id", "METADATA").append("admin.sessions.id", id);
+        return metaCollection.count(query).first() == 1;
+    }
 }

@@ -29,7 +29,6 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
-import java.util.Properties;
 
 /**
  * Created by jacobo on 10/02/15.
@@ -50,6 +49,7 @@ public class CatalogDBClientTest {
         catalogProperties.load(CatalogDBClientTest.class.getClassLoader().getResourceAsStream("catalog.properties"));
         */
         catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.deleteCatalogDB(true);
         catalogManager.installCatalogDB();
         QueryResult<ObjectMap> result = catalogManager.loginAsAnonymous("test-ip");
         userId = result.getResult().get(0).getString("userId");

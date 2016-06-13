@@ -17,16 +17,22 @@
 package org.opencb.opencga.app.cli.analysis;
 
 
+import com.beust.jcommander.ParameterException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.stats.writer.VariantStatsPopulationFrequencyExporter;
+import org.opencb.biodata.tools.variant.stats.writer.VariantStatsTsvExporter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.io.DataWriter;
+import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -34,6 +40,7 @@ import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
@@ -47,17 +54,16 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManag
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotator;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorException;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
+import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
@@ -97,6 +103,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             case "query":
                 query();
                 break;
+            case "export-frequencies":
+                exportFrequencies();
+                break;
             case "index":
                 index();
                 break;
@@ -131,6 +140,27 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         throw new UnsupportedOperationException();
     }
 
+
+    private void exportFrequencies() throws Exception {
+
+        AnalysisCliOptionsParser.ExportVariantStatsCommandOptions exportCliOptions = variantCommandOptions.exportVariantStatsCommandOptions;
+        AnalysisCliOptionsParser.QueryVariantCommandOptions queryCliOptions = variantCommandOptions.queryVariantCommandOptions;
+
+        queryCliOptions.outputFormat = exportCliOptions.outputFormat.toLowerCase().replace("tsv", "stats");
+        queryCliOptions.study = exportCliOptions.studies;
+        queryCliOptions.returnStudy = exportCliOptions.studies;
+        queryCliOptions.limit = exportCliOptions.queryOptions.limit;
+        queryCliOptions.skip = exportCliOptions.queryOptions.skip;
+        queryCliOptions.region = exportCliOptions.queryOptions.region;
+        queryCliOptions.regionFile = exportCliOptions.queryOptions.regionFile;
+        queryCliOptions.output = exportCliOptions.queryOptions.output;
+        queryCliOptions.gene = exportCliOptions.queryOptions.gene;
+        queryCliOptions.count = exportCliOptions.queryOptions.count;
+        queryCliOptions.returnSample = "";
+
+        query();
+    }
+
     private void query() throws Exception {
 
         AnalysisCliOptionsParser.QueryVariantCommandOptions cliOptions = variantCommandOptions.queryVariantCommandOptions;
@@ -153,45 +183,102 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             QueryResult rank = variantFetcher.rank(query, queryOptions, cliOptions.rank, sessionId);
             System.out.println("rank = " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rank));
         } else {
-            String outputFormat = "vcf";
+            final String outputFormat;
             if (StringUtils.isNotEmpty(cliOptions.outputFormat)) {
-                if (cliOptions.outputFormat.equals("json") || cliOptions.outputFormat.equals("json.gz")) {
-                    outputFormat = "json";
-                }
+                outputFormat = cliOptions.outputFormat.toLowerCase();
+            } else {
+                outputFormat = "vcf";
             }
-            OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(cliOptions);
-            VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId);
-            if (outputFormat.equalsIgnoreCase("vcf")) {
+
+            try (OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(cliOptions);
+                 VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId);) {
+
+                StudyConfiguration studyConfiguration;
+                final DataWriter<Variant> exporter;
+                switch (VariantQueryCommandUtils.VariantOutputFormat.value(outputFormat)) {
+                    case VCF:
 //                StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
 //                Map<Long, List<Sample>> samplesMetadata = variantFetcher.getSamplesMetadata(studyId, query, queryOptions, sessionId);
 //                QueryResult<StudyConfiguration> studyConfigurationResult = studyConfigurationManager.getStudyConfiguration(
 //                        query.getAsStringList(RETURNED_STUDIES.key()).get(0), null);
-                StudyConfiguration studyConfiguration = variantFetcher
-                        .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
-                if (studyConfiguration != null) {
-                    // Samples to be returned
-                    if (query.containsKey(RETURNED_SAMPLES.key())) {
-                        queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
-                    }
+                        studyConfiguration = variantFetcher
+                                .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
+                        if (studyConfiguration != null) {
+                            // Samples to be returned
+                            if (query.containsKey(RETURNED_SAMPLES.key())) {
+                                queryOptions.put(RETURNED_SAMPLES.key(), query.get(RETURNED_SAMPLES.key()));
+                            }
 
 //                        options.add("includeAnnotations", queryVariantsCommandOptions.includeAnnotations);
-                    if (cliOptions.annotations != null) {
-                        queryOptions.add("annotations", cliOptions.annotations);
+                            if (cliOptions.annotations != null) {
+                                queryOptions.add("annotations", cliOptions.annotations);
+                            }
+//                            VariantVcfExporter.htsExport(iterator, studyConfiguration, outputStream, queryOptions);
+                            exporter = new VariantVcfExporter(studyConfiguration, outputStream, queryOptions);
+                        } else {
+                            throw new IllegalArgumentException("No study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
+                        }
+                        break;
+                    case JSON:
+                        // we know that it is JSON, otherwise we have not reached this point
+                        exporter = batch -> {
+                            batch.forEach(variant -> {
+                                try {
+                                    outputStream.write(variant.toJson().getBytes());
+                                    outputStream.write('\n');
+                                } catch (IOException e) {
+                                    throw new UncheckedIOException(e);
+                                }
+                            });
+                            return true;
+                        };
+
+                        break;
+                    case AVRO:
+                        String codecName = "";
+                        if (VariantQueryCommandUtils.VariantOutputFormat.isGzip(outputFormat)) {
+                            codecName = "gzip";
+                        }
+                        if (outputFormat.endsWith("snappy")) {
+                            codecName = "snappy";
+                        }
+                        exporter = new VariantAvroWriter(VariantAvro.getClassSchema(), codecName, outputStream);
+
+                        break;
+                    case STATS:
+                        studyConfiguration = variantFetcher
+                                .getStudyConfiguration(query.getAsIntegerList(RETURNED_STUDIES.key()).get(0), null, sessionId);
+                        List<String> cohorts = new ArrayList<>(studyConfiguration.getCohortIds().keySet());
+                        cohorts.sort(String::compareTo);
+
+                        exporter = new VariantStatsTsvExporter(outputStream, studyConfiguration.getStudyName(), cohorts);
+
+                        break;
+                    case CELLBASE:
+                        exporter = new VariantStatsPopulationFrequencyExporter(outputStream);
+                        break;
+                    default:
+                        throw new ParameterException("Unknwon output format " + outputFormat);
+                }
+
+                ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(batchSize -> {
+                    List<Variant> variants = new ArrayList<>(batchSize);
+                    while (iterator.hasNext() && variants.size() < batchSize) {
+                        variants.add(iterator.next());
                     }
-                    VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-                    variantVcfExporter.export(iterator, studyConfiguration, outputStream, queryOptions);
-                } else {
-                    logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
-                }
-            } else {
-                // we know that it is JSON, otherwise we have not reached this point
-                while (iterator.hasNext()) {
-                    Variant variant = iterator.next();
-                    outputStream.write(variant.toJson().getBytes());
-                    outputStream.write('\n');
-                }
+                    return variants;
+                }, batch -> batch, exporter, new ParallelTaskRunner.Config(1, 10, 10, true, true));
+                ptr.run();
+//                exporter.open();
+//                exporter.pre();
+//                while (iterator.hasNext()) {
+//                    exporter.write(iterator.next());
+//                }
+//                exporter.post();
+//                exporter.close();
+
+//                iterator.close();
             }
-            iterator.close();
         }
     }
 
@@ -224,8 +311,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
                     .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
                     .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)
@@ -284,7 +371,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyId);
         // Use the INDEXED_FILE_ID instead of the given fileID. It may be the transformed file.
-        options.put(VariantStorageManager.Options.FILE_ID.key(), job.getAttributes().containsKey(Job.INDEXED_FILE_ID));
+        options.put(VariantStorageManager.Options.FILE_ID.key(), job.getAttributes().get(Job.INDEXED_FILE_ID));
         options.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
         options.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
         options.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
@@ -374,8 +461,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
+                    .append(VariantStatisticsManager.OUTPUT_FILE_NAME, cliOptions.fileName)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)
@@ -442,6 +530,9 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         options.put(VariantStorageManager.Options.OVERWRITE_STATS.key(), cliOptions.overwriteStats);
         options.put(VariantStorageManager.Options.UPDATE_STATS.key(), cliOptions.updateStats);
+        if (cliOptions.region != null) {
+            options.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), cliOptions.region);
+        }
         if (cliOptions.fileId != 0) {
             options.put(VariantStorageManager.Options.FILE_ID.key(), cliOptions.fileId);
         }
@@ -550,8 +641,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
 //                    .append(AnalysisFileIndexer.CREATE, cliOptions.create)
 //                    .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)

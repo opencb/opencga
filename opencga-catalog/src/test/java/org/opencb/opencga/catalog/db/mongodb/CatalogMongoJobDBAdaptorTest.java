@@ -1,8 +1,10 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -44,6 +46,20 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
                 ()), null).first();
         long jobId = job.getId();
         assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("Please, stop the job before");
+        catalogJobDBAdaptor.delete(jobId, new QueryOptions());
+    }
+
+    @Test
+    public void deleteJobTest2() throws CatalogException {
+        long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
+
+        Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
+                ()), null).first();
+        long jobId = job.getId();
+        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
+        catalogJobDBAdaptor.setStatus(jobId, Job.JobStatus.READY);
         QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, new QueryOptions());
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);

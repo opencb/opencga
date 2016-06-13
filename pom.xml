@@ -36,21 +36,23 @@
     </modules>
 
     <properties>
-        <java.version>1.8</java.version>
         <opencga.version>0.8-dev</opencga.version>
-        <biodata.version>0.7.0-SNAPSHOT</biodata.version>
+        <java.version>1.8</java.version>
+        <biodata.version>0.8.0-SNAPSHOT</biodata.version>
         <datastore.version>0.5.0</datastore.version>
         <cellbase.version>4.1.0-beta</cellbase.version>
         <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
-        <jackson.version>2.6.4</jackson.version>
-        <jersey.version>2.19</jersey.version>
+        <jackson.version>2.6.6</jackson.version>
+        <jersey.version>2.23</jersey.version>
         <hadoop.version>2.6.3</hadoop.version>
         <hbase.version>1.0.1</hbase.version>
         <avro.version>1.7.7</avro.version>
         <google.protobuf>3.0.0-beta-2</google.protobuf>
         <google.grpc>0.13.2</google.grpc>
+        <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <scm>
@@ -166,6 +168,11 @@
                 <artifactId>opencga-storage-core</artifactId>
                 <version>${opencga.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.opencb.opencga</groupId>
+                <artifactId>opencga-client</artifactId>
+                <version>${opencga.version}</version>
+            </dependency>
 
             <!-- OpenCB dependencies -->
             <dependency>
@@ -257,17 +264,17 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>15.0</version>
+                <version>18.0</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
-                <version>1.7.12</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-log4j12</artifactId>
-                <version>1.7.12</version>
+                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>com.beust</groupId>
@@ -287,6 +294,11 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -464,7 +476,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.2</version>
+                <version>3.5.1</version>
                 <configuration>
                     <source>${java.version}</source>
                     <target>${java.version}</target>
@@ -518,6 +530,8 @@
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
                 <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+
+                <OPENCGA.CLIENT.HOST>http://bioinfo.hpc.cam.ac.uk/hgva/</OPENCGA.CLIENT.HOST>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>

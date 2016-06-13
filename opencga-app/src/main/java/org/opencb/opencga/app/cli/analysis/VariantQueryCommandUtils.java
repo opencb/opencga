@@ -22,12 +22,11 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +34,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
+import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.AVRO;
+import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.VCF;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
@@ -43,6 +44,31 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
+
+    public enum VariantOutputFormat {
+        VCF,
+        JSON,
+        AVRO,
+        STATS,
+        CELLBASE;
+
+        static boolean isGzip(String value) {
+            return value.endsWith(".gz");
+        }
+
+        static VariantOutputFormat value(String value) {
+            int index = value.indexOf(".");
+            if (index >= 0) {
+                value = value.substring(0, index);
+            }
+            try {
+                return VariantOutputFormat.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException ignore) {
+                return null;
+            }
+        }
+
+    }
 
     public static Query parseQuery(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
             throws Exception {
@@ -94,7 +120,13 @@ public class VariantQueryCommandUtils {
 
         addParam(query, FILES, queryVariantsOptions.file);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
-        addParam(query, RETURNED_SAMPLES, queryVariantsOptions.returnSample);
+        if (queryVariantsOptions.returnSample != null) {
+            if (queryVariantsOptions.returnSample.isEmpty() || queryVariantsOptions.returnSample.equals(".")) {
+                query.put(RETURNED_SAMPLES.key(), Collections.emptyList());
+            } else {
+                query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.returnSample);
+            }
+        }
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
 
 
@@ -103,36 +135,18 @@ public class VariantQueryCommandUtils {
          */
         addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.consequenceType);
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.biotype);
-        addParam(query, ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
-        addParam(query, POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
-        addParam(query, CONSERVATION, queryVariantsOptions.conservation);
+        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
+        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
+        addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.conservation);
+        addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.flags);
+        addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
+        addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
+        addParam(query, ANNOT_HPO, queryVariantsOptions.hpo);
+        addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
+        addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
 
-        if (queryVariantsOptions.proteinSubstitution != null && !queryVariantsOptions.proteinSubstitution.isEmpty()) {
-            String[] fields = queryVariantsOptions.proteinSubstitution.split(",");
-            for (String field : fields) {
-                String[] arr = field
-                        .replaceAll("==", " ")
-                        .replaceAll(">=", " ")
-                        .replaceAll("<=", " ")
-                        .replaceAll("=", " ")
-                        .replaceAll("<", " ")
-                        .replaceAll(">", " ")
-                        .split(" ");
-
-                if (arr != null && arr.length > 1) {
-                    switch (arr[0]) {
-                        case "sift":
-                            query.put(SIFT.key(), field.replaceAll("sift", ""));
-                            break;
-                        case "polyphen":
-                            query.put(POLYPHEN.key(), field.replaceAll("polyphen", ""));
-                            break;
-                        default:
-                            query.put(PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
-                            break;
-                    }
-                }
-            }
+        if (StringUtils.isNoneEmpty(queryVariantsOptions.proteinSubstitution)) {
+            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), queryVariantsOptions.proteinSubstitution);
         }
 
 
@@ -184,7 +198,8 @@ public class VariantQueryCommandUtils {
             }
         }
 
-        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
+        outputFormat = outputFormat.toLowerCase();
+        if (returnVariants && (outputFormat.startsWith("vcf") || outputFormat.startsWith("stats"))) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
@@ -236,26 +251,24 @@ public class VariantQueryCommandUtils {
          * Output parameters
          */
         boolean gzip = true;
-        if (queryVariantsOptions.outputFormat != null && !queryVariantsOptions.outputFormat.isEmpty()) {
-            switch (queryVariantsOptions.outputFormat) {
-                case "vcf":
-                    gzip = false;
-                case "vcf.gz":
-                    break;
-                case "json":
-                    gzip = false;
-                case "json.gz":
-                    break;
-                default:
-                    logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
-                    throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
+        VariantOutputFormat outputFormat;
+        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
+            outputFormat = VariantOutputFormat.value(queryVariantsOptions.outputFormat);
+            if (outputFormat == null) {
+                logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
+                throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
+            } else {
+                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.outputFormat);
             }
+        } else {
+            outputFormat = VCF;
         }
 
         // output format has priority over output name
         OutputStream outputStream;
         if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
-            outputStream = System.out;
+            // Unclosable OutputStream
+            outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
         } else {
             if (gzip && !queryVariantsOptions.output.endsWith(".gz")) {
                 queryVariantsOptions.output += ".gz";
@@ -265,7 +278,7 @@ public class VariantQueryCommandUtils {
         }
 
         // If compressed a GZip output stream is used
-        if (gzip) {
+        if (gzip && outputFormat != AVRO) {
             outputStream = new GZIPOutputStream(outputStream);
         }
 
@@ -275,7 +288,7 @@ public class VariantQueryCommandUtils {
     }
 
     private static void addParam(Query query, VariantDBAdaptor.VariantQueryParams key, String value) {
-        if (value != null && !value.isEmpty()) {
+        if (StringUtils.isNotEmpty(value)) {
             query.put(key.key(), value);
         }
     }

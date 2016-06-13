@@ -23,10 +23,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.core.exception.VersionException;
@@ -46,7 +47,7 @@ import java.util.stream.Collectors;
  */
 @Path("/{version}/cohorts")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Cohorts", position = 8, description = "Methods for working with 'cohorts' endpoint")
+@Api(value = "Cohorts", position = 9, description = "Methods for working with 'cohorts' endpoint")
 public class CohortWSServer extends OpenCGAWSServer {
 
 
@@ -89,14 +90,14 @@ public class CohortWSServer extends OpenCGAWSServer {
                     }
                 }
                 if (variable == null) {
-                    return createErrorResponse("", "Variable " + variable  + " does not exist. ");
+                    return createErrorResponse("", "Variable " + variableName + " does not exist in variableSet " + variableSet.getName());
                 }
                 if (variable.getType() != Variable.VariableType.CATEGORICAL) {
                     return createErrorResponse("", "Can only create cohorts by variable, when is a categorical variable");
                 }
                 for (String s : variable.getAllowedValues()) {
                     QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
-                    Query samplesQuery = new Query("annotation." + variableName, s)
+                    Query samplesQuery = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + variableName, s)
                             .append("variableSetId", variableSetId);
                     cohorts.add(createCohort(studyId, s, type, cohortDescription, samplesQuery, samplesQOptions));
                 }
@@ -223,7 +224,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             if (calculate) {
                 VariantStorage variantStorage = new VariantStorage(catalogManager);
                 Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
-                queryOptions.put(AnalysisJobExecutor.EXECUTE, false);
+                queryOptions.put(ExecutorManager.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                 QueryResult<Job> jobQueryResult =
                         variantStorage.calculateStats(outdirId, cohortIds, sessionId, new QueryOptions(queryOptions));
@@ -253,6 +254,136 @@ public class CohortWSServer extends OpenCGAWSServer {
             return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
-        }    }
+        }
+    }
+
+    @POST
+    @Path("/{cohortId}/annotate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "annotate cohort", position = 6)
+    public Response annotateSamplePOST(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
+                                       @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
+                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
+                                       Map<String, Object> annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+            if (delete && update) {
+                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
+            } else if (delete) {
+                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
+            } else if (update) {
+                queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
+            } else {
+                queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations, Collections.emptyMap(),
+                        sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/annotate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Annotate cohort", position = 6)
+    public Response annotateSampleGET(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
+                                      @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+
+            if (delete && update) {
+                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
+            } else if (delete) {
+                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
+            } else {
+                if (update) {
+                    long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
+                    for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
+                        if (annotationSet.getId().equals(annotateSetName)) {
+                            variableSetId = annotationSet.getVariableSetId();
+                        }
+                    }
+                }
+                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+                if(variableSetResult.getResult().isEmpty()) {
+                    return createErrorResponse("cohort - annotate", "VariableSet not found.");
+                }
+                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+                        .filter(variable -> params.containsKey(variable.getId()))
+                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+
+                if (update) {
+                    queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
+                } else {
+                    queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations,
+                            Collections.emptyMap(), sessionId);
+                }
+            }
+
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortIds}/share")
+    @ApiOperation(value = "Share cohorts with other members", position = 7)
+    public Response share(@PathParam(value = "cohortIds") String cohortIds,
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+        try {
+            return createOkResponse(catalogManager.shareCohorts(cohortIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
+    public Response unshare(@PathParam(value = "cohortIds") String cohortIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+        try {
+            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group cohorts by several fields", position = 24)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyStr,
+                            @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id") String ids,
+                            @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
+                            @ApiParam(value = "Comma separated Type values.", required = false) @DefaultValue("") @QueryParam("type") String type,
+                            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
+                            @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                            @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
+                            @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                            @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogCohortDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.cohortGroupBy(query, qOptions, by, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
 }

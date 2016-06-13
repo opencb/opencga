@@ -1,3 +1,19 @@
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.opencb.opencga.app.cli.analysis;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,17 +27,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
@@ -112,8 +126,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
                     .collect(Collectors.toList());
 
             QueryOptions options = new QueryOptions()
-                    .append(AnalysisJobExecutor.EXECUTE, !cliOptions.job.queue)
-                    .append(AnalysisJobExecutor.SIMULATE, false)
+                    .append(ExecutorManager.EXECUTE, !cliOptions.job.queue)
+                    .append(ExecutorManager.SIMULATE, false)
                     .append(AnalysisFileIndexer.TRANSFORM, cliOptions.transform)
                     .append(AnalysisFileIndexer.LOAD, cliOptions.load)
                     .append(AnalysisFileIndexer.PARAMETERS, extraParams)

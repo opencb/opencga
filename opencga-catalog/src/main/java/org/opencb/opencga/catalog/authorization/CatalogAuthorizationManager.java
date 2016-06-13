@@ -15,6 +15,7 @@ import org.opencb.opencga.catalog.models.acls.*;
 
 import javax.annotation.Nullable;
 import java.util.*;
+import java.util.function.Function;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -36,6 +37,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final CatalogIndividualDBAdaptor individualDBAdaptor;
     private final CatalogCohortDBAdaptor cohortDBAdaptor;
     private final CatalogDatasetDBAdaptor datasetDBAdaptor;
+    private final CatalogPanelDBAdaptor panelDBAdaptor;
     private final AuditManager auditManager;
 
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
@@ -49,6 +51,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
         cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
+        panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
     }
 
     @Override
@@ -512,21 +515,84 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<FileAcl> setFilePermissions(String userId, String fileIds, String userIds, List<String> permissions)
+    public void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAcl.DiseasePanelPermissions permission)
             throws CatalogException {
+        long studyId = panelDBAdaptor.getStudyIdByPanelId(panelId);
+        if (isStudyOwner(studyId, userId)) {
+            return;
+        }
+
+        DiseasePanelAcl panelAcl = resolveDiseasePanelPermissions(studyId, panelId, userId);
+
+        if (!panelAcl.getPermissions().contains(permission)) {
+            throw CatalogAuthorizationException.deny(userId, permission.toString(), "DiseasePanel", panelId, null);
+        }
+    }
+
+    private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, DiseasePanel panel, String userId) throws CatalogException {
+        if (panel.getAcls() == null) {
+            return resolveDiseasePanelPermissions(studyId, panel.getId(), userId);
+        } else {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+
+            Map<String, DiseasePanelAcl> userAclMap = new HashMap<>();
+            for (DiseasePanelAcl panelAcl : panel.getAcls()) {
+                for (String user : panelAcl.getUsers()) {
+                    userAclMap.put(user, panelAcl);
+                }
+            }
+            return resolveDiseasePanelPermissions(studyId, userId, groupId, userAclMap);
+        }
+    }
+
+    private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, long panelId, String userId) throws CatalogException {
+        QueryResult<Group> group = getGroupBelonging(studyId, userId);
+        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+
+        List<String> userIds = (groupId == null)
+                ? Arrays.asList(userId, OTHER_USERS_ID)
+                : Arrays.asList(userId, groupId, OTHER_USERS_ID);
+        List<DiseasePanelAcl> panelAcls = panelDBAdaptor.getPanelAcl(panelId, userIds).getResult();
+
+        Map<String, DiseasePanelAcl> userAclMap = new HashMap<>();
+        for (DiseasePanelAcl panelAcl : panelAcls) {
+            for (String member : panelAcl.getUsers()) {
+                userAclMap.put(member, panelAcl);
+            }
+        }
+
+        return resolveDiseasePanelPermissions(studyId, userId, groupId, userAclMap);
+    }
+
+    private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, String userId, String groupId,
+                                                           Map<String, DiseasePanelAcl> userAclMap) throws CatalogException {
+        if (userAclMap.containsKey(userId)) {
+            return userAclMap.get(userId);
+        } else if (groupId != null && userAclMap.containsKey(groupId)) {
+            return userAclMap.get(groupId);
+        } else if (userAclMap.containsKey(OTHER_USERS_ID)) {
+            return userAclMap.get(OTHER_USERS_ID);
+        } else {
+            return transformStudyAclToDiseasePanelAcl(getStudyAclBelonging(studyId, userId, groupId));
+        }
+    }
+
+    @Override
+    public QueryResult<FileAcl> setFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions,
+                                                   boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String[] fileIdArray = fileIds.split(",");
         // Check if the userId has proper permissions for all the files.
-        for (String fileId : fileIdArray) {
-            checkFilePermission(Long.valueOf(fileId), userId, FileAcl.FilePermissions.SHARE);
+        for (Long fileId : fileIds) {
+            checkFilePermission(fileId, userId, FileAcl.FilePermissions.SHARE);
         }
 
         String[] userArray = userIds.split(",");
         // Check if all the members have a permission already set at the study level.
-        for (String fileId : fileIdArray) {
-            long studyId = fileDBAdaptor.getStudyIdByFileId(Long.valueOf(fileId));
+        for (Long fileId : fileIds) {
+            long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share file with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -535,11 +601,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
 //         Set the permissions
-        List<FileAcl> fileAclList = new ArrayList<>(fileIdArray.length);
+        List<FileAcl> fileAclList = new ArrayList<>(fileIds.size());
         String[] userIdArray = userIds.split(",");
-        for (String fileId : fileIdArray) {
+        for (Long fileId : fileIds) {
             FileAcl fileAcl = new FileAcl(Arrays.asList(userIdArray), permissions);
-            fileAclList.add(fileDBAdaptor.setFileAcl(Long.parseLong(fileId), fileAcl).first());
+            fileAclList.add(fileDBAdaptor.setFileAcl(fileId, fileAcl, override).first());
         }
 
         return new QueryResult<>("Set file permissions", (int) (System.currentTimeMillis() - startTime), fileAclList.size(),
@@ -548,36 +614,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetFilePermissions(String userId, String fileIds, String userIds) throws CatalogException {
-        String[] fileIdArray = fileIds.split(",");
+    public void unsetFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions) throws CatalogException {
         // Check if the userId has proper permissions for all the files.
-        for (String fileId : fileIdArray) {
-            checkFilePermission(Long.valueOf(fileId), userId, FileAcl.FilePermissions.SHARE);
+        for (Long fileId : fileIds) {
+            checkFilePermission(fileId, userId, FileAcl.FilePermissions.SHARE);
         }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, FileAcl.FilePermissions::valueOf);
 
         // Unset the permissions
         String[] userIdArray = userIds.split(",");
-        for (String fileId : fileIdArray) {
-            fileDBAdaptor.unsetFileAcl(Long.parseLong(fileId), Arrays.asList(userIdArray));
+        for (Long fileId : fileIds) {
+            fileDBAdaptor.unsetFileAcl(fileId, Arrays.asList(userIdArray), permissions);
         }
     }
 
     @Override
-    public QueryResult<SampleAcl> setSamplePermissions(String userId, String sampleIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<SampleAcl> setSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions,
+                                                       boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String[] sampleIdArray = sampleIds.split(",");
         // Check if the userId has proper permissions for all the samples.
-        for (String sampleId : sampleIdArray) {
-            checkSamplePermission(Long.valueOf(sampleId), userId, SampleAcl.SamplePermissions.SHARE);
+        for (Long sampleId : sampleIds) {
+            checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
         }
 
         String[] userArray = userIds.split(",");
         // Check if all the members have a permission already set at the study level.
-        for (String sampleId : sampleIdArray) {
-            long studyId = sampleDBAdaptor.getStudyIdBySampleId(Long.valueOf(sampleId));
+        for (Long sampleId : sampleIds) {
+            long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share sample with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -586,11 +653,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Set the permissions
-        List<SampleAcl> sampleAclList = new ArrayList<>(sampleIdArray.length);
+        List<SampleAcl> sampleAclList = new ArrayList<>(sampleIds.size());
         String[] userIdArray = userIds.split(",");
-        for (String sampleId : sampleIdArray) {
+        for (Long sampleId : sampleIds) {
             SampleAcl sampleAcl = new SampleAcl(Arrays.asList(userIdArray), permissions);
-            sampleAclList.add(sampleDBAdaptor.setSampleAcl(Long.parseLong(sampleId), sampleAcl).first());
+            sampleAclList.add(sampleDBAdaptor.setSampleAcl(sampleId, sampleAcl, override).first());
         }
 
         return new QueryResult<>("Set sample permissions", (int) (System.currentTimeMillis() - startTime), sampleAclList.size(),
@@ -598,36 +665,38 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetSamplePermissions(String userId, String sampleIds, String userIds) throws CatalogException {
-        String[] sampleIdArray = sampleIds.split(",");
+    public void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the samples.
-        for (String sampleId : sampleIdArray) {
-            checkSamplePermission(Long.valueOf(sampleId), userId, SampleAcl.SamplePermissions.SHARE);
+        for (Long sampleId : sampleIds) {
+            checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
         }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, SampleAcl.SamplePermissions::valueOf);
 
         // Unset the permissions
         String[] userIdArray = userIds.split(",");
-        for (String sampleId : sampleIdArray) {
-            sampleDBAdaptor.unsetSampleAcl(Long.parseLong(sampleId), Arrays.asList(userIdArray));
+        for (Long sampleId : sampleIds) {
+            sampleDBAdaptor.unsetSampleAcl(sampleId, Arrays.asList(userIdArray), permissions);
         }
     }
 
     @Override
-    public QueryResult<CohortAcl> setCohortPermissions(String userId, String cohortIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<CohortAcl> setCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions,
+                                                       boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String[] cohortIdArray = cohortIds.split(",");
         // Check if the userId has proper permissions for all the cohorts.
-        for (String cohortId : cohortIdArray) {
-            checkCohortPermission(Long.valueOf(cohortId), userId, CohortAcl.CohortPermissions.SHARE);
+        for (Long cohortId : cohortIds) {
+            checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.SHARE);
         }
 
         String[] userArray = userIds.split(",");
         // Check if all the members have a permission already set at the study level.
-        for (String cohortId : cohortIdArray) {
-            long studyId = cohortDBAdaptor.getStudyIdByCohortId(Long.valueOf(cohortId));
+        for (Long cohortId : cohortIds) {
+            long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share cohort with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -636,11 +705,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Set the permissions
-        List<CohortAcl> cohortAclList = new ArrayList<>(cohortIdArray.length);
+        List<CohortAcl> cohortAclList = new ArrayList<>(cohortIds.size());
         String[] userIdArray = userIds.split(",");
-        for (String cohortId : cohortIdArray) {
+        for (Long cohortId : cohortIds) {
             CohortAcl cohortAcl = new CohortAcl(Arrays.asList(userIdArray), permissions);
-            cohortAclList.add(cohortDBAdaptor.setCohortAcl(Long.parseLong(cohortId), cohortAcl).first());
+            cohortAclList.add(cohortDBAdaptor.setCohortAcl(cohortId, cohortAcl, override).first());
         }
 
         return new QueryResult<>("Set cohort permissions", (int) (System.currentTimeMillis() - startTime), cohortAclList.size(),
@@ -648,36 +717,38 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetCohortPermissions(String userId, String cohortIds, String userIds) throws CatalogException {
-        String[] cohortIdArray = cohortIds.split(",");
+    public void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the cohorts.
-        for (String cohortId : cohortIdArray) {
-            checkCohortPermission(Long.valueOf(cohortId), userId, CohortAcl.CohortPermissions.SHARE);
+        for (Long cohortId : cohortIds) {
+            checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.SHARE);
         }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, CohortAcl.CohortPermissions::valueOf);
 
         // Unset the permissions
         String[] userIdArray = userIds.split(",");
-        for (String cohortId : cohortIdArray) {
-            cohortDBAdaptor.unsetCohortAcl(Long.parseLong(cohortId), Arrays.asList(userIdArray));
+        for (Long cohortId : cohortIds) {
+            cohortDBAdaptor.unsetCohortAcl(cohortId, Arrays.asList(userIdArray), permissions);
         }
     }
 
     @Override
-    public QueryResult<IndividualAcl> setIndividualPermissions(String userId, String individualIds, String userIds,
-                                                               List<String> permissions) throws CatalogException {
+    public QueryResult<IndividualAcl> setIndividualPermissions(String userId, List<Long> individualIds, String userIds,
+                                                               List<String> permissions, boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String[] individualIdArray = individualIds.split(",");
         // Check if the userId has proper permissions for all the individuals.
-        for (String individualId : individualIdArray) {
-            checkIndividualPermission(Long.valueOf(individualId), userId, IndividualAcl.IndividualPermissions.SHARE);
+        for (Long individualId : individualIds) {
+            checkIndividualPermission(individualId, userId, IndividualAcl.IndividualPermissions.SHARE);
         }
 
         String[] userArray = userIds.split(",");
         // Check if all the members have a permission already set at the study level.
-        for (String individualId : individualIdArray) {
-            long studyId = individualDBAdaptor.getStudyIdByIndividualId(Long.valueOf(individualId));
+        for (Long individualId : individualIds) {
+            long studyId = individualDBAdaptor.getStudyIdByIndividualId(individualId);
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share individual with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -686,11 +757,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Set the permissions
-        List<IndividualAcl> individualAclList = new ArrayList<>(individualIdArray.length);
+        List<IndividualAcl> individualAclList = new ArrayList<>(individualIds.size());
         String[] userIdArray = userIds.split(",");
-        for (String individualId : individualIdArray) {
+        for (Long individualId : individualIds) {
             IndividualAcl individualAcl = new IndividualAcl(Arrays.asList(userIdArray), permissions);
-            individualAclList.add(individualDBAdaptor.setIndividualAcl(Long.parseLong(individualId), individualAcl).first());
+            individualAclList.add(individualDBAdaptor.setIndividualAcl(individualId, individualAcl, override).first());
         }
 
         return new QueryResult<>("Set individual permissions", (int) (System.currentTimeMillis() - startTime), individualAclList.size(),
@@ -698,36 +769,38 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetIndividualPermissions(String userId, String individualIds, String userIds) throws CatalogException {
-        String[] individualIdArray = individualIds.split(",");
+    public void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the individuals.
-        for (String individualId : individualIdArray) {
-            checkIndividualPermission(Long.valueOf(individualId), userId, IndividualAcl.IndividualPermissions.SHARE);
+        for (Long individualId : individualIds) {
+            checkIndividualPermission(individualId, userId, IndividualAcl.IndividualPermissions.SHARE);
         }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, IndividualAcl.IndividualPermissions::valueOf);
 
         // Set the permissions
         String[] userIdArray = userIds.split(",");
-        for (String individualId : individualIdArray) {
-            individualDBAdaptor.unsetIndividualAcl(Long.parseLong(individualId), Arrays.asList(userIdArray));
+        for (Long individualId : individualIds) {
+            individualDBAdaptor.unsetIndividualAcl(individualId, Arrays.asList(userIdArray), permissions);
         }
     }
 
     @Override
-    public QueryResult<JobAcl> setJobPermissions(String userId, String jobIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<JobAcl> setJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions,
+                                                 boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String[] jobIdArray = jobIds.split(",");
         // Check if the userId has proper permissions for all the jobs.
-        for (String jobId : jobIdArray) {
-            checkJobPermission(Long.valueOf(jobId), userId, JobAcl.JobPermissions.SHARE);
+        for (Long jobId : jobIds) {
+            checkJobPermission(jobId, userId, JobAcl.JobPermissions.SHARE);
         }
 
         String[] userArray = userIds.split(",");
         // Check if all the members have a permission already set at the study level.
-        for (String jobId : jobIdArray) {
-            long studyId = jobDBAdaptor.getStudyIdByJobId(Long.valueOf(jobId));
+        for (Long jobId : jobIds) {
+            long studyId = jobDBAdaptor.getStudyIdByJobId(jobId);
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share job with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -736,11 +809,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Set the permissions
-        List<JobAcl> jobAclList = new ArrayList<>(jobIdArray.length);
+        List<JobAcl> jobAclList = new ArrayList<>(jobIds.size());
         String[] userIdArray = userIds.split(",");
-        for (String jobId : jobIdArray) {
+        for (Long jobId : jobIds) {
             JobAcl jobAcl = new JobAcl(Arrays.asList(userIdArray), permissions);
-            jobAclList.add(jobDBAdaptor.setJobAcl(Long.parseLong(jobId), jobAcl).first());
+            jobAclList.add(jobDBAdaptor.setJobAcl(jobId, jobAcl, override).first());
         }
 
         return new QueryResult<>("Set job permissions", (int) (System.currentTimeMillis() - startTime), jobAclList.size(),
@@ -748,36 +821,37 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetJobPermissions(String userId, String jobIds, String userIds) throws CatalogException {
-        String[] jobIdArray = jobIds.split(",");
+    public void unsetJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions) throws CatalogException {
         // Check if the userId has proper permissions for all the jobs.
-        for (String jobId : jobIdArray) {
-            checkJobPermission(Long.valueOf(jobId), userId, JobAcl.JobPermissions.SHARE);
+        for (Long jobId : jobIds) {
+            checkJobPermission(jobId, userId, JobAcl.JobPermissions.SHARE);
         }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, JobAcl.JobPermissions::valueOf);
 
         // Set the permissions
         String[] userIdArray = userIds.split(",");
-        for (String jobId : jobIdArray) {
-            jobDBAdaptor.unsetJobAcl(Long.parseLong(jobId), Arrays.asList(userIdArray));
+        for (Long jobId : jobIds) {
+            jobDBAdaptor.unsetJobAcl(jobId, Arrays.asList(userIdArray), permissions);
         }
     }
 
     @Override
-    public QueryResult<DatasetAcl> setDatasetPermissions(String userId, String datasetIds, String userIds, List<String> permissions)
-            throws CatalogException {
+    public QueryResult<DatasetAcl> setDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions,
+                                                         boolean override) throws CatalogException {
         long startTime = System.currentTimeMillis();
-        String[] datasetArray = datasetIds.split(",");
         // Check if the userId has proper permissions for all the datasets.
-        for (String datasetId : datasetArray) {
-            checkDatasetPermission(Long.valueOf(datasetId), userId, DatasetAcl.DatasetPermissions.SHARE);
+        for (Long datasetId : datasetIds) {
+            checkDatasetPermission(datasetId, userId, DatasetAcl.DatasetPermissions.SHARE);
         }
 
         String[] userArray = userIds.split(",");
         // Check if all the members have a permission already set at the study level.
-        for (String datasetId : datasetArray) {
-            long studyId = datasetDBAdaptor.getStudyIdByDatasetId(Long.valueOf(datasetId));
+        for (Long datasetId : datasetIds) {
+            long studyId = datasetDBAdaptor.getStudyIdByDatasetId(datasetId);
             for (String member : userArray) {
-                if (!memberHasPermissionsInStudy(studyId, member)) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
                     throw new CatalogException("Cannot share dataset with " + member + ". First, a general study permission must be "
                             + "defined for that member.");
                 }
@@ -786,11 +860,11 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Set the permissions
-        List<DatasetAcl> datasetAclList = new ArrayList<>(datasetArray.length);
+        List<DatasetAcl> datasetAclList = new ArrayList<>(datasetIds.size());
         String[] userIdArray = userIds.split(",");
-        for (String datasetId : datasetArray) {
+        for (Long datasetId : datasetIds) {
             DatasetAcl datasetAcl = new DatasetAcl(Arrays.asList(userIdArray), permissions);
-            datasetAclList.add(datasetDBAdaptor.setDatasetAcl(Long.parseLong(datasetId), datasetAcl).first());
+            datasetAclList.add(datasetDBAdaptor.setDatasetAcl(datasetId, datasetAcl, override).first());
         }
 
         return new QueryResult<>("Set dataset permissions", (int) (System.currentTimeMillis() - startTime), datasetAclList.size(),
@@ -798,23 +872,81 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public void unsetDatasetPermissions(String userId, String datasetIds, String userIds) throws CatalogException {
-        String[] datasetArray = datasetIds.split(",");
+    public void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions)
+            throws CatalogException {
         // Check if the userId has proper permissions for all the datasets.
-        for (String datasetId : datasetArray) {
-            checkDatasetPermission(Long.valueOf(datasetId), userId, DatasetAcl.DatasetPermissions.SHARE);
+        for (Long datasetId : datasetIds) {
+            checkDatasetPermission(datasetId, userId, DatasetAcl.DatasetPermissions.SHARE);
         }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, DatasetAcl.DatasetPermissions::valueOf);
 
         // Set the permissions
         String[] userIdArray = userIds.split(",");
-        for (String datasetId : datasetArray) {
-            datasetDBAdaptor.unsetDatasetAcl(Long.parseLong(datasetId), Arrays.asList(userIdArray));
+        for (Long datasetId : datasetIds) {
+            datasetDBAdaptor.unsetDatasetAcl(datasetId, Arrays.asList(userIdArray), permissions);
+        }
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds,
+                                                                   List<String> permissions, boolean override) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        // Check if the userId has proper permissions for all the panels.
+        for (Long panelId : panelIds) {
+            checkDiseasePanelPermission(panelId, userId, DiseasePanelAcl.DiseasePanelPermissions.SHARE);
+        }
+
+        String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+        for (Long panelId : panelIds) {
+            long studyId = panelDBAdaptor.getStudyIdByPanelId(panelId);
+            for (String member : userArray) {
+                if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+                    throw new CatalogException("Cannot share panel with " + member + ". First, a general study permission must be "
+                            + "defined for that member.");
+                }
+            }
+
+        }
+
+        // Set the permissions
+        List<DiseasePanelAcl> panelAclList = new ArrayList<>(panelIds.size());
+        String[] userIdArray = userIds.split(",");
+        for (Long panelId : panelIds) {
+            DiseasePanelAcl panelAcl = new DiseasePanelAcl(Arrays.asList(userIdArray), permissions);
+            panelAclList.add(panelDBAdaptor.setPanelAcl(panelId, panelAcl, override).first());
+        }
+
+        return new QueryResult<>("Set panel permissions", (int) (System.currentTimeMillis() - startTime), panelAclList.size(),
+                panelAclList.size(), "", "", panelAclList);
+    }
+
+    @Override
+    public void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions)
+            throws CatalogException {
+        // Check if the userId has proper permissions for all the disease panels.
+        for (Long panelId : panelIds) {
+            checkDiseasePanelPermission(panelId, userId, DiseasePanelAcl.DiseasePanelPermissions.SHARE);
+        }
+
+        // Check if the permissions are correct
+        checkPermissions(permissions, DiseasePanelAcl.DiseasePanelPermissions::valueOf);
+
+        // Set the permissions
+        String[] userIdArray = userIds.split(",");
+        for (Long panelId : panelIds) {
+            panelDBAdaptor.unsetPanelAcl(panelId, Arrays.asList(userIdArray), permissions);
         }
     }
 
     @Override
     public void filterProjects(String userId, List<Project> projects) throws CatalogException {
         if (projects == null || projects.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         Iterator<Project> projectIt = projects.iterator();
@@ -833,6 +965,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterStudies(String userId, List<Study> studies) throws CatalogException {
         if (studies == null || studies.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         Iterator<Study> studyIt = studies.iterator();
@@ -864,6 +999,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (files == null || files.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -883,6 +1021,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterSamples(String userId, long studyId, List<Sample> samples) throws CatalogException {
         if (samples == null || samples.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -909,6 +1050,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (individuals == null || individuals.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -931,6 +1075,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterCohorts(String userId, long studyId, List<Cohort> cohorts) throws CatalogException {
         if (cohorts == null || cohorts.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -957,6 +1104,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (jobs == null || jobs.isEmpty()) {
             return;
         }
+        if (userId.equals("admin")) {
+            return;
+        }
         if (isStudyOwner(studyId, userId)) {
             return;
         }
@@ -974,6 +1124,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException {
         if (datasets == null || datasets.isEmpty()) {
+            return;
+        }
+        if (userId.equals("admin")) {
             return;
         }
         if (isStudyOwner(studyId, userId)) {
@@ -1002,20 +1155,27 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     @Override
     public void removeUsersFromGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
         studyDBAdaptor.removeMembersFromGroup(studyId, groupId, members);
     }
 
     @Override
-    public QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId)
+    public QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId, boolean override)
             throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-        return studyDBAdaptor.setStudyAcl(studyId, roleId, members);
+        return studyDBAdaptor.setStudyAcl(studyId, roleId, members, override);
     }
 
     @Override
     public void removeMembersFromRole(String userId, long studyId, List<String> members)
             throws CatalogException {
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
+        if (members.contains(studyOwnerId)) {
+            throw new CatalogException("Error: It is not allowed removing the permissions to the owner of the study.");
+        }
         studyDBAdaptor.unsetStudyAcl(studyId, members);
     }
 
@@ -1024,6 +1184,9 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> memberList = new ArrayList<>();
         memberList.add(member);
         if (!member.startsWith("@")) { // User
+            if (member.equals("admin") || isStudyOwner(studyId, member)) {
+                return true;
+            }
             QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
             if (groupBelonging.getNumResults() > 0) {
                 memberList.add(groupBelonging.first().getId()); // Add the groupId to the memberList
@@ -1046,7 +1209,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         private final long studyId;
         private final Map<String, Map<String, FileAcl>> pathUserAclMap;
 
-        public StudyAuthenticationContext(long studyId) {
+        StudyAuthenticationContext(long studyId) {
             this.studyId = studyId;
             pathUserAclMap = new HashMap<>();
         }
@@ -1158,6 +1321,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return null;
     }
 
+    public static void checkPermissions(List<String> permissions, Function<String, Enum> getValue) throws CatalogException {
+        for (String permission : permissions) {
+            try {
+                getValue.apply(permission);
+            } catch (IllegalArgumentException e) {
+                throw new CatalogException("The permission " + permission + " is not a correct permission.");
+            }
+        }
+    }
 
     /*
     ====================================
@@ -1165,7 +1337,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     ====================================
      */
     private FileAcl transformStudyAclToFileAcl(StudyAcl studyAcl) {
-        FileAcl fileAcl = new FileAcl();
+        FileAcl fileAcl = new FileAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return fileAcl;
         }
@@ -1185,7 +1357,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private SampleAcl transformStudyAclToSampleAcl(StudyAcl studyAcl) {
-        SampleAcl sampleAcl = new SampleAcl();
+        SampleAcl sampleAcl = new SampleAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return sampleAcl;
         }
@@ -1205,7 +1377,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private IndividualAcl transformStudyAclToIndividualAcl(StudyAcl studyAcl) {
-        IndividualAcl individualAcl = new IndividualAcl();
+        IndividualAcl individualAcl = new IndividualAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return individualAcl;
         }
@@ -1225,7 +1397,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private JobAcl transformStudyAclToJobAcl(StudyAcl studyAcl) {
-        JobAcl jobAcl = new JobAcl();
+        JobAcl jobAcl = new JobAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return jobAcl;
         }
@@ -1245,7 +1417,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private CohortAcl transformStudyAclToCohortAcl(StudyAcl studyAcl) {
-        CohortAcl cohortAcl = new CohortAcl();
+        CohortAcl cohortAcl = new CohortAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return cohortAcl;
         }
@@ -1265,7 +1437,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     private DatasetAcl transformStudyAclToDatasetAcl(StudyAcl studyAcl) {
-        DatasetAcl datasetAcl = new DatasetAcl();
+        DatasetAcl datasetAcl = new DatasetAcl(Collections.emptyList(), Collections.emptyList());
         if (studyAcl == null) {
             return datasetAcl;
         }
@@ -1282,5 +1454,25 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
         datasetAcl.setPermissions(datasetPermissions);
         return datasetAcl;
+    }
+
+    private DiseasePanelAcl transformStudyAclToDiseasePanelAcl(StudyAcl studyAcl) {
+        DiseasePanelAcl panelAcl = new DiseasePanelAcl(Collections.emptyList(), Collections.emptyList());
+        if (studyAcl == null) {
+            return panelAcl;
+        }
+
+        panelAcl.setUsers(studyAcl.getUsers());
+        EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
+        EnumSet<DiseasePanelAcl.DiseasePanelPermissions> datasetPermissions = EnumSet.noneOf(DiseasePanelAcl.DiseasePanelPermissions.class);
+
+        for (StudyAcl.StudyPermissions studyPermission : studyPermissions) {
+            DiseasePanelAcl.DiseasePanelPermissions aux = studyPermission.getDiseasePanelPermission();
+            if (aux != null) {
+                datasetPermissions.add(aux);
+            }
+        }
+        panelAcl.setPermissions(datasetPermissions);
+        return panelAcl;
     }
 }

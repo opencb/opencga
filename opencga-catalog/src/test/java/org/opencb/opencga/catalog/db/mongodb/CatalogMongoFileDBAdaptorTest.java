@@ -188,12 +188,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         ));
 
 //        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
-        catalogFileDBAdaptor.setFileAcl(fileId, granted);
+        catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
         granted.setUsers(Arrays.asList("imedina"));
-        catalogFileDBAdaptor.setFileAcl(fileId, granted);
+        catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
         try {
             granted.setUsers(Arrays.asList("noUser"));
-            catalogFileDBAdaptor.setFileAcl(fileId, granted);
+            catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
             fail("error: expected exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -230,7 +230,10 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         distinctFormats = catalogFileDBAdaptor.distinct(new Query(),
                 CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();
-        assertEquals(Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM"), distinctFormats);
+        Collections.sort(distinctFormats);
+        List<String> expected = Arrays.asList("PLAIN", "UNKNOWN", "COMMA_SEPARATED_VALUES", "BAM");
+        Collections.sort(expected);
+        assertEquals(expected, distinctFormats);
     }
 
     @Test

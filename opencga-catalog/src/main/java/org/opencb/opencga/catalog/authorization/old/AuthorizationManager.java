@@ -96,6 +96,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing all the ACL entries that have been set.
      * @throws CatalogException when the user corresponding to the sessionId does not have permission in the samples.
      */
+    @Deprecated
     QueryResult<AclEntry> setSampleACL(String sampleIds, String userIds, AclEntry acl, String sessionId) throws CatalogException;
 
     /***

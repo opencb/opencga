@@ -1,0 +1,65 @@
+{
+  "author": {
+    "name": "",
+    "email": ""
+  },
+  "version": "1.0",
+  "id": "survival",
+  "name": "survival",
+  "description": "",
+  "icon": {
+    "size": "",
+    "data": ""
+  },
+  "website": "http://",
+  "publication": "",
+  "globalParams": [],
+  "executions": [
+    {
+      "id": "hello",
+      "name": "Hello World!",
+      "executable": "hello_world.sh",
+      "inputParams": [],
+      "outputParam": "output",
+      "validParams": [],
+      "configAttr": [],
+      "testCmd": "hello_world.sh"
+    },
+    {
+      "id": "echo",
+      "name": "echo",
+      "executable": "echo.sh",
+      "inputParams": [],
+      "outputParam": "output",
+      "validParams": [{
+        "name": "e",
+        "description": "Message",
+        "required": "true"
+      }],
+      "configAttr": [],
+      "testCmd": "echo.sh Test cmd"
+    },
+    {
+      "id": "cat",
+      "name": "cat",
+      "executable": "cat.sh",
+      "inputParams": [{ "name" : "i" }],
+      "outputParam": "o",
+      "validParams": [{
+        "name": "i",
+        "description": "Input file",
+        "required": "true"
+      },{
+        "name": "o",
+        "description": "outdir"
+      },{
+        "name": "n",
+        "description": "output file name"
+      }],
+      "configAttr": [],
+      "testCmd": "echo.sh Test cmd"
+    }
+  ],
+  "examples": [],
+  "acl": []
+}

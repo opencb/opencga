@@ -20,12 +20,15 @@ import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiModelProperty;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -55,16 +58,6 @@ public class JobWSServer extends OpenCGAWSServer {
         super(version, uriInfo, httpServletRequest);
     }
 
-//    @GET
-//    @Path("/search")
-//    @Produces("application/json")
-//    @ApiOperation(value = "Search jobs")
-//
-//    public Response search(
-//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-//    ) {
-//        catalogManager.search
-//    }
 
     public static class InputJob {
         public InputJob() {
@@ -151,22 +144,23 @@ public class JobWSServer extends OpenCGAWSServer {
         QueryResult<Job> jobResult;
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
-            AnalysisJobExecutor analysisJobExecutor;
+            ToolManager toolManager;
+            JobFactory jobFactory = new JobFactory(catalogManager);
             String toolName;
             long toolId = catalogManager.getToolId(toolIdStr);
             if (toolId < 0) {
-                analysisJobExecutor = new AnalysisJobExecutor(toolIdStr, execution);    //LEGACY MODE, AVOID USING
+                toolManager = new ToolManager(toolIdStr, execution);    //LEGACY MODE, AVOID USING
                 toolName = toolIdStr;
             } else {
                 Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
-                analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
                 toolName = tool.getName();
             }
 
             List<Long> inputFiles = new LinkedList<>();
             Map<String, List<String>> localParams = new HashMap<>(params);
 
-            Execution ex = analysisJobExecutor.getExecution();
+            Execution ex = toolManager.getExecution();
             // Set input param
             for (InputParam inputParam : ex.getInputParams()) {
                 if (params.containsKey(inputParam.getName())) {
@@ -176,7 +170,7 @@ public class JobWSServer extends OpenCGAWSServer {
                         for (String fileId : files.split(",")) {
                             if (fileId.startsWith("example_")) { // is a example
                                 fileId = fileId.replace("example_", "");
-                                filePaths.add(analysisJobExecutor.getExamplePath(fileId));
+                                filePaths.add(toolManager.getExamplePath(fileId));
                             } else {
                                 File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
                                 filePaths.add(catalogManager.getFileUri(file).getPath());
@@ -197,7 +191,7 @@ public class JobWSServer extends OpenCGAWSServer {
 //            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
 
             // Set outdir
-            String outputParam = analysisJobExecutor.getExecution().getOutputParam();
+            String outputParam = toolManager.getExecution().getOutputParam();
             if (params.get(outputParam).isEmpty()) {
                 return createErrorResponse("", "Missing output param '" + outputParam + "'");
             }
@@ -244,30 +238,8 @@ public class JobWSServer extends OpenCGAWSServer {
             }
 
 
-            // Create temporal Outdir
-//            String randomString = StringUtils.randomString(10);
-//            URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
-//            localParams.put(outputParam, Arrays.asList(temporalOutDirUri.getPath()));
-//
-//            // Create commandLine
-//            String commandLine = analysisJobExecuter.createCommandLine(localParams);
-//            System.out.println(commandLine);
-//
-//            // Create job in CatalogManager
-//            Map<String, Object> resourceManagerAttributes = new HashMap<>();
-//            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-//
-//            jobResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-//                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
-//            Job job = jobResult.getResult().get(0);
-
-            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId, name, description,
-                    jobOutDir, inputFiles, sessionId);
-
-            // Execute job
-//            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
-//            AnalysisJobExecutor.execute(jobQueryResult.getResult().get(0));
-            //Job will be executed by the Daemon. status: PREPARED
+            QueryResult<Job> jobQueryResult = jobFactory.createJob(toolManager, localParams, studyId, name,
+                    description, jobOutDir, inputFiles, sessionId);
 
             return createOkResponse(jobQueryResult);
 
@@ -283,6 +255,47 @@ public class JobWSServer extends OpenCGAWSServer {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/search")
+    @ApiOperation(value = "File info", position = 12)
+    public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                           @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
+                           @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                           @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                           @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+        try {
+            long studyIdNum = catalogManager.getStudyId(studyId);
+            // TODO this must be changed: only one queryOptions need to be passed
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
+                logger.debug("Name attribute empty, it's been removed");
+            }
+
+            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
+                qOptions.put(MongoDBCollection.LIMIT, 1000);
+                logger.debug("Adding a limit of 1000");
+            }
+            logger.debug("query = " + query.toJson());
+            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -315,6 +328,61 @@ public class JobWSServer extends OpenCGAWSServer {
             results.add(catalogManager.deleteJob(jobId, sessionId));
             return createOkResponse(results);
         } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobIds}/share")
+    @ApiOperation(value = "Share jobs with other members", position = 5)
+    public Response share(@PathParam(value = "jobIds") String jobIds,
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+        try {
+            return createOkResponse(catalogManager.shareJob(jobIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 6)
+    public Response unshare(@PathParam(value = "jobIds") String jobIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+        try {
+            return createOkResponse(catalogManager.unshareJob(jobIds, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group jobs by several fields", position = 10)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                            @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
+                            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
+                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                            @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                            @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+                            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                            @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.jobGroupBy(query, qOptions, by, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

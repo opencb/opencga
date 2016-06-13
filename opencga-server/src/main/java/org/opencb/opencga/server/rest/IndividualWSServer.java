@@ -3,6 +3,7 @@ package org.opencb.opencga.server.rest;
 import com.wordnik.swagger.annotations.Api;
 import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
@@ -19,6 +20,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -221,6 +223,64 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             QueryResult<Individual> queryResult = catalogManager.deleteIndividual(individualId, queryOptions, sessionId);
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individualIds}/share")
+    @ApiOperation(value = "Share individuals with other members", position = 8)
+    public Response share(@PathParam(value = "individualIds") String individualIds,
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+        try {
+            return createOkResponse(catalogManager.shareIndividual(individualIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individualIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 9)
+    public Response unshare(@PathParam(value = "individualIds") String individualIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+        try {
+            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group individuals by several fields", position = 10)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
+                            @ApiParam(value = "id", required = false) @QueryParam("id") String ids,
+                            @ApiParam(value = "name", required = false) @QueryParam("name") String names,
+                            @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
+                            @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
+                            @ApiParam(value = "family", required = false) @QueryParam("family") String family,
+                            @ApiParam(value = "gender", required = false) @QueryParam("gender") String gender,
+                            @ApiParam(value = "race", required = false) @QueryParam("race") String race,
+                            @ApiParam(value = "species", required = false) @QueryParam("species") String species,
+                            @ApiParam(value = "population", required = false) @QueryParam("population") String population,
+                            @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+                            @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
+                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.individualGroupBy(query, qOptions, by, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

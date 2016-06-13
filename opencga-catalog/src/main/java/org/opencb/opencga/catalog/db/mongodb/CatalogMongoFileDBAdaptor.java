@@ -104,6 +104,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson;
         try {
             bson = parseQuery(query);
@@ -127,7 +130,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException {
         checkFileId(fileId);
-        Query query = new Query(QueryParams.ID.key(), fileId);
+        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
         return get(query, options);
     }
 
@@ -175,7 +178,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl) throws CatalogDBException {
+    public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
         checkFileId(fileId);
@@ -225,7 +228,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<FileAcl> fileAcls = getFileAcl(fileId, acl.getUsers());
-        if (fileAcls.getNumResults() > 0) {
+        if (fileAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(acl.getUsers().size());
             usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
 
@@ -240,7 +243,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetFileAcl(fileId, usersToOverride);
+            unsetFileAcl(fileId, usersToOverride, Collections.emptyList());
+        } else if (fileAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setFileAcl: " + fileAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Append the users to the existing acl.
@@ -278,7 +284,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException {
+    public void unsetFileAcl(long fileId, List<String> members, List<String> permissions) throws CatalogDBException {
 
         checkFileId(fileId);
         // Check that all the members (users) are correct and exist.
@@ -288,11 +294,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, fileId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = fileCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
-                throw new CatalogDBException("unsetFileAcl: An error occurred when trying to stop sharing file " + fileId
-                        + " with other " + member + ".");
+                throw new CatalogDBException("unsetFileAcl: An error occurred when trying to remove the ACL in file " + fileId
+                        + " for member " + member + ".");
             }
         }
 
@@ -340,9 +351,9 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
-        Bson unwind = Aggregates.unwind("$acl");
-        Bson match2 = Aggregates.match(Filters.in("acl.userId", userIds));
-        Bson project = Aggregates.project(Projections.include("id", "path", "acl"));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), userIds));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACLS.key()));
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(result);
@@ -423,7 +434,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         // If the user wants to change the diskUsages of the file(s), we first make a query to obtain the old values.
         QueryResult fileQueryResult = null;
         if (parameters.containsKey(QueryParams.DISK_USAGE.key())) {
-            QueryOptions queryOptions = new QueryOptions(MongoDBCollection.INCLUDE, Arrays.asList(
+            QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, Arrays.asList(
                     FILTER_ROUTE_FILES + QueryParams.DISK_USAGE.key(), FILTER_ROUTE_FILES + PRIVATE_STUDY_ID));
             fileQueryResult = nativeGet(query, queryOptions);
         }
@@ -445,7 +456,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
        // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
@@ -550,7 +561,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
                 + File.FileStatus.REMOVED);
         if (count(query).first() == 0) {
             query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
             File file = get(query, options).first();
             throw new CatalogDBException("The file {" + id + "} was already " + file.getStatus().getStatus());
         }
@@ -746,10 +757,6 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     private Bson parseQuery(Query query) throws CatalogDBException {
         List<Bson> andBsonList = new ArrayList<>();
-
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
@@ -949,5 +956,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         // Remove references from jobs
         result = dbAdaptorFactory.getCatalogJobDBAdaptor().extractFilesFromJobs(Collections.singletonList(fileId));
         logger.debug("FileId {} extracted from {} jobs", fileId, result.first());
+    }
+
+    public QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException {
+        long startTime = startQuery();
+        Bson bsonQuery = parseQuery(query);
+        Bson update = new Document("$pull", new Document(QueryParams.SAMPLE_IDS.key(), new Document("$in", sampleIds)));
+        QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
+        QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
+        return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
     }
 }

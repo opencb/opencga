@@ -37,6 +37,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -84,7 +85,7 @@ public class OpenCGAWSServer {
     @DefaultValue("-1")
     @QueryParam("limit")
     @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
-    protected long limit;
+    protected int limit;
 
     @DefaultValue("0")
     @QueryParam("skip")
@@ -128,6 +129,9 @@ public class OpenCGAWSServer {
 
     protected static StorageConfiguration storageConfiguration;
     protected static StorageManagerFactory storageManagerFactory;
+
+    private static final int DEFAULT_LIMIT = 2000;
+    private static final int MAX_LIMIT = 5000;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -199,6 +203,10 @@ public class OpenCGAWSServer {
         if (configDirPath != null && Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
+
+            // Required for reading the analysis.properties file.
+            // TODO: Remove when analysis.properties is totally migrated to configuration.yml
+            Config.setOpenCGAHome(configDirPath.getParent().toString());
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
@@ -302,20 +310,21 @@ public class OpenCGAWSServer {
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-        String limit = multivaluedMap.getFirst("limit");
-        if (limit != null) {
-            this.limit = Integer.parseInt(limit);
-            queryOptions.put("limit", this.limit);
-        }
 
-        String skip = multivaluedMap.getFirst("skip");
+        String limitStr = multivaluedMap.getFirst(QueryOptions.LIMIT);
+        if (StringUtils.isNotEmpty(limitStr)) {
+            limit = Integer.parseInt(limitStr);
+        }
+        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+
+        String skip = multivaluedMap.getFirst(QueryOptions.SKIP);
         if (skip != null) {
             this.skip = Integer.parseInt(skip);
-            queryOptions.put("skip", this.skip);
+            queryOptions.put(QueryOptions.SKIP, this.skip);
         }
 
-        parseIncludeExclude(multivaluedMap, "exclude", exclude);
-        parseIncludeExclude(multivaluedMap, "include", include);
+        parseIncludeExclude(multivaluedMap, QueryOptions.EXCLUDE, exclude);
+        parseIncludeExclude(multivaluedMap, QueryOptions.INCLUDE, include);
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
         // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute

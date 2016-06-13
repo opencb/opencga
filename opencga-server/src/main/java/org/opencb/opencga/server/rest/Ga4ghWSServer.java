@@ -28,7 +28,7 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 
 @Path("/{version}/ga4gh")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "GA4GH", position = 20, description = "Global Alliance for Genomics & Health RESTful API")
+@Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {
 
     public Ga4ghWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

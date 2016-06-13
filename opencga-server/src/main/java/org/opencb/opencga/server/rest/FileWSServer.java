@@ -332,7 +332,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/content-grep")
+    @Path("/{fileId}/grep")
     @ApiOperation(value = "File content", position = 7)
     public Response downloadGrep(
             @PathParam(value = "fileId") @FormDataParam("fileId") String fileIdStr,
@@ -472,8 +472,8 @@ public class FileWSServer extends OpenCGAWSServer {
                 logger.debug("Name attribute empty, it's been removed");
             }
 
-            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
-                qOptions.put(MongoDBCollection.LIMIT, 1000);
+            if (!qOptions.containsKey(QueryOptions.LIMIT)) {
+                qOptions.put(QueryOptions.LIMIT, 1000);
                 logger.debug("Adding a limit of 1000");
             }
             logger.debug("query = " + query.toJson());
@@ -847,33 +847,34 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileIds}/share")
-    @ApiOperation(value = "Share file with other user", position = 16)
+    @ApiOperation(value = "Share files with other members", position = 17)
     public Response share(@PathParam(value = "fileIds") String fileIds,
-                          @ApiParam(value = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userIds") String userIds,
-                          @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
-                          @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
-                          @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
-                          @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
-                          /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
-
-        QueryResult queryResult;
+                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                          @ApiParam(value = "Comma separated list of file permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
         try {
-            if (unshare) {
-                queryResult = catalogManager.unshareFile(fileIds, userIds, sessionId);
-            } else {
-                queryResult = catalogManager.shareFile(fileIds, userIds, new AclEntry("", read, write, false, delete), sessionId);
-            }
-
-            return createOkResponse(queryResult);
+            return createOkResponse(catalogManager.shareFile(fileIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
+    }
 
+    @GET
+    @Path("/{fileIds}/unshare")
+    @ApiOperation(value = "Remove the permissions for the list of members", position = 18)
+    public Response unshare(@PathParam(value = "fileIds") String fileIds,
+                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                            @ApiParam(value = "Comma separated list of file permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+        try {
+            return createOkResponse(catalogManager.unshareFile(fileIds, members, permissions, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/link")
-    @ApiOperation(value = "Link an external file into catalog.", position = 17)
+    @ApiOperation(value = "Link an external file into catalog.", position = 19)
     public Response link(@ApiParam(required = true) @QueryParam("uri") String uriStr,
                          @ApiParam(required = true) @QueryParam("studyId") String studyIdStr,
                          @ApiParam(required = true) @QueryParam("path") String path,
@@ -920,7 +921,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/unlink")
-    @ApiOperation(value = "Unlink an external file from catalog.", position = 17)
+    @ApiOperation(value = "Unlink an external file from catalog.", position = 20)
     public Response link(@ApiParam(required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
         try {
             QueryResult<File> queryResult = catalogManager.unlink(Integer.parseInt(fileIdStr), sessionId);
@@ -933,7 +934,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/relink")
-    @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", position = 17)
+    @ApiOperation(value = "Change file location. Provided file must be either STAGE or be an external file.", position = 21)
     public Response relink(@ApiParam(value = "File ID") @PathParam("fileId") @DefaultValue("") String fileIdStr,
                            @ApiParam(value = "new URI" ,required = true) @QueryParam("uri") String uriStr,
                            @ApiParam(value = "Do calculate checksum for new files", required = false) @DefaultValue("false") @QueryParam("calculateChecksum") boolean calculateChecksum ) {
@@ -960,7 +961,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/refresh")
-    @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", position = 17)
+    @ApiOperation(value = "Refresh metadata from the selected file or folder. Return updated files.", position = 22)
     public Response refresh(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr) {
         try {
             long fileId = catalogManager.getFileId(fileIdStr);
@@ -995,11 +996,47 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/delete")
-    @ApiOperation(value = "Delete file", position = 17)
+    @ApiOperation(value = "Delete file", position = 23)
     public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr) {
         try {
             long fileId = catalogManager.getFileId(fileIdStr);
             QueryResult result = catalogManager.deleteFile(fileId, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group files by several fields", position = 24)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyStr,
+                            @ApiParam(value = "Comma separated list of ids.", required = false) @DefaultValue("") @QueryParam("id") String ids,
+                           @ApiParam(value = "Comma separated list of names.", required = false) @DefaultValue("") @QueryParam("name") String names,
+                           @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
+                           @ApiParam(value = "Comma separated Type values.", required = false) @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "Comma separated Bioformat values.", required = false) @DefaultValue("") @QueryParam("bioformat") String bioformat,
+                           @ApiParam(value = "Comma separated Format values.", required = false) @DefaultValue("") @QueryParam("format") String formats,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
+                           @ApiParam(value = "directory", required = false) @DefaultValue("") @QueryParam("directory") String directory,
+                           @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                           @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+                           @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                           @ApiParam(value = "diskUsage", required = false) @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
+                           @ApiParam(value = "Comma separated sampleIds", required = false) @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
+                           @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
+                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.fileGroupBy(query, qOptions, by, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -28,10 +28,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
-import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
+import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -124,6 +121,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         List<Dataset> datasets = study.getDatasets();
         study.setDatasets(Collections.emptyList());
 
+        List<DiseasePanel> panels = study.getPanels();
+        study.setPanels(Collections.emptyList());
+
         //Create DBObject
         Document studyObject = getMongoDBDocument(study, "Study");
         studyObject.put(PRIVATE_ID, newId);
@@ -172,6 +172,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             }
         }
 
+        for (DiseasePanel diseasePanel : panels) {
+            String fileErrorMsg = dbAdaptorFactory.getCatalogPanelDBAdaptor().createPanel(study.getId(), diseasePanel, options)
+                    .getErrorMsg();
+            if (fileErrorMsg != null && !fileErrorMsg.isEmpty()) {
+                errorMsg += diseasePanel.getName() + ":" + fileErrorMsg + ", ";
+            }
+        }
+
         QueryResult<Study> result = getStudy(study.getId(), options);
         List<Study> studyList = result.getResult();
         return endQuery("Create Study", startTime, studyList, errorMsg, null);
@@ -182,7 +190,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException {
         checkStudyId(studyId);
-        return get(new Query(QueryParams.ID.key(), studyId), options);
+        return get(new Query(QueryParams.ID.key(), studyId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
     }
 
     @Override
@@ -224,8 +232,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public String getStudyOwnerId(long studyId) throws CatalogDBException {
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, FILTER_ROUTE_STUDIES + QueryParams.OWNER_ID.key());
-        return getStudy(studyId, queryOptions).first().getOwnerId();
+        return dbAdaptorFactory.getCatalogProjectDbAdaptor().getProjectOwnerId(getProjectIdByStudyId(studyId));
     }
 
     @Override
@@ -490,15 +497,22 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
-        Bson pull = Updates.pull("groups.$.userIds", members);
+        Bson pull = Updates.pullAll("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
         if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId);
         }
+
+        // Remove the group in case there are no users in it
+        Bson queryBson = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_ID.key(), groupId).append(
+                QueryParams.GROUP_USER_IDS.key(), new Document("$eq", Collections.emptyList()));
+        pull = new Document("$pull", new Document("groups", new Document("userIds", Collections.emptyList())));
+        studyCollection.update(queryBson, pull, null);
     }
 
     @Override
-    public QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members) throws CatalogDBException {
+    public QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members, boolean override)
+            throws CatalogDBException {
         long startTime = startQuery();
 
         checkStudyId(studyId);
@@ -546,7 +560,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Check if the members of the new acl already have some permissions set
         QueryResult<StudyAcl> studyAcls = getStudyAcl(studyId, null, membersAcl);
-        if (studyAcls.getNumResults() > 0) {
+        if (studyAcls.getNumResults() > 0 && override) {
             Set<String> usersSet = new HashSet<>(membersAcl.size());
             usersSet.addAll(membersAcl.stream().collect(Collectors.toList()));
 
@@ -562,6 +576,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
             unsetStudyAcl(studyId, usersToOverride);
+        } else if (studyAcls.getNumResults() > 0 && !override) {
+            throw new CatalogDBException("setStudyAcl: " + studyAcls.getNumResults() + " of the members already had an Acl set. If you "
+                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
         }
 
         // Check if the permissions found on acl already exist on cohort id
@@ -591,6 +608,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         dbAdaptorFactory.getCatalogDatasetDBAdaptor().unsetDatasetAclsInStudy(studyId, members);
         dbAdaptorFactory.getCatalogIndividualDBAdaptor().unsetIndividualAclsInStudy(studyId, members);
         dbAdaptorFactory.getCatalogCohortDBAdaptor().unsetCohortAclsInStudy(studyId, members);
+        dbAdaptorFactory.getCatalogPanelDBAdaptor().unsetPanelAclsInStudy(studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
@@ -663,6 +681,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         if (variable.isRequired()) {
             dbAdaptorFactory.getCatalogSampleDBAdaptor().addVariableToAnnotations(variableSetId, variable);
+            dbAdaptorFactory.getCatalogCohortDBAdaptor().addVariableToAnnotations(variableSetId, variable);
         }
         return endQuery("Add field to variable set", startTime, getVariableSet(variableSetId, null));
     }
@@ -705,6 +724,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // 4. Change the field id in the annotations
         dbAdaptorFactory.getCatalogSampleDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().renameAnnotationField(variableSetId, oldName, newName);
 
         return endQuery("Rename field in variableSet", startTime, getVariableSet(variableSetId, null));
     }
@@ -730,6 +750,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Remove all the annotations from that field
         dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAnnotationField(variableSetId, name);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAnnotationField(variableSetId, name);
 
         return endQuery("Remove field from Variable Set", startTime, getVariableSet(variableSetId, null));
     }
@@ -919,10 +940,20 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         QueryResult<Individual> individuals = dbAdaptorFactory.getCatalogIndividualDBAdaptor().get(
                 new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
-        if (samples.getNumResults() != 0) {
+        if (individuals.getNumResults() != 0) {
             String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of individuals : [";
             for (Individual individual : individuals.getResult()) {
                 msg += " { id: " + individual.getId() + ", name: \"" + individual.getName() + "\" },";
+            }
+            msg += "]";
+            throw new CatalogDBException(msg);
+        }
+        QueryResult<Cohort> cohorts = dbAdaptorFactory.getCatalogCohortDBAdaptor().get(
+                new Query(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId), new QueryOptions());
+        if (cohorts.getNumResults() != 0) {
+            String msg = "Can't delete VariableSetId, still in use as \"variableSetId\" of samples : [";
+            for (Cohort cohort : cohorts.getResult()) {
+                msg += " { id: " + cohort.getId() + ", name: \"" + cohort.getName() + "\" },";
             }
             msg += "]";
             throw new CatalogDBException(msg);
@@ -1015,7 +1046,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -1034,6 +1067,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
+        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
         if (options != null) {
@@ -1090,8 +1126,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.OWNER_ID.key(),
-                QueryParams.DESCRIPTION.key(), QueryParams.CIPHER.key(), };
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
+                QueryParams.CIPHER.key(), };
         filterStringParams(parameters, studyParameters, acceptedParams);
 
         String[] acceptedLongParams = {QueryParams.DISK_USAGE.key()};
@@ -1110,7 +1146,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             studyParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!studyParameters.isEmpty()) {
@@ -1426,9 +1462,6 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     private Bson parseQuery(Query query) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
-        }
         List<Bson> andBsonList = new ArrayList<>();
 
         for (Map.Entry<String, Object> entry : query.entrySet()) {

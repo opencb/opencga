@@ -1,14 +1,14 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
-import com.mongodb.client.FindIterable;
-import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.commons.io.DataReader;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     private final MongoDBCollection stageCollection;
     private final int studyId;
     private final Collection<String> chromosomes;
-    private MongoCursor<Document> iterator;
+    private MongoPersistentCursor iterator;
     private Document next = null;   // Pending variant
 
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageReader.class);
@@ -68,11 +68,14 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     public boolean open() {
         //Filter documents with the selected studyId and chromosomes
         //Sorting by _id
-        FindIterable<Document> iterable = stageCollection.nativeQuery().find(getQuery(),
-                new QueryOptions(MongoDBCollection.SORT, Sorts.ascending("_id"))
-        );
-        iterable.batchSize(20);
-        this.iterator = iterable.iterator();
+//        FindIterable<Document> iterable = stageCollection.nativeQuery().find(getQuery(),
+//                new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))
+//        );
+//        iterable.batchSize(20);
+//        this.iterator = iterable.iterator();
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"));
+        iterator = new MongoPersistentCursor(stageCollection, getQuery(), null, options)
+                .setBatchSize(20);
         return true;
     }
 
@@ -80,7 +83,9 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         ArrayList<Bson> chrFilters = new ArrayList<>(chromosomes.size());
 
         for (String chromosome : chromosomes) {
-            chrFilters.add(regex("_id", (chromosome.length() == 1 ? "^ " : "^") + chromosome + ":"));
+            chromosome = VariantStringIdComplexTypeConverter.convertChromosome(chromosome);
+            chrFilters.add(gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR));
+            chrFilters.add(lt("_id", chromosome + (VariantStringIdComplexTypeConverter.SEPARATOR_CHAR + 1)));
         }
         if (chrFilters.isEmpty()) {
             return exists(Integer.toString(studyId));
@@ -108,7 +113,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
 
         if (iterator.hasNext()) {
             // Obtain the LastVariant from the read LastDocument
-            Variant lastVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(last.getString("_id"));
+            Variant lastVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(last);
             int start = lastVar.getStart();
             int end = lastVar.getEnd();
             String chr = lastVar.getChromosome();
@@ -116,7 +121,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
                 // Get the next document. Check if this should be in the current batch.
                 // If not, will be added as the first element of the next batch
                 next = iterator.next();
-                Variant nextVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(next.getString("_id"));
+                Variant nextVar = MongoDBVariantStageLoader.STRING_ID_CONVERTER.convertToDataModelType(next);
 
                 // If the last and next variants overlaps, add next to the batch.
                 if (nextVar.overlapWith(chr, start, end, true)) {

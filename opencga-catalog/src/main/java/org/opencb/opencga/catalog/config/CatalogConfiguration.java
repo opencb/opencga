@@ -43,6 +43,7 @@ public class CatalogConfiguration {
     private Admin admin;
     private Monitor monitor;
     private Execution execution;
+    private Audit audit;
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
@@ -90,7 +91,6 @@ public class CatalogConfiguration {
         return catalogConfiguration;
     }
 
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("CatalogConfiguration{");
@@ -104,6 +104,7 @@ public class CatalogConfiguration {
         sb.append(", admin=").append(admin);
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
+        sb.append(", audit=").append(audit);
         sb.append(", emailServer=").append(emailServer);
         sb.append(", database=").append(database);
         sb.append('}');
@@ -215,6 +216,15 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setDatabase(DatabaseCredentials database) {
         this.database = database;
+        return this;
+    }
+
+    public Audit getAudit() {
+        return audit;
+    }
+
+    public CatalogConfiguration setAudit(Audit audit) {
+        this.audit = audit;
         return this;
     }
 }
