@@ -73,9 +73,6 @@ public abstract class StorageManager<DBADAPTOR> {
             testConnection();
         }
 
-        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
-        monitor.start();
-
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
             StorageETL storageETL = newStorageETL(doLoad);
@@ -104,7 +101,6 @@ public abstract class StorageManager<DBADAPTOR> {
 
             MemoryUsageMonitor.logMemory(logger);
         }
-        monitor.interrupt();
 
         return results;
     }

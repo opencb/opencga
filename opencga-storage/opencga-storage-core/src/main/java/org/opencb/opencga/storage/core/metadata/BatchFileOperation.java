@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant.metadata;
+package org.opencb.opencga.storage.core.metadata;
 
 import java.util.Date;
 import java.util.List;

@@ -19,16 +19,15 @@ package org.opencb.opencga.storage.core.variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
@@ -48,8 +47,21 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
 
-    //FIXME This is a temporary method
-    public void setDefaultQueryOptions(QueryOptions options) {
+    public long lockStudy(int studyId) throws StorageManagerException {
+        try {
+            return lockStudy(studyId, 10000, 20000);
+        } catch (InterruptedException | TimeoutException e) {
+            throw new StorageManagerException("Unable to lock the Study " + studyId, e);
+        }
+    }
+
+    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+        logger.warn("Ignoring lock");
+        return 0;
+    }
+
+    public void unLockStudy(int studyId, long lockId) {
+        logger.warn("Ignoring unLock");
     }
 
     protected abstract QueryResult internalUpdateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options);
@@ -130,7 +142,15 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     }
 
     public List<String> getStudyNames(QueryOptions options) {
-        return null;
+        return new ArrayList<>(getStudies(options).keySet());
+    }
+
+    public List<Integer> getStudyIds(QueryOptions options) {
+        return new ArrayList<>(getStudies(options).values());
+    }
+
+    public Map<String, Integer> getStudies(QueryOptions options) {
+        return Collections.emptyMap();
     }
 
     public final QueryResult updateStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options) {

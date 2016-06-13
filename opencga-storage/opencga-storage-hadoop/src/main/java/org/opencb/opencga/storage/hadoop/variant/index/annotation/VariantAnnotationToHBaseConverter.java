@@ -3,13 +3,14 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PFloat;
 import org.apache.phoenix.schema.types.PIntegerArray;
 import org.apache.phoenix.schema.types.PVarcharArray;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.HashSet;
@@ -31,6 +32,7 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
     public VariantAnnotationToHBaseConverter(GenomeHelper genomeHelper) {
         this.genomeHelper = genomeHelper;
     }
+    private final Logger logger = LoggerFactory.getLogger(VariantAnnotationToHBaseConverter.class);
 
     @Override
     public Put convert(VariantAnnotation variantAnnotation) {
@@ -45,16 +47,24 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
 
         Set<String> genes = new HashSet<>();
         Set<String> transcript = new HashSet<>();
+        Set<String> flags = new HashSet<>();
         Set<Integer> so = new HashSet<>();
         Set<String> biotype = new HashSet<>();
         Set<Double> polyphen = new HashSet<>();
         Set<Double> sift = new HashSet<>();
+        Set<String> polyphenDesc = new HashSet<>();
+        Set<String> siftDesc = new HashSet<>();
+        Set<String> geneTraitName = new HashSet<>();
+        Set<String> geneTraitId = new HashSet<>();
+        Set<String> drugs = new HashSet<>();
+        Set<String> proteinKeywords = new HashSet<>();
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
             addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getEnsemblGeneId());
             addNotNull(transcript, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
+            addAllNotNull(flags, consequenceType.getTranscriptAnnotationFlags());
             for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
                 String accession = sequenceOntologyTerm.getAccession();
                 addNotNull(so, Integer.parseInt(accession.substring(3)));
@@ -64,11 +74,29 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
                     for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
                         if (score.getSource().equalsIgnoreCase("sift")) {
                             addNotNull(sift, score.getScore());
+                            addNotNull(siftDesc, score.getDescription());
                         } else if (score.getSource().equalsIgnoreCase("polyphen")) {
                             addNotNull(polyphen, score.getScore());
+                            addNotNull(polyphenDesc, score.getDescription());
                         }
                     }
                 }
+                if (consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
+                    proteinKeywords.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+                }
+            }
+        }
+
+        if (variantAnnotation.getGeneTraitAssociation() != null) {
+            for (GeneTraitAssociation geneTrait : variantAnnotation.getGeneTraitAssociation()) {
+                addNotNull(geneTraitName, geneTrait.getName());
+                addNotNull(geneTraitId, geneTrait.getId());
+            }
+        }
+
+        if (variantAnnotation.getGeneDrugInteraction() != null) {
+            for (GeneDrugInteraction drug : variantAnnotation.getGeneDrugInteraction()) {
+                addNotNull(drugs, drug.getDrugName());
             }
         }
 
@@ -77,40 +105,47 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         addVarcharArray(put, BIOTYPE.bytes(), biotype);
         addIntegerArray(put, SO.bytes(), so);
         addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
+        addArray(put, POLYPHEN_DESC.bytes(), polyphenDesc, (PArrayDataType) POLYPHEN_DESC.getPDataType());
         addArray(put, SIFT.bytes(), sift, (PArrayDataType) SIFT.getPDataType());
+        addArray(put, SIFT_DESC.bytes(), siftDesc, (PArrayDataType) SIFT_DESC.getPDataType());
+        addVarcharArray(put, TRANSCRIPTION_FLAGS.bytes(), flags);
+        addVarcharArray(put, GENE_TRAITS_ID.bytes(), geneTraitId);
+        addVarcharArray(put, PROTEIN_KEYWORDS.bytes(), proteinKeywords);
+        addVarcharArray(put, GENE_TRAITS_NAME.bytes(), geneTraitName);
+        addVarcharArray(put, DRUG.bytes(), drugs);
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
-                put.addColumn(genomeHelper.getColumnFamily(), getConservationColumnName(score), PFloat.INSTANCE.toBytes(score.getScore()));
+                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
+                put.addColumn(genomeHelper.getColumnFamily(), column.bytes(), column.getPDataType().toBytes(score.getScore()));
             }
         }
 
         if (variantAnnotation.getPopulationFrequencies() != null) {
-            for (PopulationFrequency populationFrequency : variantAnnotation.getPopulationFrequencies()) {
-                put.addColumn(genomeHelper.getColumnFamily(), getPopulationFrequencyColumnName(populationFrequency),
-                        PFloat.INSTANCE.toBytes(populationFrequency.getAltAlleleFreq()));
+            for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
+                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
+                put.addColumn(genomeHelper.getColumnFamily(), column.bytes(),
+                        column.getPDataType().toBytes(pf.getAltAlleleFreq()));
             }
+        }
+
+        for (Score score : variantAnnotation.getFunctionalScore()) {
+            VariantPhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
+            put.addColumn(genomeHelper.getColumnFamily(), column.bytes(), column.getPDataType().toBytes(score.getScore()));
         }
 
         return put;
     }
 
-    private byte[] getPopulationFrequencyColumnName(PopulationFrequency populationFrequency) {
-        return Bytes.toBytes(getPopulationFrequencyColumnName(populationFrequency.getStudy(),
-                populationFrequency.getPopulation()));
-    }
-
-    private String getPopulationFrequencyColumnName(String study, String population) {
-        return (study + ":" + population).toUpperCase();
-    }
-
-    private byte[] getConservationColumnName(Score score) {
-        return Bytes.toBytes(score.getSource().toUpperCase());
-    }
-
     public <T> void addNotNull(Collection<T> collection, T value) {
         if (value != null) {
             collection.add(value);
+        }
+    }
+
+    public <T> void addAllNotNull(Collection<T> collection, Collection<T> values) {
+        if (values != null) {
+            collection.addAll(values);
         }
     }
 

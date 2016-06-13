@@ -79,19 +79,19 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         }
 
         private void checkHBaseMiniCluster() throws IOException {
-            HBaseManager hBaseManager = new HBaseManager(configuration.get());
             Connection con = ConnectionFactory.createConnection(configuration.get());
+            HBaseManager hBaseManager = new HBaseManager(configuration.get(), con);
 
             String tableName = "table";
             byte[] columnFamily = Bytes.toBytes("0");
-            hBaseManager.createTableIfNeeded(con, tableName, columnFamily, Compression.Algorithm.NONE);
-            hBaseManager.act(con, tableName, table -> {
+            hBaseManager.createTableIfNeeded(tableName, columnFamily, Compression.Algorithm.NONE);
+            hBaseManager.act(tableName, table -> {
                 table.put(Arrays.asList(new Put(Bytes.toBytes("r1")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 1")),
                         new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c"), Bytes.toBytes("value 2")),
                         new Put(Bytes.toBytes("r2")).addColumn(columnFamily, Bytes.toBytes("c2"), Bytes.toBytes("value 3"))));
             });
 
-            hBaseManager.act(con, tableName, table -> {
+            hBaseManager.act(tableName, table -> {
                 table.getScanner(columnFamily).forEach(result -> {
                     System.out.println("Row: " + Bytes.toString(result.getRow()));
                     for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(columnFamily).entrySet()) {

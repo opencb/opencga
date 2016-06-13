@@ -9,12 +9,11 @@ import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 
-import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -28,15 +27,18 @@ public class VariantTableHelper extends GenomeHelper {
     private final AtomicReference<byte[]> outtable = new AtomicReference<>();
     private final AtomicReference<byte[]> intable = new AtomicReference<>();
 
-
     public VariantTableHelper(Configuration conf) {
+        this(conf, null);
+    }
+
+    public VariantTableHelper(Configuration conf, Connection con) {
         this(conf, conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_INPUT, StringUtils.EMPTY),
-                conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY));
+                conf.get(OPENCGA_STORAGE_HADOOP_VCF_TRANSFORM_TABLE_OUTPUT, StringUtils.EMPTY), con);
     }
 
 
-    public VariantTableHelper(Configuration conf, String intable, String outTable) {
-        super(conf);
+    public VariantTableHelper(Configuration conf, String intable, String outTable, Connection con) {
+        super(conf, con);
         if (StringUtils.isEmpty(outTable)) {
             throw new IllegalArgumentException("Property for Output Table name missing or empty!!!");
         }
@@ -52,7 +54,7 @@ public class VariantTableHelper extends GenomeHelper {
                 new HBaseStudyConfigurationManager(Bytes.toString(outtable.get()), this.hBaseManager.getConf(), null)) {
             QueryResult<StudyConfiguration> query = scm.getStudyConfiguration(getStudyId(), new QueryOptions());
             if (query.getResult().size() != 1) {
-                throw new NotSupportedException("Only one study configuration expected for study");
+                throw new IllegalStateException("Only one study configuration expected for study");
             }
             return query.first();
         }

@@ -7,7 +7,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -55,6 +55,7 @@ public class VariantHbaseTestUtils {
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .putAll(params);
         variantStorageManager.dropFile(studyConfiguration.getStudyName(), fileId);
+        studyConfiguration.copy(variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
 //        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
     }
 
@@ -62,12 +63,14 @@ public class VariantHbaseTestUtils {
                                          String resourceName, int fileId, StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams, boolean doTransform, boolean loadArchive, boolean loadVariant) throws Exception {
         URI fileInputUri = VariantStorageManagerTestUtils.getResourceUri(resourceName);
 
-        ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro")
+        ObjectMap params = new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto")
                 .append(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
+                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
                 .append(VariantStorageManager.Options.DB_NAME.key(), dbName).append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
                 .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, loadArchive)
                 .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, loadVariant);
 
@@ -79,8 +82,7 @@ public class VariantHbaseTestUtils {
         }
         StorageETLResult etlResult = VariantStorageManagerTestUtils.runETL(variantStorageManager, fileInputUri, outputUri, params, doTransform, doTransform, true);
         StudyConfiguration updatedStudyConfiguration = variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        studyConfiguration.setIndexedFiles(updatedStudyConfiguration.getIndexedFiles());
-        studyConfiguration.setAttributes(updatedStudyConfiguration.getAttributes());
+        studyConfiguration.copy(updatedStudyConfiguration);
 
         return variantStorageManager.readVariantSource(doTransform ? etlResult.getTransformResult() : etlResult.getInput());
     }

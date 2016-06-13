@@ -41,4 +41,8 @@ public class VcfSliceWritable implements Writable {
     public VcfSliceProtos.VcfSlice get() {
         return obj;
     }
+
+    public void setObj(VcfSliceProtos.VcfSlice obj) {
+        this.obj = obj;
+    }
 }

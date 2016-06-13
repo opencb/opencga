@@ -2,14 +2,10 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -52,16 +48,27 @@ public class VariantDBAdaptorUtils {
     }
 
     public List<Integer> getStudyIds(QueryOptions options) {
-        return getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+        return getStudyConfigurationManager().getStudyIds(options);
     }
+
+    /**
+     * Get studyIds from a list of studies.
+     * Replaces studyNames for studyIds.
+     * Excludes those studies that starts with '!'
+     *
+     * @param studiesNames  List of study names or study ids
+     * @param options       Options
+     * @return              List of study Ids
+     */
     public List<Integer> getStudyIds(List studiesNames, QueryOptions options) {
+        Map<String, Integer> studies = getStudyConfigurationManager().getStudies(options);
         List<Integer> studiesIds;
         if (studiesNames == null) {
             return Collections.emptyList();
         }
         studiesIds = new ArrayList<>(studiesNames.size());
         for (Object studyObj : studiesNames) {
-            Integer studyId = getStudyId(studyObj, options);
+            Integer studyId = getStudyId(studyObj, options, true, studies);
             if (studyId != null) {
                 studiesIds.add(studyId);
             }
@@ -73,25 +80,31 @@ public class VariantDBAdaptorUtils {
         return getStudyId(studyObj, options, true);
     }
 
-    public Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNull) {
+    public Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated) {
+        return getStudyId(studyObj, options, skipNegated, getStudyConfigurationManager().getStudies(options));
+    }
+
+    private Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated, Map<String, Integer> studies) {
         Integer studyId;
         if (studyObj instanceof Integer) {
             studyId = ((Integer) studyObj);
         } else {
             String studyName = studyObj.toString();
-            if (skipNull && studyName.startsWith("!")) { //Skip negated studies
-                studyId = null;
-            } else {
-                if (StringUtils.isNumeric(studyName)) {
-                    studyId = Integer.parseInt(studyName);
+            if (studyName.startsWith("!")) { //Skip negated studies
+                if (skipNegated) {
+                    return null;
                 } else {
-                    QueryResult<StudyConfiguration> result = getStudyConfigurationManager()
-                            .getStudyConfiguration(studyName, options);
-                    if (result.getResult().isEmpty()) {
-                        throw VariantQueryException.studyNotFound(studyName);
-                    }
-                    studyId = result.first().getStudyId();
+                    studyName = studyName.substring(1);
                 }
+            }
+            if (StringUtils.isNumeric(studyName)) {
+                studyId = Integer.parseInt(studyName);
+            } else {
+                Integer value = studies.get(studyName);
+                if (value == null) {
+                    throw VariantQueryException.studyNotFound(studyName);
+                }
+                studyId = value;
             }
         }
         return studyId;
