@@ -22,33 +22,40 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import java.io.IOException;
 
 /**
- * Created by imedina on 03/06/16.
+ * Created by agaor on 6/06/16.
  */
-public class SamplesCommandExecutor extends OpencgaCommandExecutor {
+public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions;
+    private OpencgaCliOptionsParser.IndividualsCommandsOptions individualsCommandOptions;
 
-    public SamplesCommandExecutor(OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions) {
-        super(samplesCommandOptions.commonOptions);
-        this.samplesCommandOptions = samplesCommandOptions;
+    public IndividualsCommandExecutor(OpencgaCliOptionsParser.IndividualsCommandsOptions jobsCommandOptions) {
+        super(jobsCommandOptions.commonOptions);
+        this.individualsCommandOptions = jobsCommandOptions;
     }
 
 
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing samples command line");
+        logger.debug("Executing jobs command line");
 
-        String subCommandString = samplesCommandOptions.getParsedSubCommand();
+        String subCommandString = individualsCommandOptions.getParsedSubCommand();
         switch (subCommandString) {
-            case "load":
-                load();
+
+            case "create":
+                create();
                 break;
             case "info":
                 info();
                 break;
             case "search":
                 search();
+                break;
+            case "annotate":
+                annotate();
+                break;
+            case "update":
+                update();
                 break;
             case "delete":
                 delete();
@@ -60,19 +67,27 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void load() throws CatalogException, IOException {
-        logger.debug("Loading samples from a pedigree file");
-    }
-    private void info() throws CatalogException {
-        logger.debug("Getting samples information");
-    }
-    private void search() throws CatalogException {
-        logger.debug("Search samples");
-    }
-    private void delete() throws CatalogException {
-        logger.debug("Deleting the select sample");
+    private void create() throws CatalogException {
+        logger.debug("Creating sample");
     }
 
+
+    private void info() throws CatalogException {
+        logger.debug("Getting individual information");
+    }
+
+    private void search() throws CatalogException {
+        logger.debug("Searching individuals");
+    }
+    private void annotate() throws CatalogException {
+        logger.debug("Annotating an individual");
+    }
+    private void update() throws CatalogException {
+        logger.debug("Updating individual information");
+    }
+    private void delete() throws CatalogException {
+        logger.debug("Deleting individual information");
+    }
 
 
 

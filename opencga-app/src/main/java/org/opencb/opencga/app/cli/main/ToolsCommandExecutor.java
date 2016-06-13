@@ -24,9 +24,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
  */
 public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions toolsCommandOptions;
+    private OpencgaCliOptionsParser.ToolCommandsOptions toolsCommandOptions;
 
-    public ToolsCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions toolsCommandOptions) {
+    public ToolsCommandExecutor(OpencgaCliOptionsParser.ToolCommandsOptions toolsCommandOptions) {
         super(toolsCommandOptions.commonOptions);
         this.toolsCommandOptions = toolsCommandOptions;
     }

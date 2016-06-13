@@ -17,8 +17,14 @@
 package org.opencb.opencga.app.cli.main;
 
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created on 27/05/16.
@@ -27,25 +33,99 @@ import org.opencb.opencga.client.rest.OpenCGAClient;
  */
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
-    protected String adminPassword;
-     OpenCGAClient openCGAClient;
+    protected OpenCGAClient openCGAClient;
+    protected ClientConfiguration clientConfiguration;
 
     public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
+        this(options, false);
+    }
+
+    public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options, boolean skipDuration) {
         super(options);
-        openCGAClient = new OpenCGAClient(clientConfiguration);
+        init(skipDuration);
     }
 
-    protected void init(AdminCliOptionsParser.AdminCommonCommandOptions options) {
-        super.init(options);
-        this.adminPassword = options.adminPassword;
+    private void init(boolean skipDuration) {
+        try {
+            loadClientConfiguration();
+
+            SessionFile sessionFile = loadSessionFile();
+            System.out.println("sessionFile = " + sessionFile);
+            if (sessionFile != null) {
+                System.out.println(sessionFile.getLogout());
+                if (sessionFile.getLogout() == null) {
+                    if (skipDuration) {
+                        openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
+                    } else {
+                        int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
+                        long timestamp = sessionFile.getTimestamp();
+                        long now = System.currentTimeMillis();
+                        if ((now - timestamp) >= sessionDuration) {
+                            logger.warn("Session expired, too much time with not action");
+                            openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
+                            openCGAClient.logout();
+                            logoutSessionFile();
+//                        logoutSession();
+                        } else {
+                            logger.warn("OK!!");
+                            this.sessionId = sessionFile.getSessionId();
+                            openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
+                        }
+                    }
+                } else {
+                    logger.warn("Session already closed");
+                    openCGAClient = new OpenCGAClient(clientConfiguration);
+                }
+            } else {
+                logger.warn("No Session file");
+                openCGAClient = new OpenCGAClient(clientConfiguration);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
-    public String getAdminPassword() {
-        return adminPassword;
+    /**
+     * This method attempts to first data configuration from CLI parameter, if not present then uses
+     * the configuration from installation directory, if not exists then loads JAR storage-configuration.yml.
+     *
+     * @throws IOException If any IO problem occurs
+     */
+    public void loadClientConfiguration() throws IOException {
+        // We load configuration file either from app home folder or from the JAR
+        Path path = Paths.get(this.conf).resolve("client-configuration.yml");
+        if (path != null && Files.exists(path)) {
+            logger.debug("Loading configuration from '{}'", path.toAbsolutePath());
+            this.clientConfiguration = ClientConfiguration.load(new FileInputStream(path.toFile()));
+        } else {
+            logger.debug("Loading configuration from JAR file");
+            this.clientConfiguration = ClientConfiguration
+                    .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
+        }
     }
 
-    public CommandExecutor setAdminPassword(String adminPassword) {
-        this.adminPassword = adminPassword;
-        return this;
+    @Deprecated
+    protected void checkSessionValid() throws Exception {
+        SessionFile sessionFile = loadSessionFile();
+        if (sessionFile == null || sessionFile.getLogout() != null) {
+            System.out.println("No logged, please login first");
+        } else {
+            int sessionDuration = clientConfiguration.getSessionDuration();
+            long timestamp = sessionFile.getTimestamp();
+            long now = System.currentTimeMillis();
+            if ((now - timestamp) >= sessionDuration * 1000) {
+                System.out.println("Too much time with not action");
+                logoutSession();
+                throw new Exception("Logged out");
+            }
+        }
+    }
+
+    @Deprecated
+    protected void logoutSession() throws IOException {
+        SessionFile sessionFile = loadSessionFile();
+        openCGAClient.logout();
+
+        super.logoutSessionFile();
     }
 }

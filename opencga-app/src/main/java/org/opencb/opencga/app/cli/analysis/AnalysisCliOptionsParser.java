@@ -363,10 +363,10 @@ public class AnalysisCliOptionsParser {
 //        public String fileId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        boolean transform = false;
+        public boolean transform = false;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        boolean load = false;
+        public boolean load = false;
 
 //        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
 //        public boolean overwrite;

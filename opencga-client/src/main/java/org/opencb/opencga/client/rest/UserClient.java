@@ -29,12 +29,12 @@ import java.io.IOException;
 /**
  * Created by imedina on 04/05/16.
  */
-public class UserClient extends AbstractParentClient<User> {
+public class UserClient extends AbstractParentClient<User, User> {
 
     private static final String USERS_URL = "users";
 
-    UserClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    UserClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = USERS_URL;
         this.clazz = User.class;
@@ -50,32 +50,44 @@ public class UserClient extends AbstractParentClient<User> {
         return response;
     }
 
-    QueryResponse<ObjectMap> logout(String password) {
+    QueryResponse<ObjectMap> logout() {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, null, "logout", null, ObjectMap.class);
+            response = execute(USERS_URL, getUserId(), "logout", null, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
         return response;
     }
 
-    public QueryResponse<Project> getProjects(String userId, QueryOptions options) throws CatalogException, IOException {
-        return execute(USERS_URL, userId, "projects", options, Project.class);
+    public QueryResponse<User> get(QueryOptions options) throws CatalogException, IOException {
+        return super.get(getUserId(), options);
     }
 
-    public QueryResponse<User> changePassword(String userId, String currentPassword, String newPassword, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
-        return execute(USERS_URL, userId, "change-password", params, User.class);
+    public QueryResponse<Project> getProjects(QueryOptions options) throws CatalogException, IOException {
+        return execute(USERS_URL, getUserId(), "projects", options, Project.class);
     }
 
-    public QueryResponse<User> resetPassword(String userId, String email, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "email", email);
-        return execute(USERS_URL, userId, "change-password", params, User.class);
+    public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
+            throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
+        QueryResponse<User> execute = execute(USERS_URL, getUserId(), "change-password", params, User.class);
+        if (!execute.getError().isEmpty()) {
+            throw new CatalogException(execute.getError());
+        }
+        return execute;
     }
 
-    public QueryResponse<User> update(String userId, ObjectMap params) throws CatalogException, IOException {
-        return execute(USERS_URL, userId, "update", params, User.class);
+    public QueryResponse<User> resetPassword(String email, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "email", email);
+        return execute(USERS_URL, getUserId(), "change-password", params, User.class);
     }
 
+    public QueryResponse<User> update(ObjectMap params) throws CatalogException, IOException {
+        return execute(USERS_URL, getUserId(), "update", params, User.class);
+    }
+
+//    public QueryResponse<User> delete(ObjectMap params) throws CatalogException, IOException {
+//        return super.delete(getUserId(), params);
+//    }
 }

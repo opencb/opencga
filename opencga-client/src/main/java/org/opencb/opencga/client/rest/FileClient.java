@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -29,15 +30,21 @@ import java.net.URI;
 /**
  * Created by swaathi on 10/05/16.
  */
-public class FileClient extends AbstractParentClient<File> {
+public class FileClient extends AbstractParentClient<File, FileAcl> {
 
     private static final String FILES_URL = "files";
 
-    protected FileClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected FileClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = FILES_URL;
         this.clazz = File.class;
+        this.aclClass = FileAcl.class;
+    }
+
+    public QueryResponse<File> createFolder(String studyId, String path, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "folder", path);
+        return execute(FILES_URL, "create-folder", params, File.class);
     }
 
     public QueryResponse<File> index(String fileId, ObjectMap params) throws CatalogException, IOException {
@@ -45,12 +52,18 @@ public class FileClient extends AbstractParentClient<File> {
     }
 
     public QueryResponse<File> link(String studyId, String uri, String studyPath, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "uri", uri, "path", studyPath);
+        params = addParamsToObjectMap(params, "studyId", studyId, "uri", uri, "path", studyPath);
         return execute(FILES_URL, "link", params, File.class);
     }
 
+    public QueryResponse<File> relink(String fileId, String uri, QueryOptions options) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(options);
+        params = addParamsToObjectMap(params, "uri", uri);
+        return execute(FILES_URL, fileId, "relink", params, File.class);
+    }
+
     public QueryResponse<File> unlink(String fileId, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "fileId", fileId);
+        params = addParamsToObjectMap(params, "fileId", fileId);
         return execute(FILES_URL, "unlink", params, File.class);
     }
 
@@ -62,7 +75,8 @@ public class FileClient extends AbstractParentClient<File> {
         return execute(FILES_URL, fileId, "download", params, File.class);
     }
 
-    public QueryResponse<File> grep(String fileId, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<File> grep(String fileId, String pattern, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "pattern", pattern);
         return execute(FILES_URL, fileId, "grep", params, File.class);
     }
 
@@ -82,8 +96,17 @@ public class FileClient extends AbstractParentClient<File> {
         return execute(FILES_URL, fileId, "delete", params, File.class);
     }
 
+    public QueryResponse<File> refresh(String fileId, QueryOptions options) throws CatalogException, IOException {
+        return execute(FILES_URL, fileId, "refresh", options, File.class);
+    }
+
     /**
      * @deprecated  As of release 0.8, replaced by {@link #get(String id, QueryOptions options)}
+     * @param fileId fileId.
+     * @param options options.
+     * @return queryResponse.
+     * @throws CatalogException catalogException.
+     * @throws IOException IOException.
      */
     @Deprecated
     public QueryResponse<URI> getURI(String fileId, QueryOptions options) throws CatalogException, IOException {

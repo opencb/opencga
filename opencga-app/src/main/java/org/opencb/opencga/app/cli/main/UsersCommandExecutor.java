@@ -18,8 +18,9 @@ package org.opencb.opencga.app.cli.main;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
 
@@ -31,7 +32,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     private OpencgaCliOptionsParser.UsersCommandOptions usersCommandOptions;
 
     public UsersCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions usersCommandOptions) {
-        super(usersCommandOptions.commonOptions);
+        super(usersCommandOptions.commonOptions, usersCommandOptions.getParsedSubCommand().startsWith("log"));
         this.usersCommandOptions = usersCommandOptions;
     }
 
@@ -40,9 +41,14 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     @Override
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
-        openCGAClient = new OpenCGAClient(clientConfiguration);
+//        openCGAClient = new OpenCGAClient(clientConfiguration);
+
 
         String subCommandString = usersCommandOptions.getParsedSubCommand();
+        if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
+            checkSessionValid();
+        }
+
         switch (subCommandString) {
             case "create":
                 create();
@@ -71,9 +77,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void info() throws CatalogException {
+    private void info() throws CatalogException, IOException {
         logger.debug("User info");
-       // logger.debug(openCGAClient.getUserClient().getConfiguration().toString());
+        QueryResponse<User> user = openCGAClient.getUserClient().get(usersCommandOptions.infoCommand.up.user, null);
+        System.out.println("user = " + user);
     }
 
     private void list() throws CatalogException {
@@ -89,10 +96,10 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             //  "hgva", "hgva_cafeina", clientConfiguration
             String session = openCGAClient.login(user, password);
             // write session file
-            saveUserFile(user, session);
+            saveSessionFile(user, session);
 
             try {
-                Thread.sleep(5000);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -111,8 +118,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
 
     }
-    private void logout() throws CatalogException, IOException {
+    private void logout() throws IOException {
         logger.debug("Logout");
+        logoutSession();
     }
 
 }

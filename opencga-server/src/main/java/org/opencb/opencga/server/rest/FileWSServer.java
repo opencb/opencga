@@ -332,7 +332,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/content-grep")
+    @Path("/{fileId}/grep")
     @ApiOperation(value = "File content", position = 7)
     public Response downloadGrep(
             @PathParam(value = "fileId") @FormDataParam("fileId") String fileIdStr,
