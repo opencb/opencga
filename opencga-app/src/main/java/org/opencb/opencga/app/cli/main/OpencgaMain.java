@@ -18,9 +18,8 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
-
-import java.io.IOException;
 
 /**
  * Created by imedina on 27/05/16.
@@ -78,10 +77,10 @@ public class OpencgaMain {
 //                            commandExecutor = new ServerCommandExecutor(cliOptionsParser.getServerCommandOptions());
 //                            break;
                         case "projects":
-                            commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectCommands());
+                            commandExecutor = new ProjectsCommandExecutor(cliOptionsParser.getProjectCommandOptions());
                             break;
                         case "studies":
-                            commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudyCommands());
+                            commandExecutor = new StudiesCommandExecutor(cliOptionsParser.getStudyCommandOptions());
                             break;
                         case "files":
                             commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFileCommands());

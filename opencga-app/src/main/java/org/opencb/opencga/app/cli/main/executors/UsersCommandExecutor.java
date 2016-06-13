@@ -14,12 +14,16 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
@@ -29,14 +33,17 @@ import java.io.IOException;
  */
 public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions usersCommandOptions;
+    private UserCommandOptions usersCommandOptions;
 
-    public UsersCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions usersCommandOptions) {
-        super(usersCommandOptions.commonOptions, usersCommandOptions.getParsedSubCommand().startsWith("log"));
+    public UsersCommandExecutor(UserCommandOptions usersCommandOptions) {
+        super(usersCommandOptions.commonCommandOptions, getParsedSubCommand(usersCommandOptions.getjCommander()).startsWith("log"));
         this.usersCommandOptions = usersCommandOptions;
     }
 
-
+    public UsersCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions, UserCommandOptions usersCommandOptions) {
+        super(commonOptions, getParsedSubCommand(usersCommandOptions.getjCommander()).startsWith("log"));
+        this.usersCommandOptions = usersCommandOptions;
+    }
 
     @Override
     public void execute() throws Exception {
@@ -44,7 +51,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient = new OpenCGAClient(clientConfiguration);
 
 
-        String subCommandString = usersCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(usersCommandOptions.getjCommander());
         if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
             checkSessionValid();
         }
@@ -74,23 +81,25 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating user");
-
     }
 
     private void info() throws CatalogException, IOException {
         logger.debug("User info");
-        QueryResponse<User> user = openCGAClient.getUserClient().get(usersCommandOptions.infoCommand.up.user, null);
+        QueryResponse<User> user = openCGAClient.getUserClient().get(null);
         System.out.println("user = " + user);
     }
 
-    private void list() throws CatalogException {
+    private void list() throws CatalogException, IOException {
         logger.debug("List all projects and studies of user");
+        QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(null);
+        System.out.println("projects = " + projects);
     }
+
     private void login() throws CatalogException, IOException {
         logger.debug("Login");
 
-        String user = usersCommandOptions.loginCommand.up.user;
-        String password = usersCommandOptions.loginCommand.up.password;
+        String user = usersCommandOptions.loginCommandOptions.user;
+        String password = usersCommandOptions.loginCommandOptions.password;
 
         if (StringUtils.isNotEmpty(user) && StringUtils.isNotEmpty(password)) {
             //  "hgva", "hgva_cafeina", clientConfiguration
@@ -106,7 +115,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
 
         } else {
-            String sessionId = usersCommandOptions.loginCommand.up.sessionId;
+            String sessionId = usersCommandOptions.loginCommandOptions.sessionId;
             if (StringUtils.isNotEmpty(sessionId)) {
                 openCGAClient.setSessionId(sessionId);
             } else {

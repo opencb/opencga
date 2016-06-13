@@ -62,6 +62,11 @@ public abstract class CommandExecutor {
         init(options.logLevel, options.verbose, options.conf);
     }
 
+    public CommandExecutor(String logLevel, boolean verbose, String conf) {
+//        init(options);
+        init(logLevel, verbose, conf);
+    }
+
 //    protected void init(GeneralCliOptions.CommonCommandOptions options) {
 //        init(options.logLevel, options.verbose, options.conf);
 //    }
