@@ -16,7 +16,9 @@
 
 package org.opencb.opencga.app.cli.main;
 
+import com.beust.jcommander.JCommander;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
@@ -45,6 +47,11 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         init(skipDuration);
     }
 
+    public OpencgaCommandExecutor(String logLevel, boolean verbose, String conf, boolean skipDuration) {
+        super(logLevel, verbose, conf);
+        init(skipDuration);
+    }
+
     private void init(boolean skipDuration) {
         try {
             loadClientConfiguration();
@@ -56,6 +63,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 if (sessionFile.getLogout() == null) {
                     if (skipDuration) {
                         openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
+                        openCGAClient.setUserId(sessionFile.getUserId());
                     } else {
                         int sessionDuration = clientConfiguration.getSessionDuration() * 1000;
                         long timestamp = sessionFile.getTimestamp();
@@ -63,13 +71,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                         if ((now - timestamp) >= sessionDuration) {
                             logger.warn("Session expired, too much time with not action");
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
-                            openCGAClient.logout(sessionFile.getUserId());
+                            openCGAClient.setUserId(sessionFile.getUserId());
+                            openCGAClient.logout();
                             logoutSessionFile();
 //                        logoutSession();
                         } else {
-                            logger.warn("OK!!");
+                            logger.warn("Session ok!!");
                             this.sessionId = sessionFile.getSessionId();
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
+                            openCGAClient.setUserId(sessionFile.getUserId());
                         }
                     }
                 } else {
@@ -124,8 +134,18 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     @Deprecated
     protected void logoutSession() throws IOException {
         SessionFile sessionFile = loadSessionFile();
-        openCGAClient.logout(sessionFile.getUserId());
+        openCGAClient.logout();
 
         super.logoutSessionFile();
+    }
+
+    public static String getParsedSubCommand(JCommander jCommander) {
+        String parsedCommand = jCommander.getParsedCommand();
+        if (jCommander.getCommands().containsKey(parsedCommand)) {
+            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
+            return subCommand != null ? subCommand: "";
+        } else {
+            return "";
+        }
     }
 }

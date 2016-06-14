@@ -190,8 +190,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final List<Integer> fileIds;
     /** Indexed files in the region that we are merging. */
     private final Set<Integer> indexedFiles;
-    private Future<Long> futureNumTotalVariants = null;
-    private long numTotalVariants;
     private final DocumentToVariantConverter variantConverter;
     private final DocumentToStudyVariantEntryConverter studyConverter;
     private final StudyConfiguration studyConfiguration;
@@ -202,9 +200,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final Map<Integer, LinkedHashMap<String, Integer>> samplesPositionMap;
     private final List<Integer> indexedSamples;
 
-    private final AtomicInteger variantsCount;
     public static final int DEFAULT_LOGING_BATCH_SIZE = 5000;
+    private final AtomicInteger variantsCount;
     private long loggingBatchSize;
+    private final Future<Long> futureNumTotalVariants;
+    private final long aproxNumTotalVariants;
+    private long numTotalVariants;
+
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
     private final VariantMerger variantMerger;
     private final List<String> format;
@@ -248,8 +250,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         variantConverter = new DocumentToVariantConverter(studyConverter, null);
         result = new MongoDBVariantWriteResult();
         samplesPositionMap = new HashMap<>();
+
+        this.futureNumTotalVariants = null;
         variantsCount = new AtomicInteger(0);
+        this.aproxNumTotalVariants = 0;
         loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
+
         variantMerger = new VariantMerger();
 
     }
@@ -265,7 +271,6 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         this.dbAdaptor = dbAdaptor;
         this.collection = collection;
         this.fileIds = fileIds;
-        this.futureNumTotalVariants = futureNumTotalVariants;
         this.indexedFiles = indexedFiles;
         this.studyConfiguration = studyConfiguration;
 
@@ -279,9 +284,12 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         variantConverter = new DocumentToVariantConverter(studyConverter, null);
         result = new MongoDBVariantWriteResult();
         samplesPositionMap = new HashMap<>();
+
+        this.futureNumTotalVariants = futureNumTotalVariants;
         variantsCount = new AtomicInteger(0);
-        this.numTotalVariants = approximatedNumVariants;
+        this.aproxNumTotalVariants = approximatedNumVariants;
         loggingBatchSize = DEFAULT_LOGING_BATCH_SIZE;
+
         variantMerger = new VariantMerger();
 
     }
@@ -313,7 +321,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         List<Document> overlappedVariants = null;
 
         for (Document document : variants) {
-            Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant variant = STRING_ID_CONVERTER.convertToDataModelType(document);
             Document study = document.get(Integer.toString(studyId), Document.class);
             if (study != null) {
                 if (previousVariant != null && variant.overlapWith(chromosome, start, end, true)) {
@@ -446,7 +454,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     protected void processOverlappedVariants(List<Document> overlappedVariants, MongoDBOperations mongoDBOps) {
         for (Document document : overlappedVariants) {
-            Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(document);
             processOverlappedVariants(mainVariant, overlappedVariants, mongoDBOps);
         }
     }
@@ -480,7 +488,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             mongoDBOps.overlappedVariants++;
         } else {
 
-            Variant emptyVar = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant emptyVar = STRING_ID_CONVERTER.convertToDataModelType(document);
             Document study = document.get(studyId.toString(), Document.class);
 
             // An overlapping variant will be considered missing if is missing or duplicated for all the files
@@ -585,7 +593,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
         // For each variant, create an empty variant that will be filled by the VariantMerger
         for (Document document : overlappedVariants) {
-            Variant var = STRING_ID_CONVERTER.convertToDataModelType(document.getString("_id"));
+            Variant var = STRING_ID_CONVERTER.convertToDataModelType(document);
             if (!mainVariant.overlapWith(var, true)) {
                 // Skip those variants that do not overlap with the given main variant
                 continue;
@@ -893,8 +901,8 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     public static boolean isNewVariant(Document document, boolean newStudy) {
-        // If the document has only the study and the _id field.
-        return newStudy && document.size() == 2;
+        // If the document has only the study, _id, end, ref and alt fields.
+        return newStudy && document.size() == 5;
     }
 
     private boolean sameVariant(Variant variant, Variant other) {
@@ -905,15 +913,23 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     }
 
     protected void logProgress(int processedVariants) {
-        if (numTotalVariants <= 0) {
+        long numTotalVariants = aproxNumTotalVariants;
+        if (this.numTotalVariants <= 0) {
             try {
-                if (futureNumTotalVariants != null && futureNumTotalVariants.isDone()) {
-                    numTotalVariants = futureNumTotalVariants.get();
-                    loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
+                if (futureNumTotalVariants.isDone()) {
+                    synchronized (futureNumTotalVariants) {
+                        if (this.numTotalVariants <= 0) {
+                            numTotalVariants = futureNumTotalVariants.get();
+                            this.numTotalVariants = numTotalVariants;
+                            loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
+                        }
+                    }
                 }
             } catch (InterruptedException | ExecutionException e) {
                 throw new RuntimeException(e);
             }
+        } else {
+            numTotalVariants = this.numTotalVariants;
         }
         int previousCount = variantsCount.getAndAdd(processedVariants);
         if ((previousCount + processedVariants) / loggingBatchSize != previousCount / loggingBatchSize) {

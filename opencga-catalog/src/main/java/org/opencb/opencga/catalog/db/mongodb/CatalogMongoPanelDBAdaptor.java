@@ -141,7 +141,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetPanelAcl(panelId, usersToOverride);
+            unsetPanelAcl(panelId, usersToOverride, Collections.emptyList());
         } else if (panelAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setPanelAcl: " + panelAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -182,7 +182,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public void unsetPanelAcl(long panelId, List<String> members) throws CatalogDBException {
+    public void unsetPanelAcl(long panelId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkPanelId(panelId);
 
         // Check that all the members (users) are correct and exist.
@@ -192,7 +192,12 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, panelId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = panelCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetPanelAcl: An error occurred when trying to stop sharing panel " + panelId

@@ -283,8 +283,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                         if (queryVariantsCommandOptions.annotations != null) {
                             options.add("annotations", queryVariantsCommandOptions.annotations);
                         }
-                        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-                        variantVcfExporter.export(iterator, studyConfigurationResult.first(), outputStream, options);
+                        VariantVcfExporter.htsExport(iterator, studyConfigurationResult.first(), outputStream, options);
                     } else {
                         logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                     }

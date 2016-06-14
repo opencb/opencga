@@ -33,8 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT;
-import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
 /**
  * @author Ignacio Medina <igmecas@gmail.com>
@@ -44,42 +43,83 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     enum VariantQueryParams implements QueryParam {
-        ID("ids", TEXT_ARRAY, "CSV list of variant ids"),
-        REGION("region", TEXT_ARRAY, "CSV list of regions: {chr}:{start}-{end}"),
-        CHROMOSOME("chromosome", TEXT_ARRAY, "CSV list of chromosomes"),
-        GENE("gene", TEXT_ARRAY, "CSV list of genes"),
-        TYPE("type", TEXT_ARRAY, "Variant type: [SNV, MNV, INDEL, SV, CNV]"),
-        REFERENCE("reference", TEXT_ARRAY, "Filter by reference"),
-        ALTERNATE("alternate", TEXT_ARRAY, "Filter by alternate"),
+        ID("ids", TEXT_ARRAY,
+                "List of variant ids"),
+        REGION("region", TEXT_ARRAY,
+                "List of regions: {chr}:{start}-{end}"),
+        CHROMOSOME("chromosome", TEXT_ARRAY,
+                "List of chromosomes"),
+        GENE("gene", TEXT_ARRAY,
+                "List of genes"),
+        TYPE("type", TEXT_ARRAY,
+                "Variant type: [SNV, MNV, INDEL, SV, CNV]"),
+        REFERENCE("reference", TEXT_ARRAY,
+                "Reference allele"),
+        ALTERNATE("alternate", TEXT_ARRAY,
+                "Main alternate allele"),
         //EFFECT ("TEXT_ARRAY", null, ""),
         STUDIES("studies", TEXT_ARRAY, ""),
-        RETURNED_STUDIES("returnedStudies", TEXT_ARRAY, "Specify a list of studies to be returned"),
-        RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY, "Specify a list of samples to be returned"),
+        RETURNED_STUDIES("returnedStudies", TEXT_ARRAY,
+                "List of studies to be returned"),
+        RETURNED_SAMPLES("returnedSamples", TEXT_ARRAY,
+                "List of samples to be returned"),
         FILES("files", TEXT_ARRAY, ""),
-        RETURNED_FILES("returnedFiles", TEXT_ARRAY, "Specify a list of files to be returned"),
+        RETURNED_FILES("returnedFiles", TEXT_ARRAY,
+                "List of files to be returned"),
 
-        COHORTS("cohorts", TEXT_ARRAY, "Select variants with calculated stats for the selected cohorts"),
-        STATS_MAF("maf", TEXT_ARRAY, "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
-        STATS_MGF("mgf", TEXT_ARRAY, "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
-        MISSING_ALLELES("missingAlleles", TEXT_ARRAY, "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}"),
-        MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY, "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}"),
-        ANNOTATION_EXISTS("annotationExists", TEXT_ARRAY, "Specify if the variant annotation must exists."),
+        COHORTS("cohorts", TEXT_ARRAY,
+                "Select variants with calculated stats for the selected cohorts"),
+        STATS_MAF("maf", TEXT_ARRAY,
+                "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        STATS_MGF("mgf", TEXT_ARRAY,
+                "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        MISSING_ALLELES("missingAlleles", TEXT_ARRAY,
+                "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}"),
+        MISSING_GENOTYPES("missingGenotypes", TEXT_ARRAY,
+                "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}"),
         //[<study>:]<sample>:<genotype>[,<genotype>]*
-        GENOTYPE("genotype", TEXT_ARRAY, "Samples with a specific genotype:"
-                + " {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1"),
-        ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY, ""),
-        ANNOT_XREF("annot-xref", TEXT_ARRAY, ""),
-        ANNOT_BIOTYPE("annot-biotype", TEXT_ARRAY, ""),
-        POLYPHEN("polyphen", TEXT_ARRAY, ""),
-        SIFT("sift", TEXT_ARRAY, ""),
-        @Deprecated
-        PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY, ""),
-        CONSERVATION("conservation", TEXT_ARRAY, "Conservation score: {conservation_score}[<|>|<=|>=]{number}"
-                + " e.g. phastCons>0.5,phylop<0.1"),
-        ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY, "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
-        REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY, "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
-        POPULATION_MINOR_ALLELE_FREQUENCY("annot-population-maf", TEXT_ARRAY, "Population minor allele frequency: "
-                + "{study}:{population}[<|>|<=|>=]{number}"),
+        GENOTYPE("genotype", TEXT_ARRAY,
+                "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1"),
+
+        ANNOTATION_EXISTS("annotationExists", BOOLEAN,
+                "Specify if the variant annotation must exists."),
+        ANNOT_CONSEQUENCE_TYPE("annot-ct", TEXT_ARRAY,
+                "Consequence type SO term list. e.g. SO:0000045,SO:0000046"),
+        ANNOT_XREF("annot-xref", TEXT_ARRAY,
+                "External references."),
+        ANNOT_BIOTYPE("annot-biotype", TEXT_ARRAY,
+                "Biotype"),
+        ANNOT_POLYPHEN("polyphen", TEXT_ARRAY,
+                "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign"),
+        ANNOT_SIFT("sift", TEXT_ARRAY,
+                "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant"),
+        ANNOT_PROTEIN_SUBSTITUTION("protein_substitution", TEXT_ARRAY,
+                "Protein substitution score. {protein_score}[<|>|<=|>=]{number} or {protein_score}[~=|=|]{description} "
+                        + "e.g. polyphen>0.1 , sift=tolerant"),
+        ANNOT_CONSERVATION("conservation", TEXT_ARRAY,
+                "Conservation score: {conservation_score}[<|>|<=|>=]{number}  e.g. phastCons>0.5,phylop<0.1,gerp>0.1"),
+        ANNOT_POPULATION_ALTERNATE_FREQUENCY("alternate_frequency", TEXT_ARRAY,
+                "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
+        ANNOT_POPULATION_REFERENCE_FREQUENCY("reference_frequency", TEXT_ARRAY,
+                "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}"),
+        ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY("annot-population-maf", TEXT_ARRAY,
+                "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}"),
+        ANNOT_TRANSCRIPTION_FLAGS("annot-transcription-flags", TEXT_ARRAY,
+                "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno"),
+        ANNOT_GENE_TRAITS_ID("annot-gene-trait-id", TEXT_ARRAY,
+                "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\""),
+        ANNOT_GENE_TRAITS_NAME("annot-gene-trait-name", TEXT_ARRAY,
+                "List of gene trait association names. e.g. \"Cardiovascular Diseases\""),
+        ANNOT_HPO("annot-hpo", TEXT_ARRAY,
+                "List of HPO terms. e.g. \"HP:0000545\""),
+        ANNOT_PROTEIN_KEYWORDS("annot-protein-keywords", TEXT_ARRAY,
+                "List of protein variant annotation keywords"),
+        ANNOT_DRUG("annot-drug", TEXT_ARRAY,
+                "List of drug names"),
+        ANNOT_FUNCTIONAL_SCORE("annot-functional-score", TEXT_ARRAY,
+                "Functional score: {functional_score}[<|>|<=|>=]{number}  e.g. cadd_scaled>5.2 , cadd_raw<=0.3"),
+
+
         UNKNOWN_GENOTYPE("unknownGenotype", TEXT, "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]");
 
         VariantQueryParams(String key, Type type, String description) {
@@ -186,6 +226,18 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @return A list of QueryResult with the result of the queries
      */
     List<QueryResult<Variant>> get(List<Query> queries, QueryOptions options);
+
+    /**
+     * Return all the variants in the same phase set for a given sample in a given variant.
+     *
+     * @param variant The main variant. See {@link Variant#toString()}
+     * @param studyName Study of the sample
+     * @param sampleName Sample name
+     * @param options Other options
+     * @param windowsSize Windows size for searching the phased variants.
+     * @return A QueryResult with the result of the query
+     */
+    QueryResult<Variant> getPhased(String variant, String studyName, String sampleName, QueryOptions options, int windowsSize);
 
     /**
      * Performs a distinct operation of the given field over the returned results.

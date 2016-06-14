@@ -14,15 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
-import java.io.IOException;
-
 /**
- * Created by susi on 6/06/16.
+ * Created by agaor on 6/06/16.
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 

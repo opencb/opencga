@@ -177,7 +177,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             datasetParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!datasetParams.isEmpty()) {
@@ -351,7 +351,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetDatasetAcl(datasetId, usersToOverride);
+            unsetDatasetAcl(datasetId, usersToOverride, Collections.emptyList());
         } else if (datasetAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setDatasetAcl: " + datasetAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -392,7 +392,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException {
+    public void unsetDatasetAcl(long datasetId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkDatasetId(datasetId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByDatasetId(datasetId), members);
@@ -401,7 +401,12 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, datasetId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = datasetCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetDatasetAcl: An error occurred when trying to stop sharing dataset " + datasetId

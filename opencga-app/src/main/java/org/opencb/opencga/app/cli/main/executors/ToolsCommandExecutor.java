@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**

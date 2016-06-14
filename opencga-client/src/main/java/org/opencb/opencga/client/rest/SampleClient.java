@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -28,29 +29,30 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class SampleClient extends AbstractParentClient<Sample> {
+public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
 
     private static final String SAMPLES_URL = "samples";
 
-    protected SampleClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected SampleClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = SAMPLES_URL;
         this.clazz = Sample.class;
+        this.aclClass = SampleAcl.class;
     }
 
     public QueryResponse<Individual> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
+        params = addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
         return execute(SAMPLES_URL, "create", params, Individual.class);
     }
 
     public QueryResponse<Sample> annotate(String sampleId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "annotateSetName", annotateSetName);
+        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
         return execute(SAMPLES_URL, sampleId, "annotate", params, Sample.class);
     }
 
     public QueryResponse<Sample> loadFromPed(String studyId, String variableSetId, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "variableSetId", variableSetId);
+        params = addParamsToObjectMap(params, "studyId", studyId, "variableSetId", variableSetId);
         return execute(SAMPLES_URL, "load", params, Sample.class);
     }
 

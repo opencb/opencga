@@ -1,0 +1,11 @@
+---
+logLevel: null
+logFile: null
+rest:
+  port: 9090
+  logFile: null
+  defaultLimit: 2000
+  maxLimit: 5000
+grpc:
+  port: 9091
+  logFile: null

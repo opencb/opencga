@@ -220,12 +220,12 @@ public class VariantSqlQueryParser {
      * {@link VariantQueryParams#ANNOT_CONSEQUENCE_TYPE}
      * {@link VariantQueryParams#ANNOT_XREF}
      * {@link VariantQueryParams#ANNOT_BIOTYPE}
-     * {@link VariantQueryParams#POLYPHEN}
-     * {@link VariantQueryParams#SIFT}
-     * {@link VariantQueryParams#CONSERVATION}
-     * {@link VariantQueryParams#POPULATION_MINOR_ALLELE_FREQUENCY}
-     * {@link VariantQueryParams#ALTERNATE_FREQUENCY}
-     * {@link VariantQueryParams#REFERENCE_FREQUENCY}
+     * {@link VariantQueryParams#ANNOT_POLYPHEN}
+     * {@link VariantQueryParams#ANNOT_SIFT}
+     * {@link VariantQueryParams#ANNOT_CONSERVATION}
+     * {@link VariantQueryParams#ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY}
+     * {@link VariantQueryParams#ANNOT_POPULATION_ALTERNATE_FREQUENCY}
+     * {@link VariantQueryParams#ANNOT_POPULATION_REFERENCE_FREQUENCY}
      *
      * Stats filters:
      * {@link VariantQueryParams#STATS_MAF}
@@ -361,32 +361,32 @@ public class VariantSqlQueryParser {
 
         addSimpleQueryFilter(query, ANNOT_BIOTYPE, VariantColumn.BIOTYPE, filters);
 
-        addSimpleQueryFilter(query, SIFT, VariantColumn.SIFT, filters);
+        addSimpleQueryFilter(query, ANNOT_SIFT, VariantColumn.SIFT, filters);
 
-        addSimpleQueryFilter(query, POLYPHEN, VariantColumn.POLYPHEN, filters);
+        addSimpleQueryFilter(query, ANNOT_POLYPHEN, VariantColumn.POLYPHEN, filters);
 
-        addQueryFilter(query, CONSERVATION, (keyOpValue, rawValue) -> {
+        addQueryFilter(query, ANNOT_CONSERVATION, (keyOpValue, rawValue) -> {
             String upperCaseValue = keyOpValue[0];
             if (VariantColumn.PHASTCONS.name().equalsIgnoreCase(upperCaseValue)) {
                 return VariantColumn.PHASTCONS;
             } else if (VariantColumn.PHYLOP.name().equalsIgnoreCase(upperCaseValue)) {
                 return VariantColumn.PHYLOP;
             } else {
-                throw VariantQueryException.malformedParam(CONSERVATION, rawValue, "Unknown conservation value.");
+                throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue, "Unknown conservation value.");
             }
         }, filters, null);
 
-        if (isValidParam(query, POPULATION_MINOR_ALLELE_FREQUENCY)) {
-            logger.warn("Unsupported filter " +  POPULATION_MINOR_ALLELE_FREQUENCY);
+        if (isValidParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY)) {
+            logger.warn("Unsupported filter " + ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY);
         }
 
-        addQueryFilter(query, ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
+        addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, (keyOpValue, s) -> {
             Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
             dynamicColumns.add(column);
             return column;
         }, filters, null);
 
-        addQueryFilter(query, REFERENCE_FREQUENCY, (keyOpValue, s) -> {
+        addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY, (keyOpValue, s) -> {
             Column column = Column.build(keyOpValue[0].toUpperCase(), PFloat.INSTANCE);
             dynamicColumns.add(column);
             return column;
