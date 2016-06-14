@@ -135,7 +135,7 @@ public class OpencgaCliOptionsParser {
 
         individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("individuals", individualCommandOptions);
-        JCommander individualSubCommands = jCommander.getCommands().get("projects");
+        JCommander individualSubCommands = jCommander.getCommands().get("individuals");
         individualSubCommands.addCommand("create", individualCommandOptions.createCommandOptions);
         individualSubCommands.addCommand("info", individualCommandOptions.infoCommandOptions);
         individualSubCommands.addCommand("search", individualCommandOptions.searchCommandOptions);
@@ -162,7 +162,7 @@ public class OpencgaCliOptionsParser {
 
         cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortCommandOptions);
-        JCommander cohortSubCommands = jCommander.getCommands().get("variables");
+        JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
         cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);
         cohortSubCommands.addCommand("info", cohortCommandOptions.infoCommandOptions);
         cohortSubCommands.addCommand("samples", cohortCommandOptions.samplesCommandOptions);

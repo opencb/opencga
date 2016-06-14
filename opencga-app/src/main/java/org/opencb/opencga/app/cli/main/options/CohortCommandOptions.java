@@ -44,6 +44,7 @@ public class CohortCommandOptions {
         this.shareCommandOptions = new ShareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
     }
+
     class BaseCohortsCommand {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -82,6 +83,7 @@ public class CohortCommandOptions {
         @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
         String tagmap = null;
     }
+
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions {
 
@@ -91,8 +93,6 @@ public class CohortCommandOptions {
         @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
         public long id;
     }
-
-
 
     @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
     public class SamplesCommandOptions extends BaseCohortsCommand { }
@@ -171,8 +171,6 @@ public class CohortCommandOptions {
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
     public class UnshareCommandOptions extends BaseCohortsCommand {
-
-
         //TODO
         @Parameter(names = {"--annotateSetName"}, description = "Annotation set name. Must be unique for the cohort",required = true, arity = 1)
         String annotateSetName;
