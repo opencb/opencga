@@ -26,9 +26,9 @@ import java.io.IOException;
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions projectsCommandOptions;
+    private OpencgaCliOptionsParser.ProjectCommandsOptions projectsCommandOptions;
 
-    public ProjectsCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions projectsCommandOptions) {
+    public ProjectsCommandExecutor(OpencgaCliOptionsParser.ProjectCommandsOptions projectsCommandOptions) {
         super(projectsCommandOptions.commonOptions);
         this.projectsCommandOptions = projectsCommandOptions;
     }

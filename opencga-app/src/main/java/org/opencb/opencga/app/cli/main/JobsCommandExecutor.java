@@ -26,9 +26,9 @@ import java.io.IOException;
  */
 public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions jobsCommandOptions;
+    private OpencgaCliOptionsParser.JobsCommandsOptions jobsCommandOptions;
 
-    public JobsCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions jobsCommandOptions) {
+    public JobsCommandExecutor(OpencgaCliOptionsParser.JobsCommandsOptions jobsCommandOptions) {
         super(jobsCommandOptions.commonOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }

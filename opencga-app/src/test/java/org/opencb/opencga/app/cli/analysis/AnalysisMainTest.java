@@ -124,7 +124,7 @@ public class AnalysisMainTest {
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
         Assert.assertNotEquals(outdirId, job.getOutDirId());
 
-        // Index file4
+        // Index file4 and stats
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file4.getId()), "--calculate-stats", "--queue"});
         assertEquals(Index.IndexStatus.INDEXING, catalogManager.getFile(file4.getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.CALCULATING, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
@@ -137,8 +137,8 @@ public class AnalysisMainTest {
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file4.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
 
-        // Index file5
-        execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file5.getId())});
+        // Index file5 and annotation
+        execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", String.valueOf(file5.getId()), "--annotate"});
         assertEquals(Index.IndexStatus.READY, catalogManager.getFile(file5.getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.INVALID, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file5.getId()), null, sessionId).first();
@@ -162,25 +162,42 @@ public class AnalysisMainTest {
         Job job;
 
         File file1 = opencga.createFile(studyId, "1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+//        File file1 = opencga.createFile(studyId, "variant-test-file.vcf.gz", sessionId);
+//        File file1 = opencga.createFile(studyId, "100k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
+//        File file1 = opencga.createFile(studyId, "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz", sessionId);
 
         QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, new Query(), new QueryOptions(), sessionId);
         List<Long> sampleIds = allSamples.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        Long c1 = catalogManager.createCohort(studyId, "C1", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, 200), null, sessionId).first().getId();
-        Long c2 = catalogManager.createCohort(studyId, "C2", Cohort.Type.CONTROL_SET, "", sampleIds.subList(201, 500), null, sessionId).first().getId();
+        Long c1 = catalogManager.createCohort(studyId, "C1", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, sampleIds.size() / 2), null, sessionId).first().getId();
+        Long c2 = catalogManager.createCohort(studyId, "C2", Cohort.Type.CONTROL_SET, "", sampleIds.subList(sampleIds.size() / 2 + 1, sampleIds.size()), null, sessionId).first().getId();
+        Long c3 = catalogManager.createCohort(studyId, "C3", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, 1), null, sessionId).first().getId();
+        Sample sample = catalogManager.createSample(studyId, "Sample", "", "", null, null, sessionId).first();
+        Long c4 = catalogManager.createCohort(studyId, "C4", Cohort.Type.CONTROL_SET, "", Collections.singletonList(sample.getId()), null, sessionId).first().getId();
 
         // Index file1
-        execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats"});
+        execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats", "--annotate"});
         assertEquals(Index.IndexStatus.READY, catalogManager.getFile(file1.getId(), sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
         job = catalogManager.getAllJobs(studyId, new Query(CatalogJobDBAdaptor.QueryParams.INPUT.key(), file1.getId()), null, sessionId).first();
         assertEquals(Job.JobStatus.READY, job.getStatus().getStatus());
 
-        execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", "user@p1:s1", "--cohort-ids", c1 + "," + c2});
+        execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", "user@p1:s1", "--cohort-ids", c1 + "," + c2 + "," + c3 + "," + c4});
 
 //        execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "35,36", "--limit", "10"});
 
 
-
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: cellbase");
+        System.out.println("------------------------------------------------------");
+        execute(new String[]{"variant", "export-frequencies", "--session-id", sessionId, "--limit", "1000", "--output-format", "cellbase"});
+//        System.out.println("------------------------------------------------------");
+//        System.out.println("Export output format: avro");
+//        System.out.println("------------------------------------------------------");
+//        execute(new String[]{"variant", "query", "--session-id", sessionId, "--output-format", "avro", "--output", "/tmp/100k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz.avro.snappy"});
+        System.out.println("------------------------------------------------------");
+        System.out.println("Export output format: avro.snappy");
+        System.out.println("------------------------------------------------------");
+        execute(new String[]{"variant", "query", "--session-id", sessionId, "--return-sample", "HG00096,HG00097", "--limit", "10", "--output-format", "avro.snappy"});
         System.out.println("------------------------------------------------------");
         System.out.println("Export output format: vcf");
         System.out.println("------------------------------------------------------");

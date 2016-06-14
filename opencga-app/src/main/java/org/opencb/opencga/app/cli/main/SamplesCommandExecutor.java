@@ -26,9 +26,9 @@ import java.io.IOException;
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions samplesCommandOptions;
+    private OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions;
 
-    public SamplesCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions samplesCommandOptions) {
+    public SamplesCommandExecutor(OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions) {
         super(samplesCommandOptions.commonOptions);
         this.samplesCommandOptions = samplesCommandOptions;
     }

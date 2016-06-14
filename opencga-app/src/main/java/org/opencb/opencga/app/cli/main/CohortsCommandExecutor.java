@@ -17,7 +17,10 @@
 package org.opencb.opencga.app.cli.main;
 
 
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Sample;
 
 import java.io.IOException;
 
@@ -26,9 +29,9 @@ import java.io.IOException;
  */
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions cohortsCommandOptions;
+    private OpencgaCliOptionsParser.CohortCommandsOptions cohortsCommandOptions;
 
-    public CohortsCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions cohortsCommandOptions) {
+    public CohortsCommandExecutor(OpencgaCliOptionsParser.CohortCommandsOptions cohortsCommandOptions) {
         super(cohortsCommandOptions.commonOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
     }
@@ -63,15 +66,27 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
+        String studyId = cohortsCommandOptions.createCommand.studyId;
+        String cohortName = cohortsCommandOptions.createCommand.name;
+        openCGAClient.getCohortClient().create(studyId,cohortName,null);
+        logger.debug("Done");
     }
-    private void info() throws CatalogException {
+    private void info() throws CatalogException, IOException  {
         logger.debug("Getting cohort information");
+        QueryResponse<Cohort> info = openCGAClient.getCohortClient().get(Long.toString(cohortsCommandOptions.infoCommand.id),null);
+        System.out.println("Cohorts = " + info);
+/************************************** Mirar si hay que blindar esto mas, converison de long a string, puede ser null? lo mismo en el de abajo******************////
     }
-    private void samples() throws CatalogException {
+    private void samples() throws CatalogException, IOException  {
         logger.debug("Listing samples belonging to a cohort");
+        QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions.samplesCommand.id), null);
+        System.out.println("Samples = " + samples);
     }
     private void calculateStats() throws CatalogException {
         logger.debug("Calculating variant stats for a set of cohorts");
+        //QueryResponse<Cohort> stats = openCGAClient.getCohortClient(). no esta calculate stats o parecidoo
+        //TODO
+
     }
 
 

@@ -90,6 +90,10 @@ public class OpenCGATestExternalResource extends ExternalResource {
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
         Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("configuration-test.yml");
+        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
         // Example files
         Files.createDirectories(opencgaHome.resolve("examples"));

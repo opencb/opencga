@@ -17,7 +17,9 @@
 package org.opencb.opencga.app.cli.main;
 
 
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.File;
 
 import java.io.IOException;
 
@@ -26,9 +28,9 @@ import java.io.IOException;
  */
 public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.UsersCommandOptions filesCommandOptions;
+    private OpencgaCliOptionsParser.FileCommandsOptions filesCommandOptions;
 
-    public FilesCommandExecutor(OpencgaCliOptionsParser.UsersCommandOptions filesCommandOptions) {
+    public FilesCommandExecutor(OpencgaCliOptionsParser.FileCommandsOptions filesCommandOptions) {
         super(filesCommandOptions.commonOptions);
         this.filesCommandOptions = filesCommandOptions;
     }
@@ -80,28 +82,45 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating a new file");
+        //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
+        //TODO
     }
     private void createFolder() throws CatalogException {
         logger.debug("Creating a new folder");
+        //TODO
+
     }
 
     private void upload() throws CatalogException {
         logger.debug("Attaching a physical file to a catalog entry file");
+        //TODO
     }
 
-    private void info() throws CatalogException {
+    private void info() throws CatalogException, IOException  {
         logger.debug("Getting file information");
+        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommand.id,null);
+        System.out.println("Files = " + info);
     }
 
-    private void list() throws CatalogException {
+    private void list() throws CatalogException, IOException  {
         logger.debug("Listing files in folder");
+        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommand.id,null);
+        System.out.println("List files = " + listfiles);
+
     }
-    private void link() throws CatalogException {
-        logger.debug("Linking an external file into catalog.r");
+    private void link() throws CatalogException, IOException {
+        logger.debug("Linking an external file into catalog.");
+        String studyId = filesCommandOptions.linkCommand.studyId;
+        String uri = filesCommandOptions.linkCommand.uri;
+        String path = filesCommandOptions.createCommand.path;
+        openCGAClient.getFileClient().link(studyId,uri,path,null);
     }
 
     private void relink() throws CatalogException {
         logger.debug("Change file location. Provided file must be either STAGED or an external file");
+        //TODO
+
+
     }
 
     private void refresh() throws CatalogException {
@@ -110,10 +129,13 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private void search() throws CatalogException {
         logger.debug("Searching files");
+        //QueryResponse<File> listfiles = openCGAClient.getFileClient().search(querry, queryoptions);
+        //TODO
     }
 
     private void index() throws CatalogException {
         logger.debug("Indexing file in the selected StorageEngine");
+        //TODO
     }
 
 
