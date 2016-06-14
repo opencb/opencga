@@ -163,7 +163,7 @@
                     <programs>
                         <program>
                             <name>opencga.sh</name>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
