@@ -20,6 +20,7 @@ package org.opencb.opencga.app.cli.main.executors;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 
@@ -30,10 +31,10 @@ import java.io.IOException;
  */
 public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.FileCommandsOptions filesCommandOptions;
+    private FileCommandOptions filesCommandOptions;
 
-    public FilesCommandExecutor(OpencgaCliOptionsParser.FileCommandsOptions filesCommandOptions) {
-        super(filesCommandOptions.commonOptions);
+    public FilesCommandExecutor(FileCommandOptions filesCommandOptions) {
+        super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
     }
 
@@ -43,7 +44,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing files command line");
 
-        String subCommandString = filesCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
                 create();
@@ -100,21 +101,21 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private void info() throws CatalogException, IOException  {
         logger.debug("Getting file information");
-        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommand.id,null);
+        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id,null);
         System.out.println("Files = " + info);
     }
 
     private void list() throws CatalogException, IOException  {
         logger.debug("Listing files in folder");
-        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommand.id,null);
+        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id,null);
         System.out.println("List files = " + listfiles);
 
     }
     private void link() throws CatalogException, IOException {
         logger.debug("Linking an external file into catalog.");
-        String studyId = filesCommandOptions.linkCommand.studyId;
-        String uri = filesCommandOptions.linkCommand.uri;
-        String path = filesCommandOptions.createCommand.path;
+        String studyId = filesCommandOptions.linkCommandOptions.studyId;
+        String uri = filesCommandOptions.linkCommandOptions.uri;
+        String path = filesCommandOptions.createCommandOptions.path;
         openCGAClient.getFileClient().link(studyId,uri,path,null);
     }
 

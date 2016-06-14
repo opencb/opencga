@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
@@ -26,11 +27,11 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.IndividualsCommandsOptions individualsCommandOptions;
+    private IndividualCommandOptions individualsCommandOptions;
 
-    public IndividualsCommandExecutor(OpencgaCliOptionsParser.IndividualsCommandsOptions jobsCommandOptions) {
-        super(jobsCommandOptions.commonOptions);
-        this.individualsCommandOptions = jobsCommandOptions;
+    public IndividualsCommandExecutor(IndividualCommandOptions individualsCommandOptions) {
+        super(individualsCommandOptions.commonCommandOptions);
+        this.individualsCommandOptions = individualsCommandOptions;
     }
 
 
@@ -39,7 +40,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing jobs command line");
 
-        String subCommandString = individualsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(individualsCommandOptions.jCommander);
         switch (subCommandString) {
 
             case "create":
