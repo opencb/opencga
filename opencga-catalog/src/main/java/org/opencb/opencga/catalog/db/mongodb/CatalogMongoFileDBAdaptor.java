@@ -612,10 +612,29 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        // TODO: Check that the array of sampleIds still contains active samples. Delete references that might not be active any more.
-        // TODO: If the jobId is > 0, check if that job is still present, otherwise set it to -1.
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore files", startTime, setStatus(query, File.FileStatus.READY));
+    }
+
+    @Override
+    public QueryResult<File> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkFileId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The file {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, File.FileStatus.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore file", startTime, get(query, null));
     }
 
     public QueryResult<File> clean(int id) throws CatalogDBException {

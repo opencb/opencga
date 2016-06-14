@@ -410,6 +410,7 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getStudyId(userId, studyId);
     }
 
+    @Deprecated
     public long getFileId(String id) throws CatalogException {
         return fileManager.getFileId(id);
     }

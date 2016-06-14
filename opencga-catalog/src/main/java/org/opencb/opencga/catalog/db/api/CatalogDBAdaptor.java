@@ -89,7 +89,9 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
-    QueryResult<Long> restore(Query query) throws CatalogDBException;
+    QueryResult<T> restore(long id, QueryOptions queryOptions) throws CatalogDBException;
+
+    QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
 
 //    QueryResult<Long> updateStatus(Query query, Status status) throws CatalogDBException;
