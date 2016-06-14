@@ -27,12 +27,14 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.REPLACE;
@@ -49,6 +51,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     private final boolean closeConnection;
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
+    private final MongoLock mongoLock;
 
     public MongoDBStudyConfigurationManager(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         super(null);
@@ -57,6 +60,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         closeConnection = true;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         this.collectionName = collectionName;
+        mongoLock = new MongoLock(db.getCollection(collectionName), "_lock");
     }
 
     public MongoDBStudyConfigurationManager(MongoDataStoreManager mongoManager, MongoCredentials credentials, String collectionName)
@@ -67,6 +71,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         closeConnection = false;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         this.collectionName = collectionName;
+        mongoLock = new MongoLock(db.getCollection(collectionName), "_lock");
     }
 
     @Override
@@ -77,6 +82,16 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     @Override
     protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         return internalGetStudyConfiguration(studyId, null, timeStamp, options);
+    }
+
+    @Override
+    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+        return mongoLock.lock(studyId, lockDuration, timeout);
+    }
+
+    @Override
+    public void unLockStudy(int studyId, long lockId) {
+        mongoLock.unlock(studyId, lockId);
     }
 
     private QueryResult<StudyConfiguration> internalGetStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions
