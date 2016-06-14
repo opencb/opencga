@@ -529,7 +529,7 @@ public class AdminCliOptionsParser {
     public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;
@@ -542,7 +542,7 @@ public class AdminCliOptionsParser {
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;
