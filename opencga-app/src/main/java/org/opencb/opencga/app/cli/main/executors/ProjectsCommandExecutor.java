@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.ProjectCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -26,10 +28,10 @@ import java.io.IOException;
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.ProjectCommandsOptions projectsCommandOptions;
+    private ProjectCommandOptions projectsCommandOptions;
 
-    public ProjectsCommandExecutor(OpencgaCliOptionsParser.ProjectCommandsOptions projectsCommandOptions) {
-        super(projectsCommandOptions.commonOptions);
+    public ProjectsCommandExecutor(ProjectCommandOptions projectsCommandOptions) {
+        super(projectsCommandOptions.commonCommandOptions);
         this.projectsCommandOptions = projectsCommandOptions;
     }
 
@@ -38,7 +40,7 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing variant command line");
 
-        String subCommandString = projectsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
                 create();

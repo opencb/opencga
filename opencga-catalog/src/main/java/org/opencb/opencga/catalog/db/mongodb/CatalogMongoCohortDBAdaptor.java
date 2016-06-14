@@ -686,14 +686,29 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        throw new UnsupportedOperationException("Operation not yet supported.");
-//        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED);
-//        QueryResult<Long> updateStatus = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE));
-////        QueryResult<Long> updateStatus = updateStatus(query, Cohort.CohortStatus.NONE);
-//
-//        return endQuery("Restore cohorts", startTime, Collections.singletonList(updateStatus.first()));
+    public QueryResult<Cohort> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkCohortId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The cohort {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, Cohort.CohortStatus.NONE);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore cohort", startTime, get(query, null));
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore cohorts", startTime, setStatus(query, Cohort.CohortStatus.NONE));
     }
 
 //    @Override

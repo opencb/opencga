@@ -417,8 +417,13 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        throw new UnsupportedOperationException("Operation not yet implemented.");
+    public QueryResult<DiseasePanel> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Restore not yet implemented.");
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        throw new UnsupportedOperationException("Restore not yet implemented.");
     }
 
     @Override

@@ -51,7 +51,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
 
-    default QueryResult<Long> restore(Query query) throws CatalogDBException {
+    default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
