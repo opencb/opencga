@@ -89,7 +89,7 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         if (chrFilters.isEmpty()) {
             bson = exists(Integer.toString(studyId));
         } else {
-            bson = and(exists(Integer.toString(studyId)), and(chrFilters));
+            bson = and(exists(Integer.toString(studyId)), or(chrFilters)); // Be in any of these chromosomes
         }
         logger.debug("stage filter: " +  bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         return bson;
@@ -97,8 +97,9 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
 
     public static void addChromosomeFilter(List<Bson> chrFilters, String chromosome) {
         chromosome = VariantStringIdComplexTypeConverter.convertChromosome(chromosome);
-        chrFilters.add(gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR));
-        chrFilters.add(lt("_id", chromosome + (char)(VariantStringIdComplexTypeConverter.SEPARATOR_CHAR + 1)));
+        chrFilters.add(and(
+                gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR),
+                lt("_id", chromosome + (char) (VariantStringIdComplexTypeConverter.SEPARATOR_CHAR + 1))));
     }
 
     @Override
