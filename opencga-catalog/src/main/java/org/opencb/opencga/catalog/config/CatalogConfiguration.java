@@ -18,12 +18,14 @@ package org.opencb.opencga.catalog.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.List;
 
 /**
  * Created by imedina on 16/03/16.
@@ -44,6 +46,8 @@ public class CatalogConfiguration {
     private Monitor monitor;
     private Execution execution;
     private Audit audit;
+
+    private List<StudyAcl> acls;
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
@@ -105,6 +109,7 @@ public class CatalogConfiguration {
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
+        sb.append(", acls=").append(acls);
         sb.append(", emailServer=").append(emailServer);
         sb.append(", database=").append(database);
         sb.append('}');
@@ -225,6 +230,15 @@ public class CatalogConfiguration {
 
     public CatalogConfiguration setAudit(Audit audit) {
         this.audit = audit;
+        return this;
+    }
+
+    public List<StudyAcl> getAcls() {
+        return acls;
+    }
+
+    public CatalogConfiguration setAcls(List<StudyAcl> acls) {
+        this.acls = acls;
         return this;
     }
 }

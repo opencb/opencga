@@ -392,9 +392,9 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     private void checkUserExists(String userId) throws CatalogException {
-        if (userId.equals("admin")) {
+        if (userId.toLowerCase().equals("admin")) {
             throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
-        } else if (userId.equals("anonymous") || userId.equals("*")) {
+        } else if (userId.toLowerCase().equals("anonymous") || userId.toLowerCase().equals("daemon") || userId.equals("*")) {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 
