@@ -297,18 +297,24 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
         // Delete those new studies that have duplicated variants. Those are not inserted, so they are not new variants.
         // i.e: For each file, or the file has not been loaded (empty), or the file has more than one element.
         //     { $or : [ { <study>.<file>.0 : {$exists:false} }, { <study>.<file>.1 : {$exists:true} } ] }
-        List<Bson> filters = new LinkedList<>();
+        List<Bson> filters = new ArrayList<>();
+        Bson chrFilter;
+        if (chromosomes != null) {
+            List<Bson> chrFilters = new ArrayList<>();
+            for (String chromosome : chromosomes) {
+                MongoDBVariantStageReader.addChromosomeFilter(chrFilters, chromosome);
+            }
+            chrFilter = or(chrFilters);
+        } else {
+            chrFilter = new Document();
+        }
+
         filters.add(exists(studyId + "." + NEW_STUDY_FIELD, false));
         for (Integer fileId : fileIds) {
             filters.add(or(exists(studyId + "." + fileId + ".0", false), exists(studyId + "." + fileId + ".1")));
         }
-        if (chromosomes != null) {
-            for (String chromosome : chromosomes) {
-                MongoDBVariantStageReader.addChromosomeFilter(filters, chromosome);
-            }
-        }
         long modifiedCount = stageCollection.update(
-                and(filters), unset(Integer.toString(studyId)),
+                and(chrFilter, and(filters)), unset(Integer.toString(studyId)),
                 new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
 
 
@@ -319,14 +325,9 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 //            updates.add(unset(studyId + "." + fileId));
             updates.add(set(studyId + "." + fileId, null));
         }
-        if (chromosomes != null) {
-            for (String chromosome : chromosomes) {
-                MongoDBVariantStageReader.addChromosomeFilter(filters, chromosome);
-            }
-        }
         updates.add(set(studyId + "." + NEW_STUDY_FIELD, false));
-        modifiedCount += stageCollection.update(or(filters), combine(updates), new QueryOptions(MongoDBCollection.MULTI, true))
-                .first().getModifiedCount();
+        modifiedCount += stageCollection.update(and(chrFilter, or(filters)), combine(updates),
+                new QueryOptions(MongoDBCollection.MULTI, true)).first().getModifiedCount();
 
         return modifiedCount;
     }
