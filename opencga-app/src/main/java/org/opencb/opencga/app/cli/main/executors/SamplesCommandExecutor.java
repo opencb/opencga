@@ -17,8 +17,10 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParserOld;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -28,10 +30,10 @@ import java.io.IOException;
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions;
+    private SampleCommandOptions samplesCommandOptions;
 
-    public SamplesCommandExecutor(OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions) {
-        super(samplesCommandOptions.commonOptions);
+    public SamplesCommandExecutor(SampleCommandOptions samplesCommandOptions) {
+        super(samplesCommandOptions.commonCommandOptions);
         this.samplesCommandOptions = samplesCommandOptions;
     }
 
@@ -41,7 +43,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing samples command line");
 
-        String subCommandString = samplesCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(samplesCommandOptions.jCommander);
         switch (subCommandString) {
             case "load":
                 load();

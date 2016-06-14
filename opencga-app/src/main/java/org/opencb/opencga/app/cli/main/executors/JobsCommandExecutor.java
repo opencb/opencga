@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -28,10 +29,10 @@ import java.io.IOException;
  */
 public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.JobsCommandsOptions jobsCommandOptions;
+    private JobCommandOptions jobsCommandOptions;
 
-    public JobsCommandExecutor(OpencgaCliOptionsParser.JobsCommandsOptions jobsCommandOptions) {
-        super(jobsCommandOptions.commonOptions);
+    public JobsCommandExecutor(JobCommandOptions jobsCommandOptions) {
+        super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }
 
@@ -41,7 +42,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing jobs command line");
 
-        String subCommandString = jobsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(jobsCommandOptions.jCommander);
         switch (subCommandString) {
 
             case "info":

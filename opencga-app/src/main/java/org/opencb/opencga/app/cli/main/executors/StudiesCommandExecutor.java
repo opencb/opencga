@@ -79,7 +79,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new study");
         String alias = studiesCommandOptions.createCommandOptions.alias;
         String name = studiesCommandOptions.createCommandOptions.name;
-//        String description = studiesCommandOptions.createCommand.description;
+//        String description = studiesCommandOptions.createCommandOptions.description;
         String projectId = studiesCommandOptions.createCommandOptions.projectId;
         openCGAClient.getStudyClient().create(projectId,name,alias,null);
         /************************************************************************************************ OJO, ULTIMO PARAMETRO PARAMS NULL JUM */
