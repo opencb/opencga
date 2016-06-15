@@ -52,14 +52,44 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "create-folder":
                 createFolder();
                 break;
-            case "upload":
-                upload();
-                break;
             case "info":
                 info();
                 break;
+            case "download":
+                download();
+                break;
+            case "grep":
+                grep();
+                break;
+            case "search":
+                search();
+                break;
             case "list":
                 list();
+                break;
+            case "index":
+                index();
+                break;
+            case "alignament":
+                alignament();
+                break;
+            case "fetch":
+                fetch();
+                break;
+            case "share":
+                share();
+                break;
+            case "unshare":
+                unshare();
+                break;
+            case "update":
+                update();
+                break;
+            case "upload":
+                upload();
+                break;
+            case "delete":
+                delete();
                 break;
             case "link":
                 link();
@@ -67,14 +97,14 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "relink":
                 relink();
                 break;
+            case "unlink":
+                unlink();
+                break;
             case "refresh":
                 refresh();
                 break;
-            case "search":
-                search();
-                break;
-            case "index":
-                index();
+            case "group-by":
+                groupBy();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -94,10 +124,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void upload() throws CatalogException {
-        logger.debug("Attaching a physical file to a catalog entry file");
-        //TODO
-    }
+
 
     private void info() throws CatalogException, IOException  {
         logger.debug("Getting file information");
@@ -105,29 +132,13 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         System.out.println("Files = " + info);
     }
 
-    private void list() throws CatalogException, IOException  {
-        logger.debug("Listing files in folder");
-        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id,null);
-        System.out.println("List files = " + listfiles);
-
-    }
-    private void link() throws CatalogException, IOException {
-        logger.debug("Linking an external file into catalog.");
-        String studyId = filesCommandOptions.linkCommandOptions.studyId;
-        String uri = filesCommandOptions.linkCommandOptions.uri;
-        String path = filesCommandOptions.createCommandOptions.path;
-        openCGAClient.getFileClient().link(studyId,uri,path,null);
-    }
-
-    private void relink() throws CatalogException {
-        logger.debug("Change file location. Provided file must be either STAGED or an external file");
+    private void download() throws CatalogException {
+        logger.debug("Downloading file");
         //TODO
-
-
     }
-
-    private void refresh() throws CatalogException {
-        logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
+    private void grep() throws CatalogException {
+        logger.debug("Grep command: File content");
+        //TODO
     }
 
     private void search() throws CatalogException {
@@ -136,9 +147,81 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
+    private void list() throws CatalogException, IOException  {
+        logger.debug("Listing files in folder");
+        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id,null);
+        System.out.println("List files = " + listfiles);
+
+    }
+
     private void index() throws CatalogException {
         logger.debug("Indexing file in the selected StorageEngine");
         //TODO
+    }
+    private void alignament() throws CatalogException {
+        logger.debug("Fetch alignments from a BAM file");
+        //TODO
+    }
+
+    private void fetch() throws CatalogException {
+        logger.debug("File Fetch");
+        //TODO
+    }
+
+    private void share() throws CatalogException {
+        logger.debug("Sharing a file");
+        //TODO
+    }
+
+    private void unshare() throws CatalogException {
+        logger.debug("Unsharing a file");
+        //TODO
+    }
+
+    private void update() throws CatalogException {
+        logger.debug("updating file");
+        //TODO
+    }
+
+    private void upload() throws CatalogException {
+        logger.debug("uploading file");
+        //TODO
+    }
+
+    private void delete() throws CatalogException {
+        logger.debug("Deleting file");
+        //TODO
+    }
+
+    private void link() throws CatalogException, IOException {
+        logger.debug("Linking an external file into catalog.");
+        String studyId = filesCommandOptions.linkCommandOptions.studyId;
+        String uri = filesCommandOptions.linkCommandOptions.uri;
+        String path = filesCommandOptions.createCommandOptions.path;
+        openCGAClient.getFileClient().link(studyId, uri, path, null);
+    }
+
+    private void relink() throws CatalogException {
+        logger.debug("Change file location. Provided file must be either STAGED or an external file");
+        //TODO
+    }
+
+    private void unlink() throws CatalogException {
+        logger.debug("Unlink an external file from catalog");
+        //TODO
+
+    }
+
+    private void refresh() throws CatalogException {
+        logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
+    }
+
+
+
+    private void groupBy() throws CatalogException {
+        logger.debug("Grouping files by several fields");
+        //TODO
+
     }
 
 

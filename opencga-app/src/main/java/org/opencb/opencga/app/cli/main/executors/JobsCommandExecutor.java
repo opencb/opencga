@@ -45,17 +45,29 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(jobsCommandOptions.jCommander);
         switch (subCommandString) {
 
+            case "create":
+                create();
+                break;
             case "info":
                 info();
                 break;
-            case "finished":
-                finished();
+            case "search":
+                search();
                 break;
-            case "status":
-                status();
+            case "visit":
+                visit();
                 break;
-            case "run":
-                run();
+            case "delete":
+                delete();
+                break;
+            case "share":
+                share();
+                break;
+            case "unshare":
+                unshare();
+                break;
+            case "group-by":
+                groupBy();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -64,17 +76,36 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private void create() throws CatalogException, IOException {
+        logger.debug("Creating a new job");
+
+    }
     private void info() throws CatalogException {
         logger.debug("Getting job information");
     }
-    private void finished() throws CatalogException, IOException {
-        logger.debug("Notice catalog that a job have finished");
+
+    private void search() throws CatalogException, IOException  {
+        logger.debug("Searching job");
     }
-    private void status() throws CatalogException {
-        logger.debug("Getting the status of all running jobs");
+
+    private void visit() throws CatalogException, IOException  {
+        logger.debug("Visiting a job");
     }
-    private void run() throws CatalogException {
-        logger.debug("Executing a job");
+
+    private void delete() throws CatalogException, IOException  {
+        logger.debug("Deleting job");
+    }
+
+    private void unshare() throws CatalogException, IOException {
+        logger.debug("Unsharing a job");
+    }
+
+    private void share() throws CatalogException, IOException {
+        logger.debug("Sharing a job");
+    }
+
+    private void groupBy() throws CatalogException, IOException {
+        logger.debug("Group by job");
     }
 
 

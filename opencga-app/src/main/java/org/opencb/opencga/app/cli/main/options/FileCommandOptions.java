@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"projects"}, commandDescription = "Project commands")
+@Parameters(commandNames = {"files"}, commandDescription = "Files commands")
 public class FileCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
@@ -27,13 +27,15 @@ public class FileCommandOptions {
     public FetchCommandOptions fetchCommandOptions;
     //final VariantsCommand variantsCommand;
     public ShareCommandOptions shareCommandOptions;
+    public UnshareCommandOptions unshareCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
-    public RelinkCommandOptions relinkCommandOptions;
-    public DeleteCommandOptions deleteCommandOptions;
-    public RefreshCommandOptions refreshCommandOptions;
-    public UnlinkCommandOptions unlinkCommandOptions;
-    public LinkCommandOptions linkCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
+    public DeleteCommandOptions deleteCommandOptions;
+    public LinkCommandOptions linkCommandOptions;
+    public RelinkCommandOptions relinkCommandOptions;
+    public UnlinkCommandOptions unlinkCommandOptions;
+    public RefreshCommandOptions refreshCommandOptions;
+    public GroupByCommandOptions groupByCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -54,6 +56,7 @@ public class FileCommandOptions {
         this.alignamentsCommandOptions = new AlignamentsCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.shareCommandOptions = new ShareCommandOptions();
+        this.unshareCommandOptions = new UnshareCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.relinkCommandOptions = new RelinkCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -238,7 +241,7 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share file with other user")
-    class ShareCommandOptions  {
+    class ShareCommandOptions  extends BaseFileCommand{
 
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -246,23 +249,40 @@ public class FileCommandOptions {
         @Parameter(names = {"-fids","--fileIds"}, description = "fileIds", required = true)
         String fileIds;
 
-        @Parameter(names = {"-uids","--userIds"}, description = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true)
-        String userIds;
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        String members;
 
-        @Parameter(names = {"--unshare"}, description = "Remove the previous AclEntry", required = false, arity = 0)
-        boolean unshare = false;
-
-        @Parameter(names = {"--read"}, description = "Read permission", required = false, arity = 0)
-        boolean read = false;
-
-        @Parameter(names = {"--write"}, description = "Write permission", required = false, arity = 0)
-        boolean write = false;
-
-        @Parameter(names = {"--delete"}, description = "Delete permission", required = false, arity = 0)
-        boolean delete = false;
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
+                required = false, arity = 1)
+        String permission;
 
     }
 
+    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare file with other user")
+    class UnshareCommandOptions  {
+
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-fids","--fileIds"}, description = "fileIds", required = true)
+        String fileIds;
+
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        String members;
+
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
+                required = false, arity = 1)
+        String permission;
+
+        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
+                " of permissions in case any member already had any, default:false",required = false, arity = 0)
+        boolean override;
+
+    }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     class UpdateCommandOptions extends BaseFileCommand { }
@@ -333,5 +353,69 @@ public class FileCommandOptions {
 
     }
 
+    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
+    public class GroupByCommandOptions {
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
+        @Parameter(names = {"--by"},
+                description = "Comma separated list of fields by which to group by.",
+                required = true, arity = 1)
+        String by;
+
+        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        String studyId;
+
+
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
+                required = false, arity = 1)
+        String id;
+
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
+        String name;
+
+        @Parameter(names = {"--path"}, description = "Path.",required = false, arity = 1)
+        String path;
+
+        @Parameter(names = {"--type"}, description = "Comma separated Type values.",required = false, arity = 1)
+        String type;
+
+        @Parameter(names = {"--format"}, description = "Comma separated Format values.",required = false, arity = 1)
+        String format;
+
+        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
+        String status;
+
+        @Parameter(names = {"--directory"}, description = "Directory.",required = false, arity = 1)
+        String directory;
+
+        @Parameter(names = {"--owner-id"}, description = "Owner id.",required = false, arity = 1)
+        String ownerId;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
+        String creationDate;
+
+        @Parameter(names = {"--modification-date"}, description = "Modification date.",required = false, arity = 1)
+        String modificationDate;
+
+        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        String description;
+
+        @Parameter(names = {"--diskUsage"}, description = "diskUsage.",required = false, arity = 1)
+        Integer diskUsage;
+
+        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
+        String sampleIds;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
+        String jobId;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
+        String attributes;
+
+        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
+        String nattributes;
+
+
+    }
 }

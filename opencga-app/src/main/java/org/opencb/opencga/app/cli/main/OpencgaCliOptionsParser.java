@@ -52,9 +52,10 @@ public class OpencgaCliOptionsParser {
     private JobCommandOptions jobCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
     private SampleCommandOptions sampleCommandOptions;
-    private VariableCommandOptions variablesCommandOptions;
+    private VariableCommandOptions variableCommandOptions;
     private CohortCommandOptions cohortCommandOptions;
-    private ToolCommandsOptions toolCommands;
+    private PanelCommandOptions panelCommandOptions;
+    private ToolCommandOptions toolCommandOptions;
 
 
 
@@ -76,7 +77,7 @@ public class OpencgaCliOptionsParser {
         usersCommandOptions = new UserCommandOptions(this.commonCommandOptions, this.jCommander);
         jCommander.addCommand("users", usersCommandOptions);
         JCommander userSubCommands = jCommander.getCommands().get("users");
-        userSubCommands.addCommand("create", usersCommandOptions.createUserCommandOptions);
+        userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
         userSubCommands.addCommand("list", usersCommandOptions.listCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
@@ -116,21 +117,31 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("alignaments", fileCommandOptions.alignamentsCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("share", fileCommandOptions.shareCommandOptions);
+        fileSubCommands.addCommand("unshare", fileCommandOptions.unshareCommandOptions);
         fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
+        fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
+        fileSubCommands.addCommand("link", fileCommandOptions.linkCommandOptions);
+        fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
-        fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
-        fileSubCommands.addCommand("link", fileCommandOptions.linkCommandOptions);
-        fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
+
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);
         JCommander jobSubCommands = jCommander.getCommands().get("jobs");
+        jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);
         jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
-        jobSubCommands.addCommand("finished", jobCommandOptions.doneJobCommandOptions);
-        jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
-        jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
+        jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
+        jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
+        jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
+        jobSubCommands.addCommand("share", jobCommandOptions.shareCommandOptions);
+        jobSubCommands.addCommand("unshare", jobCommandOptions.unshareCommandOptions);
+        jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
+
+       // jobSubCommands.addCommand("finished", jobCommandOptions.doneJobCommandOptions);
+       // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
+       // jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
 
 
         individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, jCommander);
@@ -142,23 +153,32 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("annotate", individualCommandOptions.annotateCommandOptions);
         individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
+        individualSubCommands.addCommand("share", individualCommandOptions.shareCommandOptions);
+        individualSubCommands.addCommand("unshare", individualCommandOptions.unshareCommandOptions);
+        individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
 
         sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("samples", sampleCommandOptions);
         JCommander sampleSubCommands = jCommander.getCommands().get("samples");
+        sampleSubCommands.addCommand("create", sampleCommandOptions.createCommandOptions);
         sampleSubCommands.addCommand("load", sampleCommandOptions.loadCommandOptions);
         sampleSubCommands.addCommand("info", sampleCommandOptions.infoCommandOptions);
         sampleSubCommands.addCommand("search", sampleCommandOptions.searchCommandOptions);
+        sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
+        sampleSubCommands.addCommand("share", sampleCommandOptions.shareCommandOptions);
+        sampleSubCommands.addCommand("unshare", sampleCommandOptions.unshareCommandOptions);
+        sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
+        sampleSubCommands.addCommand("annotate", sampleCommandOptions.annotateCommandOptions);
 
-        variablesCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
-        jCommander.addCommand("variables", variablesCommandOptions);
+        variableCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("variables", variableCommandOptions);
         JCommander variableSubCommands = jCommander.getCommands().get("variables");
-        variableSubCommands.addCommand("create", variablesCommandOptions.createCommandOptions);
-        variableSubCommands.addCommand("info", variablesCommandOptions.infoCommandOptions);
-        variableSubCommands.addCommand("search", variablesCommandOptions.searchCommandOptions);
-        variableSubCommands.addCommand("delete", variablesCommandOptions.deleteCommandOptions);
-        variableSubCommands.addCommand("update", variablesCommandOptions.updateCommandOptions);
+        variableSubCommands.addCommand("create", variableCommandOptions.createCommandOptions);
+        variableSubCommands.addCommand("info", variableCommandOptions.infoCommandOptions);
+        variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
+        variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
+        variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
 
         cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortCommandOptions);
@@ -172,11 +192,24 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("unshare", cohortCommandOptions.unshareCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
         cohortSubCommands.addCommand("share", cohortCommandOptions.shareCommandOptions);
-        cohortSubCommands.addCommand("groupBy", cohortCommandOptions.groupByCommandOptions);
+        cohortSubCommands.addCommand("group-by", cohortCommandOptions.groupByCommandOptions);
 
+        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("tools", toolCommandOptions);
+        JCommander toolSubCommands = jCommander.getCommands().get("tools");
+        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
+        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
+        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
+        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
+        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
 
-        toolCommands = new ToolCommandsOptions(jCommander);
-
+        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("panels", panelCommandOptions);
+        JCommander panelSubCommands = jCommander.getCommands().get("panels");
+        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
+        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
+        panelSubCommands.addCommand("unshare", panelCommandOptions.unshareCommandOptions);
+        panelSubCommands.addCommand("share", panelCommandOptions.shareCommandOptions);
 
 
 
@@ -186,24 +219,6 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-//    public void parse(String[] args) throws ParameterException {
-//        jCommander.parse(args);
-//    }
-//
-//    public String getCommand() {
-//        String parsedCommand = jCommander.getParsedCommand();
-//        return parsedCommand != null ? parsedCommand: "";
-//    }
-//
-//    public String getSubCommand() {
-//        String parsedCommand = jCommander.getParsedCommand();
-//        if (jCommander.getCommands().containsKey(parsedCommand)) {
-//            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-//            return subCommand != null ? subCommand: "";
-//        } else {
-//            return "";
-//        }
-//    }
 
 //    public void printUsage(){
 //        if(!getCommand().isEmpty()) {
@@ -373,60 +388,6 @@ public class OpencgaCliOptionsParser {
     }
 
 
-
-
-    @Parameters(commandNames = {"tools"}, commandDescription = "Tools commands")
-    public class ToolCommandsOptions extends CommandOptions{
-
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public ToolCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander tools = jcommander.getCommands().get("tools");
-            tools.addCommand(this.createCommand = new CreateCommand());
-            tools.addCommand(this.infoCommand = new InfoCommand());
-        }
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Register external tool into catalog")
-        class CreateCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
-            String alias;
-
-            @Parameter(names = {"-d", "--description"}, description = "Tool description", required = false, arity = 1)
-            String description = "";
-
-//            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-//            String name;
-
-            @Parameter(names = {"-P", "--path"}, description = "Path", required = true, arity = 1)
-            String path;
-
-            @Parameter(names = {"--open"}, description = "Allow other users to use the tool", required = false, arity = 0)
-            boolean openTool = false;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
-        class InfoCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
-            String id;
-        }
-    }
-
     @Parameters(commandNames = {"share"}, commandDescription = "Share resource")
     class CommandShareResource {
         @ParametersDelegate
@@ -529,20 +490,33 @@ public class OpencgaCliOptionsParser {
         return fileCommandOptions;
     }
 
-
     public JobCommandOptions getJobsCommands() {
         return jobCommandOptions;
     }
+
     public IndividualCommandOptions getIndividualsCommands() {
         return individualCommandOptions;
     }
-    public ToolCommandsOptions getToolCommands() {
-        return toolCommands;
-    }
-    public CohortCommandOptions getCohortCommands() {
-        return cohortCommandOptions;
-    }
+
     public SampleCommandOptions getSampleCommands() {
         return sampleCommandOptions;
     }
+
+    public VariableCommandOptions getVariableCommands() {
+        return variableCommandOptions;
+    }
+
+    public CohortCommandOptions getCohortCommands() {
+        return cohortCommandOptions;
+    }
+
+    public PanelCommandOptions getPanelCommands() {
+        return panelCommandOptions;
+    }
+
+    public ToolCommandOptions getToolCommands() {  return toolCommandOptions; }
+
+
+
+
 }

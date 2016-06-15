@@ -50,15 +50,32 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             case "create":
                 create();
                 break;
-
             case "info":
                 info();
                 break;
             case "samples":
                 samples();
                 break;
+            case "annotate":
+                annotate();
+                break;
+            case "update":
+                update();
+                break;
+            case "delete":
+                delete();
+                break;
+            case "unshare":
+                unshare();
+                break;
             case "calculate-stats":
                 calculateStats();
+                break;
+            case "share":
+                share();
+                break;
+            case "group-by":
+                groupBy();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -66,6 +83,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
     }
+
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
@@ -86,6 +104,22 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
        // QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions.samplesCommandOptions.id), null);
         //System.out.println("Samples = " + samples);
     }
+
+    private void annotate() throws CatalogException, IOException  {
+        logger.debug("Annotating cohort");
+    }
+    private void update() throws CatalogException, IOException  {
+        logger.debug("Updating cohort");
+    }
+
+    private void delete() throws CatalogException, IOException  {
+        logger.debug("Deleting cohort");
+    }
+
+    private void unshare() throws CatalogException, IOException {
+        logger.debug("Unsharing a cohort");
+    }
+
     private void calculateStats() throws CatalogException {
         logger.debug("Calculating variant stats for a set of cohorts");
         //QueryResponse<Cohort> stats = openCGAClient.getCohortClient(). no esta calculate stats o parecidoo
@@ -93,7 +127,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private void share() throws CatalogException, IOException {
+        logger.debug("Sharing a cohort");
+    }
 
-
+    private void groupBy() throws CatalogException, IOException {
+        logger.debug("Group by cohorts");
+    }
 
 }
