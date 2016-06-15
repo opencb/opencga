@@ -20,8 +20,8 @@ public class VariableCommandOptions {
 
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    //public RenameCommandOptions renameCommandOptions;
-    //public AddCommandOptions addCommandOptions;
+   // public RenameCommandOptions renameCommandOptions;
+  //  public AddCommandOptions addCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -35,8 +35,8 @@ public class VariableCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-       // this.renameCommandOptions = new RenameCommandOptions();
-       // this.addCommandOptions = new AddCommandOptions();
+     //   this.renameCommandOptions = new RenameCommandOptions();
+     //   this.addCommandOptions = new AddCommandOptions();
 
     }
 
@@ -44,7 +44,7 @@ public class VariableCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--variable-id"}, description = "Variable id", required = true, arity = 1)
+        @Parameter(names = {"-id", "--variable-id"}, description = "VariableSet id", required = true, arity = 1)
         Integer id;
     }
 
@@ -62,10 +62,10 @@ public class VariableCommandOptions {
         String name;
 
         @Parameter(names = {"--unique"}, description = "Unique", required = false, arity = 0)
-        Boolean unique;
+        boolean unique;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        Integer description;
+        String description;
 
         @Parameter(names = {"--body"}, description = "Variables", required = true)
         String body;
@@ -85,17 +85,17 @@ public class VariableCommandOptions {
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
         String studyId;
 
-        @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
-        String name;
-
         @Parameter(names = {"--id"}, description = "CSV list of variableSetIds", required = false, arity = 1)
         String id;
+
+        @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
+        String name;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String family;
+        String attributes;
 
     }
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user variableSet using GET method [PENDING]")

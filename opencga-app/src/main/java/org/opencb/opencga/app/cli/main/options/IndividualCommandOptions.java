@@ -17,6 +17,11 @@ public class IndividualCommandOptions {
     public AnnotateCommandOptions annotateCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
+    public ShareCommandOptions shareCommandOptions;
+    public UnshareCommandOptions unshareCommandOptions;
+    public GroupByCommandOptions groupByCommandOptions;
+
+
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -31,6 +36,9 @@ public class IndividualCommandOptions {
         this.annotateCommandOptions = new AnnotateCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
+        this.shareCommandOptions = new ShareCommandOptions();
+        this.unshareCommandOptions = new UnshareCommandOptions();
+        this.groupByCommandOptions = new GroupByCommandOptions();
 
     }
 
@@ -82,8 +90,8 @@ public class IndividualCommandOptions {
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
         String studyId;
 
-//            @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
-//            String id;
+        @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
+        String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         String name;
@@ -165,4 +173,98 @@ public class IndividualCommandOptions {
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
     class DeleteCommandOptions extends BaseIndividualsCommand{ }
 
+
+    @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
+    public class ShareCommandOptions extends BaseIndividualsCommand {
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-ids", "--individual-ids"}, description = "Individuals ids", required = true, arity = 1)
+        String individualIds;
+
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        String members;
+
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
+                required = false, arity = 1)
+        String permission;
+
+        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
+                " of permissions in case any member already had any, default:false",required = false, arity = 0)
+        boolean override;
+    }
+
+    @Parameters(commandNames = {"unshare"}, commandDescription = "Share cohort")
+    public class UnshareCommandOptions extends BaseIndividualsCommand {
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-ids", "--individual-ids"}, description = "Individuals ids", required = true, arity = 1)
+        String individualIds;
+
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        String members;
+
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
+                required = false, arity = 1)
+        String permission;
+
+    }
+    @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
+    public class GroupByCommandOptions {
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--by"},
+                description = "Comma separated list of fields by which to group by.",
+                required = true, arity = 1)
+        String by;
+
+        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        String studyId;
+
+
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
+                required = false, arity = 1)
+        String id;
+
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 0)
+        String name;
+
+        @Parameter(names = {"--fatherId"}, description = "FatherId", required = false, arity = 1)
+        Integer fatherId;
+
+        @Parameter(names = {"--motherId"}, description = "MotherId", required = false, arity = 1)
+        Integer motherId;
+
+        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
+        String family;
+
+        @Parameter(names = {"--gender"}, description = "Gender", required = false)
+        String gender;
+
+        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
+        String race;
+
+        @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
+        String species;
+
+        @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
+        String population;
+
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
+        Integer variableSetId;
+
+        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.",required = false, arity = 0)
+        String annotationSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
+        String annotation;
+
+
+    }
 }

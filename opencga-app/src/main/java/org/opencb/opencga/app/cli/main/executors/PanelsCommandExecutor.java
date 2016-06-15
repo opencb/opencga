@@ -48,11 +48,11 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 info();
                 break;
-            case "unshare":
-                unshare();
-                break;
             case "share":
                 share();
+                break;
+            case "unshare":
+                unshare();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -68,14 +68,13 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting panel information");
     }
 
-    private void unshare() throws CatalogException {
-        logger.debug("Unsharing panel");
-    }
     private void share() throws CatalogException {
         logger.debug("Sharing panel");
     }
 
-
+    private void unshare() throws CatalogException {
+        logger.debug("Unsharing panel");
+    }
 
 
 

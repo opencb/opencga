@@ -12,7 +12,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
 @Parameters(commandNames = {"users"}, commandDescription = "User commands")
 public class UserCommandOptions {
 
-    public CreateUserCommandOptions createUserCommandOptions;
+    public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public ListCommandOptions listCommandOptions;
     public LoginCommandOptions loginCommandOptions;
@@ -25,7 +25,7 @@ public class UserCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
-        this.createUserCommandOptions = new CreateUserCommandOptions();
+        this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
@@ -36,17 +36,22 @@ public class UserCommandOptions {
         return jCommander;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
-    public class CreateUserCommandOptions {
-
+    class BaseUserCommand {
         @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-u", "--user-id"}, description = "User id", arity = 1)
+        public String user;
+    }
+
+    @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
+    public class CreateCommandOptions extends BaseUserCommand{
+
+      /*  @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
 
-        @Parameter(names = {"-u", "--user"}, description = "User id", arity = 1)
-        public String user;
-
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, password = true)
-        public String password;
+        @Parameter(names = {"-u", "--user-id"}, description = "User id", arity = 1)
+        public String user;*/
 
         @Parameter(names = {"-n", "--name"}, description = "User name", required = true, arity = 1)
         public String name;
@@ -54,15 +59,16 @@ public class UserCommandOptions {
         @Parameter(names = {"-e", "--email"}, description = "Email", required = true, arity = 1)
         public String email;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = true, arity = 1)
         public String organization;
 
+        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, password = true)
+        public String password;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")
-    public class InfoCommandOptions {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
+    public class InfoCommandOptions extends BaseUserCommand{
+
     }
 
 

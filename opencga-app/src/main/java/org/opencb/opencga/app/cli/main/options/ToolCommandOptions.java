@@ -42,32 +42,11 @@ public class ToolCommandOptions {
     }
 
 
- /*   @Parameters(commandNames = {"create"}, commandDescription = "Register external tool into catalog")
-    class CreateCommandOptions {
-
-
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-        @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
-        String alias;
-
-        @Parameter(names = {"-d", "--description"}, description = "Tool description", required = false, arity = 1)
-        String description = "";
-
-//            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-//            String name;
-
-        @Parameter(names = {"-P", "--path"}, description = "Path", required = true, arity = 1)
-        String path;
-
-        @Parameter(names = {"--open"}, description = "Allow other users to use the tool", required = false, arity = 0)
-        boolean openTool = false;
-    }
-*/
     @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
-    class InfoCommandOptions extends BaseToolsCommand{ }
+    class InfoCommandOptions extends BaseToolsCommand{
+        @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
+        String execution;
+    }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search tools")
     class SearchCommandOptions {

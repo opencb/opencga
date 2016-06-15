@@ -17,8 +17,8 @@ public class PanelCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
     public ShareCommandOptions shareCommandOptions;
+    public UnshareCommandOptions unshareCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -29,8 +29,8 @@ public class PanelCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
         this.shareCommandOptions = new ShareCommandOptions();
+        this.unshareCommandOptions = new UnshareCommandOptions();
     }
 
     class BasePanelsCommand {
@@ -48,16 +48,19 @@ public class PanelCommandOptions {
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"--name"}, description = "Panel name", required = true, arity = 1)
-        String name;
+        public String name;
 
         @Parameter(names = {"--disease"}, description = "Disease", required = true, arity = 1)
         String disease;
 
         @Parameter(names = {"--description"}, description = "Panel description", required = false, arity = 1)
         String description;
+
+        @Parameter(names = {"--genes"}, description = "Genes", required = false, arity = 1)
+        String genes;
 
         @Parameter(names = {"--regions"}, description = "Regions", required = false, arity = 1)
         String regions;
@@ -70,30 +73,43 @@ public class PanelCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BasePanelsCommand{ }
 
-
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
-    public class UnshareCommandOptions extends BasePanelsCommand {
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",required = true, arity = 1)
-        String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions",required = false, arity = 1)
-        String permission;
-
-
-    }
-
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions extends BasePanelsCommand {
+    public class ShareCommandOptions {
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-ids", "--panels-ids"}, description = "Panels ids", required = true, arity = 1)
+        String ids;
+
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",required = true, arity = 1)
         String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions",required = false, arity = 1)
         String permission;
 
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change of of permissions in case any member already had any",required = false, arity = 0)
+        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
+                " of permissions in case any member already had any, default:false",required = false, arity = 0)
         boolean override;
     }
+
+    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
+    public class UnshareCommandOptions {
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-ids", "--panels-ids"}, description = "Panels ids", required = true, arity = 1)
+        String ids;
+
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",required = true, arity = 1)
+        String members;
+
+        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions",required = false, arity = 1)
+        String permission;
+
+
+    }
+
+
 
 
 }
