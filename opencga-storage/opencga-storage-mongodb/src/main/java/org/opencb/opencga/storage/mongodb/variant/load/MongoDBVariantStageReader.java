@@ -96,6 +96,9 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
     }
 
     public static void addChromosomeFilter(List<Bson> chrFilters, String chromosome) {
+        if (chromosome == null || chromosome.isEmpty()) {
+            return;
+        }
         chromosome = VariantStringIdComplexTypeConverter.convertChromosome(chromosome);
         chrFilters.add(and(
                 gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR),

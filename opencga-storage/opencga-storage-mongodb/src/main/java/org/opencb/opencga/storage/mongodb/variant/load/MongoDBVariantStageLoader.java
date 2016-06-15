@@ -299,7 +299,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
         //     { $or : [ { <study>.<file>.0 : {$exists:false} }, { <study>.<file>.1 : {$exists:true} } ] }
         List<Bson> filters = new ArrayList<>();
         Bson chrFilter;
-        if (chromosomes != null) {
+        if (chromosomes != null && !chromosomes.isEmpty()) {
             List<Bson> chrFilters = new ArrayList<>();
             for (String chromosome : chromosomes) {
                 MongoDBVariantStageReader.addChromosomeFilter(chrFilters, chromosome);
