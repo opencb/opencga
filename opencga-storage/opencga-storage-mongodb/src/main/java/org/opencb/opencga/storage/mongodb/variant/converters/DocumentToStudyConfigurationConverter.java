@@ -27,6 +27,7 @@ import java.io.IOException;
 
 /**
  * @author Jacobo Coll <jacobo167@gmail.com>
+ * TODO: Extend {@link org.opencb.commons.datastore.mongodb.GenericDocumentComplexConverter}
  */
 public class DocumentToStudyConfigurationConverter implements ComplexTypeConverter<StudyConfiguration, Document> {
 
