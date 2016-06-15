@@ -243,7 +243,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetFileAcl(fileId, usersToOverride);
+            unsetFileAcl(fileId, usersToOverride, Collections.emptyList());
         } else if (fileAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setFileAcl: " + fileAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -284,7 +284,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public void unsetFileAcl(long fileId, List<String> members) throws CatalogDBException {
+    public void unsetFileAcl(long fileId, List<String> members, List<String> permissions) throws CatalogDBException {
 
         checkFileId(fileId);
         // Check that all the members (users) are correct and exist.
@@ -294,7 +294,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, fileId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = fileCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetFileAcl: An error occurred when trying to remove the ACL in file " + fileId
@@ -451,7 +456,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
        // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         try {
             filterEnumParams(parameters, fileParameters, acceptedEnums);
@@ -607,10 +612,29 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        // TODO: Check that the array of sampleIds still contains active samples. Delete references that might not be active any more.
-        // TODO: If the jobId is > 0, check if that job is still present, otherwise set it to -1.
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore files", startTime, setStatus(query, File.FileStatus.READY));
+    }
+
+    @Override
+    public QueryResult<File> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkFileId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The file {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, File.FileStatus.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore file", startTime, get(query, null));
     }
 
     public QueryResult<File> clean(int id) throws CatalogDBException {

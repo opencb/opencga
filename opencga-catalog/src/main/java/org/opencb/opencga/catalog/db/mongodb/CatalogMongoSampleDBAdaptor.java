@@ -336,7 +336,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetSampleAcl(sampleId, usersToOverride);
+            unsetSampleAcl(sampleId, usersToOverride, Collections.emptyList());
         }  else if (sampleAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setSampleAcl: " + sampleAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -402,7 +402,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     }
 
-    public void unsetSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+    public void unsetSampleAcl(long sampleId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkSampleId(sampleId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdBySampleId(sampleId), members);
@@ -411,7 +411,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, sampleId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetSampleAcl: An error occurred when trying to stop sharing sample " + sampleId
@@ -879,7 +884,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
         Map<String, Object> sampleParameters = new HashMap<>();
 
-        final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
+        final String[] acceptedParams = {QueryParams.SOURCE.key(), QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, sampleParameters, acceptedParams);
 
         final String[] acceptedIntParams = {QueryParams.ID.key(), QueryParams.INDIVIDUAL_ID.key()};
@@ -890,7 +895,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             sampleParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         if (!sampleParameters.isEmpty()) {
@@ -971,8 +976,29 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore samples", startTime, setStatus(query, Status.READY));
+    }
+
+    @Override
+    public QueryResult<Sample> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkSampleId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The sample {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, Status.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore sample", startTime, get(query, null));
     }
 
     /***

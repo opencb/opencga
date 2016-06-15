@@ -405,6 +405,12 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getStudyId(id);
     }
 
+    public long getStudyId(String studyId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return studyManager.getStudyId(userId, studyId);
+    }
+
+    @Deprecated
     public long getFileId(String id) throws CatalogException {
         return fileManager.getFileId(id);
     }
@@ -840,10 +846,12 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
 //    }
 
-    public QueryResult unshareFile(String fileIds, String members, String sessionId) throws CatalogException {
+    public QueryResult unshareFile(String fileIds, String members, String permissions, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> fileList = fileManager.getFileIds(userId, fileIds);
-        authorizationManager.unsetFilePermissions(userId, fileList, members);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetFilePermissions(userId, fileList, members, permissionList);
         return new QueryResult("unshareFile");
     }
 
@@ -887,11 +895,17 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setDatasetPermissions(userId, datasetList, members, permissions, override);
     }
 
-    public QueryResult unshareDatasets(String datasetIds, String userIds, String sessionId) throws CatalogException {
+    public QueryResult unshareDatasets(String datasetIds, String userIds, String sessionId, String permissions) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> datasetList = fileManager.getDatasetIds(userId, datasetIds);
-        authorizationManager.unsetDatasetPermissions(userId, datasetList, userIds);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetDatasetPermissions(userId, datasetList, userIds, permissionList);
         return new QueryResult("unshareDatasets");
+    }
+
+    public QueryResult fileGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return fileManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*
@@ -962,11 +976,17 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setJobPermissions(userId, jobList, members, permissions, override);
     }
 
-    public QueryResult unshareJob(String jobIds, String userIds, String sessionId) throws CatalogException {
+    public QueryResult unshareJob(String jobIds, String userIds, String permissions, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> jobList = jobManager.getJobIds(userId, jobIds);
-        authorizationManager.unsetJobPermissions(userId, jobList, userIds);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetJobPermissions(userId, jobList, userIds, permissionList);
         return new QueryResult("unshareJob");
+    }
+
+    public QueryResult jobGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return jobManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*
@@ -1005,10 +1025,13 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setIndividualPermissions(userId, individualList, members, permissions, override);
     }
 
-    public QueryResult unshareIndividual(String individualIds, String userIds, String sessionId) throws CatalogException {
+    public QueryResult unshareIndividual(String individualIds, String userIds, String permissions, String sessionId)
+            throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> individualList = individualManager.getIndividualIds(userId, individualIds);
-        authorizationManager.unsetIndividualPermissions(userId, individualList, userIds);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetIndividualPermissions(userId, individualList, userIds, permissionList);
         return new QueryResult("unshareIndividual");
     }
 
@@ -1050,11 +1073,13 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setSamplePermissions(userId, sampleList, members, permissions, override);
     }
 
-    public QueryResult unshareSample(String sampleIds, String userIds, String sessionId)
+    public QueryResult unshareSample(String sampleIds, String userIds, String permissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> sampleList = sampleManager.getSampleIds(userId, sampleIds);
-        authorizationManager.unsetSamplePermissions(userId, sampleList, userIds);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetSamplePermissions(userId, sampleList, userIds, permissionList);
         return new QueryResult("unshareSample");
     }
 
@@ -1080,6 +1105,11 @@ public class CatalogManager implements AutoCloseable {
             throws CatalogException {
         return sampleManager.updateAnnotation(sampleId, annotationSetId, annotations, sessionId);
     }
+
+    public QueryResult sampleGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return sampleManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
+    }
+
 
     public QueryResult<AnnotationSet> annotateIndividual(long individualId, String annotationSetId, long variableSetId,
                                                          Map<String, Object> annotations,
@@ -1108,6 +1138,10 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<Sample> deleteSample(long sampleId, QueryOptions options, String sessionId) throws CatalogException {
         return sampleManager.delete(sampleId, options, sessionId);
+    }
+
+    public QueryResult individualGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return individualManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*
@@ -1197,10 +1231,12 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
     }
 
-    public QueryResult unshareCohorts(String cohortIds, String userIds, String sessionId) throws CatalogException {
+    public QueryResult unshareCohorts(String cohortIds, String userIds, String permissions, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
-        authorizationManager.unsetCohortPermissions(userId, cohortList, userIds);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetCohortPermissions(userId, cohortList, userIds, permissionList);
         return new QueryResult("unshareCohorts");
     }
 
@@ -1223,6 +1259,10 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortId, String annotationId, String sessionId)
             throws CatalogException {
         return sampleManager.deleteCohortAnnotation(cohortId, annotationId, sessionId);
+    }
+
+    public QueryResult cohortGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
+        return sampleManager.cohortGroupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
     /*
@@ -1265,10 +1305,12 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setDiseasePanelPermissions(userId, panelList, members, permissions, override);
     }
 
-    public QueryResult unsharePanel(String panelIds, String userIds, String sessionId) throws CatalogException {
+    public QueryResult unsharePanel(String panelIds, String userIds, String sessionId, String permissions) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> panelList = studyManager.getDiseasePanelIds(userId, panelIds);
-        authorizationManager.unsetDiseasePanelPermissions(userId, panelList, userIds);
+        List<String> permissionList = permissions != null && !permissions.isEmpty()
+                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
+        authorizationManager.unsetDiseasePanelPermissions(userId, panelList, userIds, permissionList);
         return new QueryResult("unsharePanel");
     }
 

@@ -395,7 +395,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             }
 
             // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetCohortAcl(cohortId, usersToOverride);
+            unsetCohortAcl(cohortId, usersToOverride, Collections.emptyList());
         } else if (cohortAcls.getNumResults() > 0 && !override) {
             throw new CatalogDBException("setCohortAcl: " + cohortAcls.getNumResults() + " of the members already had an Acl set. If you "
                     + "still want to set the Acls for them and remove the old one, please use the override parameter.");
@@ -435,7 +435,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public void unsetCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
+    public void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException {
         checkCohortId(cohortId);
 
         // Check that all the members (users) are correct and exist.
@@ -445,7 +445,12 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String member : members) {
             Document query = new Document(PRIVATE_ID, cohortId)
                     .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acls.$.users", member));
+            } else {
+                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = cohortCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetCohortAcl: An error occurred when trying to stop sharing cohort " + cohortId
@@ -582,7 +587,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         //filterEnumParams(parameters, cohortParams, acceptedEnumParams);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             cohortParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey("status")) {
             throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_STATUS.key()
@@ -681,14 +686,29 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        throw new UnsupportedOperationException("Operation not yet supported.");
-//        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED);
-//        QueryResult<Long> updateStatus = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE));
-////        QueryResult<Long> updateStatus = updateStatus(query, Cohort.CohortStatus.NONE);
-//
-//        return endQuery("Restore cohorts", startTime, Collections.singletonList(updateStatus.first()));
+    public QueryResult<Cohort> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkCohortId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The cohort {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, Cohort.CohortStatus.NONE);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore cohort", startTime, get(query, null));
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore cohorts", startTime, setStatus(query, Cohort.CohortStatus.NONE));
     }
 
 //    @Override

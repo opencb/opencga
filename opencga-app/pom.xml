@@ -155,7 +155,6 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
                     <!--By default, "etc".-->
                     <configurationDirectory>conf</configurationDirectory>
                     <!--Do we need to include the configuration folder in the classpath?-->
@@ -165,6 +164,13 @@
                         <program>
                             <name>opencga.sh</name>
                             <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <name>opencga-rest.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -191,28 +197,6 @@
                             </platforms>
                         </program>
                     </programs>
-
-                    <!--<daemons>-->
-                        <!--<daemon>-->
-                            <!--<id>daemon-1</id>-->
-                            <!--<mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>-->
-                            <!--<commandLineArguments>-->
-                                <!--<commandLineArgument>argument_one</commandLineArgument>-->
-                            <!--</commandLineArguments>-->
-                            <!--<generatorConfigurations>-->
-                                <!--<generatorConfiguration>-->
-                                    <!--<generator>jsw</generator>-->
-                                    <!--<includes>-->
-                                        <!--<include>linux-x86-64</include>-->
-                                    <!--</includes>-->
-                                <!--</generatorConfiguration>-->
-                            <!--</generatorConfigurations>-->
-                            <!--<platforms>-->
-                                <!--<platform>jsw</platform>-->
-                            <!--</platforms>-->
-                        <!--</daemon>-->
-                    <!--</daemons>-->
-
                 </configuration>
             </plugin>
             <plugin>
@@ -269,6 +253,7 @@
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 

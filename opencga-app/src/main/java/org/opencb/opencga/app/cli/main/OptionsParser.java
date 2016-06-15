@@ -783,8 +783,8 @@ public class OptionsParser {
             @Parameter(names = {"--name"}, description = "cohort name", required = false, arity = 1)
             String name;
 
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-            long variableSetId;
+            @Parameter(names = {"--variable-set"}, description = "VariableSetId", required = false, arity = 1)
+            String variableSet;
 
             @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
             String description;

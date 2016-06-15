@@ -576,7 +576,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_STATUS.key(),
                     parameters.get(QueryParams.STATUS_STATUS.key()));
-            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            ((Document) projectParameters).put("projects.$." + QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         QueryResult<UpdateResult> updateResult = new QueryResult<>();
@@ -659,6 +659,10 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("Delete project", startTime, Collections.singletonList(projectQueryResult.getNumTotalResults()));
     }
 
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
     private QueryResult<Project>  setStatus(long projectId, String status) throws CatalogDBException {
         return update(projectId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
@@ -674,8 +678,29 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore projects", startTime, setStatus(query, Status.READY));
+    }
+
+    @Override
+    public QueryResult<Project> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkProjectId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The project {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, Status.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore project", startTime, get(query, null));
     }
 
     @Override

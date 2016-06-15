@@ -55,7 +55,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     @BeforeClass
     public static void _beforeClass() throws Exception {
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
-        Path rootDir = getTmpRootDir();
+        newRootDir();
         if (rootDir.toFile().exists()) {
             IOUtils.deleteDirectory(rootDir);
             Files.createDirectories(rootDir);
@@ -95,10 +95,14 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 //        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
 
         if (rootDir == null) {
-            rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+RandomStringUtils.randomAlphanumeric(10));
-            Files.createDirectories(rootDir);
+            newRootDir();
         }
         return rootDir;
+    }
+
+    private static void newRootDir() throws IOException {
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+ RandomStringUtils.randomAlphanumeric(10));
+        Files.createDirectories(rootDir);
     }
 
     public static void setRootDir(Path rootDir) {

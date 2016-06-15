@@ -566,9 +566,9 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{studyId}/groups")
     @ApiOperation(value = "Creates a group, adds/removes users to/from group", position = 9, notes =
-            "If <b>groupId</b> does not exist, it will create it with the list of users given in <b>addUsers</b><br>."
+            "If <b>groupId</b> does not exist, it will be created with the list of users given in <b>addUsers</b>.<br>"
                     + "If the <b>groupId</b> exists, it will add the users given in <b>addUsers</b> and/or remove the users listed "
-                    + "in <b>removeUsers</b><br><br>"
+                    + "in <b>removeUsers</b>.<br><br>"
                     + "In both cases, the users should have been previously registered in catalog.")
     public Response groups(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,

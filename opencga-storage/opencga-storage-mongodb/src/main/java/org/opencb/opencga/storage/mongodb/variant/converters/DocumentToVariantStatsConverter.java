@@ -115,9 +115,14 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
         }
 
         stats.setRefAlleleCount(alleleCounts[0]);
-        stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
         stats.setAltAlleleCount(alleleCounts[1]);
-        stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
+        if (alleleNumber == 0) {
+            stats.setRefAlleleFreq(0F);
+            stats.setAltAlleleFreq(0F);
+        } else {
+            stats.setRefAlleleFreq(alleleCounts[0] / ((float) alleleNumber));
+            stats.setAltAlleleFreq(alleleCounts[1] / ((float) alleleNumber));
+        }
         return stats;
     }
 

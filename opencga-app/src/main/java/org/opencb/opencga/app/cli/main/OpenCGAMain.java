@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.ConsoleAppender;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
@@ -47,6 +48,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
@@ -86,7 +88,7 @@ public class OpenCGAMain {
     private static boolean sessionIdFromFile = false;
 
     private static Logger logger;
-    private static UserConfigFile userConfigFile;
+    private static SessionFile sessionFile;
     private static String logLevel;
 
     public static void main(String[] args) throws IOException {
@@ -125,7 +127,7 @@ public class OpenCGAMain {
             System.exit(0);
         }
 
-        userConfigFile = loadUserFile();
+        sessionFile = loadUserFile();
 
         // Interactive mode
         interactive = optionsParser.getGeneralOptions().interactive;
@@ -134,9 +136,9 @@ public class OpenCGAMain {
 
             reader = new BufferedReader(new InputStreamReader(System.in));
 
-            if (userConfigFile != null) {
-                shellUserId = userConfigFile.userId;
-                shellSessionId = userConfigFile.sessionId;
+            if (sessionFile != null) {
+                shellUserId = sessionFile.getUserId();
+                shellSessionId = sessionFile.getSessionId();
                 sessionIdFromFile = true;
             }
             do {
@@ -248,12 +250,12 @@ public class OpenCGAMain {
                         if (shellSessionId != null) {
                             shellUserId = c.up.user;
                         }
-                        if (userConfigFile == null) {
-                            userConfigFile = new UserConfigFile();
+                        if (sessionFile == null) {
+                            sessionFile = new SessionFile();
                         }
-                        userConfigFile.sessionId = sessionId;
-                        userConfigFile.userId = catalogManager.getUserIdBySessionId(sessionId);
-                        saveUserFile(userConfigFile);
+                        sessionFile.setSessionId(sessionId);
+                        sessionFile.setUserId(catalogManager.getUserIdBySessionId(sessionId));
+                        saveUserFile(sessionFile);
 
                         System.out.println(shellSessionId);
 
@@ -268,9 +270,9 @@ public class OpenCGAMain {
                             shellUserId = null;
                             shellSessionId = null;
                             if (sessionIdFromFile) {
-                                userConfigFile.sessionId = null;
-                                userConfigFile.userId = null;
-                                saveUserFile(userConfigFile);
+                                sessionFile.setSessionId(null);
+                                sessionFile.setUserId(null);
+                                saveUserFile(sessionFile);
                             }
                         } else {
                             String userId = catalogManager.getUserIdBySessionId(c.sessionId);
@@ -777,29 +779,41 @@ public class OpenCGAMain {
                         } else {
 //                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
 //                            queryOptions.put("annotation", c.annotation);
-                            if (c.variableSetId == 0) {
+                            final long variableSetId;
+                            final VariableSet variableSet;
+                            if (StringUtils.isNumeric(c.variableSet)) {
+                                variableSetId = Long.parseLong(c.variableSet);
+                                variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
+                            } else if (StringUtils.isEmpty(c.variableSet)) {
                                 List<VariableSet> variableSets = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.variableSets"), sessionId).first().getVariableSets();
-                                if (variableSets.isEmpty()) {
-                                    logger.error("Expected variableSetId");
+                                if (!variableSets.isEmpty()) {
+                                    variableSet = variableSets.get(0); //Get the first VariableSetId
+                                    variableSetId = variableSet.getId();
                                 } else {
-                                    c.variableSetId = variableSets.get(0).getId(); //Get the first VariableSetId
+                                    throw new CatalogException("Expected variableSetId");
                                 }
+                            } else {
+                                QueryOptions query = new QueryOptions(CatalogStudyDBAdaptor.VariableSetParams.NAME.key(), c.variableSet);
+                                variableSet = catalogManager.getAllVariableSet(studyId, query, sessionId).first();
+                                if (variableSet == null) {
+                                    throw new CatalogException("Variable set \"" + c.variableSet + "\" not found");
+                                }
+                                variableSetId = variableSet.getId();
                             }
-                            VariableSet variableSet = catalogManager.getVariableSet(c.variableSetId, null, sessionId).first();
-                            c.name = c.name == null || c.name.isEmpty() ? "" : c.name + ".";
+                            c.name = ((c.name == null) || c.name.isEmpty()) ? "" : (c.name + ".");
                             for (Variable variable : variableSet.getVariables()) {
                                 if (variable.getId().equals(c.variable)) {
                                     for (String value : variable.getAllowedValues()) {
                                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                                         Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + c.variable, value)
-                                                .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);
+                                                .append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
                                         QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                                         cohorts.put(c.name + value, sampleQueryResult.getResult());
                                     }
                                 }
                             }
                             if (cohorts.isEmpty()) {
-                                logger.error("VariableSetId {} does not contain any variable with id = {}.", c.variableSetId, c.variable);
+                                logger.error("VariableSetId {} does not contain any variable with id = {}.", variableSetId, c.variable);
                                 returnValue = 2;
                             }
                         }
@@ -928,7 +942,7 @@ public class OpenCGAMain {
                         }
                         for (Long studyId : studyIds) {
                             QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
-                                    new Query(CatalogJobDBAdaptor.QueryParams.JOB_STATUS.key(),
+                                    new Query(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(),
                                             Collections.singletonList(Job.JobStatus.RUNNING.toString())), new QueryOptions(), sessionId);
 
                             for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
@@ -1340,10 +1354,10 @@ public class OpenCGAMain {
             sessionId = shellSessionId;
             logoutAtExit = false;
         } else {
-            if (userConfigFile != null && userConfigFile.sessionId != null && !userConfigFile.sessionId.isEmpty()) {
-                shellSessionId = userConfigFile.sessionId;
-                shellUserId = userConfigFile.userId;
-                sessionId = userConfigFile.sessionId;
+            if (sessionFile != null && sessionFile.getSessionId() != null && !sessionFile.getSessionId().isEmpty()) {
+                shellSessionId = sessionFile.getSessionId();
+                shellUserId = sessionFile.getUserId();
+                sessionId = sessionFile.getSessionId();
                 logoutAtExit = false;
                 sessionIdFromFile = true;
             }
@@ -1363,6 +1377,8 @@ public class OpenCGAMain {
     }
 
     private static void setLogLevel(String logLevel) {
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
+        org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
@@ -1375,16 +1391,16 @@ public class OpenCGAMain {
         logger = LoggerFactory.getLogger(OpenCGAMain.class);
     }
 
-    private static UserConfigFile loadUserFile() throws IOException {
+    private static SessionFile loadUserFile() throws IOException {
         java.io.File file = Paths.get(System.getProperty("user.home"), ".opencga", "opencga.yml").toFile();
         if (file.exists()) {
-            return new ObjectMapper(new YAMLFactory()).readValue(file, UserConfigFile.class);
+            return new ObjectMapper(new YAMLFactory()).readValue(file, SessionFile.class);
         } else {
-            return new UserConfigFile();
+            return new SessionFile();
         }
     }
 
-    private static void saveUserFile(UserConfigFile userConfigFile) throws IOException {
+    private static void saveUserFile(SessionFile sessionFile) throws IOException {
         Path opencgaDirectoryPath = Paths.get(System.getProperty("user.home"), ".opencga");
         if (!opencgaDirectoryPath.toFile().exists()) {
             Files.createDirectory(opencgaDirectoryPath);
@@ -1392,7 +1408,7 @@ public class OpenCGAMain {
         FileUtils.checkDirectory(opencgaDirectoryPath, true);
         java.io.File file = opencgaDirectoryPath.resolve("opencga.yml").toFile();
         ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory());
-        objectMapper.writeValue(file, userConfigFile);
+        objectMapper.writeValue(file, sessionFile);
     }
 
 }

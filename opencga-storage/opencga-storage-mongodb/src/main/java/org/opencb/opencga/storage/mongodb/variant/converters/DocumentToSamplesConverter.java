@@ -346,7 +346,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
                             Integer samplePosition = samplesPositionToReturn.get(sampleName);
                             if (samplePosition != null) {
-                                samplesData.get(samplePosition).set(extraFieldPosition, UNKNOWN_FIELD);
+                                if (samplesData.get(samplePosition).get(extraFieldPosition) == null) {
+                                    samplesData.get(samplePosition).set(extraFieldPosition, UNKNOWN_FIELD);
+                                }
                             }
                         }
                         extraFieldPosition++;

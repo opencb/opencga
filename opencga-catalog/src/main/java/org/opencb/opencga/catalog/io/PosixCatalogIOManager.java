@@ -162,7 +162,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
                 return Files.createDirectory(Paths.get(uri)).toUri();
             }
         } catch (IOException e) {
-            throw new CatalogIOException("Error creating directory", e);
+            throw new CatalogIOException("Error creating directory " + uri + " with parents=" + parents, e);
         }
     }
 

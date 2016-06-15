@@ -120,8 +120,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
-        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-        int failedVariants = variantVcfExporter.export(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration
+        int failedVariants = VariantVcfExporter.htsExport(dbAdaptor.iterator(query, new QueryOptions(QueryOptions.SORT, true)), studyConfiguration
                 , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantDBAdaptor.VariantQueryParams
                         .RETURNED_SAMPLES.key(), returnedSamples));
 
@@ -137,8 +136,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
-        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-        int failedVariants = variantVcfExporter.export(dbAdaptor.iterator(query, null), studyConfiguration,
+        int failedVariants = VariantVcfExporter.htsExport(dbAdaptor.iterator(query, null), studyConfiguration,
                 new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
 
         assertEquals(0, failedVariants);

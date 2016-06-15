@@ -60,8 +60,8 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
     private void rest() throws Exception {
         if (serverCommandOptions.restServerCommandOptions.start) {
 //            StorageConfiguration storageConfiguration = configuration;
-//            if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.configFile)) {
-//                Path path = Paths.get(restCommandOptions.restStartCommandOptions.commonOptions.configFile);
+//            if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.conf)) {
+//                Path path = Paths.get(restCommandOptions.restStartCommandOptions.commonOptions.conf);
 //                if (Files.exists(path)) {
 //                    storageConfiguration = StorageConfiguration.load(Files.newInputStream(path));
 //                }

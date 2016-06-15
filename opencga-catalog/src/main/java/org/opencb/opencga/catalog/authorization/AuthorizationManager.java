@@ -114,9 +114,10 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param fileIds list of file ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the files.
      */
-    void unsetFilePermissions(String userId, List<Long> fileIds, String userIds) throws CatalogException;
+    void unsetFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and sample ids given.
@@ -139,9 +140,10 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param sampleIds list of sample ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the samples.
      */
-    void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds) throws CatalogException;
+    void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and cohort ids given.
@@ -164,9 +166,10 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param cohortIds Comma separated list of cohort ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
-    void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds) throws CatalogException;
+    void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and individual ids given.
@@ -189,9 +192,11 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param individualIds Comma separated list of individual ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the individuals.
      */
-    void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds) throws CatalogException;
+    void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions)
+            throws CatalogException;
 
     /**
      * Set the permissions given for all the users and job ids given.
@@ -214,9 +219,10 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param jobIds Comma separated list of job ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
-    void unsetJobPermissions(String userId, List<Long> jobIds, String userIds) throws CatalogException;
+    void unsetJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and dataset ids given.
@@ -239,9 +245,10 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param datasetIds Comma separated list of dataset ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
      */
-    void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds) throws CatalogException;
+    void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
      * Set the permissions given for all the users and panel ids given.
@@ -264,9 +271,10 @@ public interface AuthorizationManager {
      * @param userId User id of the user that is performing the action.
      * @param panelIds Comma separated list of panel ids.
      * @param userIds Comma separated list of user ids from whom the permissions will be removed.
+     * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the panels.
      */
-    void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds) throws CatalogException;
+    void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
      * Removes from the list the projects that the user can not read.

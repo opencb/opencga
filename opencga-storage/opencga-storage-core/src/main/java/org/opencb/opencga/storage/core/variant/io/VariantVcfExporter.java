@@ -18,6 +18,7 @@ import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeader
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.commons.io.DataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.slf4j.Logger;
@@ -26,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.text.DecimalFormat;
 import java.util.*;
@@ -36,7 +38,7 @@ import java.util.stream.Collectors;
  *
  * @author Jose Miguel Mut Lopez &lt;jmmut@ebi.ac.uk&gt;
  */
-public class VariantVcfExporter {
+public class VariantVcfExporter implements DataWriter<Variant> {
 
     private final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
 
@@ -46,8 +48,23 @@ public class VariantVcfExporter {
 
     private static final String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
             + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
+    private final StudyConfiguration studyConfiguration;
+    private final OutputStream outputStream;
+    private final QueryOptions queryOptions;
 
     private DecimalFormat df3 = new DecimalFormat("#.###");
+    private VariantContextWriter writer;
+    private List<String> annotations;
+    private int failedVariants;
+
+    public VariantVcfExporter(StudyConfiguration studyConfiguration, OutputStream outputStream,
+                              QueryOptions queryOptions) {
+        this.studyConfiguration = studyConfiguration;
+        this.outputStream = outputStream;
+
+        this.queryOptions = queryOptions;
+    }
+
 
 //    static {
 //        try {
@@ -105,11 +122,28 @@ public class VariantVcfExporter {
         writer.close();
     }
 
+    public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, OutputStream outputStream,
+                                QueryOptions queryOptions) throws Exception {
 
-    public int export(VariantDBIterator iterator, StudyConfiguration studyConfiguration, OutputStream outputStream,
-                      QueryOptions queryOptions) throws Exception {
+        VariantVcfExporter exporter = new VariantVcfExporter(studyConfiguration, outputStream, queryOptions);
 
-        final VCFHeader header = getVcfHeader(studyConfiguration, queryOptions);
+        exporter.open();
+        exporter.pre();
+
+        iterator.forEachRemaining(exporter::write);
+
+        exporter.post();
+        exporter.close();
+        return exporter.failedVariants;
+    }
+
+    public boolean pre() {
+        final VCFHeader header;
+        try {
+            header = getVcfHeader(studyConfiguration, queryOptions);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
         header.addMetaDataLine(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
         header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
@@ -128,7 +162,7 @@ public class VariantVcfExporter {
         }
 
         // check if variant annotations are exported in the INFO column
-        List<String> annotations = null;
+        annotations = null;
         if (queryOptions != null && queryOptions.getString("annotations") != null && !queryOptions.getString("annotations").isEmpty()) {
             String annotationString;
             switch (queryOptions.getString("annotations")) {
@@ -158,34 +192,46 @@ public class VariantVcfExporter {
         if (header.getSampleNamesInOrder().isEmpty()) {
             builder.setOption(Options.DO_NOT_WRITE_GENOTYPES);
         }
-        VariantContextWriter writer = builder.build();
+        writer = builder.build();
 
         writer.writeHeader(header);
 
-        // actual loop
-        int failedVariants = 0;
-        while (iterator.hasNext()) {
-            Variant variant = iterator.next();
+        return true;
+    }
+
+
+    @Override
+    public boolean write(List<Variant> batch) {
+        for (Variant variant : batch) {
             try {
-                VariantContext variantContext = convertVariantToVariantContext(variant, annotations);
+                VariantContext variantContext = convertVariantToVariantContext(variant);
                 if (variantContext != null) {
                     writer.add(variantContext);
                 }
-            } catch (Exception e) {
+            } catch (RuntimeException e) {
                 e.printStackTrace(System.err);
                 failedVariants++;
             }
         }
+        return true;
+    }
 
+
+    @Override
+    public boolean post() {
         if (failedVariants > 0) {
             logger.warn(failedVariants + " variants were not written due to errors");
         }
-
-        writer.close();
-        return failedVariants;
+        return true;
     }
 
-    private VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws Exception {
+    @Override
+    public boolean close() {
+        writer.close();
+        return true;
+    }
+
+    private VCFHeader getVcfHeader(StudyConfiguration studyConfiguration, QueryOptions options) throws IOException {
         //        get header from studyConfiguration
         Collection<String> headers = studyConfiguration.getHeaders().values();
         List<String> returnedSamples = null;
@@ -193,7 +239,7 @@ public class VariantVcfExporter {
             returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
         if (headers.size() < 1) {
-            throw new Exception("file headers not available for study " + studyConfiguration.getStudyName()
+            throw new IllegalStateException("file headers not available for study " + studyConfiguration.getStudyName()
                     + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
         }
         String fileHeader = headers.iterator().next();
@@ -247,10 +293,9 @@ public class VariantVcfExporter {
      * * If some normalization has been applied, the source entries may have an attribute ORI like: "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
      *
      * @param variant A variant object to be converted
-     * @param annotations Variant annotation
      * @return The variant in HTSJDK format
      */
-    public VariantContext convertVariantToVariantContext(Variant variant, List<String> annotations) { //, StudyConfiguration
+    public VariantContext convertVariantToVariantContext(Variant variant) { //, StudyConfiguration
         // studyConfiguration) {
 
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();

@@ -73,6 +73,7 @@ public class File {
     private long jobId;
     private List<FileAcl> acls;
     private Index index;
+    @Deprecated
     private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;

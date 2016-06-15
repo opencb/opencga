@@ -30,6 +30,17 @@ emailServer:
   password: ""
   from: ""
   ssl: false
+acls:
+- role: "daemon"
+  users:
+  - "admin"
+  permissions:
+  - "VIEW_FILE_HEADERS"
+  - "VIEW_FILE_CONTENTS"
+  - "VIEW_FILES"
+  - "UPDATE_FILES"
+  - "VIEW_JOBS"
+  - "UPDATE_JOBS"
 database:
   hosts:
   - "localhost:27017"

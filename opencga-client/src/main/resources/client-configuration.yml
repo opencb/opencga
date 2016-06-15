@@ -1,0 +1,14 @@
+---
+## number of seconds that session remain open
+sessionDuration: 1200
+
+## REST client configuration options
+rest:
+  host: "${OPENCGA.CLIENT.HOST}"
+  batchQuerySize: 200
+  timeout: 10000
+  defaultLimit: 2000
+
+## gRPC configuration options
+grpc:
+  host: "localhost:9091"

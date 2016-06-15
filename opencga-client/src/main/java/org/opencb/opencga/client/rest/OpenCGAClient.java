@@ -18,7 +18,7 @@ package org.opencb.opencga.client.rest;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.util.HashMap;
@@ -29,6 +29,7 @@ import java.util.Map;
  */
 public class OpenCGAClient {
 
+    private String userId;
     private String sessionId;
     private ClientConfiguration clientConfiguration;
 
@@ -42,10 +43,10 @@ public class OpenCGAClient {
         this(null, clientConfiguration);
     }
 
-    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) {
+    public OpenCGAClient(String user, String password, ClientConfiguration clientConfiguration) throws CatalogException {
         init(null, clientConfiguration);
 
-        this.sessionId = login(user, password);
+        login(user, password);
     }
 
     public OpenCGAClient(String sessionId, ClientConfiguration clientConfiguration) {
@@ -61,55 +62,97 @@ public class OpenCGAClient {
 
 
     public UserClient getUserClient() {
-        clients.putIfAbsent("USER", new UserClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("USER", new UserClient(userId, sessionId, clientConfiguration));
         return (UserClient) clients.get("USER");
     }
 
     public ProjectClient getProjectClient() {
-        clients.putIfAbsent("PROJECT", new ProjectClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("PROJECT", new ProjectClient(userId, sessionId, clientConfiguration));
         return (ProjectClient) clients.get("PROJECT");
     }
 
     public StudyClient getStudyClient() {
-        clients.putIfAbsent("STUDY", new StudyClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("STUDY", new StudyClient(userId, sessionId, clientConfiguration));
         return (StudyClient) clients.get("STUDY");
     }
 
     public FileClient getFileClient() {
-        clients.putIfAbsent("FILE", new FileClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("FILE", new FileClient(userId, sessionId, clientConfiguration));
         return (FileClient) clients.get("FILE");
     }
 
     public JobClient getJobClient() {
-        clients.putIfAbsent("JOB", new JobClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("JOB", new JobClient(userId, sessionId, clientConfiguration));
         return (JobClient) clients.get("JOB");
     }
 
     public IndividualClient getIndividualClient() {
-        clients.putIfAbsent("INDIVIDUAL", new IndividualClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("INDIVIDUAL", new IndividualClient(userId, sessionId, clientConfiguration));
         return (IndividualClient) clients.get("INDIVIDUAL");
     }
 
     public SampleClient getSampleClient() {
-        clients.putIfAbsent("SAMPLE", new SampleClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("SAMPLE", new SampleClient(userId, sessionId, clientConfiguration));
         return (SampleClient) clients.get("SAMPLE");
     }
 
-    public VariableClient getVariableClient() {
-        clients.putIfAbsent("VARIABLE", new VariableClient(sessionId, clientConfiguration));
-        return (VariableClient) clients.get("VARIABLE");
+    public VariableSetClient getVariableClient() {
+        clients.putIfAbsent("VARIABLE", new VariableSetClient(sessionId, clientConfiguration, userId));
+        return (VariableSetClient) clients.get("VARIABLE");
     }
 
     public CohortClient getCohortClient() {
-        clients.putIfAbsent("COHORT", new CohortClient(sessionId, clientConfiguration));
+        clients.putIfAbsent("COHORT", new CohortClient(userId, sessionId, clientConfiguration));
         return (CohortClient) clients.get("COHORT");
     }
 
 
-    public String login(String user, String password) {
+    /**
+     * Logs in the user.
+     *
+     * @param user userId.
+     * @param password Password.
+     * @return the sessionId of the user logged in. Null if the user or password is incorrect.
+     * @throws CatalogException when it is not possible logging in.
+     */
+    public String login(String user, String password) throws CatalogException {
         UserClient userClient = getUserClient();
         QueryResponse<ObjectMap> login = userClient.login(user, password);
-        this.sessionId = login.firstResult().getString("sessionId");
+        String sessionId;
+        if (login.allResultsSize() == 1) {
+            sessionId = login.firstResult().getString("sessionId");
+
+            if (this.sessionId != null) { // If the latest sessionId is still active
+                userClient.logout();
+            }
+
+            setSessionId(sessionId);
+            setUserId(user);
+        } else {
+            throw new CatalogException(login.getError());
+        }
+
+        return sessionId;
+    }
+
+    public void logout() {
+        if (this.sessionId != null) {
+            UserClient userClient = getUserClient();
+            userClient.logout();
+
+            // Remove sessionId and userId for all clients
+            setSessionId(null);
+            setUserId(null);
+        }
+    }
+
+
+    public String getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(String sessionId) {
+        this.sessionId = sessionId;
 
         // Update sessionId for all clients
         clients.values().stream()
@@ -117,16 +160,20 @@ public class OpenCGAClient {
                 .forEach(abstractParentClient -> {
                     abstractParentClient.setSessionId(this.sessionId);
                 });
-        return sessionId;
     }
 
-    public void logout() {
-        // Remove sessionId for all clients
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
+
+        // Update userId for all clients
         clients.values().stream()
                 .filter(abstractParentClient -> abstractParentClient != null)
                 .forEach(abstractParentClient -> {
-                    abstractParentClient.setSessionId(null);
+                    abstractParentClient.setUserId(this.userId);
                 });
     }
-
 }

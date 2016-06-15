@@ -149,8 +149,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         Bson query = new Document(QueryParams.ID.key(), userId);
         Bson updates = Updates.push("sessions",
-                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session")))
-                        .append("$slice", -50));
+                new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session"))));
+//                        .append("$slice", -50));
         QueryResult<UpdateResult> update = userCollection.update(query, updates, null);
 
         if (update.first().getModifiedCount() == 0) {
@@ -465,7 +465,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+            userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
@@ -500,6 +500,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Could not update user " + userId);
         }
         return endQuery("Update user", startTime, get(query, null));
+    }
+
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
 
     public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
@@ -603,10 +607,32 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        return endQuery("Restore users", startTime, setStatus(query, Status.READY));
     }
 
+    @Override
+    public QueryResult<User> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new CatalogDBException("Delete user by int id. The id should be a string.");
+    }
+
+    public QueryResult<User> restore(String id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkUserExists(id);
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The user {" + id + "} is not deleted");
+        }
+
+        setStatus(id, Status.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore user", startTime, get(query, null));
+    }
 
     /***
      * Removes completely the user from the database.

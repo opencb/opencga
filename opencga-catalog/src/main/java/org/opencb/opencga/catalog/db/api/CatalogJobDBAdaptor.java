@@ -51,7 +51,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
 
-    default QueryResult<Long> restore(Query query) throws CatalogDBException {
+    default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
@@ -98,7 +98,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
 
     QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException;
 
-    void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException;
+    void unsetJobAcl(long jobId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetJobAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
@@ -150,7 +150,6 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        JOB_STATUS("jobStatus", TEXT, ""),
         DISK_USAGE("diskUsage", DECIMAL, ""),
         OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),

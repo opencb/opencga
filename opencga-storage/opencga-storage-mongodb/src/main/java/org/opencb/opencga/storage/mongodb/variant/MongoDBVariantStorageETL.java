@@ -400,7 +400,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         long startTime = System.currentTimeMillis();
         logger.info("Deleting variant records from Stage collection");
-        long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds);
+        long modifiedCount = MongoDBVariantStageLoader.cleanStageCollection(stageCollection, studyConfiguration.getStudyId(), fileIds,
+                chromosomesToLoad);
         logger.info("Delete variants time: " + (System.currentTimeMillis() - startTime) / 1000 + "s , CleanDocuments: " + modifiedCount);
 
         writeResult.setSkippedVariants(skippedVariants);
