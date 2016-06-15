@@ -142,7 +142,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
                             assertTrue(id, samples.add(sampleId));
                         }
                     }
-                    assertEquals(17, samples.size());
+                    assertEquals("\"" + id + "\" study: " + study.get(STUDYID_FIELD), 17, samples.size());
                 }
 
                 Document gt1 = studies.get(0).get(GENOTYPES_FIELD, Document.class);
