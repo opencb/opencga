@@ -17,45 +17,42 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
- * Created by imedina on 03/06/16.
+ * Created by sgallego on 6/15/16.
  */
-public class ToolsCommandExecutor extends OpencgaCommandExecutor {
+public class PanelsCommandExecutor extends OpencgaCommandExecutor {
 
-    private ToolCommandOptions toolsCommandOptions;
+    private PanelCommandOptions panelsCommandOptions;
 
-    public ToolsCommandExecutor(ToolCommandOptions toolsCommandOptions) {
-        super(toolsCommandOptions.commonCommandOptions);
-        this.toolsCommandOptions = toolsCommandOptions;
+    public PanelsCommandExecutor(PanelCommandOptions panelsCommandOptions) {
+        super(panelsCommandOptions.commonCommandOptions);
+        this.panelsCommandOptions = panelsCommandOptions;
     }
 
 
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing tools command line");
+        logger.debug("Executing panels command line");
 
-        String subCommandString = getParsedSubCommand(toolsCommandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(panelsCommandOptions.jCommander);
         switch (subCommandString) {
-            case "help":
-                help();
+            case "create":
+                create();
                 break;
             case "info":
                 info();
                 break;
-            case "search":
-                search();
+            case "unshare":
+                unshare();
                 break;
-            case "update":
-                update();
-                break;
-            case "delete":
-                delete();
+            case "share":
+                share();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -64,21 +61,18 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void help() throws CatalogException {
-        logger.debug("Tool help");
+    private void create() throws CatalogException {
+        logger.debug("Creating a panel");
     }
     private void info() throws CatalogException {
-        logger.debug("Getting tool information");
+        logger.debug("Getting panel information");
     }
 
-    private void search() throws CatalogException {
-        logger.debug("Searching tool");
+    private void unshare() throws CatalogException {
+        logger.debug("Unsharing panel");
     }
-    private void update() throws CatalogException {
-        logger.debug("Updating tool");
-    }
-    private void delete() throws CatalogException {
-        logger.debug("Deleting tool");
+    private void share() throws CatalogException {
+        logger.debug("Sharing panel");
     }
 
 

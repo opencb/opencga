@@ -192,7 +192,7 @@ public class CohortCommandOptions {
         //TODO
     }
 
-    @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
+    @Parameters(commandNames = {"groupBy"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions extends BaseCohortsCommand {
         //TODO
     }

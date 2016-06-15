@@ -52,9 +52,10 @@ public class OpencgaCliOptionsParser {
     private JobCommandOptions jobCommandOptions;
     private IndividualCommandOptions individualCommandOptions;
     private SampleCommandOptions sampleCommandOptions;
-    private VariableCommandOptions variablesCommandOptions;
+    private VariableCommandOptions variableCommandOptions;
     private CohortCommandOptions cohortCommandOptions;
-    private ToolCommandsOptions toolCommands;
+    private PanelCommandOptions panelCommandOptions;
+    private ToolCommandOptions toolCommandOptions;
 
 
 
@@ -151,14 +152,14 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("search", sampleCommandOptions.searchCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
 
-        variablesCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
-        jCommander.addCommand("variables", variablesCommandOptions);
+        variableCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("variables", variableCommandOptions);
         JCommander variableSubCommands = jCommander.getCommands().get("variables");
-        variableSubCommands.addCommand("create", variablesCommandOptions.createCommandOptions);
-        variableSubCommands.addCommand("info", variablesCommandOptions.infoCommandOptions);
-        variableSubCommands.addCommand("search", variablesCommandOptions.searchCommandOptions);
-        variableSubCommands.addCommand("delete", variablesCommandOptions.deleteCommandOptions);
-        variableSubCommands.addCommand("update", variablesCommandOptions.updateCommandOptions);
+        variableSubCommands.addCommand("create", variableCommandOptions.createCommandOptions);
+        variableSubCommands.addCommand("info", variableCommandOptions.infoCommandOptions);
+        variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
+        variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
+        variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
 
         cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortCommandOptions);
@@ -174,9 +175,22 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("share", cohortCommandOptions.shareCommandOptions);
         cohortSubCommands.addCommand("groupBy", cohortCommandOptions.groupByCommandOptions);
 
+        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("tools", toolCommandOptions);
+        JCommander toolSubCommands = jCommander.getCommands().get("tools");
+        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
+        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
+        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
+        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
+        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
 
-        toolCommands = new ToolCommandsOptions(jCommander);
-
+        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("panels", panelCommandOptions);
+        JCommander panelSubCommands = jCommander.getCommands().get("panels");
+        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
+        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
+        panelSubCommands.addCommand("unshare", panelCommandOptions.unshareCommandOptions);
+        panelSubCommands.addCommand("share", panelCommandOptions.shareCommandOptions);
 
 
 
@@ -186,24 +200,6 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-//    public void parse(String[] args) throws ParameterException {
-//        jCommander.parse(args);
-//    }
-//
-//    public String getCommand() {
-//        String parsedCommand = jCommander.getParsedCommand();
-//        return parsedCommand != null ? parsedCommand: "";
-//    }
-//
-//    public String getSubCommand() {
-//        String parsedCommand = jCommander.getParsedCommand();
-//        if (jCommander.getCommands().containsKey(parsedCommand)) {
-//            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-//            return subCommand != null ? subCommand: "";
-//        } else {
-//            return "";
-//        }
-//    }
 
 //    public void printUsage(){
 //        if(!getCommand().isEmpty()) {
@@ -373,60 +369,6 @@ public class OpencgaCliOptionsParser {
     }
 
 
-
-
-    @Parameters(commandNames = {"tools"}, commandDescription = "Tools commands")
-    public class ToolCommandsOptions extends CommandOptions{
-
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-
-        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public ToolCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander tools = jcommander.getCommands().get("tools");
-            tools.addCommand(this.createCommand = new CreateCommand());
-            tools.addCommand(this.infoCommand = new InfoCommand());
-        }
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Register external tool into catalog")
-        class CreateCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
-            String alias;
-
-            @Parameter(names = {"-d", "--description"}, description = "Tool description", required = false, arity = 1)
-            String description = "";
-
-//            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-//            String name;
-
-            @Parameter(names = {"-P", "--path"}, description = "Path", required = true, arity = 1)
-            String path;
-
-            @Parameter(names = {"--open"}, description = "Allow other users to use the tool", required = false, arity = 0)
-            boolean openTool = false;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
-        class InfoCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
-            String id;
-        }
-    }
-
     @Parameters(commandNames = {"share"}, commandDescription = "Share resource")
     class CommandShareResource {
         @ParametersDelegate
@@ -529,20 +471,33 @@ public class OpencgaCliOptionsParser {
         return fileCommandOptions;
     }
 
-
     public JobCommandOptions getJobsCommands() {
         return jobCommandOptions;
     }
+
     public IndividualCommandOptions getIndividualsCommands() {
         return individualCommandOptions;
     }
-    public ToolCommandsOptions getToolCommands() {
-        return toolCommands;
-    }
-    public CohortCommandOptions getCohortCommands() {
-        return cohortCommandOptions;
-    }
+
     public SampleCommandOptions getSampleCommands() {
         return sampleCommandOptions;
     }
+
+    public VariableCommandOptions getVariableCommands() {
+        return variableCommandOptions;
+    }
+
+    public CohortCommandOptions getCohortCommands() {
+        return cohortCommandOptions;
+    }
+
+    public PanelCommandOptions getPanelCommands() {
+        return panelCommandOptions;
+    }
+
+    public ToolCommandOptions getToolCommands() {  return toolCommandOptions; }
+
+
+
+
 }

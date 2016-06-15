@@ -85,17 +85,21 @@ public class OpencgaMain {
                         case "files":
                             commandExecutor = new FilesCommandExecutor(cliOptionsParser.getFileCommands());
                             break;
-                        case "cohorts":
-                            commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortCommands());
-                            break;
-                        case "samples":
-                            commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSampleCommands());
-                            break;
                         case "jobs":
                             commandExecutor = new JobsCommandExecutor(cliOptionsParser.getJobsCommands());
                             break;
                         case "individuals":
                             commandExecutor = new IndividualsCommandExecutor(cliOptionsParser.getIndividualsCommands());
+                            break;
+                        case "samples":
+                            commandExecutor = new SamplesCommandExecutor(cliOptionsParser.getSampleCommands());
+                            break;
+                        case "cohorts":
+                            commandExecutor = new CohortsCommandExecutor(cliOptionsParser.getCohortCommands());
+                            break;
+                        case "panels":
+                            commandExecutor = new PanelsCommandExecutor(cliOptionsParser.getPanelCommands());
+                            break;
                         case "tools":
                             commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolCommands());
                             break;
