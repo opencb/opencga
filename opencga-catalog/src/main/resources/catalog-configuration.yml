@@ -38,6 +38,18 @@ emailServer:
   from: ""
   ssl: false
 
+acls:                 # Do not touch the acl configuration. If this is not properly set, the daemons might not work.
+- role: "daemon"
+  users:
+  - "admin"
+  permissions:
+  - "VIEW_FILE_HEADERS"
+  - "VIEW_FILE_CONTENTS"
+  - "VIEW_FILES"
+  - "UPDATE_FILES"
+  - "VIEW_JOBS"
+  - "UPDATE_JOBS"
+
 database:
   hosts:
   - ${OPENCGA.CATALOG.DB.HOSTS}

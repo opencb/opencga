@@ -38,6 +38,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private final CatalogCohortDBAdaptor cohortDBAdaptor;
     private final CatalogDatasetDBAdaptor datasetDBAdaptor;
     private final CatalogPanelDBAdaptor panelDBAdaptor;
+    private final CatalogMetaDBAdaptor metaDBAdaptor;
     private final AuditManager auditManager;
 
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
@@ -52,6 +53,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
         datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
         panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
+        metaDBAdaptor = catalogDBAdaptorFactory.getCatalogMetaDBAdaptor();
     }
 
     @Override
@@ -89,9 +91,17 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
-        StudyAcl studyAcl = getStudyAclBelonging(studyId, userId, groupId);
+        StudyAcl studyAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                studyAcl = studyAclQueryResult.first();
+            }
+        } else {
+            QueryResult<Group> group = getGroupBelonging(studyId, userId);
+            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            studyAcl = getStudyAclBelonging(studyId, userId, groupId);
+        }
         if (studyAcl == null) {
             throw CatalogAuthorizationException.deny(userId, message, "Study", studyId, null);
         }
@@ -115,11 +125,20 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        if (studyAuthenticationContext == null) {
-            studyAuthenticationContext = new StudyAuthenticationContext(studyId);
+        FileAcl fileAcl = null;
+
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                fileAcl = transformStudyAclToFileAcl(studyAclQueryResult.first());
+            }
+        } else {
+            if (studyAuthenticationContext == null) {
+                studyAuthenticationContext = new StudyAuthenticationContext(studyId);
+            }
+            fileAcl = resolveFilePermissions(fileId, userId, studyId, studyAuthenticationContext);
         }
 
-        FileAcl fileAcl = resolveFilePermissions(fileId, userId, studyId, studyAuthenticationContext);
 
         if (!fileAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "File", fileId, null);
@@ -194,7 +213,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        SampleAcl sampleAcl = resolveSamplePermissions(studyId, sampleId, userId);
+        SampleAcl sampleAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                sampleAcl = transformStudyAclToSampleAcl(studyAclQueryResult.first());
+            }
+        } else {
+            sampleAcl = resolveSamplePermissions(studyId, sampleId, userId);
+        }
 
         if (!sampleAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "Sample", sampleId, null);
@@ -269,7 +296,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        IndividualAcl individualAcl = resolveIndividualPermissions(studyId, individualId, userId);
+        IndividualAcl individualAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                individualAcl = transformStudyAclToIndividualAcl(studyAclQueryResult.first());
+            }
+        } else {
+            individualAcl = resolveIndividualPermissions(studyId, individualId, userId);
+        }
 
         if (!individualAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "Individual", individualId, null);
@@ -332,7 +367,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        JobAcl jobAcl = resolveJobPermissions(studyId, jobId, userId);
+        JobAcl jobAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                jobAcl = transformStudyAclToJobAcl(studyAclQueryResult.first());
+            }
+        } else {
+            jobAcl = resolveJobPermissions(studyId, jobId, userId);
+        }
+
 
         if (!jobAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "Job", jobId, null);
@@ -395,7 +439,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        CohortAcl cohortAcl = resolveCohortPermissions(studyId, cohortId, userId);
+        CohortAcl cohortAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                cohortAcl = transformStudyAclToCohortAcl(studyAclQueryResult.first());
+            }
+        } else {
+            cohortAcl = resolveCohortPermissions(studyId, cohortId, userId);
+        }
 
         if (!cohortAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "Cohort", cohortId, null);
@@ -458,7 +510,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        DatasetAcl datasetAcl = resolveDatasetPermissions(studyId, datasetId, userId);
+        DatasetAcl datasetAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                datasetAcl = transformStudyAclToDatasetAcl(studyAclQueryResult.first());
+            }
+        } else {
+            datasetAcl = resolveDatasetPermissions(studyId, datasetId, userId);
+        }
 
         if (!datasetAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "Dataset", datasetId, null);
@@ -522,7 +582,15 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return;
         }
 
-        DiseasePanelAcl panelAcl = resolveDiseasePanelPermissions(studyId, panelId, userId);
+        DiseasePanelAcl panelAcl = null;
+        if (userId.equals("admin")) {
+            QueryResult<StudyAcl> studyAclQueryResult = metaDBAdaptor.getDaemonAcl(Arrays.asList("admin"));
+            if (studyAclQueryResult.getNumResults() == 1) {
+                panelAcl = transformStudyAclToDiseasePanelAcl(studyAclQueryResult.first());
+            }
+        } else {
+            panelAcl = resolveDiseasePanelPermissions(studyId, panelId, userId);
+        }
 
         if (!panelAcl.getPermissions().contains(permission)) {
             throw CatalogAuthorizationException.deny(userId, permission.toString(), "DiseasePanel", panelId, null);
