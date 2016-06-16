@@ -380,7 +380,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         acceptedEnums.put(QueryParams.TYPE.key(), File.Type.class);
         acceptedEnums.put(QueryParams.FORMAT.key(), File.Format.class);
         acceptedEnums.put(QueryParams.BIOFORMAT.key(), File.Bioformat.class);
-       // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
+        // acceptedEnums.put("fileStatus", File.FileStatusEnum.class);
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
             fileParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
             fileParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
@@ -502,7 +502,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             deleteReferencesToFile(id);
         }
 
-        // Change the status of the project to deleted
+        // Change the status of the file to deleted
         setStatus(id, Status.DELETED);
 
         query = new Query(QueryParams.ID.key(), id)
@@ -515,7 +515,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
         query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
-        QueryResult<File> fileQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        QueryResult<File> fileQueryResult = get(query, new QueryOptions(QueryOptions.INCLUDE, QueryParams.ID.key()));
         for (File file : fileQueryResult.getResult()) {
             delete(file.getId(), queryOptions);
         }
@@ -524,18 +524,52 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<File> remove(long id, QueryOptions queryOptions) throws CatalogDBException {
-        throw new UnsupportedOperationException("Remove not yet implemented.");
+        long startTime = startQuery();
+        checkFileId(id);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                FILTER_ROUTE_FILES + QueryParams.ID.key() + "," + FILTER_ROUTE_FILES + QueryParams.STATUS.key());
+        QueryResult<File> fileQueryResult = get(query, options);
+        return endQuery("Remove file", startTime,
+                remove(fileQueryResult.first().getId(), fileQueryResult.first().getStatus().getStatus(), queryOptions));
     }
 
     @Override
     public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
-        QueryResult<File> fileQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
+        // In case there is a status set in the query, we take it out.
+        query.put(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
+        QueryOptions options = new QueryOptions(QueryOptions.INCLUDE,
+                FILTER_ROUTE_FILES + QueryParams.ID.key() + "," + FILTER_ROUTE_FILES + QueryParams.STATUS.key());
+        QueryResult<File> fileQueryResult = get(query, options);
+
         for (File file : fileQueryResult.getResult()) {
-            remove(file.getId(), queryOptions);
+            remove(file.getId(), file.getStatus().getStatus(), queryOptions);
         }
         return endQuery("Remove file", startTime, Collections.singletonList(fileQueryResult.getNumTotalResults()));
+    }
+
+
+    private QueryResult<File> remove(long fileId, String currentStatus, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        if (currentStatus.equals(File.FileStatus.DELETED)) { // We can change the status directly to Removed !
+            setStatus(fileId, File.FileStatus.REMOVED);
+        } else if (!currentStatus.equals(File.FileStatus.REMOVED)) { // If it's different from removed, we have to take care of everything.
+
+            if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
+                checkCanDelete(fileId);
+            }
+
+            if (queryOptions.containsKey(FORCE) && queryOptions.getBoolean(FORCE)) {
+                deleteReferencesToFile(fileId);
+            }
+
+            // Change the status of the file to removed
+            setStatus(fileId, File.FileStatus.REMOVED);
+        }
+
+        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.STATUS_STATUS.key(), Status.REMOVED);
+        return endQuery("Remove file", startTime, get(query, queryOptions));
     }
 
     @Override

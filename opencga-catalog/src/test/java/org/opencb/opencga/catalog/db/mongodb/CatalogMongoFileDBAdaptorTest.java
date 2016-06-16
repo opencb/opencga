@@ -166,8 +166,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void deleteFileTest() throws CatalogDBException, IOException {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
-        System.out.println(delete);
         assertTrue(delete.getNumResults() == 1);
+        assertEquals(File.FileStatus.DELETED, delete.first().getStatus().getStatus());
         try {
             System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
                     (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
@@ -175,6 +175,25 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
         }
+    }
+
+    @Test
+    public void removeFileTest() throws CatalogDBException, IOException {
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
+        // Remove after deleted
+        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
+        assertTrue(remove.getNumResults() == 1);
+        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getStatus());
+    }
+
+    @Test
+    public void removeFileTest2() throws CatalogDBException, IOException {
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        // Remove after READY
+        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
+        assertTrue(remove.getNumResults() == 1);
+        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getStatus());
     }
 
     @Test
