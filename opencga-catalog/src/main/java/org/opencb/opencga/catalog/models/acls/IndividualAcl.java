@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class IndividualAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<IndividualPermissions> permissions;
 
     public enum IndividualPermissions {
@@ -28,13 +28,13 @@ public class IndividualAcl {
     public IndividualAcl() {
     }
 
-    public IndividualAcl(List<String> users, EnumSet<IndividualPermissions> permissions) {
-        this.users = users;
+    public IndividualAcl(String member, EnumSet<IndividualPermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public IndividualAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public IndividualAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<IndividualPermissions> aux = EnumSet.allOf(IndividualPermissions.class);
         for (IndividualPermissions permission : aux) {
@@ -44,20 +44,20 @@ public class IndividualAcl {
         }
     }
 
-    public IndividualAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public IndividualAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(IndividualPermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(IndividualPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public IndividualAcl setUsers(List<String> users) {
-        this.users = users;
+    public IndividualAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 

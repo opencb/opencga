@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class DiseasePanelAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<DiseasePanelPermissions> permissions;
 
     public enum DiseasePanelPermissions {
@@ -24,13 +24,13 @@ public class DiseasePanelAcl {
     public DiseasePanelAcl() {
     }
 
-    public DiseasePanelAcl(List<String> users, EnumSet<DiseasePanelPermissions> permissions) {
-        this.users = users;
+    public DiseasePanelAcl(String member, EnumSet<DiseasePanelPermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public DiseasePanelAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public DiseasePanelAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<DiseasePanelPermissions> aux = EnumSet.allOf(DiseasePanelPermissions.class);
         for (DiseasePanelPermissions permission : aux) {
@@ -40,20 +40,20 @@ public class DiseasePanelAcl {
         }
     }
 
-    public DiseasePanelAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public DiseasePanelAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(DiseasePanelPermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(DiseasePanelPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public DiseasePanelAcl setUsers(List<String> users) {
-        this.users = users;
+    public DiseasePanelAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 

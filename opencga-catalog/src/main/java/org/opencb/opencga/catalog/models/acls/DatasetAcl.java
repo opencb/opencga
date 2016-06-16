@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class DatasetAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<DatasetPermissions> permissions;
 
     public enum DatasetPermissions {
@@ -24,13 +24,13 @@ public class DatasetAcl {
     public DatasetAcl() {
     }
 
-    public DatasetAcl(List<String> users, EnumSet<DatasetPermissions> permissions) {
-        this.users = users;
+    public DatasetAcl(String member, EnumSet<DatasetPermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public DatasetAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public DatasetAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<DatasetPermissions> aux = EnumSet.allOf(DatasetPermissions.class);
         for (DatasetPermissions permission : aux) {
@@ -40,20 +40,20 @@ public class DatasetAcl {
         }
     }
 
-    public DatasetAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public DatasetAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(DatasetPermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(DatasetPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public DatasetAcl setUsers(List<String> users) {
-        this.users = users;
+    public DatasetAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 

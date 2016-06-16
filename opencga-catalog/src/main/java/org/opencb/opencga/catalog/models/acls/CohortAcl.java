@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class CohortAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<CohortPermissions> permissions;
 
     public enum CohortPermissions {
@@ -28,13 +28,13 @@ public class CohortAcl {
     public CohortAcl() {
     }
 
-    public CohortAcl(List<String> users, EnumSet<CohortPermissions> permissions) {
-        this.users = users;
+    public CohortAcl(String member, EnumSet<CohortPermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public CohortAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public CohortAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<CohortPermissions> aux = EnumSet.allOf(CohortPermissions.class);
         for (CohortPermissions permission : aux) {
@@ -44,20 +44,20 @@ public class CohortAcl {
         }
     }
 
-    public CohortAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public CohortAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(CohortPermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(CohortPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public CohortAcl setUsers(List<String> users) {
-        this.users = users;
+    public CohortAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 

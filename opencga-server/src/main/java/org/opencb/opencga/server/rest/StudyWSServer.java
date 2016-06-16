@@ -559,7 +559,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
-            return createOkResponse(catalogManager.shareStudy(studyId, members, roleId, override, sessionId));
+            return createOkResponse(catalogManager.shareStudy(studyId, members, Collections.emptyList(), roleId, override, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
