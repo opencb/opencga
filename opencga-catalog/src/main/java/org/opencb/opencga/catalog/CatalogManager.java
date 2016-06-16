@@ -526,6 +526,11 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.create(name, alias, description, organization, options, sessionId);
     }
 
+    public long getProjectId(String projectId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return projectManager.getProjectId(userId, projectId);
+    }
+
     public QueryResult<Project> getProject(long projectId, QueryOptions options, String sessionId)
             throws CatalogException {
         return projectManager.read(projectId, options, sessionId);
@@ -1044,6 +1049,16 @@ public class CatalogManager implements AutoCloseable {
                                             Map<String, Object> attributes, QueryOptions options, String sessionId)
             throws CatalogException {
         return sampleManager.create(studyId, name, source, description, attributes, options, sessionId);
+    }
+
+    public long getSampleId(String sampleId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return sampleManager.getSampleId(userId, sampleId);
+    }
+
+    public List<Long> getSampleIds(String sampleIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return sampleManager.getSampleIds(userId, sampleIds);
     }
 
     public QueryResult<Sample> getSample(long sampleId, QueryOptions options, String sessionId)
