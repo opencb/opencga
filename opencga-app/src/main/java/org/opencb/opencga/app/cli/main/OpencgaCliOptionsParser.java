@@ -97,6 +97,7 @@ public class OpencgaCliOptionsParser {
         JCommander studySubCommands = jCommander.getCommands().get("studies");
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
+        studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
         studySubCommands.addCommand("list", studyCommandOptions.listCommandOptions);
         studySubCommands.addCommand("resync", studyCommandOptions.resyncCommandOptions);
         studySubCommands.addCommand("check-files", studyCommandOptions.checkCommandOptions);
@@ -114,7 +115,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
-        fileSubCommands.addCommand("alignaments", fileCommandOptions.alignamentsCommandOptions);
+        fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("share", fileCommandOptions.shareCommandOptions);
         fileSubCommands.addCommand("unshare", fileCommandOptions.unshareCommandOptions);

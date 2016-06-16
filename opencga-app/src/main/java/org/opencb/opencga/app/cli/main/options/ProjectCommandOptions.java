@@ -36,7 +36,7 @@ public class ProjectCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--project-id"}, description = "Project identifier", required = true, arity = 1)
+        @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         String id;
     }
 

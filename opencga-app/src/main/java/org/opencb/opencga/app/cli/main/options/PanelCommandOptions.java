@@ -34,7 +34,7 @@ public class PanelCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--panel-id"}, description = "Panel id", required = true, arity = 1)
+        @Parameter(names = {"--panel-id"}, description = "Panel id", required = true, arity = 1)
         String id;
     }
 
@@ -73,7 +73,7 @@ public class PanelCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--panels-ids"}, description = "Panels ids", required = true, arity = 1)
+        @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
         String ids;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
@@ -93,7 +93,7 @@ public class PanelCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--panels-ids"}, description = "Panels ids", required = true, arity = 1)
+        @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
         String ids;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",

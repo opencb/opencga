@@ -26,7 +26,7 @@ public class FileCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public ListCommandOptions listCommandOptions;
     public IndexCommandOptions indexCommandOptions;
-    public AlignamentsCommandOptions alignamentsCommandOptions;
+    public AlignmentCommandOptions alignmentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     //final VariantsCommand variantsCommand;
     public ShareCommandOptions shareCommandOptions;
@@ -53,7 +53,7 @@ public class FileCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
         this.indexCommandOptions = new IndexCommandOptions();
-        this.alignamentsCommandOptions = new AlignamentsCommandOptions();
+        this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.shareCommandOptions = new ShareCommandOptions();
         this.unshareCommandOptions = new UnshareCommandOptions();
@@ -69,7 +69,7 @@ public class FileCommandOptions {
 
     class BaseFileCommand {
 
-        @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
+        @Parameter(names = {"--file-id"}, description = "File id", required = true, arity = 1)
         public String id;
 
         @ParametersDelegate
@@ -85,7 +85,7 @@ public class FileCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
+        @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         String inputFile;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
@@ -108,7 +108,7 @@ public class FileCommandOptions {
         @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
         boolean move;
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+        @Parameter(names = {"--checksum"}, description = "Calculate checksum", required = false, arity = 0)
         boolean calculateChecksum = false;
     }
 
@@ -142,7 +142,7 @@ public class FileCommandOptions {
         @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
         String pattern = "";
 
-        @Parameter(names = {"-ic", "--ignoreCase"}, description = "ignoreCase", required = false, arity = 0)
+        @Parameter(names = {"--ignore-case"}, description = "ignoreCase", required = false, arity = 0)
         boolean ignoreCase = false;
 
         @Parameter(names = {"-m", "--multi"}, description = "multi", required = false, arity = 0)
@@ -193,20 +193,20 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
     class IndexCommandOptions extends BaseFileCommand {
 
-        @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-        public List<String> dashDashParameters;
+    //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+    //    public List<String> dashDashParameters;
 
         @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
         String outdir = "";
 
-        @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-        boolean enqueue;
+    //     @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+    //    boolean enqueue;
 
-        @Parameter(names = "--transform", description = "Run only the transform phase")
-        boolean transform = false;
+    //    @Parameter(names = "--transform", description = "Run only the transform phase")
+    //    boolean transform = false;
 
-        @Parameter(names = "--load", description = "Run only the load phase")
-        boolean load = false;
+    //    @Parameter(names = "--load", description = "Run only the load phase")
+    //    boolean load = false;
 
         @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
         boolean calculateStats = false;
@@ -216,7 +216,7 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"alignaments"}, commandDescription = "Fetch alignments from a BAM file")
-    class AlignamentsCommandOptions extends BaseFileCommand {
+    class AlignmentCommandOptions extends BaseFileCommand {
     }
 
 
@@ -225,22 +225,22 @@ public class FileCommandOptions {
         @Parameter(names = {"--region"}, description = "Region", required = true, arity = 1)
         String region;
 
-        @Parameter(names = {"--view_as_pairs"}, description = "View_as_pairs", required = false, arity = 0)
+        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs", required = false, arity = 0)
         boolean view_as_pairs = false;
 
-        @Parameter(names = {"--include_coverage"}, description = "Include_coverage", required = false, arity = 0)
+        @Parameter(names = {"--include-coverage"}, description = "Include_coverage", required = false, arity = 0)
         boolean include_coverage = true;
 
-        @Parameter(names = {"--process_differences"}, description = "Process_differences", required = false, arity = 0)
+        @Parameter(names = {"--process-differences"}, description = "Process_differences", required = false, arity = 0)
         boolean process_differences = true;
 
         @Parameter(names = {"--histogram"}, description = "Histogram", required = false, arity = 0)
         boolean histogram = false;
 
-        @Parameter(names = {"--groupBy"}, description = "GroupBy: [ct, gene, ensemblGene]", required = false, arity = 1)
+        @Parameter(names = {"--group-by"}, description = "GroupBy: [ct, gene, ensemblGene]", required = false, arity = 1)
         String groupBy;
 
-        @Parameter(names = {"--variantSource"}, description = "VariantSource", required = false, arity = 0)
+        @Parameter(names = {"--variant-source"}, description = "Variant Source", required = false, arity = 0)
         boolean variantSource = false;
 
         @Parameter(names = {"--interval"}, description = "Interval", required = false, arity = 1)
@@ -254,7 +254,7 @@ public class FileCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-fids", "--fileIds"}, description = "fileIds", required = true)
+        @Parameter(names = {"--file-ids"}, description = "fileIds", required = true)
         String fileIds;
 
         @Parameter(names = {"--members"},
@@ -274,7 +274,7 @@ public class FileCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-fids", "--fileIds"}, description = "fileIds", required = true)
+        @Parameter(names = {"--file-ids"}, description = "File Ids", required = true)
         String fileIds;
 
         @Parameter(names = {"--members"},
@@ -347,7 +347,7 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"upload"}, commandDescription = "Attach a physical file to a catalog entry file.")
     class UploadCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
+        @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         String inputFile;
 
         @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed",

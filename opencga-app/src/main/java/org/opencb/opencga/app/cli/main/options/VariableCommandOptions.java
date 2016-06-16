@@ -43,7 +43,7 @@ public class VariableCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--variable-id"}, description = "VariableSet id", required = true, arity = 1)
+        @Parameter(names = {"--variable-id"}, description = "VariableSet id", required = true, arity = 1)
         Integer id;
     }
 

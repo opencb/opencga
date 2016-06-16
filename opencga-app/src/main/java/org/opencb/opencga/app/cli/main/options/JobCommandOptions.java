@@ -48,7 +48,7 @@ public class JobCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
         Integer id;
     }
 
@@ -86,7 +86,7 @@ public class JobCommandOptions {
         String studyId;
 
 
-        @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = false, arity = 1)
+        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
         String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
@@ -135,7 +135,7 @@ public class JobCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--job-ids"}, description = "Jobs ids", required = true, arity = 1)
+        @Parameter(names = {"--job-ids"}, description = "Jobs ids", required = true, arity = 1)
         String jobsids;
 
         @Parameter(names = {"--members"},
@@ -157,7 +157,7 @@ public class JobCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--job-ids"}, description = "Jobs ids", required = true, arity = 1)
+        @Parameter(names = {"--job-ids"}, description = "Jobs ids", required = true, arity = 1)
         String jobsids;
 
         @Parameter(names = {"--members"},
