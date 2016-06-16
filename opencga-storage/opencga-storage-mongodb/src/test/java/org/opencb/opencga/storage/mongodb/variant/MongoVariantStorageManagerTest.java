@@ -21,8 +21,11 @@ import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
@@ -46,6 +49,79 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
 //    protected ExpectedException getThrown() {
 //        return thrown;
 //    }
+
+
+    @Test
+    public void stageResumeFromErrorTest() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+        BatchFileOperation operation = new BatchFileOperation(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(),
+                Collections.singletonList(FILE_ID), System.currentTimeMillis());
+        operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileOperation.Status.RUNNING);
+        operation.addStatus(new Date(System.currentTimeMillis() - 50), BatchFileOperation.Status.ERROR);
+        // Last status is ERROR
+
+        studyConfiguration.getBatches().add(operation);
+        MongoDBVariantStorageManager variantStorageManager = getVariantStorageManager();
+        variantStorageManager.getDBAdaptor(DB_NAME).getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+
+        System.out.println("----------------");
+        System.out.println("|   RESUME     |");
+        System.out.println("----------------");
+
+        runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE_RESUME.key(), false)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+
+    }
+
+    @Test
+    public void stageForceResumeTest() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+        BatchFileOperation operation = new BatchFileOperation(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(),
+                Collections.singletonList(FILE_ID), System.currentTimeMillis());
+        operation.addStatus(new Date(System.currentTimeMillis() - 100), BatchFileOperation.Status.RUNNING);
+        operation.addStatus(new Date(System.currentTimeMillis() - 50), BatchFileOperation.Status.ERROR);
+        operation.addStatus(new Date(System.currentTimeMillis()), BatchFileOperation.Status.RUNNING);
+        // Last status is RUNNING
+        studyConfiguration.getBatches().add(operation);
+        MongoDBVariantStorageManager variantStorageManager = getVariantStorageManager();
+        variantStorageManager.getDBAdaptor(DB_NAME).getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+
+        try {
+            runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration);
+            fail();
+        } catch (StorageManagerException e) {
+            e.printStackTrace();
+            assertTrue(e.getCause().getMessage().contains("is being loaded in the stage collection right now"));
+        }
+
+        System.out.println("----------------");
+        System.out.println("|   RESUME     |");
+        System.out.println("----------------");
+
+        runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE_RESUME.key(), true)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+        );
+    }
+
+    @Test
+    public void mergeAlreadyStagedFileTest() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+
+        StorageETLResult storageETLResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), false));
+
+        runETL(variantStorageManager, storageETLResult.getTransformResult(), outputUri, new ObjectMap()
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), true), false, false, true);
+
+        Long count = variantStorageManager.getDBAdaptor(DB_NAME).count(null).first();
+        assertTrue(count > 0);
+    }
 
     @Test
     public void checkCanLoadSampleBatchTest() throws StorageManagerException {

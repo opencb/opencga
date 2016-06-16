@@ -58,7 +58,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         COLLECTION_STAGE("collection.stage",  "stage"),
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Collections.singleton("0/0")),
-        ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0);
+        ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
+        STAGE("stage", 0),
+        STAGE_RESUME("stage.resume", 0),
+        MERGE("merge", 0),
+        MERGE_RESUME("merge.resume", 0);
 
         private final String key;
         private final Object value;
@@ -155,6 +159,13 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                 }
             }
 
+            boolean doStage = getOptions().getBoolean(STAGE.key());
+            boolean doMerge = getOptions().getBoolean(MERGE.key());
+            if (!doStage && !doMerge) {
+                doStage = true;
+                doMerge = true;
+            }
+
             if (doLoad) {
                 int batchLoad = getOptions().getInt(Options.MERGE_BATCH_SIZE.key(), Options.MERGE_BATCH_SIZE.defaultValue());
                 List<Integer> fileIds = new ArrayList<>(batchLoad);
@@ -166,23 +177,28 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
                     MongoDBVariantStorageETL storageETL = entry.getValue();
 
 
-                    storageETL.getOptions().put("merge", false);
-                    loadFile(storageETL, etlResult, results, input, outdirUri);
+                    if (doStage) {
+                        storageETL.getOptions().put(STAGE.key(), true);
+                        storageETL.getOptions().put(MERGE.key(), false);
+                        loadFile(storageETL, etlResult, results, input, outdirUri);
+                    }
 
-                    fileIds.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
-                    if (fileIds.size() == batchLoad || !iterator.hasNext()) {
-                        long millis = System.currentTimeMillis();
-                        try {
-                            storageETL.getOptions().put("merge", true);
-                            storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(fileIds));
-                            storageETL.merge(fileIds);
-                            storageETL.postLoad(input, outdirUri);
-                            fileIds.clear();
-                        } catch (Exception e) {
-                            etlResult.setLoadError(e);
-                            throw new StorageETLException("Exception executing merge.", e, results);
-                        } finally {
-                            etlResult.setLoadTimeMillis(etlResult.getLoadTimeMillis() + System.currentTimeMillis() - millis);
+                    if (doMerge) {
+                        fileIds.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                        if (fileIds.size() == batchLoad || !iterator.hasNext()) {
+                            long millis = System.currentTimeMillis();
+                            try {
+                                storageETL.getOptions().put(MERGE.key(), true);
+                                storageETL.getOptions().put(Options.FILE_ID.key(), new ArrayList<>(fileIds));
+                                storageETL.merge(fileIds);
+                                storageETL.postLoad(input, outdirUri);
+                                fileIds.clear();
+                            } catch (Exception e) {
+                                etlResult.setLoadError(e);
+                                throw new StorageETLException("Exception executing merge.", e, results);
+                            } finally {
+                                etlResult.setLoadTimeMillis(etlResult.getLoadTimeMillis() + System.currentTimeMillis() - millis);
+                            }
                         }
                     }
                 }

@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.metadata;
 
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.TreeMap;
@@ -75,6 +76,10 @@ public class BatchFileOperation {
 
     public TreeMap<Date, Status> getStatus() {
         return status;
+    }
+
+    public BatchFileOperation addStatus(Status status) {
+        return addStatus(Calendar.getInstance().getTime(), status);
     }
 
     public BatchFileOperation addStatus(Date date, Status status) {

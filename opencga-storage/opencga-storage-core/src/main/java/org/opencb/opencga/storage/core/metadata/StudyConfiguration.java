@@ -256,6 +256,10 @@ public class StudyConfiguration {
         return this;
     }
 
+    public BatchFileOperation lastBatch() {
+        return getBatches().get(getBatches().size() - 1);
+    }
+
     public VariantSource.Aggregation getAggregation() {
         return aggregation;
     }
