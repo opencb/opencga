@@ -23,6 +23,7 @@ monitor:
   daysToRemove: 30
   executionSleepTime: 4000
   fileSleepTime: 4000
+  port: 9092
 
 execution:
   mode: "local"

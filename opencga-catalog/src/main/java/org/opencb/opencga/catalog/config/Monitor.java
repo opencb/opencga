@@ -25,6 +25,8 @@ public class Monitor {
     private int executionSleepTime;
     private int fileSleepTime;
 
+    private int port;
+
     public Monitor() {
     }
 
@@ -62,6 +64,15 @@ public class Monitor {
 
     public Monitor setFileSleepTime(int fileSleepTime) {
         this.fileSleepTime = fileSleepTime;
+        return this;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public Monitor setPort(int port) {
+        this.port = port;
         return this;
     }
 }

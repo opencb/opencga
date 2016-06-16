@@ -18,13 +18,12 @@ package org.opencb.opencga.app.cli.admin;
 
 
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
-import org.opencb.opencga.client.rest.OpenCGAClient;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
@@ -65,6 +64,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
             case "index":
                 index();
+                break;
+            case "daemon":
+                daemons();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -204,4 +206,15 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         catalogManager.installIndexes();
     }
 
+    private void daemons() throws CatalogException {
+        MonitorService monitorService = new MonitorService(catalogConfiguration);
+        try {
+            monitorService.start();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new CatalogException(e.getCause());
+        }
+
+    }
 }
