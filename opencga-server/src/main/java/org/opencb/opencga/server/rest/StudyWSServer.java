@@ -92,42 +92,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/info")
-    @ApiOperation(value = "Study information", position = 2)
-    public Response info(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
-        try {
-            String[] studyIdArray = studyIdsStr.split(",");
-            List<QueryResult<Study>> queryResults = new LinkedList<>();
-            for (String studyIdStr : studyIdArray) {
-                long studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(catalogManager.getStudy(studyId, queryOptions, sessionId));
-            }
-            return createOkResponse(queryResults);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{studyId}/summary")
-    @ApiOperation(value = "Summary with the general stats of a study", position = 3)
-    public Response summary(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
-        try {
-            String[] studyIdArray = studyIdsStr.split(",");
-            List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
-            for (String studyIdStr : studyIdArray) {
-                long studyId = catalogManager.getStudyId(studyIdStr);
-                queryResults.add(catalogManager.getStudySummary(studyId, sessionId, queryOptions));
-            }
-            return createOkResponse(queryResults);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/search")
-    @ApiOperation(value = "Search studies", position = 4)
+    @ApiOperation(value = "Search studies", position = 2)
     public Response getAllStudies(@ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
@@ -154,7 +120,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/update")
-    @ApiOperation(value = "Study modify", position = 5)
+    @ApiOperation(value = "Study modify", position = 3)
     public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
                            @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
@@ -191,10 +157,46 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", position = 6)
+    @ApiOperation(value = "Delete a study [PENDING]", position = 4)
     public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
         return createOkResponse("PENDING");
     }
+
+    @GET
+    @Path("/{studyId}/info")
+    @ApiOperation(value = "Study information", position = 5)
+    public Response info(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
+        try {
+            String[] studyIdArray = studyIdsStr.split(",");
+            List<QueryResult<Study>> queryResults = new LinkedList<>();
+            for (String studyIdStr : studyIdArray) {
+                long studyId = catalogManager.getStudyId(studyIdStr);
+                queryResults.add(catalogManager.getStudy(studyId, queryOptions, sessionId));
+            }
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{studyId}/summary")
+    @ApiOperation(value = "Summary with the general stats of a study", position = 6)
+    public Response summary(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
+        try {
+            String[] studyIdArray = studyIdsStr.split(",");
+            List<QueryResult<StudySummary>> queryResults = new LinkedList<>();
+            for (String studyIdStr : studyIdArray) {
+                long studyId = catalogManager.getStudyId(studyIdStr);
+                queryResults.add(catalogManager.getStudySummary(studyId, sessionId, queryOptions));
+            }
+            return createOkResponse(queryResults);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 
     @GET
     @Path("/{studyId}/files")
@@ -498,12 +500,13 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/create")
-    @ApiOperation(value = "Create a group [PENDING]", position = 13)
+    @ApiOperation(value = "Create a group [PENDING]", position = 14)
     public Response createGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
                            @ApiParam(value = "Comma separated list of members that will form the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(null);
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            return createOkResponse(catalogManager.addUsersToGroup(studyId, groupId, members, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -511,7 +514,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/info")
-    @ApiOperation(value = "Returns the groupId [PENDING]", position = 13)
+    @ApiOperation(value = "Returns the groupId [PENDING]", position = 15)
     public Response getGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
                                       @ApiParam(value = "Comma separated list of members that will be added to the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
@@ -524,7 +527,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/update")
-    @ApiOperation(value = "Updates the members of the group [PENDING]", position = 13)
+    @ApiOperation(value = "Updates the members of the group [PENDING]", position = 16)
     public Response addMembersToGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                 @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
                                 @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
@@ -539,7 +542,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/delete")
-    @ApiOperation(value = "Delete the group [PENDING]", position = 13)
+    @ApiOperation(value = "Delete the group [PENDING]", position = 17)
     public Response deleteMembersFromGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
                                       @ApiParam(value = "Comma separated list of members that will be taken out from the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
@@ -550,37 +553,49 @@ public class StudyWSServer extends OpenCGAWSServer {
         }
     }
 
+//    @GET
+//    @Path("/{studyId}/assignRole")
+//    @ApiOperation(value = "Assigns a role for a list of members [DEPRECATED]", position = 14)
+//    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+//                           @ApiParam(value = "Role.", allowableValues = "admin, analyst, locked", required = true) @DefaultValue("") @QueryParam("role") String roleId,
+//                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                           @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+//        try {
+//            long studyId = catalogManager.getStudyId(studyIdStr);
+//            return createOkResponse(catalogManager.shareStudy(studyId, members, Collections.emptyList(), roleId, override, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/{studyId}/removeRole")
+//    @ApiOperation(value = "Removes a list of members from the roles they had [DEPRECATED]", position = 15)
+//    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+//                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+//        try {
+//            long studyId = catalogManager.getStudyId(studyIdStr);
+//            return createOkResponse(catalogManager.unshareStudy(studyId, members, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+
     @GET
-    @Path("/{studyId}/assignRole")
-    @ApiOperation(value = "Assigns a role for a list of members [DEPRECATED]", position = 14)
-    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "Role.", allowableValues = "admin, analyst, locked", required = true) @DefaultValue("") @QueryParam("role") String roleId,
-                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                           @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+    @Path("/{studyId}/acls")
+    @ApiOperation(value = "Returns the acls of the study [PENDING]", position = 18)
+    public Response getAcls(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            return createOkResponse(catalogManager.shareStudy(studyId, members, Collections.emptyList(), roleId, override, sessionId));
+            return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
-    @GET
-    @Path("/{studyId}/removeRole")
-    @ApiOperation(value = "Removes a list of members from the roles they had [DEPRECATED]", position = 15)
-    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
-        try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            return createOkResponse(catalogManager.unshareStudy(studyId, members, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
 
     @GET
     @Path("/{studyId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 15)
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
     public Response createRole(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
@@ -594,7 +609,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 15)
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
     public Response getAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
@@ -606,7 +621,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 15)
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
     public Response updateAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
                            @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
@@ -621,7 +636,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 15)
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
     public Response deleteAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
