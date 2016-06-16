@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.client;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -63,6 +64,7 @@ public class CatalogDBClientTest {
         catalog.close();
     }
 
+    @Ignore
     @Test
     public void connectionTest() throws CatalogException {
         QueryResult<User> read = catalog.users().read(null);
@@ -70,6 +72,7 @@ public class CatalogDBClientTest {
     }
 
 
+    @Ignore
     @Test
     public void modifyUserTest() throws CatalogException {
         QueryOptions attributes = new QueryOptions("myString", "asdf");
@@ -82,11 +85,11 @@ public class CatalogDBClientTest {
         System.out.println(catalog.users(userId).read(null));
     }
 
+    @Ignore
     @Test
     public void createProjectTest() throws CatalogException {
         QueryResult<Project> projectQueryResult = catalog.projects().create(userId, "project", "p1", "testProject", "ACME", null);
         System.out.println("projectQueryResult = " + projectQueryResult);
     }
-
 
 }
