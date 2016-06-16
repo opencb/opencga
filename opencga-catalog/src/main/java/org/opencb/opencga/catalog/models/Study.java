@@ -38,6 +38,7 @@ public class Study {
     private Status status;
     private String lastActivity;
     private long diskUsage;
+    // TODO: Pending !!!
     private String cipher;
 
     private List<Group> groups;

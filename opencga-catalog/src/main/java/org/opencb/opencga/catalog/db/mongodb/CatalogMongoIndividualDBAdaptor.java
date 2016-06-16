@@ -48,6 +48,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by hpccoll1 on 19/06/15.
@@ -896,7 +897,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                         break;
                     case ANNOTATION:
                         if (variableMap == null) {
-                            int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
+                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
                                     .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
                         }

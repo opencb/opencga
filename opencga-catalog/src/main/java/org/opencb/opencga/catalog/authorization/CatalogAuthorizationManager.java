@@ -16,6 +16,9 @@ import org.opencb.opencga.catalog.models.acls.*;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by pfurio on 12/05/16.
@@ -28,6 +31,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                     FILTER_ROUTE_FILES + CatalogFileDBAdaptor.QueryParams.ACLS.key()
             ));
 
+    private final CatalogDBAdaptorFactory dbAdaptorFactory;
     private final CatalogUserDBAdaptor userDBAdaptor;
     private final CatalogProjectDBAdaptor projectDBAdaptor;
     private final CatalogStudyDBAdaptor studyDBAdaptor;
@@ -43,6 +47,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     public CatalogAuthorizationManager(CatalogDBAdaptorFactory catalogDBAdaptorFactory, AuditManager auditManager) {
         this.auditManager = auditManager;
+        this.dbAdaptorFactory = catalogDBAdaptorFactory;
         userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
         studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
@@ -769,7 +774,6 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
                             + "defined for that member.");
                 }
             }
-
         }
 
         // Set the permissions
@@ -1230,16 +1234,46 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
-    public QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId, boolean override)
-            throws CatalogException {
+    public QueryResult<StudyAcl> createStudyPermissions(String userId, long studyId, List<String> members, List<String> permissions,
+                                                        String template, boolean override) throws CatalogException {
+
+        studyDBAdaptor.checkStudyId(studyId);
+        checkMembers(dbAdaptorFactory, studyId, members);
+
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
-        return studyDBAdaptor.setStudyAcl(studyId, roleId, members, override);
+
+        // We obtain the permissions present in the demanded template (if present)
+        EnumSet<StudyAcl.StudyPermissions> studyPermissions = AuthorizationManager.getLockedAcls();
+        if (template != null && !template.isEmpty()) {
+            if (template.equals("admin")) {
+                studyPermissions = AuthorizationManager.getAdminAcls();
+            } else if (template.equals("analyst")) {
+                studyPermissions = AuthorizationManager.getAnalystAcls();
+            }
+        }
+        // Add the permissions present in permissions
+        studyPermissions.addAll(permissions.stream().map(StudyAcl.StudyPermissions::valueOf).collect(Collectors.toList()));
+
+        int timeSpent = 0;
+        List<StudyAcl> studyAclList = new ArrayList<>(members.size());
+        for (String member : members) {
+            StudyAcl studyAcl = new StudyAcl(member, studyPermissions);
+            QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.setStudyAcl(studyId, studyAcl, override);
+            timeSpent += studyAclQueryResult.getDbTime();
+            studyAclList.add(studyAclQueryResult.first());
+        }
+
+        return new QueryResult<>("setStudyPermissions", timeSpent, studyAclList.size(), studyAclList.size(), "", "", studyAclList);
     }
 
     @Override
-    public void removeMembersFromRole(String userId, long studyId, List<String> members)
-            throws CatalogException {
+    public void removeStudyPermissions(String userId, long studyId, List<String> members) throws CatalogException {
+
+        studyDBAdaptor.checkStudyId(studyId);
+        checkMembers(dbAdaptorFactory, studyId, members);
+
         checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+
         String studyOwnerId = studyDBAdaptor.getStudyOwnerId(studyId);
         if (members.contains(studyOwnerId)) {
             throw new CatalogException("Error: It is not allowed removing the permissions to the owner of the study.");
@@ -1381,8 +1415,16 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return getStudyAclBelonging(studyId, members);
     }
 
+    /**
+     * Retrieves the studyAcl for the members.
+     *
+     * @param studyId study id.
+     * @param members Might be one user, one group or one user and the group where the user belongs to.
+     * @return the studyAcl of the user/group.
+     * @throws CatalogException when there is a database error.
+     */
     StudyAcl getStudyAclBelonging(long studyId, List<String> members) throws CatalogException {
-        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, members);
+        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, members);
         if (studyQueryResult.getNumResults() > 0) {
             return studyQueryResult.first();
         }
@@ -1410,7 +1452,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return fileAcl;
         }
 
-        fileAcl.setUsers(studyAcl.getUsers());
+        fileAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<FileAcl.FilePermissions> filePermissions = EnumSet.noneOf(FileAcl.FilePermissions.class);
 
@@ -1430,7 +1472,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return sampleAcl;
         }
 
-        sampleAcl.setUsers(studyAcl.getUsers());
+        sampleAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<SampleAcl.SamplePermissions> samplePermission = EnumSet.noneOf(SampleAcl.SamplePermissions.class);
 
@@ -1450,7 +1492,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return individualAcl;
         }
 
-        individualAcl.setUsers(studyAcl.getUsers());
+        individualAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<IndividualAcl.IndividualPermissions> individualPermissions = EnumSet.noneOf(IndividualAcl.IndividualPermissions.class);
 
@@ -1470,7 +1512,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return jobAcl;
         }
 
-        jobAcl.setUsers(studyAcl.getUsers());
+        jobAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<JobAcl.JobPermissions> jobPermissions = EnumSet.noneOf(JobAcl.JobPermissions.class);
 
@@ -1490,7 +1532,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return cohortAcl;
         }
 
-        cohortAcl.setUsers(studyAcl.getUsers());
+        cohortAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<CohortAcl.CohortPermissions> cohortPermissions = EnumSet.noneOf(CohortAcl.CohortPermissions.class);
 
@@ -1510,7 +1552,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return datasetAcl;
         }
 
-        datasetAcl.setUsers(studyAcl.getUsers());
+        datasetAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<DatasetAcl.DatasetPermissions> datasetPermissions = EnumSet.noneOf(DatasetAcl.DatasetPermissions.class);
 
@@ -1530,7 +1572,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return panelAcl;
         }
 
-        panelAcl.setUsers(studyAcl.getUsers());
+        panelAcl.setUsers(Arrays.asList(studyAcl.getMember()));
         EnumSet<StudyAcl.StudyPermissions> studyPermissions = studyAcl.getPermissions();
         EnumSet<DiseasePanelAcl.DiseasePanelPermissions> datasetPermissions = EnumSet.noneOf(DiseasePanelAcl.DiseasePanelPermissions.class);
 

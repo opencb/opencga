@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Math.toIntExact;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implements CatalogCohortDBAdaptor {
 
@@ -315,7 +316,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, cohortId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
         Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
         List<CohortAcl> cohortAcl = null;
@@ -460,7 +461,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove possible cohortAcls that might have permissions defined but no users
         Bson queryBson = new Document(QueryParams.ID.key(), cohortId)
-                .append(QueryParams.ACLS_USERS.key(),
+                .append(QueryParams.ACLS_MEMBER.key(),
                         new Document("$exists", true).append("$eq", Collections.emptyList()));
         Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
         cohortCollection.update(queryBson, update, null);
@@ -806,7 +807,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                         break;
                     case ANNOTATION:
                         if (variableMap == null) {
-                            int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
+                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             if (variableSetId > 0) {
                                 variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
                                         .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));

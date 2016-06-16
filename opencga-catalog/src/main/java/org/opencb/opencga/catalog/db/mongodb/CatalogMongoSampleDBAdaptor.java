@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Math.toIntExact;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by hpccoll1 on 14/08/15.
@@ -1098,7 +1099,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                         break;
                     case ANNOTATION:
                         if (variableMap == null) {
-                            int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
+                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             if (variableSetId > 0) {
                                 variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
                                         .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));

@@ -92,12 +92,11 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * returned.
      *
      * @param studyId Study id.
-     * @param roleId Role id to look for studyAcls.
      * @param members List of members to look for permissions. Can only be existing users or groups.
      * @return A queryResult object containing a list of studyAcls that satisfies the query.
      * @throws CatalogDBException when the studyId does not exist, or the roleId or the members introduced do not exist in the database.
      */
-    QueryResult<StudyAcl> getStudyAcl(long studyId, @Nullable String roleId, List<String> members) throws CatalogDBException;
+    QueryResult<StudyAcl> getStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
@@ -134,6 +133,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      */
     void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
+    QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException;
+
     /**
      * Adds the permissions defined in the roleId to the list of members.
      *
@@ -146,6 +147,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @throws CatalogDBException when any of the studyId, roleId or members do not exist or if there is a user inside a group defined in
      * members that already have a permission created.
      */
+    @Deprecated
     QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members, boolean override) throws CatalogDBException;
 
     /**
@@ -231,8 +233,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_ROLE("acls.role", TEXT, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
