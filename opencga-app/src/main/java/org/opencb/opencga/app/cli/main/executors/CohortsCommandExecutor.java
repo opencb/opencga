@@ -18,12 +18,10 @@ package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Sample;
 
 import java.io.IOException;
 
@@ -38,7 +36,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         super(cohortsCommandOptions.commonCommandOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
     }
-
 
 
     @Override
@@ -89,30 +86,35 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new cohort");
         String studyId = cohortsCommandOptions.createCommandOptions.studyId;
         String cohortName = cohortsCommandOptions.createCommandOptions.name;
-        openCGAClient.getCohortClient().create(studyId,cohortName,null);
+        openCGAClient.getCohortClient().create(studyId, cohortName, null);
         logger.debug("Done");
     }
-    private void info() throws CatalogException, IOException  {
+
+    private void info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
         QueryResponse<Cohort> info =
-                openCGAClient.getCohortClient().get(Long.toString(cohortsCommandOptions.infoCommandOptions.id),null);
+                openCGAClient.getCohortClient().get(Long.toString(cohortsCommandOptions.infoCommandOptions.id), null);
         System.out.println("Cohorts = " + info);
-/************************ Mirar si hay que blindar esto mas, converison de long a string, puede ser null? lo mismo en el de abajo******************////
+/************************ Mirar si hay que blindar esto mas, converison de long a string, puede ser null? lo mismo en el de
+ * abajo******************////
     }
-    private void samples() throws CatalogException, IOException  {
+
+    private void samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
-       // QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions.samplesCommandOptions.id), null);
+        // QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions
+        // .samplesCommandOptions.id), null);
         //System.out.println("Samples = " + samples);
     }
 
-    private void annotate() throws CatalogException, IOException  {
+    private void annotate() throws CatalogException, IOException {
         logger.debug("Annotating cohort");
     }
-    private void update() throws CatalogException, IOException  {
+
+    private void update() throws CatalogException, IOException {
         logger.debug("Updating cohort");
     }
 
-    private void delete() throws CatalogException, IOException  {
+    private void delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
     }
 

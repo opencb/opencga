@@ -43,7 +43,7 @@ public class ToolCommandOptions {
 
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
-    class InfoCommandOptions extends BaseToolsCommand{
+    class InfoCommandOptions extends BaseToolsCommand {
         @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
         String execution;
     }
@@ -62,15 +62,17 @@ public class ToolCommandOptions {
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Tool help")
-    class HelpCommandOptions extends BaseToolsCommand{
+    class HelpCommandOptions extends BaseToolsCommand {
         @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
         String execution;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")
-    class UpdateCommandOptions extends BaseToolsCommand{ }
+    class UpdateCommandOptions extends BaseToolsCommand {
+    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a tool")
-    class DeleteCommandOptions extends BaseToolsCommand{ }
+    class DeleteCommandOptions extends BaseToolsCommand {
+    }
 
 }

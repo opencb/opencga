@@ -37,15 +37,14 @@ public class UserCommandOptions {
     }
 
     class BaseUserCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"-u", "--user-id"}, description = "User id", arity = 1)
         public String user;
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
-    public class CreateCommandOptions extends BaseUserCommand{
+    public class CreateCommandOptions extends BaseUserCommand {
 
       /*  @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
@@ -67,7 +66,7 @@ public class UserCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")
-    public class InfoCommandOptions extends BaseUserCommand{
+    public class InfoCommandOptions extends BaseUserCommand {
 
     }
 
@@ -94,11 +93,11 @@ public class UserCommandOptions {
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
         public String user;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = true)
+        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false, password = true)
         public String password;
 
         @Deprecated
-        @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
+        @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false, password = true)
         public String hiddenPassword;
 
         @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)

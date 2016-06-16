@@ -41,37 +41,34 @@ public class StudyCommandOptions {
     }
 
     abstract class BaseStudyCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String projectId;
-
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
-
         @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
         public String alias;
-
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
         @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
         Study.Type type = Study.Type.COLLECTION;
 
         @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
         String description;
 
-        @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required = false, arity = 1)
+        @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required
+                = false, arity = 1)
         String uri;
 
-        @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
+        @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. " +
+                "<bioformat>:<storageEngineName>:<database_name>")
         List<String> datastores;
 
         @Parameter(names = {"--aggregation-type"}, description = "Set the study as aggregated of type {NONE, BASIC, EVS, EXAC}")
@@ -79,7 +76,8 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
-    public class InfoCommandOptions  extends BaseStudyCommand {}
+    public class InfoCommandOptions extends BaseStudyCommand {
+    }
 
     @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
     class ResyncCommandOptions extends BaseStudyCommand {
@@ -108,18 +106,17 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
-    public class StatusCommandOptions extends BaseStudyCommand {}
+    public class StatusCommandOptions extends BaseStudyCommand {
+    }
 
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
     class AnnotationCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
-        String outdir = "";
-
-        @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-        boolean enqueue;
-
         @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
         public List<String> dashDashParameters;
+        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
+        String outdir = "";
+        @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+        boolean enqueue;
     }
 }

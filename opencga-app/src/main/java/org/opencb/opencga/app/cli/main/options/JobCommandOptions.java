@@ -1,7 +1,9 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.*;
-import org.opencb.datastore.core.ObjectMap;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 
 /**
@@ -19,9 +21,9 @@ public class JobCommandOptions {
     public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
-   // public DoneJobCommandOptions doneJobCommandOptions;
-   // public StatusCommandOptions statusCommandOptions;
-   // public RunJobCommandOptions runJobCommandOptions;
+    // public DoneJobCommandOptions doneJobCommandOptions;
+    // public StatusCommandOptions statusCommandOptions;
+    // public RunJobCommandOptions runJobCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -38,7 +40,7 @@ public class JobCommandOptions {
         this.shareCommandOptions = new ShareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
 
-    //    this.runJobCommandOptions = new RunJobCommandOptions();
+        //    this.runJobCommandOptions = new RunJobCommandOptions();
 
     }
 
@@ -49,21 +51,18 @@ public class JobCommandOptions {
         @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
         Integer id;
     }
+
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
     public class CreateCommandOptions {
 
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
-
         @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
         public String name;
-
         @Parameter(names = {"--tool-id"}, description = "Tool Id", required = true, arity = 1)
         public String toolId;
-
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
         @Parameter(names = {"--execution"}, description = "Execution", required = false, arity = 1)
         String execution;
 
@@ -73,8 +72,8 @@ public class JobCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
-    class InfoCommandOptions extends BaseJobCommand{ }
-
+    class InfoCommandOptions extends BaseJobCommand {
+    }
 
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search job")
@@ -90,22 +89,22 @@ public class JobCommandOptions {
         @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = false, arity = 1)
         String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         String name;
 
-        @Parameter(names = {"--path"}, description = "Path.",required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
         String path;
 
-        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
         String status;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.",required = false, arity = 1)
+        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
         String ownerId;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
         String creationDate;
 
-        @Parameter(names = {"--modification-date"}, description = "Modification date.",required = false, arity = 1)
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
         String modificationDate;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
@@ -121,10 +120,11 @@ public class JobCommandOptions {
     }
 
     @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")
-    class VisitCommandOptions extends BaseJobCommand{ }
+    class VisitCommandOptions extends BaseJobCommand {
+    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")
-    class DeleteCommandOptions extends BaseJobCommand{
+    class DeleteCommandOptions extends BaseJobCommand {
         @Parameter(names = {"--delete-files"}, description = "Delete files, default:true", required = false, arity = 0)
         boolean deleteFiles;
     }
@@ -148,7 +148,7 @@ public class JobCommandOptions {
         String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
+                " of permissions in case any member already had any, default:false", required = false, arity = 0)
         boolean override;
     }
 
@@ -190,22 +190,22 @@ public class JobCommandOptions {
                 required = false, arity = 1)
         String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         String name;
 
-        @Parameter(names = {"--path"}, description = "Path.",required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
         String path;
 
-        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
         String status;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.",required = false, arity = 1)
+        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
         String ownerId;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
         String creationDate;
 
-        @Parameter(names = {"--modification-date"}, description = "Modification date.",required = false, arity = 1)
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
         String modificationDate;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
@@ -214,7 +214,6 @@ public class JobCommandOptions {
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         String attributes;
-
 
 
     }
@@ -234,10 +233,12 @@ public class JobCommandOptions {
         @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
         boolean error;
 
-        @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 0)
+        @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required =
+        false, arity = 0)
         boolean force;
 
-        @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.", required = false, arity = 0)
+        @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.",
+        required = false, arity = 0)
         boolean discardOutput;
     }
 

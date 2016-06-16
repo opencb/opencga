@@ -59,13 +59,15 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
-    class InfoCommandOptions extends BaseProjectCommand{ }
+    class InfoCommandOptions extends BaseProjectCommand {
+    }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")
-    class StudiesCommandOptions extends BaseProjectCommand{ }
+    class StudiesCommandOptions extends BaseProjectCommand {
+    }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
-    class UpdateCommandOptions extends BaseProjectCommand{
+    class UpdateCommandOptions extends BaseProjectCommand {
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         String name;
 
@@ -83,6 +85,7 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
-    class DeleteCommandOptions extends BaseProjectCommand{ }
+    class DeleteCommandOptions extends BaseProjectCommand {
+    }
 
 }

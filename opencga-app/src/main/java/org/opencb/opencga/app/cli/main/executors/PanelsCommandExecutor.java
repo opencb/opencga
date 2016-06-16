@@ -19,7 +19,6 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
-import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
@@ -33,7 +32,6 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         super(panelsCommandOptions.commonCommandOptions);
         this.panelsCommandOptions = panelsCommandOptions;
     }
-
 
 
     @Override
@@ -64,6 +62,7 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
     private void create() throws CatalogException {
         logger.debug("Creating a panel");
     }
+
     private void info() throws CatalogException {
         logger.debug("Getting panel information");
     }
@@ -75,8 +74,6 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
     private void unshare() throws CatalogException {
         logger.debug("Unsharing panel");
     }
-
-
 
 
 }

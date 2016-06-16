@@ -1,6 +1,9 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.*;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 
 /**
@@ -8,7 +11,6 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
  */
 @Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
 public class IndividualCommandOptions {
-
 
 
     public CreateCommandOptions createCommandOptions;
@@ -20,7 +22,6 @@ public class IndividualCommandOptions {
     public ShareCommandOptions shareCommandOptions;
     public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
-
 
 
     public JCommander jCommander;
@@ -64,7 +65,7 @@ public class IndividualCommandOptions {
         String name;
 
         @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
-        String family  = "";
+        String family = "";
 
         @Parameter(names = {"--fatherId"}, description = "FatherId", required = false, arity = 1)
         Integer fatherId;
@@ -77,9 +78,9 @@ public class IndividualCommandOptions {
     }
 
 
-
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
-    class InfoCommandOptions extends BaseIndividualsCommand{ }
+    class InfoCommandOptions extends BaseIndividualsCommand {
+    }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     class SearchCommandOptions {
@@ -128,8 +129,8 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate an individual")
-    class AnnotateCommandOptions extends BaseIndividualsCommand{
-        @Parameter(names = {"-aN","--annotateSetName"}, description = "Annotation set name. Must be unique",
+    class AnnotateCommandOptions extends BaseIndividualsCommand {
+        @Parameter(names = {"-aN", "--annotateSetName"}, description = "Annotation set name. Must be unique",
                 required = true, arity = 1)
         String annotateSetName;
 
@@ -145,7 +146,7 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
-    class UpdateCommandOptions extends BaseIndividualsCommand{
+    class UpdateCommandOptions extends BaseIndividualsCommand {
 
 //            @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
 //            String id;
@@ -171,7 +172,8 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
-    class DeleteCommandOptions extends BaseIndividualsCommand{ }
+    class DeleteCommandOptions extends BaseIndividualsCommand {
+    }
 
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
@@ -192,7 +194,7 @@ public class IndividualCommandOptions {
         String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
+                " of permissions in case any member already had any, default:false", required = false, arity = 0)
         boolean override;
     }
 
@@ -214,6 +216,7 @@ public class IndividualCommandOptions {
         String permission;
 
     }
+
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
         @ParametersDelegate
@@ -232,7 +235,7 @@ public class IndividualCommandOptions {
                 required = false, arity = 1)
         String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 0)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         String name;
 
         @Parameter(names = {"--fatherId"}, description = "FatherId", required = false, arity = 1)
@@ -259,7 +262,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         Integer variableSetId;
 
-        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.",required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.", required = false, arity = 0)
         String annotationSetId;
 
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)

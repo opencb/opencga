@@ -127,6 +127,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
 
     }
+
     private void logout() throws IOException {
         logger.debug("Logout");
         logoutSession();

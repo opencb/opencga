@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,7 +34,6 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         super(samplesCommandOptions.commonCommandOptions);
         this.samplesCommandOptions = samplesCommandOptions;
     }
-
 
 
     @Override
@@ -84,15 +82,19 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     private void create() throws CatalogException, IOException {
         logger.debug("Creating sample");
     }
+
     private void load() throws CatalogException, IOException {
         logger.debug("Loading samples from a pedigree file");
     }
+
     private void info() throws CatalogException {
         logger.debug("Getting samples information");
     }
+
     private void search() throws CatalogException {
         logger.debug("Searching samples");
     }
+
     private void update() throws CatalogException {
         logger.debug("Updating samples");
     }
@@ -100,19 +102,22 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     private void delete() throws CatalogException {
         logger.debug("Deleting the select sample");
     }
+
     private void share() throws CatalogException {
         logger.debug("Sharing samples");
     }
+
     private void unshare() throws CatalogException {
         logger.debug("Unsharing samples");
     }
+
     private void groupBy() throws CatalogException {
         logger.debug("Group By samples");
     }
+
     private void annotate() throws CatalogException {
         logger.debug("Annotating samples");
     }
-
 
 
 }

@@ -4,18 +4,13 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
-import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
-
-import java.util.Arrays;
-import java.util.List;
 
 /**
  * Created by sgallego on 6/14/16.
  */
 @Parameters(commandNames = {"samples"}, commandDescription = "Samples commands")
 public class SampleCommandOptions {
-
 
     public CreateCommandOptions createCommandOptions;
     public LoadCommandOptions loadCommandOptions;
@@ -27,7 +22,6 @@ public class SampleCommandOptions {
     public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
     public AnnotateCommandOptions annotateCommandOptions;
-
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -46,22 +40,19 @@ public class SampleCommandOptions {
         this.unshareCommandOptions = new UnshareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.annotateCommandOptions = new AnnotateCommandOptions();
-
     }
 
     class BaseSampleCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-id", "--sample-id"}, description = "Sample id", required = true, arity = 1)
         public Integer id;
+
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
     public class CreateCommandOptions {
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
@@ -69,31 +60,29 @@ public class SampleCommandOptions {
         @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
         public String name;
 
+        @ParametersDelegate
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
         String source;
 
         @Parameter(names = {"--description"}, description = "Sample description", required = false, arity = 1)
         String description;
-
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
     class LoadCommandOptions {
 
-
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--field-id"}, description = "File id already loaded in OpenCGA",
-                required = true, arity = 1)
+        @Parameter(names = {"--field-id"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
         String fieldId;
 
-        @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file",
-                required = false, arity = 1)
-        Integer variableSetId;
-
+        @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
+        int variableSetId;
     }
+
     @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
     class InfoCommandOptions extends BaseSampleCommand {
     }
@@ -108,26 +97,25 @@ public class SampleCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
-                required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
         String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 0)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         String name;
 
-        @Parameter(names = {"--source"}, description = "Source.",required = false, arity = 0)
+        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
         String source;
 
-        @Parameter(names = {"--indivual-id"}, description = "Indivudual id.",required = false, arity = 0)
+        @Parameter(names = {"--indivual-id"}, description = "Indivudual id.", required = false, arity = 0)
         String individualId;
 
-        @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id.",required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id.", required = false, arity = 0)
         String annotationSetId;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Annotation set id.",required = false, arity = 0)
+        @Parameter(names = {"--variable-set-id"}, description = "Annotation set id.", required = false, arity = 0)
         String variableSetId;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation.",required = false, arity = 0)
+        @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 0)
         String annotation;
 
 
@@ -150,14 +138,13 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"--name"}, description = "Cohort set name.",
-                required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "Cohort set name.", required = false, arity = 1)
         String name;
 
-        @Parameter(names = {"--source"}, description = "Source",required = true, arity = 1)
+        @Parameter(names = {"--source"}, description = "Source", required = true, arity = 1)
         String source;
 
-        @Parameter(names = {"--description"}, description = "Description",required = true, arity = 0)
+        @Parameter(names = {"--description"}, description = "Description", required = true, arity = 0)
         String description;
 
         @Parameter(names = {"--individual-id"}, description = "Indivudual id", required = true, arity = 0)
@@ -167,73 +154,67 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
     public class ShareCommandOptions extends BaseSampleCommand {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-ids", "--sample-ids"}, description = "Sample ids", required = true, arity = 1)
         String sampleIds;
 
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
         String members;
 
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
         String permission;
 
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
+        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change"
+                + " of permissions in case any member already had any, default:false", required = false, arity = 0)
         boolean override;
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Share cohort")
     public class UnshareCommandOptions extends BaseSampleCommand {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-ids", "--sample-ids"}, description = "Sample ids", required = true, arity = 1)
         String sampleIds;
 
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
         String members;
 
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
         String permission;
-
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"},
-                description = "Comma separated list of fields by which to group by.",
-                required = true, arity = 1)
+        @Parameter(names = {"--by"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
         String by;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         String studyId;
 
-
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
-                required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
         String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 0)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         String name;
 
-        @Parameter(names = {"--source"}, description = "Source.",required = false, arity = 0)
+        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
         String source;
 
-        @Parameter(names = {"--individual-id"}, description = "Individual id.",required = false, arity = 0)
+        @Parameter(names = {"--individual-id"}, description = "Individual id.", required = false, arity = 0)
         String individualId;
 
-        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.",required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.", required = false, arity = 0)
         String annotationSetId;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
@@ -241,8 +222,6 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
         String annotation;
-
-
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
@@ -259,19 +238,18 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate sample")
     class AnnotateCommandOptions extends BaseSampleCommand {
+
         @Parameter(names = {"--annotate-set-name"}, description = "Annotation set name. Must be unique for the cohort",
                 required = true, arity = 1)
         String annotateSetName;
 
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt",required = true, arity = 1)
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
         String variableSetId;
 
-        @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet, default: false",
-                required = false, arity = 0)
+        @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet, default: false", arity = 0)
         boolean update;
 
-        @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet, default:false",
-                required = false, arity = 0)
+        @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet, default:false", required = false, arity = 0)
         boolean delete;
     }
 

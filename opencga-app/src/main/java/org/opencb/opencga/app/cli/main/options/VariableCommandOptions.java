@@ -13,15 +13,14 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
 public class VariableCommandOptions {
 
 
-
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
 
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-   // public RenameCommandOptions renameCommandOptions;
-  //  public AddCommandOptions addCommandOptions;
+    // public RenameCommandOptions renameCommandOptions;
+    //  public AddCommandOptions addCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -35,8 +34,8 @@ public class VariableCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-     //   this.renameCommandOptions = new RenameCommandOptions();
-     //   this.addCommandOptions = new AddCommandOptions();
+        //   this.renameCommandOptions = new RenameCommandOptions();
+        //   this.addCommandOptions = new AddCommandOptions();
 
     }
 
@@ -72,9 +71,9 @@ public class VariableCommandOptions {
     }
 
 
-
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
-    class InfoCommandOptions extends BaseVariableCommand { }
+    class InfoCommandOptions extends BaseVariableCommand {
+    }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     class SearchCommandOptions {
@@ -98,12 +97,14 @@ public class VariableCommandOptions {
         String attributes;
 
     }
+
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user variableSet using GET method [PENDING]")
-    class UpdateCommandOptions extends BaseVariableCommand { }
+    class UpdateCommandOptions extends BaseVariableCommand {
+    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete an unused variable Set")
-    class DeleteCommandOptions extends BaseVariableCommand { }
-
+    class DeleteCommandOptions extends BaseVariableCommand {
+    }
 
 
 }

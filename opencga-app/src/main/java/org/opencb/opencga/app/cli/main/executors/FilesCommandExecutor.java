@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -37,7 +36,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
     }
-
 
 
     @Override
@@ -118,6 +116,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
         //TODO
     }
+
     private void createFolder() throws CatalogException {
         logger.debug("Creating a new folder");
         //TODO
@@ -125,10 +124,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-
-    private void info() throws CatalogException, IOException  {
+    private void info() throws CatalogException, IOException {
         logger.debug("Getting file information");
-        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id,null);
+        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id, null);
         System.out.println("Files = " + info);
     }
 
@@ -136,6 +134,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Downloading file");
         //TODO
     }
+
     private void grep() throws CatalogException {
         logger.debug("Grep command: File content");
         //TODO
@@ -147,9 +146,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void list() throws CatalogException, IOException  {
+    private void list() throws CatalogException, IOException {
         logger.debug("Listing files in folder");
-        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id,null);
+        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id, null);
         System.out.println("List files = " + listfiles);
 
     }
@@ -158,6 +157,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Indexing file in the selected StorageEngine");
         //TODO
     }
+
     private void alignament() throws CatalogException {
         logger.debug("Fetch alignments from a BAM file");
         //TODO
@@ -215,7 +215,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private void refresh() throws CatalogException {
         logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
     }
-
 
 
     private void groupBy() throws CatalogException {

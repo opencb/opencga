@@ -40,7 +40,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-
     @Override
     public void execute() throws Exception {
         logger.debug("Executing studies command line");
@@ -81,29 +80,33 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String name = studiesCommandOptions.createCommandOptions.name;
 //        String description = studiesCommandOptions.createCommandOptions.description;
         String projectId = studiesCommandOptions.createCommandOptions.projectId;
-        openCGAClient.getStudyClient().create(projectId,name,alias,null);
-        /************************************************************************************************ OJO, ULTIMO PARAMETRO PARAMS NULL JUM */
+        openCGAClient.getStudyClient().create(projectId, name, alias, null);
+        /************************************************************************************************ OJO, ULTIMO PARAMETRO PARAMS
+         * NULL JUM */
         System.out.println("Done.");
     }
 
-    private void info() throws CatalogException, IOException  {
+    private void info() throws CatalogException, IOException {
         logger.debug("Getting the project info");
-        QueryResponse<Study> info = openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id,null);
-        System.out.println("Study: "+info);
+        QueryResponse<Study> info = openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id, null);
+        System.out.println("Study: " + info);
     }
+
     private void resync() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes\n");
         //TODO
     }
 
-    private void list() throws CatalogException, IOException  {
-        logger.debug("Listing files in folder");  /**************************************************************** Revisar si esto es file*////
-        QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.listCommandOptions.id,null);
+    private void list() throws CatalogException, IOException {
+        logger.debug("Listing files in folder");  /**************************************************************** Revisar si esto es
+         file*////
+        QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.listCommandOptions.id, null);
         System.out.println("Files= " + files);
     }
+
     private void checkFiles() throws CatalogException, IOException {
         logger.debug("Checking if files in study are correctly tracked.");
-       //TODO
+        //TODO
     }
 
     private void status() throws CatalogException, IOException {
@@ -112,12 +115,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         System.out.println("status = " + status);
 
     }
+
     private void annotateVariants() throws CatalogException, IOException {
         logger.debug("Annotating variants");
         //TODO
     }
-
-
 
 
 }
