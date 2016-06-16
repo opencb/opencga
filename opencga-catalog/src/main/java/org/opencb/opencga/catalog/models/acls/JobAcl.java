@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class JobAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<JobPermissions> permissions;
 
     public enum JobPermissions {
@@ -24,13 +24,13 @@ public class JobAcl {
     public JobAcl() {
     }
 
-    public JobAcl(List<String> users, EnumSet<JobPermissions> permissions) {
-        this.users = users;
+    public JobAcl(String member, EnumSet<JobPermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public JobAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public JobAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<JobPermissions> aux = EnumSet.allOf(JobPermissions.class);
         for (JobPermissions permission : aux) {
@@ -40,20 +40,20 @@ public class JobAcl {
         }
     }
 
-    public JobAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public JobAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(JobPermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(JobPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public JobAcl setUsers(List<String> users) {
-        this.users = users;
+    public JobAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 
