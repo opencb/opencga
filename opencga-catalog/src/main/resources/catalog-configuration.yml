@@ -39,9 +39,7 @@ emailServer:
   ssl: false
 
 acls:                 # Do not touch the acl configuration. If this is not properly set, the daemons might not work.
-- role: "daemon"
-  users:
-  - "admin"
+- member: "admin"
   permissions:
   - "VIEW_FILE_HEADERS"
   - "VIEW_FILE_CONTENTS"

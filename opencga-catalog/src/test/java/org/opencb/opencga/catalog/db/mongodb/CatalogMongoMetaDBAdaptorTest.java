@@ -38,11 +38,10 @@ public class CatalogMongoMetaDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void getAcld() throws CatalogDBException {
+    public void getAcl() throws CatalogDBException {
         QueryResult<StudyAcl> aclQueryResult = catalogDBAdaptor.getCatalogMetaDBAdaptor().getDaemonAcl(Arrays.asList("admin"));
         assertEquals(1, aclQueryResult.getNumResults());
-        assertEquals("daemon", aclQueryResult.first().getRole());
-        assertTrue(aclQueryResult.first().getUsers().contains("admin"));
+        assertEquals("admin", aclQueryResult.first().getMember());
     }
 
 }

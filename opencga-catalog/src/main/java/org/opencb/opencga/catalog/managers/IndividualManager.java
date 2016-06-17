@@ -185,31 +185,29 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // We loop over the results and recreate one individualAcl per member
         Map<String, IndividualAcl> individualAclHashMap = new HashMap<>();
         for (IndividualAcl individualAcl : individualAclQueryResult.getResult()) {
-            for (String tmpMember : individualAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            individualAclHashMap.put(tmpMember,
-                                    new IndividualAcl(Collections.singletonList(tmpMember), individualAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        individualAclHashMap.put(tmpUserId, new IndividualAcl(Collections.singletonList(tmpUserId),
-                                                individualAcl.getPermissions()));
-                                    }
+            if (memberList.contains(individualAcl.getMember())) {
+                if (individualAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(individualAcl.getMember())) {
+                        individualAclHashMap.put(individualAcl.getMember(),
+                                new IndividualAcl(individualAcl.getMember(), individualAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(individualAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(individualAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    individualAclHashMap.put(tmpUserId, new IndividualAcl(tmpUserId, individualAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        individualAclHashMap.put(tmpMember, new IndividualAcl(Collections.singletonList(tmpMember),
-                                individualAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    individualAclHashMap.put(individualAcl.getMember(), new IndividualAcl(individualAcl.getMember(),
+                            individualAcl.getPermissions()));
                 }
             }
+
         }
 
         // We recreate the output that is in fileAclHashMap but in the same order the members were queried.

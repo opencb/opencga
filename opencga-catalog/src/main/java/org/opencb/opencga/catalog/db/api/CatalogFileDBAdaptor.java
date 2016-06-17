@@ -58,7 +58,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
 //        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
 //        ACL_READ("acls.read", BOOLEAN, ""),

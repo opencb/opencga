@@ -139,30 +139,27 @@ public class JobManager extends AbstractManager implements IJobManager {
         // We loop over the results and recreate one sampleAcl per member
         Map<String, JobAcl> jobAclHashMap = new HashMap<>();
         for (JobAcl jobAcl : jobAclQueryResult.getResult()) {
-            for (String tmpMember : jobAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            jobAclHashMap.put(tmpMember,
-                                    new JobAcl(Collections.singletonList(tmpMember), jobAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        jobAclHashMap.put(tmpUserId, new JobAcl(Collections.singletonList(tmpUserId),
-                                                jobAcl.getPermissions()));
-                                    }
+            if (memberList.contains(jobAcl.getMember())) {
+                if (jobAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(jobAcl.getMember())) {
+                        jobAclHashMap.put(jobAcl.getMember(), new JobAcl(jobAcl.getMember(), jobAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(jobAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(jobAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    jobAclHashMap.put(tmpUserId, new JobAcl(tmpUserId, jobAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        jobAclHashMap.put(tmpMember, new JobAcl(Collections.singletonList(tmpMember), jobAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    jobAclHashMap.put(jobAcl.getMember(), new JobAcl(jobAcl.getMember(), jobAcl.getPermissions()));
                 }
             }
+
         }
 
         // We recreate the output that is in jobAclHashMap but in the same order the members were queried.

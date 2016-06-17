@@ -328,28 +328,24 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // We loop over the results and recreate one sampleAcl per member
         Map<String, SampleAcl> sampleAclHashMap = new HashMap<>();
         for (SampleAcl sampleAcl : sampleAclQueryResult.getResult()) {
-            for (String tmpMember : sampleAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            sampleAclHashMap.put(tmpMember,
-                                    new SampleAcl(Collections.singletonList(tmpMember), sampleAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        sampleAclHashMap.put(tmpUserId, new SampleAcl(Collections.singletonList(tmpUserId),
-                                                sampleAcl.getPermissions()));
-                                    }
+            if (memberList.contains(sampleAcl.getMember())) {
+                if (sampleAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(sampleAcl.getMember())) {
+                        sampleAclHashMap.put(sampleAcl.getMember(), new SampleAcl(sampleAcl.getMember(), sampleAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(sampleAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(sampleAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    sampleAclHashMap.put(tmpUserId, new SampleAcl(tmpUserId, sampleAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        sampleAclHashMap.put(tmpMember, new SampleAcl(Collections.singletonList(tmpMember), sampleAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    sampleAclHashMap.put(sampleAcl.getMember(), new SampleAcl(sampleAcl.getMember(), sampleAcl.getPermissions()));
                 }
             }
         }
@@ -771,28 +767,24 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // We loop over the results and recreate one sampleAcl per member
         Map<String, CohortAcl> cohortAclHashMap = new HashMap<>();
         for (CohortAcl cohortAcl : cohortAclQueryResult.getResult()) {
-            for (String tmpMember : cohortAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            cohortAclHashMap.put(tmpMember,
-                                    new CohortAcl(Collections.singletonList(tmpMember), cohortAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        cohortAclHashMap.put(tmpUserId, new CohortAcl(Collections.singletonList(tmpUserId),
-                                                cohortAcl.getPermissions()));
-                                    }
+            if (memberList.contains(cohortAcl.getMember())) {
+                if (cohortAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(cohortAcl.getMember())) {
+                        cohortAclHashMap.put(cohortAcl.getMember(), new CohortAcl(cohortAcl.getMember(), cohortAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(cohortAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(cohortAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    cohortAclHashMap.put(tmpUserId, new CohortAcl(tmpUserId, cohortAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        cohortAclHashMap.put(tmpMember, new CohortAcl(Collections.singletonList(tmpMember), cohortAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    cohortAclHashMap.put(cohortAcl.getMember(), new CohortAcl(cohortAcl.getMember(), cohortAcl.getPermissions()));
                 }
             }
         }

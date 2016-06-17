@@ -31,9 +31,7 @@ emailServer:
   from: ""
   ssl: false
 acls:
-- role: "daemon"
-  users:
-  - "admin"
+- member: "admin"
   permissions:
   - "VIEW_FILE_HEADERS"
   - "VIEW_FILE_CONTENTS"
