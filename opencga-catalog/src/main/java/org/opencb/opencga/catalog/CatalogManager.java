@@ -1259,12 +1259,12 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("unshareCohorts");
     }
 
-    public QueryResult updateAcl(String cohortId, String member, List<String> permissions, String sessionId)
+   /* public QueryResult updateAcl(String cohortId, String member, List<String> permissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> cohortList = sampleManager.getCohortIds(userId, cohortId);
         return authorizationManager.setCohortPermissions(userId, cohortList, member, permissions);
-    }
+    }*/
 
    /* public QueryResult getAcl(String cohortId, String sessionId)
             throws CatalogException {

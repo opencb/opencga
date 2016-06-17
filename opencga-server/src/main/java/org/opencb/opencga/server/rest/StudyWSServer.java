@@ -160,11 +160,12 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete a study [PENDING]", position = 4)
     public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
         return createOkResponse("PENDING");
-        try {
+      /*  try {
             return createOkResponse(catalogManager.deleteStudy(studyId, queryOptions, sessionId));
+
         } catch (Exception e) {
             return createErrorResponse(e);
-        }
+        }*/
     }
 
     @GET

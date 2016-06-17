@@ -194,7 +194,7 @@ public interface AuthorizationManager {
                                                 boolean override) throws CatalogException;
 
 
-
+/*
     /**
      * Set the permissions given for all the users and cohort ids given.
      *
@@ -207,8 +207,8 @@ public interface AuthorizationManager {
      * @return A queryResult containing the CohortAcl applied to the different cohort ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
-    QueryResult<CohortAcl> setCohortPermissions(String userId, Integer cohortId, String member,
-                                                List<String> permissions) throws CatalogException;
+   /* QueryResult<CohortAcl> setCohortPermissions(String userId, Integer cohortId, String member,
+                                                List<String> permissions) throws CatalogException;*/
 
   /*  /**
      * Set the permissions given for all the users and cohort ids given.
