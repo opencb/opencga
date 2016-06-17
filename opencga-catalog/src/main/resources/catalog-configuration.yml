@@ -21,8 +21,8 @@ audit:
 
 monitor:
   daysToRemove: 30
-  executionSleepTime: 4000
-  fileSleepTime: 4000
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
   port: 9092
 
 execution:

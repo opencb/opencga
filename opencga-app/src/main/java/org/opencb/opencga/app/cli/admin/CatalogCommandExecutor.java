@@ -24,8 +24,13 @@ import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
+import org.opencb.opencga.server.rest.RestServer;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -206,14 +211,24 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         catalogManager.installIndexes();
     }
 
-    private void daemons() throws CatalogException {
-        MonitorService monitorService = new MonitorService(catalogConfiguration);
-        try {
+    private void daemons() throws Exception {
+        if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
+            // Server crated and started
+            MonitorService monitorService = new MonitorService(catalogConfiguration);
             monitorService.start();
+            monitorService.blockUntilShutdown();
+            logger.info("Shutting down OpenCGA Storage REST server");
+        }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new CatalogException(e.getCause());
+        if (catalogCommandOptions.daemonCatalogCommandOptions.stop) {
+            Client client = ClientBuilder.newClient();
+            WebTarget target = client.target("http://localhost:" + catalogConfiguration.getMonitor().getPort())
+                    .path("opencga")
+                    .path("monitor")
+                    .path("admin")
+                    .path("stop");
+            Response response = target.request().get();
+            logger.info(response.toString());
         }
 
     }

@@ -30,6 +30,8 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected boolean exit = false;
 
+    protected String sessionId;
+
     protected static Logger logger;
 
     public MonitorParentDaemon(int interval, CatalogManager catalogManager) {
@@ -46,4 +48,6 @@ public abstract class MonitorParentDaemon implements Runnable {
     public void setExit(boolean exit) {
         this.exit = exit;
     }
+
+
 }
