@@ -780,6 +780,45 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         return new QueryResult<>("setCohortPermissions", timeSpent, cohortAclList.size(), cohortAclList.size(), "", "", cohortAclList);
     }
 
+/*
+    @Override
+    public QueryResult<CohortAcl> setCohortPermissions(String userId, Integer cohortId, String member,
+                                                       List<String> permissions) throws CatalogException {
+        // Check if the userId has proper permissions for all the cohorts.
+
+       checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.SHARE);
+
+
+       // String[] userArray = userIds.split(",");
+        // Check if all the members have a permission already set at the study level.
+
+        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
+
+        if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+            throw new CatalogException("Cannot share cohort with " + member + ". First, a general study permission must be "
+                    + "defined for that member.");
+        }
+
+
+        // Set the permissions
+        int timeSpent = 0;
+
+        //List<String> userIdList = Arrays.asList(userIds.split(","));
+
+        cohortDBAdaptor.checkCohortId(cohortId);
+        checkMembers(dbAdaptorFactory, cohortDBAdaptor.getStudyIdByCohortId(cohortId), userId);
+
+        CohortAcl cohortAcl = new CohortAcl(member, permissions);
+
+        //OJO EL OVERIDE TRUE
+        QueryResult<CohortAcl> cohortAclQueryResult = cohortDBAdaptor.setCohortAcl(cohortId, cohortAcl,true);
+        timeSpent += cohortAclQueryResult.getDbTime();
+        cohortAclList.add(cohortAclQueryResult.first());
+
+
+        return new QueryResult<>("setCohortPermissions", timeSpent, 1, 1, "", "", cohortAclQueryResult.first());
+    }*/
+
     @Override
     public void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions)
             throws CatalogException {

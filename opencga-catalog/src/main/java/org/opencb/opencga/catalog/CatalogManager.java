@@ -1241,6 +1241,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
@@ -1248,6 +1249,7 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
     }
 
+    @Deprecated
     public QueryResult unshareCohorts(String cohortIds, String userIds, String permissions, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
@@ -1256,6 +1258,22 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager.unsetCohortPermissions(userId, cohortList, userIds, permissionList);
         return new QueryResult("unshareCohorts");
     }
+
+    public QueryResult updateAcl(String cohortId, String member, List<String> permissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        List<Long> cohortList = sampleManager.getCohortIds(userId, cohortId);
+        return authorizationManager.setCohortPermissions(userId, cohortList, member, permissions);
+    }
+
+   /* public QueryResult getAcl(String cohortId, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        //List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
+
+        List<String> permissions
+        return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
+    }*/
 
     public long getCohortId(String cohortStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);

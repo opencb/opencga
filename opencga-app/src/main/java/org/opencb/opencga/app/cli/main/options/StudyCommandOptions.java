@@ -24,6 +24,8 @@ public class StudyCommandOptions {
     public StatusCommandOptions statusCommandOptions;
     public AnnotationCommandOptions annotationCommandOptions;
     public SearchCommandOptions searchCommandOptions;
+    public DeleteCommandOptions deleteCommandOptions;
+    public SummaryCommandOptions summaryCommandOptions;
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
@@ -39,6 +41,8 @@ public class StudyCommandOptions {
         this.statusCommandOptions = new StatusCommandOptions();
         this.annotationCommandOptions = new AnnotationCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.deleteCommandOptions = new DeleteCommandOptions();
+        this.summaryCommandOptions = new SummaryCommandOptions();
     }
 
     abstract class BaseStudyCommand {
@@ -119,7 +123,7 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"check-files"}, commandDescription = "Check if files in study are correctly tracked.")
+    @Parameters(commandNames = {"scan-files"}, commandDescription = "Check if files in study are correctly tracked.")
     class CheckCommandOptions extends BaseStudyCommand {
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
         boolean calculateChecksum = false;
@@ -142,6 +146,14 @@ public class StudyCommandOptions {
     public class StatusCommandOptions extends BaseStudyCommand {
     }
 
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
+    public class DeleteCommandOptions extends BaseStudyCommand {
+    }
+
+    @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
+    public class SummaryCommandOptions extends BaseStudyCommand {
+    }
+
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
     class AnnotationCommandOptions extends BaseStudyCommand {
 
@@ -152,4 +164,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
         boolean enqueue;
     }
+
+
 }
