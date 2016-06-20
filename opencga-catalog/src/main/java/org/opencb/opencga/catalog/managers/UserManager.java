@@ -75,7 +75,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        if (sessionId.length() == 40) {
 //            return "admin";
 //        }
-        if (sessionId.equals("anonymous")) {
+        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
             return "anonymous";
         }
         return userDBAdaptor.getUserIdBySessionId(sessionId);

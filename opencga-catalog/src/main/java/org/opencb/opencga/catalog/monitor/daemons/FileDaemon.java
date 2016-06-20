@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -74,7 +73,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkDeletedFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
+                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.TRASHED),
                 new QueryOptions(),
                 sessionId);
 
@@ -91,7 +90,8 @@ public class FileDaemon extends MonitorParentDaemon {
 //                            logger.info("Deleting file {} from study {id: {}, alias: {}}", file, study.getId(), study.getAlias());
                     catalogFileUtils.delete(file, sessionId);
                 } else {
-                            logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(), file.getAttributes());
+                            logger.info("Don't delete file {id: {}, path: '{}', attributes: {}}}", file.getId(), file.getPath(),
+                                    file.getAttributes());
                             logger.info("{}s", (currentTimeMillis - deleteTimeMillis) / 1000);
                 }
             } catch (Exception e) {
@@ -103,7 +103,7 @@ public class FileDaemon extends MonitorParentDaemon {
     private void checkPendingRemoveFiles() throws CatalogException {
         QueryResult<File> files = catalogManager.searchFile(
                 -1,
-                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.REMOVED),
+                new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), File.FileStatus.DELETED),
                 new QueryOptions(),
                 sessionId);
 
@@ -115,7 +115,7 @@ public class FileDaemon extends MonitorParentDaemon {
                     if (file.getType().equals(File.Type.FILE)) {
                         catalogManager.deleteFile(file.getId(), sessionId);
                     } else {
-
+                        System.out.println("empty block");
                     }
                 }
             } catch (IOException e) {

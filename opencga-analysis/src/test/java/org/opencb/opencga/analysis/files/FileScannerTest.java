@@ -88,7 +88,7 @@ public class FileScannerTest {
         List<File> files = new FileScanner(catalogManager).scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.DELETE, false, true, sessionIdUser);
 
         files.forEach((File f) -> assertFalse(f.getAttributes().containsKey("checksum")));
-        assertEquals(File.FileStatus.DELETED, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus().getStatus());
+        assertEquals(File.FileStatus.TRASHED, catalogManager.getFile(file.getId(), sessionIdUser).first().getStatus().getStatus());
     }
 
     @Test
@@ -100,13 +100,13 @@ public class FileScannerTest {
         catalogManager.deleteFile(file.getId(), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
-        assertEquals(File.FileStatus.DELETED, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.TRASHED, file.getStatus().getStatus());
 
         Files.delete(Paths.get(catalogManager.getFileUri(file)));
         List<File> files = new FileScanner(catalogManager).checkStudyFiles(study, false, sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
-        assertEquals(File.FileStatus.DELETED, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.TRASHED, file.getStatus().getStatus());
         assertEquals(1, files.size());
         assertEquals(file.getId(), files.get(0).getId());
     }

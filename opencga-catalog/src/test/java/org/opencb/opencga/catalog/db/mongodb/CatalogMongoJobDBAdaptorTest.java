@@ -1,10 +1,8 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import org.junit.Test;
-import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -63,7 +61,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, new QueryOptions());
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
-        assertEquals(Job.JobStatus.DELETED, queryResult.first().getStatus().getStatus());
+        assertEquals(Job.JobStatus.TRASHED, queryResult.first().getStatus().getStatus());
         try {
             System.out.println(catalogJobDBAdaptor.delete(-1, new QueryOptions()));
             fail("error: Expected \"Job not found\" exception");

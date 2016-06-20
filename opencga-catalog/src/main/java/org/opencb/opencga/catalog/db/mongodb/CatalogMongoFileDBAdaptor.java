@@ -105,7 +105,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<File> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -130,7 +130,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<File> getFile(long fileId, QueryOptions options) throws CatalogDBException {
         checkFileId(fileId);
-        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
+        Query query = new Query(QueryParams.ID.key(), fileId).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED);
         return get(query, options);
     }
 
@@ -532,7 +532,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Can not rename: " + filePath + " already exists");
         }
 
-        if (file.getType().equals(File.Type.FOLDER)) {  // recursive over the files inside folder
+        if (file.getType().equals(File.Type.DIRECTORY)) {  // recursive over the files inside folder
             QueryResult<File> allFilesInFolder = getAllFilesInFolder(studyId, file.getPath(), null);
             String oldPath = file.getPath();
             filePath += filePath.endsWith("/") ? "" : "/";
@@ -557,10 +557,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         checkFileId(id);
         // Check the file is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                + File.FileStatus.REMOVED);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                + File.FileStatus.DELETED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
             QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
             File file = get(query, options).first();
             throw new CatalogDBException("The file {" + id + "} was already " + file.getStatus().getStatus());
@@ -576,10 +576,10 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
 
         // Change the status of the project to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
 
         return endQuery("Delete file", startTime, get(query, queryOptions));
     }
@@ -614,7 +614,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         return endQuery("Restore files", startTime, setStatus(query, File.FileStatus.READY));
     }
 
@@ -625,7 +625,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         checkFileId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The file {" + id + "} is not deleted");
         }

@@ -289,7 +289,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     public QueryResult<DiseasePanel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -314,7 +314,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {

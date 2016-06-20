@@ -95,7 +95,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        Query query = new Query(QueryParams.ID.key(), datasetId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED);
+        Query query = new Query(QueryParams.ID.key(), datasetId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED);
         return endQuery("Get dataset", startTime, get(query, options));
     }
 
@@ -103,7 +103,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<Dataset> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -129,7 +129,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson;
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         try {
             bson = parseQuery(query);
@@ -196,16 +196,16 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         // Check the dataset is active
         Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
             QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
             Dataset dataset = get(query, options).first();
             throw new CatalogDBException("The dataset {" + id + "} was already " + dataset.getStatus().getStatus());
         }
 
         // Change the status of the dataset to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
 
         return endQuery("Delete dataset", startTime, get(query, null));
     }
@@ -242,7 +242,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         return endQuery("Restore datasets", startTime, setStatus(query, Status.READY));
     }
 
@@ -253,7 +253,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         checkDatasetId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The dataset {" + id + "} is not deleted");
         }

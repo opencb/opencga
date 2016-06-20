@@ -82,7 +82,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {
         checkJobId(jobId);
-        return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+        return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
 //        long startTime = startQuery();
 //        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
 //        Job job = parseJob(queryResult);
@@ -601,7 +601,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -618,7 +618,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -714,8 +714,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         Query query = new Query(QueryParams.ID.key(), id);
         Job job = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key())).first();
         switch (job.getStatus().getStatus()) {
+            case Job.JobStatus.TRASHED:
             case Job.JobStatus.DELETED:
-            case Job.JobStatus.REMOVED:
                 throw new CatalogDBException("The job {" + id + "} was already " + job.getStatus().getStatus());
             case Job.JobStatus.PREPARED:
             case Job.JobStatus.RUNNING:
@@ -746,9 +746,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         }
 
         // Change the status of the job to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
 
         return endQuery("Delete job", startTime, get(query, null));
     }
@@ -756,7 +756,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         QueryResult<Job> jobQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Job job : jobQueryResult.getResult()) {
             delete(job.getId(), queryOptions);
@@ -799,7 +799,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         return endQuery("Restore jobs", startTime, setStatus(query, Status.READY));
     }
 
@@ -810,7 +810,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         checkJobId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The job {" + id + "} is not deleted");
         }

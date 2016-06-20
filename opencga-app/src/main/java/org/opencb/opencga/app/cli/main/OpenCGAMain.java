@@ -1311,7 +1311,7 @@ public class OpenCGAMain {
                         humanReadableByteCount(file.getDiskUsage(), false),
                         showUries && file.getUri() != null ? " --> " + file.getUri() : ""
                 ));
-                if (file.getType() == File.Type.FOLDER) {
+                if (file.getType() == File.Type.DIRECTORY) {
                     listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
 //                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "| " : "  "), sessionId);
                 }

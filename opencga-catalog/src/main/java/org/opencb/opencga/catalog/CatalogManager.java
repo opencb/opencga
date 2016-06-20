@@ -811,7 +811,7 @@ public class CatalogManager implements AutoCloseable {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         long studyId = getStudyIdByFileId(folderId);
         File folder = getFile(folderId, sessionId).first();
-        if (!folder.getType().equals(File.Type.FOLDER)) {
+        if (!folder.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());

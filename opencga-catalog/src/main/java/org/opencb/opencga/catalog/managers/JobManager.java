@@ -253,8 +253,8 @@ public class JobManager extends AbstractManager implements IJobManager {
                 "projects.studies.files.path"));
         File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).first();
 
-        if (!outDir.getType().equals(File.Type.FOLDER)) {
-            throw new CatalogException("Bad outDir type. Required type : " + File.Type.FOLDER);
+        if (!outDir.getType().equals(File.Type.DIRECTORY)) {
+            throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
         }
 
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);

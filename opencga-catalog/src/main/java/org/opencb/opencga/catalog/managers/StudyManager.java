@@ -210,7 +210,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-        File rootFile = new File(".", File.Type.FOLDER, null, null, "", userId, "study root folder",
+        File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", userId, "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0);
         rootFile.setUri(uri);
         files.add(rootFile);
@@ -447,36 +447,36 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         Long nFiles = fileDBAdaptor.count(
                 new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setFiles(nFiles);
 
         Long nSamples = sampleDBAdaptor.count(
                 new Query(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setSamples(nSamples);
 
         Long nJobs = jobDBAdaptor.count(
                 new Query(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setJobs(nJobs);
 
         Long nCohorts = cohortDBAdaptor.count(
                 new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setCohorts(nCohorts);
 
         Long nIndividuals = individualDBAdaptor.count(
                 new Query(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setIndividuals(nIndividuals);
 

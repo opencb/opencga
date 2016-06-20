@@ -101,7 +101,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException {
         checkIndividualId(individualId);
-        return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+        return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
 //        long startQuery = startQuery();
 //
 //        QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
@@ -536,7 +536,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -553,7 +553,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -651,10 +651,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startTime = startQuery();
         checkIndividualId(id);
         // Check the file is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                + File.FileStatus.REMOVED);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                + File.FileStatus.DELETED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
             QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
             Individual individual = get(query, options).first();
             throw new CatalogDBException("The individual {" + id + "} was already " + individual.getStatus().getStatus());
@@ -670,10 +670,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
 
         // Change the status of the project to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
 
         return endQuery("Delete individual", startTime, get(query, queryOptions));
     }
@@ -686,7 +686,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         Query updateQuery = new Query();
 
         if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
             List<Individual> individuals = get(subQuery, null).getResult();
             List<Long> individualIdsToDelete = new ArrayList<>();
 
@@ -711,7 +711,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             }
 
             // Check family by family
-            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
             for (Map.Entry<String, List<Individual>> indFamily : familyIndividuals.entrySet()) {
                 Query tmpQuery = new Query(queryNoDeletedNoRemoved).append(QueryParams.FAMILY.key(), indFamily.getKey());
                 List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
@@ -773,13 +773,13 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             }
 
             updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
-                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
 
         } else {
-            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
         }
 
-        long count = setStatus(updateQuery, Status.DELETED).first();
+        long count = setStatus(updateQuery, Status.TRASHED).first();
 
         return endQuery("Delete individual", startTime, Collections.singletonList(count));
     }
@@ -797,7 +797,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         return endQuery("Restore individuals", startTime, setStatus(query, Status.READY));
     }
 
@@ -808,7 +808,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         checkIndividualId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The individual {" + id + "} is not deleted");
         }
