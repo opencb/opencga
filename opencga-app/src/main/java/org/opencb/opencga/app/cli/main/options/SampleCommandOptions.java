@@ -44,7 +44,7 @@ public class SampleCommandOptions {
 
     class BaseSampleCommand {
 
-        @Parameter(names = {"-id", "--sample-id"}, description = "Sample id", required = true, arity = 1)
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
         public Integer id;
 
         @ParametersDelegate
@@ -153,12 +153,12 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions extends BaseSampleCommand {
+    public class ShareCommandOptions {
 
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--sample-ids"}, description = "Sample ids", required = true, arity = 1)
+        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = true, arity = 1)
         String sampleIds;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
@@ -174,12 +174,12 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Share cohort")
-    public class UnshareCommandOptions extends BaseSampleCommand {
+    public class UnshareCommandOptions {
 
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--sample-ids"}, description = "Sample ids", required = true, arity = 1)
+        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = true, arity = 1)
         String sampleIds;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",

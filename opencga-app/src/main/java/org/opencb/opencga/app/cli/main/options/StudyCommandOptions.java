@@ -23,7 +23,9 @@ public class StudyCommandOptions {
     public CheckCommandOptions checkCommandOptions;
     public StatusCommandOptions statusCommandOptions;
     public AnnotationCommandOptions annotationCommandOptions;
-
+    public SearchCommandOptions searchCommandOptions;
+    public DeleteCommandOptions deleteCommandOptions;
+    public SummaryCommandOptions summaryCommandOptions;
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
@@ -38,10 +40,13 @@ public class StudyCommandOptions {
         this.checkCommandOptions = new CheckCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
         this.annotationCommandOptions = new AnnotationCommandOptions();
+        this.searchCommandOptions = new SearchCommandOptions();
+        this.deleteCommandOptions = new DeleteCommandOptions();
+        this.summaryCommandOptions = new SummaryCommandOptions();
     }
 
     abstract class BaseStudyCommand {
-        @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -63,8 +68,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
         String description;
 
-        @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required
-                = false, arity = 1)
+        @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.",
+                required = false, arity = 1)
         String uri;
 
         @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. " +
@@ -79,6 +84,38 @@ public class StudyCommandOptions {
     public class InfoCommandOptions extends BaseStudyCommand {
     }
 
+    @Parameters(commandNames = {"search"}, commandDescription = "Search studies")
+    public class SearchCommandOptions {
+        @Parameter(names = {"--project-id"}, description = "Project Id.", required = false, arity = 1)
+        String projectId;
+
+        @Parameter(names = {"--type"}, description = "Type.", required = false, arity = 1)
+        String type;
+
+        @Parameter(names = {"--creator-id"}, description = "Creator id.", required = false, arity = 1)
+        String creatorId;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        String creationDate;
+
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        String status;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes.", required = false, arity = 1)
+        String attributes;
+
+        @Parameter(names = {"--nattributes"}, description = "Numerical attributes.", required = false, arity = 1)
+        String nattributes;
+
+        @Parameter(names = {"--battributes"}, description = "Boolean attributes.", required = false, arity = 0)
+        boolean battributes;
+
+        @Parameter(names = {"--groups"}, description = "Groups.", required = false, arity = 1)
+        String groups;
+
+        @Parameter(names = {"--groups-users"}, description = "Groups users.", required = false, arity = 1)
+        String groupsUsers;
+    }
     @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
     class ResyncCommandOptions extends BaseStudyCommand {
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
@@ -86,7 +123,7 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"check-files"}, commandDescription = "Check if files in study are correctly tracked.")
+    @Parameters(commandNames = {"scan-files"}, commandDescription = "Check if files in study are correctly tracked.")
     class CheckCommandOptions extends BaseStudyCommand {
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
         boolean calculateChecksum = false;
@@ -109,6 +146,14 @@ public class StudyCommandOptions {
     public class StatusCommandOptions extends BaseStudyCommand {
     }
 
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
+    public class DeleteCommandOptions extends BaseStudyCommand {
+    }
+
+    @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
+    public class SummaryCommandOptions extends BaseStudyCommand {
+    }
+
     @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
     class AnnotationCommandOptions extends BaseStudyCommand {
 
@@ -119,4 +164,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
         boolean enqueue;
     }
+
+
 }

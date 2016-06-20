@@ -44,7 +44,7 @@ public class CohortCommandOptions {
     }
 
     class BaseCohortsCommand {
-        @Parameter(names = {"-id", "--cohorts-id"}, description = "Cohorts id", required = true, arity = 1)
+        @Parameter(names = {"-i", "--cohorts-id"}, description = "Cohorts id", required = true, arity = 1)
         public Integer id;
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;

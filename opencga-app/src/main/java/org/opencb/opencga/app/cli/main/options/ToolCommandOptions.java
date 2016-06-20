@@ -37,7 +37,7 @@ public class ToolCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
+        @Parameter(names = {"--tool-id"}, description = "Tool id", required = true, arity = 1)
         String id;
     }
 
