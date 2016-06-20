@@ -104,55 +104,6 @@ class CatalogMongoDBUtils {
     ********************/
 
     /**
-     * Checks if the list of members are all valid.
-     *
-     * The "members" can be:
-     *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
-     * @param dbAdaptorFactory dbAdaptorFactory
-     * @param studyId studyId
-     * @param members List of members
-     * @throws CatalogDBException CatalogDBException
-     */
-    public static void checkMembers(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
-            throws CatalogDBException {
-        for (String member : members) {
-            checkMember(dbAdaptorFactory, studyId, member);
-        }
-    }
-
-    /**
-     * Checks if the member is valid.
-     *
-     * The "member" can be:
-     *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
-     * @param dbAdaptorFactory dbAdaptorFactory
-     * @param studyId studyId
-     * @param member member
-     * @throws CatalogDBException CatalogDBException
-     */
-    public static void checkMember(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, String member)
-            throws CatalogDBException {
-        if (member.equals("*") || member.equals("anonymous")) {
-            return;
-        } else if (member.startsWith("@")) {
-            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member,
-                    Collections.emptyList());
-            if (queryResult.getNumResults() == 0) {
-                throw CatalogDBException.idNotFound("Group", member);
-            }
-        } else {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
-        }
-    }
-
-
-    /**
      * Checks if the field {@link AclEntry#userId} is valid.
      *
      * The "userId" can be:

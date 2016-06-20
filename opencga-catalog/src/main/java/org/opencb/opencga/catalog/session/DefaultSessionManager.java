@@ -2,7 +2,6 @@ package org.opencb.opencga.catalog.session;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
@@ -12,34 +11,39 @@ import org.opencb.opencga.catalog.models.Session;
 /**
  * Created by pfurio on 24/05/16.
  */
-public class CatalogSessionManager implements SessionManager {
+public class DefaultSessionManager implements SessionManager {
 
-    protected final CatalogUserDBAdaptor userDBAdaptor;
-    protected final CatalogMetaDBAdaptor metaDBAdaptor;
-    protected final CatalogConfiguration catalogConfiguration;
+    private final CatalogUserDBAdaptor userDBAdaptor;
+    private final CatalogMetaDBAdaptor metaDBAdaptor;
 
-    public CatalogSessionManager(CatalogDBAdaptorFactory dbAdaptorFactory, CatalogConfiguration catalogConfiguration) {
+    private final int USER_SESSION_LENGTH = 20;
+    private final int ADMIN_SESSION_LENGTH = 40;
+
+    public DefaultSessionManager(CatalogDBAdaptorFactory dbAdaptorFactory) {
         this.userDBAdaptor = dbAdaptorFactory.getCatalogUserDBAdaptor();
         this.metaDBAdaptor = dbAdaptorFactory.getCatalogMetaDBAdaptor();
-        this.catalogConfiguration = catalogConfiguration;
     }
 
     @Override
     public QueryResult<ObjectMap> createToken(String userId, String ip) throws CatalogException {
-        int length = 20;
+        int length = USER_SESSION_LENGTH;
         if (userId.equals("admin")) {
-            length = 40;
+            length = ADMIN_SESSION_LENGTH;
         }
 
         // Create the session
         Session session = new Session(ip, length);
         while (true) {
-            try {
-                checkUniqueSessionId(session.getId());
-                break;
-            } catch (CatalogException e) {
-                session.generateNewId(length);
+            if (length == USER_SESSION_LENGTH) {
+                if (userDBAdaptor.getUserIdBySessionId(session.getId()).isEmpty()) {
+                    break;
+                }
+            } else {
+                if (!metaDBAdaptor.checkValidAdminSession(session.getId())) {
+                    break;
+                }
             }
+            session.generateNewId(length);
         }
 
         QueryResult<ObjectMap> result;
@@ -51,16 +55,6 @@ public class CatalogSessionManager implements SessionManager {
         }
 
         return result;
-    }
-
-    private void checkUniqueSessionId(String id) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(id);
-        if (!userId.isEmpty()) {
-            throw new CatalogException("");
-        }
-        if (metaDBAdaptor.checkValidAdminSession(id)) {
-            throw new CatalogException("");
-        }
     }
 
     @Override

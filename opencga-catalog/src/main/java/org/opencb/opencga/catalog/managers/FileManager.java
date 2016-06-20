@@ -1221,28 +1221,24 @@ public class FileManager extends AbstractManager implements IFileManager {
         // We loop over the results and recreate one sampleAcl per member
         Map<String, DatasetAcl> datasetAclHashMap = new HashMap<>();
         for (DatasetAcl datasetAcl : datasetAclQueryResult.getResult()) {
-            for (String tmpMember : datasetAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            datasetAclHashMap.put(tmpMember,
-                                    new DatasetAcl(Collections.singletonList(tmpMember), datasetAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        datasetAclHashMap.put(tmpUserId, new DatasetAcl(Collections.singletonList(tmpUserId),
-                                                datasetAcl.getPermissions()));
-                                    }
+            if (memberList.contains(datasetAcl.getMember())) {
+                if (datasetAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(datasetAcl.getMember())) {
+                        datasetAclHashMap.put(datasetAcl.getMember(), new DatasetAcl(datasetAcl.getMember(), datasetAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(datasetAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(datasetAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    datasetAclHashMap.put(tmpUserId, new DatasetAcl(tmpUserId, datasetAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        datasetAclHashMap.put(tmpMember, new DatasetAcl(Collections.singletonList(tmpMember), datasetAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    datasetAclHashMap.put(datasetAcl.getMember(), new DatasetAcl(datasetAcl.getMember(), datasetAcl.getPermissions()));
                 }
             }
         }
@@ -1352,28 +1348,24 @@ public class FileManager extends AbstractManager implements IFileManager {
         // We loop over the results and recreate one fileAcl per member
         Map<String, FileAcl> fileAclHashMap = new HashMap<>();
         for (FileAcl fileAcl : fileAclQueryResult.getResult()) {
-            for (String tmpMember : fileAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            fileAclHashMap.put(tmpMember,
-                                    new FileAcl(Collections.singletonList(tmpMember), fileAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        fileAclHashMap.put(tmpUserId, new FileAcl(Collections.singletonList(tmpUserId),
-                                                fileAcl.getPermissions()));
-                                    }
+            if (memberList.contains(fileAcl.getMember())) {
+                if (fileAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(fileAcl.getMember())) {
+                        fileAclHashMap.put(fileAcl.getMember(), new FileAcl(fileAcl.getMember(), fileAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(fileAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(fileAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    fileAclHashMap.put(tmpUserId, new FileAcl(tmpUserId, fileAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        fileAclHashMap.put(tmpMember, new FileAcl(Collections.singletonList(tmpMember), fileAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    fileAclHashMap.put(fileAcl.getMember(), new FileAcl(fileAcl.getMember(), fileAcl.getPermissions()));
                 }
             }
         }

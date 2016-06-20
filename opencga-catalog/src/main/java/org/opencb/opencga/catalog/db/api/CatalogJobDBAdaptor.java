@@ -157,7 +157,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         OUTPUT("output", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

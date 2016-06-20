@@ -41,13 +41,14 @@ import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.catalog.session.CatalogSessionManager;
+import org.opencb.opencga.catalog.session.DefaultSessionManager;
 import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -179,7 +180,7 @@ public class CatalogManager implements AutoCloseable {
                 .getCatalogUserDBAdaptor(), authorizationManager, catalogConfiguration);
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
-        sessionManager = new CatalogSessionManager(catalogDBAdaptorFactory, catalogConfiguration);
+        sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
         userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
@@ -650,14 +651,15 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("removeUsersFromGroup");
     }
 
-    public QueryResult shareStudy(long studyId, String members, String roleId, boolean override, String sessionId) throws CatalogException {
+    public QueryResult shareStudy(long studyId, String members, List<String> permissions, @Nullable String templateId, boolean override,
+                                  String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.addMembersToRole(userId, studyId, members, roleId, override);
+        return authorizationManager.createStudyPermissions(userId, studyId, members, permissions, templateId, override);
     }
 
     public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        authorizationManager.removeMembersFromRole(userId, studyId, members);
+        authorizationManager.removeStudyPermissions(userId, studyId, members);
         return new QueryResult("unshareStudy");
     }
 

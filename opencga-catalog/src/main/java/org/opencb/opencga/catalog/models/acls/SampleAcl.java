@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class SampleAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<SamplePermissions> permissions;
 
     public enum SamplePermissions {
@@ -28,13 +28,13 @@ public class SampleAcl {
     public SampleAcl() {
     }
 
-    public SampleAcl(List<String> users, EnumSet<SamplePermissions> permissions) {
-        this.users = users;
+    public SampleAcl(String member, EnumSet<SamplePermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public SampleAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public SampleAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<SamplePermissions> aux = EnumSet.allOf(SamplePermissions.class);
         for (SamplePermissions permission : aux) {
@@ -44,20 +44,20 @@ public class SampleAcl {
         }
     }
 
-    public SampleAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public SampleAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(SamplePermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(SamplePermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public SampleAcl setUsers(List<String> users) {
-        this.users = users;
+    public SampleAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 

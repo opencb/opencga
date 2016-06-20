@@ -104,7 +104,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

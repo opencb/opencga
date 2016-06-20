@@ -29,9 +29,9 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by pfurio on 08/01/16.
@@ -163,7 +163,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         checkFileId(fileId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, fileId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
         Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
         List<FileAcl> fileAcl = null;
@@ -180,123 +180,56 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
-
-        checkFileId(fileId);
         long studyId = getStudyIdByFileId(fileId);
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
 
-        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        String member = acl.getMember();
+
+        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
         // already have permissions on its own.
-        Map<String, List<String>> groups = new HashMap<>();
-        Set<String> users = new HashSet<>();
+        if (member.startsWith("@")) {
+            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
-        for (String member : acl.getUsers()) {
-            if (member.startsWith("@")) {
-                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-                groups.put(group.getId(), group.getUserIds());
-            } else {
-                users.add(member);
-            }
-        }
-        if (groups.size() > 0) {
             // Check if any user already have permissions set on their own.
-            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-                QueryResult<FileAcl> fileAcl = getFileAcl(fileId, entry.getValue());
-                if (fileAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("Error when adding permissions in file. At least one user in " + entry.getKey()
-                            + " has already defined permissions for file " + fileId);
-                }
+            QueryResult<FileAcl> fileAcl = getFileAcl(fileId, group.getUserIds());
+            if (fileAcl.getNumResults() > 0) {
+                throw new CatalogDBException("Error when adding permissions in file. At least one user in " + group.getId()
+                        + " has already defined permissions for file " + fileId);
+            }
+        } else {
+            // Check if the members of the new acl already have some permissions set
+            QueryResult<FileAcl> fileAcls = getFileAcl(fileId, acl.getMember());
+
+            if (fileAcls.getNumResults() > 0 && override) {
+                unsetFileAcl(fileId, Arrays.asList(member), Collections.emptyList());
+            } else if (fileAcls.getNumResults() > 0 && !override) {
+                throw new CatalogDBException("setFileAcl: " + member + " already had an Acl set. If you "
+                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
             }
         }
 
-        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
-        // because the group will be given the permission.
-        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-            for (String userId : entry.getValue()) {
-                if (users.contains(userId)) {
-                    users.remove(userId);
-                }
-            }
-        }
-
-        // Create the definitive list of members that will be added in the acl
-        List<String> members = new ArrayList<>(users.size() + groups.size());
-        members.addAll(users.stream().collect(Collectors.toList()));
-        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
-        acl.setUsers(members);
-
-        // Check if the members of the new acl already have some permissions set
-        QueryResult<FileAcl> fileAcls = getFileAcl(fileId, acl.getUsers());
-        if (fileAcls.getNumResults() > 0 && override) {
-            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
-            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
-
-            List<String> usersToOverride = new ArrayList<>();
-            for (FileAcl fileAcl : fileAcls.getResult()) {
-                for (String member : fileAcl.getUsers()) {
-                    if (usersSet.contains(member)) {
-                        // Add the user to the list of users that will be taken out from the Acls.
-                        usersToOverride.add(member);
-                    }
-                }
-            }
-
-            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetFileAcl(fileId, usersToOverride, Collections.emptyList());
-        } else if (fileAcls.getNumResults() > 0 && !override) {
-            throw new CatalogDBException("setFileAcl: " + fileAcls.getNumResults() + " of the members already had an Acl set. If you "
-                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
-        }
-
-        // Append the users to the existing acl.
-        List<String> permissions = acl.getPermissions().stream().map(FileAcl.FilePermissions::name).collect(Collectors.toList());
-
-        // Check if the permissions found on acl already exist on file id
+        // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, fileId);
-        if (permissions.size() > 0) {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
-        } else {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
-        }
-
-        Bson update;
-        if (fileCollection.count(queryDocument).first() > 0) {
-            // Append the users to the existing acl.
-            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
-        } else {
-            queryDocument = new Document(PRIVATE_ID, fileId);
-            // Push the new acl to the list of acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
-
-        }
-
+        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
         QueryResult<UpdateResult> updateResult = fileCollection.update(queryDocument, update, null);
+
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("setFileAcl: An error occurred when trying to share file " + fileId
-                    + " with other members.");
+            throw new CatalogDBException("setFileAcl: An error occurred when trying to share file " + fileId + " with " + member);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
-        File file = fileConverter.convertToDataModelType(fileCollection.find(queryDocument, queryOptions).first());
-
-        return endQuery("setFileAcl", startTime, file.getAcls());
+        return endQuery("setFileAcl", startTime, Arrays.asList(acl));
     }
 
     @Override
     public void unsetFileAcl(long fileId, List<String> members, List<String> permissions) throws CatalogDBException {
-
-        checkFileId(fileId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByFileId(fileId), members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, fileId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Document query = new Document(PRIVATE_ID, fileId).append(QueryParams.ACLS_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls.$.users", member));
+                update = new Document("$pull", new Document("acls", new Document("member", member)));
             } else {
                 update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
             }
@@ -307,34 +240,32 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             }
         }
 
-        // Remove possible fileAcls that might have permissions defined but no users
-        Bson queryBson = new Document(QueryParams.ID.key(), fileId)
-                .append(QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        fileCollection.update(queryBson, update, null);
+//        // Remove possible fileAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(QueryParams.ID.key(), fileId)
+//                .append(QueryParams.ACLS_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        fileCollection.update(queryBson, update, null);
     }
 
     @Override
     public void unsetFileAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
             fileCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
-        // Remove possible FileAcls that might have permissions defined but no users
-        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        fileCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+//        // Remove possible FileAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+//                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        fileCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
@@ -352,7 +283,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), userIds));
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), userIds));
         Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACLS.key()));
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
@@ -363,16 +294,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             for (FileAcl acl : file.getAcls()) {
                 if (pathAclMap.containsKey(file.getPath())) {
                     Map<String, FileAcl> userAclMap = pathAclMap.get(file.getPath());
-                    for (String user : acl.getUsers()) {
-                        if (!userAclMap.containsKey(user)) {
-                            userAclMap.put(user, acl);
-                        }
+                    if (!userAclMap.containsKey(acl.getMember())) {
+                        userAclMap.put(acl.getMember(), acl);
                     }
                 } else {
                     HashMap<String, FileAcl> userAclMap = new HashMap<>();
-                    for (String user : acl.getUsers()) {
-                        userAclMap.put(user, acl);
-                    }
+                    userAclMap.put(acl.getMember(), acl);
                     pathAclMap.put(file.getPath(), userAclMap);
                 }
             }
