@@ -52,6 +52,7 @@ import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -535,16 +536,21 @@ public class OpenCGAMain {
                         }
 
                         long studyId = catalogManager.getStudyId(c.studyId);
-                        String path = c.path.isEmpty()? inputFile.getFileName().toString() : Paths.get(c.path, inputFile.getFileName().toString()).toString();
+                        String path = c.path.isEmpty() ? inputFile.getFileName().toString()
+                                : Paths.get(c.path, inputFile.getFileName().toString()).toString();
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
-                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
+                            ObjectMap params = new ObjectMap("parents", c.parents);
+                            file = catalogManager.link(inputUri, c.path, studyId, params, sessionId).first();
+//                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
                             new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
-                            file = catalogManager.createFile(studyId, null, null,
-                                    path, c.description, c.parents, -1, sessionId).first();
-                            file = catalogFileUtils.link(file, c.calculateChecksum, inputUri, false, false, sessionId);
+                            ObjectMap params = new ObjectMap("parents", c.parents);
+                            file = catalogManager.link(inputUri, c.path, studyId, params, sessionId).first();
+//                            file = catalogManager.createFile(studyId, null, null,
+//                                    path, c.description, c.parents, -1, sessionId).first();
+//                            file = catalogFileUtils.link(file, c.calculateChecksum, inputUri, false, false, sessionId);
                             file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(c.cOpt.getQueryOptions()), sessionId, false);
                         }
 

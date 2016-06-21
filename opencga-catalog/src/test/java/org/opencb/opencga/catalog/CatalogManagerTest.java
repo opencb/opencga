@@ -31,6 +31,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.core.common.UriUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -498,6 +499,43 @@ public class CatalogManagerTest extends GenericTest {
                 -1, sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
                 "data/test/folder/file.txt"), sessionIdUser).getNumResults());
+    }
+
+    @Test
+    public void testLinkFolder() throws CatalogException, IOException {
+        // We will link the same folders that are already created in this study into another folder
+        URI uri = Paths.get(catalogManager.getStudyUri(studyId2)).resolve("data").toUri();
+        long folderId = catalogManager.searchFile(studyId2, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "data/"), null,
+                sessionIdUser).first().getId();
+        int numFiles = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
+
+        catalogManager.link(uri, "data", studyId2, new ObjectMap(), sessionIdUser);
+        int numFilesAfterLink = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
+        assertEquals("Linking the same folders should not change the number of files in catalog", numFiles, numFilesAfterLink);
+
+        // Now we try to create it into a folder that does not exist with parents = true
+        catalogManager.link(uri, "myDirectory", studyId2, new ObjectMap("parents", true), sessionIdUser);
+        QueryResult<File> folderQueryResult = catalogManager.searchFile(studyId2, new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId2)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "myDirectory/"),
+                null, sessionIdUser);
+        assertEquals(1, folderQueryResult.getNumResults());
+        assertTrue(!folderQueryResult.first().isExternal());
+        folderQueryResult = catalogManager.searchFile(studyId2, new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId2)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "myDirectory/test/"), null, sessionIdUser);
+        assertEquals(1, folderQueryResult.getNumResults());
+        assertTrue(folderQueryResult.first().isExternal());
+        folderQueryResult = catalogManager.searchFile(studyId2, new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId2)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "myDirectory/test/folder/"), null, sessionIdUser);
+        assertEquals(1, folderQueryResult.getNumResults());
+        assertTrue(folderQueryResult.first().isExternal());
+
+        // Now we try to create it into a folder that does not exist with parents = false
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("not exist");
+        catalogManager.link(uri, "myDirectory2", studyId2, new ObjectMap(), sessionIdUser);
     }
 
     @Test
