@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -295,32 +296,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     @Deprecated
     @Override
     public QueryResult<File> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkObj(objectMap, "objectMap");
-        File.FileStatus fileStatus = new File.FileStatus();
-        String status = objectMap.getString("status");
-        if (File.FileStatus.isValid(status)) {
-            fileStatus.setStatus(status);
-        }
-        return create(
-                objectMap.getLong("studyId"),
-                File.Type.valueOf(objectMap.getString("type", File.Type.FILE.toString())),
-                File.Format.valueOf(objectMap.getString("format", File.Format.PLAIN.toString())),
-                File.Bioformat.valueOf(objectMap.getString("type", File.Bioformat.NONE.toString())),
-                objectMap.getString("path", null),
-                objectMap.getString("ownerId", null),
-                objectMap.getString("creationDate", null),
-                objectMap.getString("description", null),
-                fileStatus,
-                objectMap.getLong("diskUsage", 0),
-                objectMap.getLong("experimentId", -1),
-                objectMap.getAsLongList("sampleIds"),
-                objectMap.getLong("jobId", -1),
-                objectMap.getMap("stats", null),
-                objectMap.getMap("attributes", null),
-                objectMap.getBoolean("parents"),
-                options,
-                sessionId
-        );
+        throw new NotImplementedException("Deprecated create method.");
     }
 
     @Override
@@ -386,10 +362,15 @@ public class FileManager extends AbstractManager implements IFileManager {
             path = path.substring(0, path.length() - 1);
         }
 
+        URI uri = Paths.get(getStudyUri(studyId)).resolve(path).toUri();
+
         //Create file object
-        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
-                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
-                new LinkedList<>(), stats, attributes);
+//        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat,
+//                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
+//                new LinkedList<>(), stats, attributes);
+
+        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, ownerId, description, status,
+                false, diskUsage, experimentId, sampleIds, jobId, Collections.emptyList(), null, stats, attributes);
 
         //Find parent. If parents == true, create folders.
         Path parent = Paths.get(file.getPath()).getParent();
@@ -429,13 +410,12 @@ public class FileManager extends AbstractManager implements IFileManager {
 
 
         //Check external file
-        boolean isExternal = isExternal(file);
+//        boolean isExternal = isExternal(file);
 
-        if (file.getType() == File.Type.DIRECTORY && Objects.equals(file.getStatus().getStatus(), File.FileStatus.READY)
-                && (!isExternal || isRoot)) {
-            URI fileUri = getFileUri(studyId, file.getPath());
-            CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
-            ioManager.createDirectory(fileUri, parents);
+        if (file.getType() == File.Type.DIRECTORY && Objects.equals(file.getStatus().getStatus(), File.FileStatus.READY)) {
+//            URI fileUri = getFileUri(studyId, file.getPath());
+            CatalogIOManager ioManager = catalogIOManagerFactory.get(uri);
+            ioManager.createDirectory(uri, parents);
         }
 
         QueryResult<File> queryResult = fileDBAdaptor.createFile(studyId, file, options);
@@ -1083,13 +1063,14 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
 
                         if (fileDBAdaptor.count(query).first() == 0) {
-                            long diskUsage = Files.size(Paths.get(destinyPath));
+                            long diskUsage = Files.size(filePath);
 
                             // If the file does not exist, we create it
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, filePath.toUri(),
                                     destinyPath, userId, "", new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1,
                                     Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
                             fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+
                         } else {
                             throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
                                     + ". There is already a file in the path " + destinyPath + " with the same name.");
