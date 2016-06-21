@@ -67,6 +67,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "annotate-variants":
                 annotateVariants();
                 break;
+            case "delete":
+                delete();
+                break;
+
+            case "summary":
+                summary();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -121,5 +128,16 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
+    private void delete() throws CatalogException, IOException {
+        logger.debug("Deleting a study");
+
+
+    }
+
+    private void summary() throws CatalogException, IOException {
+        logger.debug("Doing summary with the general stats of a study");
+
+
+    }
 
 }

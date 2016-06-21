@@ -37,10 +37,12 @@ public class UserCommandOptions {
     }
 
     class BaseUserCommand {
-        @Parameter(names = {"-u", "--user-id"}, description = "User id", arity = 1)
-        public String user;
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-u", "--user-id"}, description = "User id",  required = true, arity = 1)
+        public String user;
+
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
@@ -61,13 +63,16 @@ public class UserCommandOptions {
         @Parameter(names = {"-o", "--organization"}, description = "Organization", required = true, arity = 1)
         public String organization;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, password = true)
+        @Parameter(names = {"-p", "--password"}, description = "Password", required = true, arity = 1, password = true)
         public String password;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")
     public class InfoCommandOptions extends BaseUserCommand {
 
+        @Parameter(names = {"--last-activity"}, description = "If matches with the user's last activity, return " +
+                "an empty QueryResult", arity = 1, required = false)
+        public String password;
     }
 
 
@@ -97,10 +102,10 @@ public class UserCommandOptions {
         public String password;
 
         @Deprecated
-        @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false, password = true)
+        @Parameter(names = {"--hidden-password"}, description = "Password", arity = 1, required = false, password = true)
         public String hiddenPassword;
 
-        @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
+        @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
         public String sessionId;
 
         @ParametersDelegate
@@ -109,7 +114,7 @@ public class UserCommandOptions {
 
     @Parameters(commandNames = {"logout"}, commandDescription = "End user session")
     public class LogoutCommandOptions {
-        @Parameter(names = {"--session-id", "-sid"}, description = "SessionId", required = false, arity = 1)
+        @Parameter(names = {"--session-id", "-S"}, description = "SessionId", required = false, arity = 1)
         public String sessionId;
     }
 

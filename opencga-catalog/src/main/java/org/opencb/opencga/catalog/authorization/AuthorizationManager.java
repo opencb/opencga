@@ -177,6 +177,7 @@ public interface AuthorizationManager {
      */
     void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions) throws CatalogException;
 
+    //@Deprecated
     /**
      * Set the permissions given for all the users and cohort ids given.
      *
@@ -191,6 +192,34 @@ public interface AuthorizationManager {
      */
     QueryResult<CohortAcl> setCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions,
                                                 boolean override) throws CatalogException;
+
+
+/*
+    /**
+     * Set the permissions given for all the users and cohort ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param cohortIds Comma separated list of cohort ids.
+     * @param userIds Comma separated list of user ids which the cohort will be shared with.
+     * @param permissions List of cohort permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
+     * @return A queryResult containing the CohortAcl applied to the different cohort ids.
+     * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
+     */
+   /* QueryResult<CohortAcl> setCohortPermissions(String userId, Integer cohortId, String member,
+                                                List<String> permissions) throws CatalogException;*/
+
+  /*  /**
+     * Set the permissions given for all the users and cohort ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param cohortId Cohort id.
+     * @return A queryResult containing the CohortAcl existing in a cohort.
+     * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
+     */
+   // QueryResult<CohortAcl> getCohortPermissions(String userId, Integer cohortId) throws CatalogException;
+
 
     /**
      * Remove the permissions given for all the users in the cohort ids given.

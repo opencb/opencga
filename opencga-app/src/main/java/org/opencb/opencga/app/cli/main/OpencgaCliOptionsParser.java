@@ -97,11 +97,14 @@ public class OpencgaCliOptionsParser {
         JCommander studySubCommands = jCommander.getCommands().get("studies");
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
-        studySubCommands.addCommand("list", studyCommandOptions.listCommandOptions);
-        studySubCommands.addCommand("resync", studyCommandOptions.resyncCommandOptions);
-        studySubCommands.addCommand("check-files", studyCommandOptions.checkCommandOptions);
-        studySubCommands.addCommand("status", studyCommandOptions.statusCommandOptions);
-        studySubCommands.addCommand("annotate-variants", studyCommandOptions.annotationCommandOptions);
+        studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
+     //   studySubCommands.addCommand("list", studyCommandOptions.listCommandOptions);
+      //  studySubCommands.addCommand("resync", studyCommandOptions.resyncCommandOptions);
+        studySubCommands.addCommand("scan-files", studyCommandOptions.checkCommandOptions);
+    //    studySubCommands.addCommand("status", studyCommandOptions.statusCommandOptions);
+        studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
+        studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
+    //    studySubCommands.addCommand("annotate-variants", studyCommandOptions.annotationCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -114,7 +117,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
-        fileSubCommands.addCommand("alignaments", fileCommandOptions.alignamentsCommandOptions);
+        fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("share", fileCommandOptions.shareCommandOptions);
         fileSubCommands.addCommand("unshare", fileCommandOptions.unshareCommandOptions);

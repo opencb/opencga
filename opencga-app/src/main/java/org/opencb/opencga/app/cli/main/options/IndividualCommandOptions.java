@@ -47,7 +47,7 @@ public class IndividualCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--individual-id"}, description = "Individual id", required = true, arity = 1)
+        @Parameter(names = {"--individual-id"}, description = "Individual id", required = true, arity = 1)
         Integer id;
     }
 
@@ -91,7 +91,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
         String studyId;
 
-        @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
+        @Parameter(names = {"--individual-id"}, description = "Id", required = false, arity = 1)
         String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
@@ -130,7 +130,7 @@ public class IndividualCommandOptions {
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate an individual")
     class AnnotateCommandOptions extends BaseIndividualsCommand {
-        @Parameter(names = {"-aN", "--annotateSetName"}, description = "Annotation set name. Must be unique",
+        @Parameter(names = {"--annotateSetName"}, description = "Annotation set name. Must be unique",
                 required = true, arity = 1)
         String annotateSetName;
 
@@ -177,11 +177,11 @@ public class IndividualCommandOptions {
 
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions extends BaseIndividualsCommand {
+    public class ShareCommandOptions{
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--individual-ids"}, description = "Individuals ids", required = true, arity = 1)
+        @Parameter(names = {"--individual-ids"}, description = "Individuals ids", required = true, arity = 1)
         String individualIds;
 
         @Parameter(names = {"--members"},
@@ -199,11 +199,11 @@ public class IndividualCommandOptions {
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Share cohort")
-    public class UnshareCommandOptions extends BaseIndividualsCommand {
+    public class UnshareCommandOptions {
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--individual-ids"}, description = "Individuals ids", required = true, arity = 1)
+        @Parameter(names = {"--individual-ids"}, description = "Individuals ids", required = true, arity = 1)
         String individualIds;
 
         @Parameter(names = {"--members"},
