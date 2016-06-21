@@ -17,13 +17,22 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 03/06/16.
@@ -44,8 +53,8 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
         String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
         switch (subCommandString) {
-            case "create":
-                create();
+            case "copy":
+                copy();
                 break;
             case "create-folder":
                 createFolder();
@@ -111,10 +120,27 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void create() throws CatalogException, IOException {
+    private void copy() throws CatalogException, IOException, URISyntaxException, StorageManagerException {
         logger.debug("Creating a new file");
         //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
-        //TODO
+//        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
+        FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
+        long studyId = catalogManager.getStudyId(copyCommandOptions.studyId);
+        Path inputFile = Paths.get(copyCommandOptions.inputFile);
+        URI sourceUri = new URI(null, copyCommandOptions.inputFile, null);
+        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
+            sourceUri = inputFile.toUri();
+        }
+        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
+            throw new IOException("File " + sourceUri + " does not exist");
+        }
+
+        QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
+                Paths.get(copyCommandOptions.path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
+                copyCommandOptions.parents, -1, sessionId);
+        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
+                copyCommandOptions.move, copyCommandOptions.calculateChecksum);
+        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
     }
 
     private void createFolder() throws CatalogException {
@@ -197,7 +223,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Linking an external file into catalog.");
         String studyId = filesCommandOptions.linkCommandOptions.studyId;
         String uri = filesCommandOptions.linkCommandOptions.uri;
-        String path = filesCommandOptions.createCommandOptions.path;
+        String path = filesCommandOptions.copyCommandOptions.path;
         openCGAClient.getFileClient().link(studyId, uri, path, null);
     }
 

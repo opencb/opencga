@@ -18,7 +18,7 @@ public class FileCommandOptions {
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
-    public CreateCommandOptions createCommandOptions;
+    public CopyCommandOptions copyCommandOptions;
     public CreateFolderCommandOptions createFolderCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public DownloadCommandOptions downloadCommandOptions;
@@ -45,7 +45,7 @@ public class FileCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
-        this.createCommandOptions = new CreateCommandOptions();
+        this.copyCommandOptions = new CopyCommandOptions();
         this.createFolderCommandOptions = new CreateFolderCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.downloadCommandOptions = new DownloadCommandOptions();
@@ -77,8 +77,8 @@ public class FileCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create file")
-    public class CreateCommandOptions {
+    @Parameters(commandNames = {"copy"}, commandDescription = "Copy a file or folder")
+    public class CopyCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;

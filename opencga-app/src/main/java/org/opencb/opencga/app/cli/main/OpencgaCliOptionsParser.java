@@ -19,13 +19,10 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.main.options.*;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.Arrays;
@@ -109,7 +106,7 @@ public class OpencgaCliOptionsParser {
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
-        fileSubCommands.addCommand("create", fileCommandOptions.createCommandOptions);
+        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
         fileSubCommands.addCommand("create-folder", fileCommandOptions.createFolderCommandOptions);
         fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
         fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
