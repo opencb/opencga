@@ -317,16 +317,16 @@ public class CatalogManager implements AutoCloseable {
         };
     }
 
-    private void configureDBAdaptor(CatalogConfiguration properties) throws CatalogDBException {
+    private void configureDBAdaptor(CatalogConfiguration catalogConfiguration) throws CatalogDBException {
 
         MongoDBConfiguration mongoDBConfiguration = MongoDBConfiguration.builder()
-                .add("username", properties.getDatabase().getUser())
-                .add("password", properties.getDatabase().getPassword())
-                .add("authenticationDatabase", properties.getDatabase().getOptions().get("authenticationDatabase"))
+                .add("username", catalogConfiguration.getDatabase().getUser())
+                .add("password", catalogConfiguration.getDatabase().getPassword())
+                .add("authenticationDatabase", catalogConfiguration.getDatabase().getOptions().get("authenticationDatabase"))
                 .build();
 
         List<DataStoreServerAddress> dataStoreServerAddresses = new LinkedList<>();
-        for (String hostPort : properties.getDatabase().getHosts()) {
+        for (String hostPort : catalogConfiguration.getDatabase().getHosts()) {
             if (hostPort.contains(":")) {
                 String[] split = hostPort.split(":");
                 Integer port = Integer.valueOf(split[1]);
@@ -338,7 +338,7 @@ public class CatalogManager implements AutoCloseable {
 //        catalogDBAdaptorFactory = new CatalogMongoDBAdaptor(dataStoreServerAddresses, mongoDBConfiguration,
 //                properties.getProperty(CATALOG_DB_DATABASE, ""));
         catalogDBAdaptorFactory = new CatalogMongoDBAdaptorFactory(dataStoreServerAddresses, mongoDBConfiguration,
-                properties.getDatabase().getDatabase()) {
+                catalogConfiguration.getDatabase().getDatabase()) {
         };
     }
 

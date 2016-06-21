@@ -58,6 +58,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     private void init(boolean skipDuration) {
         try {
             loadClientConfiguration();
+            loadCatalogConfiguration();
 
             SessionFile sessionFile = loadSessionFile();
             System.out.println("sessionFile = " + sessionFile);
