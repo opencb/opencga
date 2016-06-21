@@ -15,4 +15,7 @@ cgaVariantParam(region = character(), chromosome = character(),
 \arguments{
 \item{chromosome}{the name of the chromosome to be returned}
 }
+\description{
+This class is used to store Opencga parameters for filtering queries
+}
 

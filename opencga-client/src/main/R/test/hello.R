@@ -1,6 +1,6 @@
 base <- "http://localhost:8080/opencga/webservices/rest/v1"
 cga <- OpencgaLogin(baseurl ="http://localhost:8080/opencga/webservices/rest/v1",
-                   userid = "mano", passwd = '1234')
+                   userid = "melsiddieg", passwd = '1234')
 cga <- Opencga(baseurl = "http://localhost:8080/opencga/webservices/rest/v1",
                userID = cga$userId, sessionID = cga$sessionId)
 cga

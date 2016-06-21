@@ -2,8 +2,8 @@
 % Please edit documentation in R/OpencgaClasses.R
 \docType{methods}
 \name{OpencgaProjects,Opencga-method}
+\alias{OpencgaProjects}
 \alias{OpencgaProjects,Opencga-method}
-\alias{OpencgaStudy}
 \title{A method to query Opencga Projects}
 \usage{
 \S4method{OpencgaProjects}{Opencga}(object, id, action, params, ...)
@@ -13,6 +13,6 @@ This method allow the user to create, update and explore
 projects data and metadta
 }
 \details{
-A method to query Projects data
+A method to query, and manipulate Projects data
 }
 

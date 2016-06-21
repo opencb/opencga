@@ -54,9 +54,10 @@ setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
 
 setGeneric("OpencgaProjects", function(object, id, action, params, ...)
   standardGeneric("OpencgaProjects"))
-#' A method to query Projects data
-#' @title A method to query Opencga Projects
-#' @aliases OpencgaStudy
+#' A method to query Opencga Projects
+#' 
+#' A method to query, and manipulate Projects data
+#' @aliases OpencgaProjects
 #' @description This method allow the user to create, update and explore
 #' projects data and metadta
 #' @export
@@ -67,7 +68,7 @@ setMethod("OpencgaProjects", "Opencga",    definition = function(object,
                         params=NULL)
   return(data)
 })
-setGeneric("OpencgaFiles", function(object, id, action, params, ...)
+setGeneric("OpencgaFiles", function(object, id, action, params=NULL, ...)
   standardGeneric("OpencgaFiles"))
 #' @title A method to query Opencga Files
 #' @aliases OpencgaFiles
@@ -75,8 +76,9 @@ setGeneric("OpencgaFiles", function(object, id, action, params, ...)
 #' files data and metadta
 #' @export
 setMethod("OpencgaFiles", "Opencga",    definition = function(object,
-            id, action, params, ...){
+            id, action, params=NULL, ...){
   category <- "files"
+  
   data <- excuteOpencga(object=object, category=category, id=id, action=action,
                         params=params)
   return(data)
@@ -151,7 +153,11 @@ setMethod("OpencgaCohorts", "Opencga",    definition = function(object,
                         params=NULL)
   return(data)
 })
-#' @title A class to store Opencga parameters for filtering queries
+
+#' 
+#' A class to store Opencga parameters for filtering queries
+#' 
+#' This class is used to store Opencga parameters for filtering queries
 #' @aliases cgaVariantParam
 #' @param chromosome the name of the chromosome to be returned
 #' @export

@@ -3,10 +3,11 @@
 # fetchOpencga
 # createURL
 # ParseResponse
-require(miniUI)
-require(shiny)
-require(jsonlite)
 base <- "http://localhost:8080/opencga/webservices/rest/v1"
+#' A method to query and manipulate user data in Opencga
+#' 
+#' This method to query and manipulate user data in Opencga
+#'   
 #' @export
 OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
   require(jsonlite)
@@ -25,10 +26,10 @@ OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization
 #' @param userid a charatcer the username
 #' @param passwd a charcter the user password
 #' @param logical whether to launch a graphical interface, FALSE by default
+#' @param ... Any other arguments
 #' @return an Opencga class object
 #' @export
 OpencgaLogin <- function(baseurl, userid=NULL, passwd=NULL, interactive=FALSE){
-  require(jsonlite)
   if(interactive==TRUE){
     cred <- user_login()
     url <- paste(baseurl,"/users/",cred$user,"/login","?password=", cred$pass,
@@ -82,7 +83,7 @@ createURL <- function(baseurl, category, id, action, sessionID, params, skip){
   }else{
     extraParams <- NULL
   }
-
+  extrArgs <- list(...)
   allParams <- paste(baseParam,extraParams, sep="&")
   if (action %in%noIds){
     url <- paste0(baseurl, category, action, allParams)
@@ -94,7 +95,6 @@ createURL <- function(baseurl, category, id, action, sessionID, params, skip){
 }
 
 parseJ <- function(url){
-  require(jsonlite)
   res <- fromJSON(url, flatten = TRUE, simplifyVector = TRUE)
   num_results <- res$response$numResults
   return(list(num_results=num_results,data=as.data.frame(res$response$result)))
@@ -137,7 +137,8 @@ getCgaParam <- function(object){
 
           }
 #' A method to fetch documentation about Opencga Methods
-#' @details This method allow users to lookup required 
+#' 
+#' This method allow users to lookup required 
 #' to query Opencga Data
 #' @param category the Opencga category being queried
 #' @param action action intended on that category

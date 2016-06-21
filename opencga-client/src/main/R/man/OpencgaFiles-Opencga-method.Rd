@@ -6,7 +6,7 @@
 \alias{OpencgaFiles,Opencga-method}
 \title{A method to query Opencga Files}
 \usage{
-\S4method{OpencgaFiles}{Opencga}(object, id, action, params, ...)
+\S4method{OpencgaFiles}{Opencga}(object, id, action, params = NULL, ...)
 }
 \description{
 This method allow the user to create, update and explore

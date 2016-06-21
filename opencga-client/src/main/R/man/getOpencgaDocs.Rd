@@ -15,9 +15,6 @@ getOpencgaDocs(category, action, requiredOnly = FALSE)
 A dataframe
 }
 \description{
-A method to fetch documentation about Opencga Methods
-}
-\details{
 This method allow users to lookup required 
 to query Opencga Data
 }
