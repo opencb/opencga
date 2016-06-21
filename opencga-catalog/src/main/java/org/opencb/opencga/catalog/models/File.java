@@ -153,6 +153,7 @@ public class File {
         public static final String STAGE = "STAGE";
         public static final String MISSING = "MISSING";
         public static final String PENDING_DELETE = "PENDING_DELETE";
+        public static final String DELETING = "DELETING"; // This status is set exactly before deleting the file from disk.
         public static final String REMOVED = "REMOVED";
 
         public FileStatus(String status, String message) {
