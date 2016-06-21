@@ -17,7 +17,9 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
@@ -29,11 +31,13 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.config.Admin;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
 import org.opencb.opencga.catalog.models.Session;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
@@ -74,7 +78,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
 //                BasicDBObject.class
 //        );
 
-        Bson query = Filters.eq("_id", CatalogMongoDBAdaptorFactory.METADATA_OBJECT_ID);
+        Bson query = Filters.eq(PRIVATE_ID, CatalogMongoDBAdaptorFactory.METADATA_OBJECT_ID);
         Document projection = new Document(field, true);
         Bson inc = Updates.inc(field, 1L);
         QueryOptions queryOptions = new QueryOptions("returnNew", true);
@@ -182,10 +186,17 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
 
         Document metadataObject = getMongoDBDocument(metadata, "Metadata");
-        metadataObject.put("_id", "METADATA");
+        metadataObject.put(PRIVATE_ID, "METADATA");
         Document adminDocument = getMongoDBDocument(admin, "Admin");
         adminDocument.put("sessions", new ArrayList<>());
         metadataObject.put("admin", adminDocument);
+
+        List<StudyAcl> acls = catalogConfiguration.getAcls();
+        List<Document> aclList = new ArrayList<>(acls.size());
+        for (StudyAcl acl : acls) {
+            aclList.add(getMongoDBDocument(acl, "StudyAcl"));
+        }
+        metadataObject.put("acls", aclList);
 
         metaCollection.insert(metadataObject, null);
     }
@@ -199,7 +210,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public boolean isRegisterOpen() {
-        Document doc = metaCollection.find(new Document("_id", "METADATA"), new QueryOptions(QueryOptions.INCLUDE, "open")).first();
+        Document doc = metaCollection.find(new Document(PRIVATE_ID, "METADATA"), new QueryOptions(QueryOptions.INCLUDE, "open")).first();
         if (doc.getString("open").equals("public")) {
             return true;
         }
@@ -210,7 +221,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
     public QueryResult<ObjectMap> addAdminSession(Session session) throws CatalogDBException {
         long startTime = startQuery();
 
-        Bson query = new Document("_id", "METADATA");
+        Bson query = new Document(PRIVATE_ID, "METADATA");
         Bson updates = Updates.push("admin.sessions",
                 new Document("$each", Arrays.asList(getMongoDBDocument(session, "Session")))
                         .append("$slice", -5));
@@ -228,14 +239,32 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public String getAdminPassword() throws CatalogDBException {
-        Bson query = Filters.eq("_id", "METADATA");
+        Bson query = Filters.eq(PRIVATE_ID, "METADATA");
         QueryResult<Document> queryResult = metaCollection.find(query, new QueryOptions(QueryOptions.INCLUDE, "admin"));
         return parseObject((Document) queryResult.first().get("admin"), Admin.class).getPassword();
     }
 
     @Override
     public boolean checkValidAdminSession(String id) {
-        Document query = new Document("_id", "METADATA").append("admin.sessions.id", id);
+        Document query = new Document(PRIVATE_ID, "METADATA").append("admin.sessions.id", id);
         return metaCollection.count(query).first() == 1;
+    }
+
+    @Override
+    public QueryResult<StudyAcl> getDaemonAcl(List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, "METADATA"));
+        Bson unwind = Aggregates.unwind("$" + CatalogCohortDBAdaptor.QueryParams.ACLS.key());
+        Bson match2 = Aggregates.match(Filters.in(CatalogCohortDBAdaptor.QueryParams.ACLS_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(CatalogCohortDBAdaptor.QueryParams.ID.key(),
+                CatalogCohortDBAdaptor.QueryParams.ACLS.key()));
+
+        QueryResult<Document> aggregate = metaCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
+        StudyAcl result = null;
+        if (aggregate.getNumResults() == 1) {
+            result = parseObject(((Document) aggregate.getResult().get(0).get("acls")), StudyAcl.class);
+        }
+        return endQuery("get daemon Acl", startTime, Arrays.asList(result));
     }
 }

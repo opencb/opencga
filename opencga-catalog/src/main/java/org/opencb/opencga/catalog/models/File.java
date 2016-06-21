@@ -30,30 +30,28 @@ import java.util.Map;
  */
 public class File {
 
-    /* Attributes known values */
-    @Deprecated
-    public static final String DELETE_DATE = "deleteDate";      //Long
-
     private long id;
+
     /**
      * File name.
      */
     private String name;
+
     /**
      * Formats: file, folder, index.
      */
     private Type type;
+
     /**
      * Formats: txt, executable, image, ...
      */
     private Format format;
+
     /**
      * BAM, VCF, ...
      */
     private Bioformat bioformat;
-    /**
-     * Optional external file location. If null, file is inside its study.
-     */
+
     private URI uri;
     private String path;
     private String ownerId;
@@ -61,27 +59,22 @@ public class File {
     private String modificationDate;
     private String description;
     private FileStatus status;
-//    @Deprecated
-    //private FileStatusEnum fileStatusEnum;
+    private boolean external;
+
     private long diskUsage;
-    //private long studyId;
     private long experimentId;
     private List<Long> sampleIds;
+
     /**
      * This field values -1 when file has been uploaded.
      */
     private long jobId;
     private List<FileAcl> acls;
     private Index index;
-    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
-    /*
-     * To think
-     * ACL, url,  responsible,  extended source ??
-     */
 
     public File() {
     }
@@ -89,17 +82,18 @@ public class File {
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String description, FileStatus status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<String, Object>(),
+                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<>(),
                 new HashMap<>());
     }
 
     public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, FileStatus status, long diskUsage) {
         this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<String, Object>(),
+                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<>(),
                 new HashMap<>());
     }
 
+    @Deprecated
     public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, FileStatus status, long diskUsage, long experimentId,
                 List<Long> sampleIds, long jobId, List<FileAcl> acls, Map<String, Object> stats,
@@ -122,205 +116,35 @@ public class File {
         this.jobId = jobId;
         this.acls = acls;
         this.index = null;
-        this.annotationSets = new LinkedList<>();
+//        this.annotationSets = new LinkedList<>();
         this.stats = stats;
         this.attributes = attributes;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("File{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", type=").append(type);
-        sb.append(", format=").append(format);
-        sb.append(", bioformat=").append(bioformat);
-        sb.append(", uri=").append(uri);
-        sb.append(", path='").append(path).append('\'');
-        sb.append(", ownerId='").append(ownerId).append('\'');
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", modificationDate='").append(modificationDate).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", experimentId=").append(experimentId);
-        sb.append(", sampleIds=").append(sampleIds);
-        sb.append(", jobId=").append(jobId);
-        sb.append(", acls=").append(acls);
-        sb.append(", index=").append(index);
-        sb.append(", annotationSets=").append(annotationSets);
-        sb.append(", stats=").append(stats);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
+    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId,
+                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage,
+                long experimentId, List<Long> sampleIds, long jobId, List<FileAcl> acls, Index index, Map<String, Object> stats,
+                Map<String, Object> attributes) {
         this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
         this.name = name;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
         this.type = type;
-    }
-
-    public Format getFormat() {
-        return format;
-    }
-
-    public void setFormat(Format format) {
         this.format = format;
-    }
-
-    public Bioformat getBioformat() {
-        return bioformat;
-    }
-
-    public void setBioformat(Bioformat bioformat) {
         this.bioformat = bioformat;
-    }
-
-    public URI getUri() {
-        return uri;
-    }
-
-    public void setUri(URI uri) {
         this.uri = uri;
-    }
-
-    public String getPath() {
-        return path;
-    }
-
-    public void setPath(String path) {
         this.path = path;
-    }
-
-    public String getOwnerId() {
-        return ownerId;
-    }
-
-    public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public void setCreationDate(String creationDate) {
         this.creationDate = creationDate;
-    }
-
-    public String getModificationDate() {
-        return modificationDate;
-    }
-
-    public void setModificationDate(String modificationDate) {
         this.modificationDate = modificationDate;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
         this.description = description;
-    }
-
-    /*public FileStatusEnum getFileStatusEnum() {
-        return fileStatusEnum;
-    }
-
-    public void setFileStatusEnum(FileStatusEnum fileStatusEnum) {
-        this.fileStatusEnum = fileStatusEnum;
-    }
-*/
-    public FileStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(FileStatus status) {
         this.status = status;
-    }
-
-    public long getDiskUsage() {
-        return diskUsage;
-    }
-
-    public void setDiskUsage(long diskUsage) {
+        this.external = external;
         this.diskUsage = diskUsage;
-    }
-
-    public long getExperimentId() {
-        return experimentId;
-    }
-
-    public void setExperimentId(long experimentId) {
         this.experimentId = experimentId;
-    }
-
-    public List<Long> getSampleIds() {
-        return sampleIds;
-    }
-
-    public void setSampleIds(List<Long> sampleIds) {
         this.sampleIds = sampleIds;
-    }
-
-    public long getJobId() {
-        return jobId;
-    }
-
-    public void setJobId(long jobId) {
         this.jobId = jobId;
-    }
-
-    public List<FileAcl> getAcls() {
-        return acls;
-    }
-
-    public File setAcls(List<FileAcl> acls) {
         this.acls = acls;
-        return this;
-    }
-
-    public Index getIndex() {
-        return index;
-    }
-
-    public void setIndex(Index index) {
         this.index = index;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public void setStats(Map<String, Object> stats) {
         this.stats = stats;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
     }
 
@@ -328,7 +152,9 @@ public class File {
 
         public static final String STAGE = "STAGE";
         public static final String MISSING = "MISSING";
-//        public static final String TRASHED = "TRASHED";
+        public static final String PENDING_DELETE = "PENDING_DELETE";
+        public static final String DELETING = "DELETING"; // This status is set exactly before deleting the file from disk.
+        public static final String REMOVED = "REMOVED";
 
         public FileStatus(String status, String message) {
             if (isValid(status)) {
@@ -358,10 +184,9 @@ public class File {
     }
 
     public enum Type {
-        FOLDER,
-        FILE
+        FILE,
+        DIRECTORY
     }
-
 
     public enum Compression {
         GZIP,
@@ -375,7 +200,6 @@ public class File {
      * General format of the file, such as text, or binary, etc.
      */
     public enum Format {
-
         VCF,
         BCF,
         GVCF,
@@ -434,5 +258,222 @@ public class File {
         SEQUENCE,
         PEDIGREE,
         NONE
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("File{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", format=").append(format);
+        sb.append(", bioformat=").append(bioformat);
+        sb.append(", uri=").append(uri);
+        sb.append(", path='").append(path).append('\'');
+        sb.append(", ownerId='").append(ownerId).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", modificationDate='").append(modificationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", external=").append(external);
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", experimentId=").append(experimentId);
+        sb.append(", sampleIds=").append(sampleIds);
+        sb.append(", jobId=").append(jobId);
+        sb.append(", acls=").append(acls);
+        sb.append(", index=").append(index);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public File setId(long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public File setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public File setType(Type type) {
+        this.type = type;
+        return this;
+    }
+
+    public Format getFormat() {
+        return format;
+    }
+
+    public File setFormat(Format format) {
+        this.format = format;
+        return this;
+    }
+
+    public Bioformat getBioformat() {
+        return bioformat;
+    }
+
+    public File setBioformat(Bioformat bioformat) {
+        this.bioformat = bioformat;
+        return this;
+    }
+
+    public URI getUri() {
+        return uri;
+    }
+
+    public File setUri(URI uri) {
+        this.uri = uri;
+        return this;
+    }
+
+    public String getPath() {
+        return path;
+    }
+
+    public File setPath(String path) {
+        this.path = path;
+        return this;
+    }
+
+    public String getOwnerId() {
+        return ownerId;
+    }
+
+    public File setOwnerId(String ownerId) {
+        this.ownerId = ownerId;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public File setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public String getModificationDate() {
+        return modificationDate;
+    }
+
+    public File setModificationDate(String modificationDate) {
+        this.modificationDate = modificationDate;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public File setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public FileStatus getStatus() {
+        return status;
+    }
+
+    public File setStatus(FileStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    public boolean isExternal() {
+        return external;
+    }
+
+    public File setExternal(boolean external) {
+        this.external = external;
+        return this;
+    }
+
+    public long getDiskUsage() {
+        return diskUsage;
+    }
+
+    public File setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
+        return this;
+    }
+
+    public long getExperimentId() {
+        return experimentId;
+    }
+
+    public File setExperimentId(long experimentId) {
+        this.experimentId = experimentId;
+        return this;
+    }
+
+    public List<Long> getSampleIds() {
+        return sampleIds;
+    }
+
+    public File setSampleIds(List<Long> sampleIds) {
+        this.sampleIds = sampleIds;
+        return this;
+    }
+
+    public long getJobId() {
+        return jobId;
+    }
+
+    public File setJobId(long jobId) {
+        this.jobId = jobId;
+        return this;
+    }
+
+    public List<FileAcl> getAcls() {
+        return acls;
+    }
+
+    public File setAcls(List<FileAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public Index getIndex() {
+        return index;
+    }
+
+    public File setIndex(Index index) {
+        this.index = index;
+        return this;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public File setStats(Map<String, Object> stats) {
+        this.stats = stats;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public File setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
     }
 }

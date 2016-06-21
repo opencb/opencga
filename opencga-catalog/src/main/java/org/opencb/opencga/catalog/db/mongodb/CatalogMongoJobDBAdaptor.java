@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by pfurio on 08/01/16.
@@ -82,7 +83,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Job> getJob(long jobId, QueryOptions options) throws CatalogDBException {
         checkJobId(jobId);
-        return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+        return get(new Query(QueryParams.ID.key(), jobId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
 //        long startTime = startQuery();
 //        QueryResult<Document> queryResult = jobCollection.find(Filters.eq(PRIVATE_ID, jobId), filterOptions(options, FILTER_ROUTE_JOBS));
 //        Job job = parseJob(queryResult);
@@ -182,7 +183,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         checkJobId(jobId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, jobId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
         Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
         List<JobAcl> jobAcl = null;
@@ -199,120 +200,56 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
-        checkJobId(jobId);
         long studyId = getStudyIdByJobId(jobId);
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
 
-        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        String member = acl.getMember();
+
+        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
         // already have permissions on its own.
-        Map<String, List<String>> groups = new HashMap<>();
-        Set<String> users = new HashSet<>();
-        for (String member : acl.getUsers()) {
-            if (member.startsWith("@")) {
-                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-                groups.put(group.getId(), group.getUserIds());
-            } else {
-                users.add(member);
-            }
-        }
-        if (groups.size() > 0) {
+        if (member.startsWith("@")) {
+            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
+
             // Check if any user already have permissions set on their own.
-            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-                QueryResult<JobAcl> jobAcl = getJobAcl(jobId, entry.getValue());
-                if (jobAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("Error when adding permissions in job. At least one user in " + entry.getKey()
-                            + " has already defined permissions for job " + jobId);
-                }
+            QueryResult<JobAcl> jobAcl = getJobAcl(jobId, group.getUserIds());
+            if (jobAcl.getNumResults() > 0) {
+                throw new CatalogDBException("Error when adding permissions in job. At least one user in " + group.getId()
+                        + " has already defined permissions for job " + jobId);
+            }
+        } else {
+            // Check if the members of the new acl already have some permissions set
+            QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getMember());
+
+            if (jobAcls.getNumResults() > 0 && override) {
+                unsetJobAcl(jobId, Arrays.asList(member), Collections.emptyList());
+            } else if (jobAcls.getNumResults() > 0 && !override) {
+                throw new CatalogDBException("setJobAcl: " + member + " already had an Acl set. If you "
+                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
             }
         }
 
-        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
-        // because the group will be given the permission.
-        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-            for (String userId : entry.getValue()) {
-                if (users.contains(userId)) {
-                    users.remove(userId);
-                }
-            }
-        }
-
-        // Create the definitive list of members that will be added in the acl
-        List<String> members = new ArrayList<>(users.size() + groups.size());
-        members.addAll(users.stream().collect(Collectors.toList()));
-        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
-        acl.setUsers(members);
-
-        // Check if the members of the new acl already have some permissions set
-        QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getUsers());
-        if (jobAcls.getNumResults() > 0 && override) {
-            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
-            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
-
-            List<String> usersToOverride = new ArrayList<>();
-            for (JobAcl jobAcl : jobAcls.getResult()) {
-                for (String member : jobAcl.getUsers()) {
-                    if (usersSet.contains(member)) {
-                        // Add the user to the list of users that will be taken out from the Acls.
-                        usersToOverride.add(member);
-                    }
-                }
-            }
-
-            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetJobAcl(jobId, usersToOverride, Collections.emptyList());
-        } else if (jobAcls.getNumResults() > 0 && !override) {
-            throw new CatalogDBException("setJobAcl: " + jobAcls.getNumResults() + " of the members already had an Acl set. If you "
-                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
-        }
-
-        // Append the users to the existing acl.
-        List<String> permissions = acl.getPermissions().stream().map(JobAcl.JobPermissions::name).collect(Collectors.toList());
-
-        // Check if the permissions found on acl already exist on job id
+        // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, jobId);
-        if (permissions.size() > 0) {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
-        } else {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
-        }
-
-        Bson update;
-        if (jobCollection.count(queryDocument).first() > 0) {
-            // Append the users to the existing acl.
-            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
-        } else {
-            queryDocument = new Document(PRIVATE_ID, jobId);
-            // Push the new acl to the list of acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "JobAcl")));
-
-        }
-
+        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "JobAcl")));
         QueryResult<UpdateResult> updateResult = jobCollection.update(queryDocument, update, null);
+
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("setJobAcl: An error occurred when trying to share job " + jobId + " with other members.");
+            throw new CatalogDBException("setJobAcl: An error occurred when trying to share file " + jobId + " with " + member);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
-        Job job = jobConverter.convertToDataModelType(jobCollection.find(queryDocument, queryOptions).first());
-
-        return endQuery("setJobAcl", startTime, job.getAcls());
+        return endQuery("setJobAcl", startTime, Arrays.asList(acl));
     }
 
     @Override
     public void unsetJobAcl(long jobId, List<String> members, List<String> permissions) throws CatalogDBException {
-        checkJobId(jobId);
-
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByJobId(jobId), members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, jobId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Document query = new Document(PRIVATE_ID, jobId).append(QueryParams.ACLS_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls.$.users", member));
+                update = new Document("$pull", new Document("acls", new Document("member", member)));
             } else {
                 update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
             }
@@ -323,34 +260,32 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             }
         }
 
-        // Remove possible jobAcls that might have permissions defined but no users
-        Bson queryBson = new Document(QueryParams.ID.key(), jobId)
-                .append(QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        jobCollection.update(queryBson, update, null);
+//        // Remove possible jobAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(QueryParams.ID.key(), jobId)
+//                .append(QueryParams.ACLS_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        jobCollection.update(queryBson, update, null);
     }
 
     @Override
     public void unsetJobAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
             jobCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
         // Remove possible JobAcls that might have permissions defined but no users
-        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-                .append(QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        jobCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+//        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+//                .append(QueryParams.ACLS_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        jobCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
@@ -601,7 +536,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -618,7 +553,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -714,8 +649,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         Query query = new Query(QueryParams.ID.key(), id);
         Job job = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key())).first();
         switch (job.getStatus().getStatus()) {
+            case Job.JobStatus.TRASHED:
             case Job.JobStatus.DELETED:
-            case Job.JobStatus.REMOVED:
                 throw new CatalogDBException("The job {" + id + "} was already " + job.getStatus().getStatus());
             case Job.JobStatus.PREPARED:
             case Job.JobStatus.RUNNING:
@@ -746,9 +681,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         }
 
         // Change the status of the job to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
 
         return endQuery("Delete job", startTime, get(query, null));
     }
@@ -756,7 +691,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         QueryResult<Job> jobQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Job job : jobQueryResult.getResult()) {
             delete(job.getId(), queryOptions);
@@ -797,10 +732,30 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        return endQuery("Restore jobs", startTime, setStatus(query, Status.READY));
     }
 
+    @Override
+    public QueryResult<Job> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkJobId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The job {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, Status.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore job", startTime, get(query, null));
+    }
 
     @Override
     public CatalogDBIterator<Job> iterator(Query query, QueryOptions options) throws CatalogDBException {

@@ -54,7 +54,7 @@ public class FileScanner {
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
         query.put(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), Arrays.asList(
-                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.DELETED));
+                File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
         List<File> modifiedFiles = new LinkedList<>();
@@ -82,7 +82,7 @@ public class FileScanner {
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
-        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
+        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.DIRECTORY);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();
@@ -170,7 +170,7 @@ public class FileScanner {
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
         }
-        if (!directory.getType().equals(File.Type.FOLDER)) {
+        if (!directory.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogException("Expected folder where place the found files.");
         }
         long studyId = catalogManager.getStudyIdByFileId(directory.getId());

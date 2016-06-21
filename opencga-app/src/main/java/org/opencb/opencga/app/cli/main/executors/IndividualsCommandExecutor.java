@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -26,20 +28,19 @@ import java.io.IOException;
  */
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.IndividualsCommandsOptions individualsCommandOptions;
+    private IndividualCommandOptions individualsCommandOptions;
 
-    public IndividualsCommandExecutor(OpencgaCliOptionsParser.IndividualsCommandsOptions jobsCommandOptions) {
-        super(jobsCommandOptions.commonOptions);
-        this.individualsCommandOptions = jobsCommandOptions;
+    public IndividualsCommandExecutor(IndividualCommandOptions individualsCommandOptions) {
+        super(individualsCommandOptions.commonCommandOptions);
+        this.individualsCommandOptions = individualsCommandOptions;
     }
-
 
 
     @Override
     public void execute() throws Exception {
         logger.debug("Executing jobs command line");
 
-        String subCommandString = individualsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(individualsCommandOptions.jCommander);
         switch (subCommandString) {
 
             case "create":
@@ -60,6 +61,15 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 delete();
                 break;
+            case "share":
+                share();
+                break;
+            case "unshare":
+                unshare();
+                break;
+            case "group-by":
+                groupBy();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -71,7 +81,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating sample");
     }
 
-
     private void info() throws CatalogException {
         logger.debug("Getting individual information");
     }
@@ -79,16 +88,30 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     private void search() throws CatalogException {
         logger.debug("Searching individuals");
     }
+
     private void annotate() throws CatalogException {
         logger.debug("Annotating an individual");
     }
+
     private void update() throws CatalogException {
         logger.debug("Updating individual information");
     }
+
     private void delete() throws CatalogException {
         logger.debug("Deleting individual information");
     }
 
+    private void share() throws CatalogException, IOException {
+        logger.debug("Sharing a individual");
+    }
+
+    private void unshare() throws CatalogException, IOException {
+        logger.debug("Unsharing a individual");
+    }
+
+    private void groupBy() throws CatalogException, IOException {
+        logger.debug("Group by individuals");
+    }
 
 
 }

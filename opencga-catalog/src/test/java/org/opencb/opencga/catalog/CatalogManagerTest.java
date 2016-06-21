@@ -34,9 +34,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.nio.file.*;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -495,7 +493,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testCreateFileFromSharedStudy() throws CatalogException {
-        catalogManager.shareStudy(studyId, "user2", "analyst", false, sessionIdUser);
+        catalogManager.shareStudy(studyId, "user2", Collections.emptyList(), "analyst", false, sessionIdUser);
         catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt", "My description", true,
                 -1, sessionIdUser2);
         assertEquals(1, catalogManager.searchFile(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(),
@@ -507,7 +505,7 @@ public class CatalogManagerTest extends GenericTest {
         long projectId = catalogManager.getAllProjects("user2", null, sessionIdUser2).first().getId();
         long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser2).first().getId();
 
-        Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.FOLDER), new QueryOptions(), sessionIdUser2)
+        Set<String> paths = catalogManager.getAllFiles(studyId, new Query("type", File.Type.DIRECTORY), new QueryOptions(), sessionIdUser2)
                 .getResult().stream().map(File::getPath).collect(Collectors.toSet());
         assertEquals(3, paths.size());
         assertTrue(paths.contains(""));             //root
@@ -517,7 +515,7 @@ public class CatalogManagerTest extends GenericTest {
         Path folderPath = Paths.get("data", "new", "folder");
         File folder = catalogManager.createFolder(studyId, folderPath, true, null, sessionIdUser2).first();
 
-        paths = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.FOLDER),
+        paths = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.DIRECTORY),
                 new QueryOptions(), sessionIdUser2).getResult().stream().map(File::getPath).collect(Collectors.toSet());
         assertEquals(5, paths.size());
         assertTrue(paths.contains("data/new/"));
@@ -700,7 +698,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void getFileIdByString() throws CatalogException {
-        catalogManager.shareStudy(studyId, "user2", "analyst", false, sessionIdUser);
+        catalogManager.shareStudy(studyId, "user2", Collections.emptyList(), "analyst", false, sessionIdUser);
         File file = catalogManager.createFile(studyId, File.Format.UNKNOWN, File.Bioformat.NONE, "data/test/folder/file.txt",
                 "My description", true, -1, sessionIdUser2).first();
         long fileId = catalogManager.getFileId(file.getPath(), sessionIdUser);
@@ -769,9 +767,9 @@ public class CatalogManagerTest extends GenericTest {
         int numFiles = result.getNumResults();
         assertEquals(3, numFiles);
 
-        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FOLDER");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "DIRECTORY");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
-        result.getResult().forEach(f -> assertEquals(File.Type.FOLDER, f.getType()));
+        result.getResult().forEach(f -> assertEquals(File.Type.DIRECTORY, f.getType()));
         int numFolders = result.getNumResults();
         assertEquals(5, numFolders);
 
@@ -781,7 +779,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(".", result.first().getName());
 
 
-        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE,FOLDER");
+        query = new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE,DIRECTORY");
         result = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(8, result.getNumResults());
         assertEquals(numFiles + numFolders, result.getNumResults());
@@ -1070,7 +1068,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.DELETED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1082,7 +1080,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.DELETED);
+            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1162,7 +1160,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.deleteFolder(deletable, sessionIdUser);
 
         File file = catalogManager.getFile(deletable, sessionIdUser).first();
-        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.DELETED));
+        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.TRASHED));
 
         allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResult();
         allFilesInFolder = catalogManager.searchFile(
@@ -1172,7 +1170,7 @@ public class CatalogManagerTest extends GenericTest {
 
 
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.DELETED));
+            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.TRASHED));
         }
     }
 
@@ -1876,7 +1874,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(sampleId, queryResult.first().getId());
 
         QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
-        assertEquals(Status.DELETED, sample.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, sample.first().getStatus().getStatus());
     }
 
     /*
@@ -2031,7 +2029,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
         Cohort cohort = catalogManager.getCohort(myCohort.getId(), null, sessionIdUser).first();
-        assertEquals(Status.DELETED, cohort.getStatus().getStatus());
+        assertEquals(Status.TRASHED, cohort.getStatus().getStatus());
     }
 
     /**
@@ -2061,21 +2059,21 @@ public class CatalogManagerTest extends GenericTest {
 
         List<String> individuals;
         individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                variableSet.getId())
-                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".NAME", "~^INDIVIDUAL_"),
+                        variableSet.getId())
+                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".NAME", "~^INDIVIDUAL_"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_1", "INDIVIDUAL_2", "INDIVIDUAL_3")));
 
         individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                variableSet.getId())
-                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10"),
+                        variableSet.getId())
+                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_2", "INDIVIDUAL_3")));
 
         individuals = catalogManager.getAllIndividuals(studyId, new Query(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                variableSet.getId())
-                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10")
-                .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
+                        variableSet.getId())
+                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".AGE", ">10")
+                        .append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key() + ".PHEN", "CASE"),
                 null, sessionIdUser).getResult().stream().map(Individual::getName).collect(Collectors.toList());
         assertTrue(individuals.containsAll(Arrays.asList("INDIVIDUAL_3")));
 

@@ -215,11 +215,11 @@ public class DaemonLoop implements Runnable {
             logger.info("----- Pending deletions -----");
             try {
                 QueryResult<File> files = catalogManager.searchFile(-1, new Query(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(),
-                        File.FileStatus.DELETED), new QueryOptions(), sessionId);
+                        File.FileStatus.TRASHED), new QueryOptions(), sessionId);
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
                     try {       //TODO: skip if the file is a non-empty folder
-                        long deleteDate = new ObjectMap(file.getAttributes()).getLong(File.DELETE_DATE, 0);
+                        long deleteDate = new ObjectMap(file.getAttributes()).getLong("deleteDate", 0);
                         if (currentTimeMillis - deleteDate > Long.valueOf(properties.getProperty(DELETE_DELAY, "30")) * 1000) { //Seconds to millis
                             QueryResult<Study> studyQueryResult = catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
                             Study study = studyQueryResult.getResult().get(0);

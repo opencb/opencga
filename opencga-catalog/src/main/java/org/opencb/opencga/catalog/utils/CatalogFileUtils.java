@@ -261,7 +261,7 @@ public class CatalogFileUtils {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         checkCanLinkFile(file, relink);
-        if (file.getType() == File.Type.FOLDER) {
+        if (file.getType() == File.Type.DIRECTORY) {
             return linkFolder(file, calculateChecksum, externalUri, createFoundFiles, relink, sessionId);
         } else {
             return linkFile(file, calculateChecksum, externalUri, sessionId);
@@ -404,33 +404,35 @@ public class CatalogFileUtils {
         return catalogManager.getFile(folder.getId(), sessionId).first();
     }
 
+    @Deprecated
     public void delete(long fileId, String sessionId) throws CatalogException {
         delete(catalogManager.getFile(fileId, sessionId).first(), sessionId);
     }
 
+    @Deprecated
     public void delete(File file, String sessionId) throws CatalogException {
         ParamUtils.checkObj(file, "file");
 
-        if (!file.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
+        if (!file.getStatus().getStatus().equals(File.FileStatus.TRASHED)) {
             throw new CatalogIOException("Only deleted files can be physically deleted");
         }
         long studyId = catalogManager.getStudyIdByFileId(file.getId());
-        if (file.getType().equals(File.Type.FOLDER)) {
+        if (file.getType().equals(File.Type.DIRECTORY)) {
             Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "..*")
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.REMOVED);
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED);
             List<File> files = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId).getResult();
             for (File f : files) {
-                if (!f.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
+                if (!f.getStatus().getStatus().equals(File.FileStatus.TRASHED)) {
                     throw new CatalogIOException("Only deleted files can be physically deleted");
                 }
             }
             for (File f : files) {
-                if (f.getType() == File.Type.FILE && !f.getStatus().getStatus().equals(File.FileStatus.DELETED)) {
+                if (f.getType() == File.Type.FILE && !f.getStatus().getStatus().equals(File.FileStatus.TRASHED)) {
                     delete(f, sessionId);
                 }
             }
             List<File> folders = files.stream()
-                    .filter(f -> f.getType() == File.Type.FOLDER && !f.getStatus().getStatus().equals(File.FileStatus.DELETED))
+                    .filter(f -> f.getType() == File.Type.DIRECTORY && !f.getStatus().getStatus().equals(File.FileStatus.TRASHED))
                     .sorted((f1, f2) -> f2.getPath().length() - f1.getPath().length())
                     .collect(Collectors.toList());
             for (File folder : folders) {
@@ -448,7 +450,7 @@ public class CatalogFileUtils {
             }
             ioManager.deleteFile(fileUri);
         }
-        catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.DELETED), sessionId);
+        catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.TRASHED), sessionId);
 
     }
 
@@ -457,7 +459,7 @@ public class CatalogFileUtils {
      * <p>
      * For READY files with a non existing file, set status to MISSING. "Lost file"
      * For MISSING files who recover the file, set status to READY. "Found file"
-     * For DELETED files with a non existing file, set status to REMOVED.
+     * For TRASHED files with a non existing file, set status to DELETED.
      *
      * @param file              File to check
      * @param calculateChecksum Calculate checksum for "found files"
@@ -488,12 +490,12 @@ public class CatalogFileUtils {
                 }
                 break;
             }
-            case File.FileStatus.DELETED: {
+            case File.FileStatus.TRASHED: {
                 URI fileUri = catalogManager.getFileUri(file);
                 if (!catalogManager.getCatalogIOManagerFactory().get(fileUri).exists(fileUri)) {
                     modifiedFile = file;
                     // TODO: Change status to remove.
-//                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.REMOVED), sessionId);
+//                    catalogManager.modifyFile(file.getId(), new ObjectMap("status.status", File.FileStatus.DELETED), sessionId);
 //                    modifiedFile = catalogManager.getFile(file.getId(), sessionId).first();
                     break;
                 }

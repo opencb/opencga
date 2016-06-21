@@ -5,6 +5,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.*;
 
+import javax.annotation.Nullable;
 import java.util.*;
 
 /**
@@ -33,20 +34,12 @@ public interface AuthorizationManager {
 
     String OTHER_USERS_ID = "*";
 
-    /**
-     * Get the default Acls for the default roles.
-     *
-     * admins : Full permissions
-     * dataManagers: Full data permissions. No study permissions
-     * members: Just launch jobs permission.
-     *
-     * @param adminUsers Users to add to the admin group by default.
-     * @return List<Role>
-     */
-    static List<StudyAcl> getDefaultAcls(Collection<String> adminUsers) {
-        List<StudyAcl> studyAcls = new ArrayList<>(3);
-        studyAcls.add(new StudyAcl(ROLE_ADMIN, new ArrayList<>(adminUsers), EnumSet.allOf(StudyAcl.StudyPermissions.class)));
-        studyAcls.add(new StudyAcl(ROLE_ANALYST, Collections.emptyList(), EnumSet.of(StudyAcl.StudyPermissions.VIEW_STUDY,
+    static EnumSet<StudyAcl.StudyPermissions> getAdminAcls() {
+        return EnumSet.allOf(StudyAcl.StudyPermissions.class);
+    }
+
+    static EnumSet<StudyAcl.StudyPermissions> getAnalystAcls() {
+        return EnumSet.of(StudyAcl.StudyPermissions.VIEW_STUDY,
                 StudyAcl.StudyPermissions.UPDATE_STUDY, StudyAcl.StudyPermissions.CREATE_VARIABLE_SET,
                 StudyAcl.StudyPermissions.VIEW_VARIABLE_SET, StudyAcl.StudyPermissions.UPDATE_VARIABLE_SET,
                 StudyAcl.StudyPermissions.CREATE_FILES, StudyAcl.StudyPermissions.VIEW_FILE_HEADERS,
@@ -63,11 +56,50 @@ public interface AuthorizationManager {
                 StudyAcl.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
                 StudyAcl.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_DATASETS,
                 StudyAcl.StudyPermissions.VIEW_DATASETS, StudyAcl.StudyPermissions.UPDATE_DATASETS,
-                StudyAcl.StudyPermissions.CREATE_PANELS, StudyAcl.StudyPermissions.VIEW_PANELS, StudyAcl.StudyPermissions.UPDATE_PANELS)));
-        studyAcls.add(new StudyAcl(ROLE_LOCKED, Collections.emptyList(), EnumSet.noneOf(StudyAcl.StudyPermissions.class)));
-        // TODO: Add all the default roles and permissions.
-        return studyAcls;
+                StudyAcl.StudyPermissions.CREATE_PANELS, StudyAcl.StudyPermissions.VIEW_PANELS, StudyAcl.StudyPermissions.UPDATE_PANELS);
     }
+
+    static EnumSet<StudyAcl.StudyPermissions> getLockedAcls() {
+        return EnumSet.noneOf(StudyAcl.StudyPermissions.class);
+    }
+
+//    /**
+//     * Get the default Acls for the default roles.
+//     *
+//     * admins : Full permissions
+//     * dataManagers: Full data permissions. No study permissions
+//     * members: Just launch jobs permission.
+//     *
+//     * @param adminUsers Users to add to the admin group by default.
+//     * @return List<Role>
+//     */
+//    static List<StudyAcl> getDefaultAcls(Collection<String> adminUsers) {
+//        List<StudyAcl> studyAcls = new ArrayList<>(3);
+//        studyAcls.add(new StudyAcl(ROLE_ADMIN, new ArrayList<>(adminUsers), EnumSet.allOf(StudyAcl.StudyPermissions.class)));
+//        studyAcls.add(new StudyAcl(ROLE_ANALYST, Collections.emptyList(), EnumSet.of(StudyAcl.StudyPermissions.VIEW_STUDY,
+//                StudyAcl.StudyPermissions.UPDATE_STUDY, StudyAcl.StudyPermissions.CREATE_VARIABLE_SET,
+//                StudyAcl.StudyPermissions.VIEW_VARIABLE_SET, StudyAcl.StudyPermissions.UPDATE_VARIABLE_SET,
+//                StudyAcl.StudyPermissions.CREATE_FILES, StudyAcl.StudyPermissions.VIEW_FILE_HEADERS,
+//                StudyAcl.StudyPermissions.VIEW_FILE_CONTENTS, StudyAcl.StudyPermissions.VIEW_FILES,
+//                StudyAcl.StudyPermissions.UPDATE_FILES, StudyAcl.StudyPermissions.DOWNLOAD_FILES,
+//                StudyAcl.StudyPermissions.CREATE_JOBS, StudyAcl.StudyPermissions.VIEW_JOBS, StudyAcl.StudyPermissions.UPDATE_JOBS,
+//                StudyAcl.StudyPermissions.CREATE_SAMPLES, StudyAcl.StudyPermissions.VIEW_SAMPLES,
+// StudyAcl.StudyPermissions.UPDATE_SAMPLES,
+//                StudyAcl.StudyPermissions.CREATE_SAMPLE_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS,
+//                StudyAcl.StudyPermissions.UPDATE_SAMPLE_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_INDIVIDUALS,
+//                StudyAcl.StudyPermissions.VIEW_INDIVIDUALS, StudyAcl.StudyPermissions.UPDATE_INDIVIDUALS,
+//                StudyAcl.StudyPermissions.CREATE_INDIVIDUAL_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS,
+//                StudyAcl.StudyPermissions.UPDATE_INDIVIDUAL_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_COHORTS,
+//                StudyAcl.StudyPermissions.VIEW_COHORTS, StudyAcl.StudyPermissions.UPDATE_COHORTS,
+//                StudyAcl.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
+//                StudyAcl.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_DATASETS,
+//                StudyAcl.StudyPermissions.VIEW_DATASETS, StudyAcl.StudyPermissions.UPDATE_DATASETS,
+//                StudyAcl.StudyPermissions.CREATE_PANELS, StudyAcl.StudyPermissions.VIEW_PANELS,
+// StudyAcl.StudyPermissions.UPDATE_PANELS)));
+//        studyAcls.add(new StudyAcl(ROLE_LOCKED, Collections.emptyList(), EnumSet.noneOf(StudyAcl.StudyPermissions.class)));
+//        // TODO: Add all the default roles and permissions.
+//        return studyAcls;
+//    }
 
     void checkProjectPermission(long projectId, String userId, StudyAcl.StudyPermissions permission) throws CatalogException;
 
@@ -145,6 +177,7 @@ public interface AuthorizationManager {
      */
     void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions) throws CatalogException;
 
+    //@Deprecated
     /**
      * Set the permissions given for all the users and cohort ids given.
      *
@@ -159,6 +192,34 @@ public interface AuthorizationManager {
      */
     QueryResult<CohortAcl> setCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions,
                                                 boolean override) throws CatalogException;
+
+
+/*
+    /**
+     * Set the permissions given for all the users and cohort ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param cohortIds Comma separated list of cohort ids.
+     * @param userIds Comma separated list of user ids which the cohort will be shared with.
+     * @param permissions List of cohort permissions.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
+     * @return A queryResult containing the CohortAcl applied to the different cohort ids.
+     * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
+     */
+   /* QueryResult<CohortAcl> setCohortPermissions(String userId, Integer cohortId, String member,
+                                                List<String> permissions) throws CatalogException;*/
+
+  /*  /**
+     * Set the permissions given for all the users and cohort ids given.
+     *
+     * @param userId User id of the user that is performing the action.
+     * @param cohortId Cohort id.
+     * @return A queryResult containing the CohortAcl existing in a cohort.
+     * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
+     */
+   // QueryResult<CohortAcl> getCohortPermissions(String userId, Integer cohortId) throws CatalogException;
+
 
     /**
      * Remove the permissions given for all the users in the cohort ids given.
@@ -387,21 +448,25 @@ public interface AuthorizationManager {
 
     /**
      * Adds the list of members to the roleId specified.
-     *  @param userId User id of the user ordering the action.
+     *
+     * @param userId User id of the user ordering the action.
      * @param studyId Study id under which the members will be added to the role.
      * @param members List of member ids (users and/or groups).
-     * @param roleId Role id where the members will be added to.
+     * @param permissions List of permissions to be added to the members. If a template is provided, the permissions present here will be
+     *                    added to the list of permissions present in the template.
+     * @param template Template to be used to get the default permissions from. Might be null.
      * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
      *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return a queryResult containing the complete studyAcl where the members have been added to.
      * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
      */
-    QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, List<String> members, String roleId, boolean override)
-            throws CatalogException;
-    default QueryResult<StudyAcl> addMembersToRole(String userId, long studyId, String members, String roleId, boolean override)
-            throws CatalogException {
-        return addMembersToRole(userId, studyId, Arrays.asList(members.split(",")), roleId, override);
+    QueryResult<StudyAcl> createStudyPermissions(String userId, long studyId, List<String> members, List<String> permissions,
+                                                 @Nullable String template, boolean override) throws CatalogException;
+    default QueryResult<StudyAcl> createStudyPermissions(String userId, long studyId, String members, List<String> permissions,
+                                                         @Nullable String template, boolean override) throws CatalogException {
+        return createStudyPermissions(userId, studyId, Arrays.asList(members.split(",")), permissions, template, override);
     }
+
     /**
      * Removes the members from the roleId specified.
      *
@@ -411,10 +476,10 @@ public interface AuthorizationManager {
      * @throws CatalogException when the userId does not have the proper permissions to remove other users from roles, or the members or
      * roleId do not exist.
      */
-    void removeMembersFromRole(String userId, long studyId, List<String> members) throws CatalogException;
-    default void removeMembersFromRole(String userId, long studyId, String members)
+    void removeStudyPermissions(String userId, long studyId, List<String> members) throws CatalogException;
+    default void removeStudyPermissions(String userId, long studyId, String members)
             throws CatalogException {
-        removeMembersFromRole(userId, studyId, Arrays.asList(members.split(",")));
+        removeStudyPermissions(userId, studyId, Arrays.asList(members.split(",")));
     }
 
     /**

@@ -14,36 +14,43 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
- * Created by imedina on 03/06/16.
+ * Created by sgallego on 6/15/16.
  */
-public class ToolsCommandExecutor extends OpencgaCommandExecutor {
+public class PanelsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.ToolCommandsOptions toolsCommandOptions;
+    private PanelCommandOptions panelsCommandOptions;
 
-    public ToolsCommandExecutor(OpencgaCliOptionsParser.ToolCommandsOptions toolsCommandOptions) {
-        super(toolsCommandOptions.commonOptions);
-        this.toolsCommandOptions = toolsCommandOptions;
+    public PanelsCommandExecutor(PanelCommandOptions panelsCommandOptions) {
+        super(panelsCommandOptions.commonCommandOptions);
+        this.panelsCommandOptions = panelsCommandOptions;
     }
-
 
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing tools command line");
+        logger.debug("Executing panels command line");
 
-        String subCommandString = toolsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(panelsCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
                 create();
                 break;
             case "info":
                 info();
+                break;
+            case "share":
+                share();
+                break;
+            case "unshare":
+                unshare();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -53,15 +60,20 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void create() throws CatalogException {
-        logger.debug("Recording external tool into catalog");
+        logger.debug("Creating a panel");
     }
+
     private void info() throws CatalogException {
-        logger.debug("Getting tool information");
+        logger.debug("Getting panel information");
     }
 
+    private void share() throws CatalogException {
+        logger.debug("Sharing panel");
+    }
 
-
-
+    private void unshare() throws CatalogException {
+        logger.debug("Unsharing panel");
+    }
 
 
 }

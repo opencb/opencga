@@ -47,9 +47,14 @@ class CatalogMongoDBUtils {
 
     // Special queryOptions keys
     /**
-     * FORCE is used when deleting/removing a document. If FORCE is set to true, the document will be deleted/removed no matter if other
+     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
      * documents might depend on that one.
      */
+    public static final String SKIP_CHECK = "skipCheck";
+    /**
+     * Deprecated constant. Use SKIP_CHECK instead.
+     */
+    @Deprecated
     public static final String FORCE = "force";
     /**
      * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
@@ -102,55 +107,6 @@ class CatalogMongoDBUtils {
     /*
     * Helper methods
     ********************/
-
-    /**
-     * Checks if the list of members are all valid.
-     *
-     * The "members" can be:
-     *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
-     * @param dbAdaptorFactory dbAdaptorFactory
-     * @param studyId studyId
-     * @param members List of members
-     * @throws CatalogDBException CatalogDBException
-     */
-    public static void checkMembers(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, List<String> members)
-            throws CatalogDBException {
-        for (String member : members) {
-            checkMember(dbAdaptorFactory, studyId, member);
-        }
-    }
-
-    /**
-     * Checks if the member is valid.
-     *
-     * The "member" can be:
-     *  - '*' referring to all the users.
-     *  - 'anonymous' referring to the anonymous user.
-     *  - '@{groupId}' referring to a {@link Group}.
-     *  - '{userId}' referring to a specific user.
-     * @param dbAdaptorFactory dbAdaptorFactory
-     * @param studyId studyId
-     * @param member member
-     * @throws CatalogDBException CatalogDBException
-     */
-    public static void checkMember(CatalogDBAdaptorFactory dbAdaptorFactory, long studyId, String member)
-            throws CatalogDBException {
-        if (member.equals("*") || member.equals("anonymous")) {
-            return;
-        } else if (member.startsWith("@")) {
-            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member,
-                    Collections.emptyList());
-            if (queryResult.getNumResults() == 0) {
-                throw CatalogDBException.idNotFound("Group", member);
-            }
-        } else {
-            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
-        }
-    }
-
 
     /**
      * Checks if the field {@link AclEntry#userId} is valid.

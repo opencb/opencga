@@ -11,7 +11,7 @@ import java.util.stream.Collectors;
  */
 public class FileAcl {
 
-    private List<String> users;
+    private String member;
     private EnumSet<FilePermissions> permissions;
 
     public enum FilePermissions {
@@ -28,13 +28,13 @@ public class FileAcl {
     public FileAcl() {
     }
 
-    public FileAcl(List<String> users, EnumSet<FilePermissions> permissions) {
-        this.users = users;
+    public FileAcl(String member, EnumSet<FilePermissions> permissions) {
+        this.member = member;
         this.permissions = permissions;
     }
 
-    public FileAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public FileAcl(String member, ObjectMap permissions) {
+        this.member = member;
 
         EnumSet<FilePermissions> aux = EnumSet.allOf(FilePermissions.class);
         for (FilePermissions permission : aux) {
@@ -44,20 +44,20 @@ public class FileAcl {
         }
     }
 
-    public FileAcl(List<String> users, List<String> permissions) {
-        this.users = users;
+    public FileAcl(String member, List<String> permissions) {
+        this.member = member;
         this.permissions = EnumSet.noneOf(FilePermissions.class);
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(FilePermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
+    public String getMember() {
+        return member;
     }
 
-    public FileAcl setUsers(List<String> users) {
-        this.users = users;
+    public FileAcl setMember(String member) {
+        this.member = member;
         return this;
     }
 

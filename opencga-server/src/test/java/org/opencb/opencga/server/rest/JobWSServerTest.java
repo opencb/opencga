@@ -53,7 +53,7 @@ public class JobWSServerTest {
     @Test
     public void createReadyJobPostTest() throws CatalogException, IOException {
         File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(),
-                File.Type.FOLDER), new QueryOptions(), sessionId).first();
+                File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -80,7 +80,7 @@ public class JobWSServerTest {
     @Test
     public void createErrorJobPostTest() throws CatalogException, IOException {
         File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(),
-                File.Type.FOLDER), new QueryOptions(), sessionId).first();
+                File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String jobName = "MyJob";
         String toolName = "samtools";
         String description = "A job";
@@ -109,7 +109,7 @@ public class JobWSServerTest {
     @Test
     public void createBadJobPostTest() throws CatalogException, IOException {
         File folder = OpenCGAWSServer.catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(),
-                File.Type.FOLDER), new QueryOptions(), sessionId).first();
+                File.Type.DIRECTORY), new QueryOptions(), sessionId).first();
         String toolName = "samtools";
         String description = "A job";
         String commandLine = "samtools --do-magic";

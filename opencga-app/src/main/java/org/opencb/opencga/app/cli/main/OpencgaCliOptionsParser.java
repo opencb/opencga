@@ -18,15 +18,14 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
+import org.opencb.opencga.app.cli.main.options.*;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.Arrays;
@@ -44,17 +43,21 @@ public class OpencgaCliOptionsParser {
     private final GeneralOptions generalOptions;
     private final OpencgaCommonCommandOptions commonCommandOptions;
 
-    private final UserAndPasswordOptions userAndPasswordOptions;
+    protected final UserAndPasswordOptions userAndPasswordOptions;
 
-    private final UsersCommandOptions usersCommandOptions;
-    private final ProjectCommandsOptions projectCommands;
-    private final StudyCommandsOptions studyCommands;
-    private final FileCommandsOptions fileCommands;
-    private final JobsCommandsOptions jobsCommands;
-    private final IndividualsCommandsOptions individualsCommandsOptions;
-    private final ToolCommandsOptions toolCommands;
-    private final CohortCommandsOptions cohortCommands;
-    private final SampleCommandsOptions sampleCommands;
+    private UserCommandOptions usersCommandOptions;
+    private ProjectCommandOptions projectCommandOptions;
+    private StudyCommandOptions studyCommandOptions;
+    private FileCommandOptions fileCommandOptions;
+    private JobCommandOptions jobCommandOptions;
+    private IndividualCommandOptions individualCommandOptions;
+    private SampleCommandOptions sampleCommandOptions;
+    private VariableCommandOptions variableCommandOptions;
+    private CohortCommandOptions cohortCommandOptions;
+    private PanelCommandOptions panelCommandOptions;
+    private ToolCommandOptions toolCommandOptions;
+
+
 
 //    public final CommandShareResource commandShareResource;
 
@@ -71,15 +74,146 @@ public class OpencgaCliOptionsParser {
         userAndPasswordOptions = new UserAndPasswordOptions();
 //        commandShareResource = new CommandShareResource();
 
-        usersCommandOptions = new UsersCommandOptions(jCommander);
-        projectCommands = new ProjectCommandsOptions(jCommander);
-        studyCommands = new StudyCommandsOptions(jCommander);
-        fileCommands = new FileCommandsOptions(jCommander);
-        jobsCommands = new JobsCommandsOptions(jCommander);
-        individualsCommandsOptions = new IndividualsCommandsOptions(jCommander);
-        toolCommands = new ToolCommandsOptions(jCommander);
-        cohortCommands = new CohortCommandsOptions(jCommander);
-        sampleCommands = new SampleCommandsOptions(jCommander);
+        usersCommandOptions = new UserCommandOptions(this.commonCommandOptions, this.jCommander);
+        jCommander.addCommand("users", usersCommandOptions);
+        JCommander userSubCommands = jCommander.getCommands().get("users");
+        userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
+        userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
+        userSubCommands.addCommand("list", usersCommandOptions.listCommandOptions);
+        userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
+        userSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
+
+        projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("projects", projectCommandOptions);
+        JCommander projectSubCommands = jCommander.getCommands().get("projects");
+        projectSubCommands.addCommand("create", projectCommandOptions.createCommandOptions);
+        projectSubCommands.addCommand("info", projectCommandOptions.infoCommandOptions);
+        projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
+        projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
+        projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
+
+        studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("studies", studyCommandOptions);
+        JCommander studySubCommands = jCommander.getCommands().get("studies");
+        studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
+        studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
+        studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
+     //   studySubCommands.addCommand("list", studyCommandOptions.listCommandOptions);
+      //  studySubCommands.addCommand("resync", studyCommandOptions.resyncCommandOptions);
+        studySubCommands.addCommand("scan-files", studyCommandOptions.checkCommandOptions);
+    //    studySubCommands.addCommand("status", studyCommandOptions.statusCommandOptions);
+        studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
+        studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
+    //    studySubCommands.addCommand("annotate-variants", studyCommandOptions.annotationCommandOptions);
+
+        fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
+        jCommander.addCommand("files", fileCommandOptions);
+        JCommander fileSubCommands = jCommander.getCommands().get("files");
+        fileSubCommands.addCommand("create", fileCommandOptions.createCommandOptions);
+        fileSubCommands.addCommand("create-folder", fileCommandOptions.createFolderCommandOptions);
+        fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
+        fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
+        fileSubCommands.addCommand("grep", fileCommandOptions.grepCommandOptions);
+        fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
+        fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
+        fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
+        fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
+        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
+        fileSubCommands.addCommand("share", fileCommandOptions.shareCommandOptions);
+        fileSubCommands.addCommand("unshare", fileCommandOptions.unshareCommandOptions);
+        fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
+        fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
+        fileSubCommands.addCommand("link", fileCommandOptions.linkCommandOptions);
+        fileSubCommands.addCommand("unlink", fileCommandOptions.unlinkCommandOptions);
+        fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
+        fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
+        fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
+
+
+        jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("jobs", jobCommandOptions);
+        JCommander jobSubCommands = jCommander.getCommands().get("jobs");
+        jobSubCommands.addCommand("create", jobCommandOptions.createCommandOptions);
+        jobSubCommands.addCommand("info", jobCommandOptions.infoCommandOptions);
+        jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
+        jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
+        jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
+        jobSubCommands.addCommand("share", jobCommandOptions.shareCommandOptions);
+        jobSubCommands.addCommand("unshare", jobCommandOptions.unshareCommandOptions);
+        jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
+
+       // jobSubCommands.addCommand("finished", jobCommandOptions.doneJobCommandOptions);
+       // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
+       // jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
+
+
+        individualCommandOptions = new IndividualCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("individuals", individualCommandOptions);
+        JCommander individualSubCommands = jCommander.getCommands().get("individuals");
+        individualSubCommands.addCommand("create", individualCommandOptions.createCommandOptions);
+        individualSubCommands.addCommand("info", individualCommandOptions.infoCommandOptions);
+        individualSubCommands.addCommand("search", individualCommandOptions.searchCommandOptions);
+        individualSubCommands.addCommand("annotate", individualCommandOptions.annotateCommandOptions);
+        individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
+        individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
+        individualSubCommands.addCommand("share", individualCommandOptions.shareCommandOptions);
+        individualSubCommands.addCommand("unshare", individualCommandOptions.unshareCommandOptions);
+        individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
+
+        sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("samples", sampleCommandOptions);
+        JCommander sampleSubCommands = jCommander.getCommands().get("samples");
+        sampleSubCommands.addCommand("create", sampleCommandOptions.createCommandOptions);
+        sampleSubCommands.addCommand("load", sampleCommandOptions.loadCommandOptions);
+        sampleSubCommands.addCommand("info", sampleCommandOptions.infoCommandOptions);
+        sampleSubCommands.addCommand("search", sampleCommandOptions.searchCommandOptions);
+        sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
+        sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
+        sampleSubCommands.addCommand("share", sampleCommandOptions.shareCommandOptions);
+        sampleSubCommands.addCommand("unshare", sampleCommandOptions.unshareCommandOptions);
+        sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
+        sampleSubCommands.addCommand("annotate", sampleCommandOptions.annotateCommandOptions);
+
+        variableCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("variables", variableCommandOptions);
+        JCommander variableSubCommands = jCommander.getCommands().get("variables");
+        variableSubCommands.addCommand("create", variableCommandOptions.createCommandOptions);
+        variableSubCommands.addCommand("info", variableCommandOptions.infoCommandOptions);
+        variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
+        variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
+        variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
+
+        cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("cohorts", cohortCommandOptions);
+        JCommander cohortSubCommands = jCommander.getCommands().get("cohorts");
+        cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);
+        cohortSubCommands.addCommand("info", cohortCommandOptions.infoCommandOptions);
+        cohortSubCommands.addCommand("samples", cohortCommandOptions.samplesCommandOptions);
+        cohortSubCommands.addCommand("annotate", cohortCommandOptions.annotateCommandOptions);
+        cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
+        cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
+        cohortSubCommands.addCommand("unshare", cohortCommandOptions.unshareCommandOptions);
+        cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
+        cohortSubCommands.addCommand("share", cohortCommandOptions.shareCommandOptions);
+        cohortSubCommands.addCommand("group-by", cohortCommandOptions.groupByCommandOptions);
+
+        toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("tools", toolCommandOptions);
+        JCommander toolSubCommands = jCommander.getCommands().get("tools");
+        toolSubCommands.addCommand("help", toolCommandOptions.helpCommandOptions);
+        toolSubCommands.addCommand("info", toolCommandOptions.infoCommandOptions);
+        toolSubCommands.addCommand("search", toolCommandOptions.searchCommandOptions);
+        toolSubCommands.addCommand("update", toolCommandOptions.updateCommandOptions);
+        toolSubCommands.addCommand("delete", toolCommandOptions.deleteCommandOptions);
+
+        panelCommandOptions = new PanelCommandOptions(this.commonCommandOptions, jCommander);
+        jCommander.addCommand("panels", panelCommandOptions);
+        JCommander panelSubCommands = jCommander.getCommands().get("panels");
+        panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
+        panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
+        panelSubCommands.addCommand("unshare", panelCommandOptions.unshareCommandOptions);
+        panelSubCommands.addCommand("share", panelCommandOptions.shareCommandOptions);
+
 
 
         if (interactive) { //Add interactive commands
@@ -88,24 +222,6 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-//    public void parse(String[] args) throws ParameterException {
-//        jCommander.parse(args);
-//    }
-//
-//    public String getCommand() {
-//        String parsedCommand = jCommander.getParsedCommand();
-//        return parsedCommand != null ? parsedCommand: "";
-//    }
-//
-//    public String getSubCommand() {
-//        String parsedCommand = jCommander.getParsedCommand();
-//        if (jCommander.getCommands().containsKey(parsedCommand)) {
-//            String subCommand = jCommander.getCommands().get(parsedCommand).getParsedCommand();
-//            return subCommand != null ? subCommand: "";
-//        } else {
-//            return "";
-//        }
-//    }
 
 //    public void printUsage(){
 //        if(!getCommand().isEmpty()) {
@@ -205,26 +321,26 @@ public class OpencgaCliOptionsParser {
         }
     }
 
-    class UserAndPasswordOptions {
+    public class UserAndPasswordOptions {
 
         @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
-        String user;
+        public String user;
 
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false,  password = true)
-        String password;
+        public String password;
 
         @Deprecated
         @Parameter(names = {"-hp", "--hidden-password"}, description = "Password", arity = 1, required = false,  password = true)
-        String hiddenPassword;
+        public String hiddenPassword;
 
         @Parameter(names = {"-sid", "--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
-        String sessionId;
+        public String sessionId;
     }
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
     //    class CommonOptions {
-    public class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
+    public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
         Map<String, String> dynamic = new HashMap<String, String>();
@@ -264,1025 +380,8 @@ public class OpencgaCliOptionsParser {
     class ExitCommands {
     }
 
-    @Parameters(commandNames = {"users"}, commandDescription = "User commands")
-    class UsersCommandOptions extends CommandOptions {
 
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-        final ListCommand listCommand;
-        final LoginCommand loginCommand;
-        final LogoutCommand logoutCommand;
 
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-
-        public UsersCommandOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander users = jcommander.getCommands().get("users");
-            users.addCommand(createCommand = new CreateCommand());
-            users.addCommand(infoCommand = new InfoCommand());
-            users.addCommand(listCommand = new ListCommand());
-            users.addCommand(loginCommand = new LoginCommand());
-            users.addCommand(logoutCommand = new LogoutCommand());
-        }
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
-        class CreateCommand {
-
-//            @ParametersDelegate
-//            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @Parameter(names = {"-u", "--user"}, description = "User id", arity = 1)
-            String user;
-
-            @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, password = true)
-            String password;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-n", "--name"}, description = "User name", required = true, arity = 1)
-            String name;
-
-            @Parameter(names = {"-e", "--email"}, description = "Email", required = true, arity = 1)
-            String email;
-
-            @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
-            String organization;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")
-        class InfoCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-        }
-
-
-        @Parameters(commandNames = {"list"}, commandDescription = "List all projects and studies from a selected user")
-        class ListCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-            public int level = Integer.MAX_VALUE;
-
-            @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-            public boolean recursive = false;
-
-            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-            public boolean uries = false;
-
-        }
-
-        @Parameters(commandNames = {"login"}, commandDescription = "Login as user and return its sessionId")
-        public class LoginCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-//            @Parameter(names = {"-p", "--password"}, description = "Password read from the console", arity = 0, required = false,  password = true)
-//            String password;
-        }
-
-        @Parameters(commandNames = {"logout"}, commandDescription = "End user session")
-        public class LogoutCommand {
-
-//            @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
-//            String user;
-
-            @Parameter(names = {"--session-id", "-sid"}, description = "SessionId", required = false, arity = 1)
-            public String sessionId;
-        }
-    }
-
-
-    @Parameters(commandNames = {"projects"}, commandDescription = "Project commands")
-    class ProjectCommandsOptions extends CommandOptions{
-
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-        final StudiesCommand studiesCommand;
-        final UpdateCommand updateCommand;
-        final DeleteCommand deleteCommand;
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-        public ProjectCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander projects = jcommander.getCommands().get("projects");
-            projects.addCommand(this.createCommand = new CreateCommand());
-            projects.addCommand(this.infoCommand = new InfoCommand());
-            projects.addCommand(this.studiesCommand = new StudiesCommand());
-            projects.addCommand(this.updateCommand = new UpdateCommand());
-            projects.addCommand(this.deleteCommand = new DeleteCommand());
-//        projects.addCommand(commandShareResource);
-        }
-        class BaseProjectCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--project-id"}, description = "Project identifier", required = true, arity = 1)
-            String id;
-        }
-        @Parameters(commandNames = {"create"}, commandDescription = "Create new project")
-        class CreateCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
-            String name;
-
-            @Parameter(names = {"-a", "--alias"}, description = "Alias", required = true, arity = 1)
-            String alias;
-
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-            String description;
-
-            @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
-            String organization;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
-        class InfoCommand extends BaseProjectCommand{ }
-
-        @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")
-        class StudiesCommand extends BaseProjectCommand{ }
-
-        @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
-        class UpdateCommand extends BaseProjectCommand{
-            @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
-            String name;
-
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-            String description;
-
-            @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
-            String organization;
-
-            @Parameter(names = {"-s", "--status"}, description = "Status", required = false, arity = 1)
-            String status;
-
-            @Parameter(names = {"-a", "--attributes"}, description = "Attributes", required = false, arity = 1)
-            String attributes;
-        }
-
-        @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
-        class DeleteCommand extends BaseProjectCommand{ }
-    }
-
-    @Parameters(commandNames = {"studies"}, commandDescription = "Study commands")
-    class StudyCommandsOptions extends CommandOptions {
-
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-        final ResyncCommand resyncCommand;
-        final ListCommand listCommand;
-        final CheckCommand checkCommand;
-        final StatusCommand statusCommand;
-        final AnnotationCommand annotationCommand;
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-
-        public StudyCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander studies = jcommander.getCommands().get("studies");
-            studies.addCommand(createCommand = new CreateCommand());
-            studies.addCommand(infoCommand = new InfoCommand());
-            studies.addCommand(resyncCommand = new ResyncCommand());
-            studies.addCommand(listCommand = new ListCommand());
-            studies.addCommand(checkCommand = new CheckCommand());
-            studies.addCommand(statusCommand = new StatusCommand());
-            studies.addCommand(this.annotationCommand = new AnnotationCommand());
-//            studies.addCommand(commandShareResource);
-        }
-
-        abstract class BaseStudyCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--study-id"}, description = "Study identifier", required = true, arity = 1)
-            String id;
-        }
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
-        class CreateCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
-            String projectId;
-
-            @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
-            String name;
-
-            @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
-            String alias;
-
-            @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
-            Study.Type type = Study.Type.COLLECTION;
-
-            @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
-            String description;
-
-            @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.", required = false, arity = 1)
-            String uri;
-
-            @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. <bioformat>:<storageEngineName>:<database_name>")
-            List<String> datastores;
-
-            @Parameter(names = {"--aggregation-type"}, description = "Set the study as aggregated of type {NONE, BASIC, EVS, EXAC}")
-            VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
-        }
-
-        @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
-        class ResyncCommand extends BaseStudyCommand {
-            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-            boolean calculateChecksum = false;
-        }
-
-        @Parameters(commandNames = {"check-files"}, commandDescription = "Check if files in study are correctly tracked.")
-        class CheckCommand extends BaseStudyCommand {
-
-            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-            boolean calculateChecksum = false;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
-        class InfoCommand  extends BaseStudyCommand {}
-
-        @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
-        class ListCommand extends BaseStudyCommand {
-            @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-            public int level = Integer.MAX_VALUE;
-
-            @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-            public boolean recursive = false;
-
-            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-            public boolean uries = false;
-        }
-
-        @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
-        class StatusCommand extends BaseStudyCommand {}
-
-        @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
-        class AnnotationCommand extends BaseStudyCommand {
-
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
-            String outdir = "";
-
-            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-            boolean enqueue;
-
-            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-            public List<String> dashDashParameters;
-        }
-    }
-
-
-
-    @Parameters(commandNames = {"files"}, commandDescription = "File commands")
-    class FileCommandsOptions extends CommandOptions{
-
-        final CreateCommand createCommand;
-        final CreateFolderCommand createFolderCommand;
-        final InfoCommand infoCommand;
-        final DownloadCommand downloadCommand;
-        final GrepCommand grepCommand;
-        final SearchCommand searchCommand;
-        final ListCommand listCommand;
-        final IndexCommand indexCommand;
-        final AlignamentsCommand alignamentsCommand;
-        final FetchCommand fetchCommand;
-        //final VariantsCommand variantsCommand;
-        final ShareCommand shareCommand;
-        final UpdateCommand updateCommand;
-        final RelinkCommand relinkCommand;
-        final DeleteCommand deleteCommand;
-        final RefreshCommand refreshCommand;
-        final UnlinkCommand unlink;
-        final LinkCommand linkCommand;
-        final UploadCommand uploadCommand;
-
-
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public FileCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander files = jcommander.getCommands().get("files");
-            files.addCommand(this.createCommand = new CreateCommand());
-            files.addCommand(this.createFolderCommand = new CreateFolderCommand());
-            files.addCommand(this.infoCommand = new InfoCommand());
-            files.addCommand(this.downloadCommand = new DownloadCommand());
-            files.addCommand(this.grepCommand = new GrepCommand());
-            files.addCommand(this.searchCommand = new SearchCommand());
-            files.addCommand(this.listCommand = new ListCommand());
-            files.addCommand(this.indexCommand = new IndexCommand());
-            files.addCommand(this.alignamentsCommand = new AlignamentsCommand());
-            files.addCommand(this.fetchCommand = new FetchCommand());
-            files.addCommand(this.shareCommand = new ShareCommand());
-            files.addCommand(this.updateCommand = new UpdateCommand());
-            files.addCommand(this.relinkCommand = new RelinkCommand());
-            files.addCommand(this.deleteCommand = new DeleteCommand());
-            files.addCommand(this.refreshCommand = new RefreshCommand());
-            files.addCommand(this.unlink = new UnlinkCommand());
-            files.addCommand(this.linkCommand = new LinkCommand());
-            files.addCommand(this.uploadCommand = new UploadCommand());
-
-
-//        files.addCommand(commandShareResource);
-        }
-
-        class BaseFileCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
-            String id;
-        }
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Create file")
-        class CreateCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-            String inputFile;
-
-            @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"--path"}, description = "Directory where to create the file", required = false, arity = 1)
-            String path  = "";
-
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-            String description;
-
-            @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.models.File.Format", required = false, arity = 1)
-            File.Format format = File.Format.PLAIN;
-
-            @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.models.File.Bioformat for more info", required = false, arity = 1)
-            File.Bioformat bioformat = File.Bioformat.NONE;
-
-            @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-            boolean parents;
-
-            @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
-            boolean move;
-
-            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-            boolean calculateChecksum = false;
-        }
-
-        @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
-        class CreateFolderCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
-            String path  = "";
-
-            @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-            boolean parents = true;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
-        class InfoCommand extends BaseFileCommand {}
-
-        @Parameters(commandNames = {"download"}, commandDescription = "Download file")
-        class DownloadCommand extends BaseFileCommand {}
-
-        @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
-        class GrepCommand extends BaseFileCommand {
-            @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
-            String pattern  = "";
-
-            @Parameter(names = {"-ic", "--ignoreCase"}, description = "ignoreCase", required = false, arity = 0)
-            boolean ignoreCase = false;
-
-            @Parameter(names = {"-m", "--multi"}, description = "multi", required = false, arity = 0)
-            boolean multi = true;
-        }
-
-        @Parameters(commandNames = {"search"}, commandDescription = "Search files")
-        class SearchCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
-            String studyId;
-            //            @Parameter(names = {"--name"}, description = "Exact file name", required = false, arity = 1)
-//            String name;
-//            @Parameter(names = {"--path"}, description = "Exact file path", required = false, arity = 1)
-//            String path;
-            @Parameter(names = {"--name"}, description = "File name. Use regex pattern", required = false, arity = 1)
-            String name;
-
-            @Parameter(names = {"--directory"}, description = "Directory path (study relative). Use regex pattern", required = false, arity = 1)
-            String directory;
-
-            @Parameter(names = {"--type"}, description = "File type. CSV", required = false, arity = 1)
-            List<File.Type> types;
-
-            @Parameter(names = {"--bioformat"}, description = "File bioformat. CSV", required = false, arity = 1)
-            List<File.Bioformat> bioformats;
-
-            @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
-            List<String> status;
-
-        }
-
-        @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
-        class ListCommand extends BaseFileCommand {
-            @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-            public int level = Integer.MAX_VALUE;
-
-            @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-            public boolean recursive = false;
-
-            @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-            public boolean uries = false;
-        }
-
-        @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
-        class IndexCommand extends BaseFileCommand {
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-            String outdir = "";
-
-            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-            boolean enqueue;
-
-            @Parameter(names = "--transform", description = "Run only the transform phase")
-            boolean transform = false;
-
-            @Parameter(names = "--load", description = "Run only the load phase")
-            boolean load = false;
-
-            @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
-            boolean calculateStats = false;
-
-            @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
-            boolean annotate = false;
-
-            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-            public List<String> dashDashParameters;
-        }
-
-        @Parameters(commandNames = {"alignaments"}, commandDescription = "Fetch alignments from a BAM file")
-        class AlignamentsCommand extends BaseFileCommand { }
-
-
-        @Parameters(commandNames = {"fetch"}, commandDescription = "File fetch")
-        class FetchCommand extends BaseFileCommand {
-            @Parameter(names = {"--region"}, description = "Region", required = true, arity = 1)
-            String region;
-
-            @Parameter(names = {"--view_as_pairs"}, description = "View_as_pairs", required = false, arity = 0)
-            boolean view_as_pairs = false;
-
-            @Parameter(names = {"--include_coverage"}, description = "Include_coverage", required = false, arity = 0)
-            boolean include_coverage = true;
-
-            @Parameter(names = {"--process_differences"}, description = "Process_differences", required = false, arity = 0)
-            boolean process_differences = true;
-
-            @Parameter(names = {"--histogram"}, description = "Histogram", required = false, arity = 0)
-            boolean histogram = false;
-
-            @Parameter(names = {"--groupBy"}, description = "GroupBy: [ct, gene, ensemblGene]", required = false, arity = 1)
-            String groupBy;
-
-            @Parameter(names = {"--variantSource"}, description = "VariantSource", required = false, arity = 0)
-            boolean variantSource = false;
-
-            @Parameter(names = {"--interval"}, description = "Interval", required = false, arity = 1)
-            String interval;
-
-        }
-
-        @Parameters(commandNames = {"share"}, commandDescription = "Share file with other user")
-        class ShareCommand  {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-fids","--fileIds"}, description = "fileIds", required = true)
-            String fileIds;
-
-            @Parameter(names = {"-uids","--userIds"}, description = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true)
-            String userIds;
-
-            @Parameter(names = {"--unshare"}, description = "Remove the previous AclEntry", required = false, arity = 0)
-            boolean unshare = false;
-
-            @Parameter(names = {"--read"}, description = "Read permission", required = false, arity = 0)
-            boolean read = false;
-
-            @Parameter(names = {"--write"}, description = "Write permission", required = false, arity = 0)
-            boolean write = false;
-
-            @Parameter(names = {"--delete"}, description = "Delete permission", required = false, arity = 0)
-            boolean delete = false;
-
-        }
-
-
-        @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
-        class UpdateCommand extends BaseFileCommand { }
-
-        @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external file")
-        class RelinkCommand extends BaseFileCommand {
-            @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
-            String inputFile;
-
-
-            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-            boolean calculateChecksum = false;
-        }
-
-
-        @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
-        class DeleteCommand extends BaseFileCommand { }
-
-
-        @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
-        class RefreshCommand extends BaseFileCommand { }
-
-        @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
-        class UnlinkCommand extends BaseFileCommand { }
-
-
-        @Parameters(commandNames = {"link"}, commandDescription = "Link an external file into catalog.")
-        class LinkCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-           // @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
-           // String inputFile;
-           @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
-            String uri;
-
-            @Parameter(names = {"-s", "--study-id"}, description = "Study identifier", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-            String description;
-
-            @Parameter(names = {"--path"}, description = "New folder path", required = false, arity = 1)
-            String path  = "";
-
-            @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-            boolean parents;
-
-            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-            boolean calculateChecksum = false;
-        }
-
-        @Parameters(commandNames = {"upload"}, commandDescription = "Attach a physical file to a catalog entry file.")
-        class UploadCommand extends BaseFileCommand{
-
-            @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-            String inputFile;
-
-            @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed", required = false, arity = 0)
-            boolean replace = false;
-
-            @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
-            boolean move = false;
-
-            @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-            boolean calculateChecksum = false;
-
-        }
-
-
-
-    }
-
-    @Parameters(commandNames = {"jobs"}, commandDescription = "Jobs commands")
-    class JobsCommandsOptions extends CommandOptions{
-
-        final InfoCommand infoCommand;
-        final DoneJobCommand doneJobCommand;
-        final StatusCommand statusCommand;
-        final RunJobCommand runJobCommand;
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public JobsCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander tools = jcommander.getCommands().get("jobs");
-            tools.addCommand(this.infoCommand = new InfoCommand());
-            tools.addCommand(this.doneJobCommand = new DoneJobCommand());
-            tools.addCommand(this.statusCommand = new StatusCommand());
-            tools.addCommand(this.runJobCommand = new RunJobCommand());
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
-        class InfoCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-            long id;
-        }
-
-        @Parameters(commandNames = {"finished"}, commandDescription = "Notify catalog that a job have finished.")
-        class DoneJobCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-            long id;
-
-            @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
-            boolean error;
-
-            @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 0)
-            boolean force;
-
-            @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.", required = false, arity = 0)
-            boolean discardOutput;
-        }
-
-        @Parameters(commandNames = {"status"}, commandDescription = "Get the status of all running jobs.")
-        class StatusCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--study-id"}, description = "Study id", required = false, arity = 1)
-            String studyId;
-        }
-
-        @Parameters(commandNames = {"run"}, commandDescription = "Executes a job.")
-        class RunJobCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-t", "--tool-id"}, description = "", required = true, arity = 1)
-            String toolId;
-
-            @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
-            String outdir;
-
-            @Parameter(names = {"-e", "--execution"}, description = "", required = false, arity = 1)
-            String execution;
-
-            @Parameter(names = {"-n", "--name"}, description = "", required = true, arity = 1)
-            String name;
-
-            @Parameter(names = {"-d", "--description"}, description = "", required = false, arity = 1)
-            String description;
-
-            @DynamicParameter(names = "-P", description = "Parameters", hidden = false)
-            ObjectMap params = new ObjectMap();
-
-        }
-    }
-
-
-    @Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
-    class IndividualsCommandsOptions extends CommandOptions{
-
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-        final SearchCommand searchCommand;
-        final AnnotateCommand annotateCommand;
-        final UpdateCommand updateCommand;
-        final DeleteCommand deleteCommand;
-
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public IndividualsCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander tools = jcommander.getCommands().get("individuals");
-            tools.addCommand(this.createCommand = new CreateCommand());
-            tools.addCommand(this.infoCommand = new InfoCommand());
-            tools.addCommand(this.searchCommand = new SearchCommand());
-            tools.addCommand(this.annotateCommand = new AnnotateCommand());
-            tools.addCommand(this.updateCommand = new UpdateCommand());
-            tools.addCommand(this.deleteCommand = new DeleteCommand());
-
-        }
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Create sample.")
-        class CreateCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-s", "--study-id"}, description = "StudyId", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-            String name;
-
-            @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
-            String family  = "";
-
-            @Parameter(names = {"--fatherId"}, description = "FatherId", required = false, arity = 1)
-            Integer fatherId;
-
-            @Parameter(names = {"--motherId"}, description = "MotherId", required = false, arity = 1)
-            Integer motherId;
-
-            @Parameter(names = {"--gender"}, description = "Gender", required = false)
-            String gender;
-        }
-
-
-        class BaseIndividualsCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--individual-id"}, description = "Individual id", required = true, arity = 1)
-            Integer id;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
-        class InfoCommand extends BaseIndividualsCommand{ }
-
-        @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
-        class SearchCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
-            String id;
-
-            @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
-            String name;
-
-            @Parameter(names = {"--fatherId"}, description = "fatherId", required = false, arity = 1)
-            String fatherId;
-
-            @Parameter(names = {"--motherId"}, description = "motherId", required = false, arity = 1)
-            String motherId;
-
-            @Parameter(names = {"--family"}, description = "family", required = false, arity = 1)
-            String family;
-
-            @Parameter(names = {"--gender"}, description = "gender", required = false, arity = 1)
-            String gender;
-
-            @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-            String race;
-
-            @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
-            String species;
-
-            @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
-            String population;
-
-            @Parameter(names = {"--variableSetId"}, description = "variableSetId", required = false, arity = 1)
-            Integer variableSetId;
-
-            @Parameter(names = {"--annotationSetId"}, description = "annotationSetId", required = false, arity = 1)
-            String annotationSetId;
-
-            @Parameter(names = {"--annotation"}, description = "annotation", required = false, arity = 1)
-            String annotation;
-        }
-
-        @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate an individual")
-        class AnnotateCommand extends BaseIndividualsCommand{
-            @Parameter(names = {"-aN","--annotateSetName"}, description = "Annotation set name. Must be unique",
-                    required = true, arity = 1)
-            String annotateSetName;
-
-            @Parameter(names = {"--variableSetId"}, description = "variableSetId", required = false, arity = 1)
-            Integer id;
-
-            @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet", required = false,
-                    arity = 0)
-            boolean update;
-
-            @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet", required = false, arity = 0)
-            boolean delete;
-        }
-
-        @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
-        class UpdateCommand extends BaseIndividualsCommand{
-
-            @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
-            String id;
-
-            @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
-            String name;
-
-            @Parameter(names = {"--fatherId"}, description = "FatherId", required = false, arity = 1)
-            Integer fatherId;
-
-            @Parameter(names = {"--motherId"}, description = "MotherId", required = false, arity = 1)
-            Integer motherId;
-
-            @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
-            String family;
-
-            @Parameter(names = {"--gender"}, description = "Gender", required = false)
-            String gender;
-
-            @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-            String race;
-
-        }
-
-        @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
-        class DeleteCommand extends BaseIndividualsCommand{ }
-    }
-    @Parameters(commandNames = {"cohorts"}, commandDescription = "Cohorts methods")
-    public class CohortCommandsOptions extends CommandOptions{
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-        final SamplesCommand samplesCommand;
-        final StatsCommand statsCommand;
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public CohortCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander files = jcommander.getCommands().get("cohorts");
-            files.addCommand(this.createCommand = new CreateCommand());
-            files.addCommand(this.infoCommand = new InfoCommand());
-            files.addCommand(this.samplesCommand = new SamplesCommand());
-            files.addCommand(this.statsCommand = new StatsCommand());
-        }
-        @Parameters(commandNames = {CreateCommand.COMMAND_NAME}, commandDescription = "Create a cohort")
-        class CreateCommand {
-
-            public static final String COMMAND_NAME = "create";
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"--name"}, description = "cohort name", required = false, arity = 1)
-            String name;
-
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-            long variableSetId;
-
-            @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
-            String description;
-
-            @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)", required = false, arity = 1)
-            String sampleIds;
-
-            @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts", required = false, arity = 1)
-            String variable;
-
-            @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-            Cohort.Type type;
-
-            @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
-            String tagmap = null;
-        }
-        @Parameters(commandNames = {InfoCommand.COMMAND_NAME}, commandDescription = "Get cohort information")
-        class InfoCommand {
-
-            public static final String COMMAND_NAME = "info";
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            long id;
-        }
-
-
-
-        @Parameters(commandNames = {SamplesCommand.COMMAND_NAME}, commandDescription = "List samples belonging to a cohort")
-        class SamplesCommand {
-
-            public static final String COMMAND_NAME = "samples";
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--cohort-id"}, description = "Cohort id", required = true, arity = 1)
-            long id;
-        }
-
-        @Parameters(commandNames = {StatsCommand.COMMAND_NAME}, commandDescription = "Calculate variant stats for a set of cohorts.")
-        class StatsCommand {
-
-            public static final String COMMAND_NAME = "calculate-stats";
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--cohort-id"}, description = "CSV Cohort id list", required = false)
-            List<Long> cohortIds;
-
-            @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-            String outdir = "";
-
-            @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-            boolean enqueue;
-
-            @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
-            String tagmap = null;
-
-            @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-            public List<String> dashDashParameters;
-        }
-    }
-
-    public static class SemiColonParameterSplitter implements IParameterSplitter {
-
-        public List<String> split(String value) {
-            return Arrays.asList(value.split(";"));
-        }
-
-    }
     public static class NoSplitter implements IParameterSplitter {
 
         public List<String> split(String value) {
@@ -1290,138 +389,7 @@ public class OpencgaCliOptionsParser {
         }
 
     }
-    @Parameters(commandNames = {"samples"}, commandDescription = "Samples commands")
-    public class SampleCommandsOptions extends CommandOptions{
 
-        final LoadCommand loadCommand;
-        final InfoCommand infoCommand;
-        final SearchCommand searchCommand;
-        final DeleteCommand deleteCommand;
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public SampleCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander files = jcommander.getCommands().get("samples");
-            files.addCommand(this.loadCommand = new LoadCommand());
-            files.addCommand(this.infoCommand = new InfoCommand());
-            files.addCommand(this.searchCommand = new SearchCommand());
-            files.addCommand(this.deleteCommand = new DeleteCommand());
-//            files.addCommand(this.samplesCommand = new SamplesCommand());
-        }
-
-        class BaseSampleCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--sample-id"}, description = "Sample id", required = true, arity = 1)
-            long id;
-        }
-
-        @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
-        class LoadCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", required = false, arity = 1)
-            long variableSetId;
-
-            @Parameter(names = {"--pedigree-id"}, description = "Pedigree file id already loaded in OpenCGA", required = true, arity = 1)
-            String pedigreeFileId;
-        }
-        @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
-        class InfoCommand extends BaseSampleCommand {
-        }
-
-        @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
-        class SearchCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-            String studyId;
-
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-            String variableSetId;
-
-            @Parameter(names = {"--name"}, description = "Sample names (CSV)", required = false, arity = 1)
-            String sampleNames;
-
-            @Parameter(names = {"-id", "--sample-id"}, description = "Sample ids (CSV)", required = false, arity = 1)
-            String sampleIds;
-
-            @Parameter(names = {"-a", "--annotation"}, description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*", required = false, arity = 1, splitter = SemiColonParameterSplitter.class)
-            List<String> annotation;
-        }
-
-
-
-        @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
-        class DeleteCommand extends BaseSampleCommand {
-        }
-    }
-
-
-
-    @Parameters(commandNames = {"tools"}, commandDescription = "Tools commands")
-    class ToolCommandsOptions extends CommandOptions{
-
-        final CreateCommand createCommand;
-        final InfoCommand infoCommand;
-
-        OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = OpencgaCliOptionsParser.this.commonCommandOptions;
-        public ToolCommandsOptions(JCommander jcommander) {
-            jcommander.addCommand(this);
-            JCommander tools = jcommander.getCommands().get("tools");
-            tools.addCommand(this.createCommand = new CreateCommand());
-            tools.addCommand(this.infoCommand = new InfoCommand());
-        }
-
-        @Parameters(commandNames = {"create"}, commandDescription = "Register external tool into catalog")
-        class CreateCommand {
-
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
-            String alias;
-
-            @Parameter(names = {"-d", "--description"}, description = "Tool description", required = false, arity = 1)
-            String description = "";
-
-//            @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-//            String name;
-
-            @Parameter(names = {"-P", "--path"}, description = "Path", required = true, arity = 1)
-            String path;
-
-            @Parameter(names = {"--open"}, description = "Allow other users to use the tool", required = false, arity = 0)
-            boolean openTool = false;
-        }
-
-        @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
-        class InfoCommand {
-            @ParametersDelegate
-            UserAndPasswordOptions up = userAndPasswordOptions;
-
-            @ParametersDelegate
-            OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-            @Parameter(names = {"-id", "--tool-id"}, description = "Tool id", required = true, arity = 1)
-            String id;
-        }
-    }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share resource")
     class CommandShareResource {
@@ -1509,36 +477,49 @@ public class OpencgaCliOptionsParser {
         return userAndPasswordOptions;
     }
 
-    public UsersCommandOptions getUsersCommandOptions() {
+    public UserCommandOptions getUsersCommandOptions() {
         return usersCommandOptions;
     }
 
-    public ProjectCommandsOptions getProjectCommands() {
-        return projectCommands;
+    public ProjectCommandOptions getProjectCommandOptions() {
+        return projectCommandOptions;
     }
 
-    public StudyCommandsOptions getStudyCommands() {
-        return studyCommands;
+    public StudyCommandOptions getStudyCommandOptions() {
+        return studyCommandOptions;
     }
 
-    public FileCommandsOptions getFileCommands() {
-        return fileCommands;
+    public FileCommandOptions getFileCommands() {
+        return fileCommandOptions;
     }
 
+    public JobCommandOptions getJobsCommands() {
+        return jobCommandOptions;
+    }
 
-    public JobsCommandsOptions getJobsCommands() {
-        return jobsCommands;
+    public IndividualCommandOptions getIndividualsCommands() {
+        return individualCommandOptions;
     }
-    public IndividualsCommandsOptions getIndividualsCommands() {
-        return individualsCommandsOptions;
+
+    public SampleCommandOptions getSampleCommands() {
+        return sampleCommandOptions;
     }
-    public ToolCommandsOptions getToolCommands() {
-        return toolCommands;
+
+    public VariableCommandOptions getVariableCommands() {
+        return variableCommandOptions;
     }
-    public CohortCommandsOptions getCohortCommands() {
-        return cohortCommands;
+
+    public CohortCommandOptions getCohortCommands() {
+        return cohortCommandOptions;
     }
-    public SampleCommandsOptions getSampleCommands() {
-        return sampleCommands;
+
+    public PanelCommandOptions getPanelCommands() {
+        return panelCommandOptions;
     }
+
+    public ToolCommandOptions getToolCommands() {  return toolCommandOptions; }
+
+
+
+
 }

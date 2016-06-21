@@ -32,6 +32,7 @@ import java.util.stream.Collectors;
 
 import static java.lang.Math.toIntExact;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implements CatalogCohortDBAdaptor {
 
@@ -72,7 +73,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException {
-        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
     }
 
     @Override
@@ -315,7 +316,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, cohortId));
         Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
         Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
 
         List<CohortAcl> cohortAcl = null;
@@ -332,122 +333,56 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
-
-        checkCohortId(cohortId);
         long studyId = getStudyIdByCohortId(cohortId);
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, studyId, acl.getUsers());
 
-        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        String member = acl.getMember();
+
+        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
         // already have permissions on its own.
-        Map<String, List<String>> groups = new HashMap<>();
-        Set<String> users = new HashSet<>();
+        if (member.startsWith("@")) {
+            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
-        for (String member : acl.getUsers()) {
-            if (member.startsWith("@")) {
-                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-                groups.put(group.getId(), group.getUserIds());
-            } else {
-                users.add(member);
-            }
-        }
-        if (groups.size() > 0) {
             // Check if any user already have permissions set on their own.
-            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-                QueryResult<CohortAcl> cohortAcl = getCohortAcl(cohortId, entry.getValue());
-                if (cohortAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + entry.getKey()
-                            + " has already defined permissions for cohort " + cohortId);
-                }
+            QueryResult<CohortAcl> fileAcl = getCohortAcl(cohortId, group.getUserIds());
+            if (fileAcl.getNumResults() > 0) {
+                throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + group.getId()
+                        + " has already defined permissions for cohort " + cohortId);
+            }
+        } else {
+            // Check if the members of the new acl already have some permissions set
+            QueryResult<CohortAcl> cohortAcls = getCohortAcl(cohortId, acl.getMember());
+
+            if (cohortAcls.getNumResults() > 0 && override) {
+                unsetCohortAcl(cohortId, Arrays.asList(member), Collections.emptyList());
+            } else if (cohortAcls.getNumResults() > 0 && !override) {
+                throw new CatalogDBException("setCohortAcl: " + member + " already had an Acl set. If you "
+                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
             }
         }
 
-        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
-        // because the group will be given the permission.
-        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-            for (String userId : entry.getValue()) {
-                if (users.contains(userId)) {
-                    users.remove(userId);
-                }
-            }
-        }
-
-        // Create the definitive list of members that will be added in the acl
-        List<String> members = new ArrayList<>(users.size() + groups.size());
-        members.addAll(users.stream().collect(Collectors.toList()));
-        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
-        acl.setUsers(members);
-
-        // Check if the members of the new acl already have some permissions set
-        QueryResult<CohortAcl> cohortAcls = getCohortAcl(cohortId, acl.getUsers());
-        if (cohortAcls.getNumResults() > 0 && override) {
-            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
-            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
-
-            List<String> usersToOverride = new ArrayList<>();
-            for (CohortAcl cohortAcl : cohortAcls.getResult()) {
-                for (String member : cohortAcl.getUsers()) {
-                    if (usersSet.contains(member)) {
-                        // Add the user to the list of users that will be taken out from the Acls.
-                        usersToOverride.add(member);
-                    }
-                }
-            }
-
-            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetCohortAcl(cohortId, usersToOverride, Collections.emptyList());
-        } else if (cohortAcls.getNumResults() > 0 && !override) {
-            throw new CatalogDBException("setCohortAcl: " + cohortAcls.getNumResults() + " of the members already had an Acl set. If you "
-                    + "still want to set the Acls for them and remove the old one, please use the override parameter.");
-        }
-
-        // Append the users to the existing acl.
-        List<String> permissions = acl.getPermissions().stream().map(CohortAcl.CohortPermissions::name).collect(Collectors.toList());
-
-        // Check if the permissions found on acl already exist on cohort id
+        // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, cohortId);
-        if (permissions.size() > 0) {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
-        } else {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
-        }
-
-        Bson update;
-        if (cohortCollection.count(queryDocument).first() > 0) {
-            // Append the users to the existing acl.
-            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
-        } else {
-            queryDocument = new Document(PRIVATE_ID, cohortId);
-            // Push the new acl to the list of acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "CohortAcl")));
-        }
-
+        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "CohortAcl")));
         QueryResult<UpdateResult> updateResult = cohortCollection.update(queryDocument, update, null);
+
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("setCohortAcl: An error occurred when trying to share cohort " + cohortId
-                    + " with other members.");
+            throw new CatalogDBException("setCohortAcl: An error occurred when trying to share cohort " + cohortId + " with " + member);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
-        Cohort cohort = cohortConverter.convertToDataModelType(cohortCollection.find(queryDocument, queryOptions).first());
-
-        return endQuery("setCohortAcl", startTime, cohort.getAcls());
+        return endQuery("setCohortAcl", startTime, Arrays.asList(acl));
     }
 
     @Override
     public void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException {
-        checkCohortId(cohortId);
-
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByCohortId(cohortId), members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, cohortId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
+            Document query = new Document(PRIVATE_ID, cohortId).append(QueryParams.ACLS_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls.$.users", member));
+                update = new Document("$pull", new Document("acls", new Document("member", member)));
             } else {
                 update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
             }
@@ -458,34 +393,32 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             }
         }
 
-        // Remove possible cohortAcls that might have permissions defined but no users
-        Bson queryBson = new Document(QueryParams.ID.key(), cohortId)
-                .append(QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        cohortCollection.update(queryBson, update, null);
+//        // Remove possible cohortAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(QueryParams.ID.key(), cohortId)
+//                .append(QueryParams.ACLS_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        cohortCollection.update(queryBson, update, null);
     }
 
     @Override
     public void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
             cohortCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
-        // Remove possible CohortAcls that might have permissions defined but no users
-        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        cohortCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+//        // Remove possible CohortAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+//                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        cohortCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
@@ -521,7 +454,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Cohort> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -539,7 +472,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         QueryOptions qOptions;
         if (options != null) {
@@ -609,18 +542,18 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         checkCohortId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
+            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
             QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
             Cohort cohort = get(query, options).first();
             throw new CatalogDBException("The cohort {" + id + "} was already " + cohort.getStatus().getStatus());
         }
 
         // Change the status of the cohort to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
 
         return endQuery("Delete cohort", startTime, get(query, null));
     }
@@ -628,7 +561,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Cohort cohort : cohortQueryResult.getResult()) {
             delete(cohort.getId(), queryOptions);
@@ -655,7 +588,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        if (remove.getResult().get(0) != 1L) {
 //            throw CatalogDBException.removeError("Cohort");
 //        }
-//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.REMOVED);
+//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED);
 //        return endQuery("Remove cohort", startTime, get(query, new QueryOptions()));
     }
 
@@ -663,13 +596,13 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Operation not yet supported.");
 //        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.DELETED);
+//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.TRASHED);
 //
 //        // First we obtain the ids of the cohorts that will be removed.
 //        List<Cohort> cohorts = get(query, new QueryOptions(MongoDBCollection.INCLUDE,
 //                Arrays.asList(QueryParams.ID.key(), QueryParams.STATUS_STATUS))).getResult();
 //
-//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.REMOVED));
+//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED));
 //
 //        if (removed.first() != cohorts.size()) {
 //            throw CatalogDBException.removeError("Cohort");
@@ -678,7 +611,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        // Remove the instances to cohort that are stored in study
 //        dbAdaptorFactory.getCatalogStudyDBAdaptor().removeCohortDependencies(
 //                cohorts.stream()
-//                        .filter(c -> c.getStatus().getStatus() != Cohort.CohortStatus.DELETED)
+//                        .filter(c -> c.getStatus().getStatus() != Cohort.CohortStatus.TRASHED)
 //                        .map(Cohort::getId).collect(Collectors.toList())
 //        );
 //
@@ -686,14 +619,29 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        throw new UnsupportedOperationException("Operation not yet supported.");
-//        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED);
-//        QueryResult<Long> updateStatus = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE));
-////        QueryResult<Long> updateStatus = updateStatus(query, Cohort.CohortStatus.NONE);
-//
-//        return endQuery("Restore cohorts", startTime, Collections.singletonList(updateStatus.first()));
+    public QueryResult<Cohort> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkCohortId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The cohort {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, Cohort.CohortStatus.NONE);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore cohort", startTime, get(query, null));
+    }
+
+    @Override
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        return endQuery("Restore cohorts", startTime, setStatus(query, Cohort.CohortStatus.NONE));
     }
 
 //    @Override
@@ -791,7 +739,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                         break;
                     case ANNOTATION:
                         if (variableMap == null) {
-                            int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
+                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             if (variableSetId > 0) {
                                 variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
                                         .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));

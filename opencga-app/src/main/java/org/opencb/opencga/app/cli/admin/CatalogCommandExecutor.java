@@ -18,15 +18,19 @@ package org.opencb.opencga.app.cli.admin;
 
 
 import org.opencb.commons.datastore.core.DataStoreServerAddress;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.demo.AnalysisDemo;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.monitor.MonitorService;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
-import org.opencb.opencga.client.rest.OpenCGAClient;
+import org.opencb.opencga.server.rest.RestServer;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -65,6 +69,9 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
                 break;
             case "index":
                 index();
+                break;
+            case "daemon":
+                daemons();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -204,4 +211,25 @@ public class CatalogCommandExecutor extends AdminCommandExecutor {
         catalogManager.installIndexes();
     }
 
+    private void daemons() throws Exception {
+        if (catalogCommandOptions.daemonCatalogCommandOptions.start) {
+            // Server crated and started
+            MonitorService monitorService = new MonitorService(catalogConfiguration);
+            monitorService.start();
+            monitorService.blockUntilShutdown();
+            logger.info("Shutting down OpenCGA Storage REST server");
+        }
+
+        if (catalogCommandOptions.daemonCatalogCommandOptions.stop) {
+            Client client = ClientBuilder.newClient();
+            WebTarget target = client.target("http://localhost:" + catalogConfiguration.getMonitor().getPort())
+                    .path("opencga")
+                    .path("monitor")
+                    .path("admin")
+                    .path("stop");
+            Response response = target.request().get();
+            logger.info(response.toString());
+        }
+
+    }
 }

@@ -127,7 +127,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                         Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
                                         null, Collections.<Experiment>emptyList(),
                                         Arrays.asList(
-                                                new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/",
+                                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/",
                                                         null, null, "", new File.FileStatus(File.FileStatus.READY), 1000),
                                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
                                                         ".vcf", null, null, "", new File.FileStatus(File.FileStatus.READY), 1000)
@@ -147,7 +147,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(
-                                                new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
                                                         File.Bioformat.NONE, "data/file1.txt", null, null, "Description",
@@ -163,7 +163,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
                                         Collections.emptyMap()),
                                 new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null, null,
                                         Arrays.asList(
-                                                new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
                                                         File.Bioformat.NONE, "data/file1.txt", null, null, "Description",

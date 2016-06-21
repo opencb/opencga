@@ -51,7 +51,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
 
-    default QueryResult<Long> restore(Query query) throws CatalogDBException {
+    default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
@@ -157,7 +157,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         OUTPUT("output", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"

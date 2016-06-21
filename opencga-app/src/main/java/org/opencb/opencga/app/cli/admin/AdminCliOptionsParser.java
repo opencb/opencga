@@ -62,6 +62,7 @@ public class AdminCliOptionsParser {
         catalogSubCommands.addCommand("stats", catalogCommandOptions.statsCatalogCommandOptions);
         catalogSubCommands.addCommand("dump", catalogCommandOptions.dumpCatalogCommandOptions);
         catalogSubCommands.addCommand("import", catalogCommandOptions.importCatalogCommandOptions);
+        catalogSubCommands.addCommand("daemon", catalogCommandOptions.daemonCatalogCommandOptions);
 
         usersCommandOptions = new UsersCommandOptions();
         jCommander.addCommand("users", usersCommandOptions);
@@ -151,7 +152,7 @@ public class AdminCliOptionsParser {
      */
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = true, password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = false, password = true, arity = 0)
         public String adminPassword;
 
     }
@@ -171,6 +172,7 @@ public class AdminCliOptionsParser {
         StatsCatalogCommandOptions statsCatalogCommandOptions;
         DumpCatalogCommandOptions dumpCatalogCommandOptions;
         ImportCatalogCommandOptions importCatalogCommandOptions;
+        DaemonCatalogCommandOptions daemonCatalogCommandOptions;
 
         AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
@@ -183,6 +185,7 @@ public class AdminCliOptionsParser {
             this.statsCatalogCommandOptions = new StatsCatalogCommandOptions();
             this.dumpCatalogCommandOptions = new DumpCatalogCommandOptions();
             this.importCatalogCommandOptions = new ImportCatalogCommandOptions();
+            this.daemonCatalogCommandOptions = new DaemonCatalogCommandOptions();
         }
     }
 
@@ -371,6 +374,19 @@ public class AdminCliOptionsParser {
         public String collections = "ALL";
     }
 
+    @Parameters(commandNames = {"daemon"}, commandDescription = "Start and stop Catalog daemons")
+    public class DaemonCatalogCommandOptions extends CatalogDatabaseCommandOptions {
+
+        @ParametersDelegate
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
+
+        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean start;
+
+        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean stop;
+    }
+
 
 
     /*
@@ -529,7 +545,7 @@ public class AdminCliOptionsParser {
     public class RestServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;
@@ -542,7 +558,7 @@ public class AdminCliOptionsParser {
     public class GrpcServerCommandOptions extends CatalogDatabaseCommandOptions {
 
         @ParametersDelegate
-        public GeneralCliOptions.CommonCommandOptions commonOptions = new GeneralCliOptions.CommonCommandOptions();
+        public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
         @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
         public boolean start;

@@ -41,13 +41,14 @@ import org.opencb.opencga.catalog.managers.api.*;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.catalog.session.CatalogSessionManager;
+import org.opencb.opencga.catalog.session.DefaultSessionManager;
 import org.opencb.opencga.catalog.session.SessionManager;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -179,7 +180,7 @@ public class CatalogManager implements AutoCloseable {
                 .getCatalogUserDBAdaptor(), authorizationManager, catalogConfiguration);
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
-        sessionManager = new CatalogSessionManager(catalogDBAdaptorFactory, catalogConfiguration);
+        sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
         userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
@@ -410,6 +411,7 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getStudyId(userId, studyId);
     }
 
+    @Deprecated
     public long getFileId(String id) throws CatalogException {
         return fileManager.getFileId(id);
     }
@@ -523,6 +525,11 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Project> createProject(String name, String alias, String description, String organization, QueryOptions options,
                                               String sessionId) throws CatalogException {
         return projectManager.create(name, alias, description, organization, options, sessionId);
+    }
+
+    public long getProjectId(String projectId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return projectManager.getProjectId(userId, projectId);
     }
 
     public QueryResult<Project> getProject(long projectId, QueryOptions options, String sessionId)
@@ -644,14 +651,15 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("removeUsersFromGroup");
     }
 
-    public QueryResult shareStudy(long studyId, String members, String roleId, boolean override, String sessionId) throws CatalogException {
+    public QueryResult shareStudy(long studyId, String members, List<String> permissions, @Nullable String templateId, boolean override,
+                                  String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.addMembersToRole(userId, studyId, members, roleId, override);
+        return authorizationManager.createStudyPermissions(userId, studyId, members, permissions, templateId, override);
     }
 
     public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        authorizationManager.removeMembersFromRole(userId, studyId, members);
+        authorizationManager.removeStudyPermissions(userId, studyId, members);
         return new QueryResult("unshareStudy");
     }
 
@@ -805,7 +813,7 @@ public class CatalogManager implements AutoCloseable {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         long studyId = getStudyIdByFileId(folderId);
         File folder = getFile(folderId, sessionId).first();
-        if (!folder.getType().equals(File.Type.FOLDER)) {
+        if (!folder.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogDBException("File {id:" + folderId + ", path:'" + folder.getPath() + "'} is not a folder.");
         }
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
@@ -1045,6 +1053,16 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.create(studyId, name, source, description, attributes, options, sessionId);
     }
 
+    public long getSampleId(String sampleId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return sampleManager.getSampleId(userId, sampleId);
+    }
+
+    public List<Long> getSampleIds(String sampleIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return sampleManager.getSampleIds(userId, sampleIds);
+    }
+
     public QueryResult<Sample> getSample(long sampleId, QueryOptions options, String sessionId)
             throws CatalogException {
         return sampleManager.read(sampleId, options, sessionId);
@@ -1223,6 +1241,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
+    @Deprecated
     public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
@@ -1230,6 +1249,7 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
     }
 
+    @Deprecated
     public QueryResult unshareCohorts(String cohortIds, String userIds, String permissions, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
@@ -1238,6 +1258,22 @@ public class CatalogManager implements AutoCloseable {
         authorizationManager.unsetCohortPermissions(userId, cohortList, userIds, permissionList);
         return new QueryResult("unshareCohorts");
     }
+
+   /* public QueryResult updateAcl(String cohortId, String member, List<String> permissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        List<Long> cohortList = sampleManager.getCohortIds(userId, cohortId);
+        return authorizationManager.setCohortPermissions(userId, cohortList, member, permissions);
+    }*/
+
+   /* public QueryResult getAcl(String cohortId, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        //List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
+
+        List<String> permissions
+        return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
+    }*/
 
     public long getCohortId(String cohortStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);

@@ -72,8 +72,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/info")
     @ApiOperation(value = "Get sample information", position = 2)
-    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId) {
+    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr) {
         try {
+            // FIXME: The id resolution should not go here
+            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
             QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -104,11 +106,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "source") @QueryParam("source") String source,
-                                  @ApiParam(value = "acl") @QueryParam("acl") String acl,
-                                  @ApiParam(value = "acl.userId") @QueryParam("acl.userId") String acl_userId,
-                                  @ApiParam(value = "AclEntry read permission") @QueryParam("bacl.read") String acl_read,
-                                  @ApiParam(value = "AclEntry write permission") @QueryParam("bacl.write") String acl_write,
-                                  @ApiParam(value = "AclEntry delete permission") @QueryParam("bacl.delete") String acl_delete,
+                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
+                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
                                   @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
@@ -125,88 +124,90 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
-    @POST
-    @Path("/{sampleId}/annotate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample", position = 5)
-    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") long sampleId,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
-                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
-                                       Map<String, Object> annotations) {
-        try {
-            QueryResult<AnnotationSet> queryResult;
-            if (delete && update) {
-                return createErrorResponse("Annotate sample", "Unable to update and delete annotations at the same time");
-            } else if (delete) {
-                queryResult = catalogManager.deleteSampleAnnotation(sampleId, annotateSetName, sessionId);
-            } else if (update) {
-                queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
-            } else {
-                queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
-                        annotations, Collections.emptyMap(), sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @POST
+//    @Path("/{sampleId}/annotate")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "annotate sample", position = 5)
+//    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") long sampleId,
+//                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
+//                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
+//                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+//                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
+//                                       Map<String, Object> annotations) {
+//        try {
+//            QueryResult<AnnotationSet> queryResult;
+//            if (delete && update) {
+//                return createErrorResponse("Annotate sample", "Unable to update and delete annotations at the same time");
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteSampleAnnotation(sampleId, annotateSetName, sessionId);
+//            } else if (update) {
+//                queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
+//            } else {
+//                queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
+//                        annotations, Collections.emptyMap(), sessionId);
+//            }
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
-    @GET
-    @Path("/{sampleId}/annotate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
-                                      @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
-        try {
-            QueryResult<AnnotationSet> queryResult;
-
-            if (delete && update) {
-                return createErrorResponse("Annotate sample", "Unable to update and delete annotations at the same time");
-            } else if (delete) {
-                queryResult = catalogManager.deleteSampleAnnotation(sampleId, annotateSetName, sessionId);
-            } else {
-                if (update) {
-                    for (AnnotationSet annotationSet : catalogManager.getSample(sampleId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getId().equals(annotateSetName)) {
-                            variableSetId = annotationSet.getVariableSetId();
-                        }
-                    }
-                }
-                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-                if(variableSetResult.getResult().isEmpty()) {
-                    return createErrorResponse("sample - annotate", "VariableSet not find.");
-                }
-                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getId()))
-                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
-
-                if (update) {
-                    queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
-                } else {
-                    queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, Collections.emptyMap(), sessionId);
-                }
-            }
-
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//    @GET
+//    @Path("/{sampleId}/annotate")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "annotate sample", position = 5)
+//    public Response annotateSampleGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
+//                                      @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
+//                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+//                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+//                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
+//        try {
+//            QueryResult<AnnotationSet> queryResult;
+//
+//            if (delete && update) {
+//                return createErrorResponse("Annotate sample", "Unable to update and delete annotations at the same time");
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteSampleAnnotation(sampleId, annotateSetName, sessionId);
+//            } else {
+//                if (update) {
+//                    for (AnnotationSet annotationSet : catalogManager.getSample(sampleId, null, sessionId).first().getAnnotationSets()) {
+//                        if (annotationSet.getId().equals(annotateSetName)) {
+//                            variableSetId = annotationSet.getVariableSetId();
+//                        }
+//                    }
+//                }
+//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+//                if(variableSetResult.getResult().isEmpty()) {
+//                    return createErrorResponse("sample - annotate", "VariableSet not find.");
+//                }
+//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+//                        .filter(variable -> params.containsKey(variable.getId()))
+//                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+//
+//                if (update) {
+//                    queryResult = catalogManager.updateSampleAnnotation(sampleId, annotateSetName, annotations, sessionId);
+//                } else {
+//                    queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId, annotations, Collections.emptyMap(), sessionId);
+//                }
+//            }
+//
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{sampleId}/update")
     @ApiOperation(value = "Update some sample attributes using GET method", position = 6)
-    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
+    public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = true) @QueryParam("description") String description,
                            @ApiParam(value = "source", required = true) @QueryParam("source") String source,
                            @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId) {
         try {
+            // FIXME: The id resolution should not go here
+            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
             QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -226,9 +227,11 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some sample attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
+    public Response updateByPost(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                  @ApiParam(value = "params", required = true) UpdateSample params) {
         try {
+            // FIXME: The id resolution should not go here
+            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
             QueryResult<Sample> queryResult = catalogManager.modifySample(sampleId,
                     new QueryOptions(jsonObjectMapper.writeValueAsString(params)), sessionId);
             return createOkResponse(queryResult);
@@ -242,10 +245,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Share samples with other members", position = 7)
     public Response share(@PathParam(value = "sampleIds") String sampleIds,
                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                          @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+                          @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls,
+                          @ApiParam(value = "Boolean indicating whether to allow the change of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
         try {
-            return createOkResponse(catalogManager.shareSample(sampleIds, members, Arrays.asList(permissions.split(",")), override,
+            return createOkResponse(catalogManager.shareSample(sampleIds, members, Arrays.asList(acls.split(",")), override,
                     sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -257,9 +260,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
     public Response unshare(@PathParam(value = "sampleIds") String sampleIds,
                             @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                            @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+                            @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls) {
         try {
-            return createOkResponse(catalogManager.unshareSample(sampleIds, members, permissions, sessionId));
+            return createOkResponse(catalogManager.unshareSample(sampleIds, members, acls, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -268,8 +271,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{sampleId}/delete")
     @ApiOperation(value = "Delete a sample", position = 9)
-    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId) {
+    public Response delete(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr) {
         try {
+            // FIXME: The id resolution should not go here
+            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
             QueryResult<Sample> queryResult = catalogManager.deleteSample(sampleId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -303,4 +308,140 @@ public class SampleWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{sampleId}/annotationSets/search")
+    @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
+    public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
+                                           @ApiParam(value = "annotationSetId", required = true) @QueryParam("annotationSetId") String annotationSetId,
+                                           @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+                                           @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
+                                           @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        return createErrorResponse("Search", "not implemented");
+    }
+
+    @GET
+    @Path("/{sampleId}/annotationSets/info")
+    @ApiOperation(value = "Returns the annotation sets of the sample [PENDING]", position = 12)
+    public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
+                                         @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        return createErrorResponse("Search", "not implemented");
+    }
+
+    @POST
+    @Path("/{sampleId}/annotationSets/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "annotate sample [PENDING]", position = 13)
+    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") String sampleStr,
+                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
+                                       Map<String, Object> annotations) {
+        try {
+//            QueryResult<AnnotationSet> queryResult;
+//            queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
+//                    annotations, Collections.emptyMap(), sessionId);
+//            return createOkResponse(queryResult);
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{sampleId}/annotationSets/{annotationSetId}/delete")
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [PENDING]", position = 14)
+    public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
+                                        @ApiParam(value = "annotationSetId", required = true) @PathParam("annotationSetId") String annotationSetId,
+                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+                                        @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
+        return createErrorResponse("Search", "not implemented");
+    }
+
+    @POST
+    @Path("/{sampleId}/annotationSets/{annotationSetId}/update")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Update the annotations [PENDING]", position = 15)
+    public Response updateAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
+                                        @ApiParam(value = "annotationSetId", required = true) @PathParam("annotationSetId") String annotationSetId,
+                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
+                                        Map<String, Object> annotations) {
+        return createErrorResponse("Search", "not implemented");
+    }
+
+    @GET
+    @Path("/{sampleId}/annotationSets/{annotationSetId}/info")
+    @ApiOperation(value = "Returns the annotation set [PENDING]", position = 16)
+    public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
+                                        @ApiParam(value = "annotationSetId", required = true) @PathParam("annotationSetId") String annotationSetId,
+                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+                                        @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        return createErrorResponse("Search", "not implemented");
+    }
+
+
+
+    @GET
+    @Path("/{sampleId}/acls")
+    @ApiOperation(value = "Returns the acls of the study [PENDING]", position = 18)
+    public Response getAcls(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String studyIdStr) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{sampleId}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
+    public Response createRole(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String cohortIdStr,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{sampleId}/acls/{memberId}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
+    public Response getAcl(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{sampleId}/acls/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
+    public Response updateAcl(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String cohortIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{sampleId}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
+    public Response deleteAcl(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String cohortIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 }

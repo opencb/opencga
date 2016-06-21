@@ -48,9 +48,11 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        @Deprecated
         FILE_STATUS("fileStatus", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
@@ -58,7 +60,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
 //        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
 //        ACL_READ("acls.read", BOOLEAN, ""),
@@ -214,6 +216,18 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      * @throws CatalogDBException CatalogDBException.
      */
     QueryResult<Long> extractSampleFromFiles(Query query, List<Long> sampleIds) throws CatalogDBException;
+
+    /**
+     * Delete file.
+     *
+     * @param fileId fileId.
+     * @param update Map containing the parameters that will be updated after deletion. SKIP_CHECK might also be found in the map
+     *               to avoid checking whether the fileId is being used and delete it anyway.
+     * @param queryOptions Query Options.
+     * @return the deleted file.
+     * @throws CatalogDBException when the file could not be deleted.
+     */
+    QueryResult<File> delete(long fileId, ObjectMap update, QueryOptions queryOptions) throws CatalogDBException;
 
     /*
      * ACL methods

@@ -14,11 +14,13 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main;
+package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
@@ -30,20 +32,19 @@ import java.io.IOException;
  */
 public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.StudyCommandsOptions studiesCommandOptions;
+    private StudyCommandOptions studiesCommandOptions;
 
-    public StudiesCommandExecutor(OpencgaCliOptionsParser.StudyCommandsOptions studiesCommandOptions) {
-        super(studiesCommandOptions.commonOptions);
+    public StudiesCommandExecutor(StudyCommandOptions studiesCommandOptions) {
+        super(studiesCommandOptions.commonCommandOptions);
         this.studiesCommandOptions = studiesCommandOptions;
     }
-
 
 
     @Override
     public void execute() throws Exception {
         logger.debug("Executing studies command line");
 
-        String subCommandString = studiesCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(studiesCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
                 create();
@@ -66,6 +67,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "annotate-variants":
                 annotateVariants();
                 break;
+            case "delete":
+                delete();
+                break;
+
+            case "summary":
+                summary();
+                break;
             default:
                 logger.error("Subcommand not valid");
                 break;
@@ -75,47 +83,61 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating a new study");
-        String alias = studiesCommandOptions.createCommand.alias;
-        String name = studiesCommandOptions.createCommand.name;
-//        String description = studiesCommandOptions.createCommand.description;
-        String projectId = studiesCommandOptions.createCommand.projectId;
-        openCGAClient.getStudyClient().create(projectId,name,alias,null);
-        /************************************************************************************************ OJO, ULTIMO PARAMETRO PARAMS NULL JUM */
+        String alias = studiesCommandOptions.createCommandOptions.alias;
+        String name = studiesCommandOptions.createCommandOptions.name;
+//        String description = studiesCommandOptions.createCommandOptions.description;
+        String projectId = studiesCommandOptions.createCommandOptions.projectId;
+        openCGAClient.getStudyClient().create(projectId, name, alias, null);
+        /************************************************************************************************ OJO, ULTIMO PARAMETRO PARAMS
+         * NULL JUM */
         System.out.println("Done.");
     }
 
-    private void info() throws CatalogException, IOException  {
+    private void info() throws CatalogException, IOException {
         logger.debug("Getting the project info");
-        QueryResponse<Study> info = openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommand.id,null);
-        System.out.println("Study: "+info);
+        QueryResponse<Study> info = openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id, null);
+        System.out.println("Study: " + info);
     }
+
     private void resync() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find changes\n");
         //TODO
     }
 
-    private void list() throws CatalogException, IOException  {
-        logger.debug("Listing files in folder");  /**************************************************************** Revisar si esto es file*////
-        QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.listCommand.id,null);
+    private void list() throws CatalogException, IOException {
+        logger.debug("Listing files in folder");  /**************************************************************** Revisar si esto es
+         file*////
+        QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.listCommandOptions.id, null);
         System.out.println("Files= " + files);
     }
+
     private void checkFiles() throws CatalogException, IOException {
         logger.debug("Checking if files in study are correctly tracked.");
-       //TODO
+        //TODO
     }
 
     private void status() throws CatalogException, IOException {
         logger.debug("Scan the study folder to find untracked or missing files");
-        QueryResponse<ObjectMap> status = openCGAClient.getStudyClient().getStatus(studiesCommandOptions.statusCommand.id, null);
+        QueryResponse<ObjectMap> status = openCGAClient.getStudyClient().getStatus(studiesCommandOptions.statusCommandOptions.id, null);
         System.out.println("status = " + status);
 
     }
+
     private void annotateVariants() throws CatalogException, IOException {
         logger.debug("Annotating variants");
         //TODO
     }
 
+    private void delete() throws CatalogException, IOException {
+        logger.debug("Deleting a study");
 
 
+    }
+
+    private void summary() throws CatalogException, IOException {
+        logger.debug("Doing summary with the general stats of a study");
+
+
+    }
 
 }

@@ -249,6 +249,6 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
         if (studyId == 0L) {
             throw new CatalogException("Cohort[groupBy]: Study id not found in the query");
         }
-        return groupBy(studyId, query, field, options, sessionId);
+        return cohortGroupBy(studyId, query, field, options, sessionId);
     }
 }

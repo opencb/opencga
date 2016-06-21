@@ -29,14 +29,14 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         assertTrue(studyId >= 0);
         File file;
-        file = new File("jobs/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "",
+        file = new File("jobs/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "jobs/", null, TimeUtils.getTime(), "",
                 new File.FileStatus(File.FileStatus.STAGE), 1000);
         LinkedList<FileAcl> acl = new LinkedList<>();
-        acl.push(new FileAcl(Arrays.asList("jcoll"), Arrays.asList(FileAcl.FilePermissions.VIEW.name(),
+        acl.push(new FileAcl("jcoll", Arrays.asList(FileAcl.FilePermissions.VIEW.name(),
                 FileAcl.FilePermissions.VIEW_CONTENT.name(), FileAcl.FilePermissions.VIEW_HEADER.name(),
                 FileAcl.FilePermissions.DELETE.name(), FileAcl.FilePermissions.SHARE.name()
                 )));
-        acl.push(new FileAcl(Arrays.asList("jmmut"), Collections.emptyList()));
+        acl.push(new FileAcl("jmmut", Collections.emptyList()));
 //        acl.push(new AclEntry("jcoll", true, true, true, true));
 //        acl.push(new AclEntry("jmmut", false, false, true, true));
         file.setAcls(acl);
@@ -166,8 +166,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void deleteFileTest() throws CatalogDBException, IOException {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
-        System.out.println(delete);
         assertTrue(delete.getNumResults() == 1);
+        assertEquals(File.FileStatus.DELETED, delete.first().getStatus().getStatus());
         try {
             System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
                     (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
@@ -178,26 +178,45 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
+    public void removeFileTest() throws CatalogDBException, IOException {
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
+        // Remove after deleted
+        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
+        assertTrue(remove.getNumResults() == 1);
+        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getStatus());
+    }
+
+    @Test
+    public void removeFileTest2() throws CatalogDBException, IOException {
+        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+        // Remove after READY
+        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
+        assertTrue(remove.getNumResults() == 1);
+        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getStatus());
+    }
+
+    @Test
     public void fileAclsTest() throws CatalogDBException {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         System.out.println(fileId);
 
-        FileAcl granted = new FileAcl(Arrays.asList("jmmut"), Arrays.asList(FileAcl.FilePermissions.VIEW.name(),
+        FileAcl granted = new FileAcl("jmmut", Arrays.asList(FileAcl.FilePermissions.VIEW.name(),
                 FileAcl.FilePermissions.VIEW_CONTENT.name(), FileAcl.FilePermissions.VIEW_HEADER.name(),
                 FileAcl.FilePermissions.DELETE.name(), FileAcl.FilePermissions.SHARE.name()
         ));
 
 //        AclEntry granted = new AclEntry("jmmut", true, true, true, false);
         catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
-        granted.setUsers(Arrays.asList("imedina"));
+        granted.setMember("imedina");
         catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
-        try {
-            granted.setUsers(Arrays.asList("noUser"));
-            catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
-            fail("error: expected exception");
-        } catch (CatalogDBException e) {
-            System.out.println("correct exception: " + e);
-        }
+//        try {
+//            granted.setMember("noUser");
+//            catalogFileDBAdaptor.setFileAcl(fileId, granted, true);
+//            fail("error: expected exception");
+//        } catch (CatalogDBException e) {
+//            System.out.println("correct exception: " + e);
+//        }
 
         List<FileAcl> jmmut = catalogFileDBAdaptor.getFileAcl(fileId, "jmmut").getResult();
         assertTrue(!jmmut.isEmpty());
@@ -222,7 +241,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         List<String> distinctOwners = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.OWNER_ID.key()).getResult();
         List<String> distinctTypes = catalogFileDBAdaptor.distinct(new Query(), CatalogFileDBAdaptor.QueryParams.TYPE.key()).getResult();
         assertEquals(Arrays.asList("imedina", "pfurio"), distinctOwners);
-        assertEquals(Arrays.asList("FOLDER","FILE"), distinctTypes);
+        assertEquals(Arrays.asList("DIRECTORY","FILE"), distinctTypes);
 
         List<String> distinctFormats = catalogFileDBAdaptor.distinct(new Query(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), "pfurio"),
                 CatalogFileDBAdaptor.QueryParams.FORMAT.key()).getResult();

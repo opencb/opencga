@@ -235,7 +235,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            return endQuery("Get user", startTime, Collections.singletonList(user));
 //        }
         checkUserExists(userId);
-        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED);
+        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED);
         query.append(QueryParams.LAST_ACTIVITY.key(), "!=" + lastActivity);
         return get(query, options);
     }
@@ -409,7 +409,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
@@ -431,7 +431,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
@@ -502,6 +502,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         return endQuery("Update user", startTime, get(query, null));
     }
 
+    QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
+        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+    }
+
     public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
         return update(userId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
     }
@@ -519,7 +523,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         Query query = new Query(QueryParams.ID.key(), id)
                 .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED + "," + User.UserStatus.REMOVED);
+            query.put(QueryParams.STATUS_STATUS.key(), User.UserStatus.TRASHED + "," + User.UserStatus.DELETED);
             QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
             User user = get(query, options).first();
             throw new CatalogDBException("The user {" + id + "} was already " + user.getStatus().getStatus());
@@ -537,10 +541,10 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
 
         // Change the status of the user to deleted
-        setStatus(id, User.UserStatus.DELETED);
+        setStatus(id, User.UserStatus.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.DELETED);
+                .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.TRASHED);
 
         return endQuery("Delete user", startTime, get(query, queryOptions));
     }
@@ -579,9 +583,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery, , force);
 //        }
 //
-//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
 //        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
-//                QueryParams.STATUS_STATUS.key(), Status.DELETED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                QueryParams.STATUS_STATUS.key(), Status.TRASHED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
 //                new QueryOptions());
 //
 //        if (deleted.first().getModifiedCount() == 0) {
@@ -603,10 +607,32 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        return endQuery("Restore users", startTime, setStatus(query, Status.READY));
     }
 
+    @Override
+    public QueryResult<User> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        throw new CatalogDBException("Delete user by int id. The id should be a string.");
+    }
+
+    public QueryResult<User> restore(String id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkUserExists(id);
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The user {" + id + "} is not deleted");
+        }
+
+        setStatus(id, Status.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore user", startTime, get(query, null));
+    }
 
     /***
      * Removes completely the user from the database.

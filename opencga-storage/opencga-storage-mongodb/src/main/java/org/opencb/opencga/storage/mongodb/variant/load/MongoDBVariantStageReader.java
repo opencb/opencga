@@ -83,15 +83,26 @@ public class MongoDBVariantStageReader implements DataReader<Document> {
         ArrayList<Bson> chrFilters = new ArrayList<>(chromosomes.size());
 
         for (String chromosome : chromosomes) {
-            chromosome = VariantStringIdComplexTypeConverter.convertChromosome(chromosome);
-            chrFilters.add(gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR));
-            chrFilters.add(lt("_id", chromosome + (VariantStringIdComplexTypeConverter.SEPARATOR_CHAR + 1)));
+            addChromosomeFilter(chrFilters, chromosome);
         }
+        Bson bson;
         if (chrFilters.isEmpty()) {
-            return exists(Integer.toString(studyId));
+            bson = exists(Integer.toString(studyId));
         } else {
-            return and(exists(Integer.toString(studyId)), or(chrFilters));
+            bson = and(exists(Integer.toString(studyId)), or(chrFilters)); // Be in any of these chromosomes
         }
+        logger.debug("stage filter: " +  bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+        return bson;
+    }
+
+    public static void addChromosomeFilter(List<Bson> chrFilters, String chromosome) {
+        if (chromosome == null || chromosome.isEmpty()) {
+            return;
+        }
+        chromosome = VariantStringIdComplexTypeConverter.convertChromosome(chromosome);
+        chrFilters.add(and(
+                gte("_id", chromosome + VariantStringIdComplexTypeConverter.SEPARATOR_CHAR),
+                lt("_id", chromosome + (char) (VariantStringIdComplexTypeConverter.SEPARATOR_CHAR + 1))));
     }
 
     @Override
