@@ -891,6 +891,11 @@ public class CatalogManager implements AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
+    public QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
+            throws CatalogException, IOException {
+        return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
+    }
+
     public QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException, IOException {
         return fileManager.unlink(fileId, sessionId);
     }

@@ -122,9 +122,8 @@ public class File {
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId,
-                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage,
-                long experimentId, List<Long> sampleIds, long jobId, List<FileAcl> acls, Index index, Map<String, Object> stats,
-                Map<String, Object> attributes) {
+                String description, FileStatus status, boolean external, long diskUsage, long experimentId, List<Long> sampleIds,
+                long jobId, List<FileAcl> acls, Index index, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -133,8 +132,8 @@ public class File {
         this.uri = uri;
         this.path = path;
         this.ownerId = ownerId;
-        this.creationDate = creationDate;
-        this.modificationDate = modificationDate;
+        this.creationDate = TimeUtils.getTime();
+        this.modificationDate = "";
         this.description = description;
         this.status = status;
         this.external = external;
