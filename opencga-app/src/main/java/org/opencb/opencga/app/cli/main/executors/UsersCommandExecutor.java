@@ -36,20 +36,22 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     private UserCommandOptions usersCommandOptions;
 
     public UsersCommandExecutor(UserCommandOptions usersCommandOptions) {
+
         super(usersCommandOptions.commonCommandOptions, getParsedSubCommand(usersCommandOptions.getjCommander()).startsWith("log"));
         this.usersCommandOptions = usersCommandOptions;
     }
 
     public UsersCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions, UserCommandOptions usersCommandOptions) {
+
         super(commonOptions, getParsedSubCommand(usersCommandOptions.getjCommander()).startsWith("log"));
         this.usersCommandOptions = usersCommandOptions;
     }
 
     @Override
     public void execute() throws Exception {
+
         logger.debug("Executing variant command line");
 //        openCGAClient = new OpenCGAClient(clientConfiguration);
-
 
         String subCommandString = getParsedSubCommand(usersCommandOptions.getjCommander());
         if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
