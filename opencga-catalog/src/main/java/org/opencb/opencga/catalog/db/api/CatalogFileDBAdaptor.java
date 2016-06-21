@@ -48,9 +48,11 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
+        @Deprecated
         FILE_STATUS("fileStatus", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
@@ -58,7 +60,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
 //        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
 //        ACL_READ("acls.read", BOOLEAN, ""),
