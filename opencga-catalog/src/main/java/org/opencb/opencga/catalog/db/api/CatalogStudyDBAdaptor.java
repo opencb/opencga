@@ -235,6 +235,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
+        TYPE("type", TEXT, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
         GROUP_ID("groups.id", TEXT_ARRAY, ""),

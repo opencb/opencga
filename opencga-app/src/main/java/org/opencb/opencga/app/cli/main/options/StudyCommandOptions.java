@@ -18,12 +18,12 @@ public class StudyCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public ResyncCommandOptions resyncCommandOptions;
-    public ListCommandOptions listCommandOptions;
-    public CheckCommandOptions checkCommandOptions;
+    //public ResyncCommandOptions resyncCommandOptions;
+    public FilesCommandOptions filesCommandOptions;
+    public ScanFilesCommandOptions scanFilesCommandOptions;
     public StatusCommandOptions statusCommandOptions;
-    public AnnotationCommandOptions annotationCommandOptions;
     public SearchCommandOptions searchCommandOptions;
+    public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public SummaryCommandOptions summaryCommandOptions;
     public JCommander jCommander;
@@ -36,17 +36,16 @@ public class StudyCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
-        this.resyncCommandOptions = new ResyncCommandOptions();
-        this.listCommandOptions = new ListCommandOptions();
-        this.checkCommandOptions = new CheckCommandOptions();
+        this.filesCommandOptions = new FilesCommandOptions();
+        this.scanFilesCommandOptions = new ScanFilesCommandOptions();
         this.statusCommandOptions = new StatusCommandOptions();
-        this.annotationCommandOptions = new AnnotationCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
+        this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.summaryCommandOptions = new SummaryCommandOptions();
     }
 
-    abstract class BaseStudyCommand {
+    public abstract class BaseStudyCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -76,16 +75,9 @@ public class StudyCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.",
+        @Parameter(names = {"--status"}, description = "Status.",
                 required = false, arity = 1)
-        public String uri;
-
-        @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. " +
-                "<bioformat>:<storageEngineName>:<database_name>")
-        public List<String> datastores;
-
-        @Parameter(names = {"--aggregation-type"}, description = "Set the study as aggregated of type {NONE, BASIC, EVS, EXAC}")
-        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public String status;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
@@ -98,12 +90,22 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
+        @Parameter(names = {"--id"}, description = "Id.", required = false, arity = 1)
+        public String id;
+
         @Parameter(names = {"--project-id"}, description = "Project Id.", required = false, arity = 1)
         public String projectId;
+
+        @Parameter(names = {"--name"}, description = "Name.", required = false, arity = 1)
+        public String name;
+
+        @Parameter(names = {"--alias"}, description = "Alias.", required = false, arity = 1)
+        public String alias;
 
         @Parameter(names = {"--type"}, description = "Type.", required = false, arity = 1)
         public String type;
 
+        //Actualmente existe pero me dijo pedro que no va a existir
         @Parameter(names = {"--creator-id"}, description = "Creator id.", required = false, arity = 1)
         public String creatorId;
 
@@ -128,35 +130,41 @@ public class StudyCommandOptions {
         @Parameter(names = {"--groups-users"}, description = "Groups users.", required = false, arity = 1)
         public String groupsUsers;
     }
-    @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
+   /* @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
     class ResyncCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum = false;
-    }
+    }*/
 
-    @Parameters(commandNames = {"scan-files"}, commandDescription = "Check if files in study are correctly tracked.")
-    class CheckCommandOptions extends BaseStudyCommand {
+    @Parameters(commandNames = {"scan-files"},
+            commandDescription = "Scans the study folder to find untracked or missing files")
+    public class ScanFilesCommandOptions extends BaseStudyCommand {  }
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        public boolean calculateChecksum = false;
-    }
-
-    @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
-    public class ListCommandOptions extends BaseStudyCommand {
-
-        @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-        public int level = Integer.MAX_VALUE;
-
-        @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-        public boolean recursive = false;
-
-        @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-        public boolean uries = false;
-    }
+    @Parameters(commandNames = {"files"}, commandDescription = "Study files information")
+    public class FilesCommandOptions extends BaseStudyCommand { }
 
     @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
     public class StatusCommandOptions extends BaseStudyCommand {
+    }
+
+    @Parameters(commandNames = {"update"}, commandDescription = "Study modify")
+    public class UpdateCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
+        public String name;
+
+        @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
+        public Study.Type type = Study.Type.COLLECTION;
+
+        @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
+        public String description;
+
+        @Parameter(names = {"--status"}, description = "Status.",
+                required = false, arity = 1)
+        public String status;
+
+
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
@@ -166,19 +174,5 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
     public class SummaryCommandOptions extends BaseStudyCommand {
     }
-
-    @Parameters(commandNames = {"annotate-variants"}, commandDescription = "Annotate variants")
-    class AnnotationCommandOptions extends BaseStudyCommand {
-
-        @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-        public List<String> dashDashParameters;
-
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
-        public String outdir = "";
-
-        @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-        public boolean enqueue;
-    }
-
 
 }
