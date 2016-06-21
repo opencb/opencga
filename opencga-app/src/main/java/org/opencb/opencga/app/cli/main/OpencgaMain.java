@@ -103,6 +103,9 @@ public class OpencgaMain {
                         case "tools":
                             commandExecutor = new ToolsCommandExecutor(cliOptionsParser.getToolCommands());
                             break;
+                        case "variables":
+                            commandExecutor = new VariablesCommandExecutor(cliOptionsParser.getVariableCommands());
+                            break;
                         default:
                             System.out.printf("ERROR: not valid command passed: '" + parsedCommand + "'");
                             break;

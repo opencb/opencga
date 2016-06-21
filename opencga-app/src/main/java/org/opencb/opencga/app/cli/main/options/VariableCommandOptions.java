@@ -40,11 +40,12 @@ public class VariableCommandOptions {
     }
 
     class BaseVariableCommand {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--variable-id"}, description = "VariableSet id", required = true, arity = 1)
-        Integer id;
+        public Integer id;
     }
 
 
@@ -52,22 +53,22 @@ public class VariableCommandOptions {
     class CreateCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "StudyId", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-        String name;
+        public String name;
 
         @Parameter(names = {"--unique"}, description = "Unique", required = false, arity = 0)
-        boolean unique;
+        public boolean unique;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--body"}, description = "Variables", required = true)
-        String body;
+        public String body;
     }
 
 
@@ -79,22 +80,22 @@ public class VariableCommandOptions {
     class SearchCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"--id"}, description = "CSV list of variableSetIds", required = false, arity = 1)
-        String id;
+        public String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
-        String name;
+        public String name;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String attributes;
+        public String attributes;
 
     }
 

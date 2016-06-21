@@ -29,6 +29,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private VariableCommandOptions variableCommandOptions;
 
     public VariablesCommandExecutor(VariableCommandOptions variableCommandOptions) {
+
         super(variableCommandOptions.commonCommandOptions);
         this.variableCommandOptions = variableCommandOptions;
     }
@@ -36,6 +37,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
     @Override
     public void execute() throws Exception {
+
         logger.debug("Executing variables command line");
 
         String subCommandString = getParsedSubCommand(variableCommandOptions.jCommander);

@@ -30,6 +30,7 @@ public class StudyCommandOptions {
     public OpencgaCommonCommandOptions commonCommandOptions;
 
     public StudyCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
@@ -46,38 +47,45 @@ public class StudyCommandOptions {
     }
 
     abstract class BaseStudyCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String projectId;
+
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
+
         @Parameter(names = {"-a", "--alias"}, description = "alias", required = true, arity = 1)
         public String alias;
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"-t", "--type"}, description = "Type", required = false, arity = 1)
-        Study.Type type = Study.Type.COLLECTION;
+        public Study.Type type = Study.Type.COLLECTION;
 
         @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--uri"}, description = "URI for the folder where to place the study files. Must be a correct URI.",
                 required = false, arity = 1)
-        String uri;
+        public String uri;
 
         @Parameter(names = {"--datastore"}, description = "Configure place to store different files. One datastore per bioformat. " +
                 "<bioformat>:<storageEngineName>:<database_name>")
-        List<String> datastores;
+        public List<String> datastores;
 
         @Parameter(names = {"--aggregation-type"}, description = "Set the study as aggregated of type {NONE, BASIC, EVS, EXAC}")
-        VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
+        public VariantSource.Aggregation aggregated = VariantSource.Aggregation.NONE;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
@@ -86,52 +94,57 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search studies")
     public class SearchCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--project-id"}, description = "Project Id.", required = false, arity = 1)
-        String projectId;
+        public String projectId;
 
         @Parameter(names = {"--type"}, description = "Type.", required = false, arity = 1)
-        String type;
+        public String type;
 
         @Parameter(names = {"--creator-id"}, description = "Creator id.", required = false, arity = 1)
-        String creatorId;
+        public String creatorId;
 
         @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
-        String creationDate;
+        public String creationDate;
 
         @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
-        String status;
+        public String status;
 
         @Parameter(names = {"--attributes"}, description = "Attributes.", required = false, arity = 1)
-        String attributes;
+        public String attributes;
 
         @Parameter(names = {"--nattributes"}, description = "Numerical attributes.", required = false, arity = 1)
-        String nattributes;
+        public String nattributes;
 
         @Parameter(names = {"--battributes"}, description = "Boolean attributes.", required = false, arity = 0)
-        boolean battributes;
+        public boolean battributes;
 
         @Parameter(names = {"--groups"}, description = "Groups.", required = false, arity = 1)
-        String groups;
+        public String groups;
 
         @Parameter(names = {"--groups-users"}, description = "Groups users.", required = false, arity = 1)
-        String groupsUsers;
+        public String groupsUsers;
     }
     @Parameters(commandNames = {"resync"}, commandDescription = "Scans the study folder to find changes")
     class ResyncCommandOptions extends BaseStudyCommand {
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        boolean calculateChecksum = false;
 
+        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+        public boolean calculateChecksum = false;
     }
 
     @Parameters(commandNames = {"scan-files"}, commandDescription = "Check if files in study are correctly tracked.")
     class CheckCommandOptions extends BaseStudyCommand {
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        boolean calculateChecksum = false;
 
+        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+        public boolean calculateChecksum = false;
     }
 
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions extends BaseStudyCommand {
+
         @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
         public int level = Integer.MAX_VALUE;
 
@@ -159,10 +172,12 @@ public class StudyCommandOptions {
 
         @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
         public List<String> dashDashParameters;
+
         @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = true, arity = 1)
-        String outdir = "";
+        public String outdir = "";
+
         @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-        boolean enqueue;
+        public boolean enqueue;
     }
 
 
