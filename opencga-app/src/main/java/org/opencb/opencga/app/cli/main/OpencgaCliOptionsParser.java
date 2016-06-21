@@ -95,6 +95,7 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
         studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
+        studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
         studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
         studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
         studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);

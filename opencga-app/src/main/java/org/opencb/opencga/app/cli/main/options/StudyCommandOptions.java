@@ -141,8 +141,23 @@ public class StudyCommandOptions {
             commandDescription = "Scans the study folder to find untracked or missing files")
     public class ScanFilesCommandOptions extends BaseStudyCommand {  }
 
-    @Parameters(commandNames = {"files"}, commandDescription = "Study files information")
-    public class FilesCommandOptions extends BaseStudyCommand { }
+
+    @Parameters(commandNames = {"files"}, commandDescription = "Fetch files from a study")
+    public class FilesCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"-t", "--type"}, description = "Filter type of files, eg. file,directory", required = false, arity = 1)
+        public String type = "FILE";
+
+        @Parameter(names = {"-b", "--bioformat"}, description = "Filter by bioformat of files, eg. VARIANT,IDLIST", arity = 1)
+        public String bioformat;
+
+        @Parameter(names = {"-s", "--size"}, description = "Filter by size of files, eg. <100000", required = false, arity = 1)
+        public String size;
+
+        @Parameter(names = {"-e", "--external"}, description = "Whether to fetch external linked files", required = false, arity = 0)
+        public boolean external;
+    }
+
 
     @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
     public class StatusCommandOptions extends BaseStudyCommand {

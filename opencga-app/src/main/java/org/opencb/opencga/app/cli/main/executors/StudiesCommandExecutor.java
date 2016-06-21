@@ -17,11 +17,14 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -112,10 +115,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void files() throws CatalogException, IOException {
+        logger.debug("Listing files of a study");
 
-        logger.debug("Listing files in folder");
-        //QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.listCommandOptions.id, null);
-        //System.out.println("Files= " + files);
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.type)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), studiesCommandOptions.filesCommandOptions.type);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.bioformat)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), studiesCommandOptions.filesCommandOptions.bioformat);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.filesCommandOptions.size)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), studiesCommandOptions.filesCommandOptions.size);
+        }
+
+        QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.id, queryOptions);
+        files.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
     }
 
     private void update() throws CatalogException, IOException {
