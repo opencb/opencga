@@ -920,70 +920,236 @@ public class FileManager extends AbstractManager implements IFileManager {
         return removedFileResult;
     }
 
+    /**
+     * Create the parent directories that are needed.
+     *
+     * @param studyId study id where they will be created.
+     * @param userId user that is creating the parents.
+     * @param studyURI Base URI where the created folders will be pointing to. (base physical location)
+     * @param path Path used in catalog as a virtual location. (whole bunch of directories inside the virtual location in catalog)
+     * @param checkPermissions Boolean indicating whether to check if the user has permissions to create a folder in the first directory
+     *                         that is available in catalog.
+     * @throws CatalogDBException
+     */
+    private void createParents(long studyId, String userId, URI studyURI, Path path, boolean checkPermissions) throws CatalogException {
+        if (path == null) {
+            if (checkPermissions) {
+                authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_FILES);
+            }
+            return;
+        }
 
-    public QueryResult<File> link(Path path, ObjectMap params, String sessionId) throws CatalogException, IOException {
-        FileUtils.checkPath(path);
+        // Check if the folder exists
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), path.toString());
 
-        java.io.File file = path.toFile();
-        if (file.isFile()) {
-            String checksum = null;
-//            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
-//
-//            if (ioManager.isDirectory(externalUri)) {
-//                throw new CatalogIOException("Can't link file '" + file.getPath() + "' with a folder uri " + externalUri);
-//            }
-//
-//            if (calculateChecksum) {
-//                try {
-//                    checksum = ioManager.calculateChecksum(externalUri);
-//                } catch (CatalogIOException e) {
-//                    e.printStackTrace();
-//                }
-//            }
-//
-//            ObjectMap objectMap = new ObjectMap("uri", externalUri);
-//            objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
-//            updateFileAttributes(file, checksum, externalUri, objectMap, sessionId);
-//            return catalogManager.getFile(file.getId(), sessionId).first();
-
-
+        if (fileDBAdaptor.count(query).first() == 0) {
+            createParents(studyId, userId, studyURI, path.getParent(), checkPermissions);
         } else {
-            // We have to link a directory, we use walkFileTree to visit all files and folders
-            Files.walkFileTree(path, new SimpleFileVisitor<Path>() {
+            if (checkPermissions) {
+                long fileId = fileDBAdaptor.getFileId(studyId, path.toString());
+                authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.CREATE);
+            }
+            return;
+        }
+
+        URI completeURI = Paths.get(studyURI).resolve(path).toUri();
+
+        // Create the folder in catalog
+        File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
+                path.toString() + "/", userId, "", new File.FileStatus(File.FileStatus.READY), false, 0, -1, Collections.emptyList(), -1,
+                Collections.emptyList(), null, null, null);
+        fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
+    }
+
+    public QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
+            throws CatalogException, IOException {
+
+        studyDBAdaptor.checkStudyId(studyId);
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        boolean parents = params.getBoolean("parents", false);
+        // FIXME: Implement resync
+        boolean resync  = params.getBoolean("resync", false);
+
+        // Because pathDestiny can be null, we will use catalogPath as the virtual destiny where the files will be located in catalog.
+        Path catalogPath;
+
+        if (pathDestiny == null || pathDestiny.isEmpty()) {
+            // If no destiny is given, everything will be linked to the root folder of the study.
+            catalogPath = Paths.get("");
+            authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_FILES);
+        } else {
+            catalogPath = Paths.get(pathDestiny);
+
+            // Check if the destiny is a directory
+            if (catalogPath.toFile().isFile()) {
+                throw new CatalogException("Error: The destiny catalog path must be a directory.");
+            }
+
+            // Check if the folder exists
+            Query query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath.toString() + "/");
+
+            if (fileDBAdaptor.count(query).first() == 0) {
+                if (parents) {
+                    // Get the base URI where the files are located in the study
+                    URI studyURI = getStudyUri(studyId);
+
+                    // Create the directories that are necessary in catalog
+                    createParents(studyId, userId, studyURI, catalogPath, true);
+
+                    // Create them in the disk
+                    URI directory = Paths.get(studyURI).resolve(catalogPath).toUri();
+                    catalogIOManagerFactory.get(directory).createDirectory(directory, true);
+                } else {
+                    throw new CatalogException("The path " + catalogPath + " does not exist in catalog.");
+                }
+            } else {
+                // Check if the user has permissions to link files in the directory
+                long fileId = fileDBAdaptor.getFileId(studyId, catalogPath.toString() + "/");
+                authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.CREATE);
+            }
+        }
+
+        Path pathOrigin = Paths.get(uriOrigin);
+        if (Paths.get(uriOrigin).toFile().isFile()) {
+            Path filePath = catalogPath.resolve(pathOrigin.getFileName());
+
+            // Check if there is already a file in the same path
+            Query query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath.toString());
+
+            // Create the file
+            if (fileDBAdaptor.count(query).first() == 0) {
+                long diskUsage = Files.size(Paths.get(uriOrigin));
+
+                File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, uriOrigin,
+                        filePath.toString(), userId, "", new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1,
+                        Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                return fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+            } else {
+                throw new CatalogException("Cannot link " + filePath.getFileName().toString() + ". A file with the same name was found"
+                        + " in the same path.");
+            }
+        } else {
+            // Link all the files and folders present in the uri
+            Files.walkFileTree(pathOrigin, new SimpleFileVisitor<Path>() {
                 @Override
-                public FileVisitResult visitFile(Path path, BasicFileAttributes attrs) throws IOException {
-                    System.out.println("file.toFile().toString() = " + path.toFile().toString());
+                public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 
-                    Files.delete(path);
+                    try {
+                        String destinyPath = dir.toString().replace(Paths.get(uriOrigin).toString(), catalogPath.toString());
 
-//                    Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath);
-//                                fileDBAdaptor.remove(query, options);
+                        if (destinyPath.startsWith("/")) {
+                            destinyPath = destinyPath.substring(1, destinyPath.length());
+                        }
+
+                        if (!destinyPath.isEmpty()) {
+                            destinyPath += "/";
+                        }
+
+                        Query query = new Query()
+                                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
+
+                        if (fileDBAdaptor.count(query).first() == 0) {
+                            // If the folder does not exist, we create it
+                            File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
+                                    File.Bioformat.NONE, dir.toUri(), destinyPath, userId, "", new File.FileStatus(File.FileStatus.READY),
+                                    true, 0, -1, Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                            fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
+                        }
+
+                    } catch (CatalogDBException e) {
+                        logger.error("An error occurred when trying to create folder {}", dir.toString());
+                        e.printStackTrace();
+                    }
 
                     return FileVisitResult.CONTINUE;
                 }
 
                 @Override
-                public FileVisitResult visitFileFailed(Path file, IOException io) {
+                public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs) throws IOException {
+                    try {
+                        String destinyPath = filePath.toString().replace(Paths.get(uriOrigin).toString(), catalogPath.toString());
+
+                        Query query = new Query()
+                                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
+
+                        if (fileDBAdaptor.count(query).first() == 0) {
+                            long diskUsage = Files.size(Paths.get(destinyPath));
+
+                            // If the file does not exist, we create it
+                            File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, filePath.toUri(),
+                                    destinyPath, userId, "", new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1,
+                                    Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                            fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
+                        } else {
+                            throw new CatalogException("Cannot link the file " + filePath.getFileName().toString()
+                                    + ". There is already a file in the path " + destinyPath + " with the same name.");
+                        }
+
+                    } catch (CatalogDBException e) {
+                        logger.error("An error occurred when trying to create file {}", filePath.toString());
+                        e.printStackTrace();
+                    } catch (CatalogException e) {
+                        e.printStackTrace();
+                    }
+
+                    return FileVisitResult.CONTINUE;
+                }
+
+                @Override
+                public FileVisitResult visitFileFailed(Path file, IOException exc) throws IOException {
                     return FileVisitResult.SKIP_SUBTREE;
                 }
 
                 @Override
-                public FileVisitResult postVisitDirectory(Path dir, IOException e) throws IOException {
-                    if (e == null) {
-                        System.out.println("POST Visit ===>>> dir.toFile().toString() = " + dir.toFile().toString());
-                        if (dir.toFile().listFiles().length == 0) {
-                            Files.delete(dir);
-                        }
-                        return FileVisitResult.CONTINUE;
-                    } else {
-                        // directory iteration failed
-                        throw e;
-                    }
+                public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+                    // We update the diskUsage of the folder
+                    // TODO: Check this. Maybe we should not be doing this here.
+//                    String destinyPath = dir.toString().replace(Paths.get(uriOrigin).toString(), catalogPath.toString());
+//
+//                    if (destinyPath.startsWith("/")) {
+//                        destinyPath = destinyPath.substring(1, destinyPath.length());
+//                    }
+//
+//                    if (!destinyPath.isEmpty()) {
+//                        destinyPath += "/";
+//                    }
+//
+//                    long diskUsage = Files.size(Paths.get(destinyPath));
+//
+//                    Query query = new Query()
+//                            .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+//                            .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
+//
+//                    ObjectMap objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), diskUsage);
+//
+//                    try {
+//                        fileDBAdaptor.update(query, objectMap);
+//                    } catch (CatalogDBException e) {
+//                        logger.error("Link: There was an error when trying to update the diskUsage of the folder");
+//                        e.printStackTrace();
+//                    }
+
+                    return FileVisitResult.CONTINUE;
                 }
             });
+
+            Query query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath.toString());
+
+            return fileDBAdaptor.get(query, new QueryOptions());
         }
 
-        return null;
     }
 
     public QueryResult<File> unlink(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException {
