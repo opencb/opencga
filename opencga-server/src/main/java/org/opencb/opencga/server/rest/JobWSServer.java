@@ -321,7 +321,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (deleteFiles) {
                 QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
                 for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
-                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
+                    QueryResult queryResult = catalogManager.delete(Long.toString(fileId), queryOptions, sessionId);
                     results.add(queryResult);
                 }
             }

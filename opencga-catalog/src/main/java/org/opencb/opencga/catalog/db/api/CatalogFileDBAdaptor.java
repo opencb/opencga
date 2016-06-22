@@ -48,6 +48,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         MODIFICATION_DATE("modificationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
+        EXTERNAL("external", BOOLEAN, ""),
         STATUS("status", TEXT_ARRAY, ""),
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),

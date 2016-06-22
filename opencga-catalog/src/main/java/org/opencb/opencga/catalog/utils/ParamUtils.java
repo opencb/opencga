@@ -63,9 +63,9 @@ public class ParamUtils {
 
     public static void checkPath(Path path, String paramName) throws CatalogParameterException {
         checkObj(path, paramName);
-        if (path.isAbsolute()) {
-            throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
-        } else if (path.toString().matches("\\.|\\.\\.")) {
+//        if (path.isAbsolute()) {
+//            throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
+        if (path.toString().matches("\\.|\\.\\.")) {
             throw new CatalogParameterException("Error in path: Path '" + path + "' can't have relative names '.' or '..'");
         }
     }

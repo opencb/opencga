@@ -31,7 +31,6 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.core.common.UriUtils;
 
 import java.io.*;
 import java.net.URI;
@@ -509,12 +508,12 @@ public class CatalogManagerTest extends GenericTest {
                 sessionIdUser).first().getId();
         int numFiles = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
 
-        catalogManager.link(uri, "data", studyId, new ObjectMap(), sessionIdUser);
+        catalogManager.link(uri, "data", Long.toString(studyId), new ObjectMap(), sessionIdUser);
         int numFilesAfterLink = catalogManager.getAllFilesInFolder(folderId, null, sessionIdUser).getNumResults();
         assertEquals("Linking the same folders should not change the number of files in catalog", numFiles, numFilesAfterLink);
 
         // Now we try to create it into a folder that does not exist with parents = true
-        catalogManager.link(uri, "myDirectory", studyId, new ObjectMap("parents", true), sessionIdUser);
+        catalogManager.link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
         QueryResult<File> folderQueryResult = catalogManager.searchFile(studyId, new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "myDirectory/"),
@@ -535,7 +534,33 @@ public class CatalogManagerTest extends GenericTest {
         // Now we try to create it into a folder that does not exist with parents = false
         thrown.expect(CatalogException.class);
         thrown.expectMessage("not exist");
-        catalogManager.link(uri, "myDirectory2", studyId, new ObjectMap(), sessionIdUser);
+        catalogManager.link(uri, "myDirectory2", Long.toString(studyId), new ObjectMap(), sessionIdUser);
+    }
+
+    @Test
+    public void testUnlinkFolder() throws CatalogException, IOException {
+        URI uri = Paths.get(catalogManager.getStudyUri(studyId)).resolve("data").toUri();
+        catalogManager.link(uri, "myDirectory", Long.toString(studyId), new ObjectMap("parents", true), sessionIdUser);
+
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+        QueryResult<File> fileQueryResultLinked = catalogManager.searchFile(studyId, query, sessionIdUser);
+
+        System.out.println("Number of files/folders linked = " + fileQueryResultLinked.getNumResults());
+
+        // Now we try to unlink them
+        catalogManager.unlink("myDirectory/", null, sessionIdUser);
+        fileQueryResultLinked = catalogManager.searchFile(studyId, query, sessionIdUser);
+        assertEquals(0, fileQueryResultLinked.getNumResults());
+
+        query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.REMOVED);
+        QueryResult<File> fileQueryResultUnlinked = catalogManager.searchFile(studyId, query, sessionIdUser);
+        assertEquals(6, fileQueryResultUnlinked.getNumResults());
     }
 
     @Test
@@ -1101,7 +1126,7 @@ public class CatalogManagerTest extends GenericTest {
         List<File> result = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"),
                 new QueryOptions(), sessionIdUser).getResult();
         for (File file : result) {
-            catalogManager.deleteFile(file.getId(), sessionIdUser);
+            catalogManager.delete(Long.toString(file.getId()), null, sessionIdUser);
         }
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
@@ -1114,7 +1139,7 @@ public class CatalogManagerTest extends GenericTest {
         result = catalogManager.getAllFiles(studyId2, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult();
         for (File file : result) {
-            catalogManager.deleteFile(file.getId(), sessionIdUser);
+            catalogManager.delete(Long.toString(file.getId()), null, sessionIdUser);
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
@@ -1172,7 +1197,7 @@ public class CatalogManagerTest extends GenericTest {
 
         thrown.expect(CatalogException.class);
         try {
-            catalogManager.deleteFolder(folder.getId(), sessionIdUser);
+            catalogManager.delete(Long.toString(folder.getId()), null, sessionIdUser);
         } finally {
             assertEquals("Folder name should not be modified", folder.getPath(), catalogManager.getFile(folder.getId(), sessionIdUser)
                     .first().getPath());
@@ -1195,7 +1220,7 @@ public class CatalogManagerTest extends GenericTest {
 
     private void deleteFolderAndCheck(long deletable) throws CatalogException, IOException {
         List<File> allFilesInFolder;
-        catalogManager.deleteFolder(deletable, sessionIdUser);
+        catalogManager.delete(Long.toString(deletable), null, sessionIdUser);
 
         File file = catalogManager.getFile(deletable, sessionIdUser).first();
         assertTrue(file.getStatus().getStatus().equals(File.FileStatus.TRASHED));

@@ -195,7 +195,8 @@ public class FileScanner {
                 switch (policy) {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
-                        catalogManager.deleteFile(existingFile.getId(), sessionId);
+                        // Delete completely the file/folder !
+                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(), sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;

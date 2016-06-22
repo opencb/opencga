@@ -747,13 +747,11 @@ public class CatalogManager implements AutoCloseable {
         return fileManager.createFolder(studyId, folderPath.toString() + "/", status, parents, description, options, sessionId);
     }
 
-    public QueryResult deleteFolder(long folderId, String sessionId) throws CatalogException, IOException {
-        return deleteFile(folderId, sessionId);
+    public QueryResult delete(String fileIdStr, QueryOptions queryOptions, String sessionId) throws CatalogException, IOException {
+        return fileManager.delete(fileIdStr, queryOptions, sessionId);
     }
 
-    public QueryResult deleteFile(long fileId, String sessionId) throws CatalogException, IOException {
-        return fileManager.delete(fileId, null, sessionId);
-    }
+
 
     @Deprecated
     public QueryResult moveFile(long fileId, String newPath, QueryOptions options, String sessionId) throws CatalogException {
@@ -891,13 +889,14 @@ public class CatalogManager implements AutoCloseable {
         throw new UnsupportedOperationException();
     }
 
-    public QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
+    public QueryResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
+        long studyId = studyManager.getStudyId(studyIdStr);
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 
-    public QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException, IOException {
-        return fileManager.unlink(fileId, sessionId);
+    public QueryResult<File> unlink(String fileIdStr, QueryOptions qOptions, String sessionId) throws CatalogException, IOException {
+        return fileManager.unlink(fileIdStr, qOptions, sessionId);
     }
 
     public QueryResult shareDatasets(String datasetIds, String members, List<String> permissions, String sessionId, boolean override)

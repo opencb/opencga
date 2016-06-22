@@ -535,19 +535,19 @@ public class OpenCGAMain {
                             throw new FileNotFoundException("File " + inputUri + " not found");
                         }
 
-                        long studyId = catalogManager.getStudyId(c.studyId);
+//                        long studyId = catalogManager.getStudyId(c.studyId);
                         String path = c.path.isEmpty() ? inputFile.getFileName().toString()
                                 : Paths.get(c.path, inputFile.getFileName().toString()).toString();
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
                             ObjectMap params = new ObjectMap("parents", c.parents);
-                            file = catalogManager.link(inputUri, c.path, studyId, params, sessionId).first();
+                            file = catalogManager.link(inputUri, c.path, c.studyId, params, sessionId).first();
 //                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
                             new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
                             ObjectMap params = new ObjectMap("parents", c.parents);
-                            file = catalogManager.link(inputUri, c.path, studyId, params, sessionId).first();
+                            file = catalogManager.link(inputUri, c.path, c.studyId, params, sessionId).first();
 //                            file = catalogManager.createFile(studyId, null, null,
 //                                    path, c.description, c.parents, -1, sessionId).first();
 //                            file = catalogFileUtils.link(file, c.calculateChecksum, inputUri, false, false, sessionId);
@@ -568,7 +568,7 @@ public class OpenCGAMain {
                             throw new FileNotFoundException("File " + uri + " not found");
                         }
 
-                        long fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id, sessionId);
                         File file = catalogManager.getFile(fileId, sessionId).first();
 
                         new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, true, sessionId);
