@@ -8,18 +8,18 @@ base <- "http://localhost:8080/opencga/webservices/rest/v1"
 #' 
 #' This method to query and manipulate user data in Opencga
 #'   
-#' @export
-OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
-  require(jsonlite)
-  userid <- paste0("userid=", userid)
-  name <- paste0("name=", name)
-  email <- paste0("email=", email)
-  passwd <-paste0("password=", passwd)
-  organization <- paste0("organization=",organization)
-  url <- paste(baseurl, "/users/create?",userid, name, email, organization, passwd)
-  res <- fromJSON(url)
-  return(res$response$result)
-}
+#' #' @export
+#' OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
+#'   require(jsonlite)
+#'   userid <- paste0("userid=", userid)
+#'   name <- paste0("name=", name)
+#'   email <- paste0("email=", email)
+#'   passwd <-paste0("password=", passwd)
+#'   organization <- paste0("organization=",organization)
+#'   url <- paste(baseurl, "/users/create?",userid, name, email, organization, passwd)
+#'   res <- fromJSON(url)
+#'   return(res$response$result)
+#' }
 #' A function to login Opencga web services
 #' @aliases OpencgaLogin
 #' @param baseurl a character specifying the host url
@@ -44,37 +44,55 @@ OpencgaLogin <- function(baseurl, userid=NULL, passwd=NULL, interactive=FALSE){
   return(new("Opencga",baseurl=baseurl, sessionID=sessionId, userID=userId))
 }
 # Workforce function
-excuteOpencga <- function(object, category, id, action, params){
+excuteOpencga <- function(object, category, id, action, params, ...){
   baseurl <- object@baseurl
   sessionID <- paste0("?sid=",object@sessionID)
-  id <- as.character(id)
+  if(is.null(id)){
+    id <- NULL
+  }else{
+    id <- paste0("/", id, sep="")
+  }
+  
   action <- paste0("/", action)
-  category <- paste0("/", category, "/")
+  category <- paste0("/", category)
   params <- params
+  ################################################################
+  Oargs <- list(...)
+  if(length(args)>0){
+    acc <- list()
+    j <- 1
+    for (i in names(Oargs)){
+      tmp <- paste(i,"=", Oargs[[i]], sep="")
+      acc[[j]] <- tmp
+      j <- j+1
+    }
+    Nargs <- paste(unlist(acc), collapse = "&")
+  }else{
+    Nargs <- NULL
+  }
+  ################################################################
   ## loop to get all the data to be finished
   i=1
-  server_limit=1000
+  server_limit=2000
   skip=0
-  num_results=1000
+  num_results=2000
   container=list()
   while(num_results==server_limit){
-    url <- createURL(baseurl, category, id, action,  sessionID, params, skip)
-    res_list <- parseJ(url)
+    grl <- createURL(baseurl, category, id, action,  sessionID, params, skip, Nargs)
+    res_list <- parseJ(grl)
     num_results <- res_list$num_results
     cell <- res_list$data
     container[[i]] <- cell
-    skip=skip+1000
+    skip=skip+2000
     i = i + 1
   }
   ds <- rbind.pages(container)
-  ##
-  # url <- createURL(baseurl, category, id, action,  sessionID, params)
-  # res <- parseJ(url)
+  ###############################################################
   return(ds)
 }
 
 
-createURL <- function(baseurl, category, id, action, sessionID, params, skip){
+createURL <- function(baseurl, category, id, action, sessionID, params, skip, Nargs){
   noIds <- c("create", "create-folder", "search", "link", "unlink", "content-example", "download-example", "load")
   skip=paste0("skip=",skip)
   baseParam <- paste(sessionID, skip, sep = "&")
@@ -83,19 +101,21 @@ createURL <- function(baseurl, category, id, action, sessionID, params, skip){
   }else{
     extraParams <- NULL
   }
-  extrArgs <- list(...)
-  allParams <- paste(baseParam,extraParams, sep="&")
+  # extrArgs <- list(...)
+  allParams <- c(baseParam, extraParams, Nargs)
+  allParams <- allParams[!is.null(allParams)]
+  allParams <- paste0(allParams, collapse = "&")
   if (action %in%noIds){
-    url <- paste0(baseurl, category, action, allParams)
+    grl <- paste0(baseurl, category, action, allParams)
   }else{
-    url <- paste0(baseurl, category, id, action, allParams)
+    grl <- paste0(baseurl, category, id, action, allParams)
   }
 
-  return(url)
+  return(grl)
 }
 
-parseJ <- function(url){
-  res <- fromJSON(url, flatten = TRUE, simplifyVector = TRUE)
+parseJ <- function(grl){
+  res <- fromJSON(grl, flatten = TRUE, simplifyVector = TRUE)
   num_results <- res$response$numResults
   return(list(num_results=num_results,data=as.data.frame(res$response$result)))
 }
@@ -164,4 +184,6 @@ getOpencgaDocs <- function(category, action,  requiredOnly=FALSE){
   }
    operations
 }
+
+
 

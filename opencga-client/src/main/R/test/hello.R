@@ -1,26 +1,46 @@
+library(opencgaR)
 base <- "http://localhost:8080/opencga/webservices/rest/v1"
-cga <- OpencgaLogin(baseurl ="http://localhost:8080/opencga/webservices/rest/v1",
-                   userid = "melsiddieg", passwd = '1234')
-cga <- Opencga(baseurl = "http://localhost:8080/opencga/webservices/rest/v1",
-               userID = cga$userId, sessionID = cga$sessionId)
+cga <- OpencgaLogin(baseurl=base, userid = "mano", passwd = '1234')
 cga
 res1 <- OpencgaStudy(object = cga, id = 2, action = "files")
 
-cga <- OpencgaLogin(baseurl = base,interactive = T)
-vardata <-OpencgaStudy(object = cga, id = 3, action = "variants")
-varainst <- vardata$data
-test <- fromJSON(vardata$url)
-str(vardata,1)
+# cga <- OpencgaLogin(baseurl = base,interactive = T)
+userProj <- OpencgaUser(cga, category = "user", action = "projects")
+
 sampledata <- OpencgaStudy(object = cga, id = 2, action = "samples")
 studyFiles <- OpencgaStudy(object = cga, id = 2, action = "files")
-sams <- sampledata$num_results
-str(sams,1)
 studyInfo <- OpencgaStudy(object = cga, id = 2, action = "info")
 userinfo <- OpencgaUser(object = cga, id = "mano", action = "info")
 
 ### fetch variants from a file
+# get all the variants
+system.time({
+  test <- OpencgaFiles(object = cga, id = 60, action = "variants")
+  
+})
+# construct a variantParam
+filt <- cgaVariantParam(region = "1:10522:17522")
+#
+system.time({
+  filteredVars <- OpencgaFiles(cga, id = 60, action = "variants", params = filt)
+  })
 
-test <- OpencgaFiles(object = cga, id = 32, action = "variants")
+# A test to create a new project
+# get the neccessary help
+proj <- getOpencgaDocs(category = "projects", action = "create", requiredOnly = T)
+# Hope
+hop <- OpencgaProjects(object = cga, id = NULL, action = "create", params = NULL,
+                       name="Sudan" ,alias="Sudanese", organization="Opencb")
+#
+# create  A New study
+# get help on the arguments to create a a study
+sth <- getOpencgaDocs(category = "studies", action = "create")
+#
+newS <- OpencgaStudy(object = cga, id = NULL, action = "create", params = NULL,
+                     name="Sudan_test", alias="test_S", projectId=72)
+
+
+
 system.time({
   test2 <- OpencgaFiles(object = cga, id = 32, action = "variants")
 })

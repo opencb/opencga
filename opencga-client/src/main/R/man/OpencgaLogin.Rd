@@ -2,7 +2,7 @@
 % Please edit documentation in R/OpencgaFunctions.R
 \name{OpencgaLogin}
 \alias{OpencgaLogin}
-\title{A function to login Opencga web services}
+\title{A method to query and manipulate user data in Opencga}
 \usage{
 OpencgaLogin(baseurl, userid = NULL, passwd = NULL, interactive = FALSE)
 }
@@ -21,6 +21,20 @@ OpencgaLogin(baseurl, userid = NULL, passwd = NULL, interactive = FALSE)
 an Opencga class object
 }
 \description{
+This method to query and manipulate user data in Opencga
+  
+#' @export
+OpencgaCreateUser <- function(baseurl, userid, name, passwd, email, organization){
+  require(jsonlite)
+  userid <- paste0("userid=", userid)
+  name <- paste0("name=", name)
+  email <- paste0("email=", email)
+  passwd <-paste0("password=", passwd)
+  organization <- paste0("organization=",organization)
+  url <- paste(baseurl, "/users/create?",userid, name, email, organization, passwd)
+  res <- fromJSON(url)
+  return(res$response$result)
+}
 A function to login Opencga web services
 }
 

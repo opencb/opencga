@@ -36,7 +36,7 @@ setMethod("OpencgaUser", "Opencga", definition = function(object,
 })
 
 ###
-setGeneric("OpencgaStudy", function(object, id, action, params=NULL)
+setGeneric("OpencgaStudy", function(object, id, action, params=NULL, ...)
   standardGeneric("OpencgaStudy"))
 #' A method to query Studies
 #' @title A method to query Opencga studies
@@ -45,10 +45,10 @@ setGeneric("OpencgaStudy", function(object, id, action, params=NULL)
 #' study data and metadta
 #' @export
 setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
-                                                          action, params){
+                                                          action, params, ...){
  category <- "studies"
  data <- excuteOpencga(object=object, category=category, id=id, action=action,
-                       params=NULL)
+                       params=NULL, ...)
   return(data)
 })
 
@@ -61,11 +61,11 @@ setGeneric("OpencgaProjects", function(object, id, action, params, ...)
 #' @description This method allow the user to create, update and explore
 #' projects data and metadta
 #' @export
-setMethod("OpencgaProjects", "Opencga",    definition = function(object,
+setMethod("OpencgaProjects", "Opencga", definition = function(object,
           id, action, params, ...){
   category <- "projects"
-  data <- excuteOpencga(object=object, category=category, id=id, action=action,
-                        params=NULL)
+ data<- excuteOpencga(object=object, category=category, id=id, action=action,
+                        params=NULL, ...)
   return(data)
 })
 setGeneric("OpencgaFiles", function(object, id, action, params=NULL, ...)

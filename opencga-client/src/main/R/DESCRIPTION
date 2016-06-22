@@ -12,13 +12,12 @@ Depends:
     jsonlite,methods
 Imports:
     stringi
-Enhances:
-    shiny,miniUI
+Enhances: shiny,miniUI
 Collate:
     'OpencgaFunctions.R'
     'OpencgaClasses.R'
     'login.R'
-RoxygenNote: 5.0.1
+RoxygenNote: 5.0.1.9000
 VignetteBuilder: knitr
 Suggests:
     BiocStyle,
