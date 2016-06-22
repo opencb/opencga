@@ -1,7 +1,7 @@
 Package: opencgaR
 Type: Package
 Title: Querying Opencga Data
-Version: 0.1.0
+Version: 0.7.0
 Author: Mohammed <melsiddieg@gmail.com>
 Maintainer: Mohammed OE Abdallah <melsiddieg@gmail.com>
 Description: Classes and methods for working with Opencga data
