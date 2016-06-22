@@ -5,7 +5,7 @@ cga
 res1 <- OpencgaStudy(object = cga, id = 2, action = "files")
 
 # cga <- OpencgaLogin(baseurl = base,interactive = T)
-userProj <- OpencgaUser(cga, category = "user", action = "projects")
+userProj <- OpencgaUser(cga, category = "user", id="mano",action = "projects")
 
 sampledata <- OpencgaStudy(object = cga, id = 2, action = "samples")
 studyFiles <- OpencgaStudy(object = cga, id = 2, action = "files")
@@ -31,6 +31,9 @@ proj <- getOpencgaDocs(category = "projects", action = "create", requiredOnly = 
 # Hope
 hop <- OpencgaProjects(object = cga, id = NULL, action = "create", params = NULL,
                        name="Sudan" ,alias="Sudanese", organization="Opencb")
+# Another test
+hop2 <- OpencgaProjects(object = cga, action = "create",  name="Sudan2" ,
+                        alias="Sudanese2", organization="Opencb")
 #
 # create  A New study
 # get help on the arguments to create a a study

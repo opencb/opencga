@@ -6,7 +6,8 @@
 \alias{OpencgaUser,Opencga-method}
 \title{A method to query user data}
 \usage{
-\S4method{OpencgaUser}{Opencga}(object, id, action, params = NULL)
+\S4method{OpencgaUser}{Opencga}(object, category, id = NULL, action,
+  params = NULL, ...)
 }
 \description{
 This method allow the user to create, update, and explore user

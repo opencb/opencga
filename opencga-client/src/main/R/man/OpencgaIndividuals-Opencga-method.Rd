@@ -6,7 +6,7 @@
 \alias{OpencgaIndividuals,Opencga-method}
 \title{A method to query Opencga Individuals}
 \usage{
-\S4method{OpencgaIndividuals}{Opencga}(object, id, action, params, ...)
+\S4method{OpencgaIndividuals}{Opencga}(object, id = NULL, action, params, ...)
 }
 \description{
 This method allow the user to create, update and explore

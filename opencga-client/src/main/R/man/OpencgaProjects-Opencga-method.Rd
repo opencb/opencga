@@ -6,7 +6,8 @@
 \alias{OpencgaProjects,Opencga-method}
 \title{A method to query Opencga Projects}
 \usage{
-\S4method{OpencgaProjects}{Opencga}(object, id, action, params, ...)
+\S4method{OpencgaProjects}{Opencga}(object, id = NULL, action,
+  params = NULL, ...)
 }
 \description{
 This method allow the user to create, update and explore

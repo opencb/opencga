@@ -19,7 +19,7 @@ setMethod("show",signature = "Opencga",definition = function(object){
   cat("|This object is required by all Opencga Methods")
 })
 
-setGeneric("OpencgaUser", function(object, category, id, action, params=NULL)
+setGeneric("OpencgaUser", function(object, category, id=NULL, action, params=NULL,...)
   standardGeneric("OpencgaUser"))
 #' A method to query user data
 #' @title A method to query user data
@@ -28,8 +28,14 @@ setGeneric("OpencgaUser", function(object, category, id, action, params=NULL)
 #'  data and metadata
 #' @export
 setMethod("OpencgaUser", "Opencga", definition = function(object,
-          id, action, params=NULL){
+          id=NULL, action, params=NULL, ...){
   category <- "users"
+  if(is.null(id)){
+    id <- NULL
+  }
+  if(is.null(params)){
+    params <- NULL
+  }
   data <- excuteOpencga(object=object, category=category, id=id, action=action,
                         params=NULL)
   return(data)
@@ -44,15 +50,21 @@ setGeneric("OpencgaStudy", function(object, id, action, params=NULL, ...)
 #' @description This method allow the user to create, update and explore
 #' study data and metadta
 #' @export
-setMethod("OpencgaStudy", "Opencga", definition = function(object, id,
-                                                          action, params, ...){
+setMethod("OpencgaStudy", "Opencga", definition = function(object, id=NULL,
+                                                          action, params=NULL, ...){
  category <- "studies"
+ if(is.null(id)){
+   id <- NULL
+ }
+ if(is.null(params)){
+   params <- NULL
+ }
  data <- excuteOpencga(object=object, category=category, id=id, action=action,
-                       params=NULL, ...)
+                       params=params, ...)
   return(data)
 })
 
-setGeneric("OpencgaProjects", function(object, id, action, params, ...)
+setGeneric("OpencgaProjects", function(object, id=NULL, action, params=NULL, ...)
   standardGeneric("OpencgaProjects"))
 #' A method to query Opencga Projects
 #' 
@@ -62,13 +74,19 @@ setGeneric("OpencgaProjects", function(object, id, action, params, ...)
 #' projects data and metadta
 #' @export
 setMethod("OpencgaProjects", "Opencga", definition = function(object,
-          id, action, params, ...){
+          id=NULL, action, params=NULL, ...){
   category <- "projects"
+  if(is.null(id)){
+    id <- NULL
+  }
+  if(is.null(params)){
+    params <- NULL
+  }
  data<- excuteOpencga(object=object, category=category, id=id, action=action,
                         params=NULL, ...)
   return(data)
 })
-setGeneric("OpencgaFiles", function(object, id, action, params=NULL, ...)
+setGeneric("OpencgaFiles", function(object, id=NULL, action, params=NULL, ...)
   standardGeneric("OpencgaFiles"))
 #' @title A method to query Opencga Files
 #' @aliases OpencgaFiles
@@ -76,14 +94,19 @@ setGeneric("OpencgaFiles", function(object, id, action, params=NULL, ...)
 #' files data and metadta
 #' @export
 setMethod("OpencgaFiles", "Opencga",    definition = function(object,
-            id, action, params=NULL, ...){
+            id=NULL, action, params=NULL, ...){
   category <- "files"
-  
+  if(is.null(id)){
+    id <- NULL
+  }
+  if(is.null(params)){
+    params <- NULL
+  }
   data <- excuteOpencga(object=object, category=category, id=id, action=action,
                         params=params)
   return(data)
 })
-setGeneric("OpencgaSamples", function(object, id, action, params, ...)
+setGeneric("OpencgaSamples", function(object, id=NULL, action, params=NULL, ...)
   standardGeneric("OpencgaSamples"))
 #' @title A method to query Opencga Samples
 #' @aliases OpencgaSamples
@@ -91,13 +114,19 @@ setGeneric("OpencgaSamples", function(object, id, action, params, ...)
 #' Samples data and metadta
 #' @export
 setMethod("OpencgaSamples", "Opencga",    definition = function(object,
-         id, action, params, ...){
+         id=NULL, action, params=NULL, ...){
   category <- "samples"
+  if(is.null(id)){
+    id <- NULL
+  }
+  if(is.null(params)){
+    params <- NULL
+  }
   data <- excuteOpencga(object=object, category=category, id=id, action=action,
-                        params=NULL)
+                        params=params)
   return(data)
 })
-setGeneric("OpencgaIndividuals", function(object, id, action, params, ...)
+setGeneric("OpencgaIndividuals", function(object, id=NULL, action, params, ...)
   standardGeneric("OpencgaIndividuals"))
 #' @title A method to query Opencga Individuals
 #' @aliases OpencgaIndividuals
@@ -105,8 +134,14 @@ setGeneric("OpencgaIndividuals", function(object, id, action, params, ...)
 #' Individuals data and metadta
 #' @export
 setMethod("OpencgaIndividuals", "Opencga",    definition = function(object,
-         id, action, params, ...){
+         id=NULL, action, params, ...){
   category <- "individuals"
+  if(is.null(id)){
+    id <- NULL
+  }
+  if(is.null(params)){
+    params <- NULL
+  }
   data <- excuteOpencga(object=object, category=category, id=id, action=action,
                         params=NULL)
   return(data)
