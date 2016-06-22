@@ -37,8 +37,9 @@ public class UserCommandOptions {
     }
 
     class BaseUserCommand {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-u", "--user-id"}, description = "User id",  required = true, arity = 1)
         public String user;

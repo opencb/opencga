@@ -35,36 +35,41 @@ public class ToolCommandOptions {
 
     class BaseToolsCommand {
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--tool-id"}, description = "Tool id", required = true, arity = 1)
-        String id;
+        public String id;
     }
 
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
     class InfoCommandOptions extends BaseToolsCommand {
+
         @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
-        String execution;
+        public String execution;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search tools")
     class SearchCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "id", required = false, arity = 1)
-        String id;
+        public String id;
+
         @Parameter(names = {"--userId"}, description = "UserId", required = false, arity = 1)
-        String userId;
+        public String userId;
+
         @Parameter(names = {"--alias"}, description = "alias", required = false, arity = 1)
-        String alias;
+        public String alias;
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Tool help")
     class HelpCommandOptions extends BaseToolsCommand {
+
         @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
-        String execution;
+        public String execution;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")

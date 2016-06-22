@@ -1,6 +1,6 @@
 ---
 ## number of seconds that session remain open
-sessionDuration: 1200
+sessionDuration: 12000
 
 ## REST client configuration options
 rest:

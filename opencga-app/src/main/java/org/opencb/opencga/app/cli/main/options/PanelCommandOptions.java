@@ -21,6 +21,7 @@ public class PanelCommandOptions {
     public OpencgaCommonCommandOptions commonCommandOptions;
 
     public PanelCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
@@ -31,11 +32,12 @@ public class PanelCommandOptions {
     }
 
     class BasePanelsCommand {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--panel-id"}, description = "Panel id", required = true, arity = 1)
-        String id;
+        public String id;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
@@ -43,24 +45,24 @@ public class PanelCommandOptions {
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
+
         @Parameter(names = {"--name"}, description = "Panel name", required = true, arity = 1)
         public String name;
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--disease"}, description = "Disease", required = true, arity = 1)
-        String disease;
+        public String disease;
 
         @Parameter(names = {"--description"}, description = "Panel description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--genes"}, description = "Genes", required = false, arity = 1)
-        String genes;
+        public String genes;
 
         @Parameter(names = {"--regions"}, description = "Regions", required = false, arity = 1)
-        String regions;
+        public String regions;
 
         @Parameter(names = {"--variants"}, description = "Variants", required = false, arity = 1)
-        String variants;
+        public String variants;
 
     }
 
@@ -70,38 +72,40 @@ public class PanelCommandOptions {
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
     public class ShareCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
-        String ids;
+        public String ids;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
-        String permission;
+        public String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
                 " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        boolean override;
+        public boolean override;
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
     public class UnshareCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
-        String ids;
+        public String ids;
 
         @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
-        String permission;
+        public String permission;
 
 
     }

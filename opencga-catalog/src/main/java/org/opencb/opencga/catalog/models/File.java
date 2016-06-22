@@ -184,7 +184,9 @@ public class File {
 
     public enum Type {
         FILE,
-        DIRECTORY
+        DIRECTORY,
+        @Deprecated
+        FOLDER
     }
 
     public enum Compression {

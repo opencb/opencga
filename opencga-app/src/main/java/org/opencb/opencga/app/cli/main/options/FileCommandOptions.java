@@ -18,7 +18,7 @@ public class FileCommandOptions {
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
-    public CreateCommandOptions createCommandOptions;
+    public CopyCommandOptions copyCommandOptions;
     public CreateFolderCommandOptions createFolderCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public DownloadCommandOptions downloadCommandOptions;
@@ -38,14 +38,14 @@ public class FileCommandOptions {
     public RelinkCommandOptions relinkCommandOptions;
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
-
     public GroupByCommandOptions groupByCommandOptions;
 
     public FileCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
-        this.createCommandOptions = new CreateCommandOptions();
+        this.copyCommandOptions = new CopyCommandOptions();
         this.createFolderCommandOptions = new CreateFolderCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.downloadCommandOptions = new DownloadCommandOptions();
@@ -64,7 +64,7 @@ public class FileCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
-
+        this.groupByCommandOptions = new GroupByCommandOptions();
     }
 
     public class BaseFileCommand {
@@ -77,8 +77,8 @@ public class FileCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create file")
-    public class CreateCommandOptions {
+    @Parameters(commandNames = {"copy"}, commandDescription = "Copy a file or folder")
+    public class CopyCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -171,13 +171,13 @@ public class FileCommandOptions {
         public String directory;
 
         @Parameter(names = {"--type"}, description = "File type. CSV", required = false, arity = 1)
-        List<File.Type> types;
+        public List<File.Type> types;
 
         @Parameter(names = {"--bioformat"}, description = "File bioformat. CSV", required = false, arity = 1)
-        List<File.Bioformat> bioformats;
+        public List<File.Bioformat> bioformats;
 
         @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
-        List<String> status;
+        public List<String> status;
     }
 
 
@@ -185,7 +185,7 @@ public class FileCommandOptions {
     public class ListCommandOptions extends BaseFileCommand {
 
         @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-        int level = 1;
+        public int level = 1;
 
         @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
         public boolean recursive;
@@ -412,7 +412,7 @@ public class FileCommandOptions {
         public String description;
 
         @Parameter(names = {"--disk-usage"}, description = "diskUsage.", required = false, arity = 1)
-        Integer diskUsage;
+        public Integer diskUsage;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
         public String sampleIds;
