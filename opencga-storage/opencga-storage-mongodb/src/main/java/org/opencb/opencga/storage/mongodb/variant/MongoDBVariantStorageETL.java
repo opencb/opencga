@@ -60,6 +60,10 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         URI uri = super.preLoad(input, output);
+        if (options.getBoolean(STAGE_RESUME.key(), true)) {
+            logger.info("Resume stage load.");
+            // TODO: Clean stage collection
+        }
         return uri;
     }
 
@@ -231,13 +235,17 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     private BatchFileOperation preStage(int fileId) throws StorageManagerException {
 
         StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
-        long lock = scm.lockStudy(options.getInt(Options.STUDY_ID.key()));
-        StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+        long lock = scm.lockStudy(getStudyId());
+        BatchFileOperation operation;
+        try {
+            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
 
-        BatchFileOperation operation = securePreStage(fileId, studyConfiguration);
+            operation = securePreStage(fileId, studyConfiguration);
 
-        scm.updateStudyConfiguration(studyConfiguration, null);
-        scm.unLockStudy(studyConfiguration.getStudyId(), lock);
+            scm.updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            scm.unLockStudy(getStudyId(), lock);
+        }
 
 //        if (loadStageResume) {
 //            // TODO: Clean file from stage collection?
@@ -320,26 +328,27 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     }
 
     private void setStatus(BatchFileOperation.Status status, String operationName, List<Integer> files) throws StorageManagerException {
-        int studyId = options.getInt(Options.STUDY_ID.key());
+        int studyId = getStudyId();
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-        StudyConfiguration studyConfiguration = getStudyConfiguration(true);
-
-        List<BatchFileOperation> batches = studyConfiguration.getBatches();
-        BatchFileOperation operation = null;
-        for (int i = batches.size() - 1; i >= 0; i--) {
-            operation = batches.get(i);
-            if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
-                operation.addStatus(Calendar.getInstance().getTime(), status);
-                break;
+        try {
+            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+            List<BatchFileOperation> batches = studyConfiguration.getBatches();
+            BatchFileOperation operation = null;
+            for (int i = batches.size() - 1; i >= 0; i--) {
+                operation = batches.get(i);
+                if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
+                    operation.addStatus(Calendar.getInstance().getTime(), status);
+                    break;
+                }
+                operation = null;
             }
-            operation = null;
+            if (operation == null) {
+                throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
+            }
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
-        if (operation == null) {
-            throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
-        }
-
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
     }
 
     /**

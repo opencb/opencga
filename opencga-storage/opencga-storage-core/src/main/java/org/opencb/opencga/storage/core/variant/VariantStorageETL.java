@@ -118,24 +118,24 @@ public abstract class VariantStorageETL implements StorageETL {
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
             long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-            options.remove(Options.STUDY_CONFIGURATION.key());
+            try {
+                //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+                studyConfiguration = getStudyConfiguration(true);
 
-            //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-            studyConfiguration = getStudyConfiguration(options);
-
-            if (studyConfiguration == null) {
-                logger.info("Creating a new StudyConfiguration");
-                checkStudyId(studyId);
-                studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                if (studyConfiguration == null) {
+                    logger.info("Creating a new StudyConfiguration");
+                    checkStudyId(studyId);
+                    studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                }
+                fileId = checkNewFile(studyConfiguration, fileId, fileName);
+                options.put(Options.FILE_ID.key(), fileId);
+                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+            } finally {
+                dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
             }
-            fileId = checkNewFile(studyConfiguration, fileId, fileName);
-            options.put(Options.FILE_ID.key(), fileId);
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
 
         return input;
     }
@@ -700,6 +700,10 @@ public abstract class VariantStorageETL implements StorageETL {
         }
     }
 
+    protected int getStudyId() {
+        return options.getInt(Options.STUDY_ID.key());
+    }
+
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -710,13 +714,15 @@ public abstract class VariantStorageETL implements StorageETL {
 
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-
-        //Update StudyConfiguration
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        studyConfiguration.getIndexedFiles().addAll(fileIds);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
-
-        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        StudyConfiguration studyConfiguration;
+        try {
+            //Update StudyConfiguration
+            studyConfiguration = getStudyConfiguration(true);
+            studyConfiguration.getIndexedFiles().addAll(fileIds);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
 
         checkLoadedVariants(input, fileIds, studyConfiguration, options);
 
@@ -925,7 +931,7 @@ public abstract class VariantStorageETL implements StorageETL {
             }
         }
         if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-            throw new StorageManagerException("File " + fileName + " (" + fileId + ")" + " was already already loaded ");
+            throw StorageManagerException.alreadyLoaded(fileId, fileName);
         }
 
         return fileId;

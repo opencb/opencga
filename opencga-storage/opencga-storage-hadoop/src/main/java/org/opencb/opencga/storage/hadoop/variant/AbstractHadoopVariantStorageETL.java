@@ -442,7 +442,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
 //            HadoopCredentials dbCredentials = getDbCredentials();
 //            VariantHadoopDBAdaptor dbAdaptor = getDBAdaptor(dbCredentials);
-            int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+            int studyId = getStudyId();
 
             VariantPhoenixHelper phoenixHelper = new VariantPhoenixHelper(dbAdaptor.getGenomeHelper());
             try {

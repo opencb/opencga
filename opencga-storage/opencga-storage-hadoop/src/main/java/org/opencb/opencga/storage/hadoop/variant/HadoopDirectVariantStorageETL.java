@@ -67,7 +67,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
     @Override
     public URI load(URI inputUri) throws IOException, StorageManagerException {
         Path input = Paths.get(inputUri.getPath());
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+        int studyId = getStudyId();
 
         ArchiveHelper.setChunkSize(
                 conf, conf.getInt(
@@ -109,7 +109,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         } else {
             fileId = options.getInt(Options.FILE_ID.key());
         }
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+        int studyId = getStudyId();
 
         VariantSource source = VariantReaderUtils.readVariantSource(sourcePath, null);
         source.setFileId(fileId.toString());
