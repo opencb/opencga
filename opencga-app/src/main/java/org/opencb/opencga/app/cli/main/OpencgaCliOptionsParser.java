@@ -95,11 +95,16 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
         studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
-        studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
-        studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
         studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
         studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
         studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
+        studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
+        studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
+        studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
+        studySubCommands.addCommand("alignments", studyCommandOptions.alignmentsCommandOptions);
+        studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
+        studySubCommands.addCommand("variants", studyCommandOptions.variantsCommandOptions);
+
 
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
