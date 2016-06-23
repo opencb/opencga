@@ -14,8 +14,7 @@ import java.util.regex.Pattern;
 public class ParamUtils {
     public static void checkId(long id, String name) throws CatalogParameterException {
         if (id < 0) {
-            throw new CatalogParameterException("Error in id: '" + name + "' is not valid: "
-                    + id + ".");
+            throw new CatalogParameterException("Error in id: '" + name + "' is not valid: " + id + ".");
         }
     }
 
@@ -63,9 +62,9 @@ public class ParamUtils {
 
     public static void checkPath(Path path, String paramName) throws CatalogParameterException {
         checkObj(path, paramName);
-//        if (path.isAbsolute()) {
-//            throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
-        if (path.toString().matches("\\.|\\.\\.")) {
+        if (path.isAbsolute()) {
+            throw new CatalogParameterException("Error in path: Path '" + path + "' can't be absolute");
+        } else if (path.toString().matches("\\.|\\.\\.")) {
             throw new CatalogParameterException("Error in path: Path '" + path + "' can't have relative names '.' or '..'");
         }
     }
