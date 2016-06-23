@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.authorization;
+package org.opencb.opencga.catalog.auth.authorization;
 
 import org.junit.After;
 import org.junit.Before;

@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.authentication;
+package org.opencb.opencga.catalog.auth.authentication;
 
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
