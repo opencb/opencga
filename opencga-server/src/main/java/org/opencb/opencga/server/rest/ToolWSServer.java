@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.QueryOptions;

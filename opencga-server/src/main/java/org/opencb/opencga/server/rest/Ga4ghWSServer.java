@@ -1,7 +1,7 @@
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;

@@ -72,9 +72,9 @@
             <version>${jersey.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.wordnik</groupId>
-            <artifactId>swagger-jersey2-jaxrs_2.11</artifactId>
-            <version>1.3.12</version>
+            <groupId>io.swagger</groupId>
+            <artifactId>swagger-jersey2-jaxrs</artifactId>
+            <version>1.5.9</version>
         </dependency>
         <dependency>
             <groupId>javax.servlet</groupId>

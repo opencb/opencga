@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
@@ -63,12 +63,13 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+@ApplicationPath("/")
 @Path("/{version}")
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-    @DefaultValue("v1")
-    @PathParam("version")
+//    @DefaultValue("v1")
+//    @PathParam("version")
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
@@ -150,6 +151,28 @@ public class OpenCGAWSServer {
         //Disable MongoDB useless logging
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.cluster").setLevel(Level.WARN);
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
+    }
+
+
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+//        this.startTime = System.currentTimeMillis();
+//        this.version = version;
+        this.uriInfo = uriInfo;
+        this.httpServletRequest = httpServletRequest;
+
+        this.params = uriInfo.getQueryParameters();
+
+        startTime = System.currentTimeMillis();
+
+        query = new Query();
+        queryOptions = new QueryOptions();
+
+
+        if (initialized.compareAndSet(false, true)) {
+            init();
+        }
+
+        parseParams();
     }
 
     public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,

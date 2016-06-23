@@ -16,9 +16,9 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.core.Region;
@@ -65,8 +65,7 @@ import java.util.*;
 public class FileWSServer extends OpenCGAWSServer {
 
 
-    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest)
+    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
             throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
         super(version, uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
@@ -88,6 +87,7 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
     }
 
+    @Deprecated
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)

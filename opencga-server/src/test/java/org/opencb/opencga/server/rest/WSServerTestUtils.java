@@ -69,7 +69,7 @@ public class WSServerTestUtils {
 
         ResourceConfig resourceConfig = new ResourceConfig();
         resourceConfig.packages(false, "org.opencb.opencga.server.ws");
-        resourceConfig.property("jersey.config.server.provider.packages", "org.opencb.opencga.server.ws;com.wordnik.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json");
+        resourceConfig.property("jersey.config.server.provider.packages", "org.opencb.opencga.server.ws;io.swagger.jersey.listing;com.jersey.jaxb;com.fasterxml.jackson.jaxrs.json");
         resourceConfig.property("jersey.config.server.provider.classnames", "org.glassfish.jersey.media.multipart.MultiPartFeature");
 
         ServletContainer sc = new ServletContainer(resourceConfig);

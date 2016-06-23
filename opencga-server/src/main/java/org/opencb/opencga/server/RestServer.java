@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.server.rest;
+package org.opencb.opencga.server;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -25,6 +25,7 @@ import org.glassfish.jersey.servlet.ServletContainer;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.core.config.Configuration;
 import org.opencb.opencga.server.AbstractStorageServer;
+import org.opencb.opencga.server.rest.AdminRestWebService;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.LoggerFactory;
 
