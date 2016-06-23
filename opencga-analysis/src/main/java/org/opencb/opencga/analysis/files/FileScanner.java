@@ -10,6 +10,8 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.BioformatDetector;
+import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,8 +1,8 @@
 package org.opencb.opencga.analysis.files;
 
-import junit.framework.TestCase;
 import org.junit.Test;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.utils.BioformatDetector;
 
 import java.net.URI;
 

@@ -16,6 +16,8 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.BioformatDetector;
+import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
