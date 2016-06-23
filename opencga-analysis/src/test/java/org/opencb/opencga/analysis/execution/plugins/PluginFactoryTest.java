@@ -1,7 +1,7 @@
 package org.opencb.opencga.analysis.execution.plugins;
 
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.execution.plugins.test.TestAnalysis;
 import org.slf4j.LoggerFactory;
@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 /**
  * Created on 27/11/15

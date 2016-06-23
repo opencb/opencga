@@ -18,8 +18,8 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.main.options.*;
@@ -518,9 +518,8 @@ public class OpencgaCliOptionsParser {
         return panelCommandOptions;
     }
 
-    public ToolCommandOptions getToolCommands() {  return toolCommandOptions; }
-
-
-
+    public ToolCommandOptions getToolCommands() {
+        return toolCommandOptions;
+    }
 
 }
