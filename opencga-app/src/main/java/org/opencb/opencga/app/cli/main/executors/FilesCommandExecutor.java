@@ -225,7 +225,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
                 .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
 
-        QueryResponse<User> delete = openCGAClient.getUserClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
+        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
 
         if (!delete.getError().isEmpty()) {
             logger.error(delete.getError());

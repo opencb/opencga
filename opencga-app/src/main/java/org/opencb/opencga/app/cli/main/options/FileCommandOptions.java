@@ -315,11 +315,11 @@ public class FileCommandOptions {
         public String file;
 
         @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
-                + " (only applicable for linked files/folders)", required = false, arity = 1)
+                + " (only applicable for linked files/folders)", required = false, arity = 0)
         public boolean deleteExternal;
 
         @Parameter(names = {"--skip-trash"}, description = "Boolean indicating whether to skip sending the files to the trash first. "
-                + "If set, it will not be possible to recover them!", required = false, arity = 1)
+                + "If set, it will not be possible to recover them!", required = false, arity = 0)
         public boolean skipTrash;
 
     }
