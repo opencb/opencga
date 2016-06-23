@@ -208,8 +208,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--process-differences"}, description = "Process-differences.", required = false, arity = 0)
         public boolean process_differences;
 
-        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs.", required = false, arity = 0)
-        public boolean histogram;
+//        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs.", required = false, arity = 0)
+//        public boolean histogram;
 
         @Parameter(names = {"--interval"}, description = "Interval.", required = false, arity = 1)
         public Integer interval;

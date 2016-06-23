@@ -22,6 +22,7 @@ import org.opencb.opencga.catalog.models.acls.StudyAcl;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;

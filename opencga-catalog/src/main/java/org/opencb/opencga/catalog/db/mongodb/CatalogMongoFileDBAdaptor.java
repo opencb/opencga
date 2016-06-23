@@ -377,7 +377,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         String[] acceptedParams = {
                 QueryParams.DESCRIPTION.key(), QueryParams.URI.key(), QueryParams.CREATION_DATE.key(),
-                QueryParams.MODIFICATION_DATE.key(), };
+                QueryParams.MODIFICATION_DATE.key(), QueryParams.PATH.key(), };
         // Fixme: Add "name", "path" and "ownerId" at some point. At the moment, it would lead to inconsistencies.
         filterStringParams(parameters, fileParameters, acceptedParams);
 
