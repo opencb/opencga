@@ -369,8 +369,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 //                path, ownerId, creationDate, description, status, diskUsage, experimentId, sampleIds, jobId,
 //                new LinkedList<>(), stats, attributes);
 
-        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, ownerId, description, status,
-                false, diskUsage, experimentId, sampleIds, jobId, Collections.emptyList(), null, stats, attributes);
+        File file = new File(-1, Paths.get(path).getFileName().toString(), type, format, bioformat, uri, path, ownerId, TimeUtils.getTime(),
+                TimeUtils.getTime(), description, status, false, diskUsage, experimentId, sampleIds, jobId, Collections.emptyList(), null,
+                stats, attributes);
 
         //Find parent. If parents == true, create folders.
         Path parent = Paths.get(file.getPath()).getParent();
@@ -963,8 +964,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                path.toString() + "/", userId, "", new File.FileStatus(File.FileStatus.READY), false, 0, -1, Collections.emptyList(), -1,
-                Collections.emptyList(), null, null, null);
+                path.toString() + "/", userId, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
+                false, 0, -1, Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
         fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
     }
 
@@ -1021,9 +1022,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                     // Create the folder with external
                     File folder = new File(-1, catalogPath.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                            File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", userId, description,
-                            new File.FileStatus(File.FileStatus.READY), true, 0, -1, Collections.emptyList(), -1,
-                            Collections.emptyList(), null, null, null);
+                            File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", userId, TimeUtils.getTime(), TimeUtils.getTime(),
+                            description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
+                            Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
                     fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
 
                 } else {
@@ -1050,8 +1051,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                 long diskUsage = Files.size(Paths.get(uriOrigin));
 
                 File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, uriOrigin,
-                        filePath.toString(), userId, description, new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1,
-                        Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                        filePath.toString(), userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                        new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
+                        Collections.emptyList(), null, null, null);
                 return fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
             } else {
                 throw new CatalogException("Cannot link " + filePath.getFileName().toString() + ". A file with the same name was found"
@@ -1077,9 +1079,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                         if (fileDBAdaptor.count(query).first() == 0) {
                             // If the folder does not exist, we create it
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
-                                    File.Bioformat.NONE, dir.toUri(), destinyPath, userId, description,
-                                    new File.FileStatus(File.FileStatus.READY), true, 0, -1, Collections.emptyList(), -1,
-                                    Collections.emptyList(), null, null, null);
+                                    File.Bioformat.NONE, dir.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(),
+                                    description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
+                                    Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
                             fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
                         }
 
@@ -1105,8 +1107,9 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                             // If the file does not exist, we create it
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, filePath.toUri(),
-                                    destinyPath, userId, description, new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1,
-                                    Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                                    destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                                    new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
+                                    Collections.emptyList(), null, null, null);
                             fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
 
                         } else {

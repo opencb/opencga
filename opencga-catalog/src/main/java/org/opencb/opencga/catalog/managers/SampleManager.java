@@ -152,7 +152,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Get annotation set
         AnnotationSet annotationSet = null;
         for (AnnotationSet annotationSetAux : sample.getAnnotationSets()) {
-            if (annotationSetAux.getId().equals(annotationSetId)) {
+            if (annotationSetAux.getName().equals(annotationSetId)) {
                 annotationSet = annotationSetAux;
                 sample.getAnnotationSets().remove(annotationSet);
                 break;
@@ -173,7 +173,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Commit changes
         QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotateSample(sampleId, annotationSet, true);
 
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
                         .collect(Collectors.toSet()), annotationSet.getDate(), null);
@@ -664,7 +664,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Get annotation set
         AnnotationSet annotationSet = null;
         for (AnnotationSet annotationSetAux : cohort.getAnnotationSets()) {
-            if (annotationSetAux.getId().equals(annotationSetId)) {
+            if (annotationSetAux.getName().equals(annotationSetId)) {
                 annotationSet = annotationSetAux;
                 cohort.getAnnotationSets().remove(annotationSet);
                 break;
@@ -685,7 +685,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Commit changes
         QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.annotateCohort(cohortId, annotationSet, true);
 
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
                         .collect(Collectors.toSet()), annotationSet.getDate(), null);

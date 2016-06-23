@@ -35,11 +35,6 @@ public class User {
     private String password;
     private String organization;
 
-    /**
-     * This specifies the role of this user in OpenCGA, possible values: admin, user, demo, ...
-     */
-    @Deprecated
-    private Role role;
     private UserStatus status;
     private String lastActivity;
     private long diskUsage;
@@ -49,31 +44,31 @@ public class User {
     private List<Tool> tools;
 
     /**
-     * Open and closed sessions for this user.
-     * More than one session can be open, i.e. logged from Chrome and Firefox
+     * Open sessions for this user. Closed are in audit
+     * More than one session can be open, i.e. logged from CLI and Web browsers
      */
     private List<Session> sessions;
 
     private Map<String, Object> configs;
     private Map<String, Object> attributes;
 
+
     public User() {
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, UserStatus status) {
-        this(id, name, email, password, organization, role, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0),
-                new ArrayList<>(0), new HashMap<>(), new HashMap<>());
+    public User(String id, String name, String email, String password, String organization, UserStatus status) {
+        this(id, name, email, password, organization, status, "", -1, -1, new ArrayList<>(), new ArrayList<>(0), new ArrayList<>(0),
+                new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String password, String organization, Role role, UserStatus status,
-                String lastActivity, long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools,
-                List<Session> sessions, Map<String, Object> configs, Map<String, Object> attributes) {
+    public User(String id, String name, String email, String password, String organization, UserStatus status, String lastActivity,
+                long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools, List<Session> sessions,
+                Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.password = password;
         this.organization = organization;
-        this.role = role;
         this.status = status;
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
@@ -85,6 +80,38 @@ public class User {
         this.attributes = attributes;
     }
 
+    public static class UserStatus extends Status {
+
+        public static final String BANNED = "BANNED";
+
+        public UserStatus(String status, String message) {
+            if (isValid(status)) {
+                init(status, message);
+            } else {
+                throw new IllegalArgumentException("Unknown status " + status);
+            }
+        }
+
+        public UserStatus(String status) {
+            this(status, "");
+        }
+
+        public UserStatus() {
+            this(READY, "");
+        }
+
+        public static boolean isValid(String status) {
+            if (Status.isValid(status)) {
+                return true;
+            }
+            if (status != null && (status.equals(BANNED))) {
+                return true;
+            }
+            return false;
+        }
+    }
+
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("User{");
@@ -93,8 +120,7 @@ public class User {
         sb.append(", email='").append(email).append('\'');
         sb.append(", password='").append(password).append('\'');
         sb.append(", organization='").append(organization).append('\'');
-//        sb.append(", role=").append(role);
-        sb.append(", status='").append(status).append('\'');
+        sb.append(", status=").append(status);
         sb.append(", lastActivity='").append(lastActivity).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", diskQuota=").append(diskQuota);
@@ -149,15 +175,6 @@ public class User {
 
     public User setOrganization(String organization) {
         this.organization = organization;
-        return this;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public User setRole(Role role) {
-        this.role = role;
         return this;
     }
 
@@ -240,50 +257,6 @@ public class User {
     public User setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
-    }
-
-    public static class UserStatus extends Status {
-
-        public static final String BANNED = "BANNED";
-
-        public UserStatus(String status, String message) {
-            if (isValid(status)) {
-                init(status, message);
-            } else {
-                throw new IllegalArgumentException("Unknown status " + status);
-            }
-        }
-
-        public UserStatus(String status) {
-            this(status, "");
-        }
-
-        public UserStatus() {
-            this(READY, "");
-        }
-
-        public static boolean isValid(String status) {
-            if (Status.isValid(status)) {
-                return true;
-            }
-            if (status != null && (status.equals(BANNED))) {
-                return true;
-            }
-            return false;
-        }
-    }
-
-
-    /*
-         * Things to think about:
-         * private List<Credential> credentials = new ArrayList<Credential>();
-         * private List<Bucket> buckets = new ArrayList<Bucket>();
-         */
-    @Deprecated
-    public enum Role {
-        ADMIN,  //= "admin";
-        USER,  //= "user";
-        ANONYMOUS  //= "anonymous";
     }
 
 }

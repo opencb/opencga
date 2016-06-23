@@ -134,7 +134,7 @@ public class CatalogManager implements AutoCloseable {
 
         if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
             catalogDBAdaptorFactory.initializeCatalogDB(new Admin());
-            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", User.Role.ADMIN, new User.UserStatus());
+            User admin = new User("admin", "admin", "admin@email.com", "", "openCB", new User.UserStatus());
             catalogDBAdaptorFactory.getCatalogUserDBAdaptor().insertUser(admin, null);
             authenticationManager.newPassword("admin", "admin");
         }

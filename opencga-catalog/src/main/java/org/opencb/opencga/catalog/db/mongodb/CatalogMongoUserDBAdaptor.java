@@ -191,7 +191,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new User.UserStatus());
+        User user = new User(userId, "Anonymous", "", "", "", new User.UserStatus());
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");
@@ -467,9 +467,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
             userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
-        filterEnumParams(parameters, userParameters, acceptedEnums);
 
         final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
         filterLongParams(parameters, userParameters, acceptedLongParams);

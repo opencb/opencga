@@ -227,20 +227,20 @@ public class AnalysisFileIndexer {
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
             switch (originalFile.getIndex().getStatus().getStatus()) {
-                case Index.IndexStatus.TRANSFORMING:
+                case FileIndex.IndexStatus.TRANSFORMING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being transformed");
-                case Index.IndexStatus.TRANSFORMED:
+                case FileIndex.IndexStatus.TRANSFORMED:
                     if (transform) {
                         throw new CatalogException("File '" + originalFile.getId() + "' is already transformed");
                     }
                     break;
-                case Index.IndexStatus.LOADING:
+                case FileIndex.IndexStatus.LOADING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being loaded");
-                case Index.IndexStatus.INDEXING:
+                case FileIndex.IndexStatus.INDEXING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being indexed");
-                case Index.IndexStatus.READY:
+                case FileIndex.IndexStatus.READY:
                     throw new CatalogException("File '" + originalFile.getId() + "' is already indexed");
-                case Index.IndexStatus.NONE:
+                case FileIndex.IndexStatus.NONE:
                     break;
             }
         } else {
@@ -335,17 +335,17 @@ public class AnalysisFileIndexer {
         }
 
         /** Create index information **/
-        Index indexInformation = originalFile.getIndex();
+        FileIndex indexInformation = originalFile.getIndex();
         if (indexInformation == null) {
-            String status = externalTransformed ? Index.IndexStatus.TRANSFORMED : Index.IndexStatus.NONE;
-            indexInformation = new Index(userId, TimeUtils.getTime(), new Index.IndexStatus(status), -1, indexAttributes);
+            String status = externalTransformed ? FileIndex.IndexStatus.TRANSFORMED : FileIndex.IndexStatus.NONE;
+            indexInformation = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(status), -1, indexAttributes);
         }
         if (transform && !load) {
-            indexInformation.getStatus().setStatus(Index.IndexStatus.TRANSFORMING);
+            indexInformation.getStatus().setStatus(FileIndex.IndexStatus.TRANSFORMING);
         } else if (!transform && load) {
-            indexInformation.getStatus().setStatus(Index.IndexStatus.LOADING);
+            indexInformation.getStatus().setStatus(FileIndex.IndexStatus.LOADING);
         } else if (transform && load) {
-            indexInformation.getStatus().setStatus(Index.IndexStatus.INDEXING);
+            indexInformation.getStatus().setStatus(FileIndex.IndexStatus.INDEXING);
         }
 
         if (!simulate) {
@@ -369,15 +369,15 @@ public class AnalysisFileIndexer {
         switch (indexInformation.getStatus().getStatus()) {
             default:
 //                throw new IllegalStateException("Unexpected state");
-            case Index.IndexStatus.INDEXING:
+            case FileIndex.IndexStatus.INDEXING:
                 jobName = "index";
                 jobDescription = "Indexing file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
-            case Index.IndexStatus.LOADING:
+            case FileIndex.IndexStatus.LOADING:
                 jobName = "load";
                 jobDescription = "Loading file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
-            case Index.IndexStatus.TRANSFORMING:
+            case FileIndex.IndexStatus.TRANSFORMING:
                 jobName = "transform";
                 jobDescription = "Transforming file " + originalFile.getName() + " (" + originalFile.getId() + ")";
                 break;
@@ -403,7 +403,7 @@ public class AnalysisFileIndexer {
 
     private void modifyIndexJobId(long fileId, long jobId, boolean transform, boolean load, String sessionId) throws CatalogException {
         File file = catalogManager.getFile(fileId, sessionId).first();
-        Index index = file.getIndex();
+        FileIndex index = file.getIndex();
         index.setJobId(jobId);
         if (transform && !load) {
             index.getAttributes().put("transformJobId", jobId);

@@ -125,7 +125,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         organization = organization != null ? organization : "";
         checkUserExists(id);
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
+        User user = new User(id, name, email, "", organization, new User.UserStatus());
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);

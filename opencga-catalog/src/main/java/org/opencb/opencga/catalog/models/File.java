@@ -31,10 +31,6 @@ import java.util.Map;
 public class File {
 
     private long id;
-
-    /**
-     * File name.
-     */
     private String name;
 
     /**
@@ -54,9 +50,12 @@ public class File {
 
     private URI uri;
     private String path;
+
+    @Deprecated
     private String ownerId;
     private String creationDate;
     private String modificationDate;
+
     private String description;
     private FileStatus status;
     private boolean external;
@@ -69,8 +68,9 @@ public class File {
      * This field values -1 when file has been uploaded.
      */
     private long jobId;
+
     private List<FileAcl> acls;
-    private Index index;
+    private FileIndex index;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -93,11 +93,9 @@ public class File {
                 new HashMap<>());
     }
 
-    @Deprecated
     public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatus status, long diskUsage, long experimentId,
-                List<Long> sampleIds, long jobId, List<FileAcl> acls, Map<String, Object> stats,
-                Map<String, Object> attributes) {
+                String creationDate, String description, FileStatus status, long diskUsage, long experimentId, List<Long> sampleIds,
+                long jobId, List<FileAcl> acls, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -116,14 +114,14 @@ public class File {
         this.jobId = jobId;
         this.acls = acls;
         this.index = null;
-//        this.annotationSets = new LinkedList<>();
         this.stats = stats;
         this.attributes = attributes;
     }
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId,
-                String description, FileStatus status, boolean external, long diskUsage, long experimentId, List<Long> sampleIds,
-                long jobId, List<FileAcl> acls, Index index, Map<String, Object> stats, Map<String, Object> attributes) {
+                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage,
+                long experimentId, List<Long> sampleIds, long jobId, List<FileAcl> acls, FileIndex index, Map<String, Object> stats,
+                Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -132,8 +130,8 @@ public class File {
         this.uri = uri;
         this.path = path;
         this.ownerId = ownerId;
-        this.creationDate = TimeUtils.getTime();
-        this.modificationDate = "";
+        this.creationDate = creationDate;
+        this.modificationDate = modificationDate;
         this.description = description;
         this.status = status;
         this.external = external;
@@ -146,6 +144,7 @@ public class File {
         this.stats = stats;
         this.attributes = attributes;
     }
+
 
     public static class FileStatus extends Status {
 
@@ -451,11 +450,11 @@ public class File {
         return this;
     }
 
-    public Index getIndex() {
+    public FileIndex getIndex() {
         return index;
     }
 
-    public File setIndex(Index index) {
+    public File setIndex(FileIndex index) {
         this.index = index;
         return this;
     }
@@ -477,4 +476,5 @@ public class File {
         this.attributes = attributes;
         return this;
     }
+
 }

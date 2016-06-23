@@ -413,9 +413,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                 filterOptions(options, FILTER_ROUTE_STUDIES + QueryParams.ROLES.key() + "."));
         List<Study> studies = CatalogMongoDBUtils.parseStudies(queryResult);
         List<Role> roles = new ArrayList<>(1);
-        studies.stream().filter(study -> study.getRoles() != null).forEach(study -> {
-            roles.addAll(study.getRoles());
-        });
+//        studies.stream().filter(study -> study.getRoles() != null).forEach(study -> {
+//            roles.addAll(study.getRoles());
+//        });
         return endQuery("getRole", startTime, roles);
     }
 

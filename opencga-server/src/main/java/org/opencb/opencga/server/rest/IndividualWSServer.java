@@ -143,7 +143,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             } else {
                 if (update) {
                     for (AnnotationSet annotationSet : catalogManager.getIndividual(individualId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getId().equals(annotateSetName)) {
+                        if (annotationSet.getName().equals(annotateSetName)) {
                             variableSetId = annotationSet.getVariableSetId();
                         }
                     }

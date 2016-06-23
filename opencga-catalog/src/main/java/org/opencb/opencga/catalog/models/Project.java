@@ -43,21 +43,24 @@ public class Project {
     private Map<File.Bioformat, DataStore> dataStores;
     private Map<String, Object> attributes;
 
+
     public Project() {
     }
 
     public Project(String name, String alias, String description, Status status, String organization) {
-        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<>(), new HashMap<>());
+        this(-1, name, alias, TimeUtils.getTime(), description, organization, status, null, 0, new LinkedList<>(),
+                new HashMap<>(), new HashMap<>());
     }
 
     public Project(String name, String alias, String creationDate, String description, Status status, String lastActivity,
                    long diskUsage, String organization) {
         this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<>(),
-                new HashMap<>());
+                new HashMap<>(),  new HashMap<>());
     }
 
     public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,
-                   String lastActivity, long diskUsage, List<Study> studies, Map<String, Object> attributes) {
+                   String lastActivity, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
+                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
@@ -68,7 +71,7 @@ public class Project {
         this.lastActivity = lastActivity;
         this.diskUsage = diskUsage;
         this.studies = studies;
-        this.dataStores = new HashMap<>();
+        this.dataStores = dataStores;
         this.attributes = attributes;
     }
 
@@ -81,7 +84,7 @@ public class Project {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
-        sb.append(", status='").append(status).append('\'');
+        sb.append(", status=").append(status);
         sb.append(", lastActivity='").append(lastActivity).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", studies=").append(studies);
@@ -95,95 +98,108 @@ public class Project {
         return id;
     }
 
-    public void setId(long id) {
+    public Project setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Project setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getAlias() {
         return alias;
     }
 
-    public void setAlias(String alias) {
+    public Project setAlias(String alias) {
         this.alias = alias;
+        return this;
     }
 
     public String getCreationDate() {
         return creationDate;
     }
 
-    public void setCreationDate(String creationDate) {
+    public Project setCreationDate(String creationDate) {
         this.creationDate = creationDate;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Project setDescription(String description) {
         this.description = description;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public String getLastActivity() {
-        return lastActivity;
-    }
-
-    public void setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
-    }
-
-    public long getDiskUsage() {
-        return diskUsage;
-    }
-
-    public void setDiskUsage(long diskUsage) {
-        this.diskUsage = diskUsage;
-    }
-
-    public List<Study> getStudies() {
-        return studies;
-    }
-
-    public void setStudies(List<Study> studies) {
-        this.studies = studies;
-    }
-
-    public Map<File.Bioformat, DataStore> getDataStores() {
-        return dataStores;
-    }
-
-    public void setDataStores(Map<File.Bioformat, DataStore> dataStores) {
-        this.dataStores = dataStores;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
+        return this;
     }
 
     public String getOrganization() {
         return organization;
     }
 
-    public void setOrganization(String organization) {
+    public Project setOrganization(String organization) {
         this.organization = organization;
+        return this;
     }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Project setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public String getLastActivity() {
+        return lastActivity;
+    }
+
+    public Project setLastActivity(String lastActivity) {
+        this.lastActivity = lastActivity;
+        return this;
+    }
+
+    public long getDiskUsage() {
+        return diskUsage;
+    }
+
+    public Project setDiskUsage(long diskUsage) {
+        this.diskUsage = diskUsage;
+        return this;
+    }
+
+    public List<Study> getStudies() {
+        return studies;
+    }
+
+    public Project setStudies(List<Study> studies) {
+        this.studies = studies;
+        return this;
+    }
+
+    public Map<File.Bioformat, DataStore> getDataStores() {
+        return dataStores;
+    }
+
+    public Project setDataStores(Map<File.Bioformat, DataStore> dataStores) {
+        this.dataStores = dataStores;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Project setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
 }

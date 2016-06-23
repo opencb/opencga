@@ -220,7 +220,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, stats, attributes);
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, attributes, stats);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -440,7 +440,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 .setExperiments(studyInfo.getExperiments())
                 .setGroups(studyInfo.getGroups())
                 .setName(studyInfo.getName())
-                .setRoles(studyInfo.getRoles())
                 .setStats(studyInfo.getStats())
                 .setStatus(studyInfo.getStatus())
                 .setType(studyInfo.getType())

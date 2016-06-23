@@ -305,7 +305,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 if (update) {
                     long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
                     for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getId().equals(annotateSetName)) {
+                        if (annotationSet.getName().equals(annotateSetName)) {
                             variableSetId = annotationSet.getVariableSetId();
                         }
                     }

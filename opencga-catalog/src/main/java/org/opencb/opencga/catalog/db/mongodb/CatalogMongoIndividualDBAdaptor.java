@@ -194,15 +194,15 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startTime = startQuery();
 
         QueryResult<Long> count = individualCollection.count(
-                new Document("annotationSets.id", annotationSet.getId()).append(PRIVATE_ID, individualId));
+                new Document("annotationSets.name", annotationSet.getName()).append(PRIVATE_ID, individualId));
 
         if (overwrite) {
             if (count.first() == 0) {
-                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
             }
         } else {
             if (count.first() > 0) {
-                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+                throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
             }
         }
 
@@ -212,10 +212,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         Bson individualQuery = Filters.eq(PRIVATE_ID, individualId);
         if (overwrite) {
 //            query.put("annotationSets.id", annotationSet.getId());
-            query = Filters.and(individualQuery, Filters.eq("annotationSets.id", annotationSet.getId()));
+            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", annotationSet.getName()));
         } else {
 //            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
-            query = Filters.and(individualQuery, Filters.eq("annotationSets.id", new Document("$ne", annotationSet.getId())));
+            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", new Document("$ne", annotationSet.getName())));
         }
 
         Bson update;
@@ -228,7 +228,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         QueryResult<UpdateResult> queryResult = individualCollection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
         }
 
         return endQuery("", startTime, Collections.singletonList(annotationSet));
@@ -243,7 +243,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                 getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
         AnnotationSet annotationSet = null;
         for (AnnotationSet as : individual.getAnnotationSets()) {
-            if (as.getId().equals(annotationId)) {
+            if (as.getName().equals(annotationId)) {
                 annotationSet = as;
                 break;
             }
@@ -261,7 +261,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 //        }
 
         Bson eq = Filters.eq(PRIVATE_ID, individualId);
-        Bson pull = Updates.pull("annotationSets", new Document("id", annotationId));
+        Bson pull = Updates.pull("annotationSets", new Document("name", annotationId));
         QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
         if (update.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);

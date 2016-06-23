@@ -47,7 +47,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void createUserTest() throws CatalogException {
 
-        User user = new User("NewUser", "", "", "", "", User.Role.USER, new User.UserStatus());
+        User user = new User("NewUser", "", "", "", "", new User.UserStatus());
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user, null);
         assertNotSame(0, createUser.getResult().size());
 
@@ -57,7 +57,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void deleteUserTest() throws CatalogException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new User.UserStatus());
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", new User.UserStatus());
         QueryResult<User> createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());

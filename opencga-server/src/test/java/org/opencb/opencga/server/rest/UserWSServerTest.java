@@ -52,7 +52,6 @@ public class UserWSServerTest {
                 .queryParam("name", userId)
                 .queryParam("email", "email@cipf.es")
                 .queryParam("organization", "cipf")
-                .queryParam("role", User.Role.USER)
                 .queryParam("status", "none");
         System.out.println("webTarget.getUri() = " + webTarget.getUri());
         String s = webTarget.request().get(String.class);
