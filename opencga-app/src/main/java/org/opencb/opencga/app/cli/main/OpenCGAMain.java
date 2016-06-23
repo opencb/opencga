@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 /**
  * Created by jacobo on 29/09/14.
  */
+@Deprecated
 public class OpenCGAMain {
 
     private static String shellUserId;

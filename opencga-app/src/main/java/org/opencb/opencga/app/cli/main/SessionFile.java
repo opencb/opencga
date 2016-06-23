@@ -63,39 +63,44 @@ public class SessionFile {
         return userId;
     }
 
-    public void setUserId(String userId) {
+    public SessionFile setUserId(String userId) {
         this.userId = userId;
+        return this;
     }
 
     public String getSessionId() {
         return sessionId;
     }
 
-    public void setSessionId(String sessionId) {
+    public SessionFile setSessionId(String sessionId) {
         this.sessionId = sessionId;
+        return this;
     }
 
     public String getLogin() {
         return login;
     }
 
-    public void setLogin(String login) {
+    public SessionFile setLogin(String login) {
         this.login = login;
+        return this;
     }
 
     public String getLogout() {
         return logout;
     }
 
-    public void setLogout(String logout) {
+    public SessionFile setLogout(String logout) {
         this.logout = logout;
+        return this;
     }
 
     public long getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(long timestamp) {
+    public SessionFile setTimestamp(long timestamp) {
         this.timestamp = timestamp;
+        return this;
     }
 }
