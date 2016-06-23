@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.client.model.Projections;
 import org.bson.Document;
 import org.hamcrest.core.IsInstanceOf;
 import org.hamcrest.core.StringContains;
@@ -24,11 +25,13 @@ import org.junit.internal.matchers.ThrowableMessageMatcher;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
@@ -108,6 +111,65 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
                 .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE_RESUME.key(), true)
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
         );
+    }
+
+
+    @Test
+    public void stageResumeFromError2Test() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+
+        StorageETLResult storageETLResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), false));
+
+        MongoDBVariantStorageManager variantStorageManager = getVariantStorageManager();
+        VariantMongoDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+
+        long stageCount = simulateStageError(studyConfiguration, dbAdaptor);
+
+        // Resume stage and merge
+        runDefaultETL(storageETLResult.getTransformResult(), variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), true)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false), false, true);
+
+        long count = dbAdaptor.count(null).first();
+        assertEquals(stageCount, count);
+    }
+
+    private long simulateStageError(StudyConfiguration studyConfiguration, VariantMongoDBAdaptor dbAdaptor) throws Exception {
+        // Simulate stage error
+        // 1) Set ERROR status on the StudyConfiguration
+        StudyConfigurationManager scm = dbAdaptor.getStudyConfigurationManager();
+        studyConfiguration.copy(scm.getStudyConfiguration(studyConfiguration.getStudyId(), new QueryOptions()).first());
+        assertEquals(1, studyConfiguration.getBatches().size());
+        assertEquals(BatchFileOperation.Status.READY, studyConfiguration.getBatches().get(0).currentStatus());
+        TreeMap<Date, BatchFileOperation.Status> status = studyConfiguration.getBatches().get(0).getStatus();
+        status.remove(status.lastKey(), BatchFileOperation.Status.READY);
+        studyConfiguration.getBatches().get(0).addStatus(BatchFileOperation.Status.ERROR);
+        scm.updateStudyConfiguration(studyConfiguration, null);
+
+        // 2) Remove from files collection
+        MongoDataStore dataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
+        MongoDBCollection files = dataStore.getCollection(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_FILES.defaultValue());
+        System.out.println("Files delete count " + files.remove(new Document(), new QueryOptions()).first().getDeletedCount());
+
+        // 3) Clean some variants from the Stage collection.
+        MongoDBCollection stage = dataStore.getCollection(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_STAGE.defaultValue());
+
+        long stageCount = stage.count().first();
+        System.out.println("stage count : " + stageCount);
+        int i = 0;
+        for (Document document : stage.find(new Document(), Projections.include("_id"), null).getResult()) {
+            stage.remove(document, null).first().getDeletedCount();
+            i++;
+            if (i >= stageCount / 2) {
+                break;
+            }
+        }
+        System.out.println("stage count : " + stage.count().first());
+        return stageCount;
     }
 
     @Test

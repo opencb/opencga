@@ -37,7 +37,7 @@ public class MongoDBVariantStageReaderTest implements MongoVariantStorageManager
         MongoDataStoreManager mongoDataStoreManager = getMongoDataStoreManager(DB_NAME);
 
         collection = mongoDataStoreManager.get(DB_NAME).getCollection("stage");
-        MongoDBVariantStageLoader loader = new MongoDBVariantStageLoader(collection, 1, 1, 100);
+        MongoDBVariantStageLoader loader = new MongoDBVariantStageLoader(collection, 1, 1, 100, false);
 
 
 

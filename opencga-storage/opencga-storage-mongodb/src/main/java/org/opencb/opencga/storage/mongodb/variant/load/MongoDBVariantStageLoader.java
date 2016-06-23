@@ -57,11 +57,12 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
     private final int fileId;
     private final int numTotalVariants;
     private final String fieldName;
+    private final boolean resumeStageLoad;
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantStageLoader.class);
 
     private final AtomicInteger variantsCount;
     public static final int DEFAULT_LOGING_BATCH_SIZE = 5000;
-    private final int logingBatchSize;
+    private final int loggingBatchSize;
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
 
@@ -124,14 +125,15 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 
     public static final VariantStringIdComplexTypeConverter STRING_ID_CONVERTER = new VariantStringIdComplexTypeConverter();
 
-    public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, int numTotalVariants) {
+    public MongoDBVariantStageLoader(MongoDBCollection collection, int studyId, int fileId, int numTotalVariants, boolean resumeStageLoad) {
         this.collection = collection;
         this.studyId = studyId;
         this.fileId = fileId;
         this.numTotalVariants = numTotalVariants;
         fieldName = studyId + "." + fileId;
         variantsCount = new AtomicInteger(0);
-        logingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
+        loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
+        this.resumeStageLoad = resumeStageLoad;
     }
 
     @Override
@@ -170,7 +172,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
         }
 
         int previousCount = variantsCount.getAndAdd(variantsLocalCount[0]);
-        if ((previousCount + variantsLocalCount[0]) / logingBatchSize != previousCount / logingBatchSize) {
+        if ((previousCount + variantsLocalCount[0]) / loggingBatchSize != previousCount / loggingBatchSize) {
             logger.info("Write variants in STAGE collection " + (previousCount + variantsLocalCount[0]) + "/" + numTotalVariants + " "
                     + String.format("%.2f%%", ((float) (previousCount + variantsLocalCount[0])) / numTotalVariants * 100.0));
         }
@@ -214,7 +216,6 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
         if (values.isEmpty()) {
             return nonInsertedIds;
         }
-
         List<Bson> queries = new LinkedList<>();
         List<Bson> updates = new LinkedList<>();
         for (Document id : values.keySet()) {
@@ -222,12 +223,12 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
                 List<Binary> binaryList = values.get(id);
                 queries.add(eq("_id", id.getString("_id")));
                 if (binaryList.size() == 1) {
-                    updates.add(combine(push(fieldName, binaryList.get(0)),
+                    updates.add(combine(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)),
                             setOnInsert("end", id.get("end")),
                             setOnInsert("ref", id.get("ref")),
                             setOnInsert("alt", id.get("alt"))));
                 } else {
-                    updates.add(combine(pushEach(fieldName, binaryList),
+                    updates.add(combine(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList),
                             setOnInsert("end", id.get("end")),
                             setOnInsert("ref", id.get("ref")),
                             setOnInsert("alt", id.get("alt"))));

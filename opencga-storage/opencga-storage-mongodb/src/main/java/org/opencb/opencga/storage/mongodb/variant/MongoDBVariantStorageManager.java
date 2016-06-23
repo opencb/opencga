@@ -53,7 +53,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
     public enum MongoDBVariantOptions {
         COLLECTION_VARIANTS("collection.variants", "variants"),
-        COLLECTION_FILES("collection.files", "file"),
+        COLLECTION_FILES("collection.files", "files"),
         COLLECTION_STUDIES("collection.studies",  "studies"),
         COLLECTION_STAGE("collection.stage",  "stage"),
         BULK_SIZE("bulkSize",  100),

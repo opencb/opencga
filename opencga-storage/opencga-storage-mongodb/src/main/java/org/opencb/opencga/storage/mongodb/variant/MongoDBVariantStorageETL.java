@@ -182,7 +182,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
             ParallelTaskRunner<Variant, Variant> ptr;
             MongoDBVariantStageLoader stageLoader =
-                    new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, numRecords);
+                    new MongoDBVariantStageLoader(stageCollection, studyConfiguration.getStudyId(), fileId, numRecords,
+                            options.getBoolean(STAGE_RESUME.key()));
 
             ptr = new ParallelTaskRunner<>(
                     variantReader,

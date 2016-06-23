@@ -165,7 +165,13 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
-                                          StudyConfiguration studyConfiguration, ObjectMap params)
+                                                 StudyConfiguration studyConfiguration, ObjectMap params)
+            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+        return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, params, true, true);
+    }
+
+    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
+                                                 StudyConfiguration studyConfiguration, ObjectMap params, boolean doTransform, boolean doLoad)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
         ObjectMap newParams = new ObjectMap(params);
@@ -182,7 +188,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
-                newParams, newParams, newParams, newParams, true, true, true);
+                newParams, newParams, newParams, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
             StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
