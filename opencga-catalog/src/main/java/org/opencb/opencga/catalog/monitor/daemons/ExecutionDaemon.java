@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.monitor.daemons;
 
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.core.common.TimeUtils;
 
 /**

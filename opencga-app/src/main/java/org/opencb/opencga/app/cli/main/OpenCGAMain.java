@@ -47,15 +47,14 @@ import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -782,6 +781,9 @@ public class OpenCGAMain {
 //                            queryOptions.put("variableSetId", c.variableSetId);
                             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                             cohorts.put(c.name, sampleQueryResult.getResult());
+                        } else if (StringUtils.isNotEmpty(c.tagmap)) {
+                            List<QueryResult<Cohort>> queryResults = createCohorts(sessionId, studyId, c.tagmap, catalogManager, logger);
+                            System.out.println(createOutput(c.cOpt, queryResults, null));
                         } else {
 //                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
 //                            queryOptions.put("annotation", c.annotation);
@@ -824,12 +826,7 @@ public class OpenCGAMain {
                             }
                         }
 
-                        if (cohorts.isEmpty()) {
-                            if (c.tagmap != null) {
-                                List<QueryResult<Cohort>> queryResults = createCohorts(sessionId, studyId, c.tagmap, catalogManager, logger);
-                                System.out.println(createOutput(c.cOpt, queryResults, null));
-                            }
-                        } else {
+                        if (!cohorts.isEmpty()) {
                             List<QueryResult<Cohort>> queryResults = new ArrayList<>(cohorts.size());
                             for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
                                 List<Long> sampleIds = new LinkedList<>();

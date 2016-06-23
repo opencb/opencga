@@ -8,7 +8,7 @@ import org.opencb.opencga.analysis.beans.Analysis;
 import org.opencb.opencga.analysis.beans.Execution;
 import org.opencb.opencga.analysis.beans.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 

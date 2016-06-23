@@ -2,9 +2,7 @@ package org.opencb.opencga.client.rest;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.AfterClass;
-import org.junit.Test;
-import org.opencb.opencga.analysis.demo.AnalysisDemo;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;

@@ -9,8 +9,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
@@ -654,7 +654,6 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
             throw new CatalogException("Cannot delete file '" + fileIdStr + "'. There was an error with the database.");
         }
-
         File file = fileQueryResult.first();
 
         // Check 3.
@@ -663,22 +662,21 @@ public class FileManager extends AbstractManager implements IFileManager {
         // If file is linked externally and DELETE_EXTERNAL_FILES is false then we just unlink the file.
         if (file.isExternal() && !options.getBoolean(DELETE_EXTERNAL_FILES, false)) {
             return unlink(fileIdStr, options, sessionId);
-//            return unlink(fileId, sessionId);
         }
 
         // Check 4.
         // Only READY, TRASHED and PENDING_DELETE files can be deleted
         String fileStatus = file.getStatus().getStatus();
+        // TODO chang this to accept only valid statuses
         if (fileStatus.equalsIgnoreCase(File.FileStatus.STAGE) || fileStatus.equalsIgnoreCase(File.FileStatus.MISSING)
                 || fileStatus.equalsIgnoreCase(File.FileStatus.DELETING) || fileStatus.equalsIgnoreCase(File.FileStatus.DELETED)
                 || fileStatus.equalsIgnoreCase(File.FileStatus.REMOVED)) {
             throw new CatalogException("File cannot be deleted, status is: " + fileStatus);
         }
 
-        long studyId = -1;
-
         // Check 5.
-        // If it is a folder and there is any folder/file falling from the current path that is external...
+        // We cannot delete a folder containing any linked file/folder, these must be unlinked first
+        long studyId = -1;
         if (file.getType().equals(File.Type.DIRECTORY)) {
             studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
 
@@ -992,6 +990,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         if (pathDestiny == null || pathDestiny.isEmpty()) {
             // If no destiny is given, everything will be linked to the root folder of the study.
+            // FIXME use / as a empty
             catalogPath = Paths.get("");
             authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_FILES);
         } else {
@@ -1006,7 +1005,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             Query query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), catalogPath.toString() + "/");
-
             if (fileDBAdaptor.count(query).first() == 0) {
                 if (parents) {
                     // Get the base URI where the files are located in the study

@@ -1,8 +1,22 @@
-package org.opencb.opencga.analysis.files;
+/*
+ * Copyright 2015 OpenCB
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.opencb.opencga.catalog.utils;
 
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.core.common.IOUtils;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -14,10 +28,10 @@ import java.util.regex.Pattern;
  */
 public class FormatDetector {
 
-    protected static final Map<File.Format, Pattern> formatMap = new HashMap<>();
+    private static final Map<File.Format, Pattern> FORMAT_MAP = new HashMap<>();
 
     static {
-        formatMap.put(File.Format.IMAGE, Pattern.compile(".*\\.(png|jpg|bmp|svg|gif|jpeg|tfg)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));//IMAGE
+        FORMAT_MAP.put(File.Format.IMAGE, Pattern.compile(".*\\.(png|jpg|bmp|svg|gif|jpeg|tfg)(\\.[\\w]+)*", Pattern.CASE_INSENSITIVE));
     }
 
     /**
@@ -26,7 +40,7 @@ public class FormatDetector {
      * @return File.Format. UNKNOWN if can't detect any format.
      */
     public static File.Format detect(URI uri) {
-        for (Map.Entry<File.Format, Pattern> entry : formatMap.entrySet()) {
+        for (Map.Entry<File.Format, Pattern> entry : FORMAT_MAP.entrySet()) {
             if (entry.getValue().matcher(uri.getPath()).matches()) {
                 return entry.getKey();
             }
@@ -80,6 +94,8 @@ public class FormatDetector {
             case "jpeg":
             case "tif":
                 return File.Format.IMAGE;
+            default:
+                break;
         }
 
         //PLAIN

@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.authorization;
+package org.opencb.opencga.catalog.auth.authorization;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
