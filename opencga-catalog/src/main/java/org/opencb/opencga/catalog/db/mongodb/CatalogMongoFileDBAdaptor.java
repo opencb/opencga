@@ -489,8 +489,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> delete(long fileId, ObjectMap update, QueryOptions queryOptions)
-            throws CatalogDBException {
+    public QueryResult<File> delete(long fileId, ObjectMap update, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
 
 
