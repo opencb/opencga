@@ -29,6 +29,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
@@ -1002,9 +1003,16 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/delete")
     @ApiOperation(value = "Delete file", position = 23)
-    public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr) {
+    public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
+                              @ApiParam(value = "Delete files and folders from disk (only applicable for linked files/folders)",
+                                      required = false) @DefaultValue("false") @QueryParam("deleteExternal") boolean deleteExternal,
+                              @ApiParam(value="Skip trash and delete the files/folders from disk directly (CANNOT BE RECOVERED)",
+                                      required = false) @DefaultValue("false") @QueryParam("skipTrash") boolean skipTrash) {
         try {
-            QueryResult result = catalogManager.delete(fileIdStr, queryOptions, sessionId);
+            QueryOptions qOptions = new QueryOptions(queryOptions)
+                    .append(FileManager.DELETE_EXTERNAL_FILES, deleteExternal)
+                    .append(FileManager.SKIP_TRASH, skipTrash);
+            QueryResult result = catalogManager.delete(fileIdStr, qOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
