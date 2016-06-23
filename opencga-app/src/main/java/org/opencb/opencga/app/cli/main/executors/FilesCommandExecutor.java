@@ -17,15 +17,18 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
@@ -219,12 +222,25 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void link() throws CatalogException, IOException {
-        logger.debug("Linking an external file into catalog.");
-        String studyId = filesCommandOptions.linkCommandOptions.studyId;
-        String uri = filesCommandOptions.linkCommandOptions.uri;
-        String path = filesCommandOptions.copyCommandOptions.path;
-        openCGAClient.getFileClient().link(studyId, uri, path, null);
+    private void link() throws CatalogException, IOException, URISyntaxException {
+        logger.debug("Linking the file or folder into catalog.");
+
+        String studyStr = filesCommandOptions.linkCommandOptions.studyId;
+        URI uri = UriUtils.createUri(filesCommandOptions.linkCommandOptions.input);
+        String path = filesCommandOptions.linkCommandOptions.path;
+        ObjectMap objectMap = new ObjectMap()
+                .append(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.linkCommandOptions.description)
+                .append("parents", filesCommandOptions.linkCommandOptions.parents)
+                .append("sessionId", sessionId);
+
+        logger.debug("uri: {}", uri.toString());
+
+        QueryResponse<File> link = openCGAClient.getFileClient().link(studyStr, uri.toString(), path, objectMap);
+        if (!link.getError().isEmpty()) {
+            logger.error(link.getError());
+        } else {
+            link.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
     }
 
     private void relink() throws CatalogException {
@@ -232,9 +248,16 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void unlink() throws CatalogException {
+    private void unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
-        //TODO
+
+        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.file, new ObjectMap());
+
+        if (!unlink.getError().isEmpty()) {
+            logger.error(unlink.getError());
+        } else {
+            unlink.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
 
     }
 

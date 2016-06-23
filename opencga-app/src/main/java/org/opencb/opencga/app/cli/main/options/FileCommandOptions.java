@@ -316,35 +316,40 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
-    public class UnlinkCommandOptions extends BaseFileCommand {
+    public class UnlinkCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
+        public String file;
+
     }
 
 
-    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file into catalog.")
+    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog.")
     public class LinkCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        // @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
-        // public String inputFile;
-        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
-        public String uri;
+         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, arity = 1)
+         public String input;
+//        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
+//        public String uri;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Study where the file or folder will be associated to", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--path"}, description = "New folder path", required = false, arity = 1)
+        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder if empty)", required = false, arity = 1)
         public String path;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog", required = false, arity = 1)
         public String description;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        public boolean calculateChecksum;
     }
 
 

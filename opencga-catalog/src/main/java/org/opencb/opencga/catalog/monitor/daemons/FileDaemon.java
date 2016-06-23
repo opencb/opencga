@@ -113,7 +113,7 @@ public class FileDaemon extends MonitorParentDaemon {
                 long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
                 if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
                     if (file.getType().equals(File.Type.FILE)) {
-                        catalogManager.deleteFile(file.getId(), sessionId);
+                        catalogManager.delete(Long.toString(file.getId()), null, sessionId);
                     } else {
                         System.out.println("empty block");
                     }

@@ -23,9 +23,7 @@ import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
-import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -883,37 +881,44 @@ public class FileWSServer extends OpenCGAWSServer {
                          @ApiParam(required = false) @DefaultValue("false") @QueryParam("calculateChecksum") boolean calculateChecksum ) {
         try {
             URI uri = UriUtils.createUri(uriStr);
-            File file;
-            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
-            if (!ioManager.exists(uri)) {
-                throw new CatalogIOException("File " + uri + " does not exist");
-            }
-            if (ioManager.isDirectory(uri)) {
-                uri = UriUtils.createDirectoryUri(uriStr);
-                file = catalogFileUtils.linkFolder(studyId, path, parents, description, calculateChecksum, uri, false, false, sessionId);
-                new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
-            } else {
-                final String filePath;
-                if (path.endsWith("/")) {
-                    filePath = path + Paths.get(uri.getPath()).getFileName().toString();
-                } else {
-                    long folders = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), path + "/"),
-                            new QueryOptions(), sessionId).getNumResults();
-                    if (folders != 0) {
-                        filePath = path + "/" + Paths.get(uri.getPath()).getFileName().toString();
-                    } else {
-                        filePath = path;
-                    }
-                }
-                file = catalogManager.createFile(studyId, null, null,
-                        filePath, description, parents, -1, sessionId).first();
-                file = catalogFileUtils.link(file, calculateChecksum, uri, false, false, sessionId);
-                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
-                        false);
-            }
-            return createOkResponse(new QueryResult<>("link", 0, 1, 1, null, null, Collections.singletonList(file)));
+            ObjectMap objectMap = new ObjectMap()
+                    .append("parents", parents)
+                    .append("calculateChecksum", calculateChecksum)
+                    .append("description", description);
+            return createOkResponse(catalogManager.link(uri, path, studyIdStr, objectMap, sessionId));
+            // FIXME:
+//            URI uri = UriUtils.createUri(uriStr);
+//            File file;
+//            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
+//            long studyId = catalogManager.getStudyId(studyIdStr);
+//            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
+//            if (!ioManager.exists(uri)) {
+//                throw new CatalogIOException("File " + uri + " does not exist");
+//            }
+//            if (ioManager.isDirectory(uri)) {
+//                uri = UriUtils.createDirectoryUri(uriStr);
+//                file = catalogFileUtils.linkFolder(studyId, path, parents, description, calculateChecksum, uri, false, false, sessionId);
+//                new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
+//            } else {
+//                final String filePath;
+//                if (path.endsWith("/")) {
+//                    filePath = path + Paths.get(uri.getPath()).getFileName().toString();
+//                } else {
+//                    long folders = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), path + "/"),
+//                            new QueryOptions(), sessionId).getNumResults();
+//                    if (folders != 0) {
+//                        filePath = path + "/" + Paths.get(uri.getPath()).getFileName().toString();
+//                    } else {
+//                        filePath = path;
+//                    }
+//                }
+//                file = catalogManager.createFile(studyId, null, null,
+//                        filePath, description, parents, -1, sessionId).first();
+//                file = catalogFileUtils.link(file, calculateChecksum, uri, false, false, sessionId);
+//                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
+//                        false);
+//            }
+//            return createOkResponse(new QueryResult<>("link", 0, 1, 1, null, null, Collections.singletonList(file)));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -924,7 +929,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Unlink an external file from catalog.", position = 20)
     public Response link(@ApiParam(required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
         try {
-            QueryResult<File> queryResult = catalogManager.unlink(Integer.parseInt(fileIdStr), sessionId);
+            QueryResult<File> queryResult = catalogManager.unlink(fileIdStr, queryOptions, sessionId);
             return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -999,8 +1004,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete file", position = 23)
     public Response deleteGET(@PathParam(value = "fileId") @DefaultValue("") String fileIdStr) {
         try {
-            long fileId = catalogManager.getFileId(fileIdStr);
-            QueryResult result = catalogManager.deleteFile(fileId, sessionId);
+            QueryResult result = catalogManager.delete(fileIdStr, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);

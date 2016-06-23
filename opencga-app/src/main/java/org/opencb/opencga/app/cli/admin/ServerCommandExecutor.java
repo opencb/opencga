@@ -72,7 +72,7 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 //            }
 
             // Server crated and started
-            RestServer server = new RestServer(Paths.get(appHome).resolve("conf"));
+            RestServer server = new RestServer(Paths.get(this.conf));
             server.start();
             server.blockUntilShutdown();
             logger.info("Shutting down OpenCGA Storage REST server");

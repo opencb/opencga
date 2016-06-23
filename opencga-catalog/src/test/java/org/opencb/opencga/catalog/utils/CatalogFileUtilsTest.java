@@ -207,7 +207,7 @@ public class CatalogFileUtilsTest {
         assertTrue("folderUri " + folderUri + " shouldn't exist", !Paths.get(folderUri).toFile().exists());
 
         //Delete folder. Should trash everything.
-        catalogManager.deleteFolder(folder.getId(), userSessionId);
+        catalogManager.delete(Long.toString(folder.getId()), null, userSessionId);
 //        for (java.io.File createdFile : createdFiles) {
 //            assertTrue(createdFile.exists());
 //        }
@@ -298,7 +298,7 @@ public class CatalogFileUtilsTest {
         assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
 
         // Now we unlink it
-        catalogManager.unlink(file.getId(), userSessionId);
+        catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
         File result = catalogManager.getFile(file.getId(), userSessionId).first();
         assertEquals(File.FileStatus.TRASHED, result.getStatus().getStatus());
 
@@ -312,7 +312,7 @@ public class CatalogFileUtilsTest {
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
         thrown.expectMessage("does not have an URI.");
-        catalogManager.unlink(file.getId(), userSessionId);
+        catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
     }
 
     @Test
@@ -331,7 +331,7 @@ public class CatalogFileUtilsTest {
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getFileUri(file));
         assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first())));
 
-        catalogManager.deleteFile(file.getId(), userSessionId);
+        catalogManager.delete(Long.toString(file.getId()), null, userSessionId);
         assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first())));
 
         catalogFileUtils.delete(file.getId(), userSessionId);
@@ -347,7 +347,7 @@ public class CatalogFileUtilsTest {
             assertTrue(ioManager.exists(catalogManager.getFileUri(file)));
         }
 
-        catalogManager.deleteFolder(folder.getId(), userSessionId);
+        catalogManager.delete(Long.toString(folder.getId()), null, userSessionId);
         assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
         for (File file : folderFiles) {
             URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
@@ -374,14 +374,14 @@ public class CatalogFileUtilsTest {
         //Create deleted files inside the folder
         File toDelete = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toDelete.txt",
                 StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
-        catalogManager.deleteFile(toDelete.getId(), userSessionId);
+        catalogManager.delete(Long.toString(toDelete.getId()), null, userSessionId);
         catalogFileUtils.delete(toDelete.getId(), userSessionId);
 
         File toTrash = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/subfolder/toTrash.txt",
                 StringUtils.randomString(200).getBytes(), "", true, userSessionId).first();
-        catalogManager.deleteFile(toTrash.getId(), userSessionId);
+        catalogManager.delete(Long.toString(toTrash.getId()), null, userSessionId);
 
-        catalogManager.deleteFolder(folder.getId(), userSessionId);
+        catalogManager.delete(Long.toString(folder.getId()), null, userSessionId);
         assertTrue(ioManager.exists(catalogManager.getFileUri(catalogManager.getFile(folder.getId(), userSessionId).first())));
         for (File file : folderFiles) {
             URI fileUri = catalogManager.getFileUri(catalogManager.getFile(file.getId(), userSessionId).first());
@@ -450,7 +450,7 @@ public class CatalogFileUtilsTest {
         assertEquals(File.FileStatus.READY, returnedFile.getStatus().getStatus());
 
         /** Check TRASHED file with found file **/
-        catalogManager.deleteFile(file.getId(), userSessionId);
+        catalogManager.delete(Long.toString(file.getId()), null, userSessionId);
         file = catalogManager.getFile(file.getId(), userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
@@ -459,7 +459,7 @@ public class CatalogFileUtilsTest {
 
 
         /** Check TRASHED file with missing file **/
-        catalogManager.deleteFile(file.getId(), userSessionId);
+        catalogManager.delete(Long.toString(file.getId()), null, userSessionId);
         fileUri = catalogManager.getFileUri(file);
         assertTrue(Paths.get(fileUri).toFile().delete());
 

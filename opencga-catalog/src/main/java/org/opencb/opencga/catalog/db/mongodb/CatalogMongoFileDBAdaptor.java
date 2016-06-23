@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.db.mongodb;
 
 import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCursor;
 import com.mongodb.client.model.Aggregates;
 import com.mongodb.client.model.Filters;
@@ -90,13 +91,16 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         }
 
         // Update the diskUsage field from the study collection
-        try {
+        if (!file.isExternal()) {
             dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
-        } catch (CatalogDBException e) {
-            delete(newFileId, options);
-            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
-                    + "with the study collection.");
         }
+//        try {
+//            dbAdaptorFactory.getCatalogStudyDBAdaptor().updateDiskUsage(studyId, file.getDiskUsage());
+//        } catch (CatalogDBException e) {
+//            delete(newFileId, options);
+//            throw new CatalogDBException("File from study { id:" + studyId + "} was removed from the database due to problems "
+//                    + "with the study collection.");
+//        }
 
         return endQuery("Create file", startTime, getFile(newFileId, options));
     }
@@ -122,7 +126,8 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         qOptions = filterOptions(qOptions, FILTER_ROUTE_FILES);
 
         QueryResult<File> fileQueryResult = fileCollection.find(bson, fileConverter, qOptions);
-        logger.debug("File get: query : {}, project: {}, dbTime: {}", bson, qOptions == null ? "" : qOptions.toJson(),
+        logger.debug("File get: query : {}, project: {}, dbTime: {}",
+                bson.toBsonDocument(Document.class, MongoClient.getDefaultCodecRegistry()), qOptions == null ? "" : qOptions.toJson(),
                 fileQueryResult.getDbTime());
         return endQuery("get File", startTime, fileQueryResult);
     }

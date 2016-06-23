@@ -63,7 +63,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "Job name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--tool-id"}, description = "Tool Id", required = true, arity = 1)

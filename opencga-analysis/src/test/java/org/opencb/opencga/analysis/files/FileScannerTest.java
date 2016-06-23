@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.CatalogManagerTest;
@@ -97,7 +98,7 @@ public class FileScannerTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
 
-        catalogManager.deleteFile(file.getId(), sessionIdUser);
+        catalogManager.delete(Long.toString(file.getId()), new QueryOptions(), sessionIdUser);
 
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getStatus());
