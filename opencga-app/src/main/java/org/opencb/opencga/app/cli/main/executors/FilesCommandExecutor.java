@@ -27,6 +27,7 @@ import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -217,9 +218,20 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void delete() throws CatalogException {
+    private void delete() throws CatalogException, IOException {
         logger.debug("Deleting file");
-        //TODO
+
+        ObjectMap objectMap = new ObjectMap()
+                .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
+                .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
+
+        QueryResponse<User> delete = openCGAClient.getUserClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
+
+        if (!delete.getError().isEmpty()) {
+            logger.error(delete.getError());
+        } else {
+            delete.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
     }
 
     private void link() throws CatalogException, IOException, URISyntaxException {

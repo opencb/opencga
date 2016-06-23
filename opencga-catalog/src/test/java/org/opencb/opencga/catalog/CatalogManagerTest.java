@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog;
 
 import com.mongodb.BasicDBObject;
+import com.sun.org.apache.xml.internal.resolver.Catalog;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 import org.opencb.commons.datastore.core.*;
@@ -26,6 +27,7 @@ import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
 import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.exceptions.*;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
@@ -1115,6 +1117,106 @@ public class CatalogManagerTest extends GenericTest {
             assertTrue(f.getId() != 0);
         });
 
+    }
+
+    // Try to delete files/folders whose status is STAGED, MISSING...
+    @Test
+    public void testDelete1() throws CatalogException, IOException {
+        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
+
+        String filePath = "data/";
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
+        QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, sessionIdUser);
+
+        // Change the status to MISSING
+        ObjectMap objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.MISSING);
+        catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
+
+        try {
+            catalogManager.delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
+            fail("The call should prohibit deleting a folder in status missing");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("cannot be deleted"));
+        }
+
+        // Change the status to STAGED
+        objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.STAGE);
+        catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
+
+        try {
+            catalogManager.delete(Long.toString(fileQueryResult.first().getId()), null, sessionIdUser);
+            fail("The call should prohibit deleting a folder in status staged");
+        } catch (CatalogException e) {
+            assertTrue(e.getMessage().contains("cannot be deleted"));
+        }
+    }
+
+    // It will try to delete a folder in status ready
+    @Test
+    public void testDelete2() throws CatalogException, IOException {
+        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
+
+        String filePath = "data/";
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
+        File file = catalogManager.searchFile(studyId, query, sessionIdUser).first();
+
+        // We look for all the files and folders that fall within that folder
+        query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+        int numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
+        assertEquals(6, numResults);
+
+        // We delete it
+        catalogManager.delete(Long.toString(file.getId()), null, sessionIdUser);
+
+        // The files should have been moved to trashed status
+        numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
+        assertEquals(0, numResults);
+
+        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.TRASHED);
+        numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
+        assertEquals(6, numResults);
+    }
+
+    // It will try to delete a folder in status ready and skip the trash
+    @Test
+    public void testDelete3() throws CatalogException, IOException {
+        long projectId = catalogManager.getAllProjects("user", null, sessionIdUser).first().getId();
+        long studyId = catalogManager.getAllStudiesInProject(projectId, null, sessionIdUser).first().getId();
+
+        String filePath = "data/";
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
+        File file = catalogManager.searchFile(studyId, query, sessionIdUser).first();
+
+        // We look for all the files and folders that fall within that folder
+        query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+        int numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
+        assertEquals(6, numResults);
+
+        // We delete it
+        QueryOptions queryOptions = new QueryOptions(FileManager.SKIP_TRASH, true);
+        catalogManager.delete(Long.toString(file.getId()), queryOptions, sessionIdUser);
+
+        // The files should have been moved to trashed status
+        numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
+        assertEquals(0, numResults);
+
+        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.PENDING_DELETE);
+        numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
+        assertEquals(6, numResults);
     }
 
     @Test

@@ -306,7 +306,22 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
-    public class DeleteCommandOptions extends BaseFileCommand {
+    public class DeleteCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
+                + " (only applicable for linked files/folders)", required = false, arity = 1)
+        public boolean deleteExternal;
+
+        @Parameter(names = {"--skip-trash"}, description = "Boolean indicating whether to skip sending the files to the trash first. "
+                + "If set, it will not be possible to recover them!", required = false, arity = 1)
+        public boolean skipTrash;
+
     }
 
 
