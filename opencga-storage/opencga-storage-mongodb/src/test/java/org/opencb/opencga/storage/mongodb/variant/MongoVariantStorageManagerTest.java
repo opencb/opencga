@@ -127,7 +127,7 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
                 String id = document.getString("_id");
                 List<Document> studies = document.get(DocumentToVariantConverter.STUDIES_FIELD, List.class);
 //                List alternates = studies.get(0).get(ALTERNATES_FIELD, List.class);
-                if (id.equals("M_16185_C_A") || id.equals("M_16184_C_") || id.equals("M_16184_CC_")) {
+                if (id.equals("M:     16185:C:A") || id.equals("M:     16184:C:") || id.equals("M:     16184:CC:")) {
                     continue;
                 }
                 assertEquals(id, 2, studies.size());
