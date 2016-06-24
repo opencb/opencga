@@ -831,25 +831,27 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 mongoDBOperations.inserts.add(variantDocument);
             }
         } else if (newStudy) {
+            // If there where no files and the study is new, do not add a new study.
+            // It may happen if all the files in the variant where duplicated for this variant.
+            if (!fileDocuments.isEmpty()) {
+                Document studyDocument = new Document(STUDYID_FIELD, studyId)
+                        .append(FILES_FIELD, fileDocuments);
 
-            Document studyDocument = new Document(STUDYID_FIELD, studyId)
-                    .append(FILES_FIELD, fileDocuments);
+                if (!excludeGenotypes) {
+                    studyDocument.append(GENOTYPES_FIELD, gts);
+                }
 
-            if (!excludeGenotypes) {
-                studyDocument.append(GENOTYPES_FIELD, gts);
+                if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
+                    studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
+                }
+
+                String id = variantConverter.buildStorageId(emptyVar);
+                mongoDBOperations.queriesExistingId.add(id);
+                mongoDBOperations.queriesExisting.add(Filters.eq("_id", id));
+                mongoDBOperations.updatesExisting.add(Updates.combine(
+                        Updates.push(STUDIES_FIELD, studyDocument),
+                        Updates.addEachToSet(IDS_FIELD, ids)));
             }
-
-            if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
-                studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
-            }
-
-            String id = variantConverter.buildStorageId(emptyVar);
-            mongoDBOperations.queriesExistingId.add(id);
-            mongoDBOperations.queriesExisting.add(Filters.eq("_id", id));
-            mongoDBOperations.updatesExisting.add(Updates.combine(
-                    Updates.push(STUDIES_FIELD, studyDocument),
-                    Updates.addEachToSet(IDS_FIELD, ids)));
-
         } else {
             String id = variantConverter.buildStorageId(emptyVar);
             List<Bson> mergeUpdates = new LinkedList<>();
