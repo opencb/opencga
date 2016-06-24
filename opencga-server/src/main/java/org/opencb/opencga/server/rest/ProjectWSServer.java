@@ -54,7 +54,7 @@ public class ProjectWSServer extends OpenCGAWSServer {
     public Response createProject(@ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                   @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
                                   @ApiParam(value = "description", required = false) @QueryParam("description") String description,
-                                  @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization) {
+                                  @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization) {
         try {
             QueryResult queryResult = catalogManager.createProject(name, alias, description, organization, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -105,14 +105,12 @@ public class ProjectWSServer extends OpenCGAWSServer {
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                           @ApiParam(value = "status", required = false) @QueryParam("status") String status,
                            @ApiParam(value = "attributes", required = false) @QueryParam("attributes") String attributes) throws IOException {
         try {
             ObjectMap objectMap = new ObjectMap();
             objectMap.put("name", name);
             objectMap.put("description", description);
             objectMap.put("organization", organization);
-            objectMap.put("status", status);
             objectMap.put("attributes", attributes);
 
             long projectId = catalogManager.getProjectId(projectIdStr);

@@ -50,8 +50,9 @@ public class UserWSServer extends OpenCGAWSServer {
     public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "email", required = true) @QueryParam("email") String email,
-                               @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-                               @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
+                               @ApiParam(value = "password", required = true) @QueryParam("password") String password,
+                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                               @ApiParam(value = "[PENDING] Create a default project after creating the user", required = false, defaultValue = "false") @QueryParam("createDefaultProject") boolean defaultProject) {
         try {
             queryOptions.remove("password");
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
@@ -82,7 +83,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @Path("/{userId}/login")
     @ApiOperation(value = "User login returns a valid session ID token", position = 3)
     public Response login(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                          @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
+                          @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult queryResult;
         try {
@@ -133,7 +134,8 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/change-email")
-    @ApiOperation(value = "User email change", position = 6)
+    @Deprecated
+    @ApiOperation(value = "User email change", position = 6, notes = "Deprecated method. Moved to update.")
     public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                 @ApiParam(value = "New email", required = true) @QueryParam("nemail") String nEmail) {
         try {
@@ -146,11 +148,10 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/reset-password")
-    @ApiOperation(value = "User email change", position = 7)
-    public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                  @ApiParam(value = "email", required = true) @QueryParam("email") String email) {
+    @ApiOperation(value = "Reset password", position = 7, notes = "Reset the user password and send a new one to the e-mail stored in catalog.")
+    public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
-            QueryResult result = catalogManager.resetPassword(userId, email);
+            QueryResult result = catalogManager.resetPassword(userId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -160,7 +161,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/projects")
-    @ApiOperation(value = "Project information", position = 8)
+    @ApiOperation(value = "Return projects", position = 8, notes = "Return all the projects and studies belonging to the user.")
     public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
             QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);

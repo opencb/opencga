@@ -75,22 +75,22 @@ public class OpenCGAWSServer {
 
     @DefaultValue("")
     @QueryParam("exclude")
-    @ApiParam(name = "excluded fields", value = "Fields excluded in response. Whole JSON path e.g.: transcripts.id")
+    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
     protected String exclude;
 
     @DefaultValue("")
     @QueryParam("include")
-    @ApiParam(name = "included fields", value = "Only fields included in response. Whole JSON path e.g.: transcripts.id")
+    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
     protected String include;
 
     @DefaultValue("-1")
     @QueryParam("limit")
-    @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
+    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
     protected int limit;
 
     @DefaultValue("0")
     @QueryParam("skip")
-    @ApiParam(name = "skip results", value = "Number of documents to be skipped when querying for data.")
+    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
 
     @DefaultValue("")
@@ -422,6 +422,7 @@ public class OpenCGAWSServer {
 //        return queryOptions;
 //    }
 
+    @Deprecated
     @GET
     @Path("/help")
     public Response help() {

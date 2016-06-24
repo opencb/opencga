@@ -347,42 +347,43 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
+//
+//    @GET
+//    @Path("/content-example")
+//    @ApiOperation(value = "File content", position = 8)
+//    public Response downloadExample(@ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
+//                                    @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName) {
+//        /** I think this next two lines should be parametrized either in analysis.properties or the manifest.json of each tool **/
+//        String analysisPath = Config.getOpenCGAHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
+//        String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
+//        try {
+//            InputStream stream = new FileInputStream(fileExamplesToolPath);
+//            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/download-example")
+//    @ApiOperation(value = "File download", position = 9)
+//    public Response downloadExampleFile(@ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
+//                                        @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName) {
+//        try {
+//            String analysisPath = Config.getGcsaHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
+//            String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
+//            InputStream istream = new FileInputStream(fileExamplesToolPath);
+//            DataInputStream stream = new DataInputStream(istream);
+//            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
-    @GET
-    @Path("/content-example")
-    @ApiOperation(value = "File content", position = 8)
-    public Response downloadExample(@ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
-                                    @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName) {
-        /** I think this next two lines should be parametrized either in analysis.properties or the manifest.json of each tool **/
-        String analysisPath = Config.getOpenCGAHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
-        String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
-        try {
-            InputStream stream = new FileInputStream(fileExamplesToolPath);
-            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/download-example")
-    @ApiOperation(value = "File download", position = 9)
-    public Response downloadExampleFile(@ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
-                                        @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName) {
-        try {
-            String analysisPath = Config.getGcsaHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
-            String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
-            InputStream istream = new FileInputStream(fileExamplesToolPath);
-            DataInputStream stream = new DataInputStream(istream);
-            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
+    @Deprecated
     @GET
     @Path("/{fileId}/set-header")
-    @ApiOperation(value = "Set file header", position = 10)
+    @ApiOperation(value = "Set file header", position = 10, notes = "Deprecated method. Moved to update.")
     public Response setHeader(@PathParam(value = "fileId") @FormDataParam("fileId") long fileId,
                               @ApiParam(value = "header", required = true) @DefaultValue("") @QueryParam("header") String header) {
         String content = "";

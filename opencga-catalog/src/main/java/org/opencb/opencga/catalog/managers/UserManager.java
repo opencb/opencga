@@ -290,8 +290,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email) throws CatalogException {
-        return authenticationManager.resetPassword(userId, email);
+    public QueryResult resetPassword(String userId) throws CatalogException {
+        return authenticationManager.resetPassword(userId);
     }
 
     @Deprecated

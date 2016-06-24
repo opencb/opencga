@@ -259,42 +259,41 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+    // FIXME: Implement and change parameters
     @GET
     @Path("/search")
-    @ApiOperation(value = "File info", position = 12)
+    @ApiOperation(value = "Filter jobs [PENDING]", position = 12)
     public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
-                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
+                           @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
-                           @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
-                           @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
-                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
-                           @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
-                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+                           @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
+                           @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
+                           @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("") @QueryParam("outputFiles") String outputFiles) {
         try {
-            long studyIdNum = catalogManager.getStudyId(studyId);
-            // TODO this must be changed: only one queryOptions need to be passed
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
-                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
-                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
-                logger.debug("Name attribute empty, it's been removed");
-            }
-
-            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
-                qOptions.put(MongoDBCollection.LIMIT, 1000);
-                logger.debug("Adding a limit of 1000");
-            }
-            logger.debug("query = " + query.toJson());
-            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
-            return createOkResponse(result);
+//            long studyIdNum = catalogManager.getStudyId(studyId);
+//            // TODO this must be changed: only one queryOptions need to be passed
+//            Query query = new Query();
+//            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+//            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+//
+//            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
+//                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
+//                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+//                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
+//                logger.debug("Name attribute empty, it's been removed");
+//            }
+//
+//            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
+//                qOptions.put(MongoDBCollection.LIMIT, 1000);
+//                logger.debug("Adding a limit of 1000");
+//            }
+//            logger.debug("query = " + query.toJson());
+//            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
+//            return createOkResponse(result);
+            return createOkResponse("Non implemented method");
         } catch (Exception e) {
             return createErrorResponse(e);
         }

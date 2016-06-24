@@ -56,7 +56,7 @@ public interface IUserManager extends ResourceManager<String, User> {
     @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException;
 
-    QueryResult resetPassword(String userId, String email) throws CatalogException;
+    QueryResult resetPassword(String userId) throws CatalogException;
 
     @Deprecated
     QueryResult<ObjectMap> loginAsAnonymous(String sessionIp) throws CatalogException, IOException;

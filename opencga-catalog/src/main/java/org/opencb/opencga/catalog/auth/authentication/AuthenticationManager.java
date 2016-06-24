@@ -34,11 +34,10 @@ public interface AuthenticationManager {
      * Throws "UnsupportedOperationException" is the implementation does not support this operation.
      *
      * @param userId UserId
-     * @param email  UserId's email
      * @return QueryResult QueryResult
      * @throws CatalogException CatalogException
      */
-    QueryResult resetPassword(String userId, String email) throws CatalogException;
+    QueryResult resetPassword(String userId) throws CatalogException;
 
     /**
      * Set a password to a user without a password.
