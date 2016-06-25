@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
+import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
@@ -285,7 +286,11 @@ public class OpenCGAWSServer {
         }
     }
 
-
+    protected static void addMapParams(Map<String, Object> map, String key, Object object) {
+        if (object != null) {
+            map.put(key, object);
+        }
+    }
 
     /**
      * Builds the query and the queryOptions based on the query parameters.
@@ -425,6 +430,7 @@ public class OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/help")
+    @ApiOperation(value = "Create sample", position = 1)
     public Response help() {
         return createOkResponse("No help available");
     }
