@@ -32,6 +32,7 @@ public class FileIndex {
 
     private Map<String, Object> attributes;
 
+
     public FileIndex() {
     }
 
@@ -97,14 +98,25 @@ public class FileIndex {
         }
     }
 
-    class LocalFileIndex {
+    public class LocalFileIndex {
+
         private long fileId;
-        // This tipically will be tabix, sammtools, ...
+        // This typically will be: tabix, sammtools, ...
         private String indexer;
 
-        LocalFileIndex(long fileId, String indexer) {
+        public LocalFileIndex(long fileId, String indexer) {
             this.fileId = fileId;
             this.indexer = indexer;
+        }
+
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("LocalFileIndex{");
+            sb.append("fileId=").append(fileId);
+            sb.append(", indexer='").append(indexer).append('\'');
+            sb.append('}');
+            return sb.toString();
         }
 
         public long getFileId() {

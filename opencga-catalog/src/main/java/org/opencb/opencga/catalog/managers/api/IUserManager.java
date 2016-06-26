@@ -4,7 +4,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
@@ -66,10 +66,10 @@ public interface IUserManager extends ResourceManager<String, User> {
     @Deprecated
     QueryResult logoutAnonymous(String sessionId) throws CatalogException;
 
-    void addQueryFilter(String sessionId, Filter filter) throws CatalogException;
+    void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException;
 
     QueryResult<Long> deleteQueryFilter(String sessionId, String filterId) throws CatalogException;
 
-    QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException;
+    QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException;
 
 }

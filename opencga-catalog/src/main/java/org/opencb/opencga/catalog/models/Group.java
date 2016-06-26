@@ -27,6 +27,7 @@ public class Group {
         this.userIds = userIds;
     }
 
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Group{");
@@ -53,5 +54,6 @@ public class Group {
         this.userIds = userIds;
         return this;
     }
+
 }
 

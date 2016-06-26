@@ -51,7 +51,7 @@ public class Job {
     private String name;
 
     /**
-     * UserId of the user that created the job.
+     * Id of the user that created the job.
      */
     private String userId;
 
@@ -96,6 +96,7 @@ public class Job {
     private Map<String, Object> resourceManagerAttributes;
     private String error;
     private String errorDescription;
+
 
     public Job() {
     }
@@ -190,6 +191,47 @@ public class Job {
         this.errorDescription = null;
     }
 
+    public Job(long id, String name, String userId, long toolId, String toolName, String date, String description, long startTime, long
+            endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage, long
+            outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAcl> acls, Map<String, String>
+            params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
+        this.id = id;
+        this.name = name;
+        this.userId = userId;
+        this.toolId = toolId;
+        this.toolName = toolName;
+        this.date = date;
+        this.description = description;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.outputError = outputError;
+        this.execution = execution;
+        this.commandLine = commandLine;
+        this.visits = visits;
+        this.status = status;
+        this.diskUsage = diskUsage;
+        this.outDirId = outDirId;
+        this.tmpOutDirUri = tmpOutDirUri;
+        this.input = input;
+        this.output = output;
+        this.tags = tags;
+        this.acls = acls;
+        this.params = params;
+        this.attributes = attributes;
+        this.resourceManagerAttributes = resourceManagerAttributes;
+        if (this.resourceManagerAttributes == null) {
+            this.resourceManagerAttributes = new HashMap<>();
+        }
+        if (!this.resourceManagerAttributes.containsKey(Job.JOB_SCHEDULER_NAME)) {
+            this.resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, "");
+        }
+        if (!this.attributes.containsKey(Job.TYPE)) {
+            this.attributes.put(Job.TYPE, Type.ANALYSIS);
+        }
+        this.error = error;
+        this.errorDescription = errorDescription;
+    }
+
     public static class JobStatus extends Status {
 
         /**
@@ -247,6 +289,7 @@ public class Job {
         INDEX,
         COHORT_STATS
     }
+
 
     @Override
     public String toString() {
@@ -514,4 +557,5 @@ public class Job {
         this.errorDescription = errorDescription;
         return this;
     }
+
 }

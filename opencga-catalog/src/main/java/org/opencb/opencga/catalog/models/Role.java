@@ -23,6 +23,7 @@ import java.util.List;
  *
  * Created by pfurio on 15/04/16.
  */
+@Deprecated
 public class Role {
 
     private String id;

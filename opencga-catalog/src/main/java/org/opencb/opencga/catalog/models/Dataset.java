@@ -34,10 +34,10 @@ public class Dataset {
 
     private List<Long> files;
     private List<DatasetAcl> acls;
-
     private Status status;
 
     private Map<String, Object> attributes;
+
 
     public Dataset() {
     }
@@ -53,6 +53,19 @@ public class Dataset {
         this.status = status;
         this.attributes = attributes;
     }
+
+    public Dataset(long id, String name, String creationDate, String description, List<Long> files, List<DatasetAcl> acls, Status status,
+                   Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.creationDate = creationDate;
+        this.description = description;
+        this.files = files;
+        this.acls = acls;
+        this.status = status;
+        this.attributes = attributes;
+    }
+
 
     @Override
     public String toString() {
@@ -140,4 +153,5 @@ public class Dataset {
         this.acls = acls;
         return this;
     }
+
 }

@@ -44,7 +44,7 @@ public class User {
     private List<Tool> tools;
 
     /**
-     * Open sessions for this user. Closed are in audit
+     * Open sessions for this user. Closed are stored in audit
      * More than one session can be open, i.e. logged from CLI and Web browsers
      */
     private List<Session> sessions;

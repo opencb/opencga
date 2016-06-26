@@ -44,6 +44,7 @@ public class Cohort {
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
 
+
     public Cohort() {
     }
 
@@ -65,114 +66,6 @@ public class Cohort {
         this.annotationSets = Collections.emptyList();
         this.stats = stats;
         this.attributes = attributes;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Cohort{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", type=").append(type);
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", samples=").append(samples);
-        sb.append(", acls=").append(acls);
-        sb.append(", annotationSets=").append(annotationSets);
-        sb.append(", stats=").append(stats);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public void setType(Type type) {
-        this.type = type;
-    }
-
-    public String getCreationDate() {
-        return creationDate;
-    }
-
-    public void setCreationDate(String creationDate) {
-        this.creationDate = creationDate;
-    }
-
-    public CohortStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(CohortStatus status) {
-        this.status = status;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
-
-    public List<Long> getSamples() {
-        return samples;
-    }
-
-    public void setSamples(List<Long> samples) {
-        this.samples = samples;
-    }
-
-    public Map<String, Object> getStats() {
-        return stats;
-    }
-
-    public void setStats(Map<String, Object> stats) {
-        this.stats = stats;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public void setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-    }
-
-    public List<CohortAcl> getAcls() {
-        return acls;
-    }
-
-    public Cohort setAcls(List<CohortAcl> acls) {
-        this.acls = acls;
-        return this;
-    }
-
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
     }
 
     public static class CohortStatus extends Status {
@@ -220,4 +113,123 @@ public class Cohort {
         TRIO,
         COLLECTION
     }
+
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Cohort{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", samples=").append(samples);
+        sb.append(", acls=").append(acls);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public Cohort setId(long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Cohort setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public Cohort setType(Type type) {
+        this.type = type;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public Cohort setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public CohortStatus getStatus() {
+        return status;
+    }
+
+    public Cohort setStatus(CohortStatus status) {
+        this.status = status;
+        return this;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Cohort setDescription(String description) {
+        this.description = description;
+        return this;
+    }
+
+    public List<Long> getSamples() {
+        return samples;
+    }
+
+    public Cohort setSamples(List<Long> samples) {
+        this.samples = samples;
+        return this;
+    }
+
+    public List<CohortAcl> getAcls() {
+        return acls;
+    }
+
+    public Cohort setAcls(List<CohortAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public Map<String, Object> getStats() {
+        return stats;
+    }
+
+    public Cohort setStats(Map<String, Object> stats) {
+        this.stats = stats;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Cohort setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
 }

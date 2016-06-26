@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 
 import java.util.ArrayList;
@@ -41,13 +40,19 @@ public class Individual {
     private Status status;
     private List<IndividualAcl> acls;
     private List<AnnotationSet> annotationSets;
+
     private Map<String, Object> attributes;
+
+    public enum Gender {
+        MALE, FEMALE, UNKNOWN
+    }
+
 
     public Individual() {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
-                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) throws CatalogException {
+                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -63,52 +68,22 @@ public class Individual {
         this.attributes = attributes;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", fatherId=").append(fatherId);
-        sb.append(", motherId=").append(motherId);
-        sb.append(", family='").append(family).append('\'');
-        sb.append(", gender=").append(gender);
-        sb.append(", race='").append(race).append('\'');
-        sb.append(", species=").append(species);
-        sb.append(", population=").append(population);
-        sb.append(", status=").append(status);
-        sb.append(", acls=").append(acls);
-        sb.append(", annotationSets=").append(annotationSets);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public Individual setId(long id) {
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
+                      Population population, Status status, List<IndividualAcl> acls, List<AnnotationSet> annotationSets,
+                      Map<String, Object> attributes) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Individual setName(String name) {
         this.name = name;
-        return this;
-
-    }
-
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.fatherId = fatherId;
+        this.motherId = motherId;
+        this.family = family;
+        this.gender = gender;
+        this.race = race;
+        this.species = species;
+        this.population = population;
+        this.status = status;
+        this.acls = acls;
         this.annotationSets = annotationSets;
-        return this;
+        this.attributes = attributes;
     }
 
     @Override
@@ -169,6 +144,54 @@ public class Individual {
         result = 31 * result + (population != null ? population.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
         return toIntExact(result);
+    }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Individual{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", fatherId=").append(fatherId);
+        sb.append(", motherId=").append(motherId);
+        sb.append(", family='").append(family).append('\'');
+        sb.append(", gender=").append(gender);
+        sb.append(", race='").append(race).append('\'');
+        sb.append(", species=").append(species);
+        sb.append(", population=").append(population);
+        sb.append(", status=").append(status);
+        sb.append(", acls=").append(acls);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public Individual setId(long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Individual setName(String name) {
+        this.name = name;
+        return this;
+
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
     }
 
     public long getFatherId() {
@@ -260,15 +283,13 @@ public class Individual {
         return this;
     }
 
-    public enum Gender {
-        MALE, FEMALE, UNKNOWN
-    }
-
     // internal class
     public static class Species {
+
         private String taxonomyCode;
         private String scientificName;
         private String commonName;
+
 
         public Species() {
         }
@@ -338,9 +359,11 @@ public class Individual {
     }
 
     public static class Population {
+
         private String name;
         private String subpopulation;
         private String description;
+
 
         public Population() {
         }

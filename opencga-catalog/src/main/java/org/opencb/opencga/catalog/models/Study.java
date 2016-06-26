@@ -108,24 +108,6 @@ public class Study {
         this.attributes = attributes;
     }
 
-    public List<StudyAcl> getAcls() {
-        return acls;
-    }
-
-    public Study setAcls(List<StudyAcl> acls) {
-        this.acls = acls;
-        return this;
-    }
-
-    public List<DiseasePanel> getPanels() {
-        return panels;
-    }
-
-    public Study setPanels(List<DiseasePanel> panels) {
-        this.panels = panels;
-        return this;
-    }
-
     public enum Type {
         CASE_CONTROL,
         CASE_SET,
@@ -138,6 +120,7 @@ public class Study {
         TRIO,
         COLLECTION
     }
+
 
     @Override
     public String toString() {
@@ -270,6 +253,15 @@ public class Study {
         return this;
     }
 
+    public List<StudyAcl> getAcls() {
+        return acls;
+    }
+
+    public Study setAcls(List<StudyAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
     public List<Experiment> getExperiments() {
         return experiments;
     }
@@ -330,6 +322,15 @@ public class Study {
 
     public Study setCohorts(List<Cohort> cohorts) {
         this.cohorts = cohorts;
+        return this;
+    }
+
+    public List<DiseasePanel> getPanels() {
+        return panels;
+    }
+
+    public Study setPanels(List<DiseasePanel> panels) {
+        this.panels = panels;
         return this;
     }
 

@@ -25,8 +25,8 @@ public class Annotation {
      * This id must be a valid variable ID.
      */
     private String id;
-
     private Object value;
+
 
     public Annotation() {
     }
@@ -35,6 +35,7 @@ public class Annotation {
         this.id = id;
         this.value = value;
     }
+
 
     @Override
     public String toString() {
@@ -77,15 +78,17 @@ public class Annotation {
         return id;
     }
 
-    public void setId(String id) {
+    public Annotation setId(String id) {
         this.id = id;
+        return this;
     }
 
     public Object getValue() {
         return value;
     }
 
-    public void setValue(Object value) {
+    public Annotation setValue(Object value) {
         this.value = value;
+        return this;
     }
 }
