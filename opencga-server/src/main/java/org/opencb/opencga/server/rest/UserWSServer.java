@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -45,13 +45,14 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Creates a new user", position = 1)
+    @ApiOperation(value = "Creates a new user", position = 1, response = User.class)
     public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "email", required = true) @QueryParam("email") String email,
                                @ApiParam(value = "password", required = true) @QueryParam("password") String password,
                                @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
-                               @ApiParam(value = "[PENDING] Create a default project after creating the user", required = false, defaultValue = "false") @QueryParam("createDefaultProject") boolean defaultProject) {
+                               @ApiParam(value = "[PENDING] Create a default project after creating the user", required = false, defaultValue = "false")
+                                   @QueryParam("createDefaultProject") boolean defaultProject) {
         try {
             queryOptions.remove("password");
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
@@ -63,7 +64,11 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/info")
-    @ApiOperation(value = "Retrieves all user info", position = 2)
+    @ApiOperation(value = "Retrieves all user info", position = 2, response = User.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                             @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult", required = false) @QueryParam("lastActivity") String lastActivity) {
         try {
@@ -120,20 +125,20 @@ public class UserWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "User password change", position = 5)
     public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                    @ApiParam(value = "Old password", required = true) @QueryParam("password") String password,
-                                   @ApiParam(value = "New password", required = true) @QueryParam("npassword") String nPassword1) {
+                                   @ApiParam(value = "New password", required = true) @QueryParam("npassword") String nPassword) {
         try {
-            queryOptions.remove("password"); //Remove password from query options
+            queryOptions.remove("password");
             queryOptions.remove("npassword");
-            QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
+            QueryResult result = catalogManager.changePassword(userId, password, nPassword, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{userId}/change-email")
-    @Deprecated
     @ApiOperation(value = "User email change", position = 6, notes = "Deprecated method. Moved to update.")
     public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                 @ApiParam(value = "New email", required = true) @QueryParam("nemail") String nEmail) {
@@ -160,7 +165,13 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/projects")
-    @ApiOperation(value = "Return projects", position = 8, notes = "Return all the projects and studies belonging to the user.")
+    @ApiOperation(value = "Return projects", position = 8, notes = "Return all the projects and studies belonging to the user", response = Project[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
+    })
     public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
             QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
@@ -172,7 +183,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 9)
+    @ApiOperation(value = "Update some user attributes using GET method", position = 9, response = User.class)
     public Response update(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
@@ -207,7 +218,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{userId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 9)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 9, response = User.class)
     public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                  @ApiParam(name = "params", value = "Parameters to modify", required = true) Map<String, Object> params) {
         try {

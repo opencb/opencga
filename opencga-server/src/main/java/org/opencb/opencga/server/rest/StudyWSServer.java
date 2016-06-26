@@ -16,16 +16,17 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
+import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
+import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
@@ -33,10 +34,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.core.exception.VersionException;
-import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -63,12 +63,12 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create study with GET method", position = 1)
-    public Response createStudy(@ApiParam(value = "projectId",    required = true)  @QueryParam("projectId") String projectIdStr,
-                                @ApiParam(value = "name",         required = true)  @QueryParam("name") String name,
-                                @ApiParam(value = "alias",        required = true)  @QueryParam("alias") String alias,
-                                @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
-                                @ApiParam(value = "description",  required = false) @QueryParam("description") String description) {
+    @ApiOperation(value = "Create study with GET method", position = 1, response = Study.class)
+    public Response createStudy(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
+                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+                                @ApiParam(value = "alias", required = true) @QueryParam("alias") String alias,
+                                @ApiParam(value = "type", required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
+                                @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
         try {
             long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult = catalogManager.createStudy(projectId, name, alias, type, description, sessionId);
@@ -80,19 +80,26 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search studies", position = 2)
+    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAllStudies(@ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "projectId") @QueryParam("projectId") String projectId,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "alias") @QueryParam("alias") String alias,
                                   @ApiParam(value = "type") @QueryParam("type") String type,
-//                                  @ApiParam(value = "creatorId") @QueryParam("creatorId") String creatorId,
                                   @ApiParam(value = "creationDate") @QueryParam("creationDate") String creationDate,
                                   @ApiParam(value = "status") @QueryParam("status") String status,
                                   @ApiParam(value = "attributes") @QueryParam("attributes") String attributes,
-                                  @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
-                                  @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes) {
+                                  @Deprecated @ApiParam(value = "numerical attributes") @QueryParam("nattributes") String nattributes,
+                                  @Deprecated @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes) {
         try {
+            // FIXME this is not needed right?
             QueryOptions qOptions = new QueryOptions(queryOptions);
             parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
@@ -104,16 +111,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/update")
-    @ApiOperation(value = "Study modify", position = 3)
+    @ApiOperation(value = "Study modify", position = 3, response = Study.class)
     public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
-                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description)
-//            @ApiParam(defaultValue = "attributes", required = false) @QueryParam("attributes") String attributes,
-//            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
-            throws IOException {
+                           @ApiParam(value = "name") @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "type") @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description,
+                           @ApiParam(defaultValue = "attributes") @DefaultValue("") @QueryParam("attributes") String attributes,
+                           @ApiParam(defaultValue = "stats") @DefaultValue("") @QueryParam("stats") String stats) throws IOException {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
             ObjectMap objectMap = new ObjectMap();
             if(!name.isEmpty()) {
                 objectMap.put("name", name);
@@ -124,9 +129,15 @@ public class StudyWSServer extends OpenCGAWSServer {
             if(!description.isEmpty()) {
                 objectMap.put("description", description);
             }
-//            objectMap.put("attributes", attributes);
-//            objectMap.put("stats", stats);
-            System.out.println(objectMap.toJson());
+            if(!attributes.isEmpty()) {
+                objectMap.put("attributes", attributes);
+            }
+            if(!stats.isEmpty()) {
+                objectMap.put("stats", stats);
+            }
+
+            logger.debug(objectMap.toJson());
+            long studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -137,20 +148,18 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", position = 4)
+    @ApiOperation(value = "Delete a study [PENDING]", position = 4, response = Study.class)
     public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
         return createOkResponse("PENDING");
-      /*  try {
-            return createOkResponse(catalogManager.deleteStudy(studyId, queryOptions, sessionId));
-
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }*/
     }
 
     @GET
     @Path("/{studyId}/info")
-    @ApiOperation(value = "Study information", position = 5)
+    @ApiOperation(value = "Study information", position = 5, response = Study[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdsStr) {
         try {
             String[] studyIdArray = studyIdsStr.split(",");
@@ -186,8 +195,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     // FIXME: Implement filters
     @GET
     @Path("/{studyId}/files")
-    @ApiOperation(value = "Return filtered files in study [PENDING]", position = 7, notes = "Currently it returns all the files in the study. " +
-            "No filters are being used yet.")
+    @ApiOperation(value = "Return filtered files in study [PENDING]", position = 7, notes = "Currently it returns all the files in the study. No filters are applied yet.", response = File[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                 @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                                 @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
@@ -219,11 +234,17 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/samples")
-    @ApiOperation(value = "Return filtered samples in study", position = 8, notes = "Currently it returns all the samples in the study. "
-            + "No filters are being used yet")
+    @ApiOperation(value = "Return filtered samples in study", position = 8, notes = "Currently it returns all the samples in the study. No filters are being used yet", response = Sample[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
-                                  @ApiParam(value = "source") @QueryParam("source") String source,
+                                  @Deprecated @ApiParam(value = "source") @QueryParam("source") String source,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
                                   @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
@@ -241,8 +262,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/jobs")
-    @ApiOperation(value = "Return filtered jobs in study [PENDING]", position = 9, notes = "Currently it returns all the jobs in the study. "
-            + "No filters are being used yet.")
+    @ApiOperation(value = "Return filtered jobs in study [PENDING]", position = 9, notes = "Currently it returns all the jobs in the study. No filters are being used yet.", response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
                                @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
@@ -261,7 +288,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/variants")
-    @ApiOperation(value = "Fetch variants data from the selected study", position = 10)
+    @ApiOperation(value = "Fetch variants data from the selected study", position = 10, response = Variant[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStrCvs,
                                 @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -300,12 +334,10 @@ public class StudyWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3") @QueryParam("annot-functional-score") String functional,
 
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
-                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue("" + VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
-                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
+//                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue("" + VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
@@ -326,7 +358,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/alignments")
-    @ApiOperation(value = "Fetch alignments", position = 11)
+    @ApiOperation(value = "Fetch alignments", position = 11, response = Alignment[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAlignments(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                   @ApiParam(value = "sample id", required = false) @DefaultValue("") @QueryParam("sampleId") String sampleIds,
                                   @ApiParam(value = "file id", required = false) @DefaultValue("") @QueryParam("fileId") String fileIds,
@@ -351,9 +390,9 @@ public class StudyWSServer extends OpenCGAWSServer {
         QueryOptions qOptions = new QueryOptions(queryOptions);
         try {
             File file = catalogManager.getAllFiles(studyId, query
-                    .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
-                    .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
-                    .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), FileIndex.IndexStatus.READY),
+                            .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
+                            .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
+                            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), FileIndex.IndexStatus.READY),
                     qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -492,7 +531,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups")
-    @ApiOperation(value = "Return the groups present in the studies [PENDING]", position = 13)
+    @ApiOperation(value = "Return the groups present in the studies [PENDING]", position = 13, response = Group[].class)
     public Response getGroups(@ApiParam(value = "Comma separated list of studies", required = true) @PathParam("studyId") String studyIdStr) {
         try {
 //            long studyId = catalogManager.getStudyId(studyIdStr);
@@ -519,8 +558,9 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/groups/create")
     @ApiOperation(value = "Create a group [PENDING]", position = 14)
     public Response createGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
-                           @ApiParam(value = "Comma separated list of members that will form the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
+                                @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
+                                @ApiParam(value = "Comma separated list of members that will form the group", required = true)
+                                    @DefaultValue("") @QueryParam("members") String members) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
             return createOkResponse(catalogManager.addUsersToGroup(studyId, groupId, members, sessionId));
@@ -533,7 +573,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/groups/{groupId}/info")
     @ApiOperation(value = "Return the group [PENDING]", position = 15)
     public Response getGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                                      @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
+                             @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {
@@ -545,10 +585,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/groups/{groupId}/update")
     @ApiOperation(value = "Updates the members of the group [PENDING]", position = 16)
     public Response addMembersToGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                                @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
-                                @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
-                                @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("setUsers") String setUsers,
-                                @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
+                                      @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
+                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
+                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("setUsers") String setUsers,
+                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {
@@ -561,42 +601,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Delete the group [PENDING]", position = 17, notes = "Delete the group selected from the study. When filled in with a list of users," +
             " it will just take them out from the group leaving the group untouched.")
     public Response deleteMembersFromGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                                      @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
-                                      @ApiParam(value = "Comma separated list of users that will be taken out from the group", required = false) @QueryParam("users") String users) {
+                                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
+                                           @ApiParam(value = "Comma separated list of users that will be taken out from the group", required = false) @QueryParam("users") String users) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
-
-//    @GET
-//    @Path("/{studyId}/assignRole")
-//    @ApiOperation(value = "Assigns a role for a list of members [DEPRECATED]", position = 14)
-//    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-//                           @ApiParam(value = "Role.", allowableValues = "admin, analyst, locked", required = true) @DefaultValue("") @QueryParam("role") String roleId,
-//                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-//                           @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-//        try {
-//            long studyId = catalogManager.getStudyId(studyIdStr);
-//            return createOkResponse(catalogManager.shareStudy(studyId, members, Collections.emptyList(), roleId, override, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/{studyId}/removeRole")
-//    @ApiOperation(value = "Removes a list of members from the roles they had [DEPRECATED]", position = 15)
-//    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-//                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
-//        try {
-//            long studyId = catalogManager.getStudyId(studyIdStr);
-//            return createOkResponse(catalogManager.unshareStudy(studyId, members, sessionId));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @GET
     @Path("/{studyId}/acls")
@@ -628,7 +640,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/acls/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the user or group [PENDING]", position = 20)
     public Response getAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
+                           @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {
@@ -640,10 +652,10 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/acls/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the user or group [PENDING]", position = 21)
     public Response updateAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
-                           @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
-                           @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
-                           @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {
@@ -655,7 +667,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/acls/{memberId}/delete")
     @ApiOperation(value = "Delete all the permissions granted for the user or group [PENDING]", position = 22)
     public Response deleteAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
+                              @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {
@@ -720,7 +732,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @POST
     @Path("/search")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 2)
+    @ApiOperation(value = "Search studies", position = 2, response = Study[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
         try {
             QueryOptions qOptions = new QueryOptions(queryOptions);

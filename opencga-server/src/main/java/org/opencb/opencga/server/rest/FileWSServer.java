@@ -16,11 +16,10 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
@@ -95,7 +94,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @POST
     @Path("/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create file with POST method", position = 1, response = QueryResult.class, notes =
+    @ApiOperation(value = "Create file with POST method", position = 1, response = File[].class, notes =
             "This method only creates the file entry in Catalog.<br>" +
                     "Will accept (but not yet): acl.<br>" +
                     "<ul>" +
@@ -136,10 +135,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create-folder")
-    @ApiOperation(value = "Create a folder in the catalog environment", position = 2, response = QueryResponse.class)
+    @ApiOperation(value = "Create a folder in the catalog environment", position = 2, response = File.class)
     public Response createFolder(@ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "Path where the folder is to be created", required = true) @QueryParam("folder") String folder,
-                                 @ApiParam(value = "Create the parent directories if they do not exist", required = false) @QueryParam("parents") @DefaultValue("false") boolean parents) {
+                                 @ApiParam(value = "Create the parent directories if they do not exist", required = false)
+                                 @QueryParam("parents") @DefaultValue("false") boolean parents) {
         try {
             java.nio.file.Path folderPath = Paths.get(folder);
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -152,7 +152,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileIds}/info")
-    @ApiOperation(value = "File info", position = 3, response = QueryResponse.class)
+    @ApiOperation(value = "File info", position = 3, response = File[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@ApiParam(value="Comma separated list of file ids") @PathParam(value = "fileIds") String fileIds) {
         try {
             String[] fieldIdArray = fileIds.split(",");
@@ -187,7 +191,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @POST
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = QueryResponse.class)
+    @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
@@ -321,7 +325,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/content")
-    @ApiOperation(value = "Show the content of a file (up to a limit)", position = 6, response = QueryResponse.class)
+    @ApiOperation(value = "Show the content of a file (up to a limit)", position = 6, response = String.class)
     public Response content(@ApiParam(value = "File id") @PathParam("fileId") String fileIdStr,
                             @ApiParam(value = "start", required = false) @QueryParam("start") @DefaultValue("-1") int start,
                             @ApiParam(value = "limit", required = false) @QueryParam("limit") @DefaultValue("-1") int limit) {
@@ -337,8 +341,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/grep")
-    @ApiOperation(value = "Searches for lines of the file containing a match of the pattern [TOCHECK]", position = 7,
-            response = QueryResponse.class)
+    @ApiOperation(value = "Searches for lines of the file containing a match of the pattern [TOCHECK]", position = 7, response = String.class)
     public Response downloadGrep(
             @ApiParam(value = "File id") @PathParam("fileId") String fileIdStr,
             @ApiParam(value = "Pattern", required = false) @QueryParam("pattern") @DefaultValue(".*") String pattern,
@@ -353,38 +356,6 @@ public class FileWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-//
-//    @GET
-//    @Path("/content-example")
-//    @ApiOperation(value = "File content", position = 8)
-//    public Response downloadExample(@ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
-//                                    @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName) {
-//        /** I think this next two lines should be parametrized either in analysis.properties or the manifest.json of each tool **/
-//        String analysisPath = Config.getOpenCGAHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
-//        String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
-//        try {
-//            InputStream stream = new FileInputStream(fileExamplesToolPath);
-//            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
-//
-//    @GET
-//    @Path("/download-example")
-//    @ApiOperation(value = "File download", position = 9)
-//    public Response downloadExampleFile(@ApiParam(value = "toolName", required = true) @DefaultValue("") @QueryParam("toolName") String toolName,
-//                                        @ApiParam(value = "fileName", required = true) @DefaultValue("") @QueryParam("fileName") String fileName) {
-//        try {
-//            String analysisPath = Config.getGcsaHome() + "/" + Config.getAnalysisProperties().getProperty("OPENCGA.ANALYSIS.BINARIES.PATH");
-//            String fileExamplesToolPath = analysisPath + "/" + toolName + "/examples/" + fileName;
-//            InputStream istream = new FileInputStream(fileExamplesToolPath);
-//            DataInputStream stream = new DataInputStream(istream);
-//            return createOkResponse(stream, MediaType.APPLICATION_OCTET_STREAM_TYPE, fileName);
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
 
     @Deprecated
     @GET
@@ -433,6 +404,12 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{folderId}/files")
     @ApiOperation(value = "File content", position = 11, notes = "Deprecated method. Moved to /list.")
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
+    })
     public Response getAllFilesInFolder(@PathParam(value = "folderId") @FormDataParam("folderId") String folderIdStr) {
         QueryResult<File> results;
         try {
@@ -446,7 +423,14 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Look for files using some filters", position = 12, response = QueryResponse.class)
+    @ApiOperation(value = "Look for files using some filters", position = 12, response = File[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response search(@ApiParam(value = "Comma separated list of file ids", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyId,
                            // This can now be done using just the ids field
@@ -495,7 +479,14 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{folderId}/list")
-    @ApiOperation(value = "List all the files inside the folder", position = 13, response = QueryResponse.class)
+    @ApiOperation(value = "List all the files inside the folder", position = 13, response = File[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response list(@ApiParam(value = "Folder id") @PathParam("folderId") String folderId) {
         try {
             long fileIdNum = catalogManager.getFileId(folderId);
@@ -531,10 +522,10 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{fileId}/fetch")
     @ApiOperation(value = "File fetch", notes = "DEPRECATED. Use .../files/{fileId}/[variants|alignments] or .../studies/{studyId}/[variants|alignments] instead", position = 15)
-    @Deprecated
     public Response fetch(@PathParam(value = "fileId") @DefaultValue("") String fileIds,
                           @ApiParam(value = "region", allowMultiple = true, required = true) @DefaultValue("") @QueryParam("region") String region,
                           @ApiParam(value = "view_as_pairs", required = false) @DefaultValue("false") @QueryParam("view_as_pairs") boolean view_as_pairs,
@@ -708,6 +699,13 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/variants")
     @ApiOperation(value = "Fetch variants from a VCF/gVCF file", position = 15, response = QueryResponse.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getVariants(@ApiParam(value = "", required = true) @PathParam("fileId") String fileIdCsv,
                                 @ApiParam(value = "CSV list of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "CSV list of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -738,12 +736,10 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
                                 @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
-                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
-                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
+//                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
-                                @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
                                 @ApiParam(value = "Histogram interval size", required = false) @DefaultValue("2000") @QueryParam("interval") int interval,
                                 @ApiParam(value = "Merge results", required = false) @DefaultValue("false") @QueryParam("merge") boolean merge) {
@@ -765,7 +761,14 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/alignments")
-    @ApiOperation(value = "Fetch alignments from a BAM file", position = 15, response = QueryResponse.class)
+    @ApiOperation(value = "Fetch alignments from a BAM file", position = 15, response = Alignment[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getAlignments(@ApiParam(value = "fileId", required = true) @PathParam("fileId") String fileId) {
         return createOkResponse("PENDING");
     }
@@ -805,7 +808,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/update")
-    @ApiOperation(value = "Update fields of a file", position = 16, response = QueryResponse.class)
+    @ApiOperation(value = "Update fields of a file", position = 16, response = File.class)
     public Response update(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr) {
         try {
             ObjectMap parameters = new ObjectMap();
@@ -825,24 +828,24 @@ public class FileWSServer extends OpenCGAWSServer {
 
     public static class UpdateFile {
         public String name;
-//        public File.Format format;
+        //        public File.Format format;
 //        public File.Bioformat bioformat;
 //        public String path;
 //        public String ownerId;
 //        public String creationDate;
 //        public String modificationDate;
         public String description;
-//        public Long diskUsage;
+        //        public Long diskUsage;
 //        public int experimentId;
         public List<Integer> sampleIds;
         public Integer jobId;
-//        public Map<String, Object> stats;
+        //        public Map<String, Object> stats;
         public Map<String, Object> attributes;
     }
 
     @POST
     @Path("/{fileId}/update")
-    @ApiOperation(value = "Modify file", position = 16, response = QueryResponse.class)
+    @ApiOperation(value = "Modify file", position = 16, response = File.class)
     public Response updatePOST(@ApiParam(value = "File id") @PathParam(value = "fileId") String fileIdStr,
                                @ApiParam(name = "params", value = "Parameters to modify", required = true) UpdateFile params) {
         try {
@@ -1110,11 +1113,11 @@ public class FileWSServer extends OpenCGAWSServer {
     public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false)
-                                  @QueryParam("addPermissions") String addPermissions,
+                              @QueryParam("addPermissions") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false)
-                                  @QueryParam("removePermissions") String removePermissions,
+                              @QueryParam("removePermissions") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
-                                  @QueryParam("setPermissions") String setPermissions) {
+                              @QueryParam("setPermissions") String setPermissions) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {

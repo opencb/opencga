@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiModelProperty;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.Query;
@@ -78,9 +75,9 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         enum Status{READY, ERROR}
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String name;
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String toolName;
         public String description;
         public String execution;
@@ -107,7 +104,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
-                    + "Required values: [name, toolName, commandLine]")
+                    + "Required values: [name, toolName, commandLine]", response = Job.class)
     public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "studies", required = true) InputJob job) {
         try {
@@ -131,15 +128,12 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create job", position = 1)
-    public Response createJob(
-//            @ApiParam(defaultValue = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
-            @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
-            @ApiParam(value = "execution", required = false) @DefaultValue("") @QueryParam("execution") String execution,
-            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description
-    ) {
+    @ApiOperation(value = "Create job", position = 1, response = Job.class)
+    public Response createJob(@ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
+                              @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
+                              @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
+                              @ApiParam(value = "execution") @DefaultValue("") @QueryParam("execution") String execution,
+                              @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description) {
         QueryResult<Job> jobResult;
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -249,7 +243,11 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/info")
-    @ApiOperation(value = "Get job information", position = 2)
+    @ApiOperation(value = "Get job information", position = 2, response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
@@ -261,7 +259,14 @@ public class JobWSServer extends OpenCGAWSServer {
     // FIXME: Implement and change parameters
     @GET
     @Path("/search")
-    @ApiOperation(value = "Filter jobs [PENDING]", position = 12)
+    @ApiOperation(value = "Filter jobs [PENDING]", position = 12, response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,

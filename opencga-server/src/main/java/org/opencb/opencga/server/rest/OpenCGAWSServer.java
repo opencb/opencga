@@ -74,24 +74,24 @@ public class OpenCGAWSServer {
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
-    @DefaultValue("")
-    @QueryParam("exclude")
-    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
+//    @DefaultValue("")
+//    @QueryParam("exclude")
+//    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
     protected String exclude;
 
-    @DefaultValue("")
-    @QueryParam("include")
-    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
+//    @DefaultValue("")
+//    @QueryParam("include")
+//    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
     protected String include;
 
-    @DefaultValue("-1")
-    @QueryParam("limit")
-    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
+//    @DefaultValue("-1")
+//    @QueryParam("limit")
+//    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
     protected int limit;
 
-    @DefaultValue("0")
-    @QueryParam("skip")
-    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
+//    @DefaultValue("0")
+//    @QueryParam("skip")
+//    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
 
     @DefaultValue("")

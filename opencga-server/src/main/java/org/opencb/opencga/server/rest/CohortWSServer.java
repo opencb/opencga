@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -59,7 +57,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/create")
     @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
             "or providing a categorical variable (both variableSetId and variable). " +
-            "If none of this is given, an empty cohort will be created.")
+            "If none of this is given, an empty cohort will be created.", response = Cohort.class)
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
                                  @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
@@ -112,7 +110,11 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/info")
-    @ApiOperation(value = "Get cohort information", position = 2)
+    @ApiOperation(value = "Get cohort information", position = 2, response = Cohort.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, queryOptions, sessionId);
@@ -125,7 +127,14 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/samples")
-    @ApiOperation(value = "Get samples from cohort", position = 3)
+    @ApiOperation(value = "Get samples from cohort", position = 3, response = Sample[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
@@ -179,7 +188,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Cohort.class)
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
                            @ApiParam(value = "", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,

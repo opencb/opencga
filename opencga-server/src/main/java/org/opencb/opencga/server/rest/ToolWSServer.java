@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -54,7 +52,11 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/info")
-    @ApiOperation(value = "Tool info", position = 2)
+    @ApiOperation(value = "Tool info", position = 2, response = Tool.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
         String[] toolIds = toolId.split(",");
@@ -76,7 +78,14 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search tools", position = 2)
+    @ApiOperation(value = "Search tools", position = 2, response = Tool[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response search(@ApiParam(value = "id", required = false) @QueryParam(value = "id") @DefaultValue("") String toolId,
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
                            @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
@@ -118,7 +127,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Tool.class)
     public Response update(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) throws IOException {
         return createErrorResponse("update - GET", "PENDING");
     }
