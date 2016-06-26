@@ -35,9 +35,9 @@ import java.util.stream.Collectors;
 public class IndividualWSServer extends OpenCGAWSServer {
 
 
-    public IndividualWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET

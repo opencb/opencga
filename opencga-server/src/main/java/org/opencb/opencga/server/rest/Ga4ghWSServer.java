@@ -31,9 +31,8 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 @Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {
 
-    public Ga4ghWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @POST

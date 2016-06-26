@@ -43,9 +43,8 @@ import java.util.Map;
 public class ProjectWSServer extends OpenCGAWSServer {
 
 
-    public ProjectWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
-            throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public ProjectWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET

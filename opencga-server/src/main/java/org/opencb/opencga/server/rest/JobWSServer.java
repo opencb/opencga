@@ -53,9 +53,8 @@ import java.util.*;
 public class JobWSServer extends OpenCGAWSServer {
 
 
-    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                       @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
 

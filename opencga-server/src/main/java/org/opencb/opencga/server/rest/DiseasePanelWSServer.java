@@ -25,9 +25,9 @@ import java.util.Arrays;
 @Api(value = "Panels", position = 10, description = "Methods for working with 'panels' endpoint")
 public class DiseasePanelWSServer extends OpenCGAWSServer {
 
-    public DiseasePanelWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET

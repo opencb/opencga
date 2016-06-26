@@ -69,8 +69,8 @@ import java.util.function.Function;
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
 
-//    @DefaultValue("v1")
-//    @PathParam("version")
+    @DefaultValue("v1")
+    @PathParam("version")
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
@@ -119,10 +119,6 @@ public class OpenCGAWSServer {
 //    @QueryParam("metadata")
 //    protected boolean metadata;
 
-//    @DefaultValue("json")
-//    @QueryParam("of")
-//    protected String outputFormat;
-//    private @Context ServletContext context;
 
     protected static AtomicBoolean initialized;
 
@@ -156,46 +152,29 @@ public class OpenCGAWSServer {
 
 
     public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-//        this.startTime = System.currentTimeMillis();
-//        this.version = version;
-        this.uriInfo = uriInfo;
-        this.httpServletRequest = httpServletRequest;
-
-        this.params = uriInfo.getQueryParameters();
-
-        startTime = System.currentTimeMillis();
-
-        query = new Query();
-        queryOptions = new QueryOptions();
-
-
-        if (initialized.compareAndSet(false, true)) {
-            init();
-        }
-
-        parseParams();
+        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
     }
 
-    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                           @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-//        this.startTime = System.currentTimeMillis();
+    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
         this.version = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
 
         this.params = uriInfo.getQueryParameters();
 
-        startTime = System.currentTimeMillis();
-
-        query = new Query();
-        queryOptions = new QueryOptions();
-
-
+        // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
         }
 
+        query = new Query();
+        queryOptions = new QueryOptions();
+
         parseParams();
+
+        // take the time for calculating the whole duration of the call
+        startTime = System.currentTimeMillis();
     }
 
     private void init() {
@@ -286,11 +265,6 @@ public class OpenCGAWSServer {
         }
     }
 
-    protected static void addMapParams(Map<String, Object> map, String key, Object object) {
-        if (object != null) {
-            map.put(key, object);
-        }
-    }
 
     /**
      * Builds the query and the queryOptions based on the query parameters.
@@ -317,24 +291,23 @@ public class OpenCGAWSServer {
         }
     }
 
-    public void parseParams() throws VersionException {
+    private void parseParams() throws VersionException {
+        // If by any reason 'version' is null we try to read it from the URI path, if not present an Exeception is thrown
         if (version == null) {
-            throw new VersionException("Version not valid: '" + version + "'");
+            if (uriInfo.getPathParameters().containsKey("version")) {
+                logger.warn("Setting 'version' from UriInfo object");
+                this.version = uriInfo.getPathParameters().getFirst("version");
+            } else {
+                throw new VersionException("Version not valid: '" + version + "'");
+            }
         }
 
-        /**
-         * Check version parameter, must be: v1, v2, ... If 'latest' then is
-         * converted to appropriate version
-         */
+         // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
         if (version.equalsIgnoreCase("latest")) {
+            logger.info("Version 'latest' detected, setting 'version' parameter to 'v1'");
             version = "v1";
-            logger.info("Version 'latest' detected, setting version parameter to '{}'", version);
         }
-        // TODO Valid OpenCGA versions need to be added configuration files
-//        if (!cellBaseConfiguration.getVersion().equalsIgnoreCase(this.version)) {
-//            logger.error("Version '{}' does not match configuration '{}'", this.version, cellBaseConfiguration.getVersion());
-//            throw new VersionException("Version not valid: '" + version + "'");
-//        }
+
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
@@ -385,47 +358,6 @@ public class OpenCGAWSServer {
         }
     }
 
-//    protected QueryOptions getQueryOptions() {
-//        if(queryOptions == null) {
-//            this.queryOptions = new QueryOptions();
-//            this.queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-//            if(!exclude.isEmpty()) {
-//                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
-//            }
-//            if(!include.isEmpty()) {
-//                queryOptions.put("include", Arrays.asList(include.split(",")));
-//            }
-//            queryOptions.put("metadata", metadata);
-//        }
-//        return queryOptions;
-//    }
-
-//    protected QueryOptions getAllQueryOptions() {
-//        return getAllQueryOptions(null);
-//    }
-
-//    protected QueryOptions getAllQueryOptions(Collection<String> acceptedQueryOptions) {
-//        return getAllQueryOptions(new HashSet<String>(acceptedQueryOptions));
-//    }
-//
-//    protected QueryOptions getAllQueryOptions(Set<String> acceptedQueryOptions) {
-//        QueryOptions queryOptions = this.getQueryOptions();
-//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//            if (acceptedQueryOptions == null || acceptedQueryOptions.contains(entry.getKey())) {
-//                if (!entry.getValue().isEmpty()) {
-//                    Iterator<String> iterator = entry.getValue().iterator();
-//                    StringBuilder sb = new StringBuilder(iterator.next());
-//                    while (iterator.hasNext()) {
-//                        sb.append(",").append(iterator.next());
-//                    }
-//                    queryOptions.add(entry.getKey(), sb.toString());
-//                } else {
-//                    queryOptions.add(entry.getKey(), null);
-//                }
-//            }
-//        }
-//        return queryOptions;
-//    }
 
     @Deprecated
     @GET
@@ -517,10 +449,4 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-//    @GET
-//    @Path("/testIndices")
-//    public Response testIndices() {
-//        catalogManager.testIndices();
-//        return Response.ok("mira el log").build();
-//    }
 }

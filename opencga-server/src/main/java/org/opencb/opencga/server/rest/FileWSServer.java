@@ -69,9 +69,9 @@ import java.util.*;
 public class FileWSServer extends OpenCGAWSServer {
 
 
-    public FileWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
-            throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public FileWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException,
+            ClassNotFoundException, IllegalAccessException, InstantiationException, VersionException {
+        super(uriInfo, httpServletRequest);
 //        String alignmentManagerName = properties.getProperty("STORAGE.ALIGNMENT-MANAGER", MONGODB_ALIGNMENT_MANAGER);
 //        String alignmentManagerName = MONGODB_ALIGNMENT_MANAGER;
 //        String variantManagerName = MONGODB_VARIANT_MANAGER;

@@ -57,9 +57,8 @@ import java.util.stream.Collectors;
 public class StudyWSServer extends OpenCGAWSServer {
 
 
-    public StudyWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public StudyWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
