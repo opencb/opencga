@@ -45,7 +45,7 @@ public class CohortCommandOptions {
         this.groupByCommandOptions = new GroupByCommandOptions();
     }
 
-    class BaseCohortsCommand {
+    public class BaseCohortsCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -79,7 +79,8 @@ public class CohortCommandOptions {
                 required = false, arity = 1)
         public String sampleIds;
 
-        @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts",
+        @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts, must go together the "
+                + "parameter variable-set-id",
                 required = false, arity = 1)
         public String variable;
 
@@ -155,7 +156,7 @@ public class CohortCommandOptions {
         public String creationDate;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        public String update;
+        public String description;
 
         @Parameter(names = {"--samples"},
                 description = "Comma separated values of sampleIds. Will replace all existing sampleIds",

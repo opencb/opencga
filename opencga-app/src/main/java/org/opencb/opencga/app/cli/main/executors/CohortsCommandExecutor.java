@@ -17,9 +17,12 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
+import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 
@@ -86,17 +89,27 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new cohort");
         String studyId = cohortsCommandOptions.createCommandOptions.studyId;
         String cohortName = cohortsCommandOptions.createCommandOptions.name;
-        openCGAClient.getCohortClient().create(studyId, cohortName, null);
+        String description = cohortsCommandOptions.createCommandOptions.description;
+        Integer variableSetId = cohortsCommandOptions.createCommandOptions.variableSetId;
+        String sampleIds = cohortsCommandOptions.createCommandOptions.sampleIds;
+        String variable = cohortsCommandOptions.createCommandOptions.variable;
+
+        ObjectMap o = new ObjectMap();
+        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),description);
+        o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
+        o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),sampleIds);
+        o.append(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(),sampleIds);
+      //  o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE.key(),variable);
+        openCGAClient.getCohortClient().create(studyId, cohortName, o);
         logger.debug("Done");
     }
 
     private void info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
         QueryResponse<Cohort> info =
-                openCGAClient.getCohortClient().get(Long.toString(cohortsCommandOptions.infoCommandOptions.id), null);
+                openCGAClient.getCohortClient().get(Integer.toString(cohortsCommandOptions.infoCommandOptions.id), null);
         System.out.println("Cohorts = " + info);
-/************************ Mirar si hay que blindar esto mas, converison de long a string, puede ser null? lo mismo en el de
- * abajo******************////
+
     }
 
     private void samples() throws CatalogException, IOException {
@@ -112,10 +125,34 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private void update() throws CatalogException, IOException {
         logger.debug("Updating cohort");
+
+        ObjectMap objectMap = new ObjectMap();
+
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.name)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.updateCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.creationDate)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.updateCommandOptions.creationDate);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.description)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(), cohortsCommandOptions.updateCommandOptions.description);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.updateCommandOptions.samples)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
+        }
+
+
+        QueryResponse<Cohort> study = openCGAClient.getCohortClient()
+                .update(Integer.toString(cohortsCommandOptions.updateCommandOptions.id), objectMap);
+        System.out.println("Project: " + study);
     }
 
     private void delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
+        ObjectMap objectMap = new ObjectMap();
+        QueryResponse<Cohort> study = openCGAClient.getCohortClient()
+                .delete(Integer.toString(cohortsCommandOptions.deleteCommandOptions.id), objectMap);
+        System.out.println("Study: " + study);
     }
 
     private void unshare() throws CatalogException, IOException {

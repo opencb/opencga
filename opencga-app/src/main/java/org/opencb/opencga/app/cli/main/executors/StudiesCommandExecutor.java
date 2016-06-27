@@ -93,6 +93,15 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "variants":
                 variants();
                 break;
+            case "acl-create":
+                aclCreate();
+                break;
+            case "remove-role":
+                removeRole();
+                break;
+            case "assign-role":
+                assignRole();
+                break;
 
             default:
                 logger.error("Subcommand not valid");
@@ -121,7 +130,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     private void info() throws CatalogException, IOException {
 
-        logger.debug("Getting the project info");
+        logger.debug("Getting the study info");
         QueryResponse<Study> info = openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id, null);
         System.out.println("Study: " + info);
     }
@@ -142,7 +151,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.updateCommandOptions.description);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.updateCommandOptions.status)) {
-            objectMap.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), studiesCommandOptions.updateCommandOptions.status);
+            objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.updateCommandOptions.status);
         }
 
         QueryResponse<Study> study = openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, objectMap);
@@ -554,11 +563,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     /********************************************  Administration ACLS commands  ***********************************************/
 
+    private void aclCreate() throws CatalogException,IOException{
+        logger.debug("Creating acl");
+      /*  QueryResponse<Sample> samples =
+                openCGAClient.getStudyClient().getAcl(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
+        System.out.println(samples.toString());*/
+    }
     private void removeRole() throws CatalogException,IOException{
+        logger.debug("Removing role");
 
     }
     private void assignRole() throws CatalogException,IOException{
-
+        logger.debug("Assigning role");
     }
 
 

@@ -27,7 +27,6 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -86,7 +85,7 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, id, "delete", params, clazz);
     }
 
-    /**
+   /* /**
      * Shares the document with the list of members.
      *
      * @param ids Comma separated list of ids.
@@ -96,7 +95,7 @@ public abstract class AbstractParentClient<T, A> {
      * @return a QueryResponse containing all the permissions set.
      * @throws IOException in case of any error.
      */
-    public QueryResponse<A> share(String ids, String members, List<String> permissions, ObjectMap params) throws IOException {
+   /* public QueryResponse<A> share(String ids, String members, List<String> permissions, ObjectMap params) throws IOException {
         params = addParamsToObjectMap(params, "permissions", permissions, "members", members);
         return execute(category, ids, "share", params, aclClass);
     }
@@ -104,7 +103,32 @@ public abstract class AbstractParentClient<T, A> {
     public QueryResponse<Object> unshare(String ids, String members, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "members", members);
         return execute(category, ids, "unshare", params, Object.class);
+    }*/
+
+    public QueryResponse<Object> createAcl(String id, String permissions, String members, ObjectMap params) throws CatalogException,
+            IOException {
+        params = addParamsToObjectMap(params,  "permissions", permissions, "members", members);
+        return execute(category, id, "createAcl", params, Object.class);
     }
+
+    public QueryResponse<Object> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "memberId", memberId);
+        return execute(category, id, "deleteAcl", params, Object.class);
+    }
+
+    public QueryResponse<Object> updateAcl(String id, String memberId, String addPermissions, String removePermissions,
+                                           String setPermissions, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "memberId", memberId, "addPermissions", addPermissions, "removePermissions",
+                removePermissions, "setPermissions", setPermissions);
+        return execute(category, id, "updateAcl", params, Object.class);
+    }
+
+    public QueryResponse<Object> updateAcl(String id, String groupId, String members, ObjectMap params) throws CatalogException,
+            IOException {
+        params = addParamsToObjectMap(params,  "groupId", groupId, "members", members);
+        return execute(category, id, "updateAcl", params, Object.class);
+    }
+
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, Class<T> clazz) throws IOException {
         return execute(category, null, action, params, clazz);
