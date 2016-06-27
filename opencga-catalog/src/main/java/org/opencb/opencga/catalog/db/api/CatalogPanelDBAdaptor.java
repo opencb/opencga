@@ -35,7 +35,7 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
         STATUS_DATE("status.date", TEXT, ""),
 
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
 
         STUDY_ID("studyId", INTEGER_ARRAY, "");

@@ -20,6 +20,7 @@ package org.opencb.opencga.app.cli.main.executors;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
@@ -31,10 +32,10 @@ import java.io.IOException;
  */
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.CohortCommandsOptions cohortsCommandOptions;
+    private CohortCommandOptions cohortsCommandOptions;
 
-    public CohortsCommandExecutor(OpencgaCliOptionsParser.CohortCommandsOptions cohortsCommandOptions) {
-        super(cohortsCommandOptions.commonOptions);
+    public CohortsCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
+        super(cohortsCommandOptions.commonCommandOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
     }
 
@@ -44,20 +45,37 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing cohorts command line");
 
-        String subCommandString = cohortsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(cohortsCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
                 create();
                 break;
-
             case "info":
                 info();
                 break;
             case "samples":
                 samples();
                 break;
+            case "annotate":
+                annotate();
+                break;
+            case "update":
+                update();
+                break;
+            case "delete":
+                delete();
+                break;
+            case "unshare":
+                unshare();
+                break;
             case "calculate-stats":
                 calculateStats();
+                break;
+            case "share":
+                share();
+                break;
+            case "group-by":
+                groupBy();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -66,24 +84,42 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+
     private void create() throws CatalogException, IOException {
         logger.debug("Creating a new cohort");
-        String studyId = cohortsCommandOptions.createCommand.studyId;
-        String cohortName = cohortsCommandOptions.createCommand.name;
+        String studyId = cohortsCommandOptions.createCommandOptions.studyId;
+        String cohortName = cohortsCommandOptions.createCommandOptions.name;
         openCGAClient.getCohortClient().create(studyId,cohortName,null);
         logger.debug("Done");
     }
     private void info() throws CatalogException, IOException  {
         logger.debug("Getting cohort information");
-        QueryResponse<Cohort> info = openCGAClient.getCohortClient().get(Long.toString(cohortsCommandOptions.infoCommand.id),null);
+        QueryResponse<Cohort> info =
+                openCGAClient.getCohortClient().get(Long.toString(cohortsCommandOptions.infoCommandOptions.id),null);
         System.out.println("Cohorts = " + info);
-/************************************** Mirar si hay que blindar esto mas, converison de long a string, puede ser null? lo mismo en el de abajo******************////
+/************************ Mirar si hay que blindar esto mas, converison de long a string, puede ser null? lo mismo en el de abajo******************////
     }
     private void samples() throws CatalogException, IOException  {
         logger.debug("Listing samples belonging to a cohort");
-        QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions.samplesCommand.id), null);
-        System.out.println("Samples = " + samples);
+       // QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions.samplesCommandOptions.id), null);
+        //System.out.println("Samples = " + samples);
     }
+
+    private void annotate() throws CatalogException, IOException  {
+        logger.debug("Annotating cohort");
+    }
+    private void update() throws CatalogException, IOException  {
+        logger.debug("Updating cohort");
+    }
+
+    private void delete() throws CatalogException, IOException  {
+        logger.debug("Deleting cohort");
+    }
+
+    private void unshare() throws CatalogException, IOException {
+        logger.debug("Unsharing a cohort");
+    }
+
     private void calculateStats() throws CatalogException {
         logger.debug("Calculating variant stats for a set of cohorts");
         //QueryResponse<Cohort> stats = openCGAClient.getCohortClient(). no esta calculate stats o parecidoo
@@ -91,7 +127,12 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private void share() throws CatalogException, IOException {
+        logger.debug("Sharing a cohort");
+    }
 
-
+    private void groupBy() throws CatalogException, IOException {
+        logger.debug("Group by cohorts");
+    }
 
 }

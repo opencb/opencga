@@ -6,10 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by pfurio on 08/06/16.
@@ -85,13 +82,13 @@ public final class CatalogDemo {
         String sessionId = userSessions.get("user5");
 
         // user5 will have the role "admin"
-        catalogManager.shareStudy(studyId, "user5", "admin", false, userSessions.get("user1"));
+        catalogManager.shareStudy(studyId, "user5", Collections.emptyList(), "admin", false, userSessions.get("user1"));
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
         catalogManager.addUsersToGroup(studyId, "members", "user2,user3,user4", sessionId);
 //        // @members will have the role "analyst"
-        catalogManager.shareStudy(studyId, "@members", "analyst", false, sessionId);
+        catalogManager.shareStudy(studyId, "@members", Collections.emptyList(), "analyst", false, sessionId);
 //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.
-        catalogManager.shareStudy(studyId, "anonymous", "locked", false, sessionId);
+        catalogManager.shareStudy(studyId, "anonymous", Collections.emptyList(), "locked", false, sessionId);
     }
 
 }

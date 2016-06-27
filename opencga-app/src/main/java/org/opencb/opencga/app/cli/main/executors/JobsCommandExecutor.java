@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -28,10 +29,10 @@ import java.io.IOException;
  */
 public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.JobsCommandsOptions jobsCommandOptions;
+    private JobCommandOptions jobsCommandOptions;
 
-    public JobsCommandExecutor(OpencgaCliOptionsParser.JobsCommandsOptions jobsCommandOptions) {
-        super(jobsCommandOptions.commonOptions);
+    public JobsCommandExecutor(JobCommandOptions jobsCommandOptions) {
+        super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }
 
@@ -41,20 +42,32 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing jobs command line");
 
-        String subCommandString = jobsCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(jobsCommandOptions.jCommander);
         switch (subCommandString) {
 
+            case "create":
+                create();
+                break;
             case "info":
                 info();
                 break;
-            case "finished":
-                finished();
+            case "search":
+                search();
                 break;
-            case "status":
-                status();
+            case "visit":
+                visit();
                 break;
-            case "run":
-                run();
+            case "delete":
+                delete();
+                break;
+            case "share":
+                share();
+                break;
+            case "unshare":
+                unshare();
+                break;
+            case "group-by":
+                groupBy();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -63,17 +76,36 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private void create() throws CatalogException, IOException {
+        logger.debug("Creating a new job");
+
+    }
     private void info() throws CatalogException {
         logger.debug("Getting job information");
     }
-    private void finished() throws CatalogException, IOException {
-        logger.debug("Notice catalog that a job have finished");
+
+    private void search() throws CatalogException, IOException  {
+        logger.debug("Searching job");
     }
-    private void status() throws CatalogException {
-        logger.debug("Getting the status of all running jobs");
+
+    private void visit() throws CatalogException, IOException  {
+        logger.debug("Visiting a job");
     }
-    private void run() throws CatalogException {
-        logger.debug("Executing a job");
+
+    private void delete() throws CatalogException, IOException  {
+        logger.debug("Deleting job");
+    }
+
+    private void unshare() throws CatalogException, IOException {
+        logger.debug("Unsharing a job");
+    }
+
+    private void share() throws CatalogException, IOException {
+        logger.debug("Sharing a job");
+    }
+
+    private void groupBy() throws CatalogException, IOException {
+        logger.debug("Group by job");
     }
 
 

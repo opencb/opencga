@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.biodata.tools.variant.stats.writer.VariantStatsPopulationFrequencyExporter;
 import org.opencb.biodata.tools.variant.stats.writer.VariantStatsTsvExporter;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -63,9 +64,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+import static org.apache.commons.lang3.StringUtils.isNotEmpty;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
 
@@ -127,7 +129,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             throws CatalogException, IllegalAccessException, InstantiationException, ClassNotFoundException {
 
         String storageEngine = dataStore.getStorageEngine();
-        if (StringUtils.isEmpty(storageEngine)) {
+        if (isEmpty(storageEngine)) {
             this.variantStorageManager = storageManagerFactory.getVariantStorageManager();
         } else {
             this.variantStorageManager = storageManagerFactory.getVariantStorageManager(storageEngine);
@@ -294,7 +296,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 
         // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
+        if (isEmpty(cliOptions.job.jobId)) {
             Job job;
             long outDirId;
             if (cliOptions.outdirId == null) {
@@ -444,11 +446,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         String sessionId = variantCommandOptions.commonOptions.sessionId;
 
         // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
+        if (isEmpty(cliOptions.job.jobId)) {
             Job job;
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
             long outDirId;
-            if (StringUtils.isEmpty(cliOptions.outdirId)) {
+            if (isEmpty(cliOptions.outdirId)) {
                 outDirId = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
             } else {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId);
@@ -544,7 +546,31 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         Map<String, Integer> cohortIds = new HashMap<>();
         Map<String, Set<String>> cohorts = new HashMap<>();
-        for (String cohort : cliOptions.cohortIds.split(",")) {
+
+        Properties aggregationMappingProperties = null;
+        if (isNotEmpty(cliOptions.aggregationMappingFile)) {
+            aggregationMappingProperties = new Properties();
+            try (InputStream is = new FileInputStream(cliOptions.aggregationMappingFile)){
+                aggregationMappingProperties.load(is);
+                options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
+            } catch (FileNotFoundException e) {
+                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", cliOptions
+                        .aggregationMappingFile);
+            }
+        }
+
+        List<String> cohortNames;
+        if (isEmpty(cliOptions.cohortIds)) {
+            if (aggregationMappingProperties == null) {
+                throw new IllegalArgumentException("Missing cohorts");
+            } else {
+                cohortNames = new LinkedList<>(VariantAggregatedStatsCalculator.getCohorts(aggregationMappingProperties));
+            }
+        } else {
+            cohortNames = Arrays.asList(cliOptions.cohortIds.split(","));
+        }
+
+        for (String cohort : cohortNames) {
             int cohortId;
             if (StringUtils.isNumeric(cohort)) {
                 cohortId = Integer.parseInt(cohort);
@@ -564,16 +590,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 
         options.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
 
-        if (cliOptions.aggregationMappingFile != null) {
-            Properties aggregationMappingProperties = new Properties();
-            try {
-                aggregationMappingProperties.load(new FileInputStream(cliOptions.aggregationMappingFile));
-                options.put(VariantStorageManager.Options.AGGREGATION_MAPPING_PROPERTIES.key(), aggregationMappingProperties);
-            } catch (FileNotFoundException e) {
-                logger.error("Aggregation mapping file {} not found. Population stats won't be parsed.", cliOptions
-                        .aggregationMappingFile);
-            }
-        }
 
         /*
          * Create and load stats
@@ -581,7 +597,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //        URI outputUri = UriUtils.createUri(cliOptions.fileName == null ? "" : cliOptions.fileName);
         URI outputUri = job.getTmpOutDirUri();
         String filename;
-        if (StringUtils.isEmpty(cliOptions.fileName)) {
+        if (isEmpty(cliOptions.fileName)) {
             filename = VariantStorageManager.buildFilename(studyConfiguration.getStudyName(), cliOptions.fileId);
         } else {
             filename = cliOptions.fileName;
@@ -623,11 +639,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         AnalysisCliOptionsParser.AnnotateVariantCommandOptions cliOptions = variantCommandOptions.annotateVariantCommandOptions;
 
         // 1) Create, if not provided, an indexation job
-        if (StringUtils.isEmpty(cliOptions.job.jobId)) {
+        if (isEmpty(cliOptions.job.jobId)) {
             Job job;
             long studyId = catalogManager.getStudyId(cliOptions.studyId);
             long outDirId;
-            if (StringUtils.isEmpty(cliOptions.outdirId)) {
+            if (isEmpty(cliOptions.outdirId)) {
                 outDirId = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), ""), null, sessionId).first().getId();
             } else {
                 outDirId = catalogManager.getFileId(cliOptions.outdirId);

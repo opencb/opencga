@@ -54,11 +54,11 @@ import java.util.stream.Collectors;
 @Path("/{version}/studies")
 @Produces(MediaType.APPLICATION_JSON)
 @Api(value = "Studies", position = 3, description = "Methods for working with 'studies' endpoint")
-public class StudiesWSServer extends OpenCGAWSServer {
+public class StudyWSServer extends OpenCGAWSServer {
 
 
-    public StudiesWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                           @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public StudyWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
+                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(version, uriInfo, httpServletRequest);
     }
 
@@ -71,78 +71,24 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "type",         required = false) @DefaultValue("CASE_CONTROL") @QueryParam("type") Study.Type type,
 //                                @ApiParam(value = "creationDate", required = false) @QueryParam("creationDate") String creationDate,
                                 @ApiParam(value = "description",  required = false) @QueryParam("description") String description,
-                                @ApiParam(value = "status",       required = false) @QueryParam("status") String status,
-                                @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
+                                @ApiParam(value = "status",       required = false) @QueryParam("status") String status) {
+//                                @ApiParam(value = "cipher",       required = false) @QueryParam("cipher") String cipher) {
         try {
             long projectId = catalogManager.getProjectId(projectIdStr);
             QueryResult queryResult;
             if (status != null && !status.isEmpty()) {
 //                queryResult = catalogManager.createStudy(projectId, name, alias, type, creationDate, description,
                 queryResult = catalogManager.createStudy(projectId, name, alias, type, null, description,
-                        new Status(status, ""), cipher, null, null, null, null, null, queryOptions, sessionId);
+                        new Status(status, ""), null, null, null, null, null, null, queryOptions, sessionId);
             } else {
 //                queryResult = catalogManager.createStudy(projectId, name, alias, type, creationDate, description, new Status(),
                 queryResult = catalogManager.createStudy(projectId, name, alias, type, null, description, new Status(),
-                        cipher, null, null, null, null, null, queryOptions, sessionId);
+                        null, null, null, null, null, null, queryOptions, sessionId);
             }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @POST
-    @Path("/create")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Create a file with POST method", response = QueryResult.class, position = 1, notes =
-            "Wont't accept files, jobs, experiments, samples.<br>" +
-                    "Will accept (but not yet): acl, uri, cohorts, datasets.<br>" +
-//            "Work in progress.<br>" +
-//            "Only nested files parameter accepted, and only a few parameters.<br>" +
-//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
-                    "<ul>" +
-                    "<il><b>id</b>, <b>lastActivity</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
-                    "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
-                    "<il><b>creatorId</b> should be the same as que sessionId user (unless you are admin) </il>" +
-                    "<ul>")
-    public Response createStudyPOST(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
-                                    @ApiParam(value="studies", required = true) List<Study> studies) {
-//        List<Study> catalogStudies = new LinkedList<>();
-        List<QueryResult<Study>> queryResults = new LinkedList<>();
-        long projectId;
-        try {
-            projectId = catalogManager.getProjectId(projectIdStr);
-        } catch (CatalogException e) {
-            e.printStackTrace();
-            return createErrorResponse(e);
-        }
-        for (Study study : studies) {
-            System.out.println("study = " + study);
-            try {
-                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
-                        study.getAlias(), study.getType(), study.getCreationDate(),
-                        study.getDescription(), study.getStatus(), study.getCipher(), null, null, null, study.getStats(),
-                        study.getAttributes(), queryOptions, sessionId);
-//                Study studyAdded = queryResult.getResult().get(0);
-                queryResults.add(queryResult);
-//                List<File> files = study.getFiles();
-//                if(files != null) {
-//                    for (File file : files) {
-//                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
-//                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
-//                                file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
-//                                file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
-//                        file = fileQueryResult.getResult().get(0);
-//                        System.out.println("fileQueryResult = " + fileQueryResult);
-//                        studyAdded.getFiles().add(file);
-//                    }
-//                }
-            } catch (Exception e) {
-//                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e, Collections.<Study>emptyList()));
-                return createErrorResponse(e);
-            }
-        }
-        return createOkResponse(queryResults);
     }
 
     @GET
@@ -195,7 +141,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "boolean attributes") @QueryParam("battributes") boolean battributes,
                                   @ApiParam(value = "groups") @QueryParam("groups") String groups,
                                   @ApiParam(value = "Users in group") @QueryParam("groups.users") String groups_users
-                                  ) {
+    ) {
         try {
             QueryOptions qOptions = new QueryOptions(queryOptions);
             parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
@@ -206,25 +152,53 @@ public class StudiesWSServer extends OpenCGAWSServer {
         }
     }
 
-
-    @POST
-    @Path("/search")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Search studies", position = 5, notes = "Campos aceptados: LALALALA")
-    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
+    @GET
+    @Path("/{studyId}/update")
+    @ApiOperation(value = "Study modify", position = 5)
+    public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
+                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
+//            @ApiParam(defaultValue = "attributes", required = false) @QueryParam("attributes") String attributes,
+//            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
+            throws IOException {
         try {
-            QueryOptions qOptions = new QueryOptions(queryOptions);
-//            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
-            return createOkResponse(queryResult);
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            ObjectMap objectMap = new ObjectMap();
+            if(!name.isEmpty()) {
+                objectMap.put("name", name);
+            }
+            if(!type.isEmpty()) {
+                objectMap.put("type", type);
+            }
+            if(!description.isEmpty()) {
+                objectMap.put("description", description);
+            }
+            if(!status.isEmpty()) {
+                objectMap.put("status", status);
+            }
+//            objectMap.put("attributes", attributes);
+//            objectMap.put("stats", stats);
+            System.out.println(objectMap.toJson());
+            QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
+
+    @GET
+    @Path("/{studyId}/delete")
+    @ApiOperation(value = "Delete a study [PENDING]", position = 6)
+    public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
+        return createOkResponse("PENDING");
+    }
+
     @GET
     @Path("/{studyId}/files")
-    @ApiOperation(value = "Study files information", position = 3)
+    @ApiOperation(value = "Study files information", position = 7)
     public Response getAllFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -238,20 +212,8 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/jobs")
-    @ApiOperation(value = "Get all jobs", position = 4)
-    public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
-        try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
     @Path("/{studyId}/samples")
-    @ApiOperation(value = "Study samples information", position = 5)
+    @ApiOperation(value = "Study samples information", position = 8)
     public Response getAllSamples(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -265,8 +227,20 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
+    @Path("/{studyId}/jobs")
+    @ApiOperation(value = "Get all jobs", position = 9)
+    public Response getAllJobs(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
+        try {
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            return createOkResponse(catalogManager.getAllJobs(studyId, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
     @Path("/{studyId}/variants")
-    @ApiOperation(value = "Fetch variants data from the selected study", position = 6)
+    @ApiOperation(value = "Fetch variants data from the selected study", position = 10)
     public Response getVariants(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStrCvs,
                                 @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
                                 @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
@@ -333,7 +307,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/alignments")
-    @ApiOperation(value = "Study samples information", position = 7)
+    @ApiOperation(value = "Study samples information", position = 11)
     public Response getAlignments(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                   @ApiParam(value = "sampleId", required = true) @DefaultValue("") @QueryParam("sampleId") String sampleIds,
                                   @ApiParam(value = "fileId", required = true) @DefaultValue("") @QueryParam("fileId") String fileIds,
@@ -443,7 +417,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/scanFiles")
-    @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 8)
+    @ApiOperation(value = "Scans the study folder to find untracked or missing files", position = 12)
     public Response scanFiles(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -497,36 +471,232 @@ public class StudiesWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/update")
-    @ApiOperation(value = "Study modify", position = 9)
-    public Response update(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "type", required = false) @DefaultValue("") @QueryParam("type") String type,
-                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
-                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status)
-//            @ApiParam(defaultValue = "attributes", required = false) @QueryParam("attributes") String attributes,
-//            @ApiParam(defaultValue = "stats", required = false) @QueryParam("stats") String stats)
-            throws IOException {
+    @Path("/{studyId}/groups")
+    @ApiOperation(value = "Returns the groups present in the study [PENDING]", position = 13)
+    public Response getGroups(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
+                           @ApiParam(value = "Comma separated list of users to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
+                           @ApiParam(value = "Comma separated list of users to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
+        try {
+//            long studyId = catalogManager.getStudyId(studyIdStr);
+//            List<QueryResult> queryResults = new LinkedList<>();
+//            if (!addUsers.isEmpty() && !removeUsers.isEmpty()) {
+//                return createErrorResponse("groups", "Must specify at least one user to add or remove from one group");
+//            }
+//            if (!addUsers.isEmpty()) {
+//                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUsers, sessionId));
+//            }
+//            if (!removeUsers.isEmpty()) {
+//                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUsers, sessionId));
+//            }
+//            if (queryResults.isEmpty()) {
+//                return createErrorResponse("groups", "Must specify at least a user to add or remove from one group");
+//            }
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/groups/create")
+    @ApiOperation(value = "Create a group [PENDING]", position = 13)
+    public Response createGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
+                           @ApiParam(value = "Comma separated list of members that will form the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/groups/{groupId}/info")
+    @ApiOperation(value = "Returns the groupId [PENDING]", position = 13)
+    public Response getGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                                      @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
+                                      @ApiParam(value = "Comma separated list of members that will be added to the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/groups/{groupId}/update")
+    @ApiOperation(value = "Updates the members of the group [PENDING]", position = 13)
+    public Response addMembersToGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                                @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
+                                @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
+                                @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("setUsers") String setUsers,
+                                @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/groups/{groupId}/delete")
+    @ApiOperation(value = "Delete the group [PENDING]", position = 13)
+    public Response deleteMembersFromGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                                      @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
+                                      @ApiParam(value = "Comma separated list of members that will be taken out from the group", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/assignRole")
+    @ApiOperation(value = "Assigns a role for a list of members [DEPRECATED]", position = 14)
+    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "Role.", allowableValues = "admin, analyst, locked", required = true) @DefaultValue("") @QueryParam("role") String roleId,
+                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                           @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
-            ObjectMap objectMap = new ObjectMap();
-            if(!name.isEmpty()) {
-                objectMap.put("name", name);
+            return createOkResponse(catalogManager.shareStudy(studyId, members, Collections.emptyList(), roleId, override, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/removeRole")
+    @ApiOperation(value = "Removes a list of members from the roles they had [DEPRECATED]", position = 15)
+    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            long studyId = catalogManager.getStudyId(studyIdStr);
+            return createOkResponse(catalogManager.unshareStudy(studyId, members, sessionId));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 15)
+    public Response createRole(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/acls/{memberId}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 15)
+    public Response getAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/acls/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 15)
+    public Response updateAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+                           @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
+                           @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
+                           @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{studyId}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 15)
+    public Response deleteAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a file with POST method", response = QueryResult.class, position = 1, notes =
+            "Wont't accept files, jobs, experiments, samples.<br>" +
+                    "Will accept (but not yet): acl, uri, cohorts, datasets.<br>" +
+//            "Work in progress.<br>" +
+//            "Only nested files parameter accepted, and only a few parameters.<br>" +
+//            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
+                    "<ul>" +
+                    "<il><b>id</b>, <b>lastActivity</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
+                    "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
+                    "<ul>")
+    public Response createStudyPOST(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
+                                    @ApiParam(value="studies", required = true) List<Study> studies) {
+//        List<Study> catalogStudies = new LinkedList<>();
+        List<QueryResult<Study>> queryResults = new LinkedList<>();
+        long projectId;
+        try {
+            projectId = catalogManager.getProjectId(projectIdStr);
+        } catch (CatalogException e) {
+            e.printStackTrace();
+            return createErrorResponse(e);
+        }
+        for (Study study : studies) {
+            System.out.println("study = " + study);
+            try {
+                QueryResult<Study> queryResult = catalogManager.createStudy(projectId, study.getName(),
+                        study.getAlias(), study.getType(), study.getCreationDate(),
+                        study.getDescription(), new Status(), study.getCipher(), null, null, null, study.getStats(),
+                        study.getAttributes(), queryOptions, sessionId);
+//                Study studyAdded = queryResult.getResult().get(0);
+                queryResults.add(queryResult);
+//                List<File> files = study.getFiles();
+//                if(files != null) {
+//                    for (File file : files) {
+//                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
+//                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
+//                                file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
+//                                file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
+//                        file = fileQueryResult.getResult().get(0);
+//                        System.out.println("fileQueryResult = " + fileQueryResult);
+//                        studyAdded.getFiles().add(file);
+//                    }
+//                }
+            } catch (Exception e) {
+//                queryResults.add(new QueryResult<>("createStudy", 0, 0, 0, "", e, Collections.<Study>emptyList()));
+                return createErrorResponse(e);
             }
-            if(!type.isEmpty()) {
-                objectMap.put("type", type);
-            }
-            if(!description.isEmpty()) {
-                objectMap.put("description", description);
-            }
-            if(!status.isEmpty()) {
-                objectMap.put("status", status);
-            }
-//            objectMap.put("attributes", attributes);
-//            objectMap.put("stats", stats);
-            System.out.println(objectMap.toJson());
-            QueryResult result = catalogManager.modifyStudy(studyId, objectMap, sessionId);
-            return createOkResponse(result);
+        }
+        return createOkResponse(queryResults);
+    }
+
+
+    @POST
+    @Path("/search")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Search studies", position = 2)
+    public Response getAllStudiesByPost(@ApiParam(value="studies", required = true) Query query) {
+        try {
+            QueryOptions qOptions = new QueryOptions(queryOptions);
+//            parseQueryParams(params, CatalogStudyDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult<Study> queryResult = catalogManager.getAllStudies(query, qOptions, sessionId);
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -551,7 +721,7 @@ public class StudiesWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{studyId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some study attributes using POST method", position = 6)
+    @ApiOperation(value = "Update some study attributes using POST method", position = 3)
     public Response updateByPost(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                  @ApiParam(value = "params", required = true) UpdateStudy updateParams) {
         try {
@@ -561,73 +731,6 @@ public class StudiesWSServer extends OpenCGAWSServer {
         } catch (Exception e) {
             return createErrorResponse(e);
         }
-    }
-
-    @GET
-    @Path("/{studyId}/groups")
-    @ApiOperation(value = "Creates a group, adds/removes users to/from group", position = 9, notes =
-            "If <b>groupId</b> does not exist, it will be created with the list of users given in <b>addUsers</b>.<br>"
-                    + "If the <b>groupId</b> exists, it will add the users given in <b>addUsers</b> and/or remove the users listed "
-                    + "in <b>removeUsers</b>.<br><br>"
-                    + "In both cases, the users should have been previously registered in catalog.")
-    public Response groups(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
-                           @ApiParam(value = "Comma separated list of users to add to the selected group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
-                           @ApiParam(value = "Comma separated list of users to remove from the selected group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
-        try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            List<QueryResult> queryResults = new LinkedList<>();
-            if (!addUsers.isEmpty() && !removeUsers.isEmpty()) {
-                return createErrorResponse("groups", "Must specify at least one user to add or remove from one group");
-            }
-            if (!addUsers.isEmpty()) {
-                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUsers, sessionId));
-            }
-            if (!removeUsers.isEmpty()) {
-                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUsers, sessionId));
-            }
-            if (queryResults.isEmpty()) {
-                return createErrorResponse("groups", "Must specify at least a user to add or remove from one group");
-            }
-            return createOkResponse(queryResults);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{studyId}/assignRole")
-    @ApiOperation(value = "Assigns a role for a list of members", position = 10)
-    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                           @ApiParam(value = "Role.", allowableValues = "admin, analyst, locked", required = true) @DefaultValue("") @QueryParam("role") String roleId,
-                           @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                           @ApiParam(value = "Boolean indicating whether to allow the change of roles in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-        try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            return createOkResponse(catalogManager.shareStudy(studyId, members, roleId, override, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{studyId}/removeRole")
-    @ApiOperation(value = "Removes a list of members from the roles they had", position = 11)
-    public Response shareStudy(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
-        try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            return createOkResponse(catalogManager.unshareStudy(studyId, members, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{studyId}/delete")
-    @ApiOperation(value = "Delete a study [PENDING]", position = 12)
-    public Response delete(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyId) {
-        return createOkResponse("PENDING");
     }
 
 }

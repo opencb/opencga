@@ -215,10 +215,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         rootFile.setUri(uri);
         files.add(rootFile);
 
+        // We set all the permissions for the owner of the study.
+        // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
+
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, new LinkedList<>(), AuthorizationManager.getDefaultAcls(new HashSet<>(Arrays.asList(userId))),
-                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(),
-                new LinkedList<>(), null, datastores, stats, attributes);
+                0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, stats, attributes);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -260,6 +262,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        studyDBAdaptor.checkStudyId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_STUDY);
 
         QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
@@ -530,7 +533,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             }
         }
         List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.getStudyAcl(studyId, null, memberList);
+        QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.getStudyAcl(studyId, memberList);
 
         if (members.size() == 0) {
             return studyAclQueryResult;
@@ -538,34 +541,30 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
         // instead of the group.
-        // We loop over the results and recreate one studyAcl per member
         Map<String, StudyAcl> studyAclHashMap = new HashMap<>();
         for (StudyAcl studyAcl : studyAclQueryResult.getResult()) {
-            for (String tmpMember : studyAcl.getUsers()) {
-                if (memberList.contains(tmpMember)) {
-                    if (tmpMember.startsWith("@")) {
-                        // Check if the user was demanding the group directly or a user belonging to the group
-                        if (groupIds.contains(tmpMember)) {
-                            studyAclHashMap.put(tmpMember,
-                                    new StudyAcl(studyAcl.getRole(), Collections.singletonList(tmpMember), studyAcl.getPermissions()));
-                        } else {
-                            // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                            if (groupUsers.containsKey(tmpMember)) {
-                                for (String tmpUserId : groupUsers.get(tmpMember)) {
-                                    if (userIds.contains(tmpUserId)) {
-                                        studyAclHashMap.put(tmpUserId, new StudyAcl(studyAcl.getRole(),
-                                                Collections.singletonList(tmpUserId), studyAcl.getPermissions()));
-                                    }
+            String tmpMember = studyAcl.getMember();
+            if (memberList.contains(tmpMember)) {
+                if (tmpMember.startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(tmpMember)) {
+                        studyAclHashMap.put(tmpMember, studyAcl);
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(tmpMember)) {
+                            for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                if (userIds.contains(tmpUserId)) {
+                                    studyAclHashMap.put(tmpUserId, new StudyAcl(tmpUserId, studyAcl.getPermissions()));
                                 }
                             }
                         }
-                    } else {
-                        // Add the user
-                        studyAclHashMap.put(tmpMember,
-                                new StudyAcl(studyAcl.getRole(), Collections.singletonList(tmpMember), studyAcl.getPermissions()));
                     }
+                } else {
+                    // Add the user
+                    studyAclHashMap.put(tmpMember, studyAcl);
                 }
             }
+
         }
 
         // We recreate the output that is in studyAclHashMap but in the same order the members were queried.

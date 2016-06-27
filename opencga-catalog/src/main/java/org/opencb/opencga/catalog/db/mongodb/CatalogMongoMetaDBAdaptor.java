@@ -256,7 +256,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, "METADATA"));
         Bson unwind = Aggregates.unwind("$" + CatalogCohortDBAdaptor.QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(CatalogCohortDBAdaptor.QueryParams.ACLS_USERS.key(), members));
+        Bson match2 = Aggregates.match(Filters.in(CatalogCohortDBAdaptor.QueryParams.ACLS_MEMBER.key(), members));
         Bson project = Aggregates.project(Projections.include(CatalogCohortDBAdaptor.QueryParams.ID.key(),
                 CatalogCohortDBAdaptor.QueryParams.ACLS.key()));
 

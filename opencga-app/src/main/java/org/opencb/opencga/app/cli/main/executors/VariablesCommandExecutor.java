@@ -17,33 +17,33 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
+import org.opencb.opencga.app.cli.main.options.VariableCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 /**
- * Created by imedina on 03/06/16.
+ * Created by by sgallego on 6/15/16.
  */
-public class ToolsCommandExecutor extends OpencgaCommandExecutor {
+public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
-    private ToolCommandOptions toolsCommandOptions;
+    private VariableCommandOptions variableCommandOptions;
 
-    public ToolsCommandExecutor(ToolCommandOptions toolsCommandOptions) {
-        super(toolsCommandOptions.commonCommandOptions);
-        this.toolsCommandOptions = toolsCommandOptions;
+    public VariablesCommandExecutor(VariableCommandOptions variableCommandOptions) {
+        super(variableCommandOptions.commonCommandOptions);
+        this.variableCommandOptions = variableCommandOptions;
     }
 
 
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing tools command line");
+        logger.debug("Executing variables command line");
 
-        String subCommandString = getParsedSubCommand(toolsCommandOptions.jCommander);
+        String subCommandString = getParsedSubCommand(variableCommandOptions.jCommander);
         switch (subCommandString) {
-            case "help":
-                help();
+            case "create":
+                create();
                 break;
             case "info":
                 info();
@@ -64,21 +64,21 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void help() throws CatalogException {
-        logger.debug("Tool help");
+    private void create() throws CatalogException {
+        logger.debug("Creating variable");
     }
     private void info() throws CatalogException {
-        logger.debug("Getting tool information");
+        logger.debug("Getting variable information");
     }
 
     private void search() throws CatalogException {
-        logger.debug("Searching tool");
+        logger.debug("Searching variable");
     }
     private void update() throws CatalogException {
-        logger.debug("Updating tool");
+        logger.debug("Updating variable");
     }
     private void delete() throws CatalogException {
-        logger.debug("Deleting tool");
+        logger.debug("Deleting variable");
     }
 
 

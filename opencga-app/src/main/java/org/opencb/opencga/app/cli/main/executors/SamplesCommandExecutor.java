@@ -17,8 +17,9 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
 import java.io.IOException;
@@ -28,10 +29,10 @@ import java.io.IOException;
  */
 public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
-    private OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions;
+    private SampleCommandOptions samplesCommandOptions;
 
-    public SamplesCommandExecutor(OpencgaCliOptionsParser.SampleCommandsOptions samplesCommandOptions) {
-        super(samplesCommandOptions.commonOptions);
+    public SamplesCommandExecutor(SampleCommandOptions samplesCommandOptions) {
+        super(samplesCommandOptions.commonCommandOptions);
         this.samplesCommandOptions = samplesCommandOptions;
     }
 
@@ -41,8 +42,11 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
         logger.debug("Executing samples command line");
 
-        String subCommandString = samplesCommandOptions.getParsedSubCommand();
+        String subCommandString = getParsedSubCommand(samplesCommandOptions.jCommander);
         switch (subCommandString) {
+            case "create":
+                create();
+                break;
             case "load":
                 load();
                 break;
@@ -52,8 +56,23 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             case "search":
                 search();
                 break;
+            case "update":
+                update();
+                break;
             case "delete":
                 delete();
+                break;
+            case "share":
+                share();
+                break;
+            case "unshare":
+                unshare();
+                break;
+            case "groupBy":
+                groupBy();
+                break;
+            case "annotate":
+                annotate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -62,6 +81,9 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
+    private void create() throws CatalogException, IOException {
+        logger.debug("Creating sample");
+    }
     private void load() throws CatalogException, IOException {
         logger.debug("Loading samples from a pedigree file");
     }
@@ -69,12 +91,27 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting samples information");
     }
     private void search() throws CatalogException {
-        logger.debug("Search samples");
+        logger.debug("Searching samples");
     }
+    private void update() throws CatalogException {
+        logger.debug("Updating samples");
+    }
+
     private void delete() throws CatalogException {
         logger.debug("Deleting the select sample");
     }
-
+    private void share() throws CatalogException {
+        logger.debug("Sharing samples");
+    }
+    private void unshare() throws CatalogException {
+        logger.debug("Unsharing samples");
+    }
+    private void groupBy() throws CatalogException {
+        logger.debug("Group By samples");
+    }
+    private void annotate() throws CatalogException {
+        logger.debug("Annotating samples");
+    }
 
 
 

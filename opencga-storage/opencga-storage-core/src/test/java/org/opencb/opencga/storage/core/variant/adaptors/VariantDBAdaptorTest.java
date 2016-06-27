@@ -291,6 +291,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_id() {
         testGetAllVariants_rs(ID.key());
     }
+
+    @Test
+    public void testGetAllVariants_variantId() {
+        int i = 0;
+        List<Variant> variants = new ArrayList<>();
+        for (Variant variant : allVariants.getResult()) {
+            if (i++ % 10 == 0) {
+                variants.add(variant);
+            }
+        }
+        List<Variant> result = dbAdaptor.get(new Query(ID.key(), variants), new QueryOptions()).getResult();
+
+        assertTrue(variants.size() > 0);
+        assertEquals(variants.stream().map(Object::toString).sorted().collect(Collectors.toList()),
+                result.stream().map(Object::toString).sorted().collect(Collectors.toList()));
+    }
+
     @Test
     public void testGetAllVariants_xref() {
         testGetAllVariants_rs(ANNOT_XREF.key());

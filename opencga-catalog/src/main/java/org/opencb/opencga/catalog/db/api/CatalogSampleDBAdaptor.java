@@ -142,7 +142,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         @Deprecated
         ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),

@@ -540,7 +540,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         Long count = dbAdaptor.count(new Query()
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), fileId)
                 .append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())).first();
-        long expectedCount = 0;
+        long variantsToLoad = 0;
+
         long expectedSkippedVariants = 0;
         int symbolicVariants = 0;
         int nonVariants = 0;
@@ -554,11 +555,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 expectedSkippedVariants += entry.getValue();
                 nonVariants = entry.getValue();
             } else {
-                expectedCount += entry.getValue();
+                variantsToLoad += entry.getValue();
             }
         }
         MongoDBVariantWriteResult writeResult = options.get("writeResult", MongoDBVariantWriteResult.class);
-
+        long expectedCount = variantsToLoad;
         if (alreadyLoadedVariants != 0) {
             writeResult.setNonInsertedVariants(writeResult.getNonInsertedVariants() - alreadyLoadedVariants);
         }
@@ -596,6 +597,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         if (expectedCount != count) {
             String message = "Wrong number of loaded variants. Expected: " + expectedCount + " and got: " + count;
             logger.error(message);
+            logger.error("  * Variants to load : " + variantsToLoad);
+            logger.error("  * Non Inserted (due to duplications) : " + writeResult.getNonInsertedVariants());
+            logger.error("  * Overlapped variants (extra insertions) : " + writeResult.getOverlappedVariants());
 //            exception = new StorageManagerException(message);
         } else {
             logger.info("Final number of loaded variants: " + count);

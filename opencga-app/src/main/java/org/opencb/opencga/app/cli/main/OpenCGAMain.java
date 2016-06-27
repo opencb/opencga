@@ -776,6 +776,9 @@ public class OpenCGAMain {
 //                            queryOptions.put("variableSetId", c.variableSetId);
                             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
                             cohorts.put(c.name, sampleQueryResult.getResult());
+                        } else if (StringUtils.isNotEmpty(c.tagmap)) {
+                            List<QueryResult<Cohort>> queryResults = createCohorts(sessionId, studyId, c.tagmap, catalogManager, logger);
+                            System.out.println(createOutput(c.cOpt, queryResults, null));
                         } else {
 //                            QueryOptions queryOptions = c.cOpt.getQueryOptions();
 //                            queryOptions.put("annotation", c.annotation);
@@ -818,12 +821,7 @@ public class OpenCGAMain {
                             }
                         }
 
-                        if (cohorts.isEmpty()) {
-                            if (c.tagmap != null) {
-                                List<QueryResult<Cohort>> queryResults = createCohorts(sessionId, studyId, c.tagmap, catalogManager, logger);
-                                System.out.println(createOutput(c.cOpt, queryResults, null));
-                            }
-                        } else {
+                        if (!cohorts.isEmpty()) {
                             List<QueryResult<Cohort>> queryResults = new ArrayList<>(cohorts.size());
                             for (Map.Entry<String, List<Sample>> entry : cohorts.entrySet()) {
                                 List<Long> sampleIds = new LinkedList<>();

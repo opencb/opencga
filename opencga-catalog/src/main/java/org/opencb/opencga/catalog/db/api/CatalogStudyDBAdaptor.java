@@ -92,12 +92,11 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * returned.
      *
      * @param studyId Study id.
-     * @param roleId Role id to look for studyAcls.
      * @param members List of members to look for permissions. Can only be existing users or groups.
      * @return A queryResult object containing a list of studyAcls that satisfies the query.
      * @throws CatalogDBException when the studyId does not exist, or the roleId or the members introduced do not exist in the database.
      */
-    QueryResult<StudyAcl> getStudyAcl(long studyId, @Nullable String roleId, List<String> members) throws CatalogDBException;
+    QueryResult<StudyAcl> getStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
@@ -135,18 +134,16 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
-     * Adds the permissions defined in the roleId to the list of members.
+     * Adds the studyAcl given to the study.
      *
      * @param studyId study id.
-     * @param roleId Role that will be applied to the members.
-     * @param members List of members (users and/or groups).
+     * @param studyAcl Study acl to insert.
      * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
      *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return A queryResult with the studyAcl after the update.
-     * @throws CatalogDBException when any of the studyId, roleId or members do not exist or if there is a user inside a group defined in
-     * members that already have a permission created.
+     * @throws CatalogDBException when the user already has permissions if override is false.
      */
-    QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members, boolean override) throws CatalogDBException;
+    QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException;
 
     /**
      * Remove the permissions for the members.
@@ -231,8 +228,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_ROLE("acls.role", TEXT, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",

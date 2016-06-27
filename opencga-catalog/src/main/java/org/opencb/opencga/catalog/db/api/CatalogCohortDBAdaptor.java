@@ -30,7 +30,7 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         DESCRIPTION("description", TEXT, ""),
 
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         SAMPLES("samples", DECIMAL, ""),
 
