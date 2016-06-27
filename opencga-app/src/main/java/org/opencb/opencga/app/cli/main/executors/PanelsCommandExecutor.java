@@ -88,6 +88,7 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         o.append(CatalogPanelDBAdaptor.QueryParams.GENES.key(),genes);
         o.append(CatalogPanelDBAdaptor.QueryParams.REGIONS.key(),regions);
         o.append(CatalogPanelDBAdaptor.QueryParams.VARIANTS.key(),variants);
+
         openCGAClient.getPanelClient().create(panelsCommandOptions.createCommandOptions.studyId, name, disease, o);
 
         System.out.println("Done.");

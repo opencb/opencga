@@ -123,10 +123,12 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, id, "updateAcl", params, Object.class);
     }
 
+
     public QueryResponse<Object> infoAcl(String id, String groupId, String members, ObjectMap params) throws CatalogException,
             IOException {
         params = addParamsToObjectMap(params,  "groupId", groupId, "members", members);
         return execute(category, id, "infoAcl", params, Object.class);
+
     }
 
 
