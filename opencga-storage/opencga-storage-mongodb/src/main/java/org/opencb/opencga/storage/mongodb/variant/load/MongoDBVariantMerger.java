@@ -8,7 +8,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
-import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.FileEntry;
@@ -818,16 +817,17 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             for (Variant variant : mergedVariants.values()) {
                 // If the variant is not new in this study, query to the database for the loaded info.
                 if (!newStudies.get(i)) {
-                    Region region = new Region(variant.getChromosome(), variant.getStart(), variant.getEnd());
                     QueryResult<Variant> queryResult = dbAdaptor.get(new Query()
-                            .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region)
-                            .append(VariantDBAdaptor.VariantQueryParams.ALTERNATE.key(), variant.getAlternate())
-                            .append(VariantDBAdaptor.VariantQueryParams.REFERENCE.key(), variant.getReference())
+                            .append(VariantDBAdaptor.VariantQueryParams.ID.key(), variant.toString())
                             .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyId), null);
-                    if (!queryResult.getResult().isEmpty()) {
+                    if (queryResult.getResult().size() == 1 && queryResult.first().getStudies().size() == 1) {
                         variantsToMerge.add(queryResult.first());
                     } else {
-                        throw new IllegalStateException("Variant " + variant + " not found!");
+                        if (queryResult.getResult().isEmpty()) {
+                            throw new IllegalStateException("Variant " + variant + " not found!");
+                        } else {
+                            throw new IllegalStateException("Variant " + variant + " found wrong! : " + queryResult.getResult());
+                        }
                     }
                     // Because the loaded variants were an overlapped region, all the information required is in every variant.
                     // Fetch only one variant
