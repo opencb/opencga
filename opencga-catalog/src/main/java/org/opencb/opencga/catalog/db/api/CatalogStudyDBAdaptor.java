@@ -238,7 +238,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         TYPE("type", TEXT, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
-        GROUP_ID("groups.id", TEXT_ARRAY, ""),
+        GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
@@ -344,7 +344,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         UNIQUE("unique", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
         VARIABLE("variables", TEXT_ARRAY, ""),
-        VARIABLE_ID("variables.id", TEXT, ""),
+        VARIABLE_NAME("variables.name", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),

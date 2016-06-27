@@ -162,12 +162,12 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 for (Group group : groups.getResult()) {
                     for (String tmpUserId : group.getUserIds()) {
                         if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getId());
+                            memberSet.add(group.getName());
 
-                            if (!groupUsers.containsKey(group.getId())) {
-                                groupUsers.put(group.getId(), new ArrayList<>());
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
                             }
-                            groupUsers.get(group.getId()).add(tmpUserId);
+                            groupUsers.get(group.getName()).add(tmpUserId);
                         }
                     }
                 }

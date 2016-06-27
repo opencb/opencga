@@ -321,7 +321,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
             // Check if any user already have permissions set on their own.
             QueryResult<DatasetAcl> datasetAcl = getDatasetAcl(datasetId, group.getUserIds());
             if (datasetAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in dataset. At least one user in " + group.getName()
                         + " has already defined permissions for dataset " + datasetId);
             }
         } else {

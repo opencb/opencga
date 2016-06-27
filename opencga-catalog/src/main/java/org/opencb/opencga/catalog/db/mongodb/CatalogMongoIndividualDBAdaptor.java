@@ -322,7 +322,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             // Check if any user already have permissions set on their own.
             QueryResult<IndividualAcl> individualAcl = getIndividualAcl(individualId, group.getUserIds());
             if (individualAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in individual. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in individual. At least one user in " + group.getName()
                         + " has already defined permissions for individual " + individualId);
             }
         } else {

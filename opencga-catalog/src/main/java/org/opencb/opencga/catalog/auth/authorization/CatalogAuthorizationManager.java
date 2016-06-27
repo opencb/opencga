@@ -104,7 +104,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
             studyAcl = getStudyAclBelonging(studyId, userId, groupId);
         }
         if (studyAcl == null) {
@@ -178,7 +178,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     private FileAcl resolveFilePermissions(File file, String userId, long studyId,
                                     StudyAuthenticationContext studyAuthenticationContext) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         // We obtain all the paths from our current position to the root folder
         List<String> paths = FileManager.getParentPaths(file.getPath());
@@ -249,7 +249,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return resolveSamplePermissions(studyId, sample.getId(), userId);
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
             Map<String, SampleAcl> userAclMap = new HashMap<>();
             for (SampleAcl sampleAcl : sample.getAcls()) {
@@ -261,7 +261,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private SampleAcl resolveSamplePermissions(long studyId, long sampleId, String userId) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -317,7 +317,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return resolveIndividualPermissions(studyId, individual.getId(), userId);
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
             Map<String, IndividualAcl> userAclMap = new HashMap<>();
             for (IndividualAcl individualAcl : individual.getAcls()) {
@@ -329,7 +329,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private IndividualAcl resolveIndividualPermissions(long studyId, long individualId, String userId) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -385,7 +385,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return resolveJobPermissions(studyId, job.getId(), userId);
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
             Map<String, JobAcl> userAclMap = new HashMap<>();
             for (JobAcl jobAcl : job.getAcls()) {
@@ -397,7 +397,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private JobAcl resolveJobPermissions(long studyId, long jobId, String userId) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -452,7 +452,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return resolveCohortPermissions(studyId, cohort.getId(), userId);
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
             Map<String, CohortAcl> userAclMap = new HashMap<>();
             for (CohortAcl cohortAcl : cohort.getAcls()) {
@@ -464,7 +464,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private CohortAcl resolveCohortPermissions(long studyId, long cohortId, String userId) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -519,7 +519,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return resolveDatasetPermissions(studyId, dataset.getId(), userId);
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
             Map<String, DatasetAcl> userAclMap = new HashMap<>();
             for (DatasetAcl datasetAcl : dataset.getAcls()) {
@@ -531,7 +531,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private DatasetAcl resolveDatasetPermissions(long studyId, long datasetId, String userId) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -587,7 +587,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             return resolveDiseasePanelPermissions(studyId, panel.getId(), userId);
         } else {
             QueryResult<Group> group = getGroupBelonging(studyId, userId);
-            String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+            String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
             Map<String, DiseasePanelAcl> userAclMap = new HashMap<>();
             for (DiseasePanelAcl panelAcl : panel.getAcls()) {
@@ -599,7 +599,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
 
     private DiseasePanelAcl resolveDiseasePanelPermissions(long studyId, long panelId, String userId) throws CatalogException {
         QueryResult<Group> group = getGroupBelonging(studyId, userId);
-        String groupId = group.getNumResults() == 1 ? group.first().getId() : null;
+        String groupId = group.getNumResults() == 1 ? group.first().getName() : null;
 
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
@@ -1349,7 +1349,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
             QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
             if (groupBelonging.getNumResults() > 0) {
-                memberList.add(groupBelonging.first().getId()); // Add the groupId to the memberList
+                memberList.add(groupBelonging.first().getName()); // Add the groupId to the memberList
             }
         }
         StudyAcl studyAcl = getStudyAclBelonging(studyId, memberList);

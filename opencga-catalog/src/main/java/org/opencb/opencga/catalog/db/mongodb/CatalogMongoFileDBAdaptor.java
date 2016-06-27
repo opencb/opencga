@@ -197,7 +197,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             // Check if any user already have permissions set on their own.
             QueryResult<FileAcl> fileAcl = getFileAcl(fileId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in file. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in file. At least one user in " + group.getName()
                         + " has already defined permissions for file " + fileId);
             }
         } else {

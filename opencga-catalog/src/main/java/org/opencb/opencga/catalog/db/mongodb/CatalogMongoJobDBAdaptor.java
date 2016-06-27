@@ -212,7 +212,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             // Check if any user already have permissions set on their own.
             QueryResult<JobAcl> jobAcl = getJobAcl(jobId, group.getUserIds());
             if (jobAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in job. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in job. At least one user in " + group.getName()
                         + " has already defined permissions for job " + jobId);
             }
         } else {

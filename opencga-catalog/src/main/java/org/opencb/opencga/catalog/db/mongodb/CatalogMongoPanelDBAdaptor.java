@@ -89,7 +89,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
             // Check if any user already have permissions set on their own.
             QueryResult<DiseasePanelAcl> fileAcl = getPanelAcl(panelId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in panel. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in panel. At least one user in " + group.getName()
                         + " has already defined permissions for panel " + panelId);
             }
         } else {

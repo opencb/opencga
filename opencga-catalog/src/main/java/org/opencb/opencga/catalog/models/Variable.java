@@ -81,7 +81,7 @@ public class Variable {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Variable{");
-        sb.append("id='").append(name).append('\'');
+        sb.append("name='").append(name).append('\'');
         sb.append(", category='").append(category).append('\'');
         sb.append(", type=").append(type);
         sb.append(", defaultValue=").append(defaultValue);

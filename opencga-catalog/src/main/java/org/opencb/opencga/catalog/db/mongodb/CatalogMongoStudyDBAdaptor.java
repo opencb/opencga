@@ -318,7 +318,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
 
     @Override
-    public QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Group> getGroup(long studyId, String userId, String groupName, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson query = new Document(PRIVATE_ID, studyId);
@@ -326,8 +326,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (userId != null) {
             groupQuery.put("userIds", userId);
         }
-        if (groupId != null) {
-            groupQuery.put("id", groupId);
+        if (groupName != null) {
+            groupQuery.put("name", groupName);
         }
         Bson projection = new Document(QueryParams.GROUPS.key(), new Document("$elemMatch", groupQuery));
 
@@ -371,7 +371,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //            groupQuery.add(Filters.in("userIds", userIds));
         }
         if (groupId != null && groupId.length() > 0) {
-            aggregation.add(Aggregates.match(Filters.eq(QueryParams.GROUP_ID.key(), groupId)));
+            aggregation.add(Aggregates.match(Filters.eq(QueryParams.GROUP_NAME.key(), groupId)));
 //            groupQuery.add(Filters.eq("id", groupId));
         }
 
@@ -420,7 +420,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     boolean groupExists(long studyId, String groupId) throws CatalogDBException {
-        Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.GROUP_ID.key(), groupId);
+        Query query = new Query(QueryParams.ID.key(), studyId).append(QueryParams.GROUP_NAME.key(), groupId);
         return count(query).first() == 1;
     }
 
@@ -442,7 +442,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
             for (Group group : result) {
                 // Remove the members that already existed in other groups different than the one to be set.
-                if (!group.getId().equals(groupId)) {
+                if (!group.getName().equals(groupId)) {
                     List<String> usersToRemove = new ArrayList<>();
                     for (String userId : group.getUserIds()) {
                         if (usersSet.contains(userId)) {
@@ -450,7 +450,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                         }
                     }
                     if (usersToRemove.size() > 0) {
-                        removeMembersFromGroup(studyId, group.getId(), usersToRemove);
+                        removeMembersFromGroup(studyId, group.getName(), usersToRemove);
                     }
                 }
             }
@@ -459,7 +459,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         Document query;
         Document update;
         if (groupExists(studyId, groupId)) {
-            query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_ID.key(), groupId);
+            query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId);
             update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         } else {
             Group group = new Group(groupId, members);
@@ -485,7 +485,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
         }
 
-        Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.id", groupId));
+        Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.name", groupId));
         Bson pull = Updates.pullAll("groups.$.userIds", members);
         QueryResult<UpdateResult> update = studyCollection.update(and, pull, null);
         if (update.first().getModifiedCount() != 1) {
@@ -493,7 +493,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         // Remove the group in case there are no users in it
-        Bson queryBson = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_ID.key(), groupId).append(
+        Bson queryBson = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId).append(
                 QueryParams.GROUP_USER_IDS.key(), new Document("$eq", Collections.emptyList()));
         pull = new Document("$pull", new Document("groups", new Document("userIds", Collections.emptyList())));
         studyCollection.update(queryBson, pull, null);
@@ -515,7 +515,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
             QueryResult<StudyAcl> aclQueryResult = getStudyAcl(studyId, group.getUserIds());
             if (aclQueryResult.getNumResults() > 0) {
-                throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + group.getId()
+                throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + group.getName()
                         + " already have permissions set on its own.");
             }
         } else {
@@ -654,7 +654,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // 2. we take it out from the array.
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
-        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(), Filters.eq("id", oldName));
+        Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(), Filters.eq("name", oldName));
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
 
         if (queryResult.first().getModifiedCount() == 0) {
@@ -695,7 +695,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         Bson update = Updates.pull(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
-                Filters.eq("id", name));
+                Filters.eq("name", name));
         QueryResult<UpdateResult> queryResult = studyCollection.update(bsonQuery, update, null);
         if (queryResult.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Remove field from Variable Set. Could not remove the field " + name
@@ -724,7 +724,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         aggregation.add(Aggregates.match(Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId)));
         aggregation.add(Aggregates.unwind("$" + QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE.key()));
         aggregation.add(Aggregates.match(
-                Filters.eq(QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE_ID.key(), variableId)));
+                Filters.eq(QueryParams.VARIABLE_SET.key() + "." + VariableSetParams.VARIABLE_NAME.key(), variableId)));
 
         QueryResult<Document> queryResult = studyCollection.aggregate(aggregation, new QueryOptions());
 
@@ -749,7 +749,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(), Filters.and(
                 Filters.eq(VariableSetParams.ID.key(), variableSetId),
-                Filters.eq(VariableSetParams.VARIABLE_ID.key(), variableId))
+                Filters.eq(VariableSetParams.VARIABLE_NAME.key(), variableId))
         )));
 
         if (studyCollection.aggregate(aggregation, new QueryOptions()).getNumResults() == 0) {
@@ -767,7 +767,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.elemMatch(QueryParams.VARIABLE_SET.key(), Filters.and(
                 Filters.eq(VariableSetParams.ID.key(), variableSetId),
-                Filters.ne(VariableSetParams.VARIABLE_ID.key(), variableId))
+                Filters.ne(VariableSetParams.VARIABLE_NAME.key(), variableId))
         )));
 
         if (studyCollection.aggregate(aggregation, new QueryOptions()).getNumResults() == 0) {
