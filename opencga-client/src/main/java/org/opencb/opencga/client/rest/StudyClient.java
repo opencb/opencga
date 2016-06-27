@@ -113,7 +113,8 @@ public class StudyClient extends AbstractParentClient<Study, StudyAcl> {
         return execute(STUDY_URL, studyId, "groups", params, ObjectMap.class);
     }
 
-    public QueryResponse<StudyAcl> share(String studyId, String roleId, String members, ObjectMap params)
+ /*
+   public QueryResponse<StudyAcl> share(String studyId, String roleId, String members, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "role", roleId, "members", members);
         params.putIfAbsent("override", false);
@@ -124,7 +125,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAcl> {
     public QueryResponse<Object> unshare(String studyId, String members, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "members", members);
         return execute(STUDY_URL, studyId, "removeRole", params, Object.class);
-    }
+    }*/
 
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
         return execute(STUDY_URL, studyId, "update", params, Study.class);
