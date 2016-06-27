@@ -201,12 +201,12 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
      *
      * @param fileId Id of the file to be renamed.
      * @param filePath New file or directory name (containing the full path).
+     * @param fileUri New file uri (containing the full path).
      * @param options Options to filter the file output.
      * @return A QueryResult object containing the file that have been renamed.
-     *
      * @throws CatalogDBException when the filePath already exists.
      */
-    QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options) throws CatalogDBException;
+    QueryResult<File> renameFile(long fileId, String filePath, String fileUri, QueryOptions options) throws CatalogDBException;
 
     /**
      * Extract the sampleIds given from the files that matching the query.

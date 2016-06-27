@@ -182,6 +182,10 @@ public class FileManager extends AbstractManager implements IFileManager {
         List<Long> studyIds = getStudyIds(parsedSampleStr);
         String fileName = parsedSampleStr.getString("featureName");
 
+        if (fileName.startsWith("/")) {
+            fileName = fileName.substring(1);
+        }
+
         // We search as a path
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), fileName);
@@ -631,8 +635,9 @@ public class FileManager extends AbstractManager implements IFileManager {
          * 1. fileIdStr converts easily to a valid fileId.
          * 2. The user belonging to the sessionId has permissions to delete files.
          * 3. If file is external and DELETE_EXTERNAL_FILE is false, we will call unlink method.
-         * 4. Check if the status of the file is a valid one.
-         * 5. No external files or folders are found within the path.
+         * 4. Check if the status of the file/folder and the children is a valid one.
+         * 5. Root folders cannot be deleted.
+         * 6. No external files or folders are found within the path.
          */
 
         QueryResult<File> deletedFileResult = new QueryResult<>("Delete file", -1, 0, 0, "", "No changes made", Collections.emptyList());
@@ -665,6 +670,12 @@ public class FileManager extends AbstractManager implements IFileManager {
         }
 
         // Check 4.
+        // We cannot delete the root folder
+        if (file.getType().equals(File.Type.DIRECTORY) && isRootFolder(file)) {
+            throw new CatalogException("Root directories cannot be deleted");
+        }
+
+        // Check 5.
         // Only READY, TRASHED and PENDING_DELETE files can be deleted
         String fileStatus = file.getStatus().getName();
         // TODO chang this to accept only valid statuses
@@ -674,11 +685,30 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("File cannot be deleted, status is: " + fileStatus);
         }
 
-        // Check 5.
-        // We cannot delete a folder containing any linked file/folder, these must be unlinked first
+        // Check 6.
+        // We cannot delete a folder containing files or folders with status missing or staged
         long studyId = -1;
         if (file.getType().equals(File.Type.DIRECTORY)) {
             studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+
+            Query query = new Query()
+                    .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(),
+                            Arrays.asList(File.FileStatus.MISSING, File.FileStatus.STAGE));
+
+            long count = fileDBAdaptor.count(query).first();
+            if (count > 0) {
+                throw new CatalogException("Cannot delete folder. " + count + " files have been found with status missing or staged.");
+            }
+        }
+
+        // Check 7.
+        // We cannot delete a folder containing any linked file/folder, these must be unlinked first
+        if (file.getType().equals(File.Type.DIRECTORY)) {
+            if (studyId == -1) {
+                studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+            }
 
             Query query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
@@ -741,6 +771,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         CatalogIOManager ioManager = catalogIOManagerFactory.get(fileUri);
 
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileOrDirectory.getId());
+        String suffixName = ".DELETED_" + TimeUtils.getTime();
 
         // If file is not a directory then we can just delete it from disk and update Catalog.
         if (fileOrDirectory.getType().equals(File.Type.FILE)) {
@@ -752,10 +783,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             // 2. Delete the file from disk
             ioManager.deleteFile(fileUri);
 
-            // 3. Update the file status and path in the database. Set to delete
+            // 3. Update the file status in the database. Set to delete
             update = new ObjectMap()
                     .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
-                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
+                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), fileOrDirectory.getPath() + suffixName);
             removedFileResult = fileDBAdaptor.delete(fileOrDirectory.getId(), update, options);
         } else {
             // Directories can be marked to be deferred removed by setting FORCE_DELETE to false, then File daemon will remove it.
@@ -763,7 +794,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             if (!options.getBoolean(FORCE_DELETE, false)
                     && !fileOrDirectory.getStatus().getName().equals(File.FileStatus.PENDING_DELETE)) {
                 // Rename the directory in the filesystem.
-                String suffixName = ".DELETED_" + TimeUtils.getTime();
                 URI newURI = Paths.get(Paths.get(fileUri).toString() + suffixName).toUri();
 
                 String basePath = Paths.get(fileOrDirectory.getPath()).toString();
@@ -1211,13 +1241,15 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (file.getType().equals(File.Type.FILE)) {
             logger.debug("Unlinking file {}", file.getUri().toString());
 
-            ObjectMap update = new ObjectMap()
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
-                    .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
+            ObjectMap update = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
 
             return fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
         } else {
             logger.debug("Unlinking folder {}", file.getUri().toString());
+            String suffixName = ".REMOVED_" + TimeUtils.getTime();
+            String basePath = Paths.get(file.getPath()).toString();
+            String suffixedPath = basePath + suffixName;
+
 
             Files.walkFileTree(Paths.get(file.getUri()), new SimpleFileVisitor<Path>() {
                 @Override
@@ -1246,7 +1278,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         ObjectMap update = new ObjectMap()
                                 .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
-                                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
+                                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), file.getPath().replaceFirst(basePath, suffixedPath));
 
                         fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
 
@@ -1306,7 +1338,8 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                                 ObjectMap update = new ObjectMap()
                                         .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
-                                        .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
+                                        .append(CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                                                file.getPath().replaceFirst(basePath, suffixedPath));
 
                                 fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
 
@@ -1499,25 +1532,27 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         userDBAdaptor.updateUserLastModified(ownerId);
         CatalogIOManager catalogIOManager;
-        URI studyUri = getStudyUri(studyId);
+        URI oldUri = file.getUri();
+        URI newUri = Paths.get(oldUri).getParent().resolve(newName).toUri();
+//        URI studyUri = file.getUri();
         boolean isExternal = isExternal(file); //If the file URI is not null, the file is external located.
         QueryResult<File> result;
         switch (file.getType()) {
             case DIRECTORY:
                 if (!isExternal) {  //Only rename non external files
-                    catalogIOManager = catalogIOManagerFactory.get(studyUri); // TODO? check if something in the subtree is not READY?
-                    catalogIOManager.rename(getFileUri(studyId, oldPath), getFileUri(studyId, newPath));   // io.move() 1
+                    catalogIOManager = catalogIOManagerFactory.get(oldUri); // TODO? check if something in the subtree is not READY?
+                    catalogIOManager.rename(oldUri, newUri);   // io.move() 1
                 }
-                result = fileDBAdaptor.renameFile(fileId, newPath, null);
+                result = fileDBAdaptor.renameFile(fileId, newPath, newUri.toString(), null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath)
                         .append("name", newName), "rename", null);
                 break;
             case FILE:
                 if (!isExternal) {  //Only rename non external files
-                    catalogIOManager = catalogIOManagerFactory.get(studyUri);
-                    catalogIOManager.rename(getFileUri(studyId, file.getPath()), getFileUri(studyId, newPath));
+                    catalogIOManager = catalogIOManagerFactory.get(oldUri);
+                    catalogIOManager.rename(oldUri, newUri);
                 }
-                result = fileDBAdaptor.renameFile(fileId, newPath, null);
+                result = fileDBAdaptor.renameFile(fileId, newPath, newUri.toString(), null);
                 auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, new ObjectMap("path", newPath)
                         .append("name", newName), "rename", null);
                 break;

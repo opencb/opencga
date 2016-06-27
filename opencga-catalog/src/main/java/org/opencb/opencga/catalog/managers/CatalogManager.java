@@ -400,6 +400,7 @@ public class CatalogManager implements AutoCloseable {
         return projectManager.getProjectId(id);
     }
 
+    @Deprecated
     public long getStudyId(String id) throws CatalogException {
         return studyManager.getStudyId(id);
     }
