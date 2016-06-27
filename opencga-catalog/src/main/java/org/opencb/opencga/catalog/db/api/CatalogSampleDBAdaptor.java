@@ -157,12 +157,12 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
+        ANNOTATION_SET_NAME("annotationSetId", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         /*
         ANNOTATIONS_SET_VARIABLE_SET_ID("annotationSets.variableSetId", DOUBLE, ""),
-        ANNOTATION_SET_ID("annotationSets.id", TEXT, ""),
+        ANNOTATION_SET_NAME("annotationSets.id", TEXT, ""),
         ANNOTATION_SET("annotationSets", TEXT_ARRAY, "");
 */
         private static Map<String, QueryParams> map;

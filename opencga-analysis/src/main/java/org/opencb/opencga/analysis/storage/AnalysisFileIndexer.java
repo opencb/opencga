@@ -287,7 +287,7 @@ public class AnalysisFileIndexer {
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
                     new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION,
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
                         "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
             } else {
                 defaultCohort = cohorts.first();

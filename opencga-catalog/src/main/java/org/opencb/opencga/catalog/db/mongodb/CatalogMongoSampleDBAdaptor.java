@@ -702,7 +702,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.elemMatch("annotationSets", Filters.eq("variableSetId", variableSetId))));
-        aggregation.add(Aggregates.project(Projections.include("annotationSets", "name")));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets", "id")));
         aggregation.add(Aggregates.unwind("$annotationSets"));
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
@@ -1040,8 +1040,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;
-                    case ANNOTATION_SET_ID:
-                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                    case ANNOTATION_SET_NAME:
+                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

@@ -85,11 +85,11 @@ public class VariantStorageTest {
         File file4 = create("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         File file5 = create("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
 
-        coh1 = catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
-        coh2 = catalogManager.createCohort(studyId, "coh2", Cohort.Type.CONTROL_SET, "", file2.getSampleIds(), null, sessionId).first().getId();
-        coh3 = catalogManager.createCohort(studyId, "coh3", Cohort.Type.CONTROL_SET, "", file3.getSampleIds(), null, sessionId).first().getId();
-        coh4 = catalogManager.createCohort(studyId, "coh4", Cohort.Type.CONTROL_SET, "", file4.getSampleIds(), null, sessionId).first().getId();
-        coh5 = catalogManager.createCohort(studyId, "coh5", Cohort.Type.CONTROL_SET, "", file5.getSampleIds(), null, sessionId).first().getId();
+        coh1 = catalogManager.createCohort(studyId, "coh1", Study.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId).first().getId();
+        coh2 = catalogManager.createCohort(studyId, "coh2", Study.Type.CONTROL_SET, "", file2.getSampleIds(), null, sessionId).first().getId();
+        coh3 = catalogManager.createCohort(studyId, "coh3", Study.Type.CONTROL_SET, "", file3.getSampleIds(), null, sessionId).first().getId();
+        coh4 = catalogManager.createCohort(studyId, "coh4", Study.Type.CONTROL_SET, "", file4.getSampleIds(), null, sessionId).first().getId();
+        coh5 = catalogManager.createCohort(studyId, "coh5", Study.Type.CONTROL_SET, "", file5.getSampleIds(), null, sessionId).first().getId();
 
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
         QueryOptions queryOptions = new QueryOptions(VariantStorageManager.Options.ANNOTATE.key(), false);
@@ -138,7 +138,7 @@ public class VariantStorageTest {
         Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
+                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Study.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
                 queryResults.add(cohort);
             } else {
                 logger.warn("cohort {} was already created", cohortName);

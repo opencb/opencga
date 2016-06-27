@@ -499,7 +499,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
         filterStringParams(parameters, cohortParams, acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Cohort.Type.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
         filterEnumParams(parameters, cohortParams, acceptedEnums);
 
         String[] acceptedLongListParams = {QueryParams.SAMPLES.key()};
@@ -747,8 +747,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;
-                    case ANNOTATION_SET_ID:
-                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                    case ANNOTATION_SET_NAME:
+                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

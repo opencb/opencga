@@ -142,7 +142,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
         smp4 = catalogManager.createSample(s1, "smp4", null, null, null, null, ownerSessionId).first().getId();
         smp5 = catalogManager.createSample(s1, "smp5", null, null, null, null, ownerSessionId).first().getId();
         smp6 = catalogManager.createSample(s1, "smp6", null, null, null, null, ownerSessionId).first().getId();
-        catalogManager.createCohort(s1, "all", Cohort.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first()
+        catalogManager.createCohort(s1, "all", Study.Type.COLLECTION, "", Arrays.asList(smp1, smp2, smp3), null, ownerSessionId).first()
                 .getId();
         ind1 = catalogManager.createIndividual(s1, "ind1", "", 0, 0, Individual.Gender.UNKNOWN, null, ownerSessionId).first().getId();
         ind2 = catalogManager.createIndividual(s1, "ind2", "", 0, 0, Individual.Gender.UNKNOWN, null, ownerSessionId).first().getId();

@@ -1229,7 +1229,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.readAllCohort(studyId, query, options, sessionId);
     }
 
-    public QueryResult<Cohort> createCohort(long studyId, String name, Cohort.Type type, String description, List<Long> sampleIds,
+    public QueryResult<Cohort> createCohort(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
     }

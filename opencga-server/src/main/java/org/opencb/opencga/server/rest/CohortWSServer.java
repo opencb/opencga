@@ -60,7 +60,7 @@ public class CohortWSServer extends OpenCGAWSServer {
             "If none of this is given, an empty cohort will be created.", response = Cohort.class)
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
-                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
+                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Study.Type type,
                                  @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
@@ -148,7 +148,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(long studyId, String cohortName, Cohort.Type type, String cohortDescription, Query query,
+    private QueryResult<Cohort> createCohort(long studyId, String cohortName, Study.Type type, String cohortDescription, Query query,
                                              QueryOptions queryOptions) throws CatalogException {
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Long> sampleIds = new ArrayList<>(queryResult.getNumResults());

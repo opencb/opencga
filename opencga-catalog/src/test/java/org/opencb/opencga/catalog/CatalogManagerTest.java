@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.*;
-import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_ID;
+import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME;
 import static org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID;
 
 public class CatalogManagerTest extends GenericTest {
@@ -1906,11 +1906,11 @@ public class CatalogManagerTest extends GenericTest {
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(8, samples.size());
 
-        query = new Query(ANNOTATION_SET_ID.key(), "annot2");
+        query = new Query(ANNOTATION_SET_NAME.key(), "annot2");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(3, samples.size());
 
-        query = new Query(ANNOTATION_SET_ID.key(), "noExist");
+        query = new Query(ANNOTATION_SET_NAME.key(), "noExist");
         samples = catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
         assertEquals(0, samples.size());
 
@@ -2063,7 +2063,7 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId2 = catalogManager.createSample(studyId, "SAMPLE_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId3 = catalogManager.createSample(studyId, "SAMPLE_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
+        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
                 sampleId3), null, sessionIdUser).first();
 
         assertEquals("MyCohort", myCohort.getName());
@@ -2082,13 +2082,13 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId3 = catalogManager.createSample(studyId, "SAMPLE_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId4 = catalogManager.createSample(studyId, "SAMPLE_4", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId5 = catalogManager.createSample(studyId, "SAMPLE_5", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        Cohort myCohort1 = catalogManager.createCohort(studyId, "MyCohort1", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
+        Cohort myCohort1 = catalogManager.createCohort(studyId, "MyCohort1", Study.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
                 sampleId3), null, sessionIdUser).first();
-        Cohort myCohort2 = catalogManager.createCohort(studyId, "MyCohort2", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
+        Cohort myCohort2 = catalogManager.createCohort(studyId, "MyCohort2", Study.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
                 sampleId3, sampleId4), null, sessionIdUser).first();
-        Cohort myCohort3 = catalogManager.createCohort(studyId, "MyCohort3", Cohort.Type.CASE_CONTROL, "", Arrays.asList(sampleId3,
+        Cohort myCohort3 = catalogManager.createCohort(studyId, "MyCohort3", Study.Type.CASE_CONTROL, "", Arrays.asList(sampleId3,
                 sampleId4), null, sessionIdUser).first();
-        catalogManager.createCohort(studyId, "MyCohort4", Cohort.Type.TRIO, "", Arrays.asList(sampleId5, sampleId3),
+        catalogManager.createCohort(studyId, "MyCohort4", Study.Type.TRIO, "", Arrays.asList(sampleId5, sampleId3),
                 null, sessionIdUser).first();
 
         long numResults;
@@ -2113,7 +2113,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(4, numResults);
 
         numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),
-                Cohort.Type.FAMILY), new QueryOptions(), sessionIdUser).getNumResults();
+                Study.Type.FAMILY), new QueryOptions(), sessionIdUser).getNumResults();
         assertEquals(2, numResults);
 
         numResults = catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),
@@ -2129,7 +2129,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testCreateCohortFail() throws CatalogException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
         thrown.expect(CatalogException.class);
-        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(23L, 4L, 5L), null, sessionIdUser);
+        catalogManager.createCohort(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(23L, 4L, 5L), null, sessionIdUser);
     }
 
     @Test
@@ -2137,11 +2137,11 @@ public class CatalogManagerTest extends GenericTest {
         long studyId = catalogManager.getStudyId("user@1000G:phase1");
 
         long sampleId1 = catalogManager.createSample(studyId, "SAMPLE_1", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
-        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
+        catalogManager.createCohort(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
 
 
         thrown.expect(CatalogDBException.class);
-        catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
+        catalogManager.createCohort(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1), null, sessionIdUser).first();
     }
 
     @Test
@@ -2154,7 +2154,7 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId4 = catalogManager.createSample(studyId, "SAMPLE_4", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId5 = catalogManager.createSample(studyId, "SAMPLE_5", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
-        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
+        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
                 sampleId3), null, sessionIdUser).first();
 
 
@@ -2187,7 +2187,7 @@ public class CatalogManagerTest extends GenericTest {
         long sampleId2 = catalogManager.createSample(studyId, "SAMPLE_2", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
         long sampleId3 = catalogManager.createSample(studyId, "SAMPLE_3", "", "", null, new QueryOptions(), sessionIdUser).first().getId();
 
-        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Cohort.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
+        Cohort myCohort = catalogManager.createCohort(studyId, "MyCohort", Study.Type.FAMILY, "", Arrays.asList(sampleId1, sampleId2,
                 sampleId3), null, sessionIdUser).first();
 
 

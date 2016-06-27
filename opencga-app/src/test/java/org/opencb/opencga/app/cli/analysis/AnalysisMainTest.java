@@ -147,8 +147,8 @@ public class AnalysisMainTest {
         execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--cohort-ids", "ALL", "--outdir-id", String.valueOf(outdirId)});
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "ALL"), null, sessionId).first().getStatus().getStatus());
 
-        catalogManager.createCohort(studyId, "coh1", Cohort.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId);
-        catalogManager.createCohort(studyId, "coh2", Cohort.Type.CONTROL_SET, "", file2.getSampleIds(), null, sessionId);
+        catalogManager.createCohort(studyId, "coh1", Study.Type.CONTROL_SET, "", file1.getSampleIds(), null, sessionId);
+        catalogManager.createCohort(studyId, "coh2", Study.Type.CONTROL_SET, "", file2.getSampleIds(), null, sessionId);
 
         execute(new String[]{"variant", "stats", "--session-id", sessionId, "--study-id", String.valueOf(studyId), "--cohort-ids", "coh1", "--outdir-id", String.valueOf(outdirId)});
         assertEquals(Cohort.CohortStatus.READY, catalogManager.getAllCohorts(studyId, new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), "coh1"), null, sessionId).first().getStatus().getStatus());
@@ -168,11 +168,11 @@ public class AnalysisMainTest {
 
         QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, new Query(), new QueryOptions(), sessionId);
         List<Long> sampleIds = allSamples.getResult().stream().map(Sample::getId).collect(Collectors.toList());
-        Long c1 = catalogManager.createCohort(studyId, "C1", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, sampleIds.size() / 2), null, sessionId).first().getId();
-        Long c2 = catalogManager.createCohort(studyId, "C2", Cohort.Type.CONTROL_SET, "", sampleIds.subList(sampleIds.size() / 2 + 1, sampleIds.size()), null, sessionId).first().getId();
-        Long c3 = catalogManager.createCohort(studyId, "C3", Cohort.Type.CONTROL_SET, "", sampleIds.subList(0, 1), null, sessionId).first().getId();
+        Long c1 = catalogManager.createCohort(studyId, "C1", Study.Type.CONTROL_SET, "", sampleIds.subList(0, sampleIds.size() / 2), null, sessionId).first().getId();
+        Long c2 = catalogManager.createCohort(studyId, "C2", Study.Type.CONTROL_SET, "", sampleIds.subList(sampleIds.size() / 2 + 1, sampleIds.size()), null, sessionId).first().getId();
+        Long c3 = catalogManager.createCohort(studyId, "C3", Study.Type.CONTROL_SET, "", sampleIds.subList(0, 1), null, sessionId).first().getId();
         Sample sample = catalogManager.createSample(studyId, "Sample", "", "", null, null, sessionId).first();
-        Long c4 = catalogManager.createCohort(studyId, "C4", Cohort.Type.CONTROL_SET, "", Collections.singletonList(sample.getId()), null, sessionId).first().getId();
+        Long c4 = catalogManager.createCohort(studyId, "C4", Study.Type.CONTROL_SET, "", Collections.singletonList(sample.getId()), null, sessionId).first().getId();
 
         // Index file1
         execute(new String[]{"variant", "index", "--session-id", sessionId, "--file-id", "user@p1:s1:" + file1.getPath(), "--calculate-stats", "--annotate"});

@@ -147,7 +147,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 //                    case STUDY_ID:
 //                        addCompQueryFilter(option, option.name(), PRIVATE_STUDY_ID, query, mongoQueryList);
 //                        break;
-//                    case ANNOTATION_SET_ID:
+//                    case ANNOTATION_SET_NAME:
 //                        addCompQueryFilter(option, option.name(), "id", query, annotationSetFilter);
 //                        break;
 //                    case VARIABLE_SET_ID:
@@ -833,8 +833,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;
-                    case ANNOTATION_SET_ID:
-                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                    case ANNOTATION_SET_NAME:
+                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
