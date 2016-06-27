@@ -10,13 +10,13 @@
 {"collection": "sample", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
 {"collection": "sample", "fields": {"annotationSets.id": 1}, "options": {}}
 {"collection": "sample", "fields": {"annotationSets.variableSetId": 1}, "options": {}}
-{"collection": "sample", "fields": {"annotationSets.annotations.id": 1, "annotationSets.annotations.value": 1}, "options": {}}
+{"collection": "sample", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
 {"collection": "sample", "fields": {"_studyId": 1}, "options": {}}
 
 {"collection": "individual", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
 {"collection": "individual", "fields": {"annotationSets.id": 1}, "options": {}}
 {"collection": "individual", "fields": {"annotationSets.variableSetId": 1}, "options": {}}
-{"collection": "individual", "fields": {"annotationSets.annotations.id": 1, "annotationSets.annotations.value": 1}, "options": {}}
+{"collection": "individual", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
 {"collection": "individual", "fields": {"_studyId": 1}, "options": {}}
 
 {"collection": "file", "fields": {"name": 1}, "options": {}}

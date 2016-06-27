@@ -485,7 +485,7 @@ class CatalogMongoDBUtils {
                     }
                     if (variable.getVariableSet() != null) {
                         Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
                         if (subVariableMap.containsKey(r)) {
                             variable = subVariableMap.get(r);
                             variableType = variable.getType();
@@ -507,7 +507,7 @@ class CatalogMongoDBUtils {
         List<Bson> valueList = addCompQueryFilter(type, "value" + route, Arrays.asList(values), new ArrayList<>());
         annotationSetFilter.add(
                 Filters.elemMatch("annotations", Filters.and(
-                        Filters.eq("id", variableId),
+                        Filters.eq("name", variableId),
                         valueList.get(0)
                 ))
         );
@@ -551,7 +551,7 @@ class CatalogMongoDBUtils {
                         }
                         if (variable.getVariableSet() != null) {
                             Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                    .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
                             if (subVariableMap.containsKey(r)) {
                                 variable = subVariableMap.get(r);
                                 variableType = variable.getType();
@@ -573,7 +573,7 @@ class CatalogMongoDBUtils {
             annotationSetFilter.add(
                     new BasicDBObject("annotations",
                             new BasicDBObject("$elemMatch",
-                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", variableId)
+                                    new BasicDBObject(queryValues.get(0).toMap()).append("name", variableId)
                             )
                     )
             );

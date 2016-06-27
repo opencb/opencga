@@ -32,7 +32,7 @@ public class Cohort {
 
     private long id;
     private String name;
-    private Type type;
+    private Study.Type type;
     private String creationDate;
     private CohortStatus status;
     private String description;
@@ -48,13 +48,13 @@ public class Cohort {
     public Cohort() {
     }
 
-    public Cohort(String name, Type type, String creationDate, String description, List<Long> samples,
+    public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
                   Map<String, Object> attributes) throws CatalogException {
         this(-1, name, type, creationDate, new CohortStatus(), description, samples, Collections.emptyMap(), attributes);
     }
 
-    public Cohort(int id, String name, Type type, String creationDate, CohortStatus cohortStatus, String description, List<Long> samples,
-                  Map<String, Object> stats, Map<String, Object> attributes) throws CatalogException {
+    public Cohort(int id, String name, Study.Type type, String creationDate, CohortStatus cohortStatus, String description,
+                  List<Long> samples, Map<String, Object> stats, Map<String, Object> attributes) throws CatalogException {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -101,20 +101,6 @@ public class Cohort {
         }
     }
 
-    //Represents the criteria of grouping samples in the cohort
-    @Deprecated
-    public enum Type {
-        CASE_CONTROL,
-        CASE_SET,
-        CONTROL_SET,
-        PAIRED,
-        PAIRED_TUMOR,
-        FAMILY,
-        TRIO,
-        COLLECTION
-    }
-
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
@@ -151,11 +137,11 @@ public class Cohort {
         return this;
     }
 
-    public Type getType() {
+    public Study.Type getType() {
         return type;
     }
 
-    public Cohort setType(Type type) {
+    public Cohort setType(Study.Type type) {
         this.type = type;
         return this;
     }

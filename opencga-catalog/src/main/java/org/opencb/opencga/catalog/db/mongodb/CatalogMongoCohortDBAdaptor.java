@@ -73,7 +73,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException {
-        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
+        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
     }
 
     @Override
@@ -144,18 +144,18 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
 
-        Annotation annotation = new Annotation(variable.getId(), variable.getDefaultValue());
+        Annotation annotation = new Annotation(variable.getName(), variable.getDefaultValue());
         // Obtain the annotation ids of the annotations that are using the variableSet variableSetId
         List<Bson> aggregation = new ArrayList<>(4);
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets"));
-        aggregation.add(Aggregates.project(Projections.include("annotationSets.id", "annotationSets.variableSetId")));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets.name", "annotationSets.variableSetId")));
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         QueryResult<Document> aggregationResult = cohortCollection.aggregate(aggregation, null);
 
         Set<String> annotationIds = new HashSet<>(aggregationResult.getNumResults());
         for (Document document : aggregationResult.getResult()) {
-            annotationIds.add((String) ((Document) document.get("annotationSets")).get("id"));
+            annotationIds.add((String) ((Document) document.get("annotationSets")).get("name"));
         }
 
         Bson bsonQuery;
@@ -165,7 +165,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String annotationId : annotationIds) {
             bsonQuery = Filters.elemMatch("annotationSets", Filters.and(
                     Filters.eq("variableSetId", variableSetId),
-                    Filters.eq("id", annotationId)
+                    Filters.eq("name", annotationId)
             ));
 
             modifiedCount += cohortCollection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
@@ -189,11 +189,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), cohort.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.id", oldName)
+                            Filters.eq("annotationSets.annotations.name", oldName)
                     );
 
                     // 1. We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", oldName));
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", oldName));
                     QueryResult<UpdateResult> queryResult = cohortCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
                         throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
@@ -204,7 +204,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                     // 2. We change the id and push it again
                     Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator();
                     Annotation annotation = iterator.next();
-                    annotation.setId(newName);
+                    annotation.setName(newName);
                     bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), cohort.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName())
@@ -241,7 +241,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
         aggregation.add(Aggregates.match(
-                Filters.eq("annotationSets.annotations.id", annotationFieldId)));
+                Filters.eq("annotationSets.annotations.name", annotationFieldId)));
 
         return cohortCollection.aggregate(aggregation, cohortConverter, new QueryOptions()).getResult();
     }
@@ -260,11 +260,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), cohort.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.id", fieldId)
+                            Filters.eq("annotationSets.annotations.name", fieldId)
                     );
 
                     // We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", fieldId));
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", fieldId));
                     QueryResult<UpdateResult> queryResult = cohortCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
                         throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
@@ -345,7 +345,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             // Check if any user already have permissions set on their own.
             QueryResult<CohortAcl> fileAcl = getCohortAcl(cohortId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + group.getName()
                         + " has already defined permissions for cohort " + cohortId);
             }
         } else {
@@ -453,8 +453,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Cohort> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -471,8 +471,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         QueryOptions qOptions;
         if (options != null) {
@@ -499,7 +499,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         String[] acceptedParams = {QueryParams.DESCRIPTION.key(), QueryParams.NAME.key(), QueryParams.CREATION_DATE.key()};
         filterStringParams(parameters, cohortParams, acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Cohort.Type.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(QueryParams.TYPE.key(), Study.Type.class);
         filterEnumParams(parameters, cohortParams, acceptedEnums);
 
         String[] acceptedLongListParams = {QueryParams.SAMPLES.key()};
@@ -515,15 +515,15 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, cohortParams, acceptedMapParams);
 
-        //Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.STATUS_STATUS.key(),
+        //Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.STATUS_NAME.key(),
         //        Cohort.CohortStatus.class);
         //filterEnumParams(parameters, cohortParams, acceptedEnumParams);
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            cohortParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            cohortParams.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey("status")) {
-            throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_STATUS.key()
+            throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_NAME.key()
                     + "\" instead of \"status\"");
         }
 
@@ -542,18 +542,18 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         checkCohortId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             Cohort cohort = get(query, options).first();
-            throw new CatalogDBException("The cohort {" + id + "} was already " + cohort.getStatus().getStatus());
+            throw new CatalogDBException("The cohort {" + id + "} was already " + cohort.getStatus().getName());
         }
 
         // Change the status of the cohort to deleted
         setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete cohort", startTime, get(query, null));
     }
@@ -561,7 +561,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Cohort cohort : cohortQueryResult.getResult()) {
             delete(cohort.getId(), queryOptions);
@@ -570,11 +570,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     QueryResult<Cohort> setStatus(long cohortId, String status) throws CatalogDBException {
-        return update(cohortId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(cohortId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Override
@@ -588,7 +588,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        if (remove.getResult().get(0) != 1L) {
 //            throw CatalogDBException.removeError("Cohort");
 //        }
-//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED);
+//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.DELETED);
 //        return endQuery("Remove cohort", startTime, get(query, new QueryOptions()));
     }
 
@@ -596,13 +596,13 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Operation not yet supported.");
 //        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.TRASHED);
+//        query.append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.TRASHED);
 //
 //        // First we obtain the ids of the cohorts that will be removed.
 //        List<Cohort> cohorts = get(query, new QueryOptions(MongoDBCollection.INCLUDE,
-//                Arrays.asList(QueryParams.ID.key(), QueryParams.STATUS_STATUS))).getResult();
+//                Arrays.asList(QueryParams.ID.key(), QueryParams.STATUS_NAME))).getResult();
 //
-//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED));
+//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.DELETED));
 //
 //        if (removed.first() != cohorts.size()) {
 //            throw CatalogDBException.removeError("Cohort");
@@ -611,7 +611,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        // Remove the instances to cohort that are stored in study
 //        dbAdaptorFactory.getCatalogStudyDBAdaptor().removeCohortDependencies(
 //                cohorts.stream()
-//                        .filter(c -> c.getStatus().getStatus() != Cohort.CohortStatus.TRASHED)
+//                        .filter(c -> c.getName().getName() != Cohort.CohortStatus.TRASHED)
 //                        .map(Cohort::getId).collect(Collectors.toList())
 //        );
 //
@@ -625,7 +625,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         checkCohortId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The cohort {" + id + "} is not deleted");
         }
@@ -640,7 +640,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore cohorts", startTime, setStatus(query, Cohort.CohortStatus.NONE));
     }
 
@@ -649,7 +649,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        long startTime = startQuery();
 //        QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query),
 //                Updates.combine(
-//                        Updates.set(QueryParams.STATUS_STATUS.key(), status),
+//                        Updates.set(QueryParams.STATUS_NAME.key(), status),
 //                        Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
 //                , new QueryOptions());
 //        return endQuery("Update cohort status", startTime, Collections.singletonList(update.first().getModifiedCount()));
@@ -742,13 +742,13 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                             long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             if (variableSetId > 0) {
                                 variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
                             }
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;
-                    case ANNOTATION_SET_ID:
-                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                    case ANNOTATION_SET_NAME:
+                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);

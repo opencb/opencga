@@ -62,12 +62,12 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
-        assertEquals(Status.READY, createUser.first().getStatus().getStatus());
+        assertEquals(Status.READY, createUser.first().getStatus().getName());
 
         QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
-        assertEquals(Status.TRASHED, deleteUser.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, deleteUser.first().getStatus().getName());
 
 
         /*
@@ -88,7 +88,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         user = catalogUserDBAdaptor.getUser(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
         assertNull(user.first().getProjects());
 
-        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastActivity());
+        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastModified());
         assertTrue(user.getResult().isEmpty());
 
         thrown.expect(CatalogDBException.class);

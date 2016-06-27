@@ -51,7 +51,7 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), FileIndex.IndexStatus.READY);
+            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY);
 
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
 
@@ -59,7 +59,7 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions COHORTS_QUERY_OPTIONS = new QueryOptions();
 
     public static final QueryOptions INVALID_COHORTS_QUERY_OPTIONS = new QueryOptions()
-            .append(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.INVALID)
+            .append(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.INVALID)
             .append("include", Arrays.asList("projects.studies.cohorts.name", "projects.studies.cohorts.id", "projects.studies.cohorts.status"));
     protected static Logger logger = LoggerFactory.getLogger(CatalogStudyConfigurationFactory.class);
 
@@ -190,10 +190,10 @@ public class CatalogStudyConfigurationFactory {
                 sampleIds.add(toIntExact(sampleId));
             }
             studyConfiguration.getCohorts().put(cohortId, new HashSet<>(sampleIds));
-            if (cohort.getStatus().getStatus().equals(Cohort.CohortStatus.READY)) {
+            if (cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                 studyConfiguration.getCalculatedStats().add(cohortId);
                 studyConfiguration.getInvalidStats().remove(cohortId);
-            } else if (cohort.getStatus().getStatus().equals(Cohort.CohortStatus.INVALID)) {
+            } else if (cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                 studyConfiguration.getCalculatedStats().remove(cohortId);
                 studyConfiguration.getInvalidStats().add(cohortId);
             } else { //CALCULATING || NONE
@@ -242,9 +242,9 @@ public class CatalogStudyConfigurationFactory {
             for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
                     new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getCalculatedStats())),
                     new QueryOptions(), sessionId).getResult()) {
-                if (cohort.getStatus() == null || !cohort.getStatus().getStatus().equals(Cohort.CohortStatus.READY)) {
+                if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.READY)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.READY);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status.status", Cohort.CohortStatus.READY), new QueryOptions(), sessionId);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status.name", Cohort.CohortStatus.READY), new QueryOptions(), sessionId);
                 }
             }
         }
@@ -254,9 +254,9 @@ public class CatalogStudyConfigurationFactory {
             for (Cohort cohort : catalogManager.getAllCohorts(studyConfiguration.getStudyId(),
                     new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), new ArrayList<>(studyConfiguration.getInvalidStats())),
                     new QueryOptions(), sessionId).getResult()) {
-                if (cohort.getStatus() == null || !cohort.getStatus().getStatus().equals(Cohort.CohortStatus.INVALID)) {
+                if (cohort.getStatus() == null || !cohort.getStatus().getName().equals(Cohort.CohortStatus.INVALID)) {
                     logger.debug("Cohort \"{}\":{} change status from {} to {}", cohort.getName(), cohort.getId(), cohort.getStats(), Cohort.CohortStatus.INVALID);
-                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status.status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
+                    catalogManager.modifyCohort(cohort.getId(), new ObjectMap("status.name", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
                 }
             }
         }
@@ -265,12 +265,12 @@ public class CatalogStudyConfigurationFactory {
             for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
                     new Query("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), new QueryOptions(), sessionId)
                     .getResult()) {
-                if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(FileIndex.IndexStatus.READY)) {
+                if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                     final FileIndex index;
                     index = file.getIndex() == null ? new FileIndex() : file.getIndex();
-                    index.getStatus().setStatus(FileIndex.IndexStatus.READY);
+                    index.getStatus().setName(FileIndex.IndexStatus.READY);
                     logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
-                            file.getIndex().getStatus().getStatus(), FileIndex.IndexStatus.READY);
+                            file.getIndex().getStatus().getName(), FileIndex.IndexStatus.READY);
                     catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
                 }
             }

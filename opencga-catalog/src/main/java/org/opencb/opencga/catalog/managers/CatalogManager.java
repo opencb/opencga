@@ -485,13 +485,13 @@ public class CatalogManager implements AutoCloseable {
         return userManager.resetPassword(userId);
     }
 
-    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogException {
-        return getUser(userId, lastActivity, new QueryOptions(), sessionId);
+    public QueryResult<User> getUser(String userId, String lastModified, String sessionId) throws CatalogException {
+        return getUser(userId, lastModified, new QueryOptions(), sessionId);
     }
 
-    public QueryResult<User> getUser(String userId, String lastActivity, QueryOptions options, String sessionId)
+    public QueryResult<User> getUser(String userId, String lastModified, QueryOptions options, String sessionId)
             throws CatalogException {
-        return userManager.read(userId, lastActivity, options, sessionId);
+        return userManager.read(userId, lastModified, options, sessionId);
     }
 
     public String getUserIdBySessionId(String sessionId) {
@@ -954,7 +954,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        return jobManager.readAll(new Query("status.status",
+        return jobManager.readAll(new Query("status.name",
                 Arrays.asList(
                         Job.JobStatus.PREPARED,
                         Job.JobStatus.QUEUED,
@@ -1229,7 +1229,7 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.readAllCohort(studyId, query, options, sessionId);
     }
 
-    public QueryResult<Cohort> createCohort(long studyId, String name, Cohort.Type type, String description, List<Long> sampleIds,
+    public QueryResult<Cohort> createCohort(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
     }

@@ -215,8 +215,8 @@ public class AnalysisFileIndexer {
                 }
             }
             originalFile = catalogManager.getFile(indexedFileId, null, sessionId).first();
-            if (!originalFile.getStatus().getStatus().equals(File.FileStatus.READY)) {
-                throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getStatus().getStatus() + "\"");
+            if (!originalFile.getStatus().getName().equals(File.FileStatus.READY)) {
+                throw new CatalogException("Error: Original file status must be \"READY\", not \"" + originalFile.getStatus().getName() + "\"");
             }
         } else {
             originalFile = inputFile;
@@ -226,7 +226,7 @@ public class AnalysisFileIndexer {
 
         /** Check if file can be indexed **/
         if (originalFile.getIndex() != null) {
-            switch (originalFile.getIndex().getStatus().getStatus()) {
+            switch (originalFile.getIndex().getStatus().getName()) {
                 case FileIndex.IndexStatus.TRANSFORMING:
                     throw new CatalogException("File '" + originalFile.getId() + "' it's being transformed");
                 case FileIndex.IndexStatus.TRANSFORMED:
@@ -287,7 +287,7 @@ public class AnalysisFileIndexer {
             QueryResult<Cohort> cohorts = catalogManager.getAllCohorts(studyIdByOutDirId,
                     new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (cohorts.getResult().isEmpty()) {
-                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Cohort.Type.COLLECTION,
+                defaultCohort = catalogManager.createCohort(studyIdByOutDirId, StudyEntry.DEFAULT_COHORT, Study.Type.COLLECTION,
                         "Default cohort with almost all indexed samples", Collections.emptyList(), null, sessionId).first();
             } else {
                 defaultCohort = cohorts.first();
@@ -296,7 +296,7 @@ public class AnalysisFileIndexer {
             ObjectMap updateParams = new ObjectMap();
 
             if (options.getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key()) && load) {
-                updateParams.append("status.status", Cohort.CohortStatus.CALCULATING);
+                updateParams.append("status.name", Cohort.CohortStatus.CALCULATING);
             }
             //Samples are the already indexed plus those that are going to be indexed
             Set<Long> samples = new HashSet<>(defaultCohort.getSamples());
@@ -341,11 +341,11 @@ public class AnalysisFileIndexer {
             indexInformation = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(status), -1, indexAttributes);
         }
         if (transform && !load) {
-            indexInformation.getStatus().setStatus(FileIndex.IndexStatus.TRANSFORMING);
+            indexInformation.getStatus().setName(FileIndex.IndexStatus.TRANSFORMING);
         } else if (!transform && load) {
-            indexInformation.getStatus().setStatus(FileIndex.IndexStatus.LOADING);
+            indexInformation.getStatus().setName(FileIndex.IndexStatus.LOADING);
         } else if (transform && load) {
-            indexInformation.getStatus().setStatus(FileIndex.IndexStatus.INDEXING);
+            indexInformation.getStatus().setName(FileIndex.IndexStatus.INDEXING);
         }
 
         if (!simulate) {
@@ -366,7 +366,7 @@ public class AnalysisFileIndexer {
 
         String jobName;
         String jobDescription;
-        switch (indexInformation.getStatus().getStatus()) {
+        switch (indexInformation.getStatus().getName()) {
             default:
 //                throw new IllegalStateException("Unexpected state");
             case FileIndex.IndexStatus.INDEXING:

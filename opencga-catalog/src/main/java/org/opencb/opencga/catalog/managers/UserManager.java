@@ -89,7 +89,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
 //        checkSessionId(userId, sessionId);  //Only the user can change his own password
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
@@ -183,7 +183,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
+    public QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -195,7 +195,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             options.put(QueryOptions.EXCLUDE, Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(),
                     CatalogUserDBAdaptor.QueryParams.SESSIONS.key(), "projects.studies.variableSets"));
         }
-        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastActivity);
+        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastModified);
         return user;
     }
 
@@ -239,7 +239,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         if (parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
         return queryResult;

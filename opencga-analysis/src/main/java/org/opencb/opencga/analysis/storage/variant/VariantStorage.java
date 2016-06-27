@@ -112,19 +112,19 @@ public class VariantStorage {
             Cohort cohort = catalogManager.getCohort(cohortId, null, sessionId).first();
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
             studyIdSet.add(studyId);
-            switch (cohort.getStatus().getStatus()) {
+            switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.NONE:
                 case Cohort.CohortStatus.INVALID:
                     break;
                 case Cohort.CohortStatus.READY:
                     if (updateStats) {
-                        catalogManager.modifyCohort(cohortId, new ObjectMap("status.status", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
+                        catalogManager.modifyCohort(cohortId, new ObjectMap("status.name", Cohort.CohortStatus.INVALID), new QueryOptions(), sessionId);
                         break;
                     }
                 case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to calculate stats for cohort " +
                             "{ id: " + cohort.getId() + " name: \"" + cohort.getName() + "\" }" +
-                            " with status \"" + cohort.getStatus().getStatus() + "\"");
+                            " with status \"" + cohort.getStatus().getName() + "\"");
             }
             QueryResult<Sample> sampleQueryResult = catalogManager.getAllSamples(studyId, new Query("id", cohort.getSamples()), new QueryOptions(), sessionId);
             cohorts.put(cohort, sampleQueryResult.getResult());
@@ -153,7 +153,7 @@ public class VariantStorage {
 
         for (Long cohortId : cohortIds) {
             /** Modify cohort status to "CALCULATING" **/
-            catalogManager.modifyCohort(cohortId, new ObjectMap("status.status", Cohort.CohortStatus.CALCULATING), new QueryOptions(), sessionId);
+            catalogManager.modifyCohort(cohortId, new ObjectMap("status.name", Cohort.CohortStatus.CALCULATING), new QueryOptions(), sessionId);
         }
 
         // Check that all cohorts are from the same study

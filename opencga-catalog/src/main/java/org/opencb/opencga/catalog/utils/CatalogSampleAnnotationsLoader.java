@@ -154,7 +154,7 @@ public class CatalogSampleAnnotationsLoader {
         }
         Map<String, Object> annotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            switch (variable.getId()) {
+            switch (variable.getName()) {
                 case "family":
                     annotations.put("family", individual.getFamily());
                     break;
@@ -194,7 +194,7 @@ public class CatalogSampleAnnotationsLoader {
                     }
                     break;
                 default:
-                    annotations.put(variable.getId(), individual.getFields()[fields.get(variable.getId())]);
+                    annotations.put(variable.getName(), individual.getFields()[fields.get(variable.getName())]);
                     break;
             }
         }

@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.apache.commons.lang3.StringUtils;
-import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -36,7 +35,6 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import java.io.IOException;
 
@@ -116,7 +114,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         ObjectMap o = new ObjectMap();
         o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(),description);
-        o.append(CatalogStudyDBAdaptor.QueryParams.STATUS_STATUS.key(),status);
+        o.append(CatalogStudyDBAdaptor.QueryParams.STATUS_NAME.key(),status);
         openCGAClient.getStudyClient().create(projectId, name, alias, o);
         System.out.println("Done.");
     }
@@ -219,7 +217,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         if (StringUtils.isNotEmpty(status)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.STATUS_STATUS.key(), status);
+            query.put(CatalogStudyDBAdaptor.QueryParams.STATUS_NAME.key(), status);
         }
 
         if (StringUtils.isNotEmpty(attributes)) {

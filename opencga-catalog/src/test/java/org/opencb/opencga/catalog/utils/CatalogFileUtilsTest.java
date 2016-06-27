@@ -198,7 +198,7 @@ public class CatalogFileUtilsTest {
         }
         for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
                 new QueryOptions(), userSessionId).getResult()) {
-            assertEquals(File.FileStatus.READY, f.getStatus().getStatus());
+            assertEquals(File.FileStatus.READY, f.getStatus().getName());
             if (f.getType() != File.Type.DIRECTORY) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
                 assertTrue(f.getUri() == null);
@@ -214,7 +214,7 @@ public class CatalogFileUtilsTest {
 //        }
         for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
                 new QueryOptions(), userSessionId).getResult()) {
-            assertEquals(File.FileStatus.TRASHED, f.getStatus().getStatus());
+            assertEquals(File.FileStatus.TRASHED, f.getStatus().getName());
             if (f.getType() != File.Type.DIRECTORY) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
                 assertTrue(f.getUri() == null);
@@ -229,7 +229,7 @@ public class CatalogFileUtilsTest {
 //        assertEquals(0, catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).size());
         for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
                 new QueryOptions(), userSessionId).getResult()) {
-            assertEquals(File.FileStatus.TRASHED, f.getStatus().getStatus());
+            assertEquals(File.FileStatus.TRASHED, f.getStatus().getName());
             if (f.getType() != File.Type.DIRECTORY) {
                 assertTrue(f.getAttributes().containsKey("checksum"));
                 assertTrue(f.getUri() == null);
@@ -296,12 +296,12 @@ public class CatalogFileUtilsTest {
         fileUri = catalogManager.getFileUri(file);
         assertEquals(sourceUri, fileUri);
         assertTrue(createdFile.exists());
-        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, file.getStatus().getName());
 
         // Now we unlink it
         catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
         File result = catalogManager.getFile(file.getId(), userSessionId).first();
-        assertEquals(File.FileStatus.TRASHED, result.getStatus().getStatus());
+        assertEquals(File.FileStatus.TRASHED, result.getStatus().getName());
 
     }
 
@@ -430,14 +430,14 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
-        assertEquals(File.FileStatus.MISSING, returnedFile.getStatus().getStatus());
+        assertEquals(File.FileStatus.MISSING, returnedFile.getStatus().getName());
 
         /** Check MISSING file still missing **/
         file = catalogManager.getFile(file.getId(), userSessionId).first();
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
-        assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getStatus().getStatus(),
-                returnedFile.getStatus().getStatus());
+        assertEquals("Should not modify the still MISSING file, so should return the same file.", file.getStatus().getName(),
+                returnedFile.getStatus().getName());
         //assertSame("Should not modify the still MISSING file, so should return the same file.", file, returnedFile);
 
         /** Check MISSING file with found file **/
@@ -448,7 +448,7 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
         assertNotSame(file, returnedFile);
-        assertEquals(File.FileStatus.READY, returnedFile.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, returnedFile.getStatus().getName());
 
         /** Check TRASHED file with found file **/
         catalogManager.delete(Long.toString(file.getId()), null, userSessionId);
@@ -456,7 +456,7 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
         assertSame(file, returnedFile);
-        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getStatus());
+        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
 
 
         /** Check TRASHED file with missing file **/
@@ -467,7 +467,7 @@ public class CatalogFileUtilsTest {
         returnedFile = catalogFileUtils.checkFile(file, true, userSessionId);
 
 //        assertNotSame(file, returnedFile);
-        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getStatus());
+        assertEquals(File.FileStatus.TRASHED, returnedFile.getStatus().getName());
     }
 
 

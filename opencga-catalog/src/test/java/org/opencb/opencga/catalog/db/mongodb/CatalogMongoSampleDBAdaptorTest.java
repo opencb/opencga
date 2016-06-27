@@ -306,7 +306,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                 new QueryOptions());
         assertEquals(createResult.first().getId(), deleteResult.first().getId());
         assertEquals(1, deleteResult.getNumResults());
-        assertEquals(Status.TRASHED, deleteResult.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, deleteResult.first().getStatus().getName());
     }
 
     @Test
@@ -336,7 +336,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "",
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort("Cohort", Study.Type.COLLECTION, "", "",
                 Collections.singletonList(createResult.first().getId()), null), null);
 
         thrown.expect(CatalogDBException.class);
@@ -357,7 +357,7 @@ public class CatalogMongoSampleDBAdaptorTest {
             for (int i = 0; i < numThreads; i++) {
                 threads.add(new Thread(() -> {
                     try {
-                        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION,
+                        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort(cohortName, Study.Type.COLLECTION,
                                 "", "", Collections.emptyList(), null), null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();

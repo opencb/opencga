@@ -98,7 +98,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException {
         checkSampleId(sampleId);
-        return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
+        return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
 //        long startTime = startQuery();
 //        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
 //
@@ -287,7 +287,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             // Check if any user already have permissions set on their own.
             QueryResult<SampleAcl> fileAcl = getSampleAcl(sampleId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
-                throw new CatalogDBException("Error when adding permissions in sample. At least one user in " + group.getId()
+                throw new CatalogDBException("Error when adding permissions in sample. At least one user in " + group.getName()
                         + " has already defined permissions for sample " + sampleId);
             }
         } else {
@@ -575,18 +575,18 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
 
-        Annotation annotation = new Annotation(variable.getId(), variable.getDefaultValue());
+        Annotation annotation = new Annotation(variable.getName(), variable.getDefaultValue());
         // Obtain the annotation ids of the annotations that are using the variableSet variableSetId
         List<Bson> aggregation = new ArrayList<>(4);
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets"));
-        aggregation.add(Aggregates.project(Projections.include("annotationSets.id", "annotationSets.variableSetId")));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets.name", "annotationSets.variableSetId")));
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         QueryResult<Document> aggregationResult = sampleCollection.aggregate(aggregation, null);
 
         Set<String> annotationIds = new HashSet<>(aggregationResult.getNumResults());
         for (Document document : aggregationResult.getResult()) {
-            annotationIds.add((String) ((Document) document.get("annotationSets")).get("id"));
+            annotationIds.add((String) ((Document) document.get("annotationSets")).get("name"));
         }
 
         Bson bsonQuery;
@@ -596,7 +596,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String annotationId : annotationIds) {
             bsonQuery = Filters.elemMatch("annotationSets", Filters.and(
                     Filters.eq("variableSetId", variableSetId),
-                    Filters.eq("id", annotationId)
+                    Filters.eq("name", annotationId)
             ));
 
             modifiedCount += sampleCollection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
@@ -624,7 +624,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     );
 
                     // 1. We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", oldName));
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", oldName));
                     QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
                         throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
@@ -635,7 +635,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     // 2. We change the id and push it again
                     Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator();
                     Annotation annotation = iterator.next();
-                    annotation.setId(newName);
+                    annotation.setName(newName);
                     bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), sample.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName())
@@ -671,11 +671,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), sample.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.id", fieldId)
+                            Filters.eq("annotationSets.annotations.name", fieldId)
                     );
 
                     // We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", fieldId));
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", fieldId));
                     QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
                         throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
@@ -707,7 +707,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
         aggregation.add(Aggregates.match(
-                Filters.eq("annotationSets.annotations.id", annotationFieldId)));
+                Filters.eq("annotationSets.annotations.name", annotationFieldId)));
 
         return sampleCollection.aggregate(aggregation, sampleConverter, new QueryOptions()).getResult();
     }
@@ -779,8 +779,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -798,8 +798,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -827,8 +827,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         final String[] acceptedMapParams = {"attributes"};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            sampleParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            sampleParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -862,12 +862,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         checkSampleId(id);
         // Check the sample is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             Sample sample = get(query, options).first();
-            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getStatus());
+            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getName());
         }
 
         // If we don't find the force parameter, we check first if the file could be deleted.
@@ -883,7 +883,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         setStatus(id, Status.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete sample", startTime, get(query, queryOptions));
     }
@@ -891,7 +891,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        query.append(QueryParams.STATUS_NAME.key(), Status.READY);
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Sample sample : sampleQueryResult.getResult()) {
             delete(sample.getId(), queryOptions);
@@ -912,7 +912,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore samples", startTime, setStatus(query, Status.READY));
     }
 
@@ -923,7 +923,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         checkSampleId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The sample {" + id + "} is not deleted");
         }
@@ -1035,13 +1035,13 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                             long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             if (variableSetId > 0) {
                                 variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
                             }
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;
-                    case ANNOTATION_SET_ID:
-                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                    case ANNOTATION_SET_NAME:
+                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
@@ -1072,11 +1072,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
-        return update(sampleId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(sampleId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     private void deleteReferencesToSample(long sampleId) throws CatalogDBException {

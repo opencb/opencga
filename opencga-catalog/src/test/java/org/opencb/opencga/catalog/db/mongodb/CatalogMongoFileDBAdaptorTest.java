@@ -121,12 +121,12 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         Document stats = new Document("stat1", 1).append("stat2", true).append("stat3", "ok" + StringUtils.randomString(20));
 
         ObjectMap parameters = new ObjectMap();
-        parameters.put("status.status", File.FileStatus.READY);
+        parameters.put("status.name", File.FileStatus.READY);
         parameters.put("stats", stats);
         System.out.println(catalogFileDBAdaptor.update(fileId, parameters));
 
         file = catalogFileDBAdaptor.getFile(fileId, null).first();
-        assertEquals(file.getStatus().getStatus(), File.FileStatus.READY);
+        assertEquals(file.getStatus().getName(), File.FileStatus.READY);
         assertEquals(file.getStats(), stats);
 
         parameters = new ObjectMap();
@@ -167,7 +167,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
         assertTrue(delete.getNumResults() == 1);
-        assertEquals(File.FileStatus.DELETED, delete.first().getStatus().getStatus());
+        assertEquals(File.FileStatus.DELETED, delete.first().getStatus().getName());
         try {
             System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
                     (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
@@ -184,7 +184,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         // Remove after deleted
         QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
         assertTrue(remove.getNumResults() == 1);
-        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getStatus());
+        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
     }
 
     @Test
@@ -193,7 +193,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         // Remove after READY
         QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
         assertTrue(remove.getNumResults() == 1);
-        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getStatus());
+        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
     }
 
     @Test

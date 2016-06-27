@@ -6,6 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Study;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -66,7 +67,7 @@ public class CohortCommandOptions {
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-        public Cohort.Type type;
+        public Study.Type type;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
         public Integer variableSetId;

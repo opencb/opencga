@@ -230,7 +230,7 @@ public class FileScanner {
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
-                if (file.getStatus().getStatus().equals(File.FileStatus.MISSING)) {
+                if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                     logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
                     logger.debug("Set status to " + File.FileStatus.READY);
                     returnFile = true;      //Return file because was missing

@@ -57,11 +57,11 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     }
 
     default QueryResult<Job> setStatus(long jobId, String status) throws CatalogDBException {
-        return update(jobId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     default QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Deprecated
@@ -147,7 +147,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         //PARAMS,
         COMMAND_LINE("commandLine", TEXT_ARRAY, ""),
         VISITS("visits", INTEGER_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         DISK_USAGE("diskUsage", DECIMAL, ""),

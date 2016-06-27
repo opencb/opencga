@@ -43,13 +43,13 @@ public interface IUserManager extends ResourceManager<String, User> {
      * Gets the user information.
      *
      * @param userId       User id
-     * @param lastActivity If lastActivity matches with the one in Catalog, return an empty QueryResult.
+     * @param lastModified If lastModified matches with the one in Catalog, return an empty QueryResult.
      * @param options      QueryOptions
      * @param sessionId    SessionId of the user performing this operation.
      * @return The requested user
      * @throws CatalogException CatalogException
      */
-    QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId) throws CatalogException;
+    QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId) throws CatalogException;
 
     void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException;
 
