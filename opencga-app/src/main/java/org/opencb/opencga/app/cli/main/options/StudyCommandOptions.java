@@ -392,4 +392,18 @@ public class StudyCommandOptions {
         public String merge;
     }
 
+    @Parameters(commandNames = {"assignRole"}, commandDescription = "Study samples information")
+    public class AssignRoleCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"--role"}, description = "Job name", required = false, arity = 1)
+        public String role;
+
+        @Parameter(names = {"--members"}, description = "Source Id", required = false, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--override"}, description = "Sample description", required = false, arity = 0)
+        public boolean override;
+    }
+
+
 }

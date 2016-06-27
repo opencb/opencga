@@ -556,5 +556,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     /********************************************  Administration ACLS commands  ***********************************************/
 
+    private void removeRole() throws CatalogException,IOException{
+
+    }
+    private void assignRole() throws CatalogException,IOException{
+
+    }
+
 
 }
