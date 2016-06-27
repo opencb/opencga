@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
@@ -91,11 +91,11 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     String getUserIdBySessionId(String sessionId);
 
-    void addQueryFilter(String userId, Filter filter) throws CatalogDBException;
+    void addQueryFilter(String userId, QueryFilter queryFilter) throws CatalogDBException;
 
     QueryResult<Long> deleteQueryFilter(String userId, String filterId) throws CatalogDBException;
 
-    QueryResult<Filter> getQueryFilter(String userId, String filterId) throws CatalogDBException;
+    QueryResult<QueryFilter> getQueryFilter(String userId, String filterId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),

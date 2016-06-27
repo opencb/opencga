@@ -1,8 +1,6 @@
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.core.exception.VersionException;
@@ -25,14 +23,14 @@ import java.util.Arrays;
 @Api(value = "Panels", position = 10, description = "Methods for working with 'panels' endpoint")
 public class DiseasePanelWSServer extends OpenCGAWSServer {
 
-    public DiseasePanelWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public DiseasePanelWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create disease panel", position = 1)
+    @ApiOperation(value = "Create disease panel", position = 1, response = DiseasePanel.class)
     public Response createSample(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "disease", required = true) @QueryParam("disease") String disease,
@@ -51,7 +49,11 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panelId}/info")
-    @ApiOperation(value = "Get disease panel information", position = 2)
+    @ApiOperation(value = "Get disease panel information", position = 2, response = DiseasePanel.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response infoSample(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String panelId) {
         try {
             QueryResult<DiseasePanel> queryResult = catalogManager.getDiseasePanel(panelId, queryOptions, sessionId);

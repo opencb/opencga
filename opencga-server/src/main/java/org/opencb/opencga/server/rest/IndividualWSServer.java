@@ -1,8 +1,7 @@
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
+import io.swagger.models.auth.In;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -35,14 +34,14 @@ import java.util.stream.Collectors;
 public class IndividualWSServer extends OpenCGAWSServer {
 
 
-    public IndividualWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create sample", position = 1)
+    @ApiOperation(value = "Create sample", position = 1, response = Individual.class)
     public Response createIndividual(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "family", required = false) @QueryParam("family") String family,
@@ -60,7 +59,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/info")
-    @ApiOperation(value = "Get individual information", position = 2)
+    @ApiOperation(value = "Get individual information", position = 2, response = Individual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response infoIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
         try {
             QueryResult<Individual> queryResult = catalogManager.getIndividual(individualId, queryOptions, sessionId);
@@ -72,7 +75,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search for individuals", position = 3)
+    @ApiOperation(value = "Search for individuals", position = 3, response = Individual[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response searchIndividuals(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                       @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                       @ApiParam(value = "name", required = false) @QueryParam("name") String name,
@@ -143,7 +153,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             } else {
                 if (update) {
                     for (AnnotationSet annotationSet : catalogManager.getIndividual(individualId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getId().equals(annotateSetName)) {
+                        if (annotationSet.getName().equals(annotateSetName)) {
                             variableSetId = annotationSet.getVariableSetId();
                         }
                     }
@@ -172,7 +182,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/update")
-    @ApiOperation(value = "Update individual information", position = 6)
+    @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
     public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
                                      @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,

@@ -135,7 +135,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest{
 
         //Create transform index job
         Job job = analysisFileIndexer.index(inputFile.getId(), outputId, sessionId, queryOptions).first();
-        assertEquals(Index.IndexStatus.TRANSFORMING, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getStatus());
+        assertEquals(FileIndex.IndexStatus.TRANSFORMING, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getStatus());
 
         //Run transform index job
         job = runStorageJob(catalogManager, job, logger, sessionId);
@@ -143,7 +143,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest{
         Cohort defaultCohort = getDefaultCohort(catalogManager.getStudyIdByFileId(inputFile.getId()));
         assertEquals(500, defaultCohort.getSamples().size());
         assertEquals(Cohort.CohortStatus.NONE, defaultCohort.getStatus().getStatus());
-        assertEquals(Index.IndexStatus.TRANSFORMED, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getStatus());
+        assertEquals(FileIndex.IndexStatus.TRANSFORMED, catalogManager.getFile(inputFile.getId(), sessionId).first().getIndex().getStatus().getStatus());
 
         assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
 
@@ -167,13 +167,13 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest{
 
         job = analysisFileIndexer.index(transformedFile.getId(), outputId, sessionId, queryOptions).first();
         long indexedFileId = ((Number) job.getAttributes().get(Job.INDEXED_FILE_ID)).longValue();
-        assertEquals(Index.IndexStatus.LOADING, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getStatus());
+        assertEquals(FileIndex.IndexStatus.LOADING, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getStatus());
         assertEquals(job.getAttributes().get(Job.TYPE), Job.Type.INDEX.toString());
 
         //Run load index job
         job = runStorageJob(catalogManager, job, logger, sessionId);
         assertEquals(job.getStatus().getStatus(), Status.READY);
-        assertEquals(Index.IndexStatus.READY, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getStatus());
+        assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getStatus());
 
         Cohort defaultCohort = getDefaultCohort(catalogManager.getStudyIdByFileId(indexedFileId));
         assertEquals(500, defaultCohort.getSamples().size());

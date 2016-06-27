@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.db.api.CatalogMetaDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.MailUtils;
 
@@ -74,14 +75,22 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email) throws CatalogException {
+    public QueryResult resetPassword(String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        ParamUtils.checkParameter(email, "email");
         userDBAdaptor.updateUserLastActivity(userId);
 
         String newPassword = StringUtils.randomString(6);
 
         String newCryptPass = cypherPassword(newPassword);
+
+        QueryResult<User> user =
+                userDBAdaptor.getUser(userId, new QueryOptions(QueryOptions.INCLUDE, CatalogUserDBAdaptor.QueryParams.EMAIL.key()), "");
+
+        if (user == null && user.getNumResults() != 1) {
+            throw new CatalogException("Could not retrieve the user e-mail.");
+        }
+
+        String email = user.first().getEmail();
 
         QueryResult qr = userDBAdaptor.resetPassword(userId, email, newCryptPass);
 

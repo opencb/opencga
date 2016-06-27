@@ -51,7 +51,7 @@ public class CatalogStudyConfigurationFactory {
     public static final QueryOptions INDEXED_FILES_QUERY_OPTIONS = new QueryOptions()
             .append("include", Arrays.asList("projects.studies.files.id", "projects.studies.files.name", "projects.studies.files.path"));
     public static final Query INDEXED_FILES_QUERY = new Query()
-            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), Index.IndexStatus.READY);
+            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), FileIndex.IndexStatus.READY);
 
     public static final QueryOptions SAMPLES_QUERY_OPTIONS = new QueryOptions("include", Arrays.asList("projects.studies.samples.id", "projects.studies.samples.name"));
 
@@ -265,12 +265,12 @@ public class CatalogStudyConfigurationFactory {
             for (File file : catalogManager.getAllFiles(studyConfiguration.getStudyId(),
                     new Query("id", new ArrayList<>(studyConfiguration.getIndexedFiles())), new QueryOptions(), sessionId)
                     .getResult()) {
-                if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
-                    final Index index;
-                    index = file.getIndex() == null ? new Index() : file.getIndex();
-                    index.getStatus().setStatus(Index.IndexStatus.READY);
+                if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(FileIndex.IndexStatus.READY)) {
+                    final FileIndex index;
+                    index = file.getIndex() == null ? new FileIndex() : file.getIndex();
+                    index.getStatus().setStatus(FileIndex.IndexStatus.READY);
                     logger.debug("File \"{}\":{} change status from {} to {}", file.getName(), file.getId(),
-                            file.getIndex().getStatus().getStatus(), Index.IndexStatus.READY);
+                            file.getIndex().getStatus().getStatus(), FileIndex.IndexStatus.READY);
                     catalogManager.modifyFile(file.getId(), new ObjectMap("index", index), sessionId);
                 }
             }

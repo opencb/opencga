@@ -79,8 +79,8 @@ public class CatalogStudyConfigurationFactoryTest {
         file = fileMetadataReader.create(studyId, uri, "data/vcfs/", "", true, null, sessionId).first();
         catalogFileUtils.upload(uri, file, null, sessionId, false, false, true, false, Long.MAX_VALUE);
         if (indexed) {
-            catalogManager.modifyFile(file.getId(), new ObjectMap("index", new Index("user", "today",
-                    new Index.IndexStatus(Index.IndexStatus.READY), 1234, Collections.emptyMap())), sessionId);
+            catalogManager.modifyFile(file.getId(), new ObjectMap("index", new FileIndex("user", "today",
+                    new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), 1234, Collections.emptyMap())), sessionId);
             indexedFiles.add((int) file.getId());
         }
         return catalogManager.getFile(file.getId(), sessionId).first();
@@ -146,7 +146,7 @@ public class CatalogStudyConfigurationFactoryTest {
             assertEquals(file.getName(), entry.getKey());
             int id = (int) file.getId();
             assertEquals(file.getSampleIds().stream().map(Long::intValue).collect(Collectors.toSet()), studyConfiguration.getSamplesInFiles().get((id)));
-            if (file.getIndex() != null && file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
+            if (file.getIndex() != null && file.getIndex().getStatus().getStatus().equals(FileIndex.IndexStatus.READY)) {
                 assertTrue(studyConfiguration.getIndexedFiles().contains(id));
                 assertTrue("Missing header for file " + file.getId(), studyConfiguration.getHeaders().containsKey(id));
                 assertTrue("Missing header for file " + file.getId(), !studyConfiguration.getHeaders().get(id).isEmpty());

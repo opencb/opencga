@@ -53,9 +53,9 @@ public class Variable {
     public Variable() {
     }
 
-    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
-                    boolean multiValue, List<String> allowedValues, long rank, String dependsOn, String description,
-                    Set<Variable> variableSet, Map<String, Object> attributes) {
+    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required, boolean multiValue,
+                    List<String> allowedValues, long rank, String dependsOn, String description, Set<Variable> variableSet,
+                    Map<String, Object> attributes) {
         this.id = id;
         this.category = category;
         this.type = type;
@@ -68,6 +68,14 @@ public class Variable {
         this.description = description;
         this.variableSet = variableSet;
         this.attributes = attributes;
+    }
+
+    public enum VariableType {
+        BOOLEAN,
+        CATEGORICAL,
+        NUMERIC,
+        TEXT,
+        OBJECT
     }
 
     @Override
@@ -206,13 +214,5 @@ public class Variable {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-    }
-
-    public enum VariableType {
-        BOOLEAN,
-        CATEGORICAL,
-        NUMERIC,
-        TEXT,
-        OBJECT
     }
 }

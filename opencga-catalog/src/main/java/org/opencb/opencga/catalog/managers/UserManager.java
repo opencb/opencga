@@ -17,7 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -125,7 +125,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         organization = organization != null ? organization : "";
         checkUserExists(id);
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
+        User user = new User(id, name, email, "", organization, new User.UserStatus());
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);
@@ -290,8 +290,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email) throws CatalogException {
-        return authenticationManager.resetPassword(userId, email);
+    public QueryResult resetPassword(String userId) throws CatalogException {
+        return authenticationManager.resetPassword(userId);
     }
 
     @Deprecated
@@ -364,10 +364,10 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public void addQueryFilter(String sessionId, Filter filter) throws CatalogException {
+    public void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
-        userDBAdaptor.addQueryFilter(userId, filter);
+        userDBAdaptor.addQueryFilter(userId, queryFilter);
     }
 
     @Override
@@ -378,7 +378,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
+    public QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
         return userDBAdaptor.getQueryFilter(userId, filterId);

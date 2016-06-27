@@ -191,7 +191,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             throw new CatalogDBException("Error, sessionID already exists");
         }
         String userId = "anonymous_" + session.getId();
-        User user = new User(userId, "Anonymous", "", "", "", User.Role.ANONYMOUS, new User.UserStatus());
+        User user = new User(userId, "Anonymous", "", "", "", new User.UserStatus());
         user.getSessions().add(session);
 //        DBObject anonymous = getDbObject(user, "User");
         Document anonymous = getMongoDBDocument(user, "User");
@@ -328,24 +328,24 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public void addQueryFilter(String userId, Filter filter) throws CatalogDBException {
+    public void addQueryFilter(String userId, QueryFilter queryFilter) throws CatalogDBException {
         // Check if there exists a filter for that user with the same id
         Bson checkFilterExists = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
-                Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filter.getId())
+                Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", queryFilter.getId())
         );
         QueryResult<Long> count = userCollection.count(checkFilterExists);
         if (count.getResult().get(0) != 0) {
-            throw new CatalogDBException("There already exists a filter with name " + filter.getId() + " for user " + userId);
+            throw new CatalogDBException("There already exists a filter with name " + queryFilter.getId() + " for user " + userId);
         }
 
         // Insert the filter
         Bson query = Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
-                Filters.ne(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filter.getId())
+                Filters.ne(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", queryFilter.getId())
         );
 
-        Bson filterDocument = getMongoDBDocument(filter, "Filter");
+        Bson filterDocument = getMongoDBDocument(queryFilter, "Filter");
         Bson update = Updates.push(QueryParams.CONFIG_OPENCGA_FILTERS.key(), filterDocument);
 
         QueryResult<UpdateResult> queryResult = userCollection.update(query, update, null);
@@ -376,13 +376,13 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<Filter> getQueryFilter(String userId, String filterId) throws CatalogDBException {
+    public QueryResult<QueryFilter> getQueryFilter(String userId, String filterId) throws CatalogDBException {
         List<Bson> aggregates = new ArrayList<>();
         aggregates.add(Aggregates.unwind("$" + QueryParams.CONFIG_OPENCGA_FILTERS.key()));
         aggregates.add(Aggregates.match(Filters.and(
                 Filters.eq(QueryParams.ID.key(), userId),
                 Filters.eq(QueryParams.CONFIG_OPENCGA_FILTERS.key() + ".id", filterId))));
-        QueryResult<Filter> aggregate = userCollection.aggregate(aggregates, filterConverter, new QueryOptions());
+        QueryResult<QueryFilter> aggregate = userCollection.aggregate(aggregates, filterConverter, new QueryOptions());
         if (aggregate.getNumResults() == 0) {
             throw new CatalogDBException("The filter " + filterId + " could not be found in the database.");
         }
@@ -467,9 +467,6 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
             userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
             userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
-
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap("role", User.Role.class);
-        filterEnumParams(parameters, userParameters, acceptedEnums);
 
         final String[] acceptedLongParams = {QueryParams.DISK_QUOTA.key(), QueryParams.DISK_USAGE.key()};
         filterLongParams(parameters, userParameters, acceptedLongParams);

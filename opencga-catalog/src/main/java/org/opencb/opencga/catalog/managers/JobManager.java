@@ -254,6 +254,7 @@ public class JobManager extends AbstractManager implements IJobManager {
             throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
         }
 
+        // FIXME: Pass the toolId
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
         job.setOutput(outputFiles);
         job.setStatus(status);

@@ -485,15 +485,15 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         /*QueryResult<Long> count = sampleCollection.count(
                 new BasicDBObject("annotationSets.id", annotationSet.getId()).append(PRIVATE_ID, sampleId));*/
-        QueryResult<Long> count = sampleCollection.count(new Document("annotationSets.id", annotationSet.getId())
+        QueryResult<Long> count = sampleCollection.count(new Document("annotationSets.name", annotationSet.getName())
                 .append(PRIVATE_ID, sampleId));
         if (overwrite) {
             if (count.getResult().get(0) == 0) {
-                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
             }
         } else {
             if (count.getResult().get(0) > 0) {
-                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+                throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
             }
         }
 
@@ -504,9 +504,9 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         Bson query = new Document(PRIVATE_ID, sampleId);
         if (overwrite) {
-            ((Document) query).put("annotationSets.id", annotationSet.getId());
+            ((Document) query).put("annotationSets.name", annotationSet.getName());
         } else {
-            ((Document) query).put("annotationSets.id", new Document("$ne", annotationSet.getId()));
+            ((Document) query).put("annotationSets.name", new Document("$ne", annotationSet.getName()));
         }
 
         /*
@@ -528,7 +528,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         QueryResult<UpdateResult> queryResult = sampleCollection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
         }
 
         return endQuery("", startTime, Collections.singletonList(annotationSet));
@@ -542,7 +542,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         Sample sample = getSample(sampleId, new QueryOptions("include", "projects.studies.samples.annotationSets")).first();
         AnnotationSet annotationSet = null;
         for (AnnotationSet as : sample.getAnnotationSets()) {
-            if (as.getId().equals(annotationId)) {
+            if (as.getName().equals(annotationId)) {
                 annotationSet = as;
                 break;
             }
@@ -557,7 +557,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
         */
         Bson query = new Document(PRIVATE_ID, sampleId);
-        Bson update = Updates.pull("annotationSets", new Document("id", annotationId));
+        Bson update = Updates.pull("annotationSets", new Document("name", annotationId));
         QueryResult<UpdateResult> resultQueryResult = sampleCollection.update(query, update, null);
         if (resultQueryResult.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
@@ -619,16 +619,16 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                 for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), sample.getId()),
-                            Filters.eq("annotationSets.id", annotationSet.getId()),
-                            Filters.eq("annotationSets.annotations.id", oldName)
+                            Filters.eq("annotationSets.name", annotationSet.getName()),
+                            Filters.eq("annotationSets.annotations.name", oldName)
                     );
 
                     // 1. We extract the annotation.
                     Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", oldName));
                     QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
-                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
-                                + annotationSet.getId() + "} - An unexpected error happened when extracting the annotation " + oldName
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
+                                + annotationSet.getName() + "} - An unexpected error happened when extracting the annotation " + oldName
                                 + ". Please, report this error to the OpenCGA developers.");
                     }
 
@@ -638,14 +638,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     annotation.setId(newName);
                     bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), sample.getId()),
-                            Filters.eq("annotationSets.id", annotationSet.getId())
+                            Filters.eq("annotationSets.name", annotationSet.getName())
                     );
                     update = Updates.push("annotationSets.$.annotations", getMongoDBDocument(annotation, "Annotation"));
                     queryResult = sampleCollection.update(bsonQuery, update, null);
 
                     if (queryResult.first().getModifiedCount() != 1) {
-                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
-                                + annotationSet.getId() + "} - A critical error happened when trying to rename the annotation " + oldName
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
+                                + annotationSet.getName() + "} - A critical error happened when trying to rename the annotation " + oldName
                                 + ". Please, report this error to the OpenCGA developers.");
                     }
                     renamedAnnotations += 1;
@@ -670,7 +670,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                 for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), sample.getId()),
-                            Filters.eq("annotationSets.id", annotationSet.getId()),
+                            Filters.eq("annotationSets.name", annotationSet.getName()),
                             Filters.eq("annotationSets.annotations.id", fieldId)
                     );
 
@@ -678,8 +678,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                     Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", fieldId));
                     QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
-                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {id: "
-                                + annotationSet.getId() + "} - An unexpected error happened when extracting the annotation " + fieldId
+                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
+                                + annotationSet.getName() + "} - An unexpected error happened when extracting the annotation " + fieldId
                                 + ". Please, report this error to the OpenCGA developers.");
                     }
 

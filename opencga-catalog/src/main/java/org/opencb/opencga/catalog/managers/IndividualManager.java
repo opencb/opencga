@@ -326,7 +326,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // Get annotation set
         AnnotationSet annotationSet = null;
         for (AnnotationSet annotationSetAux : individual.getAnnotationSets()) {
-            if (annotationSetAux.getId().equals(annotationSetId)) {
+            if (annotationSetAux.getName().equals(annotationSetId)) {
                 annotationSet = annotationSetAux;
                 individual.getAnnotationSets().remove(annotationSet);
                 break;
@@ -347,7 +347,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // Commit changes
         QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, true);
 
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors
                         .toSet()),
                 annotationSet.getDate(), null);

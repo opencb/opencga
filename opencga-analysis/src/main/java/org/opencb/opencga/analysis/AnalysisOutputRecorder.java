@@ -30,7 +30,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Index;
+import org.opencb.opencga.catalog.models.FileIndex;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -165,7 +165,7 @@ public class AnalysisOutputRecorder {
 
         Long indexedFileId = ((Number) job.getAttributes().get(Job.INDEXED_FILE_ID)).longValue();
         File indexedFile = catalogManager.getFile(indexedFileId, sessionId).first();
-        final Index index;
+        final FileIndex index;
 
         boolean transformedSuccess = storageETLResult != null && storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() == null;
         boolean loadedSuccess = storageETLResult != null && storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() == null;
@@ -173,52 +173,52 @@ public class AnalysisOutputRecorder {
         if (indexedFile.getIndex() != null) {
             index = indexedFile.getIndex();
             switch (index.getStatus().getStatus()) {
-                case Index.IndexStatus.NONE:
-                case Index.IndexStatus.TRANSFORMED:
+                case FileIndex.IndexStatus.NONE:
+                case FileIndex.IndexStatus.TRANSFORMED:
                     logger.warn("Unexpected index status. Expected "
-                            + Index.IndexStatus.TRANSFORMING + ", "
-                            + Index.IndexStatus.LOADING + " or "
-                            + Index.IndexStatus.INDEXING
+                            + FileIndex.IndexStatus.TRANSFORMING + ", "
+                            + FileIndex.IndexStatus.LOADING + " or "
+                            + FileIndex.IndexStatus.INDEXING
                             + " and got " + index.getStatus());
-                case Index.IndexStatus.READY: //Do not show warn message when index status is READY.
+                case FileIndex.IndexStatus.READY: //Do not show warn message when index status is READY.
                     break;
-                case Index.IndexStatus.TRANSFORMING:
+                case FileIndex.IndexStatus.TRANSFORMING:
                     if (jobFailed) {
                         logger.warn("Job failed. Restoring status from " +
-                                Index.IndexStatus.TRANSFORMING + " to " + Index.IndexStatus.NONE);
-                        index.getStatus().setStatus(Index.IndexStatus.NONE);
+                                FileIndex.IndexStatus.TRANSFORMING + " to " + FileIndex.IndexStatus.NONE);
+                        index.getStatus().setStatus(FileIndex.IndexStatus.NONE);
                     } else {
-                        index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
+                        index.getStatus().setStatus(FileIndex.IndexStatus.TRANSFORMED);
                     }
                     break;
-                case Index.IndexStatus.LOADING:
+                case FileIndex.IndexStatus.LOADING:
                     if (jobFailed) {
                         logger.warn("Job failed. Restoring status from " +
-                                Index.IndexStatus.LOADING + " to " + Index.IndexStatus.TRANSFORMED);
-                        index.getStatus().setStatus(Index.IndexStatus.TRANSFORMED);
+                                FileIndex.IndexStatus.LOADING + " to " + FileIndex.IndexStatus.TRANSFORMED);
+                        index.getStatus().setStatus(FileIndex.IndexStatus.TRANSFORMED);
                     } else {
-                        index.getStatus().setStatus(Index.IndexStatus.READY);
+                        index.getStatus().setStatus(FileIndex.IndexStatus.READY);
                     }
                     break;
-                case Index.IndexStatus.INDEXING:
+                case FileIndex.IndexStatus.INDEXING:
                     if (jobFailed) {
                         String newStatus;
                         // If transform was executed, restore status to Transformed.
                         if (transformedSuccess) {
-                            newStatus = Index.IndexStatus.TRANSFORMED;
+                            newStatus = FileIndex.IndexStatus.TRANSFORMED;
                         } else {
-                            newStatus = Index.IndexStatus.NONE;
+                            newStatus = FileIndex.IndexStatus.NONE;
                         }
                         logger.warn("Job failed. Restoring status from " +
-                                Index.IndexStatus.INDEXING + " to " + newStatus);
+                                FileIndex.IndexStatus.INDEXING + " to " + newStatus);
                         index.getStatus().setStatus(newStatus);
                     } else {
-                        index.getStatus().setStatus(Index.IndexStatus.READY);
+                        index.getStatus().setStatus(FileIndex.IndexStatus.READY);
                     }
                     break;
             }
         } else {
-            index = new Index(job.getUserId(), job.getDate(), new Index.IndexStatus(Index.IndexStatus.READY), job.getId(),
+            index = new FileIndex(job.getUserId(), job.getDate(), new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), job.getId(),
                     new HashMap<>());
             logger.warn("Expected INDEX object on the indexed file " +
                     "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");
@@ -232,7 +232,7 @@ public class AnalysisOutputRecorder {
         boolean calculateStats = Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(),
                 VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString());
 
-        if (index.getStatus().getStatus().equals(Index.IndexStatus.READY) && calculateStats) {
+        if (index.getStatus().getStatus().equals(FileIndex.IndexStatus.READY) && calculateStats) {
             QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()),
                     new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (queryResult.getNumResults() != 0) {

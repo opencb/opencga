@@ -60,39 +60,43 @@ import static org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStag
  *                +-------+-------+------+
  *                | File1 | File2 | Vars |
  *  +-------------+-------+-------+------+
- *  | 1:100:A:C   | DATA  | DATA  | DATA |  <--- Update variants with data from File1 and File2
+ *  | 1:100:A:C   | DATA  | DATA  | DATA |  <--- A1) Update variants with data from File1 and File2
  *  +-------------+-------+-------+------+
- *  | 1:125:A:C   | DATA  | DATA  | ---- |  <--- New variant
+ *  | 1:125:A:C   | DATA  | DATA  | ---- |  <--- A2) New variant
  *  +-------------+-------+-------+------+
- *  | 1:150:G:T   | ----  | ----  | DATA |  <--- Fill Gaps
+ *  | 1:150:G:T   | ----  | ----  | DATA |  <--- A3) Fill Gaps
  *  +-------------+-------+-------+------+
  *
  *  Some partial information from the stage collection. Fill gaps
  *  +-------------+-------+-------+------+
- *  | 1:200:A:C   | ----  | DATA  | DATA |  <--- Update variants with data from File2 and missing from File1
+ *  | 1:200:A:C   | ----  | DATA  | DATA |  <--- B1) Update variants with data from File2 and missing from File1
  *  +-------------+-------+-------+------+
- *  | 1:225:A:C   | DATA  | ----  | ---- |  <--- New variant with missing information from the File2
+ *  | 1:225:A:C   | DATA  | ----  | ---- |  <--- B2) New variant with missing information from the File2
  *  +-------------+-------+-------+------+
- *  | 1:250:G:T   | ----  | ----  | DATA |  <--- Missing information. Fill Gaps
+ *  | 1:250:G:T   | ----  | ----  | DATA |  <--- B3) Missing information. Fill Gaps
  *  +-------------+-------+-------+------+
  *
  *  Overlapping variants
  *  +-------------+-------+-------+------+
  *  | 1:300:A:C   | ----  | DATA  | DATA |  <---
- *  +-------------+-------+-------+------+      |- Simple merge variants
+ *  +-------------+-------+-------+------+      |- C1) Simple merge variants
  *  | 1:300:A:T   | DATA  | ----  | DATA |  <---
  *  +=============+=======+=======+======+
  *  | 1:400:A:C   | DATA  | DATA  | DATA |  <---
- *  +-------------+-------+-------+------+      |- Simple merge variants. File1 has duplicated information for this variants
+ *  +-------------+-------+-------+------+      |- C2) Simple merge variants. File1 has duplicated information for this variants
  *  | 1:400:A:T   | DATA  | ----  | DATA |  <---   Ideally, variants for File1 have correct secondary alternate. Discard one variant.
  *  +=============+=======+=======+======+
  *  | 1:500:A:C   | ----  | ----  | DATA |  <---
- *  +-------------+-------+-------+------+      |- New overlapped region. Fetch data from the database and merge.
+ *  +-------------+-------+-------+------+      |- C3) New overlapped region. Fetch data from the database and merge.
  *  | 1:500:A:T   | DATA  | DATA  | ---- |  <---   Fill gaps for indexed files
  *  +=============+=======+=======+======+
  *  | 1:600:A:C   | ----  | ----  | DATA |  <---
- *  +-------------+-------+-------+------+      |- New overlapped region. Fetch data from the database and merge.
+ *  +-------------+-------+-------+------+      |- C4) New overlapped region. Fetch data from the database and merge.
  *  | 1:600:A:T   | DATA  | ----  | ---- |  <---   Fill gaps for indexed files and file2
+ *  +=============+=======+=======+======+
+ *  | 1:700:A:C   | ----  | ----  | DATA |  <---
+ *  +-------------+-------+-------+------+      |- C5) Already existing overlapped region. No extra information. No overlapping variants.
+ *  | 1:700:A:T   | ----  | ----  | DATA |  <---   Fill gaps for file1 and file2
  *  +=============+=======+=======+======+
  *
  *
@@ -211,6 +215,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final VariantMerger variantMerger;
     private final List<String> format;
 
+    /**
+     * Private class for grouping mongodb operations.
+     * Allows thread-safe operations.
+     */
     private class MongoDBOperations {
 
         private List<Document> inserts =  new LinkedList<>();
@@ -231,14 +239,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                 MongoDBCollection collection, long numTotalVariants, Set<Integer> indexedFiles) {
-        Objects.requireNonNull(studyConfiguration);
+        this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
+        this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
+        this.fileIds = Objects.requireNonNull(fileIds);
+        this.collection = Objects.requireNonNull(collection);
+        this.indexedFiles = Objects.requireNonNull(indexedFiles);
 
-        this.dbAdaptor = dbAdaptor;
-        this.studyConfiguration = studyConfiguration;
-        this.fileIds = fileIds;
-        this.collection = collection;
         this.numTotalVariants = numTotalVariants;
-        this.indexedFiles = indexedFiles;
 
         excludeGenotypes = getExcludeGenotypes(studyConfiguration);
         format = buildFormat(studyConfiguration);
@@ -263,16 +270,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                 MongoDBCollection collection, Future<Long> futureNumTotalVariants, long approximatedNumVariants,
                                 Set<Integer> indexedFiles) {
-        Objects.requireNonNull(dbAdaptor);
-        Objects.requireNonNull(studyConfiguration);
-        Objects.requireNonNull(fileIds);
-        Objects.requireNonNull(collection);
-        Objects.requireNonNull(indexedFiles);
-        this.dbAdaptor = dbAdaptor;
-        this.collection = collection;
-        this.fileIds = fileIds;
-        this.indexedFiles = indexedFiles;
-        this.studyConfiguration = studyConfiguration;
+        this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
+        this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
+        this.fileIds = Objects.requireNonNull(fileIds);
+        this.collection = Objects.requireNonNull(collection);
+        this.indexedFiles = Objects.requireNonNull(indexedFiles);
 
         excludeGenotypes = getExcludeGenotypes(studyConfiguration);
         format = buildFormat(studyConfiguration);
@@ -300,7 +302,16 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     @Override
     public List<MongoDBVariantWriteResult> apply(List<Document> batch) {
-        return Collections.singletonList(load(batch));
+        try {
+            return Collections.singletonList(load(batch));
+        } catch (Exception e) {
+            if (batch.isEmpty()) {
+                logger.error("Fail loading empty batch");
+            } else {
+                logger.error("Fail loading batch from " + batch.get(0).get("_id") + " to " + batch.get(batch.size() - 1).get("_id"));
+            }
+            throw e;
+        }
     }
 
     @Override
@@ -333,7 +344,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     }
                     overlappedVariants.add(document);
                     start = Math.min(start, variant.getStart());
-                    end = Math.max(end, variant.getEnd());
+                    end = Math.max(end, getEnd(variant));
                     previousDocument = document;
                     previousVariant = variant;
 
@@ -343,7 +354,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     if (overlappedVariants != null) {
                         processOverlappedVariants(overlappedVariants, mongoDBOps);
                     } else if (previousDocument != null) {
-                        processVariant(previousDocument, previousVariant, mongoDBOps);
+                        processVariantTryCatch(previousDocument, previousVariant, mongoDBOps);
                     }
                     overlappedVariants = null;
                 }
@@ -352,7 +363,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 previousVariant = variant;
                 chromosome = variant.getChromosome();
                 start = variant.getStart();
-                end = variant.getEnd();
+                end = getEnd(variant);
             }
 
         }
@@ -361,20 +372,30 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         if (overlappedVariants != null) {
             processOverlappedVariants(overlappedVariants, mongoDBOps);
         } else if (previousDocument != null) {
-            processVariant(previousDocument, previousVariant, mongoDBOps);
+            processVariantTryCatch(previousDocument, previousVariant, mongoDBOps);
         }
 
         // Execute MongoDB Operations
         return executeMongoDBOperations(mongoDBOps);
     }
 
-//    public Integer getEnd(Variant variant) {
-//        return variant.getType().equals(VariantType.SYMBOLIC) || variant.getType().equals(VariantType.NO_VARIATION)
-//                ? variant.getEnd()
-//                : variant.getStart() + Math.max(variant.getReference().length() - 1, -1 /* 0 */);
-////        return variant.getEnd();
-//    }
+    public Integer getEnd(Variant variant) {
+//        if (variant.getType().equals(VariantType.SYMBOLIC) || variant.getType().equals(VariantType.NO_VARIATION)) {
+//            return variant.getEnd();
+//        } else {
+//            return variant.getStart() + Math.max(variant.getReference().length() - 1, -1 /* 0 */);
+//        }
+        return variant.getEnd();
+    }
 
+    protected void processVariantTryCatch(Document document, Variant emptyVar, MongoDBOperations mongoDBOps) {
+        try {
+            processVariant(document, emptyVar, mongoDBOps);
+        } catch (Exception e) {
+            logger.error("Error processing variant " + emptyVar);
+            throw e;
+        }
+    }
     /**
      * Given a document from the stage collection, transforms the document into a set of MongoDB operations.
      *
@@ -408,7 +429,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 if (duplicatedVariants.size() > 1) {
                     mongoDBOps.nonInserted += duplicatedVariants.size();
                     addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
-                    logger.warn("Duplicated variants for file {} in variant {}", fileId, emptyVar);
+                    logger.warn("Found {} duplicated variants for file {} in variant {}", duplicatedVariants.size(), fileId, emptyVar);
                     continue;
                 }
 
@@ -455,7 +476,15 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     protected void processOverlappedVariants(List<Document> overlappedVariants, MongoDBOperations mongoDBOps) {
         for (Document document : overlappedVariants) {
             Variant mainVariant = STRING_ID_CONVERTER.convertToDataModelType(document);
-            processOverlappedVariants(mainVariant, overlappedVariants, mongoDBOps);
+            try {
+                processOverlappedVariants(mainVariant, overlappedVariants, mongoDBOps);
+            } catch (Exception e) {
+                List<Variant> variants = overlappedVariants.stream()
+                        .map(STRING_ID_CONVERTER::convertToDataModelType)
+                        .collect(Collectors.toList());
+                logger.error("Error processing variant " + mainVariant + " in overlapped variants " + variants);
+                throw e;
+            }
         }
     }
 
@@ -515,6 +544,10 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             List<Document> fileDocuments = new LinkedList<>();
             List<Document> alternateDocuments = null;
             StudyEntry studyEntry = variant.getStudies().get(0);
+
+            // Count of all files missing in the merged variant that have to be loaded
+            int missingFiles = 0;
+
             // For all the files that are being indexed
             for (Integer fileId : fileIds) {
                 FileEntry file = studyEntry.getFile(fileId.toString());
@@ -527,8 +560,15 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                     fileDocuments.addAll(getListFromDocument(studyDocument, FILES_FIELD));
                     alternateDocuments = getListFromDocument(studyDocument, ALTERNATES_FIELD);
                 } else {
+                    missingFiles++;
                     addSampleIdsGenotypes(gts, UNKNOWN_GENOTYPE, getSamplesInFile(fileId));
                 }
+            }
+
+            // If the files to be loaded where not present in the current variant, there is not overlapped variant.
+            // See scenario C5)
+            if (missingOverlappingVariant && missingFiles == fileIds.size()) {
+                mongoDBOps.overlappedVariants--;
             }
             // For the rest of the files not indexed, only is this variant is new in this study,
             // add all the already indexed files information, if present in this variant.
@@ -629,6 +669,7 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                         // If there are more than one variant for this file, increment the number of nonInserted variants.
                         // Duplicated variant
                         mongoDBOps.nonInserted += files.size();
+                        logger.warn("Found {} duplicated variants for file {} in variant {}", files.size(), fileId, var);
                     }
                 } // else { /* Missing variant */ }
             }
@@ -676,11 +717,11 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                             logger.warn("Missing overlapping variants in file {} : {}", fileId, variantList);
                             prompted = true;
                         }
-                        // Those variants that do not overlap with the selected variant won't be inserted
-                        if (!auxVar.overlapWith(var, true)) {
-                            mongoDBOps.nonInserted++;
-                            logger.warn("Skipping overlapped variant " + auxVar);
-                        }
+//                        // Those variants that do not overlap with the selected variant won't be inserted
+//                        if (!auxVar.overlapWith(var, true)) {
+//                            mongoDBOps.nonInserted++;
+//                            logger.warn("Skipping overlapped variant " + auxVar);
+//                        }
                     }
                     break;
             }
@@ -790,25 +831,27 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
                 mongoDBOperations.inserts.add(variantDocument);
             }
         } else if (newStudy) {
+            // If there where no files and the study is new, do not add a new study.
+            // It may happen if all the files in the variant where duplicated for this variant.
+            if (!fileDocuments.isEmpty()) {
+                Document studyDocument = new Document(STUDYID_FIELD, studyId)
+                        .append(FILES_FIELD, fileDocuments);
 
-            Document studyDocument = new Document(STUDYID_FIELD, studyId)
-                    .append(FILES_FIELD, fileDocuments);
+                if (!excludeGenotypes) {
+                    studyDocument.append(GENOTYPES_FIELD, gts);
+                }
 
-            if (!excludeGenotypes) {
-                studyDocument.append(GENOTYPES_FIELD, gts);
+                if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
+                    studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
+                }
+
+                String id = variantConverter.buildStorageId(emptyVar);
+                mongoDBOperations.queriesExistingId.add(id);
+                mongoDBOperations.queriesExisting.add(Filters.eq("_id", id));
+                mongoDBOperations.updatesExisting.add(Updates.combine(
+                        Updates.push(STUDIES_FIELD, studyDocument),
+                        Updates.addEachToSet(IDS_FIELD, ids)));
             }
-
-            if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
-                studyDocument.append(ALTERNATES_FIELD, secondaryAlternates);
-            }
-
-            String id = variantConverter.buildStorageId(emptyVar);
-            mongoDBOperations.queriesExistingId.add(id);
-            mongoDBOperations.queriesExisting.add(Filters.eq("_id", id));
-            mongoDBOperations.updatesExisting.add(Updates.combine(
-                    Updates.push(STUDIES_FIELD, studyDocument),
-                    Updates.addEachToSet(IDS_FIELD, ids)));
-
         } else {
             String id = variantConverter.buildStorageId(emptyVar);
             List<Bson> mergeUpdates = new LinkedList<>();
