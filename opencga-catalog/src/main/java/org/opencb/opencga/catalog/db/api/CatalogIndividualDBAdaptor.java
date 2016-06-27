@@ -93,7 +93,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         FAMILY("family", TEXT, ""),
         GENDER("gender", TEXT, ""),
         RACE("race", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         SPECIES("species", TEXT, ""),

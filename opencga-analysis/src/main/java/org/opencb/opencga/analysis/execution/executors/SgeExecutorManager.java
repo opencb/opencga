@@ -31,7 +31,7 @@ public class SgeExecutorManager implements ExecutorManager {
         // TODO: Lock job before submit. Avoid double submission
         SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
                 -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
-        return catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.QUEUED), sessionId);
+        return catalogManager.modifyJob(job.getId(), new ObjectMap("status.name", Job.JobStatus.QUEUED), sessionId);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class SgeExecutorManager implements ExecutorManager {
                 return Job.JobStatus.RUNNING;
             case SgeManager.UNKNOWN:
             default:
-                return job.getStatus().getStatus();
+                return job.getStatus().getName();
         }
     }
 }

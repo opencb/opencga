@@ -306,7 +306,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                 new QueryOptions());
         assertEquals(createResult.first().getId(), deleteResult.first().getId());
         assertEquals(1, deleteResult.getNumResults());
-        assertEquals(Status.TRASHED, deleteResult.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, deleteResult.first().getStatus().getName());
     }
 
     @Test

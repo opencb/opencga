@@ -94,15 +94,15 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     public QueryResult<Dataset> getDataset(long datasetId, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
 
-        Query query = new Query(QueryParams.ID.key(), datasetId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.ID.key(), datasetId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         return endQuery("Get dataset", startTime, get(query, options));
     }
 
     @Override
     public QueryResult<Dataset> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -127,8 +127,8 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson;
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         try {
             bson = parseQuery(query);
@@ -174,8 +174,8 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, datasetParams, acceptedMapParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            datasetParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            datasetParams.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             datasetParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -193,18 +193,18 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
         checkDatasetId(id);
         // Check the dataset is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             Dataset dataset = get(query, options).first();
-            throw new CatalogDBException("The dataset {" + id + "} was already " + dataset.getStatus().getStatus());
+            throw new CatalogDBException("The dataset {" + id + "} was already " + dataset.getStatus().getName());
         }
 
         // Change the status of the dataset to deleted
         setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete dataset", startTime, get(query, null));
     }
@@ -212,7 +212,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        query.append(QueryParams.STATUS_NAME.key(), Status.READY);
         QueryResult<Dataset> datasetQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Dataset dataset : datasetQueryResult.getResult()) {
             delete(dataset.getId(), queryOptions);
@@ -221,11 +221,11 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     }
 
     QueryResult<Dataset> setStatus(long datasetId, String status) throws CatalogDBException {
-        return update(datasetId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(datasetId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Override
@@ -241,7 +241,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore datasets", startTime, setStatus(query, Status.READY));
     }
 
@@ -252,7 +252,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         checkDatasetId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The dataset {" + id + "} is not deleted");
         }

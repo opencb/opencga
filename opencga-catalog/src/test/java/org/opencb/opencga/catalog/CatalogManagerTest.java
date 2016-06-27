@@ -555,7 +555,7 @@ public class CatalogManagerTest extends GenericTest {
         Query query = new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         QueryResult<File> fileQueryResultLinked = catalogManager.searchFile(studyId, query, sessionIdUser);
 
         System.out.println("Number of files/folders linked = " + fileQueryResultLinked.getNumResults());
@@ -568,7 +568,7 @@ public class CatalogManagerTest extends GenericTest {
         query = new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~myDirectory/*")
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.REMOVED);
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
         QueryResult<File> fileQueryResultUnlinked = catalogManager.searchFile(studyId, query, sessionIdUser);
         assertEquals(6, fileQueryResultUnlinked.getNumResults());
     }
@@ -637,7 +637,7 @@ public class CatalogManagerTest extends GenericTest {
         fileName = "item." + TimeUtils.getTimeMillis() + ".txt";
         fileResult = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/" + fileName,
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
-        assertTrue("", fileResult.first().getStatus().getStatus().equals(File.FileStatus.READY));
+        assertTrue("", fileResult.first().getStatus().getName().equals(File.FileStatus.READY));
         assertTrue("", fileResult.first().getDiskUsage() == 200);
 
         fileName = "item." + TimeUtils.getTimeMillis() + ".vcf";
@@ -1140,7 +1140,7 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, sessionIdUser);
 
         // Change the status to MISSING
-        ObjectMap objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.MISSING);
+        ObjectMap objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.MISSING);
         catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
 
         try {
@@ -1151,7 +1151,7 @@ public class CatalogManagerTest extends GenericTest {
         }
 
         // Change the status to STAGED
-        objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.STAGE);
+        objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.STAGE);
         catalogManager.modifyFile(fileQueryResult.first().getId(), objectMap, sessionIdUser);
 
         try {
@@ -1178,7 +1178,7 @@ public class CatalogManagerTest extends GenericTest {
         query = new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         int numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
 
@@ -1189,7 +1189,7 @@ public class CatalogManagerTest extends GenericTest {
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.TRASHED);
+        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
     }
@@ -1210,7 +1210,7 @@ public class CatalogManagerTest extends GenericTest {
         query = new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + filePath + "*")
-                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
         int numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
 
@@ -1222,7 +1222,7 @@ public class CatalogManagerTest extends GenericTest {
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
         assertEquals(0, numResults);
 
-        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.PENDING_DELETE);
+        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE);
         numResults = catalogManager.searchFile(studyId, query, sessionIdUser).getNumResults();
         assertEquals(6, numResults);
     }
@@ -1241,7 +1241,7 @@ public class CatalogManagerTest extends GenericTest {
         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
+            assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1253,7 +1253,7 @@ public class CatalogManagerTest extends GenericTest {
         }
         catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.TYPE.key(), "FILE"), new QueryOptions(),
                 sessionIdUser).getResult().forEach(f -> {
-            assertEquals(f.getStatus().getStatus(), File.FileStatus.TRASHED);
+            assertEquals(f.getStatus().getName(), File.FileStatus.TRASHED);
             assertTrue(f.getName().startsWith(".deleted"));
         });
 
@@ -1333,7 +1333,7 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.delete(Long.toString(deletable), null, sessionIdUser);
 
         File file = catalogManager.getFile(deletable, sessionIdUser).first();
-        assertTrue(file.getStatus().getStatus().equals(File.FileStatus.TRASHED));
+        assertTrue(file.getStatus().getName().equals(File.FileStatus.TRASHED));
 
         allFilesInFolder = catalogManager.getAllFilesInFolder(deletable, null, sessionIdUser).getResult();
         allFilesInFolder = catalogManager.searchFile(
@@ -1343,7 +1343,7 @@ public class CatalogManagerTest extends GenericTest {
 
 
         for (File subFile : allFilesInFolder) {
-            assertTrue(subFile.getStatus().getStatus().equals(File.FileStatus.TRASHED));
+            assertTrue(subFile.getStatus().getName().equals(File.FileStatus.TRASHED));
         }
     }
 
@@ -2047,7 +2047,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(sampleId, queryResult.first().getId());
 
         QueryResult<Sample> sample = catalogManager.getSample(sampleId, new QueryOptions(), sessionIdUser);
-        assertEquals(Status.TRASHED, sample.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, sample.first().getStatus().getName());
     }
 
     /*
@@ -2202,7 +2202,7 @@ public class CatalogManagerTest extends GenericTest {
         assertEquals(myCohort.getId(), myDeletedCohort.getId());
 
         Cohort cohort = catalogManager.getCohort(myCohort.getId(), null, sessionIdUser).first();
-        assertEquals(Status.TRASHED, cohort.getStatus().getStatus());
+        assertEquals(Status.TRASHED, cohort.getStatus().getName());
     }
 
     /**

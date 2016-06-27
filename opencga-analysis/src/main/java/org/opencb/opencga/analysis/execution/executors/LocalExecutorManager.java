@@ -39,12 +39,12 @@ public class LocalExecutorManager implements ExecutorManager {
     @Override
     public QueryResult<Job> run(Job job) throws CatalogException, AnalysisExecutionException {
 
-        String status = job.getStatus().getStatus();
+        String status = job.getStatus().getName();
         switch (status) {
             case Job.JobStatus.QUEUED:
             case Job.JobStatus.PREPARED:
                 // change to RUNNING
-                catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.RUNNING), sessionId);
+                catalogManager.modifyJob(job.getId(), new ObjectMap("status.name", Job.JobStatus.RUNNING), sessionId);
                 break;
             case Job.JobStatus.RUNNING:
                 //nothing
@@ -191,7 +191,7 @@ public class LocalExecutorManager implements ExecutorManager {
         if (executionInfo != null) {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
         }
-        parameters.put("status.status", Job.JobStatus.DONE);
+        parameters.put("status.name", Job.JobStatus.DONE);
         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
         /** Record output **/
@@ -200,13 +200,13 @@ public class LocalExecutorManager implements ExecutorManager {
 
         /** Change status to READY or ERROR **/
         if (exitValue == 0 && StringUtils.isEmpty(error)) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("status.status", Job.JobStatus.READY), sessionId);
+            catalogManager.modifyJob(job.getId(), new ObjectMap("status.name", Job.JobStatus.READY), sessionId);
         } else {
             if (error == null) {
                 error = Job.ERRNO_FINISH_ERROR;
             }
             parameters = new ObjectMap();
-            parameters.put("status.status", Job.JobStatus.ERROR);
+            parameters.put("status.name", Job.JobStatus.ERROR);
             parameters.put("error", error);
             parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);

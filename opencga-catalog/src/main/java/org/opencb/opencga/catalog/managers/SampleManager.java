@@ -577,15 +577,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.UPDATE);
 
         Cohort cohort = readCohort(cohortId, new QueryOptions(QueryOptions.INCLUDE, "projects.studies.cohorts."
-                + CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key()), sessionId).first();
+                + CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key()), sessionId).first();
         if (params.containsKey(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key())
                 || params.containsKey(CatalogCohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
-            switch (cohort.getStatus().getStatus()) {
+            switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
                             + "\"");
                 case Cohort.CohortStatus.READY:
-                    params.putIfAbsent("status.status", Cohort.CohortStatus.INVALID);
+                    params.putIfAbsent("status.name", Cohort.CohortStatus.INVALID);
                     break;
                 case Cohort.CohortStatus.NONE:
                 case Cohort.CohortStatus.INVALID:

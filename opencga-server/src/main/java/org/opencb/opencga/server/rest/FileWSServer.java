@@ -120,7 +120,7 @@ public class FileWSServer extends OpenCGAWSServer {
             try {
                 QueryResult<File> fileQueryResult = catalogManager.createFile(studyId, file.getType(), file.getFormat(),
                         file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
-                        file.getDescription(), new File.FileStatus(file.getStatus().getStatus()), file.getDiskUsage(), file.getExperimentId(),
+                        file.getDescription(), new File.FileStatus(file.getStatus().getName()), file.getDiskUsage(), file.getExperimentId(),
                         file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, queryOptions, sessionId);
 //                file = fileQueryResult.getResult().get(0);
                 System.out.println("fileQueryResult = " + fileQueryResult);
@@ -558,7 +558,7 @@ public class FileWSServer extends OpenCGAWSServer {
             }
 
 //            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(FileIndex.IndexStatus.READY)) {
+            if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                 return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }

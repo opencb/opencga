@@ -46,7 +46,7 @@ public class AnalysisFileIndexerAggregatedTest extends AbstractAnalysisFileIndex
         queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
         runStorageJob(catalogManager, analysisFileIndexer.index((int) files.get(0).getId(), (int) outputId, sessionId, queryOptions).first(), logger, sessionId);
         assertEquals(0, getDefaultCohort(studyId).getSamples().size());
-        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getStatus());
+        assertEquals(Cohort.CohortStatus.READY, getDefaultCohort(studyId).getStatus().getName());
         checkCalculatedAggregatedStats(Collections.singletonMap(DEFAULT_COHORT, catalogManager.getAllCohorts(studyId,
                 new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), DEFAULT_COHORT), new QueryOptions(), sessionId).first()), dbName
         );

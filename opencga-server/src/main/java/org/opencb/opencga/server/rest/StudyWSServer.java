@@ -392,7 +392,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             File file = catalogManager.getAllFiles(studyId, query
                             .append(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), File.Bioformat.ALIGNMENT)
                             .append(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), sampleId)
-                            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_STATUS.key(), FileIndex.IndexStatus.READY),
+                            .append(CatalogFileDBAdaptor.QueryParams.INDEX_STATUS_NAME.key(), FileIndex.IndexStatus.READY),
                     qOptions, sessionId).first();
         } catch (CatalogException e) {
             e.printStackTrace();
@@ -413,7 +413,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             }
 
 //            if (!file.getType().equals(File.Type.INDEX)) {
-            if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(FileIndex.IndexStatus.READY)) {
+            if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
                 return createErrorResponse("", "File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                         " is not an indexed file.");
             }
@@ -485,7 +485,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
             /** First, run CheckStudyFiles to find new missing files **/
             List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().getStatus().equals(File.FileStatus.READY)).collect(Collectors.toList());
+            List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().getName().equals(File.FileStatus.READY)).collect(Collectors.toList());
 
             /** Get untracked files **/
             Map<String, URI> untrackedFiles = fileScanner.untrackedFiles(study, sessionId);
@@ -713,7 +713,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //                    for (File file : files) {
 //                        QueryResult<File> fileQueryResult = catalogManager.createFile(studyAdded.getId(), file.getType(), file.getFormat(),
 //                                file.getBioformat(), file.getPath(), file.getOwnerId(), file.getCreationDate(),
-//                                file.getDescription(), file.getStatus(), file.getDiskUsage(), file.getExperimentId(),
+//                                file.getDescription(), file.getName(), file.getDiskUsage(), file.getExperimentId(),
 //                                file.getSampleIds(), file.getJobId(), file.getStats(), file.getAttributes(), true, sessionId);
 //                        file = fileQueryResult.getResult().get(0);
 //                        System.out.println("fileQueryResult = " + fileQueryResult);

@@ -50,7 +50,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         DESCRIPTION("description", TEXT_ARRAY, ""),
         EXTERNAL("external", BOOLEAN, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         @Deprecated
@@ -72,7 +72,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File> {
         //INDEX("index", TEXT, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
         INDEX_DATE("index.date", TEXT, ""),
-        INDEX_STATUS_STATUS("index.status.status", TEXT, ""),
+        INDEX_STATUS_NAME("index.status.name", TEXT, ""),
         INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),
 

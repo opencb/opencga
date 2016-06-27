@@ -127,7 +127,7 @@ public class AnalysisOutputRecorder {
                 break;
             case COHORT_STATS:
                 List<Integer> cohortIds = new ObjectMap(job.getAttributes()).getAsIntegerList("cohortIds");
-                ObjectMap updateParams = new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), jobFailed? Cohort.CohortStatus.INVALID : Cohort.CohortStatus.READY);
+                ObjectMap updateParams = new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), jobFailed? Cohort.CohortStatus.INVALID : Cohort.CohortStatus.READY);
                 for (Integer cohortId : cohortIds) {
                     catalogManager.modifyCohort(cohortId, updateParams, new QueryOptions(), sessionId);
                 }
@@ -172,7 +172,7 @@ public class AnalysisOutputRecorder {
 
         if (indexedFile.getIndex() != null) {
             index = indexedFile.getIndex();
-            switch (index.getStatus().getStatus()) {
+            switch (index.getStatus().getName()) {
                 case FileIndex.IndexStatus.NONE:
                 case FileIndex.IndexStatus.TRANSFORMED:
                     logger.warn("Unexpected index status. Expected "
@@ -186,18 +186,18 @@ public class AnalysisOutputRecorder {
                     if (jobFailed) {
                         logger.warn("Job failed. Restoring status from " +
                                 FileIndex.IndexStatus.TRANSFORMING + " to " + FileIndex.IndexStatus.NONE);
-                        index.getStatus().setStatus(FileIndex.IndexStatus.NONE);
+                        index.getStatus().setName(FileIndex.IndexStatus.NONE);
                     } else {
-                        index.getStatus().setStatus(FileIndex.IndexStatus.TRANSFORMED);
+                        index.getStatus().setName(FileIndex.IndexStatus.TRANSFORMED);
                     }
                     break;
                 case FileIndex.IndexStatus.LOADING:
                     if (jobFailed) {
                         logger.warn("Job failed. Restoring status from " +
                                 FileIndex.IndexStatus.LOADING + " to " + FileIndex.IndexStatus.TRANSFORMED);
-                        index.getStatus().setStatus(FileIndex.IndexStatus.TRANSFORMED);
+                        index.getStatus().setName(FileIndex.IndexStatus.TRANSFORMED);
                     } else {
-                        index.getStatus().setStatus(FileIndex.IndexStatus.READY);
+                        index.getStatus().setName(FileIndex.IndexStatus.READY);
                     }
                     break;
                 case FileIndex.IndexStatus.INDEXING:
@@ -211,9 +211,9 @@ public class AnalysisOutputRecorder {
                         }
                         logger.warn("Job failed. Restoring status from " +
                                 FileIndex.IndexStatus.INDEXING + " to " + newStatus);
-                        index.getStatus().setStatus(newStatus);
+                        index.getStatus().setName(newStatus);
                     } else {
-                        index.getStatus().setStatus(FileIndex.IndexStatus.READY);
+                        index.getStatus().setName(FileIndex.IndexStatus.READY);
                     }
                     break;
             }
@@ -232,14 +232,14 @@ public class AnalysisOutputRecorder {
         boolean calculateStats = Boolean.parseBoolean(job.getAttributes().getOrDefault(VariantStorageManager.Options.CALCULATE_STATS.key(),
                 VariantStorageManager.Options.CALCULATE_STATS.defaultValue()).toString());
 
-        if (index.getStatus().getStatus().equals(FileIndex.IndexStatus.READY) && calculateStats) {
+        if (index.getStatus().getName().equals(FileIndex.IndexStatus.READY) && calculateStats) {
             QueryResult<Cohort> queryResult = catalogManager.getAllCohorts(catalogManager.getStudyIdByJobId(job.getId()),
                     new Query(CatalogCohortDBAdaptor.QueryParams.NAME.key(), StudyEntry.DEFAULT_COHORT), new QueryOptions(), sessionId);
             if (queryResult.getNumResults() != 0) {
                 logger.debug("Default cohort status set to READY");
                 Cohort defaultCohort = queryResult.first();
                 catalogManager.modifyCohort(defaultCohort.getId(),
-                        new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.READY),
+                        new ObjectMap(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.READY),
                         new QueryOptions(), sessionId);
             }
         }

@@ -130,13 +130,13 @@ public class OpenCGAWSServerTest {
         FileWSServerTest fileTest = new FileWSServerTest();
         fileTest.setWebTarget(webTarget);
         File fileVcf = fileTest.uploadVcf(study.getId(), sessionId);
-        assertEquals(File.FileStatus.READY, fileVcf.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, fileVcf.getStatus().getName());
         assertEquals(File.Bioformat.VARIANT, fileVcf.getBioformat());
         Job indexJobVcf = fileTest.index(fileVcf.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobVcf = runStorageJob(sessionId, indexJobVcf);
-        assertEquals(Job.JobStatus.READY, indexJobVcf.getStatus().getStatus());
+        assertEquals(Job.JobStatus.READY, indexJobVcf.getStatus().getName());
 
         QueryOptions queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "1");
@@ -177,26 +177,26 @@ public class OpenCGAWSServerTest {
 
 
         Cohort myCohort = OpenCGAWSServer.catalogManager.createCohort(study.getId(), "MyCohort", Study.Type.FAMILY, "", samples.stream().map(Sample::getId).collect(Collectors.toList()), null, sessionId).first();
-        assertEquals(Cohort.CohortStatus.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus().getStatus());
+        assertEquals(Cohort.CohortStatus.NONE, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus().getName());
 
         long outputId = OpenCGAWSServer.catalogManager.getFileParent(fileVcf.getId(), null, sessionId).first().getId();
         Job calculateVariantStatsJob = fileTest.calculateVariantStats(myCohort.getId(), outputId, sessionId);
 
         /* Emulate DAEMON working */
         calculateVariantStatsJob = runStorageJob(sessionId, calculateVariantStatsJob);
-        assertEquals(Job.JobStatus.READY, calculateVariantStatsJob.getStatus().getStatus());
-        assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus().getStatus());
+        assertEquals(Job.JobStatus.READY, calculateVariantStatsJob.getStatus().getName());
+        assertEquals(Cohort.CohortStatus.READY, OpenCGAWSServer.catalogManager.getCohort(myCohort.getId(), null, sessionId).first().getStatus().getName());
 
 
 
         File fileBam = fileTest.uploadBam(study.getId(), sessionId);
-        assertEquals(File.FileStatus.READY, fileBam.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, fileBam.getStatus().getName());
         assertEquals(File.Bioformat.ALIGNMENT, fileBam.getBioformat());
         Job indexJobBam = fileTest.index(fileBam.getId(), sessionId);
 
         /* Emulate DAEMON working */
         indexJobBam = runStorageJob(sessionId, indexJobBam);
-        assertEquals(Job.JobStatus.READY, indexJobBam.getStatus().getStatus());
+        assertEquals(Job.JobStatus.READY, indexJobBam.getStatus().getName());
 
         queryOptions = new QueryOptions("limit", 10);
         queryOptions.put("region", "20:60000-60200");

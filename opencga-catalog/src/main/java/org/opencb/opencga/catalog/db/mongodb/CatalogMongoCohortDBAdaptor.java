@@ -73,7 +73,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult<Cohort> getCohort(long cohortId, QueryOptions options) throws CatalogDBException {
-        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
+        return get(new Query(QueryParams.ID.key(), cohortId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
     }
 
     @Override
@@ -453,8 +453,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Cohort> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -471,8 +471,8 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
         Bson bson = parseQuery(query);
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         QueryOptions qOptions;
         if (options != null) {
@@ -515,15 +515,15 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key(), QueryParams.STATS.key()};
         filterMapParams(parameters, cohortParams, acceptedMapParams);
 
-        //Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.STATUS_STATUS.key(),
+        //Map<String, Class<? extends Enum>> acceptedEnumParams = Collections.singletonMap(QueryParams.STATUS_NAME.key(),
         //        Cohort.CohortStatus.class);
         //filterEnumParams(parameters, cohortParams, acceptedEnumParams);
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            cohortParams.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            cohortParams.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             cohortParams.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
         if (parameters.containsKey("status")) {
-            throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_STATUS.key()
+            throw new CatalogDBException("Unable to modify cohort. Use parameter \"" + QueryParams.STATUS_NAME.key()
                     + "\" instead of \"status\"");
         }
 
@@ -542,18 +542,18 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         checkCohortId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             Cohort cohort = get(query, options).first();
-            throw new CatalogDBException("The cohort {" + id + "} was already " + cohort.getStatus().getStatus());
+            throw new CatalogDBException("The cohort {" + id + "} was already " + cohort.getStatus().getName());
         }
 
         // Change the status of the cohort to deleted
         setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete cohort", startTime, get(query, null));
     }
@@ -561,7 +561,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         QueryResult<Cohort> cohortQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Cohort cohort : cohortQueryResult.getResult()) {
             delete(cohort.getId(), queryOptions);
@@ -570,11 +570,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     QueryResult<Cohort> setStatus(long cohortId, String status) throws CatalogDBException {
-        return update(cohortId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(cohortId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Override
@@ -588,7 +588,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        if (remove.getResult().get(0) != 1L) {
 //            throw CatalogDBException.removeError("Cohort");
 //        }
-//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED);
+//        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.DELETED);
 //        return endQuery("Remove cohort", startTime, get(query, new QueryOptions()));
     }
 
@@ -596,13 +596,13 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException {
         throw new UnsupportedOperationException("Operation not yet supported.");
 //        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.TRASHED);
+//        query.append(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.NONE + "," + Cohort.CohortStatus.TRASHED);
 //
 //        // First we obtain the ids of the cohorts that will be removed.
 //        List<Cohort> cohorts = get(query, new QueryOptions(MongoDBCollection.INCLUDE,
-//                Arrays.asList(QueryParams.ID.key(), QueryParams.STATUS_STATUS))).getResult();
+//                Arrays.asList(QueryParams.ID.key(), QueryParams.STATUS_NAME))).getResult();
 //
-//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), Cohort.CohortStatus.DELETED));
+//        QueryResult<Long> removed = update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), Cohort.CohortStatus.DELETED));
 //
 //        if (removed.first() != cohorts.size()) {
 //            throw CatalogDBException.removeError("Cohort");
@@ -611,7 +611,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        // Remove the instances to cohort that are stored in study
 //        dbAdaptorFactory.getCatalogStudyDBAdaptor().removeCohortDependencies(
 //                cohorts.stream()
-//                        .filter(c -> c.getStatus().getStatus() != Cohort.CohortStatus.TRASHED)
+//                        .filter(c -> c.getName().getName() != Cohort.CohortStatus.TRASHED)
 //                        .map(Cohort::getId).collect(Collectors.toList())
 //        );
 //
@@ -625,7 +625,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         checkCohortId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The cohort {" + id + "} is not deleted");
         }
@@ -640,7 +640,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore cohorts", startTime, setStatus(query, Cohort.CohortStatus.NONE));
     }
 
@@ -649,7 +649,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 //        long startTime = startQuery();
 //        QueryResult<UpdateResult> update = cohortCollection.update(parseQuery(query),
 //                Updates.combine(
-//                        Updates.set(QueryParams.STATUS_STATUS.key(), status),
+//                        Updates.set(QueryParams.STATUS_NAME.key(), status),
 //                        Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis()))
 //                , new QueryOptions());
 //        return endQuery("Update cohort status", startTime, Collections.singletonList(update.first().getModifiedCount()));

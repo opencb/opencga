@@ -191,7 +191,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException {
         checkStudyId(studyId);
-        return get(new Query(QueryParams.ID.key(), studyId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
+        return get(new Query(QueryParams.ID.key(), studyId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
     }
 
     @Override
@@ -1000,8 +1000,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Study> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -1021,8 +1021,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -1098,8 +1098,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
             studyParameters.put(QueryParams.URI.key(), uri.toString());
         }
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            studyParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            studyParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             studyParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -1130,12 +1130,12 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         checkStudyId(id);
         // Check the study is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             Study study = get(query, options).first();
-            throw new CatalogDBException("The study {" + id + "} was already " + study.getStatus().getStatus());
+            throw new CatalogDBException("The study {" + id + "} was already " + study.getStatus().getName());
         }
 
         // If we don't find the force parameter, we check first if the user does not have an active project.
@@ -1163,30 +1163,30 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         // Change the status of the project to deleted
         setStatus(id, Status.TRASHED);
 
-        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete study", startTime, get(query, null));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Study> setStatus(long studyId, String status) throws CatalogDBException {
-        return update(studyId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(studyId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        query.append(QueryParams.STATUS_NAME.key(), Status.READY);
         QueryResult<Study> studyQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Study study : studyQueryResult.getResult()) {
             delete(study.getId(), queryOptions);
         }
         return endQuery("Delete study", startTime, Collections.singletonList(studyQueryResult.getNumTotalResults()));
 //        long startTime = startQuery();
-//        query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+//        query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
 //
 //        if (queryOptions == null) {
 //            queryOptions = new QueryOptions();
@@ -1260,9 +1260,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //        }
 //
 //        Query queryDelete = new Query(QueryParams.ID.key(), studiesToRemove)
-//                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
+//                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
 //        QueryResult<UpdateResult> deleted = studyCollection.update(parseQuery(queryDelete), Updates.combine(
-//                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.TRASHED),
+//                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_NAME.key(), Status.TRASHED),
 //                Updates.set(CatalogUserDBAdaptor.QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
 //                new QueryOptions());
 //
@@ -1283,7 +1283,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     private void checkCanDelete(long studyId) throws CatalogDBException {
         checkStudyId(studyId);
         Query query = new Query(PRIVATE_STUDY_ID, studyId)
-                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
 
         Long count = dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first();
         if (count > 0) {
@@ -1325,7 +1325,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      */
     private void checkEmptyStudy(long studyId) throws CatalogDBException {
         Query query = new Query(PRIVATE_STUDY_ID, studyId)
-                .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+                .append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
 
         // Check files
         if (dbAdaptorFactory.getCatalogFileDBAdaptor().count(query).first() > 0) {
@@ -1361,7 +1361,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore studies", startTime, setStatus(query, Status.READY));
     }
 
@@ -1372,7 +1372,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         checkStudyId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The study {" + id + "} is not deleted");
         }

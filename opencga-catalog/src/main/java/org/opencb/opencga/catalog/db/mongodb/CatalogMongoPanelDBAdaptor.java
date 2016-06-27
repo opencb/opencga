@@ -218,8 +218,8 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<DiseasePanel> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -243,8 +243,8 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson;
         try {
@@ -284,8 +284,8 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         final String[] acceptedParams = {QueryParams.DESCRIPTION.key()};
         filterStringParams(parameters, panelSetParameters, acceptedParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            panelSetParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            panelSetParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             panelSetParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
         }
         // Create the update with set

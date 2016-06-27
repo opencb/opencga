@@ -235,7 +235,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            return endQuery("Get user", startTime, Collections.singletonList(user));
 //        }
         checkUserExists(userId);
-        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED);
+        Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED);
         query.append(QueryParams.LAST_MODIFIED.key(), "!=" + lastModified);
         return get(query, options);
     }
@@ -408,8 +408,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult<User> get(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryResult<User> userQueryResult = userCollection.find(bson, null, userConverter, options);
@@ -430,8 +430,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryResult<Document> queryResult = userCollection.find(bson, options);
@@ -463,8 +463,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
                 QueryParams.LAST_MODIFIED.key(), };
         filterStringParams(parameters, userParameters, acceptedParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            userParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            userParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             userParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -500,11 +500,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     public QueryResult<User> setStatus(String userId, String status) throws CatalogDBException {
-        return update(userId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(userId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Override
@@ -518,12 +518,12 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         checkUserExists(id);
         // Check the user is active or banned
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
+                .append(QueryParams.STATUS_NAME.key(), User.UserStatus.READY + "," + User.UserStatus.BANNED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), User.UserStatus.TRASHED + "," + User.UserStatus.DELETED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), User.UserStatus.TRASHED + "," + User.UserStatus.DELETED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             User user = get(query, options).first();
-            throw new CatalogDBException("The user {" + id + "} was already " + user.getStatus().getStatus());
+            throw new CatalogDBException("The user {" + id + "} was already " + user.getStatus().getName());
         }
 
         // If we don't find the force parameter, we check first if the user does not have an active project.
@@ -541,7 +541,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         setStatus(id, User.UserStatus.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), User.UserStatus.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), User.UserStatus.TRASHED);
 
         return endQuery("Delete user", startTime, get(query, queryOptions));
     }
@@ -555,7 +555,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     private void checkCanDelete(String userId) throws CatalogDBException {
         checkUserExists(userId);
         Query query = new Query(CatalogProjectDBAdaptor.QueryParams.USER_ID.key(), userId)
-                .append(CatalogProjectDBAdaptor.QueryParams.STATUS_STATUS.key(), Status.READY);
+                .append(CatalogProjectDBAdaptor.QueryParams.STATUS_NAME.key(), Status.READY);
         Long count = dbAdaptorFactory.getCatalogProjectDbAdaptor().count(query).first();
         if (count > 0) {
             throw new CatalogDBException("The user {" + userId + "} cannot be deleted. The user has " + count + " projects in use.");
@@ -580,9 +580,9 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 //            dbAdaptorFactory.getCatalogProjectDbAdaptor().delete(projectIdsQuery, , force);
 //        }
 //
-//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
+//        query.append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
 //        QueryResult<UpdateResult> deleted = userCollection.update(parseQuery(query), Updates.combine(Updates.set(
-//                QueryParams.STATUS_STATUS.key(), Status.TRASHED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
+//                QueryParams.STATUS_NAME.key(), Status.TRASHED), Updates.set(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis())),
 //                new QueryOptions());
 //
 //        if (deleted.first().getModifiedCount() == 0) {
@@ -606,7 +606,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore users", startTime, setStatus(query, Status.READY));
     }
 
@@ -620,7 +620,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         checkUserExists(id);
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The user {" + id + "} is not deleted");
         }

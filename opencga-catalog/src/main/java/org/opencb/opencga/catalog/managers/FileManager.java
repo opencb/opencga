@@ -348,7 +348,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         stats = ParamUtils.defaultObject(stats, HashMap<String, Object>::new);
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!Objects.equals(status.getStatus(), File.FileStatus.STAGE) && type == File.Type.FILE) {
+        if (!Objects.equals(status.getName(), File.FileStatus.STAGE) && type == File.Type.FILE) {
 //            if (!authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
             throw new CatalogException("Permission denied. Required ROLE_ADMIN to create a file with status != STAGE and INDEXING");
 //            }
@@ -412,7 +412,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         //Check external file
 //        boolean isExternal = isExternal(file);
 
-        if (file.getType() == File.Type.DIRECTORY && Objects.equals(file.getStatus().getStatus(), File.FileStatus.READY)) {
+        if (file.getType() == File.Type.DIRECTORY && Objects.equals(file.getStatus().getName(), File.FileStatus.READY)) {
 //            URI fileUri = getFileUri(studyId, file.getPath());
             CatalogIOManager ioManager = catalogIOManagerFactory.get(uri);
             ioManager.createDirectory(uri, parents);
@@ -503,7 +503,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 case "format":
                 case "bioformat":
                 case "description":
-                case "status.status":
+                case "status.name":
                 case "attributes":
                 case "stats":
                 case "index":
@@ -517,9 +517,9 @@ public class FileManager extends AbstractManager implements IFileManager {
                 case "creationDate":
                 case "modificationDate":
                 case "diskUsage":
-//                            if (!file.getStatus().equals(File.Status.STAGE)) {
+//                            if (!file.getName().equals(File.Status.STAGE)) {
 //                                throw new CatalogException("Parameter '" + s + "' can't be changed when " +
-//                                        "status == " + file.getStatus().name() + ". " +
+//                                        "status == " + file.getName().name() + ". " +
 //                                        "Required status STAGE or admin account");
 //                            }
                     break;
@@ -583,7 +583,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         userDBAdaptor.updateUserLastModified(ownerId);
 
         ObjectMap objectMap = new ObjectMap();
-        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.TRASHED);
+        objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.TRASHED);
         objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_DATE.key(), System.currentTimeMillis());
 
         switch (file.getType()) {
@@ -666,7 +666,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Check 4.
         // Only READY, TRASHED and PENDING_DELETE files can be deleted
-        String fileStatus = file.getStatus().getStatus();
+        String fileStatus = file.getStatus().getName();
         // TODO chang this to accept only valid statuses
         if (fileStatus.equalsIgnoreCase(File.FileStatus.STAGE) || fileStatus.equalsIgnoreCase(File.FileStatus.MISSING)
                 || fileStatus.equalsIgnoreCase(File.FileStatus.DELETING) || fileStatus.equalsIgnoreCase(File.FileStatus.DELETED)
@@ -683,7 +683,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             Query query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + file.getPath() + "*")
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY)
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY)
                     .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true);
 
             long count = fileDBAdaptor.count(query).first();
@@ -709,7 +709,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     Query query = new Query()
                             .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                             .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + file.getPath() + "*")
-                            .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                            .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
                     QueryResult<File> allFiles = fileDBAdaptor.get(query,
                             new QueryOptions(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.ID.key()));
 
@@ -746,7 +746,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         if (fileOrDirectory.getType().equals(File.Type.FILE)) {
             // 1. Set the file status to deleting
             ObjectMap update = new ObjectMap()
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETING);
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
             fileDBAdaptor.delete(fileOrDirectory.getId(), update, options);
 
             // 2. Delete the file from disk
@@ -754,14 +754,14 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             // 3. Update the file status and path in the database. Set to delete
             update = new ObjectMap()
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED)
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
             removedFileResult = fileDBAdaptor.delete(fileOrDirectory.getId(), update, options);
         } else {
             // Directories can be marked to be deferred removed by setting FORCE_DELETE to false, then File daemon will remove it.
             // In this mode directory is just renamed and URIs and Paths updated in Catalog. By default removal is deferred.
             if (!options.getBoolean(FORCE_DELETE, false)
-                    && !fileOrDirectory.getStatus().getStatus().equals(File.FileStatus.PENDING_DELETE)) {
+                    && !fileOrDirectory.getStatus().getName().equals(File.FileStatus.PENDING_DELETE)) {
                 // Rename the directory in the filesystem.
                 String suffixName = ".DELETED_" + TimeUtils.getTime();
                 URI newURI = Paths.get(Paths.get(fileUri).toString() + suffixName).toUri();
@@ -774,7 +774,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 Query query = new Query()
                         .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + fileOrDirectory.getPath() + "*")
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), fileOrDirectory.getStatus().getStatus());
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), fileOrDirectory.getStatus().getName());
                 QueryResult<File> queryResult = fileDBAdaptor.get(query, new QueryOptions());
 
                 if (queryResult != null && queryResult.getNumResults() > 0) {
@@ -796,7 +796,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 newUri, File.FileStatus.PENDING_DELETE);
 
                         ObjectMap update = new ObjectMap()
-                                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.PENDING_DELETE)
+                                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.PENDING_DELETE)
                                 .append(CatalogFileDBAdaptor.QueryParams.URI.key(), newUri)
                                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), newPath);
                         fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
@@ -833,7 +833,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                             // 1. Set the file status to deleting
                             ObjectMap update = new ObjectMap()
-                                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETING);
+                                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETING);
                             fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
 
                             logger.debug("Deleting file '" + path.toString() + "' from filesystem and Catalog");
@@ -843,7 +843,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                             // 3. Update the file status and path in the database. Set to delete
                             update = new ObjectMap()
-                                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED);
+                                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
 
                             QueryResult<File> deleteQueryResult = fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
 
@@ -899,7 +899,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                     ioManager.deleteDirectory(dir.toUri());
 
                                     ObjectMap update = new ObjectMap()
-                                            .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.DELETED);
+                                            .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.DELETED);
 //                                            .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
 
                                     QueryResult<File> deleteQueryResult = fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
@@ -1212,7 +1212,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             logger.debug("Unlinking file {}", file.getUri().toString());
 
             ObjectMap update = new ObjectMap()
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.REMOVED)
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                     .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
 
             return fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
@@ -1228,7 +1228,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                 .append(CatalogFileDBAdaptor.QueryParams.URI.key(), path.toUri().toString())
                                 .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true)
-                                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
 
                         QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -1245,7 +1245,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                         File file = fileQueryResult.first();
 
                         ObjectMap update = new ObjectMap()
-                                .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.REMOVED)
+                                .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
 
                         fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
@@ -1272,7 +1272,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                         .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                         .append(CatalogFileDBAdaptor.QueryParams.URI.key(), "~^" + dir.toUri().toString() + "/*")
                                         .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true)
-                                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
 
                                 QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -1288,7 +1288,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                         .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                                         .append(CatalogFileDBAdaptor.QueryParams.URI.key(), dir.toUri().toString())
                                         .append(CatalogFileDBAdaptor.QueryParams.EXTERNAL.key(), true)
-                                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.READY);
+                                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.READY);
 
                                 fileQueryResult = fileDBAdaptor.get(query, new QueryOptions());
 
@@ -1305,7 +1305,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                                 File file = fileQueryResult.first();
 
                                 ObjectMap update = new ObjectMap()
-                                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.REMOVED)
+                                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED)
                                         .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "");
 
                                 fileDBAdaptor.delete(file.getId(), update, new QueryOptions());
@@ -1325,7 +1325,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
             Query query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.ID.key(), file.getId())
-                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.REMOVED);
+                    .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
             return fileDBAdaptor.get(query, new QueryOptions());
         }
     }
@@ -1444,7 +1444,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
         authorizationManager.checkFilePermission(file.getId(), userId, FileAcl.FilePermissions.DELETE);
 
-        switch (file.getStatus().getStatus()) {
+        switch (file.getStatus().getName()) {
             case File.FileStatus.TRASHED:
                 //Send warning message
                 String warningMsg = "File already deleted. {id: " + file.getId() + ", status: '" + file.getStatus() + "'}";
@@ -1460,7 +1460,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 throw new CatalogException("File is not ready. {"
                         + "id: " + file.getId() + ", "
                         + "path:\"" + file.getPath() + "\","
-                        + "status: '" + file.getStatus().getStatus() + "'}");
+                        + "status: '" + file.getStatus().getName() + "'}");
         }
         return null;
     }

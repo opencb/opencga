@@ -24,7 +24,7 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),

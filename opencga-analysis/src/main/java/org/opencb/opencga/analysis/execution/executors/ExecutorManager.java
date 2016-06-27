@@ -73,7 +73,7 @@ public interface ExecutorManager {
     QueryResult<Job> run(Job job) throws Exception;
 
     default String status(Job job) throws Exception {
-        return job.getStatus().getStatus();
+        return job.getStatus().getName();
     }
 
     default QueryResult<Job> stop(Job job) throws Exception { throw new UnsupportedOperationException(); }

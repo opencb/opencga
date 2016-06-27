@@ -98,7 +98,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> getSample(long sampleId, QueryOptions options) throws CatalogDBException {
         checkSampleId(sampleId);
-        return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED), options);
+        return get(new Query(QueryParams.ID.key(), sampleId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
 //        long startTime = startQuery();
 //        //QueryOptions filteredOptions = filterOptions(options, FILTER_ROUTE_SAMPLES);
 //
@@ -779,8 +779,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Sample> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -798,8 +798,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -827,8 +827,8 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         final String[] acceptedMapParams = {"attributes"};
         filterMapParams(parameters, sampleParameters, acceptedMapParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            sampleParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            sampleParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
             sampleParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
@@ -862,12 +862,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         checkSampleId(id);
         // Check the sample is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), Status.READY);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED + "," + Status.DELETED);
-            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(QueryOptions.INCLUDE, QueryParams.STATUS_NAME.key());
             Sample sample = get(query, options).first();
-            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getStatus());
+            throw new CatalogDBException("The sample {" + id + "} was already " + sample.getStatus().getName());
         }
 
         // If we don't find the force parameter, we check first if the file could be deleted.
@@ -883,7 +883,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         setStatus(id, Status.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete sample", startTime, get(query, queryOptions));
     }
@@ -891,7 +891,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.append(QueryParams.STATUS_STATUS.key(), Status.READY);
+        query.append(QueryParams.STATUS_NAME.key(), Status.READY);
         QueryResult<Sample> sampleQueryResult = get(query, new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.ID.key()));
         for (Sample sample : sampleQueryResult.getResult()) {
             delete(sample.getId(), queryOptions);
@@ -912,7 +912,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     @Override
     public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         long startTime = startQuery();
-        query.put(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         return endQuery("Restore samples", startTime, setStatus(query, Status.READY));
     }
 
@@ -923,7 +923,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         checkSampleId(id);
         // Check if the cohort is active
         Query query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.TRASHED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
         if (count(query).first() == 0) {
             throw new CatalogDBException("The sample {" + id + "} is not deleted");
         }
@@ -1072,11 +1072,11 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     QueryResult<Sample> setStatus(long sampleId, String status) throws CatalogDBException {
-        return update(sampleId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(sampleId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     private void deleteReferencesToSample(long sampleId) throws CatalogDBException {

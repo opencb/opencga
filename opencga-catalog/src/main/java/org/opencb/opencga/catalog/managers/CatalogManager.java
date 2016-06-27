@@ -954,7 +954,7 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Job> getUnfinishedJobs(String sessionId) throws CatalogException {
-        return jobManager.readAll(new Query("status.status",
+        return jobManager.readAll(new Query("status.name",
                 Arrays.asList(
                         Job.JobStatus.PREPARED,
                         Job.JobStatus.QUEUED,

@@ -221,7 +221,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         CREATION_DATE("creationDate", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),

@@ -103,7 +103,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         EMAIL("email", TEXT_ARRAY, ""),
         PASSWORD("password", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),

@@ -43,7 +43,7 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
                 ()), null).first();
         long jobId = job.getId();
-        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
+        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("Please, stop the job before");
         catalogJobDBAdaptor.delete(jobId, new QueryOptions());
@@ -56,12 +56,12 @@ public class CatalogMongoJobDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         Job job = catalogJobDBAdaptor.createJob(studyId, new Job("name", user3.getId(), "", "", "", 4, null, Collections.<Long>emptyList
                 ()), null).first();
         long jobId = job.getId();
-        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getStatus());
+        assertEquals(Job.JobStatus.PREPARED, job.getStatus().getName());
         catalogJobDBAdaptor.setStatus(jobId, Job.JobStatus.READY);
         QueryResult<Job> queryResult = catalogJobDBAdaptor.delete(jobId, new QueryOptions());
         System.out.println(queryResult);
         assertTrue(queryResult.getNumResults() == 1);
-        assertEquals(Job.JobStatus.TRASHED, queryResult.first().getStatus().getStatus());
+        assertEquals(Job.JobStatus.TRASHED, queryResult.first().getStatus().getName());
         try {
             System.out.println(catalogJobDBAdaptor.delete(-1, new QueryOptions()));
             fail("error: Expected \"Job not found\" exception");

@@ -8,21 +8,21 @@ import org.opencb.opencga.core.common.TimeUtils;
 public class Status {
 
     /**
-     * READY status means that the object is being used.
+     * READY name means that the object is being used.
      */
     public static final String READY = "READY";
 
     /**
-     * TRASHED status means that the object is marked as deleted although is still available in the database.
+     * TRASHED name means that the object is marked as deleted although is still available in the database.
      */
     public static final String TRASHED = "TRASHED";
 
     /**
-     * DELETED status means that the object is marked as removed, so it will get completely removed from the database ASAP.
+     * DELETED name means that the object is marked as removed, so it will get completely removed from the database ASAP.
      */
     public static final String DELETED = "DELETED";
 
-    private String status;
+    private String name;
     private String date;
     private String message;
 
@@ -30,30 +30,30 @@ public class Status {
         this(READY, "");
     }
 
-    public Status(String status) {
-        this(status, "");
+    public Status(String name) {
+        this(name, "");
     }
 
-    public Status(String status, String message) {
-        if (isValid(status)) {
-            init(status, message);
+    public Status(String name, String message) {
+        if (isValid(name)) {
+            init(name, message);
         } else {
-            throw new IllegalArgumentException("Unknown status '" + status + "'");
+            throw new IllegalArgumentException("Unknown name '" + name + "'");
         }
     }
 
     protected void init(String status, String message) {
-        this.status = status;
+        this.name = status;
         this.date = TimeUtils.getTime();
         this.message = message;
     }
 
-    public String getStatus() {
-        return status;
+    public String getName() {
+        return name;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getDate() {
@@ -86,7 +86,7 @@ public class Status {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Status{");
-        sb.append("status='").append(status).append('\'');
+        sb.append("name='").append(name).append('\'');
         sb.append(", date='").append(date).append('\'');
         sb.append(", message='").append(message).append('\'');
         sb.append('}');
