@@ -685,7 +685,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 //            "Only nested files parameter accepted, and only a few parameters.<br>" +
 //            "<b>{ files:[ { format, bioformat, path, description, type, jobId, attributes } ] }</b><br>" +
                     "<ul>" +
-                    "<il><b>id</b>, <b>lastActivity</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
+                    "<il><b>id</b>, <b>lastModified</b> and <b>diskUsage</b> parameters will be ignored.<br></il>" +
                     "<il><b>type</b> accepted values: [<b>'CASE_CONTROL', 'CASE_SET', 'CONTROL_SET', 'FAMILY', 'PAIRED', 'TRIO'</b>].<br></il>" +
                     "<ul>")
     public Response createStudyPOST(@ApiParam(value = "projectId", required = true) @QueryParam("projectId") String projectIdStr,
@@ -757,7 +757,7 @@ public class StudyWSServer extends OpenCGAWSServer {
         public Study.Type type;
         public String description;
         public String status;
-        public String lastActivity;
+        public String lastModified;
 //        public long diskUsage;
 //        public String cipher;
 

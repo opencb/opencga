@@ -70,13 +70,13 @@ public class UserWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                            @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult", required = false) @QueryParam("lastActivity") String lastActivity) {
+                            @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult") @QueryParam("lastModified") String lastModified) {
         try {
             System.out.println("userId = " + userId);
             System.out.println("catalogManager = " + catalogManager);
             System.out.println("sessionId = " + sessionId);
             System.out.println("queryOptions = " + queryOptions);
-            QueryResult result = catalogManager.getUser(userId, lastActivity, queryOptions, sessionId);
+            QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
