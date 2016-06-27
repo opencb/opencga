@@ -51,6 +51,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
+import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -853,6 +854,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
 
             if (query.get(VariantQueryParams.ID.key()) != null && !query.getString(VariantQueryParams.ID.key()).isEmpty()) {
+                List<String> idsList = query.getAsStringList(VariantQueryParams.ID.key());
+                for (String id : idsList) {
+                    if (id.contains(":")) {
+                        try {
+                            Variant variant = new Variant(id);
+                            String mongoId = MongoDBVariantStageLoader.STRING_ID_CONVERTER.buildId(variant);
+                            addQueryStringFilter("_id", mongoId, builder, QueryOperation.OR);
+                        } catch (IllegalArgumentException ignore) {
+                            logger.info("Wrong variant " + id);
+                        }
+                    }
+                }
                 String ids = query.getString(VariantQueryParams.ID.key());
                 addQueryStringFilter(DocumentToVariantConverter.ANNOTATION_FIELD
                         + "." + DocumentToVariantAnnotationConverter.XREFS_FIELD
