@@ -22,7 +22,7 @@ package org.opencb.opencga.catalog.models;
 public class Annotation {
 
     /**
-     * This id must be a valid variable ID.
+     * This name must be a valid variable name.
      */
     private String name;
     private Object value;

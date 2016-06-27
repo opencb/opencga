@@ -1,7 +1,6 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import io.swagger.models.auth.In;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -163,8 +162,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     return createErrorResponse("sample annotate", "VariableSet not find.");
                 }
                 Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getId()))
-                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+                        .filter(variable -> params.containsKey(variable.getName()))
+                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
 
                 if (update) {
                     queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);

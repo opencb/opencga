@@ -829,7 +829,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                         if (variableMap == null) {
                             long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                                    .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;

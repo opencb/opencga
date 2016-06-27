@@ -811,7 +811,7 @@ public class OpenCGAMain {
                             }
                             c.name = ((c.name == null) || c.name.isEmpty()) ? "" : (c.name + ".");
                             for (Variable variable : variableSet.getVariables()) {
-                                if (variable.getId().equals(c.variable)) {
+                                if (variable.getName().equals(c.variable)) {
                                     for (String value : variable.getAllowedValues()) {
                                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                                         Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + c.variable, value)

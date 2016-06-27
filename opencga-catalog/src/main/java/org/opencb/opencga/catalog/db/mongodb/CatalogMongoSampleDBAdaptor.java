@@ -575,7 +575,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
         long startTime = startQuery();
 
-        Annotation annotation = new Annotation(variable.getId(), variable.getDefaultValue());
+        Annotation annotation = new Annotation(variable.getName(), variable.getDefaultValue());
         // Obtain the annotation ids of the annotations that are using the variableSet variableSetId
         List<Bson> aggregation = new ArrayList<>(4);
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
@@ -1035,7 +1035,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
                             long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             if (variableSetId > 0) {
                                 variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                        .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                                        .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
                             }
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);

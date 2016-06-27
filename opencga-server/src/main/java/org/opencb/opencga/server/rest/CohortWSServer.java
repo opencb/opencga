@@ -64,7 +64,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
-                                 @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
+                                 @ApiParam(value = "Variable name", required = false) @QueryParam("variable") String variableName) {
         try {
             //QueryOptions queryOptions = getAllQueryOptions();
             List<QueryResult<Cohort>> cohorts = new LinkedList<>();
@@ -81,7 +81,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
                 for (Variable v : variableSet.getVariables()) {
-                    if (v.getId().equals(variableName)) {
+                    if (v.getName().equals(variableName)) {
                         variable = v;
                         break;
                     }
@@ -323,8 +323,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                     return createErrorResponse("cohort - annotate", "VariableSet not found.");
                 }
                 Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getId()))
-                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+                        .filter(variable -> params.containsKey(variable.getName()))
+                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
 
                 if (update) {
                     queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);

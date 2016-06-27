@@ -624,7 +624,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
 
         checkVariableSetExists(variableSetId);
-        checkVariableNotInVariableSet(variableSetId, variable.getId());
+        checkVariableNotInVariableSet(variableSetId, variable.getName());
 
         Bson bsonQuery = Filters.eq(QueryParams.VARIABLE_SET_ID.key(), variableSetId);
         Bson update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
@@ -666,7 +666,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         // 3. we change the name in the variable object and push it again in the array.
-        variable.setId(newName);
+        variable.setName(newName);
         update = Updates.push(QueryParams.VARIABLE_SET.key() + ".$." + VariableSetParams.VARIABLE.key(),
                 getMongoDBDocument(variable, "Variable"));
         queryResult = studyCollection.update(bsonQuery, update, null);

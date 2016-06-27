@@ -485,7 +485,7 @@ class CatalogMongoDBUtils {
                     }
                     if (variable.getVariableSet() != null) {
                         Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
                         if (subVariableMap.containsKey(r)) {
                             variable = subVariableMap.get(r);
                             variableType = variable.getType();
@@ -551,7 +551,7 @@ class CatalogMongoDBUtils {
                         }
                         if (variable.getVariableSet() != null) {
                             Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                    .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
                             if (subVariableMap.containsKey(r)) {
                                 variable = subVariableMap.get(r);
                                 variableType = variable.getType();

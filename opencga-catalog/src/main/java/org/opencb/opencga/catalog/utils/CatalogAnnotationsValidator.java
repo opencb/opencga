@@ -37,10 +37,10 @@ public class CatalogAnnotationsValidator {
     public static void checkVariableSet(VariableSet variableSet) throws CatalogException {
         Set<String> variableIdSet = new HashSet<>();
         for (Variable variable : variableSet.getVariables()) {
-            if (variableIdSet.contains(variable.getId())) {
+            if (variableIdSet.contains(variable.getName())) {
                 throw new CatalogException("Duplicated variable Id");
             }
-            variableIdSet.add(variable.getId());
+            variableIdSet.add(variable.getName());
         }
         for (Variable variable : variableSet.getVariables()) {
             checkVariable(variable);
@@ -146,7 +146,7 @@ public class CatalogAnnotationsValidator {
         Set<String> annotatedVariables = new HashSet<>();
         Map<String, Variable> variableMap = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            variableMap.put(variable.getId(), variable);
+            variableMap.put(variable.getName(), variable);
         }
 
         //Check Duplicated
@@ -168,7 +168,7 @@ public class CatalogAnnotationsValidator {
         //Check for missing values
         List<Annotation> defaultAnnotations = new LinkedList<>();
         for (Variable variable : variableSet.getVariables()) {
-            if (!annotatedVariables.contains(variable.getId())) {
+            if (!annotatedVariables.contains(variable.getName())) {
                 Annotation defaultAnnotation = getDefaultAnnotation(variable);
                 if (defaultAnnotation == null) {
                     if (variable.isRequired()) {
@@ -207,19 +207,19 @@ public class CatalogAnnotationsValidator {
         switch (variable.getType()) {
             case BOOLEAN: {
                 Boolean booleanValue = getBooleanValue(defaultValue);
-                return booleanValue == null ? null : new Annotation(variable.getId(), booleanValue);
+                return booleanValue == null ? null : new Annotation(variable.getName(), booleanValue);
             }
             case NUMERIC: {
                 Double numericValue = getNumericValue(defaultValue);
-                return numericValue == null ? null : new Annotation(variable.getId(), numericValue);
+                return numericValue == null ? null : new Annotation(variable.getName(), numericValue);
             }
             case CATEGORICAL:
             case TEXT: {
                 String stringValue = getStringValue(defaultValue);
-                return stringValue == null ? null : new Annotation(variable.getId(), stringValue);
+                return stringValue == null ? null : new Annotation(variable.getName(), stringValue);
             }
             case OBJECT:
-                return variable.getDefaultValue() == null ? null : new Annotation(variable.getId(), variable.getDefaultValue());
+                return variable.getDefaultValue() == null ? null : new Annotation(variable.getName(), variable.getDefaultValue());
             default:
                 throw new CatalogException("Unknown VariableType " + variable.getType().name());
         }
@@ -288,7 +288,7 @@ public class CatalogAnnotationsValidator {
                 //Check variableSet
                 for (Object object : listValues) {
                     if (variable.getVariableSet() != null && !variable.getVariableSet().isEmpty()) {
-                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getId,
+                        Map<String, Variable> variableMap = variable.getVariableSet().stream().collect(Collectors.toMap(Variable::getName,
                                 Function.<Variable>identity()));
                         Map objectMap = (Map) object;
 
@@ -297,7 +297,7 @@ public class CatalogAnnotationsValidator {
 //                            checkAnnotation(variableMap, new Annotation(entry.getKey().toString(), entry.getValue()));
                             annotationSet.add(new Annotation(entry.getKey().toString(), entry.getValue()));
                         }
-                        checkAnnotationSet(new VariableSet(0, variable.getId(), false, variable.getDescription(),
+                        checkAnnotationSet(new VariableSet(0, variable.getName(), false, variable.getDescription(),
                                 variable.getVariableSet(), null), new AnnotationSet("", 0, annotationSet, null, null), null);
                     }
                 }
