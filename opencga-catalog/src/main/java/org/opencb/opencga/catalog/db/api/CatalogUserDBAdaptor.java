@@ -54,7 +54,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException;
+    QueryResult<User> getUser(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
 
 //    @Deprecated
 //    default QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
@@ -83,7 +83,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    void updateUserLastActivity(String userId) throws CatalogDBException;
+    void updateUserLastModified(String userId) throws CatalogDBException;
 
     QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
@@ -106,7 +106,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         DISK_QUOTA("diskQuota", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -119,7 +119,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         PROJECT_ALIAS("projects.alias", TEXT_ARRAY, ""),
         PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
         PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
-        PROJECT_LAST_ACTIVITY("projects.lastActivity", TEXT_ARRAY, ""),
+        PROJECT_LAST_MODIFIED("projects.lastModified", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),
         TOOL_NAME("tools.name", TEXT_ARRAY, ""),

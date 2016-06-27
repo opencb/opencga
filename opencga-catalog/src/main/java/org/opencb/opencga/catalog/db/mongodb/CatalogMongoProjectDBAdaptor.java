@@ -236,7 +236,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //        //BasicDBObject projectParameters = new BasicDBObject();
 //        Bson projectParameters = new Document();
 //
-//        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastActivity"};
+//        String[] acceptedParams = {"name", "creationDate", "description", "organization", "status", "lastModified"};
 //        for (String s : acceptedParams) {
 //            if (parameters.containsKey(s)) {
 //                ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));
@@ -550,7 +550,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         Bson projectParameters = new Document();
 
         String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(),
-                QueryParams.ORGANIZATION.key(), QueryParams.LAST_ACTIVITY.key(), };
+                QueryParams.ORGANIZATION.key(), QueryParams.LAST_MODIFIED.key(), };
         for (String s : acceptedParams) {
             if (parameters.containsKey(s)) {
                 ((Document) projectParameters).put("projects.$." + s, parameters.getString(s));

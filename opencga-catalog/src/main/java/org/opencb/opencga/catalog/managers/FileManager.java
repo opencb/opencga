@@ -547,7 +547,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         String ownerId = fileDBAdaptor.getFileOwnerId(fileId);
         QueryResult queryResult = fileDBAdaptor.update(fileId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.file, fileId, userId, parameters, null, null);
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         return queryResult;
     }
 
@@ -580,7 +580,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             return result;
         }
 
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
 
         ObjectMap objectMap = new ObjectMap();
         objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), File.FileStatus.TRASHED);
@@ -1497,7 +1497,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             newPath = parent.resolve(newName).toString();
         }
 
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         CatalogIOManager catalogIOManager;
         URI studyUri = getStudyUri(studyId);
         boolean isExternal = isExternal(file); //If the file URI is not null, the file is external located.

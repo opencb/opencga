@@ -68,7 +68,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    void updateStudyLastActivity(long studyId) throws CatalogDBException;
+    void updateStudyLastModified(long studyId) throws CatalogDBException;
 
 //    @Deprecated
 //    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
@@ -224,7 +224,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         STATUS_STATUS("status.status", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
@@ -403,7 +403,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         creatorId(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
         status(Type.TEXT, ""),
-        lastActivity(Type.TEXT, ""),
+        lastModified(Type.TEXT, ""),
         stats(Type.TEXT, ""),
         attributes(Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),

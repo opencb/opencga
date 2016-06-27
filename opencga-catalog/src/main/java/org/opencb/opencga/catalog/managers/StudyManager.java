@@ -246,7 +246,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 //        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
                 null, rootFile, null, null);
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         return result;
     }
 
@@ -318,7 +318,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         String ownerId = studyDBAdaptor.getStudyOwnerId(studyId);
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
@@ -335,9 +335,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
 
         // Both users must bu updated
-        userDBAdaptor.updateUserLastActivity(userId);
-//        userDBAdaptor.updateUserLastActivity(studyOwnerId);
-        //TODO get all shared users to updateUserLastActivity
+        userDBAdaptor.updateUserLastModified(userId);
+//        userDBAdaptor.updateUserLastModified(studyOwnerId);
+        //TODO get all shared users to updateUserLastModified
 
         //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);

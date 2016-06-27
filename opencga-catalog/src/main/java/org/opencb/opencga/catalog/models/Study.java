@@ -35,7 +35,7 @@ public class Study {
     private String creationDate;
     private String description;
     private Status status;
-    private String lastActivity;
+    private String lastModified;
     private long diskUsage;
     // TODO: Pending !!!
     private String cipher;
@@ -76,7 +76,7 @@ public class Study {
         );
     }
 
-    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastActivity,
+    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
                  long diskUsage, String cipher, List<Group> groups, List<StudyAcl> acls, List<Experiment> experiments, List<File> files,
                  List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
                  List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores,
@@ -88,7 +88,7 @@ public class Study {
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
-        this.lastActivity = lastActivity;
+        this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
         this.groups = groups;
@@ -132,7 +132,7 @@ public class Study {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", cipher='").append(cipher).append('\'');
         sb.append(", groups=").append(groups);
@@ -217,12 +217,12 @@ public class Study {
         return this;
     }
 
-    public String getLastActivity() {
-        return lastActivity;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public Study setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
+    public Study setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 

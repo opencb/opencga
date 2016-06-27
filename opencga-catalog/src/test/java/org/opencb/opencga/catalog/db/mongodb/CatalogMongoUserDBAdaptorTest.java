@@ -88,7 +88,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         user = catalogUserDBAdaptor.getUser(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
         assertNull(user.first().getProjects());
 
-        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastActivity());
+        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastModified());
         assertTrue(user.getResult().isEmpty());
 
         thrown.expect(CatalogDBException.class);

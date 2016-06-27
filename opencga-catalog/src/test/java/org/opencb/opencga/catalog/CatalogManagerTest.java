@@ -278,7 +278,7 @@ public class CatalogManagerTest extends GenericTest {
     public void testGetUserInfo() throws CatalogException {
         QueryResult<User> user = catalogManager.getUser("user", null, sessionIdUser);
         System.out.println("user = " + user);
-        QueryResult<User> userVoid = catalogManager.getUser("user", user.first().getLastActivity(), sessionIdUser);
+        QueryResult<User> userVoid = catalogManager.getUser("user", user.first().getLastModified(), sessionIdUser);
         System.out.println("userVoid = " + userVoid);
         assertTrue(userVoid.getResult().isEmpty());
         try {
@@ -310,14 +310,14 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.changeEmail("user", newEmail, sessionIdUser);
         catalogManager.changePassword("user", PASSWORD, newPassword, sessionIdUser);
 
-        List<User> userList = catalogManager.getUser("user", userPre.getLastActivity(), new QueryOptions("exclude", Arrays.asList
+        List<User> userList = catalogManager.getUser("user", userPre.getLastModified(), new QueryOptions("exclude", Arrays.asList
                 ("sessions")), sessionIdUser).getResult();
         if (userList.isEmpty()) {
-            fail("Error. LastActivity should have changed");
+            fail("Error. LastModified should have changed");
         }
         User userPost = userList.get(0);
         System.out.println("userPost = " + userPost);
-        assertTrue(!userPre.getLastActivity().equals(userPost.getLastActivity()));
+        assertTrue(!userPre.getLastModified().equals(userPost.getLastModified()));
         assertEquals(userPost.getName(), newName);
         assertEquals(userPost.getEmail(), newEmail);
         assertEquals(userPost.getPassword(), CatalogAuthenticationManager.cypherPassword(newPassword));

@@ -36,7 +36,7 @@ public class User {
     private String organization;
 
     private UserStatus status;
-    private String lastActivity;
+    private String lastModified;
     private long diskUsage;
     private long diskQuota;
 
@@ -61,7 +61,7 @@ public class User {
                 new HashMap<>(), new HashMap<>());
     }
 
-    public User(String id, String name, String email, String password, String organization, UserStatus status, String lastActivity,
+    public User(String id, String name, String email, String password, String organization, UserStatus status, String lastModified,
                 long diskUsage, long diskQuota, List<Project> projects, List<Tool> tools, List<Session> sessions,
                 Map<String, Object> configs, Map<String, Object> attributes) {
         this.id = id;
@@ -70,7 +70,7 @@ public class User {
         this.password = password;
         this.organization = organization;
         this.status = status;
-        this.lastActivity = lastActivity;
+        this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.diskQuota = diskQuota;
         this.projects = projects;
@@ -121,7 +121,7 @@ public class User {
         sb.append(", password='").append(password).append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", diskQuota=").append(diskQuota);
         sb.append(", projects=").append(projects);
@@ -187,12 +187,12 @@ public class User {
         return this;
     }
 
-    public String getLastActivity() {
-        return lastActivity;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public User setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
+    public User setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 

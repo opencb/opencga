@@ -35,7 +35,7 @@ public class Project {
     private String description;
     private String organization;
     private Status status;
-    private String lastActivity;
+    private String lastModified;
     private long diskUsage;
 
     private List<Study> studies;
@@ -52,14 +52,14 @@ public class Project {
                 new HashMap<>(), new HashMap<>());
     }
 
-    public Project(String name, String alias, String creationDate, String description, Status status, String lastActivity,
+    public Project(String name, String alias, String creationDate, String description, Status status, String lastModified,
                    long diskUsage, String organization) {
-        this(-1, name, alias, creationDate, description, organization, status, lastActivity, diskUsage, new LinkedList<>(),
+        this(-1, name, alias, creationDate, description, organization, status, lastModified, diskUsage, new LinkedList<>(),
                 new HashMap<>(),  new HashMap<>());
     }
 
     public Project(long id, String name, String alias, String creationDate, String description, String organization, Status status,
-                   String lastActivity, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
+                   String lastModified, long diskUsage, List<Study> studies, Map<File.Bioformat, DataStore> dataStores,
                    Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -68,7 +68,7 @@ public class Project {
         this.description = description;
         this.organization = organization;
         this.status = status;
-        this.lastActivity = lastActivity;
+        this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.studies = studies;
         this.dataStores = dataStores;
@@ -85,7 +85,7 @@ public class Project {
         sb.append(", description='").append(description).append('\'');
         sb.append(", organization='").append(organization).append('\'');
         sb.append(", status=").append(status);
-        sb.append(", lastActivity='").append(lastActivity).append('\'');
+        sb.append(", lastModified='").append(lastModified).append('\'');
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", studies=").append(studies);
         sb.append(", dataStores=").append(dataStores);
@@ -157,12 +157,12 @@ public class Project {
         return this;
     }
 
-    public String getLastActivity() {
-        return lastActivity;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public Project setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
+    public Project setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 

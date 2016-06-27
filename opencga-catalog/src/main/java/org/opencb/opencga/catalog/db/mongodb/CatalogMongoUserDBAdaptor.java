@@ -83,7 +83,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         List<Project> projects = user.getProjects();
         user.setProjects(Collections.<Project>emptyList());
 
-        user.setLastActivity(TimeUtils.getTimeMillis());
+        user.setLastModified(TimeUtils.getTimeMillis());
         Document userDocument = userConverter.convertToStorageType(user);
         userDocument.append(PRIVATE_ID, user.getId());
 
@@ -219,24 +219,24 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException {
+    public QueryResult<User> getUser(String userId, QueryOptions options, String lastModified) throws CatalogDBException {
 //        long startTime = startQuery();
 //        if (!userExists(userId)) {
 //            throw CatalogDBException.idNotFound("User", userId);
 //        }
 //        DBObject query = new BasicDBObject(PRIVATE_ID, userId);
-//        query.put("lastActivity", new BasicDBObject("$ne", lastActivity));
+//        query.put("lastModified", new BasicDBObject("$ne", lastModified));
 //        QueryResult<DBObject> result = userCollection.find(query, options);
 //        User user = parseUser(result);
 //        if (user == null) {
-//            return endQuery("Get user", startTime); // user exists but no different lastActivity was found: return empty result
+//            return endQuery("Get user", startTime); // user exists but no different lastModified was found: return empty result
 //        } else {
 //            joinFields(user, options);
 //            return endQuery("Get user", startTime, Collections.singletonList(user));
 //        }
         checkUserExists(userId);
         Query query = new Query(QueryParams.ID.key(), userId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED);
-        query.append(QueryParams.LAST_ACTIVITY.key(), "!=" + lastActivity);
+        query.append(QueryParams.LAST_MODIFIED.key(), "!=" + lastModified);
         return get(query, options);
     }
 
@@ -264,8 +264,8 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public void updateUserLastActivity(String userId) throws CatalogDBException {
-        update(userId, new ObjectMap("lastActivity", TimeUtils.getTimeMillis()));
+    public void updateUserLastModified(String userId) throws CatalogDBException {
+        update(userId, new ObjectMap("lastModified", TimeUtils.getTimeMillis()));
     }
 
     @Override
@@ -460,7 +460,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         Map<String, Object> userParameters = new HashMap<>();
 
         final String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.EMAIL.key(), QueryParams.ORGANIZATION.key(),
-                QueryParams.LAST_ACTIVITY.key(), };
+                QueryParams.LAST_MODIFIED.key(), };
         filterStringParams(parameters, userParameters, acceptedParams);
 
         if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {

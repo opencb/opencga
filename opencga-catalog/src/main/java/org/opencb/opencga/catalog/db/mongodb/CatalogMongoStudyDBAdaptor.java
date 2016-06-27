@@ -203,8 +203,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public void updateStudyLastActivity(long studyId) throws CatalogDBException {
-        update(studyId, new ObjectMap("lastActivity", TimeUtils.getTime()));
+    public void updateStudyLastModified(long studyId) throws CatalogDBException {
+        update(studyId, new ObjectMap("lastModified", TimeUtils.getTime()));
     }
 
     @Override
@@ -1046,7 +1046,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 //        BasicDBObject studyParameters = new BasicDBObject();
         Document studyParameters = new Document();
 
-        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastActivity", "cipher"};
+        String[] acceptedParams = {"name", "creationDate", "creationId", "description", "status", "lastModified", "cipher"};
         filterStringParams(parameters, studyParameters, acceptedParams);
 
         String[] acceptedLongParams = {"diskUsage"};

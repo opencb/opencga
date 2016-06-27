@@ -77,7 +77,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     @Override
     public QueryResult resetPassword(String userId) throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
 
         String newPassword = StringUtils.randomString(6);
 

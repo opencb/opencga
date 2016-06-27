@@ -485,13 +485,13 @@ public class CatalogManager implements AutoCloseable {
         return userManager.resetPassword(userId);
     }
 
-    public QueryResult<User> getUser(String userId, String lastActivity, String sessionId) throws CatalogException {
-        return getUser(userId, lastActivity, new QueryOptions(), sessionId);
+    public QueryResult<User> getUser(String userId, String lastModified, String sessionId) throws CatalogException {
+        return getUser(userId, lastModified, new QueryOptions(), sessionId);
     }
 
-    public QueryResult<User> getUser(String userId, String lastActivity, QueryOptions options, String sessionId)
+    public QueryResult<User> getUser(String userId, String lastModified, QueryOptions options, String sessionId)
             throws CatalogException {
-        return userManager.read(userId, lastActivity, options, sessionId);
+        return userManager.read(userId, lastModified, options, sessionId);
     }
 
     public String getUserIdBySessionId(String sessionId) {
