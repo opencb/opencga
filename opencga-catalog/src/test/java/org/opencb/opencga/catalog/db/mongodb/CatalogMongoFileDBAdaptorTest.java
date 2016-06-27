@@ -142,14 +142,14 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         String newName = "newFile.bam";
         String parentPath = "data/";
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        System.out.println(catalogFileDBAdaptor.renameFile(fileId, parentPath + newName, null));
+        System.out.println(catalogFileDBAdaptor.renameFile(fileId, parentPath + newName, "", null));
 
         File file = catalogFileDBAdaptor.getFile(fileId, null).first();
         assertEquals(file.getName(), newName);
         assertEquals(file.getPath(), parentPath + newName);
 
         try {
-            catalogFileDBAdaptor.renameFile(-1, "noFile", null);
+            catalogFileDBAdaptor.renameFile(-1, "noFile", "", null);
             fail("error: expected \"file not found\"exception");
         } catch (CatalogDBException e) {
             System.out.println("correct exception: " + e);
@@ -157,9 +157,8 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
         long folderId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/");
         String folderName = "folderName";
-        catalogFileDBAdaptor.renameFile(folderId, folderName, null);
+        catalogFileDBAdaptor.renameFile(folderId, folderName, "", null);
         assertTrue(catalogFileDBAdaptor.getFile(fileId, null).first().getPath().equals(folderName + "/" + newName));
-
     }
 
     @Test
@@ -167,7 +166,7 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
         QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
         assertTrue(delete.getNumResults() == 1);
-        assertEquals(File.FileStatus.DELETED, delete.first().getStatus().getName());
+        assertEquals(File.FileStatus.TRASHED, delete.first().getStatus().getName());
         try {
             System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
                     (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
@@ -178,23 +177,42 @@ public class CatalogMongoFileDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     }
 
     @Test
-    public void removeFileTest() throws CatalogDBException, IOException {
+    public void deleteFileTest2() throws CatalogDBException, IOException {
         long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, new QueryOptions());
-        // Remove after deleted
-        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
-        assertTrue(remove.getNumResults() == 1);
-        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
-    }
 
-    @Test
-    public void removeFileTest2() throws CatalogDBException, IOException {
-        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
-        // Remove after READY
-        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
-        assertTrue(remove.getNumResults() == 1);
-        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
+        // New status after delete
+        ObjectMap objectMap = new ObjectMap(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), File.FileStatus.REMOVED);
+
+        QueryResult<File> delete = catalogFileDBAdaptor.delete(fileId, objectMap, new QueryOptions());
+        assertTrue(delete.getNumResults() == 1);
+        assertEquals(File.FileStatus.REMOVED, delete.first().getStatus().getName());
+        try {
+            System.out.println(catalogFileDBAdaptor.delete(catalogFileDBAdaptor.getFileId(catalogStudyDBAdaptor.getStudyId
+                    (catalogProjectDBAdaptor.getProjectId("jcoll", "1000G"), "ph1"), "data/noExists"), new QueryOptions()));
+            fail("error: Expected \"FileId not found\" exception");
+        } catch (CatalogDBException e) {
+            System.out.println("correct exception: " + e);
+        }
     }
+//
+//    @Test
+//    public void removeFileTest() throws CatalogDBException, IOException {
+//        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+//        catalogFileDBAdaptor.delete(fileId, new QueryOptions());
+//        // Remove after deleted
+//        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
+//        assertTrue(remove.getNumResults() == 1);
+//        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
+//    }
+//
+//    @Test
+//    public void removeFileTest2() throws CatalogDBException, IOException {
+//        long fileId = catalogFileDBAdaptor.getFileId(user3.getProjects().get(0).getStudies().get(0).getId(), "data/file.vcf");
+//        // Remove after READY
+//        QueryResult<File> remove = catalogFileDBAdaptor.remove(fileId, new QueryOptions());
+//        assertTrue(remove.getNumResults() == 1);
+//        assertEquals(File.FileStatus.REMOVED, remove.first().getStatus().getName());
+//    }
 
     @Test
     public void fileAclsTest() throws CatalogDBException {

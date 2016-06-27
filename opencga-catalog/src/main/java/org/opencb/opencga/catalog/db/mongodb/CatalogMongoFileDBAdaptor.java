@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
@@ -446,7 +447,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<File> renameFile(long fileId, String filePath, QueryOptions options)
+    public QueryResult<File> renameFile(long fileId, String filePath, String fileUri, QueryOptions options)
             throws CatalogDBException {
         long startTime = startQuery();
 
@@ -468,14 +469,20 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             QueryResult<File> allFilesInFolder = getAllFilesInFolder(studyId, file.getPath(), null);
             String oldPath = file.getPath();
             filePath += filePath.endsWith("/") ? "" : "/";
+            URI uri = file.getUri();
+            String oldUri = uri != null ? uri.toString() : "";
             for (File subFile : allFilesInFolder.getResult()) {
                 String replacedPath = subFile.getPath().replaceFirst(oldPath, filePath);
-                renameFile(subFile.getId(), replacedPath, null); // first part of the path in the subfiles 3
+                String replacedUri = subFile.getUri().toString().replaceFirst(oldUri, fileUri);
+                renameFile(subFile.getId(), replacedPath, replacedUri, null); // first part of the path in the subfiles 3
             }
         }
 
         Document query = new Document(PRIVATE_ID, fileId);
-        Document set = new Document("$set", new Document("name", fileName).append("path", filePath));
+        Document set = new Document("$set", new Document()
+                .append(QueryParams.NAME.key(), fileName)
+                .append(QueryParams.PATH.key(), filePath)
+                .append(QueryParams.URI.key(), fileUri));
         QueryResult<UpdateResult> update = fileCollection.update(query, set, null);
         if (update.getResult().isEmpty() || update.getResult().get(0).getModifiedCount() == 0) {
             throw CatalogDBException.idNotFound("File", fileId);

@@ -115,126 +115,126 @@ public class CatalogFileUtilsTest {
                 userSessionId);
         catalogFileUtils.upload(sourceUri, fileQueryResult.getResult().get(0), null, userSessionId, false, false, true, true);
     }
-
-    @Test
-    public void linkStageFileTest() throws IOException, CatalogException {
-
-        java.io.File createdFile;
-        URI sourceUri;
-        createdFile = CatalogManagerTest.createDebugFile();
-        sourceUri = createdFile.toURI();
-        File file;
-        URI fileUri;
-
-        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
-        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
-
-        fileUri = catalogManager.getFileUri(file);
-        assertEquals(sourceUri, fileUri);
-        assertTrue(createdFile.exists());
-
-        catalogManager.renameFile(file.getId(), "newName", userSessionId);
-        file = catalogManager.getFile(file.getId(), userSessionId).first();
-        fileUri = catalogManager.getFileUri(file);
-        assertEquals(sourceUri, fileUri);
-        assertTrue(createdFile.exists());
-
-        /** Relink to new file **/
-        createdFile = CatalogManagerTest.createDebugFile();
-        sourceUri = createdFile.toURI();
-        file = catalogFileUtils.link(file, true, sourceUri, true, true, userSessionId);
-
-        /** Link a missing file **/
-        assertTrue(createdFile.delete());
-        file = catalogFileUtils.checkFile(file, false, userSessionId);
-        createdFile = CatalogManagerTest.createDebugFile();
-        sourceUri = createdFile.toURI();
-        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
-
-        /** File is ready **/
-        createdFile = CatalogManagerTest.createDebugFile();
-        sourceUri = createdFile.toURI();
-        thrown.expect(CatalogException.class);
-        catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
-    }
-
-    @Test
-    public void linkFolderTest() throws Exception {
-        Path directory = Paths.get("/tmp/linkFolderTest");
-        if (directory.toFile().exists()) {
-            IOUtils.deleteDirectory(directory);
-        }
-        Files.createDirectory(directory);
-        List<java.io.File> createdFiles = new LinkedList<>();
-        for (int i = 0; i < 1000; i++) {
-            createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file_" + i + ".txt").toString(), 0));
-        }
-        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString()));
-        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file2.txt").toString()));
-        Files.createDirectory(directory.resolve("dir"));
-        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("file2.txt").toString()));
-        Files.createDirectory(directory.resolve("dir").resolve("subdir"));
-        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("subdir").resolve("file3.txt").toString()));
-        URI sourceUri = directory.toUri();
-
-        System.out.println("--------------------------------");
-        catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFilesStream(directory.toUri()).forEach(System.out::println);
-        System.out.println("--------------------------------");
-        catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).forEach(System.out::println);
-        System.out.println("--------------------------------");
-
-        URI fileUri;
-
-        //Create folder & link
-        File folder = catalogManager.createFile(studyId, File.Type.DIRECTORY, null, null,
-                "test", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, userSessionId).first();
-        folder = catalogFileUtils.link(folder, true, sourceUri, true, false, userSessionId);
-
-        fileUri = catalogManager.getFileUri(folder);
-        assertEquals(sourceUri, fileUri);
-        for (java.io.File createdFile : createdFiles) {
-            assertTrue(createdFile.exists());
-        }
-        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
-                new QueryOptions(), userSessionId).getResult()) {
-            assertEquals(File.FileStatus.READY, f.getStatus().getName());
-            if (f.getType() != File.Type.DIRECTORY) {
-                assertTrue(f.getAttributes().containsKey("checksum"));
-                assertTrue(f.getUri() == null);
-            }
-        }
-        URI folderUri = catalogManager.getStudyUri(studyId).resolve(folder.getName());
-        assertTrue("folderUri " + folderUri + " shouldn't exist", !Paths.get(folderUri).toFile().exists());
-
-        //Delete folder. Should trash everything.
-        catalogManager.delete(Long.toString(folder.getId()), null, userSessionId);
+//
+//    @Test
+//    public void linkStageFileTest() throws IOException, CatalogException {
+//
+//        java.io.File createdFile;
+//        URI sourceUri;
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        File file;
+//        URI fileUri;
+//
+//        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+//                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+//        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
+//
+//        fileUri = catalogManager.getFileUri(file);
+//        assertEquals(sourceUri, fileUri);
+//        assertTrue(createdFile.exists());
+//
+//        catalogManager.renameFile(file.getId(), "newName", userSessionId);
+//        file = catalogManager.getFile(file.getId(), userSessionId).first();
+//        fileUri = catalogManager.getFileUri(file);
+//        assertEquals(sourceUri, fileUri);
+//        assertTrue(createdFile.exists());
+//
+//        /** Relink to new file **/
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        file = catalogFileUtils.link(file, true, sourceUri, true, true, userSessionId);
+//
+//        /** Link a missing file **/
+//        assertTrue(createdFile.delete());
+//        file = catalogFileUtils.checkFile(file, false, userSessionId);
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
+//
+//        /** File is ready **/
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        thrown.expect(CatalogException.class);
+//        catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
+//    }
+//
+//    @Test
+//    public void linkFolderTest() throws Exception {
+//        Path directory = Paths.get("/tmp/linkFolderTest");
+//        if (directory.toFile().exists()) {
+//            IOUtils.deleteDirectory(directory);
+//        }
+//        Files.createDirectory(directory);
+//        List<java.io.File> createdFiles = new LinkedList<>();
+//        for (int i = 0; i < 1000; i++) {
+//            createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file_" + i + ".txt").toString(), 0));
+//        }
+//        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file1.txt").toString()));
+//        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("file2.txt").toString()));
+//        Files.createDirectory(directory.resolve("dir"));
+//        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("file2.txt").toString()));
+//        Files.createDirectory(directory.resolve("dir").resolve("subdir"));
+//        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("subdir").resolve("file3.txt").toString()));
+//        URI sourceUri = directory.toUri();
+//
+//        System.out.println("--------------------------------");
+//        catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFilesStream(directory.toUri()).forEach(System.out::println);
+//        System.out.println("--------------------------------");
+//        catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).forEach(System.out::println);
+//        System.out.println("--------------------------------");
+//
+//        URI fileUri;
+//
+//        //Create folder & link
+//        File folder = catalogManager.createFile(studyId, File.Type.DIRECTORY, null, null,
+//                "test", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, userSessionId).first();
+//        folder = catalogFileUtils.link(folder, true, sourceUri, true, false, userSessionId);
+//
+//        fileUri = catalogManager.getFileUri(folder);
+//        assertEquals(sourceUri, fileUri);
 //        for (java.io.File createdFile : createdFiles) {
 //            assertTrue(createdFile.exists());
 //        }
-        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
-                new QueryOptions(), userSessionId).getResult()) {
-            assertEquals(File.FileStatus.TRASHED, f.getStatus().getName());
-            if (f.getType() != File.Type.DIRECTORY) {
-                assertTrue(f.getAttributes().containsKey("checksum"));
-                assertTrue(f.getUri() == null);
-            }
-        }
-
-        //Final delete folder. Should not remove original files.
-        catalogFileUtils.delete(catalogManager.getFile(folder.getId(), userSessionId).first(), userSessionId);
-//        for (java.io.File createdFile : createdFiles) {
-//            assertTrue(createdFile.exists());
+//        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
+//                new QueryOptions(), userSessionId).getResult()) {
+//            assertEquals(File.FileStatus.READY, f.getStatus().getName());
+//            if (f.getType() != File.Type.DIRECTORY) {
+//                assertTrue(f.getAttributes().containsKey("checksum"));
+//                assertTrue(f.getUri() == null);
+//            }
 //        }
-//        assertEquals(0, catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).size());
-        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
-                new QueryOptions(), userSessionId).getResult()) {
-            assertEquals(File.FileStatus.TRASHED, f.getStatus().getName());
-            if (f.getType() != File.Type.DIRECTORY) {
-                assertTrue(f.getAttributes().containsKey("checksum"));
-                assertTrue(f.getUri() == null);
-            }
-        }
+//        URI folderUri = catalogManager.getStudyUri(studyId).resolve(folder.getName());
+//        assertTrue("folderUri " + folderUri + " shouldn't exist", !Paths.get(folderUri).toFile().exists());
+//
+//        //Delete folder. Should trash everything.
+//        catalogManager.delete(Long.toString(folder.getId()), null, userSessionId);
+////        for (java.io.File createdFile : createdFiles) {
+////            assertTrue(createdFile.exists());
+////        }
+//        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
+//                new QueryOptions(), userSessionId).getResult()) {
+//            assertEquals(File.FileStatus.TRASHED, f.getStatus().getName());
+//            if (f.getType() != File.Type.DIRECTORY) {
+//                assertTrue(f.getAttributes().containsKey("checksum"));
+//                assertTrue(f.getUri() == null);
+//            }
+//        }
+//
+//        //Final delete folder. Should not remove original files.
+//        catalogFileUtils.delete(catalogManager.getFile(folder.getId(), userSessionId).first(), userSessionId);
+////        for (java.io.File createdFile : createdFiles) {
+////            assertTrue(createdFile.exists());
+////        }
+////        assertEquals(0, catalogManager.getCatalogIOManagerFactory().get(directory.toUri()).listFiles(directory.toUri()).size());
+//        for (File f : catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~" + folder.getPath()),
+//                new QueryOptions(), userSessionId).getResult()) {
+//            assertEquals(File.FileStatus.TRASHED, f.getStatus().getName());
+//            if (f.getType() != File.Type.DIRECTORY) {
+//                assertTrue(f.getAttributes().containsKey("checksum"));
+//                assertTrue(f.getUri() == null);
+//            }
+//        }
 
 //        catalogManager.renameFile(file.getId(), "newName", userSessionId);
 //        file = catalogManager.getFile(file.getId(), userSessionId).first();
@@ -250,60 +250,60 @@ public class CatalogFileUtilsTest {
 //        sourceUri = createdFile.toURI();
 //        thrown.expect(CatalogException.class);
 //        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
-    }
-
-    @Test
-    public void linkFolderTest2() throws Exception {
-        Path directory = Paths.get("/tmp/linkFolderTest");
-        if (directory.toFile().exists()) {
-            IOUtils.deleteDirectory(directory);
-        }
-        Files.createDirectory(directory);
-        List<java.io.File> createdFiles = new LinkedList<>();
-
-        Files.createDirectory(directory.resolve("dir"));
-        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("file2.txt").toString()));
-        URI sourceUri = directory.toUri();
-
-        File folder = catalogManager.createFile(studyId, File.Type.DIRECTORY, null, null,
-                "test", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, userSessionId).first();
-        folder = catalogFileUtils.link(folder, true, sourceUri, true, false, userSessionId);
-        URI uri = catalogManager.getFileUri(folder);
-        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
-
-        folder = catalogManager.createFolder(studyId, Paths.get("test/dir/folder"), true, null, userSessionId).first();
-        uri = catalogManager.getFileUri(folder);
-        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
-
-        folder = catalogManager.createFolder(studyId, Paths.get("test/folder"), true, null, userSessionId).first();
-        uri = catalogManager.getFileUri(folder);
-        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
-    }
-
-    @Test
-    public void unlinkFileTest() throws CatalogException, IOException {
-        java.io.File createdFile;
-        URI sourceUri;
-        createdFile = CatalogManagerTest.createDebugFile();
-        sourceUri = createdFile.toURI();
-        File file;
-        URI fileUri;
-
-        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
-                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
-        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
-
-        fileUri = catalogManager.getFileUri(file);
-        assertEquals(sourceUri, fileUri);
-        assertTrue(createdFile.exists());
-        assertEquals(File.FileStatus.READY, file.getStatus().getName());
-
-        // Now we unlink it
-        catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
-        File result = catalogManager.getFile(file.getId(), userSessionId).first();
-        assertEquals(File.FileStatus.TRASHED, result.getStatus().getName());
-
-    }
+//    }
+//
+//    @Test
+//    public void linkFolderTest2() throws Exception {
+//        Path directory = Paths.get("/tmp/linkFolderTest");
+//        if (directory.toFile().exists()) {
+//            IOUtils.deleteDirectory(directory);
+//        }
+//        Files.createDirectory(directory);
+//        List<java.io.File> createdFiles = new LinkedList<>();
+//
+//        Files.createDirectory(directory.resolve("dir"));
+//        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("file2.txt").toString()));
+//        URI sourceUri = directory.toUri();
+//
+//        File folder = catalogManager.createFile(studyId, File.Type.DIRECTORY, null, null,
+//                "test", null, null, null, new File.FileStatus(File.FileStatus.STAGE), 0, -1, null, -1, null, null, true, null, userSessionId).first();
+//        folder = catalogFileUtils.link(folder, true, sourceUri, true, false, userSessionId);
+//        URI uri = catalogManager.getFileUri(folder);
+//        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+//
+//        folder = catalogManager.createFolder(studyId, Paths.get("test/dir/folder"), true, null, userSessionId).first();
+//        uri = catalogManager.getFileUri(folder);
+//        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+//
+//        folder = catalogManager.createFolder(studyId, Paths.get("test/folder"), true, null, userSessionId).first();
+//        uri = catalogManager.getFileUri(folder);
+//        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+//    }
+//
+//    @Test
+//    public void unlinkFileTest() throws CatalogException, IOException {
+//        java.io.File createdFile;
+//        URI sourceUri;
+//        createdFile = CatalogManagerTest.createDebugFile();
+//        sourceUri = createdFile.toURI();
+//        File file;
+//        URI fileUri;
+//
+//        file = catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE,
+//                "item." + TimeUtils.getTimeMillis() + ".txt", "file at root", true, -1, userSessionId).first();
+//        file = catalogFileUtils.link(file, true, sourceUri, true, false, userSessionId);
+//
+//        fileUri = catalogManager.getFileUri(file);
+//        assertEquals(sourceUri, fileUri);
+//        assertTrue(createdFile.exists());
+//        assertEquals(File.FileStatus.READY, file.getStatus().getName());
+//
+//        // Now we unlink it
+//        catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
+//        File result = catalogManager.getFile(file.getId(), userSessionId).first();
+//        assertEquals(File.FileStatus.TRASHED, result.getStatus().getName());
+//
+//    }
 
     @Test
     public void unlinkFileNoUriTest() throws CatalogException, IOException {
@@ -312,7 +312,7 @@ public class CatalogFileUtilsTest {
 
         // Now we try to unlink it
         thrown.expect(CatalogException.class);
-        thrown.expectMessage("does not have an URI.");
+        thrown.expectMessage("Only previously linked files can be unlinked. Please, use delete instead.");
         catalogManager.unlink(Long.toString(file.getId()), new QueryOptions(), userSessionId);
     }
 
