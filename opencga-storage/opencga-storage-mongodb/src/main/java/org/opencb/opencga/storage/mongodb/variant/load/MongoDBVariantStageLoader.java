@@ -1,9 +1,7 @@
 package org.opencb.opencga.storage.mongodb.variant.load;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
-import com.google.protobuf.InvalidProtocolBufferException;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
@@ -11,30 +9,22 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.Binary;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantAvro;
 import org.opencb.biodata.models.variant.avro.VariantType;
-import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
-import org.opencb.biodata.tools.variant.converter.VariantToVcfSliceConverter;
-import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.commons.utils.CompressionUtils;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantWriteResult;
 import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.stage.VariantToAvroBinaryConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-import java.util.zip.DataFormatException;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
@@ -65,63 +55,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
     private final int loggingBatchSize;
     private final MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
 
-
-
-    private static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_JSON = new ComplexTypeConverter<Variant, Binary>() {
-
-        private ObjectMapper mapper = new ObjectMapper();
-
-        @Override
-        public Variant convertToDataModelType(Binary object) {
-            try {
-                byte[] data = object.getData();
-                try {
-                    data = CompressionUtils.decompress(data);
-                } catch (DataFormatException e) {
-                    throw new RuntimeException(e);
-                }
-                return new Variant(mapper.readValue(data, VariantAvro.class));
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        @Override
-        public Binary convertToStorageType(Variant variant) {
-            byte [] data = variant.toJson().getBytes();
-            try {
-                data = CompressionUtils.compress(data);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
-            }
-            return new Binary(data);
-        }
-    };
-
-    private static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_PROTO = new ComplexTypeConverter<Variant, Binary>() {
-//        private final VariantToProtoVcfRecord converter = new VariantToProtoVcfRecord();
-        private final VariantToVcfSliceConverter converter = new VariantToVcfSliceConverter();
-        private final VcfSliceToVariantListConverter converterBack
-                = new VcfSliceToVariantListConverter(new VariantSource("", "4", "4", ""));
-
-
-
-        @Override
-        public Variant convertToDataModelType(Binary object) {
-            try {
-                return converterBack.convert(VcfSliceProtos.VcfSlice.parseFrom(object.getData())).get(0);
-            } catch (InvalidProtocolBufferException e) {
-                throw new UncheckedIOException(e);
-            }
-        }
-
-        @Override
-        public Binary convertToStorageType(Variant object) {
-            return new Binary(converter.convert(object).toByteArray());
-        }
-    };
-
-    public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = VARIANT_CONVERTER_JSON;
+    public static final ComplexTypeConverter<Variant, Binary> VARIANT_CONVERTER_DEFAULT = new VariantToAvroBinaryConverter();
 
     public static final VariantStringIdComplexTypeConverter STRING_ID_CONVERTER = new VariantStringIdComplexTypeConverter();
 
