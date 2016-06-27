@@ -174,7 +174,7 @@ public class CatalogAnnotationsValidatorTest {
                 .append("K3", "newAnnotation"); //Add
         CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
 
-        Map<String, Object> newAnnotation = annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getId,
+        Map<String, Object> newAnnotation = annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getName,
                 Annotation::getValue));
 
         Assert.assertEquals(3, newAnnotation.size());

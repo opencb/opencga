@@ -24,15 +24,15 @@ public class Annotation {
     /**
      * This id must be a valid variable ID.
      */
-    private String id;
+    private String name;
     private Object value;
 
 
     public Annotation() {
     }
 
-    public Annotation(String id, Object value) {
-        this.id = id;
+    public Annotation(String name, Object value) {
+        this.name = name;
         this.value = value;
     }
 
@@ -40,7 +40,7 @@ public class Annotation {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Annotation{");
-        sb.append("id='").append(id).append('\'');
+        sb.append("name='").append(name).append('\'');
         sb.append(", value=").append(value);
         sb.append('}');
         return sb.toString();
@@ -57,7 +57,7 @@ public class Annotation {
 
         Annotation that = (Annotation) o;
 
-        if (!id.equals(that.id)) {
+        if (!name.equals(that.name)) {
             return false;
         }
         if (!value.equals(that.value)) {
@@ -69,17 +69,17 @@ public class Annotation {
 
     @Override
     public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
+        int result = name != null ? name.hashCode() : 0;
         result = 31 * result + (value != null ? value.hashCode() : 0);
         return result;
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public Annotation setId(String id) {
-        this.id = id;
+    public Annotation setName(String name) {
+        this.name = name;
         return this;
     }
 

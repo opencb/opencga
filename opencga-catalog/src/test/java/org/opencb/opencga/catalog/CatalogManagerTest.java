@@ -1585,7 +1585,7 @@ public class CatalogManagerTest extends GenericTest {
         QueryResult<AnnotationSet> annotationSetQueryResult = catalogManager.annotateSample(s_1, "annotation1", vs1.getId(), annotations,
                 null, sessionIdUser);
         assertEquals(1, annotationSetQueryResult.getNumResults());
-        Map<String, Object> map = annotationSetQueryResult.first().getAnnotations().stream().collect(Collectors.toMap(Annotation::getId,
+        Map<String, Object> map = annotationSetQueryResult.first().getAnnotations().stream().collect(Collectors.toMap(Annotation::getName,
                 Annotation::getValue));
         assertEquals(1, map.size());
         assertEquals("Joe", map.get("NAME"));
@@ -1945,7 +1945,7 @@ public class CatalogManagerTest extends GenericTest {
 
         AnnotationSet annotationSet = sample.getAnnotationSets().get(0);
         catalogManager.annotateIndividual(individual.getId(), annotationSet.getName(), annotationSet.getVariableSetId(),
-                annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getId, Annotation::getValue)),
+                annotationSet.getAnnotations().stream().collect(Collectors.toMap(Annotation::getName, Annotation::getValue)),
                 Collections.emptyMap(), sessionIdUser);
 
         // First update
@@ -1958,7 +1958,7 @@ public class CatalogManagerTest extends GenericTest {
 
         Consumer<AnnotationSet> check = as -> {
             Map<String, Object> annotations = as.getAnnotations().stream()
-                    .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+                    .collect(Collectors.toMap(Annotation::getName, Annotation::getValue));
 
             assertEquals(6, annotations.size());
             assertEquals("SAMPLE1", annotations.get("NAME"));
@@ -1979,7 +1979,7 @@ public class CatalogManagerTest extends GenericTest {
 
         check = as -> {
             Map<String, Object> annotations = as.getAnnotations().stream()
-                    .collect(Collectors.toMap(Annotation::getId, Annotation::getValue));
+                    .collect(Collectors.toMap(Annotation::getName, Annotation::getValue));
 
             assertEquals(5, annotations.size());
             assertEquals("SAMPLE 1", annotations.get("NAME"));

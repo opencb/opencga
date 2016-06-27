@@ -149,13 +149,13 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         List<Bson> aggregation = new ArrayList<>(4);
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets"));
-        aggregation.add(Aggregates.project(Projections.include("annotationSets.id", "annotationSets.variableSetId")));
+        aggregation.add(Aggregates.project(Projections.include("annotationSets.name", "annotationSets.variableSetId")));
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         QueryResult<Document> aggregationResult = cohortCollection.aggregate(aggregation, null);
 
         Set<String> annotationIds = new HashSet<>(aggregationResult.getNumResults());
         for (Document document : aggregationResult.getResult()) {
-            annotationIds.add((String) ((Document) document.get("annotationSets")).get("id"));
+            annotationIds.add((String) ((Document) document.get("annotationSets")).get("name"));
         }
 
         Bson bsonQuery;
@@ -165,7 +165,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         for (String annotationId : annotationIds) {
             bsonQuery = Filters.elemMatch("annotationSets", Filters.and(
                     Filters.eq("variableSetId", variableSetId),
-                    Filters.eq("id", annotationId)
+                    Filters.eq("name", annotationId)
             ));
 
             modifiedCount += cohortCollection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
@@ -189,11 +189,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), cohort.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.id", oldName)
+                            Filters.eq("annotationSets.annotations.name", oldName)
                     );
 
                     // 1. We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", oldName));
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", oldName));
                     QueryResult<UpdateResult> queryResult = cohortCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
                         throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
@@ -204,7 +204,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                     // 2. We change the id and push it again
                     Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator();
                     Annotation annotation = iterator.next();
-                    annotation.setId(newName);
+                    annotation.setName(newName);
                     bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), cohort.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName())
@@ -241,7 +241,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
         aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
         aggregation.add(Aggregates.match(
-                Filters.eq("annotationSets.annotations.id", annotationFieldId)));
+                Filters.eq("annotationSets.annotations.name", annotationFieldId)));
 
         return cohortCollection.aggregate(aggregation, cohortConverter, new QueryOptions()).getResult();
     }
@@ -260,11 +260,11 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
                     Bson bsonQuery = Filters.and(
                             Filters.eq(QueryParams.ID.key(), cohort.getId()),
                             Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.id", fieldId)
+                            Filters.eq("annotationSets.annotations.name", fieldId)
                     );
 
                     // We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("id", fieldId));
+                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", fieldId));
                     QueryResult<UpdateResult> queryResult = cohortCollection.update(bsonQuery, update, null);
                     if (queryResult.first().getModifiedCount() != 1) {
                         throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "

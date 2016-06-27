@@ -151,10 +151,10 @@ public class CatalogAnnotationsValidator {
 
         //Check Duplicated
         for (Annotation annotation : annotationSet.getAnnotations()) {
-            if (annotatedVariables.contains(annotation.getId())) {
+            if (annotatedVariables.contains(annotation.getName())) {
                 throw new CatalogException("Duplicated annotation " + annotation);
             }
-            annotatedVariables.add(annotation.getId());
+            annotatedVariables.add(annotation.getName());
         }
 
         //Remove null values
@@ -176,7 +176,7 @@ public class CatalogAnnotationsValidator {
                     }
                 } else {
                     defaultAnnotations.add(defaultAnnotation);
-                    annotatedVariables.add(defaultAnnotation.getId());
+                    annotatedVariables.add(defaultAnnotation.getName());
                 }
             }
         }
@@ -191,7 +191,7 @@ public class CatalogAnnotationsValidator {
     }
 
     public static void checkAnnotation(Map<String, Variable> variableMap, Annotation annotation) throws CatalogException {
-        String id = annotation.getId();
+        String id = annotation.getName();
         if (!variableMap.containsKey(id)) {
             throw new CatalogException("Annotation id '" + annotation + "' is not an accepted id");
         } else {
@@ -429,7 +429,7 @@ public class CatalogAnnotationsValidator {
 
     public static void mergeNewAnnotations(AnnotationSet annotationSet, Map<String, Object> newAnnotations) {
         Map<String, Annotation> annotations = annotationSet.getAnnotations().stream()
-                .collect(Collectors.toMap(Annotation::getId, Function.identity()));
+                .collect(Collectors.toMap(Annotation::getName, Function.identity()));
 
         for (Map.Entry<String, Object> entry : newAnnotations.entrySet()) {
             if (entry.getValue() != null) {

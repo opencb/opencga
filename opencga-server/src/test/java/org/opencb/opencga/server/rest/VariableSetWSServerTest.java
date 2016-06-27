@@ -94,7 +94,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertTrue("The field name has not been properly propagated", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> variable.getId().equals(annotation.getId()))
+                        .filter(annotation -> variable.getId().equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
@@ -135,7 +135,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertFalse("The field name has been unnecessarily propagated", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> variable.getId().equals(annotation.getId()))
+                        .filter(annotation -> variable.getId().equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
@@ -182,12 +182,12 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertTrue("The field name of the annotations was not properly propagated", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> "PHEN_renamed".equals(annotation.getId()))
+                        .filter(annotation -> "PHEN_renamed".equals(annotation.getName()))
                         .findAny()
                         .isPresent());
                 assertFalse("The old field name is still present in the annotations", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> "PHEN".equals(annotation.getId()))
+                        .filter(annotation -> "PHEN".equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
@@ -228,7 +228,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertFalse("The field name is still present in the annotations", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> "PHEN".equals(annotation.getId()))
+                        .filter(annotation -> "PHEN".equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
