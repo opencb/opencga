@@ -1109,20 +1109,20 @@ public class CatalogManager implements AutoCloseable {
         return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
     }
 
-    public QueryResult<AnnotationSet> annotateSample(long sampleId, String annotationSetId, long variableSetId,
+    public QueryResult<AnnotationSet> annotateSample(long sampleId, String annotationSetName, long variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
                                                      boolean checkAnnotationSet,
                                                      String sessionId)
             throws CatalogException {
-        return sampleManager.annotate(sampleId, annotationSetId, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
+        return sampleManager.annotate(sampleId, annotationSetName, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
-    public QueryResult<AnnotationSet> updateSampleAnnotation(long sampleId, String annotationSetId,
+    public QueryResult<AnnotationSet> updateSampleAnnotation(long sampleId, String annotationSetName,
                                                              Map<String, Object> annotations,
                                                              String sessionId)
             throws CatalogException {
-        return sampleManager.updateAnnotation(sampleId, annotationSetId, annotations, sessionId);
+        return sampleManager.updateAnnotation(sampleId, annotationSetName, annotations, sessionId);
     }
 
     public QueryResult sampleGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
@@ -1130,19 +1130,19 @@ public class CatalogManager implements AutoCloseable {
     }
 
 
-    public QueryResult<AnnotationSet> annotateIndividual(long individualId, String annotationSetId, long variableSetId,
+    public QueryResult<AnnotationSet> annotateIndividual(long individualId, String annotationSetName, long variableSetId,
                                                          Map<String, Object> annotations,
                                                          Map<String, Object> attributes,
                                                          String sessionId)
             throws CatalogException {
-        return individualManager.annotate(individualId, annotationSetId, variableSetId, annotations, attributes, sessionId);
+        return individualManager.annotate(individualId, annotationSetName, variableSetId, annotations, attributes, sessionId);
     }
 
-    public QueryResult<AnnotationSet> updateIndividualAnnotation(long individualId, String annotationSetId,
+    public QueryResult<AnnotationSet> updateIndividualAnnotation(long individualId, String annotationSetName,
                                                                  Map<String, Object> annotations,
                                                                  String sessionId)
             throws CatalogException {
-        return individualManager.updateAnnotation(individualId, annotationSetId, annotations, sessionId);
+        return individualManager.updateAnnotation(individualId, annotationSetName, annotations, sessionId);
     }
 
     public QueryResult<AnnotationSet> deleteSampleAnnotation(long sampleId, String annotationId, String sessionId)
@@ -1282,15 +1282,15 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.getCohortId(userId, cohortStr);
     }
 
-    public QueryResult<AnnotationSet> annotateCohort(String cohortId, String annotationSetId, long variableSetId,
+    public QueryResult<AnnotationSet> annotateCohort(String cohortId, String annotationSetName, long variableSetId,
                                                      Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
             throws CatalogException {
-        return sampleManager.annotateCohort(cohortId, annotationSetId, variableSetId, annotations, attributes, true, sessionId);
+        return sampleManager.annotateCohort(cohortId, annotationSetName, variableSetId, annotations, attributes, true, sessionId);
     }
 
-    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortId, String annotationSetId, Map<String, Object> annotations,
+    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortId, String annotationSetName, Map<String, Object> annotations,
                                                              String sessionId) throws CatalogException {
-        return sampleManager.updateCohortAnnotation(cohortId, annotationSetId, annotations, sessionId);
+        return sampleManager.updateCohortAnnotation(cohortId, annotationSetName, annotations, sessionId);
     }
 
     public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortId, String annotationId, String sessionId)

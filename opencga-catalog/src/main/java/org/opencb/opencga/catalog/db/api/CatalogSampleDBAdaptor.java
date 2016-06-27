@@ -157,7 +157,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        ANNOTATION_SET_NAME("annotationSetId", TEXT_ARRAY, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         /*
@@ -316,7 +316,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     @Deprecated
     enum SampleFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
-        annotationSetId(Type.TEXT, ""),
+        annotationSetName(Type.TEXT, ""),
         variableSetId(Type.NUMERICAL, ""),
 
         annotation(Type.TEXT, "Format: [<VariableId>:[<operator><value>,]+;]+  -> ID:3,4,5;AGE:>30;NAME:Luke,Leia,Vader"),

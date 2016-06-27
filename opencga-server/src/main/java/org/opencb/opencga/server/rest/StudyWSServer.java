@@ -246,7 +246,7 @@ public class StudyWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @Deprecated @ApiParam(value = "source") @QueryParam("source") String source,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
-                                  @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
+                                  @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {

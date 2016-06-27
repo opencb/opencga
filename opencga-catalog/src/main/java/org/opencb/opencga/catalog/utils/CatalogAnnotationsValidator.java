@@ -142,7 +142,7 @@ public class CatalogAnnotationsValidator {
             }
         }
 
-        //Get annotationSetId set and variableId map
+        //Get annotationSetName set and variableId map
         Set<String> annotatedVariables = new HashSet<>();
         Map<String, Variable> variableMap = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {

@@ -117,7 +117,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "acls") @QueryParam("acls") String acls,
                                   @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
-                                  @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
+                                  @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation
                                   ) {
@@ -299,7 +299,7 @@ public class SampleWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "Comma separated list of names.") @QueryParam("name") String name,
                             @ApiParam(value = "source") @QueryParam("source") String source,
                             @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
-                            @ApiParam(value = "annotationSetId") @QueryParam("annotationSetId") String annotationSetId,
+                            @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
                             @ApiParam(value = "annotation") @QueryParam("annotation") String annotation) {
         try {
@@ -320,7 +320,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotationSets/search")
     @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                           @ApiParam(value = "annotationSetId", required = true) @QueryParam("annotationSetId") String annotationSetId,
+                                           @ApiParam(value = "annotationSetName", required = true) @QueryParam("annotationSetName") String annotationSetName,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
                                            @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
@@ -355,21 +355,21 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/annotationSets/{annotationSetId}/delete")
+    @Path("/{sampleId}/annotationSets/{annotationSetName}/delete")
     @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [PENDING]", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                        @ApiParam(value = "annotationSetId", required = true) @PathParam("annotationSetId") String annotationSetId,
+                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                         @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                         @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         return createErrorResponse("Search", "not implemented");
     }
 
     @POST
-    @Path("/{sampleId}/annotationSets/{annotationSetId}/update")
+    @Path("/{sampleId}/annotationSets/{annotationSetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update the annotations [PENDING]", position = 15)
     public Response updateAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
-                                        @ApiParam(value = "annotationSetId", required = true) @PathParam("annotationSetId") String annotationSetId,
+                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                         @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                         @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
                                         Map<String, Object> annotations) {
@@ -377,10 +377,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/annotationSets/{annotationSetId}/info")
+    @Path("/{sampleId}/annotationSets/{annotationSetName}/info")
     @ApiOperation(value = "Returns the annotation set [PENDING]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                        @ApiParam(value = "annotationSetId", required = true) @PathParam("annotationSetId") String annotationSetId,
+                                        @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                         @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                         @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         return createErrorResponse("Search", "not implemented");

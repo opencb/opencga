@@ -93,7 +93,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                                       @ApiParam(value = "population", required = false) @QueryParam("population") String population,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
+                                      @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -279,7 +279,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                             @ApiParam(value = "population", required = false) @QueryParam("population") String population,
                             @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                            @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
+                            @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             Query query = new Query();
