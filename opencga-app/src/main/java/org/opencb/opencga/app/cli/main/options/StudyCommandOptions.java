@@ -440,6 +440,18 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
     public class AclsCreateCommandOptions extends BaseStudyCommand {
 
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions",
+                required = true, arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
+                required = false, arity = 1)
+        public String templateId;
     }
 
     @Parameters(commandNames = {"acls-member-delete"},
@@ -464,6 +476,16 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
+        public String addPermissions;
+
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
+                required = false, arity = 1)
+        public String removePermissions;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
+        public String setPermissions;
     }
 
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group [PENDING")

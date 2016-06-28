@@ -18,7 +18,9 @@ package org.opencb.opencga.client.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
@@ -28,6 +30,9 @@ import javax.ws.rs.client.WebTarget;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
  * Created by imedina on 04/05/16.
@@ -55,6 +60,45 @@ public abstract class AbstractParentClient<T, A> {
         this.configuration = configuration;
 
         init();
+    }
+
+    public enum AclParams implements QueryParam {
+        ADD_PERMISSIONS("addPermissions", INTEGER_ARRAY, ""),
+        REMOVE_PERMISSIONS("removePermissions", TEXT_ARRAY, ""),
+        SET_PERMISSIONS("setPermissions", TEXT_ARRAY, "");
+
+        private static Map<String, CatalogStudyDBAdaptor.QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (CatalogStudyDBAdaptor.QueryParams params : CatalogStudyDBAdaptor.QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        AclParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
     }
 
     private void init() {

@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.client.rest.StudyClient;
 
 import java.io.IOException;
 
@@ -93,14 +94,35 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "variants":
                 variants();
                 break;
-            case "acl-create":
-                aclCreate();
+            case "acls":
+                acls();
                 break;
-            case "remove-role":
-                removeRole();
+            case "acls-create":
+                aclsCreate();
                 break;
-            case "assign-role":
-                assignRole();
+            case "acls-member-delete":
+                aclMemberDelete();
+                break;
+            case "acl-member-info":
+                aclMemberInfo();
+                break;
+            case "acl-member-update":
+                aclMemberUpdate();
+                break;
+            case "groups":
+                groups();
+                break;
+            case "groups-create":
+                groupsCreate();
+                break;
+            case "groups-delete":
+                groupsDelete();
+                break;
+            case "groups-info":
+                groupsInfo();
+                break;
+            case "groups-update":
+                groupsUpdate();
                 break;
 
             default:
@@ -256,7 +278,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     private void scanFiles() throws CatalogException, IOException {
 
         logger.debug("Scan the study folder to find changes\n");
-        QueryResponse scan =  openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
+        QueryResponse scan = openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
         System.out.println("Scan Files: " + scan);
     }
 
@@ -563,19 +585,108 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     /********************************************  Administration ACLS commands  ***********************************************/
 
-    private void aclCreate() throws CatalogException,IOException{
-        logger.debug("Creating acl");
-      /*  QueryResponse<Sample> samples =
-                openCGAClient.getStudyClient().getAcl(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
-        System.out.println(samples.toString());*/
-    }
-    private void removeRole() throws CatalogException,IOException{
-        logger.debug("Removing role");
+    private void acls() throws CatalogException,IOException {
+        logger.debug("Acls");
+       /* QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().acl(studiesCommandOptions.groupsCreateCommandOptions.id,
+                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.members,
+                queryOptions);
+
+        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));*/
 
     }
-    private void assignRole() throws CatalogException,IOException{
-        logger.debug("Assigning role");
+    private void aclsCreate() throws CatalogException,IOException{
+        logger.debug("Creating acl");
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        /*if (StringUtils.isNotEmpty(studiesCommandOptions.aclsCreateCommandOptions.templateId)) {
+            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.TEMPLATE_ID.key(), studiesCommandOptions.aclsCreateCommandOptions.templateId);
+        }*/
+
+        QueryResponse<Object> acl =
+                openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.id,
+                        studiesCommandOptions.aclsCreateCommandOptions.permissions, studiesCommandOptions.aclsCreateCommandOptions.members,
+                        queryOptions);
+        System.out.println(acl.toString());
     }
+    private void aclMemberDelete() throws CatalogException,IOException {
+        logger.debug("Creating acl");
+
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Object> acl = openCGAClient.getStudyClient().deleteAcl(studiesCommandOptions.aclsMemberDeleteCommandOptions.id,
+                        studiesCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
+        System.out.println(acl.toString());
+    }
+    private void aclMemberInfo() throws CatalogException,IOException {
+        logger.debug("Creating acl");
+    }
+    private void aclMemberUpdate() throws CatalogException,IOException {
+        logger.debug("Creating acl");
+        //AclParams
+    }
+
+    /************************************************* Groups commands *********************************************************/
+    private void groups() throws CatalogException,IOException {
+        logger.debug("Creating groups");
+
+       //TODO
+    }
+    private void groupsCreate() throws CatalogException,IOException {
+        logger.debug("Creating groups");
+
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.id,
+                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.members,
+                queryOptions);
+
+        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
+    }
+    private void groupsDelete() throws CatalogException,IOException {
+        logger.debug("Deleting groups");
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().deleteGroup(studiesCommandOptions.groupsDeleteCommandOptions.id,
+                studiesCommandOptions.groupsDeleteCommandOptions.groupId, studiesCommandOptions.groupsDeleteCommandOptions.members,
+                queryOptions);
+
+        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
+    }
+    private void groupsInfo() throws CatalogException,IOException {
+        logger.debug("Info groups");
+        //TODO
+        /*QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().gr(studiesCommandOptions.groupsCreateCommandOptions.id,
+                studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.members,
+                queryOptions);
+
+        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));*/
+    }
+    private void groupsUpdate() throws CatalogException,IOException {
+        logger.debug("Updating groups");
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        if (StringUtils.isNotEmpty(studiesCommandOptions.groupsUpdateCommandOptions.addUsers)) {
+            queryOptions.put(StudyClient.GroupUpdateParams.ADD_USERS.key(),
+                    studiesCommandOptions.groupsUpdateCommandOptions.addUsers);
+        }
+
+        if (StringUtils.isNotEmpty(studiesCommandOptions.groupsUpdateCommandOptions.setUsers)) {
+            queryOptions.put(StudyClient.GroupUpdateParams.SET_USERS.key(),
+                    studiesCommandOptions.groupsUpdateCommandOptions.setUsers);
+        }
+
+        if (StringUtils.isNotEmpty(studiesCommandOptions.groupsUpdateCommandOptions.removeUsers)) {
+            queryOptions.put(StudyClient.GroupUpdateParams.REMOVE_USERS.key(),
+                    studiesCommandOptions.groupsUpdateCommandOptions.removeUsers);
+        }
+
+        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.id,
+                studiesCommandOptions.groupsUpdateCommandOptions.groupId, queryOptions);
+
+        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
+    }
+
 
 
 }
