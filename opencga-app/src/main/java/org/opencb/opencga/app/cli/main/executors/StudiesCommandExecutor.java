@@ -35,6 +35,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.client.rest.StudyClient;
 
 import java.io.IOException;
@@ -622,8 +623,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating acl");
     }
     private void aclMemberUpdate() throws CatalogException,IOException {
-        logger.debug("Creating acl");
-        //AclParams
+        logger.debug("Updating acl");
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
+            objectMap.put(StudyClient.AclParams.ADD_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
+            objectMap.put(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
+            objectMap.put(StudyClient.AclParams.SET_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
+        }
+
+        QueryResponse<Object> acl = openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.id,
+                studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
+        System.out.println(acl.toString());
     }
 
     /************************************************* Groups commands *********************************************************/

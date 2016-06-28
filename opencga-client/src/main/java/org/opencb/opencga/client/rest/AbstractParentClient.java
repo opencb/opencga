@@ -160,10 +160,8 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, id, "deleteAcl", params, Object.class);
     }
 
-    public QueryResponse<Object> updateAcl(String id, String memberId, String addPermissions, String removePermissions,
-                                           String setPermissions, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "memberId", memberId, "addPermissions", addPermissions, "removePermissions",
-                removePermissions, "setPermissions", setPermissions);
+    public QueryResponse<Object> updateAcl(String id, String memberId,  ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "memberId", memberId);
         return execute(category, id, "updateAcl", params, Object.class);
     }
 
