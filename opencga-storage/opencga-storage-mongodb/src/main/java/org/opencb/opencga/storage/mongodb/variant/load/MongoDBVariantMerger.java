@@ -224,6 +224,9 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
     private final Logger logger = LoggerFactory.getLogger(MongoDBVariantMerger.class);
     private final VariantMerger variantMerger;
     private final List<String> format;
+    private boolean resume;
+    private static final QueryOptions UPSERT_AND_RELPACE = new QueryOptions(MongoDBCollection.UPSERT, true)
+            .append(MongoDBCollection.REPLACE, true);
 
     /**
      * Private class for grouping mongodb operations.
@@ -247,15 +250,14 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     }
 
-    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
-                                MongoDBCollection collection, long numTotalVariants, Set<Integer> indexedFiles) {
+    private MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+                                 MongoDBCollection collection, Set<Integer> indexedFiles, Future<Long> futureNumTotalVariants,
+                                 long aproxNumTotalVariants, boolean resume) {
         this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
         this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
         this.fileIds = Objects.requireNonNull(fileIds);
         this.collection = Objects.requireNonNull(collection);
         this.indexedFiles = Objects.requireNonNull(indexedFiles);
-
-        this.numTotalVariants = numTotalVariants;
 
         excludeGenotypes = getExcludeGenotypes(studyConfiguration);
         format = buildFormat(studyConfiguration);
@@ -268,42 +270,26 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         result = new MongoDBVariantWriteResult();
         samplesPositionMap = new HashMap<>();
 
-        this.futureNumTotalVariants = null;
         variantsCount = new AtomicInteger(0);
-        this.aproxNumTotalVariants = 0;
-        loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
-
+        this.futureNumTotalVariants = futureNumTotalVariants;
+        this.aproxNumTotalVariants = aproxNumTotalVariants;
         variantMerger = new VariantMerger();
 
+        this.resume = resume;
+    }
+
+    public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
+                                MongoDBCollection collection, long numTotalVariants, Set<Integer> indexedFiles, boolean resume) {
+        this(dbAdaptor, studyConfiguration, fileIds, collection, indexedFiles, null, 0, resume);
+        this.numTotalVariants = numTotalVariants;
+        loggingBatchSize = Math.max(numTotalVariants / 200, DEFAULT_LOGING_BATCH_SIZE);
     }
 
     public MongoDBVariantMerger(VariantDBAdaptor dbAdaptor, StudyConfiguration studyConfiguration, List<Integer> fileIds,
                                 MongoDBCollection collection, Future<Long> futureNumTotalVariants, long approximatedNumVariants,
-                                Set<Integer> indexedFiles) {
-        this.dbAdaptor = Objects.requireNonNull(dbAdaptor);
-        this.studyConfiguration = Objects.requireNonNull(studyConfiguration);
-        this.fileIds = Objects.requireNonNull(fileIds);
-        this.collection = Objects.requireNonNull(collection);
-        this.indexedFiles = Objects.requireNonNull(indexedFiles);
-
-        excludeGenotypes = getExcludeGenotypes(studyConfiguration);
-        format = buildFormat(studyConfiguration);
-        indexedSamples = Collections.unmodifiableList(buildIndexedSamplesList(fileIds));
-        studyId = studyConfiguration.getStudyId();
-
-        DocumentToSamplesConverter samplesConverter = new DocumentToSamplesConverter(this.studyConfiguration);
-        studyConverter = new DocumentToStudyVariantEntryConverter(false, samplesConverter);
-        variantConverter = new DocumentToVariantConverter(studyConverter, null);
-        result = new MongoDBVariantWriteResult();
-        samplesPositionMap = new HashMap<>();
-
-        this.futureNumTotalVariants = futureNumTotalVariants;
-        variantsCount = new AtomicInteger(0);
-        this.aproxNumTotalVariants = approximatedNumVariants;
+                                Set<Integer> indexedFiles, boolean resume) {
+        this(dbAdaptor, studyConfiguration, fileIds, collection, indexedFiles, futureNumTotalVariants, approximatedNumVariants, resume);
         loggingBatchSize = DEFAULT_LOGING_BATCH_SIZE;
-
-        variantMerger = new VariantMerger();
-
     }
 
     public MongoDBVariantWriteResult getResult() {
@@ -920,8 +906,13 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
             if (!excludeGenotypes) {
                 for (String gt : gts.keySet()) {
                     List sampleIds = getListFromDocument(gts, gt);
-                    mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
-                            sampleIds));
+                    if (resume) {
+                        mergeUpdates.add(Updates.addEachToSet(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                                sampleIds));
+                    } else {
+                        mergeUpdates.add(Updates.pushEach(STUDIES_FIELD + ".$." + GENOTYPES_FIELD + "." + gt,
+                                sampleIds));
+                    }
                 }
             }
             if (secondaryAlternates != null && !secondaryAlternates.isEmpty()) {
@@ -953,9 +944,28 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         long newVariants = -System.nanoTime();
         if (!mongoDBOps.inserts.isEmpty()) {
             try {
-                BulkWriteResult writeResult = collection.insert(mongoDBOps.inserts, QUERY_OPTIONS).first();
-                if (writeResult.getInsertedCount() != mongoDBOps.inserts.size()) {
-                    onInsertError(mongoDBOps, writeResult);
+                if (resume) {
+                    List<Document> queries = new ArrayList<>(mongoDBOps.inserts.size());
+                    for (Document document : mongoDBOps.inserts) {
+                        queries.add(new Document("_id", document.get("_id")));
+                        document.remove("_id");
+                    }
+                    try {
+                        BulkWriteResult writeResult = collection.update(queries, mongoDBOps.inserts, UPSERT_AND_RELPACE).first();
+                        if ((writeResult.getMatchedCount() + writeResult.getUpserts().size())
+                                != mongoDBOps.inserts.size()) {
+                            onInsertError(mongoDBOps, writeResult);
+                        }
+                    } catch (Exception e) {
+                        logger.error(queries.size() + " : queries = " + queries);
+                        logger.error(mongoDBOps.inserts.size() + " : mongoDBOps.inserts ");
+                        throw e;
+                    }
+                } else {
+                    BulkWriteResult writeResult = collection.insert(mongoDBOps.inserts, QUERY_OPTIONS).first();
+                    if (writeResult.getInsertedCount() != mongoDBOps.inserts.size()) {
+                        onInsertError(mongoDBOps, writeResult);
+                    }
                 }
             } catch (MongoBulkWriteException e) {
                 logger.error("Error inserting variants with _id: " + mongoDBOps.inserts.stream()
@@ -967,16 +977,29 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
         newVariants += System.nanoTime();
         long existingVariants = -System.nanoTime();
         if (!mongoDBOps.queriesExisting.isEmpty()) {
-            QueryResult<BulkWriteResult> update = collection.update(mongoDBOps.queriesExisting, mongoDBOps.updatesExisting, QUERY_OPTIONS);
-            if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
-                onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
+            if (resume) {
+                List<Bson> queriesExisting = new ArrayList<>(mongoDBOps.queriesExisting.size());
+                for (Bson bson : mongoDBOps.queriesExisting) {
+                    queriesExisting.add(Filters.and(bson, Filters.nin(STUDIES_FIELD + "." + FILES_FIELD + "." + FILEID_FIELD, fileIds)));
+                }
+                QueryResult<BulkWriteResult> update = collection.update(queriesExisting, mongoDBOps.updatesExisting, QUERY_OPTIONS);
+//                if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
+//                    // FIXME: Don't know if there is some error inserting. Query already existing?
+//                    onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
+//                }
+            } else {
+                QueryResult<BulkWriteResult> update = collection.update(mongoDBOps.queriesExisting, mongoDBOps.updatesExisting,
+                        QUERY_OPTIONS);
+                if (update.first().getModifiedCount() != mongoDBOps.queriesExisting.size()) {
+                    onUpdateError("existing variants", update, mongoDBOps.queriesExisting, mongoDBOps.queriesExistingId);
+                }
             }
         }
         existingVariants += System.nanoTime();
         long fillGapsVariants = -System.nanoTime();
         if (!mongoDBOps.queriesFillGaps.isEmpty()) {
             QueryResult<BulkWriteResult> update = collection.update(mongoDBOps.queriesFillGaps, mongoDBOps.updatesFillGaps, QUERY_OPTIONS);
-            if (update.first().getModifiedCount() != mongoDBOps.queriesFillGaps.size()) {
+            if (update.first().getMatchedCount() != mongoDBOps.queriesFillGaps.size()) {
                 onUpdateError("fill gaps", update, mongoDBOps.queriesFillGaps, mongoDBOps.queriesFillGapsId);
             }
         }

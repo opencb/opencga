@@ -40,12 +40,22 @@ public abstract class StudyConfigurationManager implements AutoCloseable {
     private final Map<String, StudyConfiguration> stringStudyConfigurationMap = new HashMap<>();
     private final Map<Integer, StudyConfiguration> intStudyConfigurationMap = new HashMap<>();
 
+    public interface LockCloseable extends AutoCloseable {
+        @Override
+        void close();
+    }
+
     public StudyConfigurationManager(ObjectMap objectMap) {
     }
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(String studyName, Long time, QueryOptions options);
 
     protected abstract QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options);
+
+    public LockCloseable closableLockStudy(int studyId) throws StorageManagerException {
+        long lock = lockStudy(studyId);
+        return () -> unLockStudy(studyId, lock);
+    }
 
     public long lockStudy(int studyId) throws StorageManagerException {
         try {
