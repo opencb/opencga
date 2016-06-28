@@ -99,7 +99,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
         o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),sampleIds);
         o.append(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(),sampleIds);
-      //  o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE.key(),variable);
+        o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_NAME.key(),variable);
         openCGAClient.getCohortClient().create(studyId, cohortName, o);
         logger.debug("Done");
     }
@@ -142,17 +142,17 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         }
 
 
-        QueryResponse<Cohort> study = openCGAClient.getCohortClient()
+        QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
                 .update(Integer.toString(cohortsCommandOptions.updateCommandOptions.id), objectMap);
-        System.out.println("Project: " + study);
+        System.out.println("Cohort: " + cohort);
     }
 
     private void delete() throws CatalogException, IOException {
         logger.debug("Deleting cohort");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<Cohort> study = openCGAClient.getCohortClient()
+        QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
                 .delete(Integer.toString(cohortsCommandOptions.deleteCommandOptions.id), objectMap);
-        System.out.println("Study: " + study);
+        System.out.println("Cohort: " + cohort);
     }
 
     private void unshare() throws CatalogException, IOException {
