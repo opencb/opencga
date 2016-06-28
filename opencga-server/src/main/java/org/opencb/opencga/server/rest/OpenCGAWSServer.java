@@ -362,7 +362,7 @@ public class OpenCGAWSServer {
     @Deprecated
     @GET
     @Path("/help")
-    @ApiOperation(value = "Create sample", position = 1)
+    @ApiOperation(value = "Help", position = 1)
     public Response help() {
         return createOkResponse("No help available");
     }
@@ -376,7 +376,7 @@ public class OpenCGAWSServer {
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(version);
         queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError(e.toString());
+        queryResponse.setError(e.getMessage());
 
         QueryResult<ObjectMap> result = new QueryResult();
         result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");

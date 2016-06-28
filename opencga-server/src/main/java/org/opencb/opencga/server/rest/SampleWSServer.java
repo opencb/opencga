@@ -22,7 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.exception.VersionException;
 
@@ -33,10 +34,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * Created by jacobo on 15/12/14.
@@ -59,7 +59,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "source", required = false) @QueryParam("source") String source,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String description) {
         try {
-            QueryResult<Sample> queryResult = catalogManager.createSample(catalogManager.getStudyId(studyIdStr), name, source, description, null, null, sessionId);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+            QueryResult<Sample> queryResult = catalogManager.createSample(studyId, name, source, description, null, null, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -67,18 +68,24 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/info")
+    @Path("/{sampleIds}/info")
     @ApiOperation(value = "Get sample information", position = 2, response = Sample.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoSample(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr) {
+    public Response infoSample(@ApiParam(value = "Comma separated list of sample ids or names", required = true) @PathParam("sampleIds") String sampleStr) {
         try {
-            // FIXME: The id resolution should not go here
-            long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
-            QueryResult<Sample> queryResult = catalogManager.getSample(sampleId, queryOptions, sessionId);
-            return createOkResponse(queryResult);
+            try {
+                List<QueryResult<Sample>> queryResults = new LinkedList<>();
+                List<Long> sampleIds = catalogManager.getSampleIds(sampleStr, sessionId);
+                for (Long sampleId : sampleIds) {
+                    queryResults.add(catalogManager.getSample(sampleId, queryOptions, sessionId));
+                }
+                return createOkResponse(queryResults);
+            } catch (Exception e) {
+                return createErrorResponse(e);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -91,8 +98,9 @@ public class SampleWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileIdStr,
                                 @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId) {
         try {
+            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);
-            File pedigreeFile = catalogManager.getFile(catalogManager.getFileId(fileIdStr), sessionId).first();
+            File pedigreeFile = catalogManager.getFile(fileId, sessionId).first();
             QueryResult<Sample> sampleQueryResult = loader.loadSampleAnnotations(pedigreeFile, variableSetId, sessionId);
             return createOkResponse(sampleQueryResult);
         } catch (Exception e) {
@@ -122,10 +130,10 @@ public class SampleWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "annotation") @QueryParam("annotation") String annotation
                                   ) {
         try {
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions();
             parseQueryParams(params, CatalogSampleDBAdaptor.QueryParams::getParam, query, qOptions);
-            QueryResult<Sample> queryResult = catalogManager.getAllSamples(catalogManager.getStudyId(studyIdStr), query, qOptions,
-                    sessionId);
+            QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, qOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -210,9 +218,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update some sample attributes using GET method", position = 6, response = Sample.class)
     public Response update(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
-                           @ApiParam(value = "description", required = true) @QueryParam("description") String description,
-                           @ApiParam(value = "source", required = true) @QueryParam("source") String source,
-                           @ApiParam(value = "individualId", required = true) @QueryParam("individualId") String individualId) {
+                           @ApiParam(value = "description", required = false) @QueryParam("description") String description,
+                           @ApiParam(value = "source", required = false) @QueryParam("source") String source,
+                           @ApiParam(value = "individualId", required = false) @QueryParam("individualId") String individualId) {
         try {
             // FIXME: The id resolution should not go here
             long sampleId = catalogManager.getSampleId(sampleStr, sessionId);
@@ -247,34 +255,34 @@ public class SampleWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
-    @GET
-    @Path("/{sampleIds}/share")
-    @ApiOperation(value = "Share samples with other members", position = 7)
-    public Response share(@PathParam(value = "sampleIds") String sampleIds,
-                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                          @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls,
-                          @ApiParam(value = "Boolean indicating whether to allow the change of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-        try {
-            return createOkResponse(catalogManager.shareSample(sampleIds, members, Arrays.asList(acls.split(",")), override,
-                    sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{sampleIds}/unshare")
-    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
-    public Response unshare(@PathParam(value = "sampleIds") String sampleIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                            @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls) {
-        try {
-            return createOkResponse(catalogManager.unshareSample(sampleIds, members, acls, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//
+//    @GET
+//    @Path("/{sampleIds}/share")
+//    @ApiOperation(value = "Share samples with other members", position = 7)
+//    public Response share(@PathParam(value = "sampleIds") String sampleIds,
+//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                          @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls,
+//                          @ApiParam(value = "Boolean indicating whether to allow the change of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+//        try {
+//            return createOkResponse(catalogManager.shareSample(sampleIds, members, Arrays.asList(acls.split(",")), override,
+//                    sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/{sampleIds}/unshare")
+//    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
+//    public Response unshare(@PathParam(value = "sampleIds") String sampleIds,
+//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                            @ApiParam(value = "Comma separated list of sample permissions", required = false) @DefaultValue("") @QueryParam("acls") String acls) {
+//        try {
+//            return createOkResponse(catalogManager.unshareSample(sampleIds, members, acls, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/{sampleId}/delete")

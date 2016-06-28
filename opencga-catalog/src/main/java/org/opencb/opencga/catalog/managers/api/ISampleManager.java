@@ -174,8 +174,7 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
      */
     Long getCohortId(String userId, String cohortStr) throws CatalogException;
 
-    /**
-     * Obtains the list of cohort ids corresponding to the comma separated list of cohort strings given in cohortStr.
+    /**     * Obtains the list of cohort ids corresponding to the comma separated list of cohort strings given in cohortStr.
      *
      * @param userId User demanding the action.
      * @param cohortStr Comma separated list of cohort ids.

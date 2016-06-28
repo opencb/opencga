@@ -18,8 +18,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -48,7 +49,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                  @ApiParam(value = "gender", required = false) @QueryParam("gender") @DefaultValue("UNKNOWN") Individual.Gender gender) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, gender, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -57,16 +58,20 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/info")
+    @Path("/{individualIds}/info")
     @ApiOperation(value = "Get individual information", position = 2, response = Individual.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
+    public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids", required = true) @PathParam("individualId") String individualStr) {
         try {
-            QueryResult<Individual> queryResult = catalogManager.getIndividual(individualId, queryOptions, sessionId);
-            return createOkResponse(queryResult);
+            List<QueryResult<Individual>> queryResults = new LinkedList<>();
+            List<Long> individualIds = catalogManager.getIndividualIds(individualStr, sessionId);
+            for (Long individualId : individualIds) {
+                queryResults.add(catalogManager.getIndividual(individualId, queryOptions, sessionId));
+            }
+            return createOkResponse(queryResults);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -96,7 +101,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             QueryOptions qOptions = new QueryOptions(queryOptions);
             parseQueryParams(params, CatalogIndividualDBAdaptor.QueryParams::getParam, query, qOptions);
             QueryResult<Individual> queryResult = catalogManager.getAllIndividuals(studyId, query, qOptions, sessionId);
@@ -110,13 +115,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual", position = 4)
-    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
+    public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                        @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true) @QueryParam("annotateSetName") String annotateSetName,
                                        @ApiParam(value = "VariableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                        @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
                                        @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
                                        Map<String, Object> annotations) {
         try {
+            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
             QueryResult<AnnotationSet> queryResult;
             if (update && delete) {
                 return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same time");
@@ -138,12 +144,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/annotate")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Annotate an individual", position = 5)
-    public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
+    public Response annotateSampleGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "Annotation set name. Must be unique", required = true) @QueryParam("annotateSetName") String annotateSetName,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
         try {
+            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
             QueryResult<AnnotationSet> queryResult;
             if (update && delete) {
                 return createErrorResponse("Annotate individual", "Unable to update and delete annotations at the same time");
@@ -182,7 +189,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individualId}/update")
     @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
-    public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
+    public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                      @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
@@ -192,6 +199,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "race", required = false) @QueryParam("race") String race
                                       ) {
         try {
+            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
             QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -215,10 +223,12 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @Path("/{individualId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some individual attributes using POST method", position = 6)
-    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
+    public Response updateByPost(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                  @ApiParam(value = "params", required = true) UpdateIndividual updateParams) {
         try {
-            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId, new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
+            long individualId = catalogManager.getIndividualId(individualStr, sessionId);
+            QueryResult<Individual> queryResult = catalogManager.modifyIndividual(individualId,
+                    new QueryOptions(jsonObjectMapper.writeValueAsString(updateParams)), sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -236,33 +246,33 @@ public class IndividualWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
-    @GET
-    @Path("/{individualIds}/share")
-    @ApiOperation(value = "Share individuals with other members", position = 8)
-    public Response share(@PathParam(value = "individualIds") String individualIds,
-                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                          @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-        try {
-            return createOkResponse(catalogManager.shareIndividual(individualIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{individualIds}/unshare")
-    @ApiOperation(value = "Remove the permissions for the list of members", position = 9)
-    public Response unshare(@PathParam(value = "individualIds") String individualIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                            @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-        try {
-            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//
+//    @GET
+//    @Path("/{individualIds}/share")
+//    @ApiOperation(value = "Share individuals with other members", position = 8)
+//    public Response share(@PathParam(value = "individualIds") String individualIds,
+//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                          @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+//        try {
+//            return createOkResponse(catalogManager.shareIndividual(individualIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/{individualIds}/unshare")
+//    @ApiOperation(value = "Remove the permissions for the list of members", position = 9)
+//    public Response unshare(@PathParam(value = "individualIds") String individualIds,
+//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                            @ApiParam(value = "Comma separated list of individual permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+//        try {
+//            return createOkResponse(catalogManager.unshareIndividual(individualIds, members, permissions, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/groupBy")
@@ -310,8 +320,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{individualId}/acls/create")
     @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
-    public Response createRole(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String cohortIdStr,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+    public Response createAcl   (@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {

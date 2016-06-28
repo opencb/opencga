@@ -64,7 +64,7 @@ public class JobWSServerTest {
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
-                        status, outDirId, Collections.emptyList(), null, null)), String.class);
+                        status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
         Job job = response.getResponse().get(0).first();
@@ -91,7 +91,7 @@ public class JobWSServerTest {
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(jobName, toolName, description, 10, 20, commandLine,
-                        status, outDirId, Collections.emptyList(), null, null)), String.class);
+                        status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
 
         QueryResponse<Job> response = WSServerTestUtils.parseResult(json, Job.class);
         Job job = response.getResponse().get(0).first();
@@ -121,7 +121,7 @@ public class JobWSServerTest {
                 .queryParam("studyId", studyId)
                 .queryParam("sid", sessionId)
                 .request().post(Entity.json(new JobWSServer.InputJob(null, toolName, description, 10, 20, commandLine,
-                        status, outDirId, Collections.emptyList(), null, null)), String.class);
+                        status, Long.toString(outDirId), Collections.emptyList(), null, null)), String.class);
     }
 
 }

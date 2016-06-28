@@ -72,7 +72,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 return createErrorResponse("", "Can only create a cohort given list of sampleIds or a categorical variable name");
             }
 
-            long studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             if (sampleIdsStr != null && !sampleIdsStr.isEmpty()) {
                 QueryOptions samplesQOptions = new QueryOptions("include", "projects.studies.samples.id");
                 Query samplesQuery = new Query("id", sampleIdsStr);
@@ -115,10 +115,18 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
+    public Response infoSample(@ApiParam(value = "Comma separated list of cohort names or ids", required = true) @PathParam("cohortId") String cohortStr) {
         try {
-            QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, queryOptions, sessionId);
-            return createOkResponse(queryResult);
+            try {
+                List<QueryResult<Cohort>> queryResults = new LinkedList<>();
+                List<Long> cohortIds = catalogManager.getCohortIds(cohortStr, sessionId);
+                for (Long cohortId : cohortIds) {
+                    queryResults.add(catalogManager.getCohort(cohortId, queryOptions, sessionId));
+                }
+                return createOkResponse(queryResults);
+            } catch (Exception e) {
+                return createErrorResponse(e);
+            }
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -135,8 +143,9 @@ public class CohortWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
-    public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
+    public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr) {
         try {
+            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
             query.put("id", cohort.getSamples());
             long studyId = catalogManager.getStudyIdByCohortId(cohortId);
@@ -189,12 +198,13 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/update")
     @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Cohort.class)
-    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
+    public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                            @ApiParam(value = "", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
                            @ApiParam(value = "", required = false) @QueryParam("description") String description,
                            @ApiParam(value = "Comma separated values of sampleIds. Will replace all existing sampleIds", required = true) @QueryParam("samples") String samples) {
         try {
+            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             // TODO: Change queryOptions, queryOptions
             return createOkResponse(catalogManager.modifyCohort(cohortId, queryOptions, queryOptions, sessionId));
         } catch (Exception e) {
@@ -205,9 +215,10 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Update some user attributes using POST method", position = 4)
-    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
+    public Response updateByPost(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                  @ApiParam(value = "params", required = true) Map<String, Object> params) {
         try {
+            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             return createOkResponse(catalogManager.modifyCohort(cohortId, new ObjectMap(params), queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -217,21 +228,17 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/stats")
     @ApiOperation(value = "Cohort stats", position = 2)
-    public Response stats(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdsCsv,
+    public Response stats(@ApiParam(value = "Comma separated list of cohort names or ids", required = true) @PathParam("cohortId") String cohortIdsCsv,
                           @ApiParam(value = "Calculate cohort stats", required = false) @QueryParam("calculate") boolean calculate,
                           @ApiParam(value = "Delete stats [PENDING]", required = false) @QueryParam("delete") boolean delete,
                           @ApiParam(value = "Log level", required = false) @QueryParam("log") String logLevel,
                           @ApiParam(value = "Output directory", required = false) @QueryParam("outdirId") String outdirIdStr
                           ) {
         try {
-            String[] split = cohortIdsCsv.split(",");
-            List<Long> cohortIds = new ArrayList<>(split.length);
-            for (String cohortIdStr : split) {
-                cohortIds.add(Long.parseLong(cohortIdStr));
-            }
+            List<Long> cohortIds = catalogManager.getCohortIds(cohortIdsCsv, sessionId);
             if (calculate) {
                 VariantStorage variantStorage = new VariantStorage(catalogManager);
-                Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr);
+                Long outdirId = outdirIdStr == null ? null : catalogManager.getFileId(outdirIdStr, sessionId);
                 queryOptions.put(ExecutorManager.EXECUTE, false);
                 queryOptions.add(AnalysisFileIndexer.LOG_LEVEL, logLevel);
                 QueryResult<Job> jobQueryResult =
@@ -257,8 +264,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{cohortId}/delete")
     @ApiOperation(value = "Delete cohort.", position = 5)
-    public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
+    public Response deleteCohort(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr) {
         try {
+            long cohortId = catalogManager.getCohortId(cohortStr, sessionId);
             return createOkResponse(catalogManager.deleteCohort(cohortId, queryOptions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -339,33 +347,33 @@ public class CohortWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-
-    @GET
-    @Path("/{cohortIds}/share")
-    @ApiOperation(value = "Share cohorts with other members", position = 7)
-    public Response share(@PathParam(value = "cohortIds") String cohortIds,
-                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                          @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-        try {
-            return createOkResponse(catalogManager.shareCohorts(cohortIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{cohortIds}/unshare")
-    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
-    public Response unshare(@PathParam(value = "cohortIds") String cohortIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                            @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-        try {
-            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, permissions, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//
+//    @GET
+//    @Path("/{cohortIds}/share")
+//    @ApiOperation(value = "Share cohorts with other members", position = 7)
+//    public Response share(@PathParam(value = "cohortIds") String cohortIds,
+//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                          @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+//        try {
+//            return createOkResponse(catalogManager.shareCohorts(cohortIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/{cohortIds}/unshare")
+//    @ApiOperation(value = "Remove the permissions for the list of members", position = 8)
+//    public Response unshare(@PathParam(value = "cohortIds") String cohortIds,
+//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                            @ApiParam(value = "Comma separated list of cohort permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+//        try {
+//            return createOkResponse(catalogManager.unshareCohorts(cohortIds, members, permissions, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/groupBy")
