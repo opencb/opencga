@@ -106,7 +106,10 @@ public class OpenCGAClient {
         return (CohortClient) clients.get("COHORT");
     }
 
-
+    public PanelClient getPanelClient() {
+        clients.putIfAbsent("PANEL", new PanelClient(userId, sessionId, clientConfiguration));
+        return (PanelClient) clients.get("PANEL");
+    }
     /**
      * Logs in the user.
      *

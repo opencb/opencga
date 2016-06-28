@@ -16,12 +16,11 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.apache.commons.collections.map.LinkedMap;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
@@ -29,6 +28,10 @@ import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
+import java.util.Map;
+
+import static org.opencb.commons.datastore.core.QueryParam.Type.INTEGER_ARRAY;
+import static org.opencb.commons.datastore.core.QueryParam.Type.TEXT_ARRAY;
 
 /**
  * Created by swaathi on 10/05/16.
@@ -37,6 +40,44 @@ public class StudyClient extends AbstractParentClient<Study, StudyAcl> {
 
     private static final String STUDY_URL = "studies";
 
+    public enum GroupUpdateParams implements QueryParam {
+        ADD_USERS("addUsers", INTEGER_ARRAY, ""),
+        SET_USERS("setUsers", TEXT_ARRAY, ""),
+        REMOVE_USERS("removeUsers", TEXT_ARRAY, "");
+
+        private static Map<String, CatalogStudyDBAdaptor.QueryParams> map;
+        static {
+            map = new LinkedMap();
+            for (CatalogStudyDBAdaptor.QueryParams params : CatalogStudyDBAdaptor.QueryParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        GroupUpdateParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+    }
     protected StudyClient(String userId, String sessionId, ClientConfiguration configuration) {
         super(userId, sessionId, configuration);
 
@@ -106,14 +147,15 @@ public class StudyClient extends AbstractParentClient<Study, StudyAcl> {
         return execute(STUDY_URL, studyId, "groups", params, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> changeGroup(String studyId, String groupId, String addUsers, String removeUsers, QueryOptions options)
+    public QueryResponse<ObjectMap> updateGroup(String studyId, String groupId, QueryOptions options)
             throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(options);
-        params = addParamsToObjectMap(params, "groupId", groupId, "addUsers", addUsers, "removeUsers", removeUsers);
+        params = addParamsToObjectMap(params, "groupId", groupId);
         return execute(STUDY_URL, studyId, "groups", params, ObjectMap.class);
     }
 
-    public QueryResponse<StudyAcl> share(String studyId, String roleId, String members, ObjectMap params)
+ /*
+   public QueryResponse<StudyAcl> share(String studyId, String roleId, String members, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "role", roleId, "members", members);
         params.putIfAbsent("override", false);
@@ -124,7 +166,7 @@ public class StudyClient extends AbstractParentClient<Study, StudyAcl> {
     public QueryResponse<Object> unshare(String studyId, String members, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "members", members);
         return execute(STUDY_URL, studyId, "removeRole", params, Object.class);
-    }
+    }*/
 
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
         return execute(STUDY_URL, studyId, "update", params, Study.class);
