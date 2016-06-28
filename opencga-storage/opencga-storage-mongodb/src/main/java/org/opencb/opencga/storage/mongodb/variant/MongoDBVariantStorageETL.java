@@ -196,6 +196,16 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                     new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false)
             );
 
+            Thread hook = new Thread(() -> {
+                try {
+                    logger.error("Stage shutdown hook!");
+                    stageError();
+                } catch (StorageManagerException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                }
+            });
+            Runtime.getRuntime().addShutdownHook(hook);
             try {
                 ptr.run();
                 stageSuccess(source);
@@ -203,6 +213,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 e.printStackTrace();
                 stageError();
                 throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
+            } finally {
+                Runtime.getRuntime().removeShutdownHook(hook);
             }
 
             long skippedVariants = stageLoader.getWriteResult().getSkippedVariants();
@@ -429,6 +441,16 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
         }
 
+        Thread hook = new Thread(() -> {
+            try {
+                logger.error("Merge shutdown hook!");
+                setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
+            } catch (StorageManagerException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        });
+        Runtime.getRuntime().addShutdownHook(hook);
         final MongoDBVariantWriteResult writeResult;
         try {
             if (wholeGenomeFiles && !chromosomesToLoad.isEmpty()) {
@@ -453,6 +475,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         } catch (Exception e) {
             setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
             throw e;
+        } finally {
+            Runtime.getRuntime().removeShutdownHook(hook);
         }
         setStatus(BatchFileOperation.Status.READY, MERGE.key(), fileIds);
 
