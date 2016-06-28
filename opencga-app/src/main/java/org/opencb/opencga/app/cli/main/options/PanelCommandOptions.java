@@ -5,9 +5,6 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
-import org.opencb.opencga.catalog.models.Cohort;
-
-import java.util.List;
 
 /**
  * Created by sgallego on 6/15/16.
@@ -24,6 +21,7 @@ public class PanelCommandOptions {
     public OpencgaCommonCommandOptions commonCommandOptions;
 
     public PanelCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
@@ -34,18 +32,16 @@ public class PanelCommandOptions {
     }
 
     class BasePanelsCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--panel-id"}, description = "Panel id", required = true, arity = 1)
-        String id;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--panel-id"}, description = "Panel id", required = true, arity = 1)
+        public String id;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
     public class CreateCommandOptions {
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
@@ -54,62 +50,65 @@ public class PanelCommandOptions {
         public String name;
 
         @Parameter(names = {"--disease"}, description = "Disease", required = true, arity = 1)
-        String disease;
+        public String disease;
 
         @Parameter(names = {"--description"}, description = "Panel description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--genes"}, description = "Genes", required = false, arity = 1)
-        String genes;
+        public String genes;
 
         @Parameter(names = {"--regions"}, description = "Regions", required = false, arity = 1)
-        String regions;
+        public String regions;
 
         @Parameter(names = {"--variants"}, description = "Variants", required = false, arity = 1)
-        String variants;
+        public String variants;
 
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
-    public class InfoCommandOptions extends BasePanelsCommand{ }
+    public class InfoCommandOptions extends BasePanelsCommand {
+    }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
     public class ShareCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--panels-ids"}, description = "Panels ids", required = true, arity = 1)
-        String ids;
+        @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
+        public String ids;
 
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",required = true, arity = 1)
-        String members;
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        public String members;
 
-        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions",required = false, arity = 1)
-        String permission;
+        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
+        public String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
-        boolean override;
+                " of permissions in case any member already had any, default:false", required = false, arity = 0)
+        public boolean override;
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
     public class UnshareCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--panels-ids"}, description = "Panels ids", required = true, arity = 1)
-        String ids;
+        @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
+        public String ids;
 
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",required = true, arity = 1)
-        String members;
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+                required = true, arity = 1)
+        public String members;
 
-        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions",required = false, arity = 1)
-        String permission;
+        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
+        public String permission;
 
 
     }
-
-
 
 
 }

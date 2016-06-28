@@ -74,7 +74,7 @@ public class VariableSetWSServerTest {
         assertTrue("The field of the variableSet was not inserted",
                 variables
                         .stream()
-                        .filter(variable1 -> variable.getId().equals(variable1.getId()))
+                        .filter(variable1 -> variable.getName().equals(variable1.getName()))
                         .findAny()
                         .isPresent());
 
@@ -94,7 +94,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertTrue("The field name has not been properly propagated", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> variable.getId().equals(annotation.getId()))
+                        .filter(annotation -> variable.getName().equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
@@ -104,7 +104,7 @@ public class VariableSetWSServerTest {
         // Now the variable is not mandatory
         objectMapper = new ObjectMapper();
         variable.setRequired(false);
-        variable.setId("OTHER_ID");
+        variable.setName("OTHER_ID");
         variable.setDefaultValue("other default value");
 
         json = webTarget.path("variables").path(String.valueOf(variableSetId)).path("field").path("add")
@@ -116,7 +116,7 @@ public class VariableSetWSServerTest {
         assertTrue("The field of the variableSet was not inserted",
                 variables
                         .stream()
-                        .filter(variable1 -> variable.getId().equals(variable1.getId()))
+                        .filter(variable1 -> variable.getName().equals(variable1.getName()))
                         .findAny()
                         .isPresent());
 
@@ -135,7 +135,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertFalse("The field name has been unnecessarily propagated", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> variable.getId().equals(annotation.getId()))
+                        .filter(annotation -> variable.getName().equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
@@ -156,13 +156,13 @@ public class VariableSetWSServerTest {
         assertTrue("The field of the variableSet was not renamed",
                 variables
                         .stream()
-                        .filter(variable -> "PHEN_renamed".equals(variable.getId()))
+                        .filter(variable -> "PHEN_renamed".equals(variable.getName()))
                         .findAny()
                         .isPresent());
         assertFalse("The old field of the variableSet is still present",
                 variables
                         .stream()
-                        .filter(variable -> "PHEN".equals(variable.getId()))
+                        .filter(variable -> "PHEN".equals(variable.getName()))
                         .findAny()
                         .isPresent());
 
@@ -182,12 +182,12 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertTrue("The field name of the annotations was not properly propagated", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> "PHEN_renamed".equals(annotation.getId()))
+                        .filter(annotation -> "PHEN_renamed".equals(annotation.getName()))
                         .findAny()
                         .isPresent());
                 assertFalse("The old field name is still present in the annotations", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> "PHEN".equals(annotation.getId()))
+                        .filter(annotation -> "PHEN".equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }
@@ -208,7 +208,7 @@ public class VariableSetWSServerTest {
         assertFalse("The field of the variableSet was not removed",
                 variables
                         .stream()
-                        .filter(variable -> "PHEN".equals(variable.getId()))
+                        .filter(variable -> "PHEN".equals(variable.getName()))
                         .findAny()
                         .isPresent());
 
@@ -228,7 +228,7 @@ public class VariableSetWSServerTest {
             for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
                 assertFalse("The field name is still present in the annotations", annotationSet.getAnnotations()
                         .stream()
-                        .filter(annotation -> "PHEN".equals(annotation.getId()))
+                        .filter(annotation -> "PHEN".equals(annotation.getName()))
                         .findAny()
                         .isPresent());
             }

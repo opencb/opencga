@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -92,7 +92,7 @@ public class VariantFetcher {
         fileIdNum = catalogManager.getFileId(fileId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
-        if (file.getIndex() == null || !file.getIndex().getStatus().getStatus().equals(Index.IndexStatus.READY)) {
+        if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
             throw new Exception("File {id:" + file.getId() + " name:'" + file.getName() + "'} " +
                     " is not an indexed file.");
         }

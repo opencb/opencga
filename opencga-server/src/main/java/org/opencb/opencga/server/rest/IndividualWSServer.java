@@ -1,8 +1,6 @@
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -35,14 +33,14 @@ import java.util.stream.Collectors;
 public class IndividualWSServer extends OpenCGAWSServer {
 
 
-    public IndividualWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public IndividualWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create sample", position = 1)
+    @ApiOperation(value = "Create sample", position = 1, response = Individual.class)
     public Response createIndividual(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                  @ApiParam(value = "family", required = false) @QueryParam("family") String family,
@@ -60,7 +58,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/info")
-    @ApiOperation(value = "Get individual information", position = 2)
+    @ApiOperation(value = "Get individual information", position = 2, response = Individual.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response infoIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId) {
         try {
             QueryResult<Individual> queryResult = catalogManager.getIndividual(individualId, queryOptions, sessionId);
@@ -72,7 +74,14 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search for individuals", position = 3)
+    @ApiOperation(value = "Search for individuals", position = 3, response = Individual[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response searchIndividuals(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                       @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                       @ApiParam(value = "name", required = false) @QueryParam("name") String name,
@@ -84,7 +93,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                                       @ApiParam(value = "population", required = false) @QueryParam("population") String population,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
+                                      @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -143,7 +152,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
             } else {
                 if (update) {
                     for (AnnotationSet annotationSet : catalogManager.getIndividual(individualId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getId().equals(annotateSetName)) {
+                        if (annotationSet.getName().equals(annotateSetName)) {
                             variableSetId = annotationSet.getVariableSetId();
                         }
                     }
@@ -153,8 +162,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                     return createErrorResponse("sample annotate", "VariableSet not find.");
                 }
                 Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getId()))
-                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+                        .filter(variable -> params.containsKey(variable.getName()))
+                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
 
                 if (update) {
                     queryResult = catalogManager.updateIndividualAnnotation(individualId, annotateSetName, annotations, sessionId);
@@ -172,7 +181,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/update")
-    @ApiOperation(value = "Update individual information", position = 6)
+    @ApiOperation(value = "Update individual information", position = 6, response = Individual.class)
     public Response updateIndividual(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
                                      @ApiParam(value = "id", required = false) @QueryParam("id") String id,
                                      @ApiParam(value = "name", required = false) @QueryParam("name") String name,
@@ -270,7 +279,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                             @ApiParam(value = "population", required = false) @QueryParam("population") String population,
                             @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                            @ApiParam(value = "annotationSetId", required = false) @QueryParam("annotationSetId") String annotationSetId,
+                            @ApiParam(value = "annotationSetName", required = false) @QueryParam("annotationSetName") String annotationSetName,
                             @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
         try {
             Query query = new Query();
@@ -281,6 +290,71 @@ public class IndividualWSServer extends OpenCGAWSServer {
             logger.debug("queryOptions = " + qOptions.toJson());
             QueryResult result = catalogManager.individualGroupBy(query, qOptions, by, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individualId}/acls")
+    @ApiOperation(value = "Returns the acls of the individual [PENDING]", position = 18)
+    public Response getAcls(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String studyIdStr) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{individualId}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
+    public Response createRole(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String cohortIdStr,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individualId}/acls/{memberId}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
+    public Response getAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individualId}/acls/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
+    public Response updateAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String cohortIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{individualId}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
+    public Response deleteAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String cohortIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -47,14 +47,14 @@ import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.GitRepositoryState;
@@ -76,6 +76,7 @@ import java.util.stream.Collectors;
 /**
  * Created by jacobo on 29/09/14.
  */
+@Deprecated
 public class OpenCGAMain {
 
     private static String shellUserId;
@@ -396,7 +397,7 @@ public class OpenCGAMain {
 
                         /** First, run CheckStudyFiles to find new missing files **/
                         List<File> checkStudyFiles = fileScanner.checkStudyFiles(study, false, sessionId);
-                        List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().getStatus().equals(File.FileStatus.READY))
+                        List<File> found = checkStudyFiles.stream().filter(f -> f.getStatus().getName().equals(File.FileStatus.READY))
                                 .collect(Collectors.toList());
                         int maxFound = found.stream().map(f -> f.getPath().length()).max(Comparator.<Integer>naturalOrder()).orElse(0);
 
@@ -534,17 +535,22 @@ public class OpenCGAMain {
                             throw new FileNotFoundException("File " + inputUri + " not found");
                         }
 
-                        long studyId = catalogManager.getStudyId(c.studyId);
-                        String path = c.path.isEmpty()? inputFile.getFileName().toString() : Paths.get(c.path, inputFile.getFileName().toString()).toString();
+//                        long studyId = catalogManager.getStudyId(c.studyId);
+                        String path = c.path.isEmpty() ? inputFile.getFileName().toString()
+                                : Paths.get(c.path, inputFile.getFileName().toString()).toString();
                         File file;
                         CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
                         if (ioManager.isDirectory(inputUri)) {
-                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
+                            ObjectMap params = new ObjectMap("parents", c.parents);
+                            file = catalogManager.link(inputUri, c.path, c.studyId, params, sessionId).first();
+//                            file = catalogFileUtils.linkFolder(studyId, path, c.parents, c.description, c.calculateChecksum, inputUri, false, false, sessionId);
                             new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, c.calculateChecksum, false, sessionId);
                         } else {
-                            file = catalogManager.createFile(studyId, null, null,
-                                    path, c.description, c.parents, -1, sessionId).first();
-                            file = catalogFileUtils.link(file, c.calculateChecksum, inputUri, false, false, sessionId);
+                            ObjectMap params = new ObjectMap("parents", c.parents);
+                            file = catalogManager.link(inputUri, c.path, c.studyId, params, sessionId).first();
+//                            file = catalogManager.createFile(studyId, null, null,
+//                                    path, c.description, c.parents, -1, sessionId).first();
+//                            file = catalogFileUtils.link(file, c.calculateChecksum, inputUri, false, false, sessionId);
                             file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(c.cOpt.getQueryOptions()), sessionId, false);
                         }
 
@@ -562,7 +568,7 @@ public class OpenCGAMain {
                             throw new FileNotFoundException("File " + uri + " not found");
                         }
 
-                        long fileId = catalogManager.getFileId(c.id);
+                        long fileId = catalogManager.getFileId(c.id, sessionId);
                         File file = catalogManager.getFile(fileId, sessionId).first();
 
                         new CatalogFileUtils(catalogManager).link(file, c.calculateChecksum, uri, false, true, sessionId);
@@ -624,7 +630,7 @@ public class OpenCGAMain {
                         if (c.directory != null) query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), c.directory);
                         if (c.bioformats != null) query.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), c.bioformats);
                         if (c.types != null) query.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), c.types);
-                        if (c.status != null) query.put(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), c.status);
+                        if (c.status != null) query.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), c.status);
 
                         QueryResult<File> fileQueryResult = catalogManager.searchFile(studyId, query, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         System.out.println(createOutput(optionsParser.getCommonOptions(), fileQueryResult, null));
@@ -805,7 +811,7 @@ public class OpenCGAMain {
                             }
                             c.name = ((c.name == null) || c.name.isEmpty()) ? "" : (c.name + ".");
                             for (Variable variable : variableSet.getVariables()) {
-                                if (variable.getId().equals(c.variable)) {
+                                if (variable.getName().equals(c.variable)) {
                                     for (String value : variable.getAllowedValues()) {
                                         QueryOptions queryOptions = new QueryOptions(c.cOpt.getQueryOptions());
                                         Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + c.variable, value)
@@ -886,11 +892,11 @@ public class OpenCGAMain {
                         QueryResult<Job> jobQueryResult = catalogManager.getJob(c.id, new QueryOptions(c.cOpt.getQueryOptions()), sessionId);
                         Job job = jobQueryResult.first();
                         if (c.force) {
-                            if (job.getStatus().getStatus().equals(Job.JobStatus.ERROR) || job.getStatus().getStatus().equals(Job.JobStatus.READY)) {
-                                logger.info("Job status is '{}' . Nothing to do.", job.getStatus().getStatus());
+                            if (job.getStatus().getName().equals(Job.JobStatus.ERROR) || job.getStatus().getName().equals(Job.JobStatus.READY)) {
+                                logger.info("Job status is '{}' . Nothing to do.", job.getStatus().getName());
                                 System.out.println(createOutput(c.cOpt, jobQueryResult, null));
                             }
-                        } else if (!job.getStatus().getStatus().equals(Job.JobStatus.DONE)) {
+                        } else if (!job.getStatus().getName().equals(Job.JobStatus.DONE)) {
                             throw new Exception("Job status != DONE. Need --force to continue");
                         }
 
@@ -912,11 +918,11 @@ public class OpenCGAMain {
                         /** Change status to ERROR or READY **/
                         ObjectMap parameters = new ObjectMap();
                         if (c.error) {
-                            parameters.put("status.status", Job.JobStatus.ERROR);
+                            parameters.put("status.name", Job.JobStatus.ERROR);
                             parameters.put("error", Job.ERRNO_ABORTED);
                             parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(Job.ERRNO_ABORTED));
                         } else {
-                            parameters.put("status.status", Job.JobStatus.READY);
+                            parameters.put("status.name", Job.JobStatus.READY);
                         }
                         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
@@ -940,7 +946,7 @@ public class OpenCGAMain {
                         }
                         for (Long studyId : studyIds) {
                             QueryResult<Job> allJobs = catalogManager.getAllJobs(studyId,
-                                    new Query(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(),
+                                    new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(),
                                             Collections.singletonList(Job.JobStatus.RUNNING.toString())), new QueryOptions(), sessionId);
 
                             for (Iterator<Job> iterator = allJobs.getResult().iterator(); iterator.hasNext(); ) {
@@ -1093,7 +1099,7 @@ public class OpenCGAMain {
         Set<String> catalogCohorts = catalogManager.getAllCohorts(studyId, null, null, sessionId).getResult().stream().map(Cohort::getName).collect(Collectors.toSet());
         for (String cohortName : VariantAggregatedStatsCalculator.getCohorts(tagmap)) {
             if (!catalogCohorts.contains(cohortName)) {
-                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Cohort.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
+                QueryResult<Cohort> cohort = catalogManager.createCohort(studyId, cohortName, Study.Type.COLLECTION, "", Collections.emptyList(), null, sessionId);
                 queryResults.add(cohort);
             } else {
                 logger.warn("cohort {} was already created", cohortName);
@@ -1300,16 +1306,16 @@ public class OpenCGAMain {
 //            files.sort((file1, file2) -> file1.getModificationDate().compareTo(file2.getModificationDate()));
             for (Iterator<File> iterator = files.iterator(); iterator.hasNext(); ) {
                 File file = iterator.next();
-//                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getStatus());
+//                System.out.printf("%s%d - %s \t\t[%s]\n", indent + (iterator.hasNext()? "+--" : "L--"), file.getId(), file.getName(), file.getName());
                 sb.append(String.format("%s (%d) - %s   [%s, %s]%s\n",
                         indent.isEmpty() ? "" : indent + (iterator.hasNext() ? "├──" : "└──"),
                         file.getId(),
                         file.getName(),
-                        file.getStatus().getStatus(),
+                        file.getStatus().getName(),
                         humanReadableByteCount(file.getDiskUsage(), false),
                         showUries && file.getUri() != null ? " --> " + file.getUri() : ""
                 ));
-                if (file.getType() == File.Type.FOLDER) {
+                if (file.getType() == File.Type.DIRECTORY) {
                     listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "│   " : "    "), showUries, sb, sessionId);
 //                    listFiles(studyId, file.getPath(), level - 1, indent + (iterator.hasNext()? "| " : "  "), sessionId);
                 }

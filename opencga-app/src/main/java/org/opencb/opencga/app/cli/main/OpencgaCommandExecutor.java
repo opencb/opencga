@@ -18,7 +18,8 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.GeneralCliOptions;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.client.rest.OpenCGAClient;
 
@@ -36,6 +37,7 @@ import java.nio.file.Paths;
 public abstract class OpencgaCommandExecutor extends CommandExecutor {
 
     protected OpenCGAClient openCGAClient;
+    protected CatalogManager catalogManager;
     protected ClientConfiguration clientConfiguration;
 
     public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
@@ -55,6 +57,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     private void init(boolean skipDuration) {
         try {
             loadClientConfiguration();
+            loadCatalogConfiguration();
 
             SessionFile sessionFile = loadSessionFile();
             System.out.println("sessionFile = " + sessionFile);
@@ -80,6 +83,9 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                             this.sessionId = sessionFile.getSessionId();
                             openCGAClient = new OpenCGAClient(sessionFile.getSessionId(), clientConfiguration);
                             openCGAClient.setUserId(sessionFile.getUserId());
+
+                            // Some operations such as copy and link are run in the server side and need Catalog Manager
+                            catalogManager = new CatalogManager(catalogConfiguration);
                         }
                     }
                 } else {
@@ -91,6 +97,8 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
                 openCGAClient = new OpenCGAClient(clientConfiguration);
             }
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (CatalogException e) {
             e.printStackTrace();
         }
     }

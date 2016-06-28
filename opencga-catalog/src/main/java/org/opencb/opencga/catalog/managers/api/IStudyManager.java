@@ -36,6 +36,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     Long getStudyId(String userId, String studyStr) throws CatalogException;
 
+    @Deprecated
     Long getStudyId(String studyId) throws CatalogException;
 
     /**

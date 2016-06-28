@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
@@ -99,11 +99,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetId, long variableSetId, Map<String, Object> annotations,
+    public QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                                Map<String, Object> attributes, boolean checkAnnotationSet,
                                                String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
@@ -112,7 +112,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -132,12 +132,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetId, Map<String, Object> newAnnotations, String
+    public QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetName, Map<String, Object> newAnnotations, String
             sessionId)
             throws CatalogException {
 
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -152,7 +152,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Get annotation set
         AnnotationSet annotationSet = null;
         for (AnnotationSet annotationSetAux : sample.getAnnotationSets()) {
-            if (annotationSetAux.getId().equals(annotationSetId)) {
+            if (annotationSetAux.getName().equals(annotationSetName)) {
                 annotationSet = annotationSetAux;
                 sample.getAnnotationSets().remove(annotationSet);
                 break;
@@ -160,7 +160,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetId);
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetName);
         }
 
         // Get variable set
@@ -173,7 +173,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Commit changes
         QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.annotateSample(sampleId, annotationSet, true);
 
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
                         .collect(Collectors.toSet()), annotationSet.getDate(), null);
@@ -305,12 +305,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 for (Group group : groups.getResult()) {
                     for (String tmpUserId : group.getUserIds()) {
                         if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getId());
+                            memberSet.add(group.getName());
 
-                            if (!groupUsers.containsKey(group.getId())) {
-                                groupUsers.put(group.getId(), new ArrayList<>());
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
                             }
-                            groupUsers.get(group.getId()).add(tmpUserId);
+                            groupUsers.get(group.getName()).add(tmpUserId);
                         }
                     }
                 }
@@ -545,11 +545,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<Cohort> createCohort(long studyId, String name, Cohort.Type type, String description, List<Long> sampleIds,
+    public QueryResult<Cohort> createCohort(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(name, "name");
         ParamUtils.checkObj(sampleIds, "Samples list");
-        type = ParamUtils.defaultObject(type, Cohort.Type.COLLECTION);
+        type = ParamUtils.defaultObject(type, Study.Type.COLLECTION);
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
@@ -577,15 +577,15 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.UPDATE);
 
         Cohort cohort = readCohort(cohortId, new QueryOptions(QueryOptions.INCLUDE, "projects.studies.cohorts."
-                + CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key()), sessionId).first();
+                + CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key()), sessionId).first();
         if (params.containsKey(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key())
                 || params.containsKey(CatalogCohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
-            switch (cohort.getStatus().getStatus()) {
+            switch (cohort.getStatus().getName()) {
                 case Cohort.CohortStatus.CALCULATING:
                     throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
                             + "\"");
                 case Cohort.CohortStatus.READY:
-                    params.putIfAbsent("status.status", Cohort.CohortStatus.INVALID);
+                    params.putIfAbsent("status.name", Cohort.CohortStatus.INVALID);
                     break;
                 case Cohort.CohortStatus.NONE:
                 case Cohort.CohortStatus.INVALID:
@@ -611,11 +611,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetId, long variableSetId,
+    public QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetName, long variableSetId,
                                                      Map<String, Object> annotations, Map<String, Object> attributes,
                                                      boolean checkAnnotationSet, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
@@ -625,7 +625,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -645,10 +645,10 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetId, Map<String, Object> newAnnotations,
+    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetName, Map<String, Object> newAnnotations,
                                                              String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -664,7 +664,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Get annotation set
         AnnotationSet annotationSet = null;
         for (AnnotationSet annotationSetAux : cohort.getAnnotationSets()) {
-            if (annotationSetAux.getId().equals(annotationSetId)) {
+            if (annotationSetAux.getName().equals(annotationSetName)) {
                 annotationSet = annotationSetAux;
                 cohort.getAnnotationSets().remove(annotationSet);
                 break;
@@ -672,7 +672,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         }
 
         if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetId);
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetName);
         }
 
         // Get variable set
@@ -685,7 +685,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // Commit changes
         QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.annotateCohort(cohortId, annotationSet, true);
 
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
                         .collect(Collectors.toSet()), annotationSet.getDate(), null);
@@ -744,12 +744,12 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 for (Group group : groups.getResult()) {
                     for (String tmpUserId : group.getUserIds()) {
                         if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getId());
+                            memberSet.add(group.getName());
 
-                            if (!groupUsers.containsKey(group.getId())) {
-                                groupUsers.put(group.getId(), new ArrayList<>());
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
                             }
-                            groupUsers.get(group.getId()).add(tmpUserId);
+                            groupUsers.get(group.getName()).add(tmpUserId);
                         }
                     }
                 }

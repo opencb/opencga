@@ -47,9 +47,14 @@ class CatalogMongoDBUtils {
 
     // Special queryOptions keys
     /**
-     * FORCE is used when deleting/removing a document. If FORCE is set to true, the document will be deleted/removed no matter if other
+     * SKIP_CHECK is used when deleting a document. If SKIP_CHECK is set to false, the document will be deleted no matter if other
      * documents might depend on that one.
      */
+    public static final String SKIP_CHECK = "skipCheck";
+    /**
+     * Deprecated constant. Use SKIP_CHECK instead.
+     */
+    @Deprecated
     public static final String FORCE = "force";
     /**
      * KEEP_OUTPUT_FILES is used when deleting/removing a job. If it is set to true, it will mean that the output files that have been
@@ -480,7 +485,7 @@ class CatalogMongoDBUtils {
                     }
                     if (variable.getVariableSet() != null) {
                         Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
                         if (subVariableMap.containsKey(r)) {
                             variable = subVariableMap.get(r);
                             variableType = variable.getType();
@@ -502,7 +507,7 @@ class CatalogMongoDBUtils {
         List<Bson> valueList = addCompQueryFilter(type, "value" + route, Arrays.asList(values), new ArrayList<>());
         annotationSetFilter.add(
                 Filters.elemMatch("annotations", Filters.and(
-                        Filters.eq("id", variableId),
+                        Filters.eq("name", variableId),
                         valueList.get(0)
                 ))
         );
@@ -546,7 +551,7 @@ class CatalogMongoDBUtils {
                         }
                         if (variable.getVariableSet() != null) {
                             Map<String, Variable> subVariableMap = variable.getVariableSet().stream()
-                                    .collect(Collectors.toMap(Variable::getId, Function.<Variable>identity()));
+                                    .collect(Collectors.toMap(Variable::getName, Function.<Variable>identity()));
                             if (subVariableMap.containsKey(r)) {
                                 variable = subVariableMap.get(r);
                                 variableType = variable.getType();
@@ -568,7 +573,7 @@ class CatalogMongoDBUtils {
             annotationSetFilter.add(
                     new BasicDBObject("annotations",
                             new BasicDBObject("$elemMatch",
-                                    new BasicDBObject(queryValues.get(0).toMap()).append("id", variableId)
+                                    new BasicDBObject(queryValues.get(0).toMap()).append("name", variableId)
                             )
                     )
             );

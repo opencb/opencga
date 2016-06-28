@@ -18,14 +18,11 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
 import org.opencb.opencga.app.cli.main.options.*;
-import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.Arrays;
@@ -97,16 +94,23 @@ public class OpencgaCliOptionsParser {
         JCommander studySubCommands = jCommander.getCommands().get("studies");
         studySubCommands.addCommand("create", studyCommandOptions.createCommandOptions);
         studySubCommands.addCommand("info", studyCommandOptions.infoCommandOptions);
-        studySubCommands.addCommand("list", studyCommandOptions.listCommandOptions);
-        studySubCommands.addCommand("resync", studyCommandOptions.resyncCommandOptions);
-        studySubCommands.addCommand("check-files", studyCommandOptions.checkCommandOptions);
-        studySubCommands.addCommand("status", studyCommandOptions.statusCommandOptions);
-        studySubCommands.addCommand("annotate-variants", studyCommandOptions.annotationCommandOptions);
+        studySubCommands.addCommand("search", studyCommandOptions.searchCommandOptions);
+        studySubCommands.addCommand("summary", studyCommandOptions.summaryCommandOptions);
+        studySubCommands.addCommand("delete", studyCommandOptions.deleteCommandOptions);
+        studySubCommands.addCommand("update", studyCommandOptions.updateCommandOptions);
+        studySubCommands.addCommand("scan-files", studyCommandOptions.scanFilesCommandOptions);
+        studySubCommands.addCommand("files", studyCommandOptions.filesCommandOptions);
+        studySubCommands.addCommand("jobs", studyCommandOptions.jobsCommandOptions);
+        studySubCommands.addCommand("alignments", studyCommandOptions.alignmentsCommandOptions);
+        studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
+        studySubCommands.addCommand("variants", studyCommandOptions.variantsCommandOptions);
+
+
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
         jCommander.addCommand("files", fileCommandOptions);
         JCommander fileSubCommands = jCommander.getCommands().get("files");
-        fileSubCommands.addCommand("create", fileCommandOptions.createCommandOptions);
+        fileSubCommands.addCommand("copy", fileCommandOptions.copyCommandOptions);
         fileSubCommands.addCommand("create-folder", fileCommandOptions.createFolderCommandOptions);
         fileSubCommands.addCommand("info", fileCommandOptions.infoCommandOptions);
         fileSubCommands.addCommand("download", fileCommandOptions.downloadCommandOptions);
@@ -114,7 +118,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("search", fileCommandOptions.searchCommandOptions);
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
-        fileSubCommands.addCommand("alignaments", fileCommandOptions.alignamentsCommandOptions);
+        fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
         fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("share", fileCommandOptions.shareCommandOptions);
         fileSubCommands.addCommand("unshare", fileCommandOptions.unshareCommandOptions);
@@ -514,9 +518,8 @@ public class OpencgaCliOptionsParser {
         return panelCommandOptions;
     }
 
-    public ToolCommandOptions getToolCommands() {  return toolCommandOptions; }
-
-
-
+    public ToolCommandOptions getToolCommands() {
+        return toolCommandOptions;
+    }
 
 }

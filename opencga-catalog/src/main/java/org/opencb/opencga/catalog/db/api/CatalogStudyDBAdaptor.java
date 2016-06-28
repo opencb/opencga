@@ -68,7 +68,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    void updateStudyLastActivity(long studyId) throws CatalogDBException;
+    void updateStudyLastModified(long studyId) throws CatalogDBException;
 
 //    @Deprecated
 //    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
@@ -221,10 +221,10 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         CREATION_DATE("creationDate", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
@@ -235,9 +235,10 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
+        TYPE("type", TEXT, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
-        GROUP_ID("groups.id", TEXT_ARRAY, ""),
+        GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
@@ -343,7 +344,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         UNIQUE("unique", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
         VARIABLE("variables", TEXT_ARRAY, ""),
-        VARIABLE_ID("variables.id", TEXT, ""),
+        VARIABLE_NAME("variables.name", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
@@ -402,7 +403,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         creatorId(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
         status(Type.TEXT, ""),
-        lastActivity(Type.TEXT, ""),
+        lastModified(Type.TEXT, ""),
         stats(Type.TEXT, ""),
         attributes(Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),

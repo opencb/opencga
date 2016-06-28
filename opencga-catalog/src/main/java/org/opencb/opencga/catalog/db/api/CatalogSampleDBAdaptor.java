@@ -135,7 +135,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
 
@@ -157,12 +157,12 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, "");
 
         /*
         ANNOTATIONS_SET_VARIABLE_SET_ID("annotationSets.variableSetId", DOUBLE, ""),
-        ANNOTATION_SET_ID("annotationSets.id", TEXT, ""),
+        ANNOTATION_SET_NAME("annotationSets.id", TEXT, ""),
         ANNOTATION_SET("annotationSets", TEXT_ARRAY, "");
 */
         private static Map<String, QueryParams> map;
@@ -316,7 +316,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
     @Deprecated
     enum SampleFilterOption implements AbstractCatalogDBAdaptor.FilterOption {
         studyId(Type.NUMERICAL, ""),
-        annotationSetId(Type.TEXT, ""),
+        annotationSetName(Type.TEXT, ""),
         variableSetId(Type.NUMERICAL, ""),
 
         annotation(Type.TEXT, "Format: [<VariableId>:[<operator><value>,]+;]+  -> ID:3,4,5;AGE:>30;NAME:Luke,Leia,Vader"),

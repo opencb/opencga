@@ -5,6 +5,7 @@ package org.opencb.opencga.catalog.models;
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
+@Deprecated
 public class StudyPermissions {
 
     /**

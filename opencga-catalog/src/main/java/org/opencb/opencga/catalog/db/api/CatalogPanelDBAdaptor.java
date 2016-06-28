@@ -30,7 +30,7 @@ public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
         REGIONS("regions", TEXT_ARRAY, ""),
         VARIANTS("variants", TEXT_ARRAY, ""),
 
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
 

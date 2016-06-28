@@ -33,10 +33,10 @@ public class Sample {
 
     private List<SampleAcl> acls;
     private List<AnnotationSet> annotationSets;
-
     private Status status;
 
     private Map<String, Object> attributes;
+
 
     public Sample() {
     }
@@ -57,6 +57,7 @@ public class Sample {
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
+
 
     @Override
     public String toString() {
@@ -153,4 +154,5 @@ public class Sample {
         this.attributes = attributes;
         return this;
     }
+
 }

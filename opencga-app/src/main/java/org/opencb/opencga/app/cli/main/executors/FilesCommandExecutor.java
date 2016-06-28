@@ -17,14 +17,26 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
+import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.User;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.core.common.UriUtils;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * Created by imedina on 03/06/16.
@@ -39,15 +51,14 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-
     @Override
     public void execute() throws Exception {
         logger.debug("Executing files command line");
 
         String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
         switch (subCommandString) {
-            case "create":
-                create();
+            case "copy":
+                copy();
                 break;
             case "create-folder":
                 createFolder();
@@ -113,11 +124,29 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void create() throws CatalogException, IOException {
+    private void copy() throws CatalogException, IOException, URISyntaxException, StorageManagerException {
         logger.debug("Creating a new file");
         //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
-        //TODO
+//        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
+        FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
+        long studyId = catalogManager.getStudyId(copyCommandOptions.studyId);
+        Path inputFile = Paths.get(copyCommandOptions.inputFile);
+        URI sourceUri = new URI(null, copyCommandOptions.inputFile, null);
+        if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
+            sourceUri = inputFile.toUri();
+        }
+        if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
+            throw new IOException("File " + sourceUri + " does not exist");
+        }
+
+        QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
+                Paths.get(copyCommandOptions.path, inputFile.getFileName().toString()).toString(), copyCommandOptions.description,
+                copyCommandOptions.parents, -1, sessionId);
+        new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
+                copyCommandOptions.move, copyCommandOptions.calculateChecksum);
+        FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
     }
+
     private void createFolder() throws CatalogException {
         logger.debug("Creating a new folder");
         //TODO
@@ -125,10 +154,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-
-    private void info() throws CatalogException, IOException  {
+    private void info() throws CatalogException, IOException {
         logger.debug("Getting file information");
-        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id,null);
+        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id, null);
         System.out.println("Files = " + info);
     }
 
@@ -136,6 +164,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Downloading file");
         //TODO
     }
+
     private void grep() throws CatalogException {
         logger.debug("Grep command: File content");
         //TODO
@@ -147,9 +176,9 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void list() throws CatalogException, IOException  {
+    private void list() throws CatalogException, IOException {
         logger.debug("Listing files in folder");
-        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id,null);
+        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id, null);
         System.out.println("List files = " + listfiles);
 
     }
@@ -158,6 +187,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Indexing file in the selected StorageEngine");
         //TODO
     }
+
     private void alignament() throws CatalogException {
         logger.debug("Fetch alignments from a BAM file");
         //TODO
@@ -188,17 +218,41 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void delete() throws CatalogException {
+    private void delete() throws CatalogException, IOException {
         logger.debug("Deleting file");
-        //TODO
+
+        ObjectMap objectMap = new ObjectMap()
+                .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
+                .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
+
+        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
+
+        if (!delete.getError().isEmpty()) {
+            logger.error(delete.getError());
+        } else {
+            delete.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
     }
 
-    private void link() throws CatalogException, IOException {
-        logger.debug("Linking an external file into catalog.");
-        String studyId = filesCommandOptions.linkCommandOptions.studyId;
-        String uri = filesCommandOptions.linkCommandOptions.uri;
-        String path = filesCommandOptions.createCommandOptions.path;
-        openCGAClient.getFileClient().link(studyId, uri, path, null);
+    private void link() throws CatalogException, IOException, URISyntaxException {
+        logger.debug("Linking the file or folder into catalog.");
+
+        String studyStr = filesCommandOptions.linkCommandOptions.studyId;
+        URI uri = UriUtils.createUri(filesCommandOptions.linkCommandOptions.input);
+        String path = filesCommandOptions.linkCommandOptions.path;
+        ObjectMap objectMap = new ObjectMap()
+                .append(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.linkCommandOptions.description)
+                .append("parents", filesCommandOptions.linkCommandOptions.parents)
+                .append("sessionId", sessionId);
+
+        logger.debug("uri: {}", uri.toString());
+
+        QueryResponse<File> link = openCGAClient.getFileClient().link(studyStr, uri.toString(), path, objectMap);
+        if (!link.getError().isEmpty()) {
+            logger.error(link.getError());
+        } else {
+            link.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
     }
 
     private void relink() throws CatalogException {
@@ -206,16 +260,22 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void unlink() throws CatalogException {
+    private void unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
-        //TODO
+
+        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.file, new ObjectMap());
+
+        if (!unlink.getError().isEmpty()) {
+            logger.error(unlink.getError());
+        } else {
+            unlink.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
 
     }
 
     private void refresh() throws CatalogException {
         logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
     }
-
 
 
     private void groupBy() throws CatalogException {

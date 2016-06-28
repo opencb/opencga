@@ -22,7 +22,8 @@ import org.opencb.biodata.models.pedigree.Individual;
 import org.opencb.biodata.models.pedigree.Pedigree;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.slf4j.Logger;
@@ -153,7 +154,7 @@ public class CatalogSampleAnnotationsLoader {
         }
         Map<String, Object> annotations = new HashMap<>();
         for (Variable variable : variableSet.getVariables()) {
-            switch (variable.getId()) {
+            switch (variable.getName()) {
                 case "family":
                     annotations.put("family", individual.getFamily());
                     break;
@@ -193,7 +194,7 @@ public class CatalogSampleAnnotationsLoader {
                     }
                     break;
                 default:
-                    annotations.put(variable.getId(), individual.getFields()[fields.get(variable.getId())]);
+                    annotations.put(variable.getName(), individual.getFields()[fields.get(variable.getName())]);
                     break;
             }
         }

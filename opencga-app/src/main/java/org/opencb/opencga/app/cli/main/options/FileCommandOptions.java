@@ -15,7 +15,10 @@ import java.util.List;
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
 public class FileCommandOptions {
 
-    public CreateCommandOptions createCommandOptions;
+    public JCommander jCommander;
+    public OpencgaCommonCommandOptions commonCommandOptions;
+
+    public CopyCommandOptions copyCommandOptions;
     public CreateFolderCommandOptions createFolderCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public DownloadCommandOptions downloadCommandOptions;
@@ -23,7 +26,7 @@ public class FileCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public ListCommandOptions listCommandOptions;
     public IndexCommandOptions indexCommandOptions;
-    public AlignamentsCommandOptions alignamentsCommandOptions;
+    public AlignmentCommandOptions alignmentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     //final VariantsCommand variantsCommand;
     public ShareCommandOptions shareCommandOptions;
@@ -37,15 +40,12 @@ public class FileCommandOptions {
     public RefreshCommandOptions refreshCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
-    public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
-
     public FileCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
-
-        this.createCommandOptions = new CreateCommandOptions();
+        this.copyCommandOptions = new CopyCommandOptions();
         this.createFolderCommandOptions = new CreateFolderCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.downloadCommandOptions = new DownloadCommandOptions();
@@ -53,7 +53,7 @@ public class FileCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
         this.indexCommandOptions = new IndexCommandOptions();
-        this.alignamentsCommandOptions = new AlignamentsCommandOptions();
+        this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.shareCommandOptions = new ShareCommandOptions();
         this.unshareCommandOptions = new UnshareCommandOptions();
@@ -64,358 +64,386 @@ public class FileCommandOptions {
         this.unlinkCommandOptions = new UnlinkCommandOptions();
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
-
+        this.groupByCommandOptions = new GroupByCommandOptions();
     }
 
-    class BaseFileCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+    public class BaseFileCommand {
 
-        @Parameter(names = {"-id", "--file-id"}, description = "File id", required = true, arity = 1)
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--file-id"}, description = "File id", required = true, arity = 1)
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create file")
-    public class CreateCommandOptions {
+
+    @Parameters(commandNames = {"copy"}, commandDescription = "Copy a file or folder")
+    public class CopyCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-        String inputFile;
-
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-        String studyId;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--path"}, description = "Directory where to create the file", required = false, arity = 1)
-        public String path  = "";
+        public String path;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        String description;
-
-        @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See catalog.models.File.Format", required = false, arity = 1)
-        File.Format format = File.Format.PLAIN;
-
-        @Parameter(names = {"-b", "--bioformat"}, description = "See catalog.models.File.Bioformat for more info", required = false, arity = 1)
-        File.Bioformat bioformat = File.Bioformat.NONE;
-
-        @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-        boolean parents;
-
-        @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
-        boolean move;
-
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        boolean calculateChecksum = false;
-    }
-
-    @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
-    class CreateFolderCommandOptions {
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
-        String path  = "";
+        @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
+        public String inputFile;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-        String studyId;
+        public String studyId;
+
+        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        public String description;
+
+        @Parameter(names = {"-f", "--format"}, description = "one of {PLAIN, GZIP, BINARY, EXECUTABLE, IMAGE}. See File.Format", arity = 1)
+        public File.Format format = File.Format.PLAIN;
+
+        @Parameter(names = {"-b", "--bioformat"}, description = "See File.Bioformat for more info", required = false, arity = 1)
+        public File.Bioformat bioformat = File.Bioformat.NONE;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-        boolean parents = true;
+        public boolean parents;
+
+        @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
+        public boolean move;
+
+        @Parameter(names = {"--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+        public boolean calculateChecksum;
     }
 
+
+    @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
+    public class CreateFolderCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
+        public String path = "";
+
+        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
+        public boolean parents = true;
+    }
+
+
     @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
-    public class InfoCommandOptions extends BaseFileCommand {}
+    public class InfoCommandOptions extends BaseFileCommand {
+    }
+
 
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")
-    class DownloadCommandOptions extends BaseFileCommand {}
+    class DownloadCommandOptions extends BaseFileCommand {
+    }
+
 
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
-    class GrepCommandOptions extends BaseFileCommand {
-        @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
-        String pattern  = "";
+    public class GrepCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"-ic", "--ignoreCase"}, description = "ignoreCase", required = false, arity = 0)
-        boolean ignoreCase = false;
+        @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
+        public String pattern;
+
+        @Parameter(names = {"--ignore-case"}, description = "ignoreCase", required = false, arity = 0)
+        public boolean ignoreCase;
 
         @Parameter(names = {"-m", "--multi"}, description = "multi", required = false, arity = 0)
-        boolean multi = true;
+        public boolean multi;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search files")
-    class SearchCommandOptions {
+    public class SearchCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
+        public String studyId;
         //            @Parameter(names = {"--name"}, description = "Exact file name", required = false, arity = 1)
-//            String name;
+//            public String name;
 //            @Parameter(names = {"--path"}, description = "Exact file path", required = false, arity = 1)
-//            String path;
+//            public String path;
         @Parameter(names = {"--name"}, description = "File name. Use regex pattern", required = false, arity = 1)
-        String name;
+        public String name;
 
         @Parameter(names = {"--directory"}, description = "Directory path (study relative). Use regex pattern", required = false, arity = 1)
-        String directory;
+        public String directory;
 
         @Parameter(names = {"--type"}, description = "File type. CSV", required = false, arity = 1)
-        List<File.Type> types;
+        public List<File.Type> types;
 
         @Parameter(names = {"--bioformat"}, description = "File bioformat. CSV", required = false, arity = 1)
-        List<File.Bioformat> bioformats;
+        public List<File.Bioformat> bioformats;
 
         @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
-        List<String> status;
-
+        public List<String> status;
     }
+
 
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions extends BaseFileCommand {
+
         @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-        public int level = Integer.MAX_VALUE;
+        public int level = 1;
 
         @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-        public boolean recursive = false;
+        public boolean recursive;
 
         @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-        public boolean uries = false;
+        public boolean uries;
     }
+
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
-    class IndexCommandOptions extends BaseFileCommand {
+    public class IndexCommandOptions extends BaseFileCommand {
+
+    //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+    //    public List<String> dashDashParameters;
+
         @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-        String outdir = "";
+        public String outdir = "";
 
-        @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-        boolean enqueue;
+    //     @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+    //    public boolean enqueue;
 
-        @Parameter(names = "--transform", description = "Run only the transform phase")
-        boolean transform = false;
+    //    @Parameter(names = "--transform", description = "Run only the transform phase")
+    //    public boolean transform = false;
 
-        @Parameter(names = "--load", description = "Run only the load phase")
-        boolean load = false;
+    //    @Parameter(names = "--load", description = "Run only the load phase")
+    //    public boolean load = false;
 
         @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
-        boolean calculateStats = false;
+        public boolean calculateStats;
 
         @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
-        boolean annotate = false;
-
-        @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-        public List<String> dashDashParameters;
+        public boolean annotate;
     }
 
-    @Parameters(commandNames = {"alignaments"}, commandDescription = "Fetch alignments from a BAM file")
-    class AlignamentsCommandOptions extends BaseFileCommand { }
+
+    @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
+    public class AlignmentCommandOptions extends BaseFileCommand {
+    }
 
 
     @Parameters(commandNames = {"fetch"}, commandDescription = "File fetch")
-    class FetchCommandOptions extends BaseFileCommand {
+    public class FetchCommandOptions extends BaseFileCommand {
+
         @Parameter(names = {"--region"}, description = "Region", required = true, arity = 1)
-        String region;
+        public String region;
 
-        @Parameter(names = {"--view_as_pairs"}, description = "View_as_pairs", required = false, arity = 0)
-        boolean view_as_pairs = false;
+        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs", required = false, arity = 0)
+        public boolean viewAsPairs;
 
-        @Parameter(names = {"--include_coverage"}, description = "Include_coverage", required = false, arity = 0)
-        boolean include_coverage = true;
+        @Parameter(names = {"--include-coverage"}, description = "Include_coverage", required = false, arity = 0)
+        public boolean includeCoverage;
 
-        @Parameter(names = {"--process_differences"}, description = "Process_differences", required = false, arity = 0)
-        boolean process_differences = true;
+        @Parameter(names = {"--process-differences"}, description = "Process_differences", required = false, arity = 0)
+        public boolean processDifferences;
 
         @Parameter(names = {"--histogram"}, description = "Histogram", required = false, arity = 0)
-        boolean histogram = false;
+        public boolean histogram;
 
-        @Parameter(names = {"--groupBy"}, description = "GroupBy: [ct, gene, ensemblGene]", required = false, arity = 1)
-        String groupBy;
+        @Parameter(names = {"--group-by"}, description = "GroupBy: [ct, gene, ensemblGene]", required = false, arity = 1)
+        public String groupBy;
 
-        @Parameter(names = {"--variantSource"}, description = "VariantSource", required = false, arity = 0)
-        boolean variantSource = false;
+        @Parameter(names = {"--variant-source"}, description = "Variant Source", required = false, arity = 0)
+        public boolean variantSource;
 
         @Parameter(names = {"--interval"}, description = "Interval", required = false, arity = 1)
-        String interval;
-
+        public String interval;
     }
 
+
     @Parameters(commandNames = {"share"}, commandDescription = "Share file with other user")
-    class ShareCommandOptions  extends BaseFileCommand{
+    public class ShareCommandOptions extends BaseFileCommand {
 
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-fids","--fileIds"}, description = "fileIds", required = true)
-        String fileIds;
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
-        String permission;
-
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
+        public String permission;
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare file with other user")
-    class UnshareCommandOptions  {
+    public class UnshareCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-fids","--fileIds"}, description = "fileIds", required = true)
-        String fileIds;
+        @Parameter(names = {"--file-ids"}, description = "File Ids", required = true)
+        public String fileIds;
 
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
+        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
-        String permission;
+        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
+        public String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
-        boolean override;
-
+                " of permissions in case any member already had any, default:false", required = false, arity = 0)
+        public boolean override;
     }
 
+
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
-    class UpdateCommandOptions extends BaseFileCommand { }
+    class UpdateCommandOptions extends BaseFileCommand {
+    }
 
-    @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external file")
+
+    @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external" +
+            " file")
     class RelinkCommandOptions extends BaseFileCommand {
-        @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
-        String inputFile;
 
+        @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
+        public String inputFile;
 
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        boolean calculateChecksum = false;
+        public boolean calculateChecksum;
     }
 
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
-    class DeleteCommandOptions extends BaseFileCommand { }
+    public class DeleteCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
+        public String file;
+
+        @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
+                + " (only applicable for linked files/folders)", required = false, arity = 0)
+        public boolean deleteExternal;
+
+        @Parameter(names = {"--skip-trash"}, description = "Boolean indicating whether to skip sending the files to the trash first. "
+                + "If set, it will not be possible to recover them!", required = false, arity = 0)
+        public boolean skipTrash;
+
+    }
 
 
     @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
-    class RefreshCommandOptions extends BaseFileCommand { }
+    public class RefreshCommandOptions extends BaseFileCommand {
+    }
+
 
     @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
-    class UnlinkCommandOptions extends BaseFileCommand { }
+    public class UnlinkCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
+        public String file;
+
+    }
 
 
-    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file into catalog.")
+    @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog.")
     public class LinkCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        // @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
-        // String inputFile;
-        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
-        public String uri;
+         @Parameter(names = {"-i", "--input"}, description = "File or folder location", required = true, arity = 1)
+         public String input;
+//        @Parameter(names = {"-uri"}, description = "File location", required = true, arity = 1)
+//        public String uri;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Study identifier", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Study where the file or folder will be associated to", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        String description;
+        @Parameter(names = {"--path"}, description = "Virtual path within catalog where the file or folder will be linked (root folder if empty)", required = false, arity = 1)
+        public String path;
 
-        @Parameter(names = {"--path"}, description = "New folder path", required = false, arity = 1)
-        public String path  = "";
+        @Parameter(names = {"-d", "--description"}, description = "Brief description that will be attached to the files in catalog", required = false, arity = 1)
+        public String description;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-        boolean parents;
+        public boolean parents;
 
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        boolean calculateChecksum = false;
     }
 
+
     @Parameters(commandNames = {"upload"}, commandDescription = "Attach a physical file to a catalog entry file.")
-    class UploadCommandOptions extends BaseFileCommand{
+    public class UploadCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"-i", "--input"}, description = "Input file", required = true, arity = 1)
-        String inputFile;
+        @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
+        public String inputFile;
 
-        @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed", required = false, arity = 0)
-        boolean replace = false;
+        @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed",
+                required = false, arity = 0)
+        public boolean replace;
 
         @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
-        boolean move = false;
+        public boolean move;
 
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
-        boolean calculateChecksum = false;
+        public boolean calculateChecksum;
 
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"},
-                description = "Comma separated list of fields by which to group by.",
-                required = true, arity = 1)
-        String by;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--fields"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        public String fields;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        public String id;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
-                required = false, arity = 1)
-        String id;
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        public String name;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
-        String name;
+        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
+        public String path;
 
-        @Parameter(names = {"--path"}, description = "Path.",required = false, arity = 1)
-        String path;
+        @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
+        public String type;
 
-        @Parameter(names = {"--type"}, description = "Comma separated Type values.",required = false, arity = 1)
-        String type;
+        @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
+        public String format;
 
-        @Parameter(names = {"--format"}, description = "Comma separated Format values.",required = false, arity = 1)
-        String format;
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        public String status;
 
-        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
-        String status;
+        @Parameter(names = {"--directory"}, description = "Directory.", required = false, arity = 1)
+        public String directory;
 
-        @Parameter(names = {"--directory"}, description = "Directory.",required = false, arity = 1)
-        String directory;
+        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
+        public String ownerId;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.",required = false, arity = 1)
-        String ownerId;
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        public String creationDate;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
-        String creationDate;
-
-        @Parameter(names = {"--modification-date"}, description = "Modification date.",required = false, arity = 1)
-        String modificationDate;
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
+        public String modificationDate;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        String description;
+        public String description;
 
-        @Parameter(names = {"--diskUsage"}, description = "diskUsage.",required = false, arity = 1)
-        Integer diskUsage;
+        @Parameter(names = {"--disk-usage"}, description = "diskUsage.", required = false, arity = 1)
+        public Integer diskUsage;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
-        String sampleIds;
+        public String sampleIds;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        String jobId;
+        public String jobId;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String attributes;
+        public String attributes;
 
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        String nattributes;
-
-
+        public String nattributes;
     }
 }

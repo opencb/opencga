@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
@@ -162,12 +162,12 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 for (Group group : groups.getResult()) {
                     for (String tmpUserId : group.getUserIds()) {
                         if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getId());
+                            memberSet.add(group.getName());
 
-                            if (!groupUsers.containsKey(group.getId())) {
-                                groupUsers.put(group.getId(), new ArrayList<>());
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
                             }
-                            groupUsers.get(group.getId()).add(tmpUserId);
+                            groupUsers.get(group.getName()).add(tmpUserId);
                         }
                     }
                 }
@@ -276,10 +276,10 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
-    public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetId, long variableSetId, Map<String, Object>
+    public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object>
             annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
@@ -289,7 +289,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
         AnnotationSet annotationSet =
-                new AnnotationSet(annotationSetId, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+                new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
 
         for (Map.Entry<String, Object> entry : annotations.entrySet()) {
             annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
@@ -308,11 +308,11 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return queryResult;
     }
 
-    public QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetId, Map<String, Object> newAnnotations,
+    public QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
                                                        String sessionId) throws CatalogException {
 
         ParamUtils.checkParameter(sessionId, "sessionId");
-        ParamUtils.checkParameter(annotationSetId, "annotationSetId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -326,7 +326,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // Get annotation set
         AnnotationSet annotationSet = null;
         for (AnnotationSet annotationSetAux : individual.getAnnotationSets()) {
-            if (annotationSetAux.getId().equals(annotationSetId)) {
+            if (annotationSetAux.getName().equals(annotationSetName)) {
                 annotationSet = annotationSetAux;
                 individual.getAnnotationSets().remove(annotationSet);
                 break;
@@ -334,7 +334,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         }
 
         if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetId);
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetName);
         }
 
         // Get variable set
@@ -347,7 +347,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         // Commit changes
         QueryResult<AnnotationSet> queryResult = individualDBAdaptor.annotateIndividual(individualId, annotationSet, true);
 
-        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getId(), annotationSet.getVariableSetId(),
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors
                         .toSet()),
                 annotationSet.getDate(), null);

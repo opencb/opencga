@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -15,7 +15,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -79,7 +79,7 @@ public class FileMetadataReaderTest {
 
         File file = fileQueryResult.first();
 
-        assertEquals(File.FileStatus.STAGE, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
@@ -89,7 +89,7 @@ public class FileMetadataReaderTest {
         new CatalogFileUtils(catalogManager).upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
 
-        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
@@ -136,7 +136,7 @@ public class FileMetadataReaderTest {
 
         File file = fileQueryResult.first();
 
-        assertEquals(File.FileStatus.STAGE, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.PLAIN, file.getFormat());
         assertEquals(File.Bioformat.NONE, file.getBioformat());
         assertNull(file.getAttributes().get("variantSource"));
@@ -152,7 +152,7 @@ public class FileMetadataReaderTest {
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
-        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
@@ -216,7 +216,7 @@ public class FileMetadataReaderTest {
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
-        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, file.getStatus().getName());
         assertEquals(File.Format.VCF, file.getFormat());
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
@@ -231,7 +231,7 @@ public class FileMetadataReaderTest {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN,
                 File.Bioformat.NONE, folder.getPath() + BAM_FILE_NAME, "", false, -1, sessionIdUser).first();
 
-        assertEquals(File.FileStatus.STAGE, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.STAGE, file.getStatus().getName());
         assertEquals(File.Format.PLAIN, file.getFormat());
         assertEquals(File.Bioformat.NONE, file.getBioformat());
         assertNull(file.getAttributes().get("variantSource"));
@@ -248,7 +248,7 @@ public class FileMetadataReaderTest {
         file = FileMetadataReader.get(catalogManager).
                 setMetadataInformation(file, null, null, sessionIdUser, false);
 
-        assertEquals(File.FileStatus.READY, file.getStatus().getStatus());
+        assertEquals(File.FileStatus.READY, file.getStatus().getName());
 //        assertEquals(File.Format.GZIP, file.getFormat());
         assertEquals(File.Bioformat.ALIGNMENT, file.getBioformat());
         assertNotNull(file.getAttributes().get("alignmentHeader"));

@@ -75,10 +75,10 @@ public interface IIndividualManager extends ResourceManager<Long, Individual> {
         return result;
     }
 
-    QueryResult<AnnotationSet> annotate(long individualId, String annotationSetId, long variableSetId, Map<String, Object> annotations,
+    QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetId, Map<String, Object> newAnnotations,
+    QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
                                                 String sessionId) throws CatalogException;
 
     QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException;

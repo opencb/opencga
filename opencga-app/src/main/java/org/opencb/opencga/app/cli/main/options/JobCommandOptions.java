@@ -1,7 +1,9 @@
 package org.opencb.opencga.app.cli.main.options;
 
-import com.beust.jcommander.*;
-import org.opencb.datastore.core.ObjectMap;
+import com.beust.jcommander.JCommander;
+import com.beust.jcommander.Parameter;
+import com.beust.jcommander.Parameters;
+import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 
 /**
@@ -19,16 +21,18 @@ public class JobCommandOptions {
     public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
-   // public DoneJobCommandOptions doneJobCommandOptions;
-   // public StatusCommandOptions statusCommandOptions;
-   // public RunJobCommandOptions runJobCommandOptions;
+    // public DoneJobCommandOptions doneJobCommandOptions;
+    // public StatusCommandOptions statusCommandOptions;
+    // public RunJobCommandOptions runJobCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
     public JobCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
+
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
@@ -37,18 +41,19 @@ public class JobCommandOptions {
         this.unshareCommandOptions = new UnshareCommandOptions();
         this.shareCommandOptions = new ShareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
-
-    //    this.runJobCommandOptions = new RunJobCommandOptions();
+        //    this.runJobCommandOptions = new RunJobCommandOptions();
 
     }
 
     class BaseJobCommand {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-        Integer id;
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        public Integer id;
     }
+
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
     public class CreateCommandOptions {
 
@@ -58,73 +63,71 @@ public class JobCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "Job name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--tool-id"}, description = "Tool Id", required = true, arity = 1)
         public String toolId;
 
         @Parameter(names = {"--execution"}, description = "Execution", required = false, arity = 1)
-        String execution;
+        public String execution;
 
         @Parameter(names = {"--description"}, description = "Job description", required = false, arity = 1)
-        String description;
-
+        public String description;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
-    class InfoCommandOptions extends BaseJobCommand{ }
-
+    class InfoCommandOptions extends BaseJobCommand {
+    }
 
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search job")
     public class SearchCommandOptions {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
+        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
+        public String id;
 
-        @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = false, arity = 1)
-        String id;
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        public String name;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
-        String name;
+        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
+        public String path;
 
-        @Parameter(names = {"--path"}, description = "Path.",required = false, arity = 1)
-        String path;
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        public String status;
 
-        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
-        String status;
+        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
+        public String ownerId;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.",required = false, arity = 1)
-        String ownerId;
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        public String creationDate;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
-        String creationDate;
-
-        @Parameter(names = {"--modification-date"}, description = "Modification date.",required = false, arity = 1)
-        String modificationDate;
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
+        public String modificationDate;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        String description;
-
+        public String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String attributes;
+        public String attributes;
 
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        String nattributes;
-
+        public String nattributes;
     }
 
     @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")
-    class VisitCommandOptions extends BaseJobCommand{ }
+    class VisitCommandOptions extends BaseJobCommand {
+    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")
-    class DeleteCommandOptions extends BaseJobCommand{
+    class DeleteCommandOptions extends BaseJobCommand {
+
         @Parameter(names = {"--delete-files"}, description = "Delete files, default:true", required = false, arity = 0)
         boolean deleteFiles;
     }
@@ -132,91 +135,87 @@ public class JobCommandOptions {
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
     public class ShareCommandOptions {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--job-ids"}, description = "Jobs ids", required = true, arity = 1)
-        String jobsids;
+        @Parameter(names = {"--job-ids"}, description = "Jobs ids", required = true, arity = 1)
+        public String jobsids;
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
                 required = false, arity = 1)
-        String permission;
+        public String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
-        boolean override;
+                " of permissions in case any member already had any, default:false", required = false, arity = 0)
+        public boolean override;
     }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
     public class UnshareCommandOptions {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-ids", "--job-ids"}, description = "Jobs ids", required = true, arity = 1)
-        String jobsids;
+        @Parameter(names = {"--job-ids"}, description = "Jobs ids", required = true, arity = 1)
+        public String jobsids;
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
                 required = false, arity = 1)
-        String permission;
-
-
+        public String permission;
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy job")
     public class GroupByCommandOptions {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--by"},
                 description = "Comma separated list of fields by which to group by.",
                 required = true, arity = 1)
-        String by;
+        public String by;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
-
+        public String studyId;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
                 required = false, arity = 1)
-        String id;
+        public String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
-        String name;
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        public String name;
 
-        @Parameter(names = {"--path"}, description = "Path.",required = false, arity = 1)
-        String path;
+        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
+        public String path;
 
-        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
-        String status;
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        public String status;
 
-        @Parameter(names = {"--owner-id"}, description = "Owner id.",required = false, arity = 1)
-        String ownerId;
+        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
+        public String ownerId;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
-        String creationDate;
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        public String creationDate;
 
-        @Parameter(names = {"--modification-date"}, description = "Modification date.",required = false, arity = 1)
-        String modificationDate;
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
+        public String modificationDate;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        String description;
-
+        public String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         String attributes;
-
-
-
     }
 
 
@@ -234,10 +233,12 @@ public class JobCommandOptions {
         @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
         boolean error;
 
-        @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required = false, arity = 0)
+        @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required =
+        false, arity = 0)
         boolean force;
 
-        @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.", required = false, arity = 0)
+        @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.",
+        required = false, arity = 0)
         boolean discardOutput;
     }
 

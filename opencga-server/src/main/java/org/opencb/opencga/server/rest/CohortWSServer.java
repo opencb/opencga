@@ -16,9 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -51,23 +49,22 @@ import java.util.stream.Collectors;
 public class CohortWSServer extends OpenCGAWSServer {
 
 
-    public CohortWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                          @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public CohortWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
     @ApiOperation(value = "Create a cohort", position = 1, notes = "A cohort can be created by providing a list of SampleIds, " +
             "or providing a categorical variable (both variableSetId and variable). " +
-            "If none of this is given, an empty cohort will be created.")
+            "If none of this is given, an empty cohort will be created.", response = Cohort.class)
     public Response createCohort(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                  @ApiParam(value = "name", required = true) @QueryParam("name") String cohortName,
-                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Cohort.Type type,
+                                 @ApiParam(value = "type", required = false) @QueryParam("type") @DefaultValue("COLLECTION") Study.Type type,
                                  @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                  @ApiParam(value = "description", required = false) @QueryParam("description") String cohortDescription,
                                  @ApiParam(value = "sampleIds", required = false) @QueryParam("sampleIds") String sampleIdsStr,
-                                 @ApiParam(value = "variable", required = false) @QueryParam("variable") String variableName) {
+                                 @ApiParam(value = "Variable name", required = false) @QueryParam("variable") String variableName) {
         try {
             //QueryOptions queryOptions = getAllQueryOptions();
             List<QueryResult<Cohort>> cohorts = new LinkedList<>();
@@ -84,7 +81,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 VariableSet variableSet = catalogManager.getVariableSet(variableSetId, null, sessionId).first();
                 Variable variable = null;
                 for (Variable v : variableSet.getVariables()) {
-                    if (v.getId().equals(variableName)) {
+                    if (v.getName().equals(variableName)) {
                         variable = v;
                         break;
                     }
@@ -113,7 +110,11 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/info")
-    @ApiOperation(value = "Get cohort information", position = 2)
+    @ApiOperation(value = "Get cohort information", position = 2, response = Cohort.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response infoSample(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             QueryResult<Cohort> queryResult = catalogManager.getCohort(cohortId, queryOptions, sessionId);
@@ -126,7 +127,14 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/samples")
-    @ApiOperation(value = "Get samples from cohort", position = 3)
+    @ApiOperation(value = "Get samples from cohort", position = 3, response = Sample[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response getSamples(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId) {
         try {
             Cohort cohort = catalogManager.getCohort(cohortId, queryOptions, sessionId).first();
@@ -140,7 +148,7 @@ public class CohortWSServer extends OpenCGAWSServer {
         }
     }
 
-    private QueryResult<Cohort> createCohort(long studyId, String cohortName, Cohort.Type type, String cohortDescription, Query query,
+    private QueryResult<Cohort> createCohort(long studyId, String cohortName, Study.Type type, String cohortDescription, Query query,
                                              QueryOptions queryOptions) throws CatalogException {
         QueryResult<Sample> queryResult = catalogManager.getAllSamples(studyId, query, queryOptions, sessionId);
         List<Long> sampleIds = new ArrayList<>(queryResult.getNumResults());
@@ -180,7 +188,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Cohort.class)
     public Response update(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
                            @ApiParam(value = "", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "", required = false) @QueryParam("creationDate") String creationDate,
@@ -305,7 +313,7 @@ public class CohortWSServer extends OpenCGAWSServer {
                 if (update) {
                     long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
                     for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getId().equals(annotateSetName)) {
+                        if (annotationSet.getName().equals(annotateSetName)) {
                             variableSetId = annotationSet.getVariableSetId();
                         }
                     }
@@ -315,8 +323,8 @@ public class CohortWSServer extends OpenCGAWSServer {
                     return createErrorResponse("cohort - annotate", "VariableSet not found.");
                 }
                 Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getId()))
-                        .collect(Collectors.toMap(Variable::getId, variable -> params.getFirst(variable.getId())));
+                        .filter(variable -> params.containsKey(variable.getName()))
+                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
 
                 if (update) {
                     queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
@@ -381,6 +389,72 @@ public class CohortWSServer extends OpenCGAWSServer {
             logger.debug("queryOptions = " + qOptions.toJson());
             QueryResult result = catalogManager.cohortGroupBy(query, qOptions, by, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/acls")
+    @ApiOperation(value = "Returns the acls of the cohort [PENDING]", position = 18)
+    public Response getAcls(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String studyIdStr) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{cohortId}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
+    public Response createRole(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/acls/{memberId}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
+    public Response getAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/acls/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
+    public Response updateAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+        try {
+           // return createOkResponse(catalogManager.updateAcl(cohortId, member, Arrays.asList(addpermissions.split(",")),  sessionId));
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{cohortId}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
+    public Response deleteAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

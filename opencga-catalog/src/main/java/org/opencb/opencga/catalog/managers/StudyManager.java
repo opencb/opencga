@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -118,6 +118,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
     }
 
+    @Deprecated
     @Override
     public Long getStudyId(String studyId) throws CatalogException {
         if (StringUtils.isNumeric(studyId)) {
@@ -210,7 +211,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-        File rootFile = new File(".", File.Type.FOLDER, null, null, "", userId, "study root folder",
+        File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", userId, "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0);
         rootFile.setUri(uri);
         files.add(rootFile);
@@ -220,7 +221,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 
         Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
                 0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, stats, attributes);
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, attributes, stats);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -246,7 +247,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
 //        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
         auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
                 null, rootFile, null, null);
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         return result;
     }
 
@@ -318,7 +319,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         String ownerId = studyDBAdaptor.getStudyOwnerId(studyId);
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
@@ -335,9 +336,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
 
         // Both users must bu updated
-        userDBAdaptor.updateUserLastActivity(userId);
-//        userDBAdaptor.updateUserLastActivity(studyOwnerId);
-        //TODO get all shared users to updateUserLastActivity
+        userDBAdaptor.updateUserLastModified(userId);
+//        userDBAdaptor.updateUserLastModified(studyOwnerId);
+        //TODO get all shared users to updateUserLastModified
 
         //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
@@ -440,7 +441,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 .setExperiments(studyInfo.getExperiments())
                 .setGroups(studyInfo.getGroups())
                 .setName(studyInfo.getName())
-                .setRoles(studyInfo.getRoles())
                 .setStats(studyInfo.getStats())
                 .setStatus(studyInfo.getStatus())
                 .setType(studyInfo.getType())
@@ -450,36 +450,36 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         Long nFiles = fileDBAdaptor.count(
                 new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setFiles(nFiles);
 
         Long nSamples = sampleDBAdaptor.count(
                 new Query(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setSamples(nSamples);
 
         Long nJobs = jobDBAdaptor.count(
                 new Query(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setJobs(nJobs);
 
         Long nCohorts = cohortDBAdaptor.count(
                 new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setCohorts(nCohorts);
 
         Long nIndividuals = individualDBAdaptor.count(
                 new Query(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setIndividuals(nIndividuals);
 
@@ -521,12 +521,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 for (Group group : groups.getResult()) {
                     for (String tmpUserId : group.getUserIds()) {
                         if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getId());
+                            memberSet.add(group.getName());
 
-                            if (!groupUsers.containsKey(group.getId())) {
-                                groupUsers.put(group.getId(), new ArrayList<>());
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
                             }
-                            groupUsers.get(group.getId()).add(tmpUserId);
+                            groupUsers.get(group.getName()).add(tmpUserId);
                         }
                     }
                 }
@@ -709,7 +709,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         for (Variable variable : variables) {
-            ParamUtils.checkParameter(variable.getId(), "variable ID");
+            ParamUtils.checkParameter(variable.getName(), "variable ID");
             ParamUtils.checkObj(variable.getType(), "variable Type");
             variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
             variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));

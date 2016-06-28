@@ -18,7 +18,6 @@ package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.app.cli.main.options.VariableCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 
@@ -30,14 +29,15 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private VariableCommandOptions variableCommandOptions;
 
     public VariablesCommandExecutor(VariableCommandOptions variableCommandOptions) {
+
         super(variableCommandOptions.commonCommandOptions);
         this.variableCommandOptions = variableCommandOptions;
     }
 
 
-
     @Override
     public void execute() throws Exception {
+
         logger.debug("Executing variables command line");
 
         String subCommandString = getParsedSubCommand(variableCommandOptions.jCommander);
@@ -67,6 +67,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private void create() throws CatalogException {
         logger.debug("Creating variable");
     }
+
     private void info() throws CatalogException {
         logger.debug("Getting variable information");
     }
@@ -74,16 +75,14 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
     private void search() throws CatalogException {
         logger.debug("Searching variable");
     }
+
     private void update() throws CatalogException {
         logger.debug("Updating variable");
     }
+
     private void delete() throws CatalogException {
         logger.debug("Deleting variable");
     }
-
-
-
-
 
 
 }

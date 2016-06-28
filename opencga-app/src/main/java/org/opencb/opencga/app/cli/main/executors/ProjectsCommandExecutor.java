@@ -64,5 +64,4 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-
 }

@@ -24,7 +24,7 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
         NAME("name", TEXT, ""),
         TYPE("type", TEXT, ""),
         CREATION_DATE("creationDate", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
@@ -36,7 +36,7 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-        ANNOTATION_SET_ID("annotationSetId", TEXT_ARRAY, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
         ANNOTATION("annotation", TEXT_ARRAY, ""),
 
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),

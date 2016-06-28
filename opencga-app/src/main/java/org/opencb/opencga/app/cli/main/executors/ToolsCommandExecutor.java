@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -33,7 +32,6 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         super(toolsCommandOptions.commonCommandOptions);
         this.toolsCommandOptions = toolsCommandOptions;
     }
-
 
 
     @Override
@@ -67,6 +65,7 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
     private void help() throws CatalogException {
         logger.debug("Tool help");
     }
+
     private void info() throws CatalogException {
         logger.debug("Getting tool information");
     }
@@ -74,16 +73,14 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
     private void search() throws CatalogException {
         logger.debug("Searching tool");
     }
+
     private void update() throws CatalogException {
         logger.debug("Updating tool");
     }
+
     private void delete() throws CatalogException {
         logger.debug("Deleting tool");
     }
-
-
-
-
 
 
 }

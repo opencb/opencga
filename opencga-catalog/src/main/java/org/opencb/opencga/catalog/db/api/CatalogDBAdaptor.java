@@ -85,6 +85,7 @@ public interface CatalogDBAdaptor<T> extends Iterable<T> {
 
     QueryResult<Long> delete(Query query, QueryOptions queryOptions) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<T> remove(long id, QueryOptions queryOptions) throws CatalogDBException;
 
     QueryResult<Long> remove(Query query, QueryOptions queryOptions) throws CatalogDBException;

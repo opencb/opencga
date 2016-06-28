@@ -183,18 +183,18 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
 
         Individual individual = catalogIndividualDBAdaptor.getIndividual(individualId, new QueryOptions()).first();
         Map<String, AnnotationSet> annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap
-                (AnnotationSet::getId, Function.identity()));
+                (AnnotationSet::getName, Function.identity()));
         assertEquals(2, annotationSets.size());
-        assertEquals(annot1, annotationSets.get(annot1.getId()));
-        assertEquals(annot2, annotationSets.get(annot2.getId()));
+        assertEquals(annot1, annotationSets.get(annot1.getName()));
+        assertEquals(annot2, annotationSets.get(annot2.getName()));
 
-        catalogIndividualDBAdaptor.deleteAnnotation(individualId, annot1.getId());
+        catalogIndividualDBAdaptor.deleteAnnotation(individualId, annot1.getName());
 
         individual = catalogIndividualDBAdaptor.getIndividual(individualId, new QueryOptions()).first();
-        annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        annotationSets = individual.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getName, Function.identity()));
         assertEquals(1, annotationSets.size());
-        assertFalse(annotationSets.containsKey(annot1.getId()));
-        assertEquals(annot2, annotationSets.get(annot2.getId()));
+        assertFalse(annotationSets.containsKey(annot1.getName()));
+        assertEquals(annot2, annotationSets.get(annot2.getName()));
 
     }
 

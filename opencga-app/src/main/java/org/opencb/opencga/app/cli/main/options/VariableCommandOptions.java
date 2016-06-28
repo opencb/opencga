@@ -13,15 +13,14 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
 public class VariableCommandOptions {
 
 
-
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
 
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-   // public RenameCommandOptions renameCommandOptions;
-  //  public AddCommandOptions addCommandOptions;
+    // public RenameCommandOptions renameCommandOptions;
+    //  public AddCommandOptions addCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -35,17 +34,18 @@ public class VariableCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
-     //   this.renameCommandOptions = new RenameCommandOptions();
-     //   this.addCommandOptions = new AddCommandOptions();
+        //   this.renameCommandOptions = new RenameCommandOptions();
+        //   this.addCommandOptions = new AddCommandOptions();
 
     }
 
     class BaseVariableCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--variable-id"}, description = "VariableSet id", required = true, arity = 1)
-        Integer id;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--variable-id"}, description = "VariableSet id", required = true, arity = 1)
+        public Integer id;
     }
 
 
@@ -53,57 +53,59 @@ public class VariableCommandOptions {
     class CreateCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "StudyId", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
-        String name;
+        public String name;
 
         @Parameter(names = {"--unique"}, description = "Unique", required = false, arity = 0)
-        boolean unique;
+        public boolean unique;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--body"}, description = "Variables", required = true)
-        String body;
+        public String body;
     }
 
 
-
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
-    class InfoCommandOptions extends BaseVariableCommand { }
+    class InfoCommandOptions extends BaseVariableCommand {
+    }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     class SearchCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
-        String studyId;
+        public String studyId;
 
         @Parameter(names = {"--id"}, description = "CSV list of variableSetIds", required = false, arity = 1)
-        String id;
+        public String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
-        String name;
+        public String name;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String attributes;
+        public String attributes;
 
     }
+
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user variableSet using GET method [PENDING]")
-    class UpdateCommandOptions extends BaseVariableCommand { }
+    class UpdateCommandOptions extends BaseVariableCommand {
+    }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete an unused variable Set")
-    class DeleteCommandOptions extends BaseVariableCommand { }
-
+    class DeleteCommandOptions extends BaseVariableCommand {
+    }
 
 
 }

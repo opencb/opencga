@@ -22,8 +22,10 @@ package org.opencb.opencga.catalog.config;
 public class Monitor {
 
     private int daysToRemove;
-    private int executionSleepTime;
-    private int fileSleepTime;
+    private int executionDaemonInterval;
+    private int fileDaemonInterval;
+
+    private int port;
 
     public Monitor() {
     }
@@ -32,8 +34,9 @@ public class Monitor {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Monitor{");
         sb.append("daysToRemove=").append(daysToRemove);
-        sb.append(", executionSleepTime=").append(executionSleepTime);
-        sb.append(", fileSleepTime=").append(fileSleepTime);
+        sb.append(", executionDaemonInterval=").append(executionDaemonInterval);
+        sb.append(", fileDaemonInterval=").append(fileDaemonInterval);
+        sb.append(", port=").append(port);
         sb.append('}');
         return sb.toString();
     }
@@ -47,21 +50,30 @@ public class Monitor {
         return this;
     }
 
-    public int getExecutionSleepTime() {
-        return executionSleepTime;
+    public int getExecutionDaemonInterval() {
+        return executionDaemonInterval;
     }
 
-    public Monitor setExecutionSleepTime(int executionSleepTime) {
-        this.executionSleepTime = executionSleepTime;
+    public Monitor setExecutionDaemonInterval(int executionDaemonInterval) {
+        this.executionDaemonInterval = executionDaemonInterval;
         return this;
     }
 
-    public int getFileSleepTime() {
-        return fileSleepTime;
+    public int getFileDaemonInterval() {
+        return fileDaemonInterval;
     }
 
-    public Monitor setFileSleepTime(int fileSleepTime) {
-        this.fileSleepTime = fileSleepTime;
+    public Monitor setFileDaemonInterval(int fileDaemonInterval) {
+        this.fileDaemonInterval = fileDaemonInterval;
+        return this;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public Monitor setPort(int port) {
+        this.port = port;
         return this;
     }
 }

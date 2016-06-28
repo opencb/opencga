@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -116,12 +116,12 @@ public class JobManager extends AbstractManager implements IJobManager {
                 for (Group group : groups.getResult()) {
                     for (String tmpUserId : group.getUserIds()) {
                         if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getId());
+                            memberSet.add(group.getName());
 
-                            if (!groupUsers.containsKey(group.getId())) {
-                                groupUsers.put(group.getId(), new ArrayList<>());
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
                             }
-                            groupUsers.get(group.getId()).add(tmpUserId);
+                            groupUsers.get(group.getName()).add(tmpUserId);
                         }
                     }
                 }
@@ -250,10 +250,11 @@ public class JobManager extends AbstractManager implements IJobManager {
                 "projects.studies.files.path"));
         File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).first();
 
-        if (!outDir.getType().equals(File.Type.FOLDER)) {
-            throw new CatalogException("Bad outDir type. Required type : " + File.Type.FOLDER);
+        if (!outDir.getType().equals(File.Type.DIRECTORY)) {
+            throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
         }
 
+        // FIXME: Pass the toolId
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
         job.setOutput(outputFiles);
         job.setStatus(status);

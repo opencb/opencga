@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,7 +34,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
     }
-
 
 
     @Override
@@ -80,19 +78,20 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new job");
 
     }
+
     private void info() throws CatalogException {
         logger.debug("Getting job information");
     }
 
-    private void search() throws CatalogException, IOException  {
+    private void search() throws CatalogException, IOException {
         logger.debug("Searching job");
     }
 
-    private void visit() throws CatalogException, IOException  {
+    private void visit() throws CatalogException, IOException {
         logger.debug("Visiting a job");
     }
 
-    private void delete() throws CatalogException, IOException  {
+    private void delete() throws CatalogException, IOException {
         logger.debug("Deleting job");
     }
 
@@ -107,8 +106,6 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     private void groupBy() throws CatalogException, IOException {
         logger.debug("Group by job");
     }
-
-
 
 
 }

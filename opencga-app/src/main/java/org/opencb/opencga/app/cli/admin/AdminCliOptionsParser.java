@@ -152,7 +152,7 @@ public class AdminCliOptionsParser {
      */
     public class AdminCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
-        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = true, password = true, arity = 0)
+        @Parameter(names = {"-p", "--password"}, description = "Admin password", required = false, password = true, arity = 0)
         public String adminPassword;
 
     }
@@ -380,6 +380,11 @@ public class AdminCliOptionsParser {
         @ParametersDelegate
         public AdminCommonCommandOptions commonOptions = AdminCliOptionsParser.this.commonCommandOptions;
 
+        @Parameter(names = {"--start"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean start;
+
+        @Parameter(names = {"--stop"}, description = "File with the new tool to be installed", arity = 0)
+        public boolean stop;
     }
 
 

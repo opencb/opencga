@@ -16,10 +16,7 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiModelProperty;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.Query;
@@ -53,9 +50,8 @@ import java.util.*;
 public class JobWSServer extends OpenCGAWSServer {
 
 
-    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                       @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
 
@@ -79,9 +75,9 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         enum Status{READY, ERROR}
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String name;
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String toolName;
         public String description;
         public String execution;
@@ -108,7 +104,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
-                    + "Required values: [name, toolName, commandLine]")
+                    + "Required values: [name, toolName, commandLine]", response = Job.class)
     public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                   @ApiParam(value = "studies", required = true) InputJob job) {
         try {
@@ -132,15 +128,12 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create job", position = 1)
-    public Response createJob(
-//            @ApiParam(defaultValue = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
-            @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
-            @ApiParam(value = "execution", required = false) @DefaultValue("") @QueryParam("execution") String execution,
-            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description
-    ) {
+    @ApiOperation(value = "Create job", position = 1, response = Job.class)
+    public Response createJob(@ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
+                              @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
+                              @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
+                              @ApiParam(value = "execution") @DefaultValue("") @QueryParam("execution") String execution,
+                              @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description) {
         QueryResult<Job> jobResult;
         try {
             long studyId = catalogManager.getStudyId(studyIdStr);
@@ -250,7 +243,11 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/info")
-    @ApiOperation(value = "Get job information", position = 2)
+    @ApiOperation(value = "Get job information", position = 2, response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
@@ -259,42 +256,48 @@ public class JobWSServer extends OpenCGAWSServer {
         }
     }
 
+    // FIXME: Implement and change parameters
     @GET
     @Path("/search")
-    @ApiOperation(value = "File info", position = 12)
+    @ApiOperation(value = "Filter jobs [PENDING]", position = 12, response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
-                           @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
-                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
+                           @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
-                           @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
-                           @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
-                           @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
-                           @ApiParam(value = "jobId", required = false) @DefaultValue("") @QueryParam("jobId") String jobId,
-                           @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes,
-                           @ApiParam(value = "numerical attributes", required = false) @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+                           @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
+                           @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
+                           @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("") @QueryParam("outputFiles") String outputFiles) {
         try {
-            long studyIdNum = catalogManager.getStudyId(studyId);
-            // TODO this must be changed: only one queryOptions need to be passed
-            Query query = new Query();
-            QueryOptions qOptions = new QueryOptions(this.queryOptions);
-            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
-
-            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
-                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
-                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
-                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
-                logger.debug("Name attribute empty, it's been removed");
-            }
-
-            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
-                qOptions.put(MongoDBCollection.LIMIT, 1000);
-                logger.debug("Adding a limit of 1000");
-            }
-            logger.debug("query = " + query.toJson());
-            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
-            return createOkResponse(result);
+//            long studyIdNum = catalogManager.getStudyId(studyId);
+//            // TODO this must be changed: only one queryOptions need to be passed
+//            Query query = new Query();
+//            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+//            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+//
+//            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
+//                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
+//                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+//                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
+//                logger.debug("Name attribute empty, it's been removed");
+//            }
+//
+//            if (!qOptions.containsKey(MongoDBCollection.LIMIT)) {
+//                qOptions.put(MongoDBCollection.LIMIT, 1000);
+//                logger.debug("Adding a limit of 1000");
+//            }
+//            logger.debug("query = " + query.toJson());
+//            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
+//            return createOkResponse(result);
+            return createOkResponse("Non implemented method");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -321,7 +324,7 @@ public class JobWSServer extends OpenCGAWSServer {
             if (deleteFiles) {
                 QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
                 for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
-                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
+                    QueryResult queryResult = catalogManager.delete(Long.toString(fileId), queryOptions, sessionId);
                     results.add(queryResult);
                 }
             }
@@ -382,6 +385,71 @@ public class JobWSServer extends OpenCGAWSServer {
             logger.debug("queryOptions = " + qOptions.toJson());
             QueryResult result = catalogManager.jobGroupBy(query, qOptions, by, sessionId);
             return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls")
+    @ApiOperation(value = "Returns the acls of the job [PENDING]", position = 18)
+    public Response getAcls(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{jobId}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
+    public Response createRole(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls/{memberId}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
+    public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
+    public Response updateAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
+    public Response deleteAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

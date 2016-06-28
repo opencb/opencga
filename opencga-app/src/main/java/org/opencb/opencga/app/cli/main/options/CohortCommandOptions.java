@@ -6,8 +6,7 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.catalog.models.Cohort;
-
-import java.util.List;
+import org.opencb.opencga.catalog.models.Study;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -30,6 +29,7 @@ public class CohortCommandOptions {
     public OpencgaCommonCommandOptions commonCommandOptions;
 
     public CohortCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
@@ -46,10 +46,11 @@ public class CohortCommandOptions {
     }
 
     class BaseCohortsCommand {
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-id", "--cohorts-id"}, description = "Cohorts id", required = true, arity = 1)
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-i", "--cohorts-id"}, description = "Cohorts id", required = true, arity = 1)
         public Integer id;
     }
 
@@ -57,7 +58,7 @@ public class CohortCommandOptions {
     public class CreateCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
@@ -66,55 +67,58 @@ public class CohortCommandOptions {
         public String name;
 
         @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-        Cohort.Type type;
+        public Study.Type type;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-        Integer variableSetId;
+        public Integer variableSetId;
 
         @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
-        String description;
+        public String description;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids for the cohort (CSV)",
                 required = false, arity = 1)
-        String sampleIds;
+        public String sampleIds;
 
         @Parameter(names = {"--variable"}, description = "Categorical variable name to use to create cohorts",
                 required = false, arity = 1)
-        String variable;
+        public String variable;
 
 
-
-      //  @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
-      //  String tagmap = null;
+        //  @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without
+        // samples may be extracted from the mapping file", required = false, arity = 1)
+        //  String tagmap = null;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
-    public class InfoCommandOptions extends BaseCohortsCommand{ }
+    public class InfoCommandOptions extends BaseCohortsCommand {
+    }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
-    public class SamplesCommandOptions extends BaseCohortsCommand { }
+    public class SamplesCommandOptions extends BaseCohortsCommand {
+    }
 
     @Parameters(commandNames = {"calculate-stats"},
             commandDescription = "Calculate variant stats for a set of cohorts.")
-    class StatsCommandOptions extends BaseCohortsCommand{
+    class StatsCommandOptions extends BaseCohortsCommand {
 
         @Parameter(names = {"--calculate"}, description = "Calculate cohort stats", arity = 0)
-        boolean calculate;
+        public boolean calculate;
 
         @Parameter(names = {"--delete"}, description = "Delete stats [PENDING]", arity = 0)
-        boolean delete;
+        public boolean delete;
 
         @Parameter(names = {"--log"}, description = "Log level", required = false, arity = 1)
-        String log = "";
+        public String log = "";
 
         @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file",
                 required = false, arity = 1)
-        String outdir = "";
+        public String outdir = "";
 
       /*  @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
         boolean enqueue;
 
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF file")
+        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF
+        file")
         String tagmap = null;
 
         @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
@@ -123,22 +127,21 @@ public class CohortCommandOptions {
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate cohort")
     public class AnnotateCommandOptions extends BaseCohortsCommand {
+
         @Parameter(names = {"--annotate-set-name"}, description = "Annotation set name. Must be unique for the cohort",
                 required = true, arity = 1)
-        String annotateSetName;
+        public String annotateSetName;
 
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt",required = true, arity = 1)
-        String variableSetId;
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
 
         @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet, default: false",
                 required = false, arity = 0)
-        boolean update;
+        public boolean update;
 
         @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet, default:false",
                 required = false, arity = 0)
-        boolean delete;
-
-
+        public boolean delete;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
@@ -146,110 +149,105 @@ public class CohortCommandOptions {
 
         @Parameter(names = {"--name"}, description = "Cohort set name.",
                 required = false, arity = 1)
-        String name;
+        public String name;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date",required = false, arity = 1)
-        String creationDate;
+        @Parameter(names = {"--creation-date"}, description = "Creation date", required = false, arity = 1)
+        public String creationDate;
 
-        @Parameter(names = {"--description"}, description = "Description",required = false, arity = 1)
-        String update;
+        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
+        public String update;
 
         @Parameter(names = {"--samples"},
                 description = "Comma separated values of sampleIds. Will replace all existing sampleIds",
                 required = true, arity = 0)
-        String samples;
-
-
+        public String samples;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete cohort")
-    public class DeleteCommandOptions extends BaseCohortsCommand {    }
+    public class DeleteCommandOptions extends BaseCohortsCommand {
+    }
 
     @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
     public class UnshareCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-ids", "--cohort-ids"}, description = "Cohorts ids", required = true, arity = 1)
-        String ids;
+        public String ids;
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
                 required = false, arity = 1)
-        String permission;
-
-
+        public String permission;
     }
 
     @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
     public class ShareCommandOptions {
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-ids", "--cohort-ids"}, description = "Cohorts ids", required = true, arity = 1)
-        String cohortids;
+        public String cohortids;
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
                 required = true, arity = 1)
-        String members;
+        public String members;
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
                 required = false, arity = 1)
-        String permission;
+        public String permission;
 
         @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false",required = false, arity = 0)
-        boolean override;
+                " of permissions in case any member already had any, default:false", required = false, arity = 0)
+        public boolean override;
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
+
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--by"},
                 description = "Comma separated list of fields by which to group by.",
                 required = true, arity = 1)
-        String by;
+        public String by;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
-
+        public String studyId;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
                 required = false, arity = 1)
-        String id;
+        public String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.",required = false, arity = 1)
-        String name;
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        public String name;
 
-        @Parameter(names = {"--type"}, description = "Comma separated Type values.",required = false, arity = 1)
-        String type;
+        @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
+        public String type;
 
-        @Parameter(names = {"--status"}, description = "Status.",required = false, arity = 1)
-        String status;
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        public String status;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.",required = false, arity = 1)
-        String creationDate;
-
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        public String creationDate;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
-        String sampleIds;
+        public String sampleIds;
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        String description;
-
+        public String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String attributes;
+        public String attributes;
 
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        String nattributes;
-
+        public String nattributes;
     }
 }

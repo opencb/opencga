@@ -6,9 +6,9 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
@@ -17,7 +17,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -75,7 +75,7 @@ public class UserManager extends AbstractManager implements IUserManager {
 //        if (sessionId.length() == 40) {
 //            return "admin";
 //        }
-        if (sessionId.equals("anonymous")) {
+        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
             return "anonymous";
         }
         return userDBAdaptor.getUserIdBySessionId(sessionId);
@@ -89,7 +89,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
 //        checkSessionId(userId, sessionId);  //Only the user can change his own password
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
@@ -125,7 +125,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         organization = organization != null ? organization : "";
         checkUserExists(id);
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
+        User user = new User(id, name, email, "", organization, new User.UserStatus());
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);
@@ -183,7 +183,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
+    public QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -195,7 +195,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             options.put(QueryOptions.EXCLUDE, Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(),
                     CatalogUserDBAdaptor.QueryParams.SESSIONS.key(), "projects.studies.variableSets"));
         }
-        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastActivity);
+        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastModified);
         return user;
     }
 
@@ -239,7 +239,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         if (parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
         return queryResult;
@@ -290,8 +290,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email) throws CatalogException {
-        return authenticationManager.resetPassword(userId, email);
+    public QueryResult resetPassword(String userId) throws CatalogException {
+        return authenticationManager.resetPassword(userId);
     }
 
     @Deprecated
@@ -364,10 +364,10 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public void addQueryFilter(String sessionId, Filter filter) throws CatalogException {
+    public void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
-        userDBAdaptor.addQueryFilter(userId, filter);
+        userDBAdaptor.addQueryFilter(userId, queryFilter);
     }
 
     @Override
@@ -378,7 +378,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
+    public QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
         return userDBAdaptor.getQueryFilter(userId, filterId);

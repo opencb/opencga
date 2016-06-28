@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers.api;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -12,6 +13,7 @@ import org.opencb.opencga.catalog.models.acls.DatasetAcl;
 import org.opencb.opencga.catalog.models.acls.FileAcl;
 
 import java.io.DataInputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -94,7 +96,15 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> rename(long fileId, String newName, String sessionId) throws CatalogException;
 
+    QueryResult<File> delete(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException;
+
+    QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
+            throws CatalogException, IOException;
+
+    @Deprecated
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;
+
+    QueryResult<File> unlink(String fileIdStr, QueryOptions options, String sessionId) throws CatalogException, IOException;
 
     /**
      * Retrieve the file Acls for the given members in the file.

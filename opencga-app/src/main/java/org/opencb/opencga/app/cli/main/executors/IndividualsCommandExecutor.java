@@ -17,7 +17,6 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
-import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -35,7 +34,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         super(individualsCommandOptions.commonCommandOptions);
         this.individualsCommandOptions = individualsCommandOptions;
     }
-
 
 
     @Override
@@ -90,12 +88,15 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     private void search() throws CatalogException {
         logger.debug("Searching individuals");
     }
+
     private void annotate() throws CatalogException {
         logger.debug("Annotating an individual");
     }
+
     private void update() throws CatalogException {
         logger.debug("Updating individual information");
     }
+
     private void delete() throws CatalogException {
         logger.debug("Deleting individual information");
     }
@@ -103,6 +104,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     private void share() throws CatalogException, IOException {
         logger.debug("Sharing a individual");
     }
+
     private void unshare() throws CatalogException, IOException {
         logger.debug("Unsharing a individual");
     }
@@ -110,7 +112,6 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
     private void groupBy() throws CatalogException, IOException {
         logger.debug("Group by individuals");
     }
-
 
 
 }

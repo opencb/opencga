@@ -2,14 +2,12 @@ package org.opencb.opencga.client.rest;
 
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.AfterClass;
-import org.junit.Test;
-import org.opencb.opencga.analysis.demo.AnalysisDemo;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.utils.CatalogDemo;
 import org.opencb.opencga.client.config.ClientConfiguration;
 import org.opencb.opencga.core.config.Configuration;
-import org.opencb.opencga.server.rest.RestServer;
+import org.opencb.opencga.server.RestServer;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 
 import java.io.FileInputStream;
