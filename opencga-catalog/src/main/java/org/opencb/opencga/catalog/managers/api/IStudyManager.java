@@ -36,6 +36,22 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      */
     Long getStudyId(String userId, String studyStr) throws CatalogException;
 
+    /**
+     * Obtains the list of studyIds corresponding to the comma separated list of study strings given in studyStr.
+     *
+     * @param userId User demanding the action.
+     * @param studyStr Comma separated list of study ids.
+     * @return A list of study ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getStudyIds(String userId, String studyStr) throws CatalogException {
+        List<Long> studyIds = new ArrayList<>();
+        for (String studyId : studyStr.split(",")) {
+            studyIds.add(getStudyId(userId, studyId));
+        }
+        return studyIds;
+    }
+
     @Deprecated
     Long getStudyId(String studyId) throws CatalogException;
 

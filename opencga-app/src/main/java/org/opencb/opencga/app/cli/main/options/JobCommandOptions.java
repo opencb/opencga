@@ -45,10 +45,10 @@ public class JobCommandOptions {
 
     }
 
-    class BaseJobCommand {
+    public class BaseJobCommand {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
         public Integer id;
@@ -77,7 +77,7 @@ public class JobCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
-    class InfoCommandOptions extends BaseJobCommand {
+    public class InfoCommandOptions extends BaseJobCommand {
     }
 
 
@@ -91,7 +91,7 @@ public class JobCommandOptions {
         public String studyId;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String id;
+        public String jobId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;

@@ -405,6 +405,11 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getStudyId(id);
     }
 
+    public List<Long> getStudyIds(String studyId, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return studyManager.getStudyIds(userId, studyId);
+    }
+
     public long getStudyId(String studyId, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return studyManager.getStudyId(userId, studyId);
@@ -524,6 +529,11 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<Project> createProject(String name, String alias, String description, String organization, QueryOptions options,
                                               String sessionId) throws CatalogException {
         return projectManager.create(name, alias, description, organization, options, sessionId);
+    }
+
+    public List<Long> getProjectIds(String projectIds, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return projectManager.getProjectIds(userId, projectIds);
     }
 
     public long getProjectId(String projectId, String sessionId) throws CatalogException {
@@ -1004,6 +1014,16 @@ public class CatalogManager implements AutoCloseable {
      * ***************************
      */
 
+    public long getIndividualId(String individualStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return individualManager.getIndividualId(userId, individualStr);
+    }
+
+    public List<Long> getIndividualIds(String individualStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return individualManager.getIndividualIds(userId, individualStr);
+    }
+
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
                                                     Individual.Gender gender, QueryOptions options, String sessionId)
             throws CatalogException {
@@ -1281,6 +1301,11 @@ public class CatalogManager implements AutoCloseable {
     public long getCohortId(String cohortStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return sampleManager.getCohortId(userId, cohortStr);
+    }
+
+    public List<Long> getCohortIds(String cohortStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        return sampleManager.getCohortIds(userId, cohortStr);
     }
 
     public QueryResult<AnnotationSet> annotateCohort(String cohortId, String annotationSetName, long variableSetId,

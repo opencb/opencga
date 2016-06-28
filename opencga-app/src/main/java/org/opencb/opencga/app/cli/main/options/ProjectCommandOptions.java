@@ -33,7 +33,7 @@ public class ProjectCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
     }
 
-    class BaseProjectCommand {
+    public class BaseProjectCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -43,7 +43,7 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new project")
-    class CreateCommandOptions {
+    public class CreateCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -57,20 +57,20 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = true, arity = 1)
         public String organization;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
-    class InfoCommandOptions extends BaseProjectCommand {
+    public class InfoCommandOptions extends BaseProjectCommand {
     }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")
-    class StudiesCommandOptions extends BaseProjectCommand {
+    public class StudiesCommandOptions extends BaseProjectCommand {
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
-    class UpdateCommandOptions extends BaseProjectCommand {
+    public class UpdateCommandOptions extends BaseProjectCommand {
 
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
@@ -89,7 +89,7 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
-    class DeleteCommandOptions extends BaseProjectCommand {
+    public class DeleteCommandOptions extends BaseProjectCommand {
     }
 
 }

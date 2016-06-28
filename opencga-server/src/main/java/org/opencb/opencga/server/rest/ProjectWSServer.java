@@ -71,10 +71,9 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response info(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         try {
-            String[] projectIdArray = projectIdsStr.split(",");
             List<QueryResult<Project>> queryResults = new LinkedList<>();
-            for (String projectIdStr : projectIdArray) {
-                long projectId = catalogManager.getProjectId(projectIdStr);
+            List<Long> projectIds = catalogManager.getProjectIds(projectIdsStr, sessionId);
+            for (Long projectId : projectIds) {
                 queryResults.add(catalogManager.getProject(projectId, queryOptions, sessionId));
             }
             return createOkResponse(queryResults);
@@ -94,10 +93,15 @@ public class ProjectWSServer extends OpenCGAWSServer {
     })
     public Response getAllStudies(@ApiParam(value = "projectId", required = true) @PathParam("projectId") String projectIdsStr) {
         try {
-            String[] projectIdArray = projectIdsStr.split(",");
-            List<QueryResult> results = new LinkedList<>();
-            for (String id : projectIdArray) {
-                results.add(catalogManager.getAllStudiesInProject(Integer.parseInt(id), queryOptions, sessionId));
+            List<QueryResult<Study>> results = new LinkedList<>();
+            List<Long> projectIds = catalogManager.getProjectIds(projectIdsStr, sessionId);
+            String[] splittedProjectNames = projectIdsStr.split(",");
+            for (int i = 0; i < projectIds.size(); i++) {
+                Long projectId = projectIds.get(i);
+                QueryResult<Study> allStudiesInProject = catalogManager.getAllStudiesInProject(projectId, queryOptions, sessionId);
+                // We set the id of the queryResult with the project id given by the user
+                allStudiesInProject.setId(splittedProjectNames[i]);
+                results.add(allStudiesInProject);
             }
             return createOkResponse(results);
         } catch (Exception e) {

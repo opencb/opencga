@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -190,11 +190,23 @@ public class UserManager extends AbstractManager implements IUserManager {
         checkSessionId(userId, sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if ((!options.containsKey(QueryOptions.INCLUDE) || options.getAsStringList(QueryOptions.INCLUDE).isEmpty())
-                && (!options.containsKey(QueryOptions.EXCLUDE) || options.getAsStringList(QueryOptions.EXCLUDE).isEmpty())) {
-            options.put(QueryOptions.EXCLUDE, Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(),
-                    CatalogUserDBAdaptor.QueryParams.SESSIONS.key(), "projects.studies.variableSets"));
+        if (!options.containsKey(QueryOptions.INCLUDE) || options.get(QueryOptions.INCLUDE) == null) {
+            List<String> excludeList;
+            if (options.containsKey(QueryOptions.EXCLUDE)) {
+                List<String> asStringList = options.getAsStringList(QueryOptions.EXCLUDE, ",");
+                excludeList = new ArrayList<>(asStringList.size() + 3);
+                excludeList.addAll(asStringList);
+            } else {
+                excludeList = new ArrayList<>(3);
+            }
+            excludeList.add(CatalogUserDBAdaptor.QueryParams.SESSIONS.key());
+            excludeList.add(CatalogUserDBAdaptor.QueryParams.PASSWORD.key());
+            if (!excludeList.contains(CatalogUserDBAdaptor.QueryParams.PROJECTS.key())) {
+                excludeList.add("projects.studies.variableSets");
+            }
+            options.put(QueryOptions.EXCLUDE, excludeList);
         }
+
         QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastModified);
         return user;
     }
