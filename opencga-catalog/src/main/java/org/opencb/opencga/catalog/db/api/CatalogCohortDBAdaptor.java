@@ -36,11 +36,8 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort> {
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
-
-
-        ANNOTATION_SET_NAME("annotationSetId", TEXT_ARRAY, ""),
         VARIABLE_NAME("variableName", TEXT, ""),
-
+        ANNOTATION_SET_NAME("annotationSetName", TEXT_ARRAY, ""),
 
         ANNOTATION("annotation", TEXT_ARRAY, ""),
 

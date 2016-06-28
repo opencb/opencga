@@ -84,11 +84,11 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
     }
 
 
-    QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetId, long variableSetId, Map<String, Object> annotations,
+    QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet,
                                         String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetId, Map<String, Object> newAnnotations,
+    QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetName, Map<String, Object> newAnnotations,
                                                 String sessionId) throws CatalogException;
 
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException;
@@ -201,11 +201,11 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
 
     QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetId, long variableSetId, Map<String, Object> annotations,
-                                        Map<String, Object> attributes, boolean checkAnnotationSet, String sessionId)
-            throws CatalogException;
+    QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetName, long variableSetId,
+                                              Map<String, Object> annotations, Map<String, Object> attributes, boolean checkAnnotationSet,
+                                              String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetId, Map<String, Object> newAnnotations,
+    QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetName, Map<String, Object> newAnnotations,
                                                 String sessionId) throws CatalogException;
 
     QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortStr, String annotationId, String sessionId) throws CatalogException;

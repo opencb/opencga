@@ -113,7 +113,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         STUDY_ID("studyId", DECIMAL, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
-        ANNOTATION_SET_NAME("annotationSetId", TEXT, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT, ""),
         ANNOTATION("annotation", TEXT, "");
 
         private static Map<String, QueryParams> map;
@@ -172,7 +172,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         population(Type.TEXT, ""),
 
         variableSetId(Type.NUMERICAL, ""),
-        annotationSetId(Type.NUMERICAL, ""),
+        annotationSetName(Type.NUMERICAL, ""),
         annotation(Type.TEXT, ""),
 
         attributes("attributes", Type.TEXT, ""),

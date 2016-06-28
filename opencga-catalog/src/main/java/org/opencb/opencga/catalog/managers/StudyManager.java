@@ -118,6 +118,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
     }
 
+    @Deprecated
     @Override
     public Long getStudyId(String studyId) throws CatalogException {
         if (StringUtils.isNumeric(studyId)) {

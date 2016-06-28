@@ -529,7 +529,7 @@ public class CatalogManagerTest extends GenericTest {
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "myDirectory/"),
                 null, sessionIdUser);
         assertEquals(1, folderQueryResult.getNumResults());
-        assertTrue(!folderQueryResult.first().isExternal());
+        assertTrue(folderQueryResult.first().isExternal());
         folderQueryResult = catalogManager.searchFile(studyId, new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                 .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), "myDirectory/test/"), null, sessionIdUser);
@@ -742,13 +742,13 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void renameFileTest() throws CatalogException, IOException {
-        long studyId = catalogManager.getStudyId("user@1000G:phase1");
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/file.txt",
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
         catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/nested/folder/file2.txt",
                 StringUtils.randomString(200).getBytes(), "description", true, sessionIdUser);
 
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/nested/"), "nested2", sessionIdUser);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/nested/", sessionIdUser), "nested2", sessionIdUser);
         Set<String> paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
@@ -758,7 +758,7 @@ public class CatalogManagerTest extends GenericTest {
         assertTrue(paths.contains("data/nested2/folder/file2.txt"));
         assertTrue(paths.contains("data/file.txt"));
 
-        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/"), "Data", sessionIdUser);
+        catalogManager.renameFile(catalogManager.getFileId("user@1000G:phase1:data/", sessionIdUser), "Data", sessionIdUser);
         paths = catalogManager.getAllFiles(studyId, new Query(), new QueryOptions(), sessionIdUser).getResult()
                 .stream().map(File::getPath).collect(Collectors.toSet());
 
@@ -1261,19 +1261,19 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void testDeleteLeafFolder() throws CatalogException, IOException {
-        long deletable = catalogManager.getFileId("user@1000G/phase3/data/test/folder/");
+        long deletable = catalogManager.getFileId("user@1000G:phase3:/data/test/folder/", sessionIdUser);
         deleteFolderAndCheck(deletable);
     }
 
     @Test
     public void testDeleteMiddleFolder() throws CatalogException, IOException {
-        long deletable = catalogManager.getFileId("user@1000G/phase3/data/");
+        long deletable = catalogManager.getFileId("user@1000G:phase3:/data/", sessionIdUser);
         deleteFolderAndCheck(deletable);
     }
 
     @Test
     public void testDeleteRootFolder() throws CatalogException, IOException {
-        long deletable = catalogManager.getFileId("user@1000G/phase3/");
+        long deletable = catalogManager.getFileId("user@1000G:phase3:/", sessionIdUser);
         thrown.expect(CatalogException.class);
         deleteFolderAndCheck(deletable);
     }
@@ -1281,7 +1281,7 @@ public class CatalogManagerTest extends GenericTest {
     @Test
     public void deleteFolderTest() throws CatalogException, IOException {
         List<File> folderFiles = new LinkedList<>();
-        long studyId = catalogManager.getStudyId("user@1000G/phase3");
+        long studyId = catalogManager.getStudyId("user@1000G:phase3", sessionIdUser);
         File folder = catalogManager.createFolder(studyId, Paths.get("folder"), false, null, sessionIdUser).first();
         folderFiles.add(catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "folder/my.txt", StringUtils
                 .randomString(200).getBytes(), "", true, sessionIdUser).first());
@@ -1323,7 +1323,7 @@ public class CatalogManagerTest extends GenericTest {
 
     @Test
     public void getAllFilesInFolder() throws CatalogException {
-        long fileId = catalogManager.getFileId("user@1000G/phase1/data/test/folder/");
+        long fileId = catalogManager.getFileId("user@1000G:phase1:/data/test/folder/", sessionIdUser);
         List<File> allFilesInFolder = catalogManager.getAllFilesInFolder(fileId, null, sessionIdUser).getResult();
         assertEquals(3, allFilesInFolder.size());
     }

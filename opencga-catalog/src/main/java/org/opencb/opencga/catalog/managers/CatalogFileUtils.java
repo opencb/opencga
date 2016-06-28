@@ -241,6 +241,7 @@ public class CatalogFileUtils {
     }
 
 
+    @Deprecated
     /**
      * Link an external file into Catalog. Adds an URI to the field File::uri
      * A file with a uri is an "external" file. Files inside external folders are not external.
@@ -268,6 +269,7 @@ public class CatalogFileUtils {
         }
     }
 
+    @Deprecated
     /**
      * Creates and links an external folder.
      *
@@ -297,7 +299,7 @@ public class CatalogFileUtils {
         return linkFolder(folder, calculateChecksum, externalUri, createFoundFiles, relink, sessionId);
     }
 
-
+    @Deprecated
     private void checkCanLinkFile(File file, boolean relink) throws CatalogException {
         String fileStatusEnum = file.getStatus().getName();
         if (relink) {
@@ -314,6 +316,7 @@ public class CatalogFileUtils {
         }
     }
 
+    @Deprecated
     private File linkFile(File file, boolean calculateChecksum, URI externalUri, String sessionId) throws CatalogException {
         String checksum = null;
         CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(externalUri);
@@ -336,6 +339,7 @@ public class CatalogFileUtils {
         return catalogManager.getFile(file.getId(), sessionId).first();
     }
 
+    @Deprecated
     private File linkFolder(File folder, boolean calculateChecksum, URI externalUri, boolean createFoundFiles, boolean relink, String
             sessionId) throws CatalogException {
         logger.debug("Linking a folder");

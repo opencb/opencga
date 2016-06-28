@@ -108,7 +108,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--indivual-id"}, description = "Indivudual id.", required = false, arity = 0)
         public String individualId;
 
-        @Parameter(names = {"--annotation-set-id"}, description = "Annotation set id.", required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
         public String annotationSetId;
 
         @Parameter(names = {"--variable-set-id"}, description = "Annotation set id.", required = false, arity = 0)
@@ -213,7 +213,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--individual-id"}, description = "Individual id.", required = false, arity = 0)
         public String individualId;
 
-        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.", required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
         public String annotationSetId;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)

@@ -264,7 +264,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         public Integer variableSetId;
 
-        @Parameter(names = {"--annotation-set-id"}, description = "Annotation Set Id.", required = false, arity = 0)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
         public String annotationSetId;
 
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
