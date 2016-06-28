@@ -40,6 +40,7 @@ import java.util.stream.Collectors;
  */
 public class VariantVcfExporter implements DataWriter<Variant> {
 
+    private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#.#######");
     private final Logger logger = LoggerFactory.getLogger(VariantVcfExporter.class);
 
 
@@ -150,13 +151,23 @@ public class VariantVcfExporter implements DataWriter<Variant> {
 
         for (String cohortName : studyConfiguration.getCohortIds().keySet()) {
             if (cohortName.equals(StudyEntry.DEFAULT_COHORT)) {
+                header.addMetaDataLine(new VCFInfoHeaderLine(VCFConstants.ALLELE_COUNT_KEY, VCFHeaderLineCount.A,
+                        VCFHeaderLineType.Integer, "Total number of alternate alleles in called genotypes,"
+                        + " for each ALT allele, in the same order as listed"));
+                header.addMetaDataLine(new VCFInfoHeaderLine(VCFConstants.ALLELE_FREQUENCY_KEY, VCFHeaderLineCount.A,
+                        VCFHeaderLineType.Float, "Allele Frequency, for each ALT allele, calculated from AC and AN, in the range (0,1),"
+                        + " in the same order as listed"));
+                header.addMetaDataLine(new VCFInfoHeaderLine(VCFConstants.ALLELE_NUMBER_KEY, 1,
+                        VCFHeaderLineType.Integer, "Total number of alleles in called genotypes"));
                 continue;
             }
 //            header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + VCFConstants.ALLELE_COUNT_KEY, VCFHeaderLineCount.A,
-//                    VCFHeaderLineType.Integer, "Total number of alternate alleles in called genotypes"));
+//                    VCFHeaderLineType.Integer, "Total number of alternate alleles in called genotypes,"
+//                    + " for each ALT allele, in the same order as listed"));
             header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + "_" + VCFConstants.ALLELE_FREQUENCY_KEY, VCFHeaderLineCount.A,
                     VCFHeaderLineType.Float,
-                    "Allele frequency in the " + cohortName + " cohort calculated from AC and AN, in the range (0,1)"));
+                    "Allele frequency in the " + cohortName + " cohort calculated from AC and AN, in the range (0,1),"
+                            + " in the same order as listed"));
 //            header.addMetaDataLine(new VCFInfoHeaderLine(cohortName + VCFConstants.ALLELE_NUMBER_KEY, 1, VCFHeaderLineType.Integer,
 //                    "Total number of alleles in called genotypes"));
         }
@@ -593,13 +604,17 @@ public class VariantVcfExporter implements DataWriter<Variant> {
 
             if (cohortName.equals(StudyEntry.DEFAULT_COHORT)) {
                 cohortName = "";
-                attributes.put(cohortName + VCFConstants.ALLELE_NUMBER_KEY,
-                        String.valueOf(stats.getAltAlleleCount() + stats.getRefAlleleCount()));
-                attributes.put(cohortName + VCFConstants.ALLELE_COUNT_KEY, String.valueOf(stats.getAltAlleleCount()));
+                int an = stats.getAltAlleleCount() + stats.getRefAlleleCount();
+                if (an >= 0) {
+                    attributes.put(cohortName + VCFConstants.ALLELE_NUMBER_KEY, String.valueOf(an));
+                }
+                if (stats.getAltAlleleCount() >= 0) {
+                    attributes.put(cohortName + VCFConstants.ALLELE_COUNT_KEY, String.valueOf(stats.getAltAlleleCount()));
+                }
             } else {
                 cohortName = cohortName + "_";
             }
-            attributes.put(cohortName + VCFConstants.ALLELE_FREQUENCY_KEY, String.valueOf(stats.getAltAlleleFreq()));
+            attributes.put(cohortName + VCFConstants.ALLELE_FREQUENCY_KEY, DECIMAL_FORMAT.format(stats.getAltAlleleFreq()));
         }
     }
 

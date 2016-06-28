@@ -182,7 +182,9 @@ public class VariantStatisticsManager {
                             .joining(";")));
         }
         logger.info("ReaderQuery: " + readerQuery.toJson());
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
+        QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true);
+        logger.info("ReaderQueryOptions: " + readerOptions.toJson());
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/,
