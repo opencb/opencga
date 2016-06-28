@@ -277,15 +277,15 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     @Override
     public QueryResult<Study> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
+        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!options.containsKey("include") || options.get("include") == null || options.getAsStringList("include").isEmpty()) {
-            options.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
+        if (!qOptions.containsKey("include") || qOptions.get("include") == null || qOptions.getAsStringList("include").isEmpty()) {
+            qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
-        QueryResult<Study> allStudies = studyDBAdaptor.get(query, options);
+        QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions);
         List<Study> studies = allStudies.getResult();
 
         authorizationManager.filterStudies(userId, studies);

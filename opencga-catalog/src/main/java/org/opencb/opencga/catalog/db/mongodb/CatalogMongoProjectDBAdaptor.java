@@ -490,7 +490,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("study")) {
+                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies")) {
             for (Project project : projectQueryResult.getResult()) {
                 Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
                 try {

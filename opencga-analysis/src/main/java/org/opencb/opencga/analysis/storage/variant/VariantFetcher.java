@@ -89,7 +89,7 @@ public class VariantFetcher {
         QueryResult result;
         long fileIdNum;
 
-        fileIdNum = catalogManager.getFileId(fileId);
+        fileIdNum = catalogManager.getFileId(fileId, sessionId);
         File file = catalogManager.getFile(fileIdNum, sessionId).first();
 
         if (file.getIndex() == null || !file.getIndex().getStatus().getName().equals(FileIndex.IndexStatus.READY)) {
