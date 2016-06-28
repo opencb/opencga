@@ -77,7 +77,7 @@ import java.util.stream.Collectors;
  * Created by jacobo on 29/09/14.
  */
 @Deprecated
-public class OpenCGAMain {
+public class OpenCGAMainOld {
 
     private static String shellUserId;
     private static String shellSessionId;
@@ -94,7 +94,7 @@ public class OpenCGAMain {
 
     public static void main(String[] args) throws IOException {
 
-        OpenCGAMain opencgaMain = new OpenCGAMain();
+        OpenCGAMainOld opencgaMain = new OpenCGAMainOld();
 
         OptionsParser optionsParser = new OptionsParser(false);
         try {
@@ -1392,7 +1392,7 @@ public class OpenCGAMain {
         ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
         stderr.setThreshold(Level.toLevel(logLevel));
 
-        logger = LoggerFactory.getLogger(OpenCGAMain.class);
+        logger = LoggerFactory.getLogger(OpenCGAMainOld.class);
     }
 
     private static SessionFile loadUserFile() throws IOException {

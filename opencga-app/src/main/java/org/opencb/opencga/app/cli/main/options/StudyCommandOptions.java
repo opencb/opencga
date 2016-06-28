@@ -484,7 +484,7 @@ public class StudyCommandOptions {
                 required = false, arity = 1)
         public String removePermissions;
 
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
         public String setPermissions;
     }
 

@@ -91,7 +91,7 @@ public class JobCommandOptions {
         public String studyId;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String id;
+        public String jobId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
@@ -113,9 +113,6 @@ public class JobCommandOptions {
 
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String jobId;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
         public String attributes;

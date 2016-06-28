@@ -51,7 +51,7 @@ public class CohortCommandOptions {
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-i", "--cohorts-id"}, description = "Cohorts id", required = true, arity = 1)
-        public Integer id;
+        public String id;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
@@ -70,7 +70,7 @@ public class CohortCommandOptions {
         public Study.Type type;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-        public Integer variableSetId;
+        public String variableSetId;
 
         @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
         public String description;

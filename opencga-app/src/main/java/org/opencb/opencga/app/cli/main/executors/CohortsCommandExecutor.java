@@ -90,7 +90,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         String studyId = cohortsCommandOptions.createCommandOptions.studyId;
         String cohortName = cohortsCommandOptions.createCommandOptions.name;
         String description = cohortsCommandOptions.createCommandOptions.description;
-        Integer variableSetId = cohortsCommandOptions.createCommandOptions.variableSetId;
+        String variableSetId = cohortsCommandOptions.createCommandOptions.variableSetId;
         String sampleIds = cohortsCommandOptions.createCommandOptions.sampleIds;
         String variable = cohortsCommandOptions.createCommandOptions.variable;
 
@@ -107,7 +107,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     private void info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
         QueryResponse<Cohort> info =
-                openCGAClient.getCohortClient().get(Integer.toString(cohortsCommandOptions.infoCommandOptions.id), null);
+                openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.id, null);
         System.out.println("Cohorts = " + info);
 
     }
@@ -143,7 +143,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
 
         QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
-                .update(Integer.toString(cohortsCommandOptions.updateCommandOptions.id), objectMap);
+                .update(cohortsCommandOptions.updateCommandOptions.id, objectMap);
         System.out.println("Cohort: " + cohort);
     }
 
@@ -151,7 +151,7 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Deleting cohort");
         ObjectMap objectMap = new ObjectMap();
         QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
-                .delete(Integer.toString(cohortsCommandOptions.deleteCommandOptions.id), objectMap);
+                .delete(cohortsCommandOptions.deleteCommandOptions.id, objectMap);
         System.out.println("Cohort: " + cohort);
     }
 
