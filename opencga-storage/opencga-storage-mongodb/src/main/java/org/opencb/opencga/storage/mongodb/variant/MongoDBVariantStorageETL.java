@@ -7,6 +7,7 @@ import org.bson.Document;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -22,6 +23,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
+import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
@@ -71,6 +73,33 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageManagerException {
         super.securePreLoad(studyConfiguration, source);
         int fileId = options.getInt(Options.FILE_ID.key());
+
+        if (studyConfiguration.getAttributes().containsKey(DEFAULT_GENOTYPE.key())) {
+            Set<String> defaultGenotype = new HashSet<>(studyConfiguration.getAttributes().getAsStringList(DEFAULT_GENOTYPE.key()));
+            logger.debug("Using default genotype from study configuration: {}", defaultGenotype);
+        } else {
+            Set<String> defaultGenotype;
+            if (options.containsKey(DEFAULT_GENOTYPE.key())) {
+                defaultGenotype = new HashSet<>(options.getAsStringList(DEFAULT_GENOTYPE.key()));
+            } else {
+                VariantStudy.StudyType studyType = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class, Options.STUDY_TYPE
+                        .defaultValue());
+                switch (studyType) {
+                    case FAMILY:
+                    case TRIO:
+                    case PAIRED:
+                    case PAIRED_TUMOR:
+                        defaultGenotype = Collections.singleton(DocumentToSamplesConverter.UNKNOWN_GENOTYPE);
+                        logger.debug("Do not compress genotypes. Default genotype : {}", defaultGenotype);
+                        break;
+                    default:
+                        defaultGenotype = new HashSet<>(DEFAULT_GENOTYPE.defaultValue());
+                        logger.debug("No default genotype found. Using default genotype: {}", defaultGenotype);
+                        break;
+                }
+            }
+            studyConfiguration.getAttributes().put(DEFAULT_GENOTYPE.key(), defaultGenotype);
+        }
 
         boolean newSampleBatch = checkCanLoadSampleBatch(studyConfiguration, fileId);
 

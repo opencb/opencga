@@ -57,7 +57,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         COLLECTION_STUDIES("collection.studies",  "studies"),
         COLLECTION_STAGE("collection.stage",  "stage"),
         BULK_SIZE("bulkSize",  100),
-        DEFAULT_GENOTYPE("defaultGenotype", Collections.singleton("0/0")),
+        DEFAULT_GENOTYPE("defaultGenotype", Arrays.asList("0/0", "0|0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
         STAGE("stage", false),
         STAGE_RESUME("stage.resume", false),
