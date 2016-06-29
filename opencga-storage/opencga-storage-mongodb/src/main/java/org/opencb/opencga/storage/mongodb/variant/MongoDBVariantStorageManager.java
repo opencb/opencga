@@ -59,10 +59,11 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         BULK_SIZE("bulkSize",  100),
         DEFAULT_GENOTYPE("defaultGenotype", Collections.singleton("0/0")),
         ALREADY_LOADED_VARIANTS("alreadyLoadedVariants", 0),
-        STAGE("stage", 0),
-        STAGE_RESUME("stage.resume", 0),
-        MERGE("merge", 0),
-        MERGE_RESUME("merge.resume", 0);
+        STAGE("stage", false),
+        STAGE_RESUME("stage.resume", false),
+        MERGE("merge", false),
+        MERGE_SKIP("merge.skip", false), // Internal use only
+        MERGE_RESUME("merge.resume", false);
 
         private final String key;
         private final Object value;

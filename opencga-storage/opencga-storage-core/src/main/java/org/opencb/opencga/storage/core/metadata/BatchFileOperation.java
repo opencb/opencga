@@ -19,6 +19,7 @@ public class BatchFileOperation {
 
     public enum Status {
         RUNNING,
+//        DONE,       // Finished, but some work still needed (optional)
         READY,
         ERROR
     }

@@ -406,7 +406,12 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration = preMerge(fileIds);
-
+        if (options.getBoolean(MERGE_SKIP.key())) {
+            // It was already merged, but still some work is needed. Exit to do postLoad step
+            MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
+            options.put("writeResult", writeResult);
+            return writeResult;
+        }
         //Iterate over all the files
         Query query = new Query(VariantSourceDBAdaptor.VariantSourceQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
         Iterator<VariantSource> iterator = dbAdaptor.getVariantSourceDBAdaptor().iterator(query, null);
@@ -525,7 +530,13 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                         case READY:// Already indexed!
                             // TODO: Believe this ready? What if deleted?
                             // It was not "indexed" so suppose "deleted"
+                            // Already merged but still needs some work.
+                            options.put(MERGE_SKIP.key(), true);
+                            logger.info("Files " + fileIds + " where already merged, but where not marked as indexed files.");
                             break;
+//                        case DONE:
+//                            // Already merged but still needs some work.
+//                            options.put(MERGE_SKIP.key(), true);
                         case RUNNING:
                             if (!loadMergeResume) {
                                 throw new StorageManagerException(
@@ -536,7 +547,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                         case ERROR:
                             // Resume merge
                             loadMergeResume = true;
-                            options.put(MERGE_RESUME.key(), true);
+                            options.put(MERGE_RESUME.key(), loadMergeResume);
                             break;
                         default:
                             throw new IllegalStateException("Unknown status: " + op.currentStatus());
@@ -549,8 +560,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             if (operation == null) {
                 operation = new BatchFileOperation(MERGE.key(), fileIds, System.currentTimeMillis());
                 studyConfiguration.getBatches().add(operation);
+                operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+            } else if (operation.currentStatus() != BatchFileOperation.Status.READY) {
+                // Only set to RUNNING if it was not READY
+                operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
             }
-            operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
         }
         return studyConfiguration;
@@ -595,6 +609,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 
         if (options.getBoolean(MERGE.key())) {
+//            List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());
+//            setStatus(BatchFileOperation.Status.READY, MERGE.key(), fileIds);
             return super.postLoad(input, output);
         } else {
             return input;
