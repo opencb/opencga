@@ -17,9 +17,19 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
+import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.client.rest.SampleClient;
 
 import java.io.IOException;
 
@@ -60,17 +70,26 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 delete();
                 break;
-            case "share":
-                share();
-                break;
-            case "unshare":
-                unshare();
-                break;
             case "groupBy":
                 groupBy();
                 break;
             case "annotate":
                 annotate();
+                break;
+            case "acls":
+                acls();
+                break;
+            case "acls-create":
+                aclsCreate();
+                break;
+            case "acls-member-delete":
+                aclMemberDelete();
+                break;
+            case "acl-member-info":
+                aclMemberInfo();
+                break;
+            case "acl-member-update":
+                aclMemberUpdate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -81,35 +100,132 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
     private void create() throws CatalogException, IOException {
         logger.debug("Creating sample");
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.createCommandOptions.description)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.createCommandOptions.description);
+        }
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.createCommandOptions.source)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
+        }
+
+        QueryResponse<Sample> sample = openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.studyId,
+                samplesCommandOptions.createCommandOptions.name, objectMap);
+
+        System.out.println(sample.toString());
     }
 
     private void load() throws CatalogException, IOException {
         logger.debug("Loading samples from a pedigree file");
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.loadCommandOptions.fileId)) {
+            objectMap.put("fileId", samplesCommandOptions.loadCommandOptions.fileId);
+        }
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.loadCommandOptions.variableSetId)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.loadCommandOptions.variableSetId);
+        }
+
+        QueryResponse<Sample> sample = openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.id, objectMap);
+
+        System.out.println(sample.toString());
     }
 
-    private void info() throws CatalogException {
+    private void info() throws CatalogException, IOException  {
         logger.debug("Getting samples information");
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.commonOptions.exclude);
+        }
+
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient().get(samplesCommandOptions.infoCommandOptions.id, queryOptions);
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
-    private void search() throws CatalogException {
+    private void search() throws CatalogException, IOException  {
         logger.debug("Searching samples");
+
+        Query query = new Query();
+        query.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(),samplesCommandOptions.searchCommandOptions.studyId);
+
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.id)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.searchCommandOptions.id);
+        }
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.name)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.source)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.individualId)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
+                    samplesCommandOptions.searchCommandOptions.individualId);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.annotationSetName)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+                    samplesCommandOptions.searchCommandOptions.annotationSetName);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.variableSetId)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                    samplesCommandOptions.searchCommandOptions.variableSetId);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.annotation)) {
+            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.exclude);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.limit);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.skip);
+        }
+
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient().search(query, queryOptions);
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
-    private void update() throws CatalogException {
+    private void update() throws CatalogException, IOException {
         logger.debug("Updating samples");
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.updateCommandOptions.name)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.updateCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.updateCommandOptions.description)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), samplesCommandOptions.updateCommandOptions.description);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.updateCommandOptions.source)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.updateCommandOptions.source);
+        }
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.updateCommandOptions.individualId)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individualId);
+        }
+
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.id, objectMap);
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
-    private void delete() throws CatalogException {
+    private void delete() throws CatalogException, IOException {
         logger.debug("Deleting the select sample");
+
+        ObjectMap objectMap = new ObjectMap();
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient().delete(samplesCommandOptions.deleteCommandOptions.id, objectMap);
+        System.out.println(samples.toString());
     }
 
-    private void share() throws CatalogException {
-        logger.debug("Sharing samples");
-    }
 
-    private void unshare() throws CatalogException {
-        logger.debug("Unsharing samples");
-    }
 
     private void groupBy() throws CatalogException {
         logger.debug("Group By samples");
@@ -119,5 +235,71 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Annotating samples");
     }
 
+
+
+    /********************************************  Administration ACLS commands  ***********************************************/
+
+    private void acls() throws CatalogException,IOException {
+
+        logger.debug("Acls");
+        ObjectMap objectMap = new ObjectMap();
+        QueryResponse<SampleAcl> acls = openCGAClient.getSampleClient().getAcls(samplesCommandOptions.aclsCommandOptions.id);
+
+        System.out.println(acls.toString());
+
+    }
+    private void aclsCreate() throws CatalogException,IOException{
+
+        logger.debug("Creating acl");
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        /*if (StringUtils.isNotEmpty(studiesCommandOptions.aclsCreateCommandOptions.templateId)) {
+            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.TEMPLATE_ID.key(), studiesCommandOptions.aclsCreateCommandOptions.templateId);
+        }*/
+
+        QueryResponse<SampleAcl> acl =
+                openCGAClient.getSampleClient().createAcl(samplesCommandOptions.aclsCreateCommandOptions.id,
+                        samplesCommandOptions.aclsCreateCommandOptions.permissions, samplesCommandOptions.aclsCreateCommandOptions.members,
+                        queryOptions);
+        System.out.println(acl.toString());
+    }
+    private void aclMemberDelete() throws CatalogException,IOException {
+
+        logger.debug("Creating acl");
+
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Object> acl = openCGAClient.getSampleClient().deleteAcl(samplesCommandOptions.aclsMemberDeleteCommandOptions.id,
+                samplesCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
+        System.out.println(acl.toString());
+    }
+    private void aclMemberInfo() throws CatalogException,IOException {
+
+        logger.debug("Creating acl");
+
+        QueryResponse<SampleAcl> acls = openCGAClient.getSampleClient().getAcl(samplesCommandOptions.aclsMemberInfoCommandOptions.id,
+                samplesCommandOptions.aclsMemberInfoCommandOptions.memberId);
+        System.out.println(acls.toString());
+    }
+
+    private void aclMemberUpdate() throws CatalogException,IOException {
+
+        logger.debug("Updating acl");
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
+            objectMap.put(SampleClient.AclParams.ADD_PERMISSIONS.key(), samplesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
+            objectMap.put(SampleClient.AclParams.REMOVE_PERMISSIONS.key(), samplesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
+            objectMap.put(SampleClient.AclParams.SET_PERMISSIONS.key(), samplesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
+        }
+
+        QueryResponse<SampleAcl> acl = openCGAClient.getSampleClient().updateAcl(samplesCommandOptions.aclsMemberUpdateCommandOptions.id,
+                samplesCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
+        System.out.println(acl.toString());
+    }
 
 }

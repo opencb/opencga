@@ -19,12 +19,14 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ProjectCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.Study;
 
 import java.io.IOException;
 
@@ -58,6 +60,12 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "delete":
                 delete();
+                break;
+            case "studies":
+                studies();
+                break;
+            case "help":
+                help();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -116,5 +124,34 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         System.out.println("Study: " + study);
     }
 
+    private void studies() throws CatalogException, IOException {
+        logger.debug("Getting all studies the from a project ");
+        QueryOptions queryOptions = new QueryOptions();
+
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.commonOptions.exclude);
+        }
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
+        }
+
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
+        }
+        QueryResponse<Study> study = openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
+        System.out.println("Study: " + study);
+
+    }
+
+    private void help() throws CatalogException, IOException {
+
+        logger.debug("Helping");
+
+        System.out.println("PENDING");
+
+    }
 
 }

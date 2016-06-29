@@ -131,6 +131,17 @@ public class StudyClient extends AbstractParentClient<Study, StudyAcl> {
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
+    public QueryResponse<ObjectMap> groups(String studyId, ObjectMap objectMap) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(objectMap);
+        return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
+    }
+
+    public QueryResponse<ObjectMap> infoGroup(String studyId,  String groupId, ObjectMap objectMap) throws CatalogException, IOException {
+        ObjectMap params = new ObjectMap(objectMap);
+        params = addParamsToObjectMap(params, "groupId", groupId);
+        return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
+    }
+
  /*
    public QueryResponse<StudyAcl> share(String studyId, String roleId, String members, ObjectMap params)
             throws CatalogException, IOException {

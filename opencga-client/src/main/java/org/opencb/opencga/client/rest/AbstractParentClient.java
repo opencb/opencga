@@ -139,8 +139,8 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, id, "acls", new ObjectMap(), GET, aclClass);
     }
 
-    public QueryResponse<A> getAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acls", memberId, "info", params, GET, aclClass);
+    public QueryResponse<A> getAcl(String id, String memberId) throws CatalogException, IOException {
+        return execute(category, id, "acls", memberId, "info", new ObjectMap(), GET, aclClass);
     }
 
     public QueryResponse<A> createAcl(String id, String permissions, String members, ObjectMap params) throws CatalogException,
@@ -157,7 +157,6 @@ public abstract class AbstractParentClient<T, A> {
     public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
         return execute(category, id, "acls", memberId, "update", params, GET, aclClass);
     }
-
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
             throws IOException {

@@ -88,6 +88,7 @@ public class OpencgaCliOptionsParser {
         projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
         projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
         projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
+        projectSubCommands.addCommand("help", projectCommandOptions.helpCommandOptions);
 
         studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
@@ -179,10 +180,13 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("search", sampleCommandOptions.searchCommandOptions);
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
-        sampleSubCommands.addCommand("share", sampleCommandOptions.shareCommandOptions);
-        sampleSubCommands.addCommand("unshare", sampleCommandOptions.unshareCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
         sampleSubCommands.addCommand("annotate", sampleCommandOptions.annotateCommandOptions);
+        sampleSubCommands.addCommand("acls", sampleCommandOptions.aclsCommandOptions);
+        sampleSubCommands.addCommand("acls-create", sampleCommandOptions.aclsCreateCommandOptions);
+        sampleSubCommands.addCommand("acls-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);
+        sampleSubCommands.addCommand("acls-member-info", sampleCommandOptions.aclsMemberInfoCommandOptions);
+        sampleSubCommands.addCommand("acls-member-update", sampleCommandOptions.aclsMemberUpdateCommandOptions);
 
         variableCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("variables", variableCommandOptions);
@@ -378,6 +382,7 @@ public class OpencgaCliOptionsParser {
             return queryOptions;
         }
     }
+
 
     class BasicCommand {
     }
