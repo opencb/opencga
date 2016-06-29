@@ -92,9 +92,6 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String projectId;
 
@@ -124,6 +121,12 @@ public class StudyCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
 
         @Parameter(names = {"--id"}, description = "Id.", required = false, arity = 1)
         public String id;
@@ -189,7 +192,10 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Study modify")
-    public class UpdateCommandOptions extends BaseStudyCommand {
+    public class UpdateCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
@@ -208,11 +214,17 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
-    public class DeleteCommandOptions extends BaseStudyCommand {
+    public class DeleteCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
     }
 
     @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
-    public class SummaryCommandOptions extends BaseStudyCommand {
+    public class SummaryCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
     }
 
     @Parameters(commandNames = {"alignments"}, commandDescription = "Study alignments information")
@@ -252,11 +264,30 @@ public class StudyCommandOptions {
         @Parameter(names = {"--tool-id"}, description = "Tool Id PENDING", required = false, arity = 1)
         public String toolId;
 
-        @Parameter(names = {"--execution"}, description = "Execution", required = false, arity = 1)
-        public String execution;
+        @Parameter(names = {"--status"}, description = "Status", required = false, arity = 1)
+        public String status;
 
-        @Parameter(names = {"--description"}, description = "Job description", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--owner-id"}, description = "ownerId", required = false, arity = 1)
+        public String ownerId;
+
+        @Parameter(names = {"--date"}, description = "Date", required = false, arity = 1)
+        public String date;
+
+        @Parameter(names = {"--input-files"}, description = "Comma separated list of input file ids", required = false, arity = 1)
+        public String inputFiles;
+
+        @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids", required = false, arity = 1)
+        public String outputFiles;
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        public boolean count;
+
     }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "Study samples information")
@@ -421,11 +452,13 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies [PENDING]")
-    public class GroupsCommandOptions extends BaseStudyCommand {
+    public class GroupsCommandOptions {
 
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
     }
 
-    @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING")
+    @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
     public class HelpCommandOptions {
 
         @ParametersDelegate
@@ -433,20 +466,23 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
-    public class AclsCommandOptions extends BaseStudyCommand {
+    public class AclsCommandOptions {
 
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
     }
 
     @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions extends BaseStudyCommand {
+    public class AclsCreateCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
         public String members;
 
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions",
-                required = true, arity = 1)
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
         public String permissions;
 
         @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
@@ -456,7 +492,10 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acls-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions extends BaseStudyCommand {
+    public class AclsMemberDeleteCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -464,7 +503,10 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acls-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions extends BaseStudyCommand {
+    public class AclsMemberInfoCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -472,7 +514,10 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acls-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions extends BaseStudyCommand {
+    public class AclsMemberUpdateCommandOptions{
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -488,38 +533,52 @@ public class StudyCommandOptions {
         public String setPermissions;
     }
 
+    @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+    public String id;
+
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group [PENDING")
-    public class GroupsCreateCommandOptions extends BaseStudyCommand{
+    public class GroupsCreateCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--members"}, description = "Comma separated list of members that will form the group",
+        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group",
                 required = true, arity = 1)
-        public String members;
+        public String users;
     }
 
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group [PENDING]")
-    public class GroupsDeleteCommandOptions extends BaseStudyCommand{
+    public class GroupsDeleteCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--members"}, description = "Comma separated list of members that will form the group",
+        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group",
                 required = true, arity = 1)
-        public String members;
+        public String users;
     }
 
     @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group [PENDING]")
-    public class GroupsInfoCommandOptions extends BaseStudyCommand{
+    public class GroupsInfoCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
-
     }
 
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group [PENDING]")
-    public class GroupsUpdateCommandOptions extends BaseStudyCommand{
+    public class GroupsUpdateCommandOptions {
+
+        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
@@ -535,6 +594,5 @@ public class StudyCommandOptions {
         @Parameter(names = {"--remove-users"}, description = "Comma separated list of users that will be added to the group",
                 required = false, arity = 1)
         public String removeUsers;
-
     }
 }

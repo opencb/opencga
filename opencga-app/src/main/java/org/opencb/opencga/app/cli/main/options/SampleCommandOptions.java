@@ -18,10 +18,14 @@ public class SampleCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public ShareCommandOptions shareCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
     public AnnotateCommandOptions annotateCommandOptions;
+    public AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+
+    public AclsCommandOptions aclsCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -36,19 +40,24 @@ public class SampleCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.shareCommandOptions = new ShareCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
+
         this.groupByCommandOptions = new GroupByCommandOptions();
         this.annotateCommandOptions = new AnnotateCommandOptions();
+
+        this.aclsCommandOptions = new AclsCommandOptions();
+        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
     }
 
-    class BaseSampleCommand {
+    public class BaseSampleCommand {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public Integer id;
+        public String id;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
@@ -71,24 +80,24 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
-    class LoadCommandOptions {
+    public class LoadCommandOptions {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
 
-        @Parameter(names = {"--field-id"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
-        public String fieldId;
+        @Parameter(names = {"--file-id"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
+        public String fileId;
 
         @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
-        public int variableSetId;
+        public String variableSetId;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
-    class InfoCommandOptions extends BaseSampleCommand {
+    public class InfoCommandOptions extends BaseSampleCommand {
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
-    class SearchCommandOptions {
+    public class SearchCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -99,24 +108,32 @@ public class SampleCommandOptions {
         @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
+        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
+        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 1)
         public String source;
 
-        @Parameter(names = {"--indivual-id"}, description = "Indivudual id.", required = false, arity = 0)
+        @Parameter(names = {"--indivual-id"}, description = "Indivudual id.", required = false, arity = 1)
         public String individualId;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
-        public String annotationSetId;
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
+        public String annotationSetName;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Annotation set id.", required = false, arity = 0)
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id.", required = false, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 0)
+        @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 1)
         public String annotation;
 
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        public boolean count;
 
     /*    @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
         String variableSetId;
@@ -151,43 +168,6 @@ public class SampleCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = true, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
-        public String permission;
-
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change"
-                + " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        public boolean override;
-    }
-
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Share cohort")
-    public class UnshareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = true, arity = 1)
-        public String sampleIds;
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
-        public String permission;
-    }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
@@ -224,19 +204,14 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
-    class DeleteCommandOptions extends BaseSampleCommand {
+    public class DeleteCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
     }
 
-    /*public static class SemiColonParameterSplitter implements IParameterSplitter {
-
-        public List<String> split(String value) {
-            return Arrays.asList(value.split(";"));
-        }
-
-    }*/
-
     @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate sample")
-    class AnnotateCommandOptions extends BaseSampleCommand {
+    public class AnnotateCommandOptions extends BaseSampleCommand {
 
         @Parameter(names = {"--annotate-set-name"}, description = "Annotation set name. Must be unique for the cohort",
                 required = true, arity = 1)
@@ -252,4 +227,72 @@ public class SampleCommandOptions {
         public boolean delete;
     }
 
+
+    @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
+    public class AclsCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+    }
+
+    @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    public class AclsCreateCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
+                required = false, arity = 1)
+        public String templateId;
+    }
+
+    @Parameters(commandNames = {"acls-member-delete"},
+            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
+    public class AclsMemberDeleteCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acls-member-info"},
+            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberInfoCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acls-member-update"},
+            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberUpdateCommandOptions{
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
+        public String addPermissions;
+
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
+                required = false, arity = 1)
+        public String removePermissions;
+
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
+        public String setPermissions;
+    }
 }

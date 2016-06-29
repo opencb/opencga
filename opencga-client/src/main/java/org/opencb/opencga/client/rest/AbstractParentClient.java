@@ -138,6 +138,19 @@ public abstract class AbstractParentClient<T, A> {
     }
 
 
+    public QueryResponse<Object> getAcl(String id, String memberId, ObjectMap params) throws CatalogException,
+            IOException {
+        params = addParamsToObjectMap(params,  "memberId", memberId);
+        return execute(category, id, "getAcl", params, Object.class);
+
+    }
+
+    public QueryResponse<Object> getAllAcl(String id, ObjectMap params) throws CatalogException,
+            IOException {
+        return execute(category, id, "getAllAcl", params, Object.class);
+
+    }
+
     public QueryResponse<Object> infoAcl(String id, String groupId, String members, ObjectMap params) throws CatalogException,
             IOException {
         params = addParamsToObjectMap(params,  "groupId", groupId, "members", members);

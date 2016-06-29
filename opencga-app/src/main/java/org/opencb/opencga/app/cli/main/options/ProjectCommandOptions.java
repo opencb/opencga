@@ -17,6 +17,7 @@ public class ProjectCommandOptions {
     public StudiesCommandOptions studiesCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
+    public HelpCommandOptions helpCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -31,6 +32,7 @@ public class ProjectCommandOptions {
         this.studiesCommandOptions = new StudiesCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
+        this.helpCommandOptions = new HelpCommandOptions();
     }
 
     public class BaseProjectCommand {
@@ -67,10 +69,19 @@ public class ProjectCommandOptions {
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")
     public class StudiesCommandOptions extends BaseProjectCommand {
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
-    public class UpdateCommandOptions extends BaseProjectCommand {
+    public class UpdateCommandOptions  {
+
+        @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
+        public String id;
 
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
@@ -89,7 +100,14 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
-    public class DeleteCommandOptions extends BaseProjectCommand {
+    public class DeleteCommandOptions {
+
+        @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
+        public String id;
+    }
+
+    @Parameters(commandNames = {"help"}, commandDescription = "Help in project")
+    public class HelpCommandOptions {
     }
 
 }
