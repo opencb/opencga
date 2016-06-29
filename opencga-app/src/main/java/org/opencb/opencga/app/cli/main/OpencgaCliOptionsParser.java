@@ -110,8 +110,8 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("groups-delete", studyCommandOptions.groupsDeleteCommandOptions);
         studySubCommands.addCommand("groups-info", studyCommandOptions.groupsInfoCommandOptions);
         studySubCommands.addCommand("groups-update", studyCommandOptions.groupsUpdateCommandOptions);
-        studySubCommands.addCommand("acls", studyCommandOptions.groupsUpdateCommandOptions);
-        studySubCommands.addCommand("acls-create", studyCommandOptions.aclsCommandOptions);
+        studySubCommands.addCommand("acls", studyCommandOptions.aclsCommandOptions);
+        studySubCommands.addCommand("acls-create", studyCommandOptions.aclsCreateCommandOptions);
         studySubCommands.addCommand("acls-member-delete", studyCommandOptions.aclsMemberDeleteCommandOptions);
         studySubCommands.addCommand("acls-member-info", studyCommandOptions.aclsMemberInfoCommandOptions);
         studySubCommands.addCommand("acls-member-update", studyCommandOptions.aclsMemberUpdateCommandOptions);

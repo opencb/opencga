@@ -34,6 +34,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.client.rest.StudyClient;
@@ -104,10 +105,10 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "acls-member-delete":
                 aclMemberDelete();
                 break;
-            case "acl-member-info":
+            case "acls-member-info":
                 aclMemberInfo();
                 break;
-            case "acl-member-update":
+            case "acls-member-update":
                 aclMemberUpdate();
                 break;
             case "groups":
@@ -596,6 +597,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));*/
 
     }
+
     private void aclsCreate() throws CatalogException,IOException{
         logger.debug("Creating acl");
 
@@ -605,12 +607,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogStudyDBAdaptor.QueryParams.TEMPLATE_ID.key(), studiesCommandOptions.aclsCreateCommandOptions.templateId);
         }*/
 
-        QueryResponse<Object> acl =
+        QueryResponse<StudyAcl> acl =
                 openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.id,
                         studiesCommandOptions.aclsCreateCommandOptions.permissions, studiesCommandOptions.aclsCreateCommandOptions.members,
                         queryOptions);
         System.out.println(acl.toString());
     }
+
     private void aclMemberDelete() throws CatalogException,IOException {
         logger.debug("Creating acl");
 
@@ -619,9 +622,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                         studiesCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
         System.out.println(acl.toString());
     }
+
     private void aclMemberInfo() throws CatalogException,IOException {
         logger.debug("Creating acl");
     }
+
     private void aclMemberUpdate() throws CatalogException,IOException {
         logger.debug("Updating acl");
         ObjectMap objectMap = new ObjectMap();
@@ -635,8 +640,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(StudyClient.AclParams.SET_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
         }
 
-        QueryResponse<Object> acl = openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.id,
+        QueryResponse<StudyAcl> acl = openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.id,
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
+
         System.out.println(acl.toString());
     }
 

@@ -43,17 +43,17 @@ public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
 
     public QueryResponse<Individual> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
-        return execute(SAMPLES_URL, "create", params, Individual.class);
+        return execute(SAMPLES_URL, "create", params, GET, Individual.class);
     }
 
     public QueryResponse<Sample> annotate(String sampleId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(SAMPLES_URL, sampleId, "annotate", params, Sample.class);
+        return execute(SAMPLES_URL, sampleId, "annotate", params, GET, Sample.class);
     }
 
     public QueryResponse<Sample> loadFromPed(String studyId, String variableSetId, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "variableSetId", variableSetId);
-        return execute(SAMPLES_URL, "load", params, Sample.class);
+        return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
 }

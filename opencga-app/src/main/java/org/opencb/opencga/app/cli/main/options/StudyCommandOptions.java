@@ -441,12 +441,10 @@ public class StudyCommandOptions {
     public class AclsCreateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
         public String members;
 
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions",
-                required = true, arity = 1)
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
         public String permissions;
 
         @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",

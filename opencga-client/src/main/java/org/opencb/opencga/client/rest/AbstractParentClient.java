@@ -24,7 +24,9 @@ import org.opencb.opencga.client.config.ClientConfiguration;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +50,8 @@ public abstract class AbstractParentClient<T, A> {
 
     private static final int BATCH_SIZE = 2000;
     private static final int DEFAULT_SKIP = 0;
+    protected static final String GET = "GET";
+    protected static final String POST = "POST";
 
     protected AbstractParentClient(String userId, String sessionId, ClientConfiguration configuration) {
         this.userId = userId;
@@ -80,25 +84,25 @@ public abstract class AbstractParentClient<T, A> {
 
 
     public QueryResponse<Long> count(Query query) throws IOException {
-        return execute(category, "count", query, Long.class);
+        return execute(category, "count", query, GET, Long.class);
     }
 
     public QueryResponse<T> get(String id, QueryOptions options) throws CatalogException, IOException {
-        return execute(category, id, "info", options, clazz);
+        return execute(category, id, "info", options, GET, clazz);
     }
 
     public QueryResponse<T> search(Query query, QueryOptions options) throws IOException {
         ObjectMap myQuery = new ObjectMap(query);
         myQuery.putAll(options);
-        return execute(category, "search", myQuery, clazz);
+        return execute(category, "search", myQuery, GET, clazz);
     }
 
     public QueryResponse<T> update(String id, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "update", params, clazz);
+        return execute(category, id, "update", params, GET, clazz);
     }
 
     public QueryResponse<T> delete(String id, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "delete", params, clazz);
+        return execute(category, id, "delete", params, GET, clazz);
     }
 
    /* /**
@@ -121,37 +125,52 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, ids, "unshare", params, Object.class);
     }*/
 
-    public QueryResponse<Object> createAcl(String id, String permissions, String members, ObjectMap params) throws CatalogException,
+//    public QueryResponse<StudyAcl> getAcls(String studyId) throws IOException {
+//        return execute(STUDY_URL, studyId, "acls", new ObjectMap(), GET, StudyAcl.class);
+//    }
+//
+//    public QueryResponse<StudyAcl> createAcl(String studyId, String members, String permissions, ObjectMap objectMap) throws IOException {
+//        ObjectMap params = new ObjectMap(objectMap);
+//        params = addParamsToObjectMap(params, "members", members, "permissions", permissions);
+//        return execute(STUDY_URL, studyId, "acls", null, "create", params, GET, StudyAcl.class);
+//    }
+
+    public QueryResponse<A> getAcls(String id) throws IOException {
+        return execute(category, id, "acls", new ObjectMap(), GET, aclClass);
+    }
+
+    public QueryResponse<A> getAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        return execute(category, id, "acls", memberId, "info", params, GET, aclClass);
+    }
+
+    public QueryResponse<A> createAcl(String id, String permissions, String members, ObjectMap params) throws CatalogException,
             IOException {
         params = addParamsToObjectMap(params,  "permissions", permissions, "members", members);
-        return execute(category, id, "createAcl", params, Object.class);
+        return execute(category, id, "acls", null, "create", params, GET, aclClass);
     }
 
     public QueryResponse<Object> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "memberId", memberId);
-        return execute(category, id, "deleteAcl", params, Object.class);
+        return execute(category, id, "acls", memberId, "delete", params, GET, Object.class);
     }
 
-    public QueryResponse<Object> updateAcl(String id, String memberId,  ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "memberId", memberId);
-        return execute(category, id, "updateAcl", params, Object.class);
-    }
-
-
-    public QueryResponse<Object> infoAcl(String id, String groupId, String members, ObjectMap params) throws CatalogException,
-            IOException {
-        params = addParamsToObjectMap(params,  "groupId", groupId, "members", members);
-        return execute(category, id, "infoAcl", params, Object.class);
-
+    public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
+        return execute(category, id, "acls", memberId, "update", params, GET, aclClass);
     }
 
 
-    protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, Class<T> clazz) throws IOException {
-        return execute(category, null, action, params, clazz);
-    }
-
-    protected <T> QueryResponse<T> execute(String category, String id, String action, Map<String, Object> params, Class<T> clazz)
+    protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
             throws IOException {
+        return execute(category, null, action, params, method, clazz);
+    }
+
+    protected <T> QueryResponse<T> execute(String category, String id, String action, Map<String, Object> params, String method,
+                                           Class<T> clazz) throws IOException {
+        return execute(category, id, null, null, action, params, method, clazz);
+    }
+
+    protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
+                                           Map<String, Object> params, String method, Class<T> clazz) throws IOException {
 
         System.out.println("configuration = " + configuration);
         // Build the basic URL
@@ -160,7 +179,24 @@ public abstract class AbstractParentClient<T, A> {
                 .path("webservices")
                 .path("rest")
                 .path("v1")
-                .path(category);
+                .path(category1);
+
+        // TODO we still have to check if there are multiple IDs, the limit is 200 pero query, this can be parallelized
+        // Some WS do not have IDs such as 'create'
+        if (id1 != null && !id1.isEmpty()) {
+            path = path.path(id1);
+        }
+
+        if (category2 != null && !category2.isEmpty()) {
+            path = path.path(category2);
+        }
+
+        if (id2 != null && !id2.isEmpty()) {
+            path = path.path(id2);
+        }
+
+        // Add the last URL part, the 'action'
+        path = path.path(action);
 
         if (params == null) {
             params = new HashMap<>();
@@ -171,7 +207,7 @@ public abstract class AbstractParentClient<T, A> {
 
         int skip = (int) params.getOrDefault(QueryOptions.SKIP, DEFAULT_SKIP);
 
-        // Session ID is needed almost always, the only exceptions are 'create/user' and 'login'
+        // Session ID is needed almost always, the only exceptions are 'create/user', 'login' and 'changePassword'
         if (this.sessionId != null && !this.sessionId.isEmpty()) {
             path = path.queryParam("sid", this.sessionId);
         }
@@ -183,7 +219,7 @@ public abstract class AbstractParentClient<T, A> {
             params.put(QueryOptions.SKIP, skip);
             params.put(QueryOptions.LIMIT, limit);
 
-            queryResponse = (QueryResponse<T>) callRest(path, id, action, params, clazz);
+            queryResponse = (QueryResponse<T>) callRest(path, params, clazz, method);
             int numResults = queryResponse.getResponse().get(0).getNumResults();
 
             if (finalQueryResponse == null) {
@@ -212,28 +248,47 @@ public abstract class AbstractParentClient<T, A> {
         return finalQueryResponse;
     }
 
-    protected QueryResponse<T> callRest(WebTarget path, String id, String action, Map<String, Object> params, Class clazz)
-            throws IOException {
+    /**
+     * Call to WS using get or post method.
+     *
+     * @param path Path of the WS.
+     * @param params Params to be passed to the WS.
+     * @param clazz Expected return class.
+     * @param method Method by which the query will be done (GET or POST).
+     * @return A queryResponse object containing the results of the query.
+     * @throws IOException if the path is wrong and cannot be converted to a proper url.
+     */
+    protected QueryResponse<T> callRest(WebTarget path, Map<String, Object> params, Class clazz, String method) throws IOException {
 
-        // TODO we still have to check if there are multiple IDs, the limit is 200 pero query, this can be parallelized
-        // Some WS do not have IDs such as 'create'
-        if (id != null && !id.isEmpty()) {
-            path = path.path(id);
-        }
-
-        // Add the last URL part, the 'action'
-        path = path.path(action);
-
-        // TODO we still have to check the limit of the query, and keep querying while there are more results
-        if (params != null) {
-            for (String s : params.keySet()) {
-                path = path.queryParam(s, params.get(s));
+        String jsonString = "{}";
+        if (method.equalsIgnoreCase(GET)) {
+            // TODO we still have to check the limit of the query, and keep querying while there are more results
+            if (params != null) {
+                for (String s : params.keySet()) {
+                    path = path.queryParam(s, params.get(s));
+                }
             }
+
+            System.out.println("GET URL: " + path.getUri().toURL());
+            jsonString = path.request().get().readEntity(String.class);
+        } else if (method.equalsIgnoreCase(POST)) {
+            // TODO we still have to check the limit of the query, and keep querying while there are more results
+//            Form form = new Form();
+//            if (params != null) {
+//                for (String s : params.keySet()) {
+//                    Object value = params.get(s);
+//                    if (value instanceof Number) {
+//                        form.param(s, (Integer.toString((int) params.get(s))));
+//                    } else {
+//                        form.param(s, ((String) params.get(s)));
+//                    }
+//                }
+//            }
+
+            System.out.println("POST URL: " + path.getUri().toURL());
+            jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(params, MediaType.APPLICATION_JSON),
+                    String.class);
         }
-
-        System.out.println("REST URL: " + path.getUri().toURL());
-        String jsonString = path.request().get().readEntity(String.class);
-
         return parseResult(jsonString, clazz);
     }
 

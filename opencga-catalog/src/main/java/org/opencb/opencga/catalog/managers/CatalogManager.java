@@ -477,7 +477,7 @@ public class CatalogManager implements AutoCloseable {
         return userManager.logoutAnonymous(sessionId);
     }
 
-    public QueryResult changePassword(String userId, String oldPassword, String newPassword, String sessionId)
+    public QueryResult changePassword(String userId, String oldPassword, String newPassword)
             throws CatalogException {
         userManager.changePassword(userId, oldPassword, newPassword);
         return new QueryResult("changePassword", 0, 0, 0, "", "", Collections.emptyList());

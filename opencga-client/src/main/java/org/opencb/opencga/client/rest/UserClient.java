@@ -43,7 +43,7 @@ public class UserClient extends AbstractParentClient<User, User> {
     QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, user, "login", createParamsMap("password", password), ObjectMap.class);
+            response = execute(USERS_URL, user, "login", createParamsMap("password", password), POST, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -53,7 +53,7 @@ public class UserClient extends AbstractParentClient<User, User> {
     QueryResponse<ObjectMap> logout() {
         QueryResponse<ObjectMap> response = null;
         try {
-            response = execute(USERS_URL, getUserId(), "logout", null, ObjectMap.class);
+            response = execute(USERS_URL, getUserId(), "logout", null, GET, ObjectMap.class);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -65,13 +65,13 @@ public class UserClient extends AbstractParentClient<User, User> {
     }
 
     public QueryResponse<Project> getProjects(QueryOptions options) throws CatalogException, IOException {
-        return execute(USERS_URL, getUserId(), "projects", options, Project.class);
+        return execute(USERS_URL, getUserId(), "projects", options, GET, Project.class);
     }
 
     public QueryResponse<User> changePassword(String currentPassword, String newPassword, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "password", currentPassword, "npassword", newPassword);
-        QueryResponse<User> execute = execute(USERS_URL, getUserId(), "change-password", params, User.class);
+        QueryResponse<User> execute = execute(USERS_URL, getUserId(), "change-password", params, POST, User.class);
         if (!execute.getError().isEmpty()) {
             throw new CatalogException(execute.getError());
         }
@@ -80,11 +80,11 @@ public class UserClient extends AbstractParentClient<User, User> {
 
     public QueryResponse<User> resetPassword(String email, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "email", email);
-        return execute(USERS_URL, getUserId(), "change-password", params, User.class);
+        return execute(USERS_URL, getUserId(), "change-password", params, GET, User.class);
     }
 
     public QueryResponse<User> update(ObjectMap params) throws CatalogException, IOException {
-        return execute(USERS_URL, getUserId(), "update", params, User.class);
+        return execute(USERS_URL, getUserId(), "update", params, GET, User.class);
     }
 
 //    public QueryResponse<User> delete(ObjectMap params) throws CatalogException, IOException {
