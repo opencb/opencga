@@ -718,7 +718,7 @@ public abstract class VariantStorageETL implements StorageETL {
         try {
             //Update StudyConfiguration
             studyConfiguration = getStudyConfiguration(true);
-            studyConfiguration.getIndexedFiles().addAll(fileIds);
+            securePostLoad(fileIds, studyConfiguration);
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
         } finally {
             dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
@@ -804,6 +804,10 @@ public abstract class VariantStorageETL implements StorageETL {
         }
 
         return input;
+    }
+
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
+        studyConfiguration.getIndexedFiles().addAll(fileIds);
     }
 
     @Override

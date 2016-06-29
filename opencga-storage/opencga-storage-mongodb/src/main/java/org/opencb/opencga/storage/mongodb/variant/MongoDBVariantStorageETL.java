@@ -62,9 +62,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         URI uri = super.preLoad(input, output);
-        if (options.getBoolean(STAGE_RESUME.key(), true)) {
+        if (options.getBoolean(STAGE_RESUME.key(), false)) {
             logger.info("Resume stage load.");
-            // TODO: Clean stage collection
+            // Clean stage collection?
         }
         return uri;
     }
@@ -435,12 +435,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
 
         long start = System.currentTimeMillis();
         StudyConfiguration studyConfiguration = preMerge(fileIds);
-        if (options.getBoolean(MERGE_SKIP.key())) {
-            // It was already merged, but still some work is needed. Exit to do postLoad step
-            MongoDBVariantWriteResult writeResult = new MongoDBVariantWriteResult();
-            options.put("writeResult", writeResult);
-            return writeResult;
-        }
+
         //Iterate over all the files
         Query query = new Query(VariantSourceDBAdaptor.VariantSourceQueryParam.STUDY_ID.key(), studyConfiguration.getStudyId());
         Iterator<VariantSource> iterator = dbAdaptor.getVariantSourceDBAdaptor().iterator(query, null);
@@ -475,44 +470,49 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
         }
 
-        Thread hook = new Thread(() -> {
-            try {
-                logger.error("Merge shutdown hook!");
-                setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
-            } catch (StorageManagerException e) {
-                e.printStackTrace();
-                throw new RuntimeException(e);
-            }
-        });
-        Runtime.getRuntime().addShutdownHook(hook);
         final MongoDBVariantWriteResult writeResult;
-        try {
-            if (wholeGenomeFiles && !chromosomesToLoad.isEmpty()) {
-                String message = "Impossible to merge files splitted and not splitted by chromosome at the same time!";
-                logger.error(message);
-                throw new StorageManagerException(message);
-            }
-
-            if (chromosomesToLoad.isEmpty()) {
-                writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, capacity, stageCollection,
-                        studyConfiguration, null, studyConfiguration.getIndexedFiles());
-            } else {
-                writeResult = new MongoDBVariantWriteResult();
-                for (String chromosome : chromosomesToLoad) {
-                    List<Integer> filesToLoad = chromosomeInFilesToLoad.get(chromosome);
-                    Set<Integer> indexedFiles = new HashSet<>(chromosomeInLoadedFiles.get(chromosome));
-                    MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads, capacity, stageCollection,
-                            studyConfiguration, chromosome, indexedFiles);
-                    writeResult.merge(aux);
+        if (options.getBoolean(MERGE_SKIP.key())) {
+            // It was already merged, but still some work is needed. Exit to do postLoad step
+            writeResult = new MongoDBVariantWriteResult();
+        } else {
+            Thread hook = new Thread(() -> {
+                try {
+                    logger.error("Merge shutdown hook!");
+                    setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
+                } catch (StorageManagerException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
                 }
+            });
+            Runtime.getRuntime().addShutdownHook(hook);
+            try {
+                if (wholeGenomeFiles && !chromosomesToLoad.isEmpty()) {
+                    String message = "Impossible to merge files splitted and not splitted by chromosome at the same time!";
+                    logger.error(message);
+                    throw new StorageManagerException(message);
+                }
+
+                if (chromosomesToLoad.isEmpty()) {
+                    writeResult = mergeByChromosome(fileIds, batchSize, loadThreads, capacity, stageCollection,
+                            studyConfiguration, null, studyConfiguration.getIndexedFiles());
+                } else {
+                    writeResult = new MongoDBVariantWriteResult();
+                    for (String chromosome : chromosomesToLoad) {
+                        List<Integer> filesToLoad = chromosomeInFilesToLoad.get(chromosome);
+                        Set<Integer> indexedFiles = new HashSet<>(chromosomeInLoadedFiles.get(chromosome));
+                        MongoDBVariantWriteResult aux = mergeByChromosome(filesToLoad, batchSize, loadThreads, capacity, stageCollection,
+                                studyConfiguration, chromosome, indexedFiles);
+                        writeResult.merge(aux);
+                    }
+                }
+            } catch (Exception e) {
+                setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
+                throw e;
+            } finally {
+                Runtime.getRuntime().removeShutdownHook(hook);
             }
-        } catch (Exception e) {
-            setStatus(BatchFileOperation.Status.ERROR, MERGE.key(), fileIds);
-            throw e;
-        } finally {
-            Runtime.getRuntime().removeShutdownHook(hook);
+            setStatus(BatchFileOperation.Status.DONE, MERGE.key(), fileIds);
         }
-        setStatus(BatchFileOperation.Status.READY, MERGE.key(), fileIds);
 
         long startTime = System.currentTimeMillis();
         logger.info("Deleting variant records from Stage collection");
@@ -540,7 +540,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
         StudyConfiguration studyConfiguration;
         try (StudyConfigurationManager.LockCloseable lock = dbAdaptor.getStudyConfigurationManager().closableLockStudy(studyId)) {
             studyConfiguration = getStudyConfiguration(true);
-            //preMerge()
 
             for (Integer fileId : fileIds) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
@@ -558,14 +557,12 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                     switch (op.currentStatus()) {
                         case READY:// Already indexed!
                             // TODO: Believe this ready? What if deleted?
-                            // It was not "indexed" so suppose "deleted"
-                            // Already merged but still needs some work.
-                            options.put(MERGE_SKIP.key(), true);
-                            logger.info("Files " + fileIds + " where already merged, but where not marked as indexed files.");
+                            // It was not "indexed" so suppose "deleted" ?
                             break;
-//                        case DONE:
-//                            // Already merged but still needs some work.
-//                            options.put(MERGE_SKIP.key(), true);
+                        case DONE:
+                            // Already merged but still needs some work.
+                            logger.info("Files " + fileIds + " where already merged, but where not marked as indexed files.");
+                            options.put(MERGE_SKIP.key(), true);
                         case RUNNING:
                             if (!loadMergeResume) {
                                 throw new StorageManagerException(
@@ -590,8 +587,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 operation = new BatchFileOperation(MERGE.key(), fileIds, System.currentTimeMillis());
                 studyConfiguration.getBatches().add(operation);
                 operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-            } else if (operation.currentStatus() != BatchFileOperation.Status.READY) {
-                // Only set to RUNNING if it was not READY
+            } else if (operation.currentStatus() == BatchFileOperation.Status.ERROR) {
+                // Only set to RUNNING if it was on ERROR
                 operation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
             }
             dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
@@ -638,12 +635,27 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 
         if (options.getBoolean(MERGE.key())) {
-//            List<Integer> fileIds = options.getAsIntegerList(Options.FILE_ID.key());
-//            setStatus(BatchFileOperation.Status.READY, MERGE.key(), fileIds);
             return super.postLoad(input, output);
         } else {
             return input;
         }
+    }
+
+    @Override
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
+
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        for (int i = batches.size() - 1; i >= 0; i--) {
+            BatchFileOperation operation = batches.get(i);
+            if (operation.getOperationName().equals(MERGE.key()) && operation.getFileIds().equals(fileIds)) {
+                if (operation.currentStatus() != BatchFileOperation.Status.DONE) {
+                    logger.warn("Unexpected status " + operation.currentStatus());
+                }
+                operation.addStatus(BatchFileOperation.Status.READY);
+            }
+        }
+
+        super.securePostLoad(fileIds, studyConfiguration);
     }
 
     @Override
