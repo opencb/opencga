@@ -2220,7 +2220,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             String operatorValue;
             if (value.contains(":")) {
                 String[] studyValue = value.split(":");
-                String[] cohortValue = splitKeyValue(studyValue[1]);
+                String[] cohortValue = VariantDBAdaptorUtils.splitOperator(studyValue[1]);
                 String study = studyValue[0];
                 String cohort = cohortValue[0];
                 operatorValue = cohortValue[1];

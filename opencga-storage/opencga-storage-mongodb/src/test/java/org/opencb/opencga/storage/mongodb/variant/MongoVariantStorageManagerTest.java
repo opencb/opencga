@@ -17,11 +17,13 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.hamcrest.core.IsInstanceOf;
 import org.hamcrest.core.StringContains;
 import org.junit.Test;
 import org.junit.internal.matchers.ThrowableMessageMatcher;
+import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
@@ -34,8 +36,12 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -187,6 +193,97 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
 
         Long count = variantStorageManager.getDBAdaptor(DB_NAME).count(null).first();
         assertTrue(count > 0);
+    }
+
+
+    @Test
+    public void mergeResume() throws Exception {
+
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+
+        StorageETLResult storageETLResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), false));
+
+
+        int sleep = 0;
+        int i = 0;
+        Logger logger = LoggerFactory.getLogger("Test");
+        while (true) {
+            final int execution = ++i;
+            Thread thread = new Thread(() -> {
+                try {
+                    runETL(variantStorageManager, storageETLResult.getTransformResult(), outputUri, new ObjectMap()
+                            .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                            .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                            .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                            .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), true), false, false, true);
+
+                } catch (IOException | FileFormatException | StorageManagerException e) {
+                    logger.error("Error loading in execution " + execution, e);
+                }
+            });
+            logger.warn("+-----------------------+");
+            logger.warn("+   Execution : " + execution);
+            logger.warn("+-----------------------+");
+            thread.start();
+            sleep += 1000;
+            logger.warn("join sleep = " + sleep);
+            thread.join(sleep);
+            if (thread.isAlive()) {
+                thread.interrupt();
+                thread.join();
+            } else {
+                logger.info("Exit");
+                break;
+            }
+            // Finish in less than 15 executions
+            assertTrue(execution < 15);
+        }
+        // Do at least one interruption
+        assertTrue(i > 1);
+
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        long count = dbAdaptor.count(null).first();
+        System.out.println("count = " + count);
+        assertTrue(count > 0);
+
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+        studyConfiguration.getHeaders().clear();
+        System.out.println(studyConfiguration.toString());
+        assertTrue(studyConfiguration.getIndexedFiles().contains(FILE_ID));
+        assertEquals(BatchFileOperation.Status.READY, studyConfiguration.getBatches().get(1).currentStatus());
+
+        // Insert in a different set of collections the same file
+        StorageETLResult storageETLResult2 = runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.STAGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.MERGE.key(), true)
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_STUDIES.key(), "studies_2")
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_FILES.key(), "files_2")
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_STAGE.key(), "stage_2")
+                .append(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_VARIANTS.key(), "variants_2"));
+
+
+        // Iterate over both collections to check that contain the same variants
+        MongoDataStore mongoDataStore = getMongoDataStoreManager(DB_NAME).get(DB_NAME);
+        MongoDBCollection variantsCollection = mongoDataStore.getCollection(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue());
+        MongoDBCollection variants2Collection = mongoDataStore.getCollection(MongoDBVariantStorageManager.MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue());
+
+        Iterator<Document> variants = variantsCollection.nativeQuery().find(new Document(), new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))).iterator();
+        Iterator<Document> variants2 = variants2Collection.nativeQuery().find(new Document(), new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))).iterator();
+
+        long c = 0;
+        while (variants.hasNext() && variants2.hasNext()) {
+            c++;
+            Document next = variants.next();
+            Document next2 = variants2.next();
+            assertEquals(next2, next);
+        }
+        assertFalse(variants.hasNext());
+        assertFalse(variants2.hasNext());
+        assertEquals(count, c);
     }
 
 
