@@ -181,7 +181,10 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
-        sampleSubCommands.addCommand("annotate", sampleCommandOptions.annotateCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationSetsAllInfoCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-search", sampleCommandOptions.annotationSetsSearchCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-delete", sampleCommandOptions.annotationSetsDeleteCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-info", sampleCommandOptions.annotationSetsInfoCommandOptions);
         sampleSubCommands.addCommand("acls", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acls-create", sampleCommandOptions.aclsCreateCommandOptions);
         sampleSubCommands.addCommand("acls-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);
