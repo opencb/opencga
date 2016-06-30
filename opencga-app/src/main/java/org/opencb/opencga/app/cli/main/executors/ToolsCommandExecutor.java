@@ -17,9 +17,15 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.Tool;
+
+
+import java.io.IOException;
 
 /**
  * Created by imedina on 03/06/16.
@@ -62,24 +68,38 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void help() throws CatalogException {
+    private void help() throws CatalogException, IOException {
         logger.debug("Tool help");
+
     }
 
-    private void info() throws CatalogException {
+    private void info() throws CatalogException, IOException {
         logger.debug("Getting tool information");
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Tool> tools = openCGAClient.getToolClient().get(toolsCommandOptions.infoCommandOptions.id, queryOptions);
+        tools.first().getResult().stream().forEach(tool -> System.out.println(tool.toString()));
     }
 
-    private void search() throws CatalogException {
+    private void search() throws CatalogException, IOException {
         logger.debug("Searching tool");
+        logger.debug("Getting tool information");
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Tool> tools = openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);
+        tools.first().getResult().stream().forEach(tool -> System.out.println(tool.toString()));
     }
 
-    private void update() throws CatalogException {
+    private void update() throws CatalogException, IOException {
         logger.debug("Updating tool");
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Tool> tools = openCGAClient.getToolClient().update(toolsCommandOptions.updateCommandOptions.id, queryOptions);
+        System.out.println(tools.toString());
     }
 
-    private void delete() throws CatalogException {
+    private void delete() throws CatalogException, IOException {
         logger.debug("Deleting tool");
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Tool> tools = openCGAClient.getToolClient().delete(toolsCommandOptions.deleteCommandOptions.id, queryOptions);
+        System.out.println(tools.toString());
     }
 
 
