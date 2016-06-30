@@ -239,6 +239,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         logger.debug("getting DBAdaptor to db: {}", credentials.getMongoDbName());
         return variantMongoDBAdaptor;
     }
+
     MongoCredentials getMongoCredentials(String dbName) {
         ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
 

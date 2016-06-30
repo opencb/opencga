@@ -499,6 +499,7 @@ public abstract class VariantStorageETL implements StorageETL {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
             boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
@@ -714,6 +715,10 @@ public abstract class VariantStorageETL implements StorageETL {
 
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+
+        // Check loaded variants BEFORE updating the StudyConfiguration
+        checkLoadedVariants(input, fileIds, getStudyConfiguration(), options);
+
         StudyConfiguration studyConfiguration;
         try {
             //Update StudyConfiguration
@@ -724,7 +729,6 @@ public abstract class VariantStorageETL implements StorageETL {
             dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
 
-        checkLoadedVariants(input, fileIds, studyConfiguration, options);
 
         if (annotate) {
 

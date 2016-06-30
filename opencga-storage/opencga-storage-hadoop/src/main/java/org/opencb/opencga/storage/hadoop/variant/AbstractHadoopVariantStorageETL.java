@@ -23,9 +23,9 @@ import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.hpg.bigdata.core.io.ProtoFileWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -54,7 +54,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
@@ -314,13 +313,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
             logger.info("Found files in Archive DB: " + files);
 
-            long lock;
-            try {
-                lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId, 10000, 10000);
-                options.remove(Options.STUDY_CONFIGURATION.key());
-            } catch (InterruptedException | TimeoutException e) {
-                throw new StorageManagerException("Problems with locking StudyConfiguration!!!");
-            }
+            long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+            options.remove(Options.STUDY_CONFIGURATION.key());
             StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
 
             List<Integer> pendingFiles = new LinkedList<>();

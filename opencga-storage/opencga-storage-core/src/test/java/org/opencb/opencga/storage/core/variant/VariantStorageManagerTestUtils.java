@@ -177,6 +177,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         ObjectMap newParams = new ObjectMap(params);
 
         newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        newParams.putIfAbsent(VariantStorageManager.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
@@ -192,13 +193,9 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
             StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-            studyConfiguration.setFileIds(newStudyConfiguration.getFileIds());
-            studyConfiguration.setCohortIds(newStudyConfiguration.getCohortIds());
-            studyConfiguration.setCohorts(newStudyConfiguration.getCohorts());
-            studyConfiguration.setSampleIds(newStudyConfiguration.getSampleIds());
-            studyConfiguration.setSamplesInFiles(newStudyConfiguration.getSamplesInFiles());
-            studyConfiguration.setIndexedFiles(newStudyConfiguration.getIndexedFiles());
-            studyConfiguration.setHeaders(newStudyConfiguration.getHeaders());
+            if (newStudyConfiguration != null) {
+                studyConfiguration.copy(newStudyConfiguration);
+            }
         }
 
         return storageETLResult;

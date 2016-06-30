@@ -17,6 +17,7 @@
 package org.opencb.opencga.storage.mongodb.variant;
 
 import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
@@ -94,6 +95,11 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
             // Ensure document exists
             MongoDBCollection coll = db.getCollection(collectionName);
             coll.update(new Document("_id", studyId), set("id", studyId), new QueryOptions(MongoDBCollection.UPSERT, true));
+        } catch (MongoWriteException e) {
+            // Duplicated key exception
+            if (e.getError().getCode() != 11000) {
+                throw e;
+            }
         } catch (DuplicateKeyException ignore) {
             // Ignore this exception.
             // With UPSERT=true, this command should never throw DuplicatedKeyException.
@@ -129,7 +135,12 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         if (queryResult.getResult().isEmpty()) {
             studyConfiguration = null;
         } else {
-            studyConfiguration = queryResult.first();
+            if (queryResult.first().getStudyName() == null) {
+                // If the studyName is null, it may be only a lock instead of a real study configuration
+                studyConfiguration = null;
+            } else {
+                studyConfiguration = queryResult.first();
+            }
         }
 
         if (studyConfiguration == null) {

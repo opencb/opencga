@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
+import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageManagerException;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantMerger;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageLoader;
 import org.opencb.opencga.storage.mongodb.variant.load.MongoDBVariantStageReader;
@@ -538,6 +539,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
     private StudyConfiguration preMerge(List<Integer> fileIds) throws StorageManagerException {
         int studyId = getStudyId();
         StudyConfiguration studyConfiguration;
+        Set<Integer> fileIdsSet = new HashSet<>(fileIds);
         try (StudyConfigurationManager.LockCloseable lock = dbAdaptor.getStudyConfigurationManager().closableLockStudy(studyId)) {
             studyConfiguration = getStudyConfiguration(true);
 
@@ -553,7 +555,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             BatchFileOperation operation = null;
             for (int i = batches.size() - 1; i >= 0; i--) {
                 BatchFileOperation op = batches.get(i);
-                if (op.getOperationName().equals(MERGE.key()) && fileIds.equals(op.getFileIds())) {
+                if (op.getOperationName().equals(MERGE.key())
+                        && fileIds.size() == op.getFileIds().size()
+                        && fileIdsSet.containsAll(op.getFileIds())) {
                     switch (op.currentStatus()) {
                         case READY:// Already indexed!
                             // TODO: Believe this ready? What if deleted?
@@ -565,9 +569,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                             options.put(MERGE_SKIP.key(), true);
                         case RUNNING:
                             if (!loadMergeResume) {
-                                throw new StorageManagerException(
-                                        "Files " + fileIds + " are being loaded in the variants collection "
-                                                + "right now. To ignore this, relaunch with " + MERGE_RESUME.key() + "=true");
+                                throw MongoVariantStorageManagerException.filesBeingMergedException(fileIds);
                             }
                             break;
                         case ERROR:
@@ -580,6 +582,18 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                     }
                     operation = op;
                     break;
+                } else {
+                    // Can not merge any file if there is an ongoing MERGE or STAGE operation
+                    if (op.getOperationName().equals(MERGE.key()) || op.getOperationName().equals(STAGE.key())) {
+                        switch (op.currentStatus()) {
+                            case READY:
+                                break;
+                            case RUNNING:
+                            case DONE:
+                            case ERROR:
+                                throw MongoVariantStorageManagerException.operationInProgressException(op);
+                        }
+                    }
                 }
             }
 

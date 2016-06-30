@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.internal.matchers.ThrowableMessageMatcher;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
@@ -36,15 +37,21 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTest;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.MongoDBVariantStorageManager.MongoDBVariantOptions;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.exceptions.MongoVariantStorageManagerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -56,15 +63,6 @@ import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSt
  * @author Jacobo Coll <jacobo167@gmail.com>
  */
 public class MongoVariantStorageManagerTest extends VariantStorageManagerTest implements MongoVariantStorageManagerTestUtils {
-
-//    @Rule
-//    public ExpectedException thrown = ExpectedException.none();
-//
-//    @Override
-//    protected ExpectedException getThrown() {
-//        return thrown;
-//    }
-
 
     @Test
     public void stageResumeFromErrorTest() throws Exception {
@@ -197,13 +195,123 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         assertTrue(count > 0);
     }
 
+    @Test
+    public void loadStageConcurrent() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+        StorageETLResult storageETLResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration, new ObjectMap(), true, false);
+
+        StorageETLException exception = loadConcurrentAndCheck(studyConfiguration, storageETLResult);
+        exception.printStackTrace();
+    }
 
     @Test
-    public void mergeResume() throws Exception {
-
+    public void loadMergeSameConcurrent() throws Exception {
         StudyConfiguration studyConfiguration = createStudyConfiguration();
+        StorageETLResult storageETLResult = runDefaultETL(smallInputUri, variantStorageManager, studyConfiguration,
+                new ObjectMap()
+                        .append(MongoDBVariantOptions.STAGE.key(), true)
+                        .append(MongoDBVariantOptions.MERGE.key(), false), true, true);
 
-        StorageETLResult storageETLResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap()
+        StorageETLException exception = loadConcurrentAndCheck(studyConfiguration, storageETLResult);
+        exception.printStackTrace();
+        assertEquals(1, exception.getResults().size());
+        assertTrue(exception.getResults().get(0).isLoadExecuted());
+        assertNotNull(exception.getResults().get(0).getLoadError());
+        MongoVariantStorageManagerException expected = MongoVariantStorageManagerException.filesBeingMergedException(Collections.singletonList(FILE_ID));
+        assertEquals(expected.getClass(), exception.getResults().get(0).getLoadError().getClass());
+        assertEquals(expected.getMessage(), exception.getResults().get(0).getLoadError().getMessage());
+    }
+
+    public StorageETLException loadConcurrentAndCheck(StudyConfiguration studyConfiguration, StorageETLResult storageETLResult) throws InterruptedException, StorageManagerException, ExecutionException {
+
+        AtomicReference<StorageETLException> exception = new AtomicReference<>(null);
+        Callable<Integer> load = () -> {
+            try {
+                runDefaultETL(storageETLResult.getTransformResult(), getVariantStorageManager(), studyConfiguration, new ObjectMap()
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false), false, true);
+            } catch (StorageETLException e) {
+                assertEquals(null, exception.getAndSet(e));
+                return 1;
+            }
+            return 0;
+        };
+
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<Integer> loadOne = executor.submit(load);
+        Future<Integer> loadTwo = executor.submit(load);
+        executor.shutdown();
+
+        executor.awaitTermination(1, TimeUnit.MINUTES);
+
+        VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+        assertTrue(dbAdaptor.count(new Query()).first() > 0);
+        assertEquals(1, studyConfiguration.getIndexedFiles().size());
+        assertEquals(BatchFileOperation.Status.READY, studyConfiguration.getBatches().get(0).currentStatus());
+        assertEquals(MongoDBVariantOptions.STAGE.key(), studyConfiguration.getBatches().get(0).getOperationName());
+        assertEquals(BatchFileOperation.Status.READY, studyConfiguration.getBatches().get(1).currentStatus());
+        assertEquals(MongoDBVariantOptions.MERGE.key(), studyConfiguration.getBatches().get(1).getOperationName());
+
+        assertEquals(1, loadOne.get() + loadTwo.get());
+        return exception.get();
+    }
+
+    @Test
+    public void mergeResumeFirstFileTest() throws Exception {
+        mergeResume(VariantStorageManagerTestUtils.inputUri, createStudyConfiguration(), o -> {});
+    }
+
+    @Test
+    public void mergeResumeOtherFilesTest2() throws Exception {
+        StudyConfiguration studyConfiguration = createStudyConfiguration();
+        // Load in study 1
+        URI f1 = getResourceUri("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        URI f2 = getResourceUri("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        // Load in study 2
+        URI f3 = getResourceUri("1000g_batches/1001-1500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+        URI f4 = getResourceUri("1000g_batches/1501-2000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+
+        // Load in study 1 (with interruptions)
+        URI f5 = getResourceUri("1000g_batches/2001-2504.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
+
+        int studyId1 = studyConfiguration.getStudyId();
+        int studyId2 = studyConfiguration.getStudyId() + 1;
+        mergeResume(f5, studyConfiguration, variantStorageManager -> {
+            try {
+                ObjectMap objectMap = new ObjectMap()
+                        .append(VariantStorageManager.Options.DB_NAME.key(), DB_NAME)
+                        .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                        .append(VariantStorageManager.Options.ANNOTATE.key(), false)
+                        .append(VariantStorageManager.Options.FILE_ID.key(), null);
+
+                runETL(variantStorageManager, f1, outputUri, objectMap
+                                .append(VariantStorageManager.Options.STUDY_ID.key(), studyId1)
+                                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
+                        , true, true, true);
+                runETL(variantStorageManager, f2, outputUri, objectMap
+                                .append(VariantStorageManager.Options.STUDY_ID.key(), studyId1)
+                                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName())
+                        , true, true, true);
+                runETL(variantStorageManager, f3, outputUri, objectMap
+                                .append(VariantStorageManager.Options.STUDY_ID.key(), studyId2)
+                                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName() + "_2")
+                        , true, true, true);
+                runETL(variantStorageManager, f4, outputUri, objectMap
+                                .append(VariantStorageManager.Options.STUDY_ID.key(), studyId2)
+                                .append(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName() + "_2")
+                        , true, true, true);
+            } catch (Exception e) {
+                e.printStackTrace();
+                fail(e.getMessage());
+            }
+        });
+    }
+
+    public void mergeResume(URI file, StudyConfiguration studyConfiguration, Consumer<VariantStorageManager> setUp) throws Exception {
+
+        setUp.accept(variantStorageManager);
+
+        StorageETLResult storageETLResult = runDefaultETL(file, variantStorageManager, studyConfiguration, new ObjectMap()
                 .append(MongoDBVariantOptions.STAGE.key(), true)
                 .append(MongoDBVariantOptions.MERGE.key(), false));
 
@@ -260,15 +368,19 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         assertEquals(BatchFileOperation.Status.READY, studyConfiguration.getBatches().get(1).currentStatus());
 
         // Insert in a different set of collections the same file
-        runDefaultETL(inputUri, variantStorageManager, studyConfiguration, new ObjectMap()
-                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
-                .append(VariantStorageManager.Options.ANNOTATE.key(), false)
-                .append(MongoDBVariantOptions.STAGE.key(), true)
-                .append(MongoDBVariantOptions.MERGE.key(), true)
+        MongoDBVariantStorageManager variantStorageManager = getVariantStorageManager();
+        ObjectMap renameCollections = new ObjectMap()
                 .append(MongoDBVariantOptions.COLLECTION_STUDIES.key(), MongoDBVariantOptions.COLLECTION_STUDIES.defaultValue() + "_2")
                 .append(MongoDBVariantOptions.COLLECTION_FILES.key(), MongoDBVariantOptions.COLLECTION_FILES.defaultValue() + "_2")
                 .append(MongoDBVariantOptions.COLLECTION_STAGE.key(), MongoDBVariantOptions.COLLECTION_STAGE.defaultValue() + "_2")
-                .append(MongoDBVariantOptions.COLLECTION_VARIANTS.key(), MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + "_2"));
+                .append(MongoDBVariantOptions.COLLECTION_VARIANTS.key(), MongoDBVariantOptions.COLLECTION_VARIANTS.defaultValue() + "_2");
+
+        variantStorageManager.getOptions().putAll(renameCollections);
+        setUp.accept(variantStorageManager);
+
+        runDefaultETL(file, variantStorageManager, studyConfiguration, new ObjectMap(renameCollections)
+                .append(VariantStorageManager.Options.CALCULATE_STATS.key(), false)
+                .append(VariantStorageManager.Options.ANNOTATE.key(), false));
 
 
         // Iterate over both collections to check that contain the same variants
@@ -283,18 +395,19 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     }
 
     public long compareCollections(MongoDBCollection expectedCollection, MongoDBCollection actualCollection) {
-        Iterator<Document> actualIter = actualCollection.nativeQuery().find(new Document(), new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))).iterator();
-        Iterator<Document> expectedIter = expectedCollection.nativeQuery().find(new Document(), new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"))).iterator();
+        QueryOptions sort = new QueryOptions(QueryOptions.SORT, Sorts.ascending("_id"));
+        Iterator<Document> actualIterator = actualCollection.nativeQuery().find(new Document(), sort).iterator();
+        Iterator<Document> expectedIterator = expectedCollection.nativeQuery().find(new Document(), sort).iterator();
 
         long c = 0;
-        while (actualIter.hasNext() && expectedIter.hasNext()) {
+        while (actualIterator.hasNext() && expectedIterator.hasNext()) {
             c++;
-            Document actual = actualIter.next();
-            Document expected = expectedIter.next();
+            Document actual = actualIterator.next();
+            Document expected = expectedIterator.next();
             assertEquals(expected, actual);
         }
-        assertFalse(actualIter.hasNext());
-        assertFalse(expectedIter.hasNext());
+        assertFalse(actualIterator.hasNext());
+        assertFalse(expectedIterator.hasNext());
         return c;
     }
 
