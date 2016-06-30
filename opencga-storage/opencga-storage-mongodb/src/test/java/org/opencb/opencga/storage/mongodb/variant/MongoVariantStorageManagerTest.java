@@ -19,10 +19,7 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
-import org.hamcrest.core.IsInstanceOf;
-import org.hamcrest.core.StringContains;
 import org.junit.Test;
-import org.junit.internal.matchers.ThrowableMessageMatcher;
 import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -55,7 +52,9 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
+import static org.junit.internal.matchers.ThrowableMessageMatcher.hasMessage;
 import static org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter.*;
 
 
@@ -257,6 +256,94 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
     }
 
     @Test
+    public void stageWhileMerging() throws Exception {
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        StorageETLResult storageETLResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantOptions.STAGE.key(), true));
+        Thread thread = new Thread(() -> {
+            try {
+                runDefaultETL(storageETLResult.getTransformResult(), getVariantStorageManager(), studyConfiguration, new ObjectMap(),
+                        false, true);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        StudyConfigurationManager studyConfigurationManager = getVariantStorageManager().getDBAdaptor(DB_NAME).getStudyConfigurationManager();
+        int secondFileId = 8;
+        try {
+            thread.start();
+            Thread.sleep(200);
+
+            BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0);
+            opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
+            MongoVariantStorageManagerException expected = MongoVariantStorageManagerException.operationInProgressException(opInProgress);
+            thrown.expect(StorageETLException.class);
+            thrown.expectCause(instanceOf(expected.getClass()));
+            thrown.expectCause(hasMessage(is(expected.getMessage())));
+
+            runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration,
+                    new ObjectMap(VariantStorageManager.Options.FILE_ID.key(), secondFileId));
+        } finally {
+            System.out.println("Interrupt!");
+            thread.interrupt();
+            System.out.println("Join!");
+            thread.join();
+            System.out.println("EXIT");
+
+            StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            // Second file is not staged or merged
+            List<BatchFileOperation> ops = sc.getBatches().stream().filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            assertEquals(0, ops.size());
+        }
+    }
+
+    @Test
+    public void mergeWhileMerging() throws Exception {
+        StudyConfiguration studyConfiguration = newStudyConfiguration();
+        StorageETLResult storageETLResult = runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantOptions.STAGE.key(), true));
+
+        int secondFileId = 8;
+        StorageETLResult storageETLResult2 = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap()
+                .append(MongoDBVariantOptions.STAGE.key(), true).append(VariantStorageManager.Options.FILE_ID.key(), secondFileId));
+        Thread thread = new Thread(() -> {
+            try {
+                runDefaultETL(storageETLResult.getTransformResult(), getVariantStorageManager(), studyConfiguration, new ObjectMap(),
+                        false, true);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        StudyConfigurationManager studyConfigurationManager = getVariantStorageManager().getDBAdaptor(DB_NAME).getStudyConfigurationManager();
+        try {
+            thread.start();
+            Thread.sleep(200);
+
+            BatchFileOperation opInProgress = new BatchFileOperation(MongoDBVariantOptions.MERGE.key(), Collections.singletonList(FILE_ID), 0);
+            opInProgress.addStatus(BatchFileOperation.Status.RUNNING);
+            MongoVariantStorageManagerException expected = MongoVariantStorageManagerException.operationInProgressException(opInProgress);
+            thrown.expect(StorageETLException.class);
+            thrown.expectCause(instanceOf(expected.getClass()));
+            thrown.expectCause(hasMessage(is(expected.getMessage())));
+
+            runDefaultETL(storageETLResult2.getTransformResult(), getVariantStorageManager(), studyConfiguration,
+                    new ObjectMap(MongoDBVariantOptions.STAGE.key(), false).append(VariantStorageManager.Options.FILE_ID.key(), secondFileId), false, true);
+        } finally {
+            System.out.println("Interrupt!");
+            thread.interrupt();
+            System.out.println("Join!");
+            thread.join();
+            System.out.println("EXIT");
+
+            StudyConfiguration sc = studyConfigurationManager.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            // Second file is not staged or merged
+            List<BatchFileOperation> ops = sc.getBatches().stream().filter(op -> op.getFileIds().contains(secondFileId)).collect(Collectors.toList());
+            assertEquals(1, ops.size());
+            assertEquals(MongoDBVariantOptions.STAGE.key(), ops.get(0).getOperationName());
+        }
+    }
+
+    @Test
     public void mergeResumeFirstFileTest() throws Exception {
         mergeResume(VariantStorageManagerTestUtils.inputUri, createStudyConfiguration(), o -> {});
     }
@@ -423,12 +510,6 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         long count = variantStorageManager.getDBAdaptor(DB_NAME).count(null).first();
         assertEquals(0L, count);
 
-//        thrown.expect(StorageETLException.class);
-//        thrown.expectCause(IsInstanceOf.instanceOf(StorageManagerException.class));
-//        thrown.expectCause(
-//                ThrowableMessageMatcher.hasMessage(
-//                        StringContains.containsString(
-//                                StorageManagerException.alreadyLoaded(FILE_ID, studyConfiguration).getMessage())));
         runETL(variantStorageManager, storageETLResult.getTransformResult(), outputUri, new ObjectMap()
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
@@ -449,11 +530,8 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         assertTrue(count > 0);
 
         thrown.expect(StorageETLException.class);
-        thrown.expectCause(IsInstanceOf.instanceOf(StorageManagerException.class));
-        thrown.expectCause(
-                ThrowableMessageMatcher.hasMessage(
-                        StringContains.containsString(
-                                StorageManagerException.alreadyLoaded(FILE_ID, studyConfiguration).getMessage())));
+        thrown.expectCause(instanceOf(StorageManagerException.class));
+        thrown.expectCause(hasMessage(containsString(StorageManagerException.alreadyLoaded(FILE_ID, studyConfiguration).getMessage())));
         runETL(variantStorageManager, storageETLResult.getTransformResult(), outputUri, new ObjectMap()
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)
@@ -473,11 +551,8 @@ public class MongoVariantStorageManagerTest extends VariantStorageManagerTest im
         assertTrue(count > 0);
 
         thrown.expect(StorageETLException.class);
-        thrown.expectCause(IsInstanceOf.instanceOf(StorageManagerException.class));
-        thrown.expectCause(
-                ThrowableMessageMatcher.hasMessage(
-                        StringContains.containsString(
-                                StorageManagerException.alreadyLoaded(FILE_ID, studyConfiguration).getMessage())));
+        thrown.expectCause(instanceOf(StorageManagerException.class));
+        thrown.expectCause(hasMessage(containsString(StorageManagerException.alreadyLoaded(FILE_ID, studyConfiguration).getMessage())));
         runETL(variantStorageManager, storageETLResult.getTransformResult(), outputUri, new ObjectMap()
                 .append(VariantStorageManager.Options.ANNOTATE.key(), false)
                 .append(MongoDBVariantOptions.STAGE.key(), true)

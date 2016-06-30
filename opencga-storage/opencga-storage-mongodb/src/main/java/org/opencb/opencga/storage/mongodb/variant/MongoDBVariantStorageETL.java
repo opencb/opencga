@@ -331,9 +331,7 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                             break;
                         case RUNNING:
                             if (!loadStageResume) {
-                                throw new StorageManagerException(
-                                        "File \"" + fileName + "\" (" + fileId + ") is being loaded in the stage collection "
-                                                + "right now. To ignore this, relaunch with " + STAGE_RESUME.key() + "=true");
+                                throw MongoVariantStorageManagerException.fileBeingStagedException(fileId, fileName);
                             }
                         case ERROR:
                             // Resume stage
@@ -345,6 +343,11 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                     }
                     operation = op;
                     break;
+                } else if (op.getOperationName().equals(MERGE.key())) {
+                    // Avoid stage new files if there are ongoing merge operations
+                    if (!op.currentStatus().equals(BatchFileOperation.Status.READY)) {
+                        throw MongoVariantStorageManagerException.operationInProgressException(op);
+                    }
                 }
             }
 
@@ -585,13 +588,8 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
                 } else {
                     // Can not merge any file if there is an ongoing MERGE or STAGE operation
                     if (op.getOperationName().equals(MERGE.key()) || op.getOperationName().equals(STAGE.key())) {
-                        switch (op.currentStatus()) {
-                            case READY:
-                                break;
-                            case RUNNING:
-                            case DONE:
-                            case ERROR:
-                                throw MongoVariantStorageManagerException.operationInProgressException(op);
+                        if (!op.currentStatus().equals(BatchFileOperation.Status.READY)) {
+                            throw MongoVariantStorageManagerException.operationInProgressException(op);
                         }
                     }
                 }

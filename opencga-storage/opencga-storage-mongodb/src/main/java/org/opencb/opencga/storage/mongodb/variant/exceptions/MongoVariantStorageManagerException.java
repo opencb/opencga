@@ -21,16 +21,22 @@ public class MongoVariantStorageManagerException extends StorageManagerException
         super(message);
     }
 
-    public static MongoVariantStorageManagerException operationInProgressException(BatchFileOperation op) {
+    public static MongoVariantStorageManagerException operationInProgressException(BatchFileOperation opInProgress) {
         return new MongoVariantStorageManagerException("Can not load any file while there is "
-                + "an operation \"" + op.getOperationName() + "\" "
-                + "in status \"" + op.currentStatus() + "\" for files " + op.getFileIds() + ". "
+                + "an operation \"" + opInProgress.getOperationName() + "\" "
+                + "in status \"" + opInProgress.currentStatus() + "\" for files " + opInProgress.getFileIds() + ". "
                 + "Finish operations to continue.");
     }
 
     public static MongoVariantStorageManagerException filesBeingMergedException(List<Integer> fileIds) {
         return new MongoVariantStorageManagerException(
-                "Files " + fileIds + " are being loaded in the variants collection "
+                "Files " + fileIds + " are already being loaded in the variants collection "
                         + "right now. To ignore this, relaunch with " + MongoDBVariantOptions.MERGE_RESUME.key() + "=true");
+    }
+
+    public static MongoVariantStorageManagerException fileBeingStagedException(int fileId, String fileName) {
+        return new MongoVariantStorageManagerException(
+                "File \"" + fileName + "\" (" + fileId + ") is already being loaded in the stage collection "
+                        + "right now. To ignore this, relaunch with " + MongoDBVariantOptions.STAGE_RESUME.key() + "=true");
     }
 }
