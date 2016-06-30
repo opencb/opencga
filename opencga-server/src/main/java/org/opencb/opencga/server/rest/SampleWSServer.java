@@ -325,10 +325,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/annotationSets/search")
+    @Path("/{sampleId}/annotationSets/{annotationSetName}/search")
     @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                           @ApiParam(value = "annotationSetName", required = true) @QueryParam("annotationSetName") String annotationSetName,
+                                           @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
                                            @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
