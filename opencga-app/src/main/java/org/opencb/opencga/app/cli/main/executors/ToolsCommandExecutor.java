@@ -82,7 +82,6 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     private void search() throws CatalogException, IOException {
         logger.debug("Searching tool");
-        logger.debug("Getting tool information");
         QueryOptions queryOptions = new QueryOptions();
         QueryResponse<Tool> tools = openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);
         tools.first().getResult().stream().forEach(tool -> System.out.println(tool.toString()));
