@@ -194,7 +194,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         try {
             panelCollection.insert(panelDocument, null);
         } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("Panel from study { id:" + studyId + "}", "name", diseasePanel.getName());
+            throw CatalogDBException.alreadyExists("Panel", studyId, "name", diseasePanel.getName());
         }
 
         return endQuery("Create panel", startTime, getPanel(newPanelId, options));

@@ -19,6 +19,8 @@ package org.opencb.opencga.catalog.db.mongodb;
 import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
+import com.mongodb.ErrorCategory;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Updates;
 import com.mongodb.util.JSON;
@@ -34,6 +36,7 @@ import org.opencb.opencga.catalog.models.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -876,4 +879,15 @@ class CatalogMongoDBUtils {
     }
 
 
+    static boolean isDuplicateKeyException(MongoWriteException e) {
+        return ErrorCategory.fromErrorCode(e.getCode()) == ErrorCategory.DUPLICATE_KEY;
+    }
+
+    static CatalogDBException ifDuplicateKeyException(Supplier<? extends CatalogDBException> producer, MongoWriteException e) {
+        if (isDuplicateKeyException(e)) {
+            return producer.get();
+        } else {
+            throw e;
+        }
+    }
 }
