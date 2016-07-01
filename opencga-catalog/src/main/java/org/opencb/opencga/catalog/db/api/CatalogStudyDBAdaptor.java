@@ -98,6 +98,8 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      */
     QueryResult<StudyAcl> getStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
+    QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException;
+
     @Deprecated
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
 
