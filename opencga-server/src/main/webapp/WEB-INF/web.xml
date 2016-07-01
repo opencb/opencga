@@ -72,7 +72,7 @@
         </init-param>
         <init-param>
             <param-name>swagger.api.basepath</param-name>
-            <param-value>/opencga/webservices/rest</param-value>
+            <param-value>/${opencga.war.name}/webservices/rest</param-value>
         </init-param>
         <load-on-startup>2</load-on-startup>
     </servlet>

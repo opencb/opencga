@@ -64,7 +64,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/info")
-    @ApiOperation(value = "Retrieves all user info", position = 2, response = User.class)
+    @ApiOperation(value = "Return the user information including its projects and studies", position = 2, response = User.class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),

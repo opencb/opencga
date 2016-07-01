@@ -73,8 +73,17 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             case "groupBy":
                 groupBy();
                 break;
-            case "annotate":
-                annotate();
+            case "annotation-sets-all-info":
+                annotationSetsAllInfo();
+                break;
+            case "annotation-sets-search":
+                annotationSetsSearch();
+                break;
+            case "annotation-sets-delete":
+                annotationSetsDelete();
+                break;
+            case "annotation-sets-info":
+                annotationSetsInfo();
                 break;
             case "acls":
                 acls();
@@ -97,7 +106,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         }
 
     }
-
+    /********************************************  Administration commands  ***********************************************/
     private void create() throws CatalogException, IOException {
         logger.debug("Creating sample");
         ObjectMap objectMap = new ObjectMap();
@@ -225,18 +234,64 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         System.out.println(samples.toString());
     }
 
-
-
     private void groupBy() throws CatalogException {
         logger.debug("Group By samples");
+        //TODO
+        /*ObjectMap objectMap = new ObjectMap();
+        QueryResponse<SampleAcl> acls = openCGAClient.getSampleClient().(samplesCommandOptions.aclsCommandOptions.id);
+
+        System.out.println(acls.toString());*/
     }
 
-    private void annotate() throws CatalogException {
-        logger.debug("Annotating samples");
+    /********************************************  Annotation commands  ***********************************************/
+
+    private void annotationSetsAllInfo() throws CatalogException, IOException {
+        logger.debug("Searching annotationSets information");
+        ObjectMap objectMap = new ObjectMap();
+        /*
+        if (samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap) {
+            objectMap.put("as-map", samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
+        }
+
+        QueryResponse<Sample> sample = openCGAClient.getSampleClient().annotateSetsAllInfo(samplesCommandOptions.annotationSetsAllInfoCommandOptions.,
+                samplesCommandOptions.createCommandOptions.name, objectMap);
+
+        System.out.println(sample.toString());*/
     }
 
+    private void annotationSetsInfo() throws CatalogException, IOException {
+        logger.debug("Searching annotationSets information");
+        ObjectMap objectMap = new ObjectMap();
 
+        objectMap.put("asMap", samplesCommandOptions.annotationSetsInfoCommandOptions.asMap);
 
+        /*if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(), samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
+        }
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                    samplesCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
+        }*/
+
+        /*QueryResponse<Sample> sample = openCGAClient.getSampleClient().annotate(samplesCommandOptions.annotationSetsInfoCommandOptions.id,
+                samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
+                samplesCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
+
+        System.out.println(sample.toString());*/
+    }
+
+    private void annotationSetsSearch() throws CatalogException, IOException {
+        logger.debug("Searching annotationSets");
+        ObjectMap objectMap = new ObjectMap();
+        //TODO
+    }
+
+    private void annotationSetsDelete() throws CatalogException, IOException {
+        logger.debug("Searching annotationSets");
+        ObjectMap objectMap = new ObjectMap();
+        //TODO
+    }
     /********************************************  Administration ACLS commands  ***********************************************/
 
     private void acls() throws CatalogException,IOException {

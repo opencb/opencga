@@ -19,7 +19,12 @@ public class SampleCommandOptions {
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
-    public AnnotateCommandOptions annotateCommandOptions;
+
+    public AnnotationSetsAllInfoCommandOptions annotationSetsAllInfoCommandOptions;
+    public AnnotationSetsSearchCommandOptions annotationSetsSearchCommandOptions;
+    public AnnotationSetsInfoCommandOptions annotationSetsInfoCommandOptions;
+    public AnnotationSetsDeleteCommandOptions annotationSetsDeleteCommandOptions;
+
     public AclsCreateCommandOptions aclsCreateCommandOptions;
     public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
     public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
@@ -40,9 +45,12 @@ public class SampleCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-
         this.groupByCommandOptions = new GroupByCommandOptions();
-        this.annotateCommandOptions = new AnnotateCommandOptions();
+
+        this.annotationSetsAllInfoCommandOptions = new AnnotationSetsAllInfoCommandOptions();
+        this.annotationSetsSearchCommandOptions = new AnnotationSetsSearchCommandOptions();
+        this.annotationSetsInfoCommandOptions = new AnnotationSetsInfoCommandOptions();
+        this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
@@ -210,23 +218,57 @@ public class SampleCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate sample")
-    public class AnnotateCommandOptions extends BaseSampleCommand {
+    @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsAllInfoCommandOptions extends BaseSampleCommand {
 
-        @Parameter(names = {"--annotate-set-name"}, description = "Annotation set name. Must be unique for the cohort",
+        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
+        public boolean asMap = true;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsSearchCommandOptions extends BaseSampleCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
                 required = true, arity = 1)
-        public String annotateSetName;
+        public String annotationSetName;
 
         @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet, default: false", arity = 0)
-        public boolean update;
-
-        @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet, default:false", required = false, arity = 0)
-        public boolean delete;
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
     }
 
+    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsDeleteCommandOptions extends BaseSampleCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
+                required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsInfoCommandOptions extends BaseSampleCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
+                required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
+        public boolean asMap = true;
+    }
 
     @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
     public class AclsCommandOptions {
