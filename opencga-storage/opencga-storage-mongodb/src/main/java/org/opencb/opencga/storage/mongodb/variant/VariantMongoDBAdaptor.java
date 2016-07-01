@@ -266,7 +266,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 //                System.err.println("mongodb.explain = " + explain);
 //            }
 //        }
-        QueryResult<Variant> queryResult = variantsCollection.find(mongoQuery, projection, getDbObjectToVariantConverter(query, options),
+        QueryResult<Variant> queryResult = variantsCollection.find(mongoQuery, projection, getDocumentToVariantConverter(query, options),
                 options);
         // set query Id?
         return queryResult;
@@ -389,7 +389,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         Document mongoQuery = parseQuery(query);
         Document projection = createProjection(query, options);
-        DocumentToVariantConverter converter = getDbObjectToVariantConverter(query, options);
+        DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
         // Short queries with timeout or limit don't need the persistent cursor.
@@ -665,6 +665,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
         for (Integer studyId : studyIds) {
             StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
+            if (sc == null) {
+                continue;
+            }
             LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
             List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
             returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
@@ -700,7 +703,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         long start = System.nanoTime();
         DocumentToVariantStatsConverter statsConverter = new DocumentToVariantStatsConverter(studyConfigurationManager);
 //        VariantSource variantSource = queryOptions.get(VariantStorageManager.VARIANT_SOURCE, VariantSource.class);
-        DocumentToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), options);
+        DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), options);
         boolean overwrite = options.getBoolean(VariantStorageManager.Options.OVERWRITE_STATS.key(), false);
         //TODO: Use the StudyConfiguration to change names to ids
 
@@ -803,7 +806,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         List<Bson> updates = new LinkedList<>();
 
         long start = System.nanoTime();
-        DocumentToVariantConverter variantConverter = getDbObjectToVariantConverter(new Query(), queryOptions);
+        DocumentToVariantConverter variantConverter = getDocumentToVariantConverter(new Query(), queryOptions);
         for (VariantAnnotation variantAnnotation : variantAnnotations) {
             String id = variantConverter.buildStorageId(variantAnnotation.getChromosome(), variantAnnotation.getStart(),
                     variantAnnotation.getReference(), variantAnnotation.getAlternate());
@@ -1461,29 +1464,30 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
-                .STUDIES_FIELD)) {
-            List<Integer> files = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
-            projection.put(
-                    DocumentToVariantConverter.STUDIES_FIELD,
-                    new Document(
-                            "$elemMatch",
-                            new Document(
-                                    DocumentToStudyVariantEntryConverter.FILES_FIELD + "." + DocumentToStudyVariantEntryConverter
-                                            .FILEID_FIELD,
-                                    new Document(
-                                            "$in",
-                                            files
-                                    )
-                            )
-                    )
-            );
-        }
+//        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
+//                .STUDIES_FIELD)) {
+//            List<Integer> files = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
+//            projection.put(
+//                    DocumentToVariantConverter.STUDIES_FIELD,
+//                    new Document(
+//                            "$elemMatch",
+//                            new Document(
+//                                    DocumentToStudyVariantEntryConverter.FILES_FIELD + "." + DocumentToStudyVariantEntryConverter
+//                                            .FILEID_FIELD,
+//                                    new Document(
+//                                            "$in",
+//                                            files
+//                                    )
+//                            )
+//                    )
+//            );
+//        }
         if (query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
                 && projection.containsKey(DocumentToVariantConverter.STUDIES_FIELD)) {
             List<Integer> studiesIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
 //            List<Integer> studies = query.getAsIntegerList(VariantQueryParams.RETURNED_STUDIES.key());
-            if (!studiesIds.isEmpty()) {
+            // Use elemMatch only if there is one study to return.
+            if (studiesIds.size() == 1) {
                 projection.put(
                         DocumentToVariantConverter.STUDIES_FIELD,
                         new Document(
@@ -1798,7 +1802,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         return variantsCollection.update(query, update, queryOptions);
     }
 
-    private DocumentToVariantConverter getDbObjectToVariantConverter(Query query, QueryOptions options) {
+    private DocumentToVariantConverter getDocumentToVariantConverter(Query query, QueryOptions options) {
         List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.STUDIES.key(), ",|;"), options);
 
         DocumentToSamplesConverter samplesConverter;
@@ -1825,14 +1829,18 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedSamples(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
                     .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList()));
         }
-        DocumentToStudyVariantEntryConverter sourceEntryConverter = new DocumentToStudyVariantEntryConverter(false,
+        DocumentToStudyVariantEntryConverter studyEntryConverter = new DocumentToStudyVariantEntryConverter(false,
                 query.containsKey(VariantQueryParams.RETURNED_FILES.key())
                         ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key())
                         : null,
                 samplesConverter
         );
-        sourceEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
-        return new DocumentToVariantConverter(sourceEntryConverter, new DocumentToVariantStatsConverter(studyConfigurationManager));
+        studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
+        List<Integer> returnedStudies = query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
+                ? utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options)
+                : null;
+        return new DocumentToVariantConverter(studyEntryConverter,
+                new DocumentToVariantStatsConverter(studyConfigurationManager), returnedStudies);
     }
 
     @Deprecated
