@@ -311,7 +311,7 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/{jobId}/delete")
     @ApiOperation(value = "Delete job", position = 4)
     public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId,
-                           @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
             List<QueryResult> results = new LinkedList<>();
             if (deleteFiles) {
