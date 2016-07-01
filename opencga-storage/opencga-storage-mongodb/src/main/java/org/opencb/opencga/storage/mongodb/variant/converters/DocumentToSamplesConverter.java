@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;

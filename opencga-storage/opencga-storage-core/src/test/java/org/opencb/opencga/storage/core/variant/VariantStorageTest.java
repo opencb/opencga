@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.core.variant;
 
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.avro.VariantType;
 
 /**
  * Created on 26/10/15

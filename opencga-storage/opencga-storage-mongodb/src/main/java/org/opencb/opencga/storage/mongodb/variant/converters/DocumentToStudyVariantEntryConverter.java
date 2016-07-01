@@ -23,7 +23,7 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 
 import java.io.IOException;

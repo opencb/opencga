@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.run.ParallelTaskRunner;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -182,7 +182,9 @@ public class VariantStatisticsManager {
                             .joining(";")));
         }
         logger.info("ReaderQuery: " + readerQuery.toJson());
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
+        QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true);
+        logger.info("ReaderQueryOptions: " + readerOptions.toJson());
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/,

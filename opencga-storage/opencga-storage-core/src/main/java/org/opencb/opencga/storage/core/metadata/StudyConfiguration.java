@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.storage.core;
+package org.opencb.opencga.storage.core.metadata;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 
@@ -48,6 +50,8 @@ public class StudyConfiguration {
     private Set<Integer> calculatedStats;
     private Set<Integer> invalidStats;
 
+    private List<BatchFileOperation> batches;
+
     private VariantSource.Aggregation aggregation;
 
     private Long timeStamp;
@@ -58,6 +62,10 @@ public class StudyConfiguration {
     }
 
     public StudyConfiguration(StudyConfiguration other) {
+        copy(other);
+    }
+
+    public void copy(StudyConfiguration other) {
         this.studyId = other.studyId;
         this.studyName = other.studyName;
         this.fileIds = HashBiMap.create(other.fileIds == null ? Collections.emptyMap() : other.fileIds);
@@ -69,6 +77,7 @@ public class StudyConfiguration {
         this.samplesInFiles = new HashMap<>(other.samplesInFiles);
         this.calculatedStats = new LinkedHashSet<>(other.calculatedStats);
         this.invalidStats = new LinkedHashSet<>(other.invalidStats);
+        this.batches = other.batches;
         this.aggregation = other.aggregation;
         this.attributes = new ObjectMap(other.attributes);
     }
@@ -89,6 +98,7 @@ public class StudyConfiguration {
         this.samplesInFiles = new LinkedHashMap<>();
         this.calculatedStats = new LinkedHashSet<>();
         this.invalidStats = new LinkedHashSet<>();
+        this.batches = new LinkedList<>();
         this.aggregation = VariantSource.Aggregation.NONE;
         this.attributes = new ObjectMap();
     }
@@ -130,23 +140,23 @@ public class StudyConfiguration {
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("StudyConfiguration{");
-        sb.append("studyId=").append(studyId);
-        sb.append(", studyName='").append(studyName).append('\'');
-        sb.append(", fileIds=").append(fileIds);
-        sb.append(", sampleIds=").append(sampleIds);
-        sb.append(", cohortIds=").append(cohortIds);
-        sb.append(", cohorts=").append(cohorts);
-        sb.append(", indexedFiles=").append(indexedFiles);
-        sb.append(", headers=").append(headers);
-        sb.append(", samplesInFiles=").append(samplesInFiles);
-        sb.append(", calculatedStats=").append(calculatedStats);
-        sb.append(", invalidStats=").append(invalidStats);
-        sb.append(", aggregation=").append(aggregation);
-        sb.append(", timeStamp=").append(timeStamp);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
+        return new ToStringBuilder(this, ToStringStyle.MULTI_LINE_STYLE)
+                .append("studyId", studyId)
+                .append("studyName", studyName)
+                .append("fileIds", fileIds)
+                .append("sampleIds", sampleIds)
+                .append("cohortIds", cohortIds)
+                .append("cohorts", cohorts)
+                .append("indexedFiles", indexedFiles)
+                .append("headers", headers)
+                .append("samplesInFiles", samplesInFiles)
+                .append("calculatedStats", calculatedStats)
+                .append("invalidStats", invalidStats)
+                .append("batches", batches)
+                .append("aggregation", aggregation)
+                .append("timeStamp", timeStamp)
+                .append("attributes", attributes)
+                .toString();
     }
 
     public int getStudyId() {
@@ -235,6 +245,19 @@ public class StudyConfiguration {
 
     public void setInvalidStats(Set<Integer> invalidStats) {
         this.invalidStats = invalidStats;
+    }
+
+    public List<BatchFileOperation> getBatches() {
+        return batches;
+    }
+
+    public StudyConfiguration setBatches(List<BatchFileOperation> batches) {
+        this.batches = batches;
+        return this;
+    }
+
+    public BatchFileOperation lastBatch() {
+        return getBatches().get(getBatches().size() - 1);
     }
 
     public VariantSource.Aggregation getAggregation() {
