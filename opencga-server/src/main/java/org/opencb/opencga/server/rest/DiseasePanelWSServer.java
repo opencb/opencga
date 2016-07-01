@@ -63,32 +63,6 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
         }
     }
 
-    @GET
-    @Path("/{panelIds}/share")
-    @ApiOperation(value = "Share panels with other members", position = 3)
-    public Response share(@PathParam(value = "panelIds") String panelIds,
-                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                          @ApiParam(value = "Comma separated list of panel permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
-        try {
-            return createOkResponse(catalogManager.sharePanel(panelIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{panelIds}/unshare")
-    @ApiOperation(value = "Remove the permissions for the list of members", position = 4)
-    public Response unshare(@PathParam(value = "panelIds") String panelIds,
-                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
-                            @ApiParam(value = "Comma separated list of panel permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
-        try {
-            return createOkResponse(catalogManager.unsharePanel(panelIds, members, sessionId, permissions));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
 
     @GET
     @Path("/{panelId}/acls")

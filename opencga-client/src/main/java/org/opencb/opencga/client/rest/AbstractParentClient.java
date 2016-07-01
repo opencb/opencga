@@ -105,6 +105,7 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, id, "delete", params, GET, clazz);
     }
 
+
    /* /**
      * Shares the document with the list of members.
      *
