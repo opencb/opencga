@@ -26,6 +26,6 @@ public class PanelClient extends AbstractParentClient<DiseasePanel, DiseasePanel
     public QueryResponse<DiseasePanel> create(String studyId, String name, String disease, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", name, "disease", disease);
-        return execute(PANEL_URL, "create", params, DiseasePanel.class);
+        return execute(PANEL_URL, "create", params, GET, DiseasePanel.class);
     }
 }

@@ -43,11 +43,11 @@ public class JobClient extends AbstractParentClient<Job, JobAcl> {
 
     public QueryResponse<Job> create(String studyId, String jobName, String toolId, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", jobName, "toolId", toolId);
-        return execute(JOBS_URL, "create", params, Job.class);
+        return execute(JOBS_URL, "create", params, GET, Job.class);
     }
 
     public QueryResponse<Job> visit(String jobId, QueryOptions options) throws CatalogException, IOException {
-        return execute(JOBS_URL, jobId, "visit", options, Job.class);
+        return execute(JOBS_URL, jobId, "visit", options, GET, Job.class);
     }
 
 }

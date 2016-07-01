@@ -88,6 +88,7 @@ public class OpencgaCliOptionsParser {
         projectSubCommands.addCommand("studies", projectCommandOptions.studiesCommandOptions);
         projectSubCommands.addCommand("update", projectCommandOptions.updateCommandOptions);
         projectSubCommands.addCommand("delete", projectCommandOptions.deleteCommandOptions);
+        projectSubCommands.addCommand("help", projectCommandOptions.helpCommandOptions);
 
         studyCommandOptions = new StudyCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("studies", studyCommandOptions);
@@ -104,8 +105,17 @@ public class OpencgaCliOptionsParser {
         studySubCommands.addCommand("alignments", studyCommandOptions.alignmentsCommandOptions);
         studySubCommands.addCommand("samples", studyCommandOptions.samplesCommandOptions);
         studySubCommands.addCommand("variants", studyCommandOptions.variantsCommandOptions);
-
-
+        studySubCommands.addCommand("help", studyCommandOptions.helpCommandOptions);
+        studySubCommands.addCommand("groups", studyCommandOptions.groupsCommandOptions);
+        studySubCommands.addCommand("groups-create", studyCommandOptions.groupsCreateCommandOptions);
+        studySubCommands.addCommand("groups-delete", studyCommandOptions.groupsDeleteCommandOptions);
+        studySubCommands.addCommand("groups-info", studyCommandOptions.groupsInfoCommandOptions);
+        studySubCommands.addCommand("groups-update", studyCommandOptions.groupsUpdateCommandOptions);
+        studySubCommands.addCommand("acls", studyCommandOptions.aclsCommandOptions);
+        studySubCommands.addCommand("acls-create", studyCommandOptions.aclsCreateCommandOptions);
+        studySubCommands.addCommand("acls-member-delete", studyCommandOptions.aclsMemberDeleteCommandOptions);
+        studySubCommands.addCommand("acls-member-info", studyCommandOptions.aclsMemberInfoCommandOptions);
+        studySubCommands.addCommand("acls-member-update", studyCommandOptions.aclsMemberUpdateCommandOptions);
 
         fileCommandOptions = new FileCommandOptions(this.commonCommandOptions,jCommander);
         jCommander.addCommand("files", fileCommandOptions);
@@ -170,10 +180,16 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("search", sampleCommandOptions.searchCommandOptions);
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
-        sampleSubCommands.addCommand("share", sampleCommandOptions.shareCommandOptions);
-        sampleSubCommands.addCommand("unshare", sampleCommandOptions.unshareCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
-        sampleSubCommands.addCommand("annotate", sampleCommandOptions.annotateCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationSetsAllInfoCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-search", sampleCommandOptions.annotationSetsSearchCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-delete", sampleCommandOptions.annotationSetsDeleteCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-info", sampleCommandOptions.annotationSetsInfoCommandOptions);
+        sampleSubCommands.addCommand("acls", sampleCommandOptions.aclsCommandOptions);
+        sampleSubCommands.addCommand("acls-create", sampleCommandOptions.aclsCreateCommandOptions);
+        sampleSubCommands.addCommand("acls-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);
+        sampleSubCommands.addCommand("acls-member-info", sampleCommandOptions.aclsMemberInfoCommandOptions);
+        sampleSubCommands.addCommand("acls-member-update", sampleCommandOptions.aclsMemberUpdateCommandOptions);
 
         variableCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("variables", variableCommandOptions);
@@ -369,6 +385,7 @@ public class OpencgaCliOptionsParser {
             return queryOptions;
         }
     }
+
 
     class BasicCommand {
     }

@@ -42,13 +42,13 @@ public class IndividualClient extends AbstractParentClient<Individual, Individua
 
     public QueryResponse<Individual> create(String studyId, String individualName, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", individualName);
-        return execute(INDIVIDUALS_URL, "create", params, Individual.class);
+        return execute(INDIVIDUALS_URL, "create", params, GET, Individual.class);
     }
 
     public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(INDIVIDUALS_URL, individualId, "annotate", params, Individual.class);
+        return execute(INDIVIDUALS_URL, individualId, "annotate", params, GET, Individual.class);
     }
 
 }

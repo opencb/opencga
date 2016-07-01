@@ -33,7 +33,7 @@ public class ToolCommandOptions {
 
     }
 
-    class BaseToolsCommand {
+    public class BaseToolsCommand {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -43,14 +43,14 @@ public class ToolCommandOptions {
 
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get tool information")
-    class InfoCommandOptions extends BaseToolsCommand {
+    public class InfoCommandOptions extends BaseToolsCommand {
 
         @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
         public String execution;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search tools")
-    class SearchCommandOptions {
+    public class SearchCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -66,18 +66,18 @@ public class ToolCommandOptions {
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Tool help")
-    class HelpCommandOptions extends BaseToolsCommand {
+    public class HelpCommandOptions extends BaseToolsCommand {
 
         @Parameter(names = {"--execution"}, description = "execution", required = false, arity = 1)
         public String execution;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user attributes")
-    class UpdateCommandOptions extends BaseToolsCommand {
+    public class UpdateCommandOptions extends BaseToolsCommand {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a tool")
-    class DeleteCommandOptions extends BaseToolsCommand {
+    public class DeleteCommandOptions extends BaseToolsCommand {
     }
 
 }

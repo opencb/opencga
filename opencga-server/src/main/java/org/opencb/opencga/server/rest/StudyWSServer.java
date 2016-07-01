@@ -562,11 +562,11 @@ public class StudyWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Create a group [PENDING]", position = 14)
     public Response createGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                 @ApiParam(value = "groupId", required = true) @DefaultValue("") @QueryParam("groupId") String groupId,
-                                @ApiParam(value = "Comma separated list of members that will form the group", required = true)
-                                    @DefaultValue("") @QueryParam("members") String members) {
+                                @ApiParam(value = "Comma separated list of users that will form the group", required = true)
+                                    @DefaultValue("") @QueryParam("users") String users) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            return createOkResponse(catalogManager.addUsersToGroup(studyId, groupId, members, sessionId));
+            return createOkResponse(catalogManager.addUsersToGroup(studyId, groupId, users, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -629,10 +629,14 @@ public class StudyWSServer extends OpenCGAWSServer {
     @Path("/{studyId}/acls/create")
     @ApiOperation(value = "Define a set of permissions for a list of users or groups [PENDING]", position = 19)
     public Response createRole(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String templateId,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
+            System.out.println("studyIdStr = " + studyIdStr);
+            System.out.println("templateId = " + templateId);
+            System.out.println("permissions = " + permissions);
+            System.out.println("members = " + members);
             return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -660,6 +664,10 @@ public class StudyWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
         try {
+            System.out.println("studyIdStr = " + studyIdStr);
+            System.out.println("addPermissions = " + addPermissions);
+            System.out.println("removePermissions = " + removePermissions);
+            System.out.println("setPermissions = " + setPermissions);
             return createOkResponse(null);
         } catch (Exception e) {
             return createErrorResponse(e);

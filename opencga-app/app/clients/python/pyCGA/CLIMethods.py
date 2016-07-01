@@ -338,8 +338,8 @@ class Methods:
         try:
             result = sample.search_by_annotation(args.studyId, args.variableSetName, *args.queries)
             for r in result:
-                print(int(AnnotationSet(*[annotation for annotation in r["annotationSets"] if args.variableSetName in annotation["attributes"]["annotateSetName"]][0]["annotations"]).get_json()["id"]))
-
+                # print(int(AnnotationSet(*[annotation for annotation in r["annotationSets"] if args.variableSetName in annotation["attributes"]["annotateSetName"]][0]["annotations"]).get_json()["id"]))
+                print(AnnotationSet(*[annotation for annotation in r["annotationSets"] if args.variableSetName in annotation["attributes"]["annotateSetName"]][0]["annotations"]).get_json()["name"])
         except ServerResponseException as e:
             print(str(e), file=sys.stderr)
 

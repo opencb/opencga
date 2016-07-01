@@ -43,11 +43,11 @@ public class ProjectClient extends AbstractParentClient<Project, Project> {
     public QueryResponse<Project> create(String projectName, String projectAlias, String projectOrganization, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "name", projectName, "alias", projectAlias, "organization", projectOrganization);
-        return execute(PROJECTS_URL, "create", params, Project.class);
+        return execute(PROJECTS_URL, "create", params, GET, Project.class);
     }
 
     public QueryResponse<Study> getStudies(String projectId, QueryOptions options) throws CatalogException, IOException {
-        return execute(PROJECTS_URL, projectId, "studies", options, Study.class);
+        return execute(PROJECTS_URL, projectId, "studies", options, GET, Study.class);
     }
 
 //    public QueryResponse<Project> update(String projectId, ObjectMap params) throws CatalogException, IOException {

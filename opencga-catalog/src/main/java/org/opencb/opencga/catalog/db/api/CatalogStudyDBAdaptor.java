@@ -214,6 +214,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
+
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),

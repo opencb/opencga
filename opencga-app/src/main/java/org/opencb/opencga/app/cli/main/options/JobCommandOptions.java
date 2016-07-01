@@ -21,9 +21,12 @@ public class JobCommandOptions {
     public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
-    // public DoneJobCommandOptions doneJobCommandOptions;
-    // public StatusCommandOptions statusCommandOptions;
-    // public RunJobCommandOptions runJobCommandOptions;
+    public AclsCommandOptions aclsCommandOptions;
+    public AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -41,17 +44,21 @@ public class JobCommandOptions {
         this.unshareCommandOptions = new UnshareCommandOptions();
         this.shareCommandOptions = new ShareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
-        //    this.runJobCommandOptions = new RunJobCommandOptions();
 
+        this.aclsCommandOptions = new AclsCommandOptions();
+        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
     }
 
-    class BaseJobCommand {
+    public class BaseJobCommand {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
-        public Integer id;
+        public String id;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
@@ -77,7 +84,7 @@ public class JobCommandOptions {
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
-    class InfoCommandOptions extends BaseJobCommand {
+    public class InfoCommandOptions extends BaseJobCommand {
     }
 
 
@@ -85,19 +92,16 @@ public class JobCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String id;
+        public String jobId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
-
-        @Parameter(names = {"--path"}, description = "Path.", required = false, arity = 1)
-        public String path;
 
         @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
         public String status;
@@ -105,31 +109,31 @@ public class JobCommandOptions {
         @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
         public String ownerId;
 
-        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
-        public String creationDate;
+        @Parameter(names = {"--date"}, description = "Creation date.", required = false, arity = 1)
+        public String date;
 
-        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
-        public String modificationDate;
+        @Parameter(names = {"--input-files"}, description = "Comma separated list of input file ids.", required = false, arity = 1)
+        public String inputFiles;
 
-        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids.", required = false, arity = 1)
+        public String outputFiles;
 
-        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        public String attributes;
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
 
-        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
-        public String nattributes;
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
     }
 
     @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")
-    class VisitCommandOptions extends BaseJobCommand {
+    public class VisitCommandOptions extends BaseJobCommand {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")
-    class DeleteCommandOptions extends BaseJobCommand {
+    public class DeleteCommandOptions extends BaseJobCommand {
 
         @Parameter(names = {"--delete-files"}, description = "Delete files, default:true", required = false, arity = 0)
-        boolean deleteFiles;
+        public boolean deleteFiles = true;
     }
 
 
@@ -219,69 +223,72 @@ public class JobCommandOptions {
     }
 
 
+    @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
+    public class AclsCommandOptions {
 
-  /*  @Parameters(commandNames = {"finished"}, commandDescription = "Notify catalog that a job have finished.")
-    class DoneJobCommandOptions {
-
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
-
-        @Parameter(names = {"-id", "--job-id"}, description = "Job id", required = true, arity = 1)
-        long id;
-
-        @Parameter(names = {"--error"}, description = "Job finish with error", required = false, arity = 0)
-        boolean error;
-
-        @Parameter(names = {"--force"}, description = "Force finish job. Ignore if the job was PREPARED, QUEUED or RUNNING", required =
-        false, arity = 0)
-        boolean force;
-
-        @Parameter(names = {"--discart-output"}, description = "Discart generated files. Temporal output directory will be deleted.",
-        required = false, arity = 0)
-        boolean discardOutput;
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        public String id;
     }
 
-    @Parameters(commandNames = {"status"}, commandDescription = "Get the status of all running jobs.")
-    class StatusCommandOptions {
+    @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    public class AclsCreateCommandOptions {
 
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        public String id;
 
-        @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
+        public String members;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = false, arity = 1)
-        String studyId;
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
+                required = false, arity = 1)
+        public String templateId;
     }
 
-    @Parameters(commandNames = {"run"}, commandDescription = "Executes a job.")
-    class RunJobCommandOptions {
+    @Parameters(commandNames = {"acls-member-delete"},
+            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
+    public class AclsMemberDeleteCommandOptions {
 
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        public String id;
 
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
 
-        @ParametersDelegate
-        OpencgaCommonCommandOptions cOpt = commonCommandOptions;
+    @Parameters(commandNames = {"acls-member-info"},
+            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberInfoCommandOptions {
 
-        @Parameter(names = {"-t", "--tool-id"}, description = "", required = true, arity = 1)
-        String toolId;
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        public String id;
 
-        @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
-        String studyId;
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
 
-        @Parameter(names = {"-o", "--outdir"}, description = "Output directory", required = true, arity = 1)
-        String outdir;
+    @Parameters(commandNames = {"acls-member-update"},
+            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberUpdateCommandOptions{
 
-        @Parameter(names = {"-e", "--execution"}, description = "", required = false, arity = 1)
-        String execution;
+        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        public String id;
 
-        @Parameter(names = {"-n", "--name"}, description = "", required = true, arity = 1)
-        String name;
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
 
-        @Parameter(names = {"-d", "--description"}, description = "", required = false, arity = 1)
-        String description;
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
+        public String addPermissions;
 
-        @DynamicParameter(names = "-P", description = "Parameters", hidden = false)
-        ObjectMap params = new ObjectMap();
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
+                required = false, arity = 1)
+        public String removePermissions;
 
-    }*/
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
+        public String setPermissions;
+    }
 
 }

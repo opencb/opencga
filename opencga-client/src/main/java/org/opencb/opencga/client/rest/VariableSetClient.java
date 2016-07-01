@@ -41,24 +41,24 @@ public class VariableSetClient extends AbstractParentClient<VariableSet, Variabl
     public QueryResponse<VariableSet> create(String studyId, String variableSetName, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", variableSetName);
-        return execute(VARIABLES_URL, "create", params, VariableSet.class);
+        return execute(VARIABLES_URL, "create", params, GET, VariableSet.class);
     }
 
     // FIXME: The way to do this is via POST, not GET
     public QueryResponse<VariableSet> addVariable(String variableSetid, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "variableSetId", variableSetid);
-        return execute(VARIABLES_URL, "field/add", params, VariableSet.class);
+        return execute(VARIABLES_URL, "field/add", params, GET, VariableSet.class);
     }
 
     public QueryResponse<VariableSet> deleteVariable(String variableSetid, String variable, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "variableSetId", variableSetid, "name", variable);
-        return execute(VARIABLES_URL, "field/delete", params, VariableSet.class);
+        return execute(VARIABLES_URL, "field/delete", params, GET, VariableSet.class);
     }
 
     public QueryResponse<VariableSet> renameVariable(String variableSetid, String oldVariableName, String newVariableName, ObjectMap params)
             throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "variableSetId", variableSetid, "oldName", oldVariableName, "newName", newVariableName);
-        return execute(VARIABLES_URL, "field/rename", params, VariableSet.class);
+        return execute(VARIABLES_URL, "field/rename", params, GET, VariableSet.class);
     }
 }

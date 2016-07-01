@@ -308,7 +308,7 @@ public class CatalogManagerTest extends GenericTest {
 
         catalogManager.modifyUser("user", params, sessionIdUser);
         catalogManager.changeEmail("user", newEmail, sessionIdUser);
-        catalogManager.changePassword("user", PASSWORD, newPassword, sessionIdUser);
+        catalogManager.changePassword("user", PASSWORD, newPassword);
 
         List<User> userList = catalogManager.getUser("user", userPre.getLastModified(), new QueryOptions("exclude", Arrays.asList
                 ("sessions")), sessionIdUser).getResult();
@@ -325,7 +325,7 @@ public class CatalogManagerTest extends GenericTest {
             assertEquals(userPost.getAttributes().get(entry.getKey()), entry.getValue());
         }
 
-        catalogManager.changePassword("user", newPassword, PASSWORD, sessionIdUser);
+        catalogManager.changePassword("user", newPassword, PASSWORD);
 
         try {
             params = new ObjectMap();

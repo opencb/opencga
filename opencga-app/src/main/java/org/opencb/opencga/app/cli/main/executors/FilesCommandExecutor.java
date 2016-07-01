@@ -149,6 +149,10 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private void createFolder() throws CatalogException {
         logger.debug("Creating a new folder");
+        ObjectMap o = new ObjectMap();
+       // QueryResponse<File> create = openCGAClient.getFileClient().createFolder(filesCommandOptions.infoCommandOptions.id,
+          //      filesCommandOptions.infoCommandOptions.path,o);
+        System.out.println("Created.");
         //TODO
 
     }

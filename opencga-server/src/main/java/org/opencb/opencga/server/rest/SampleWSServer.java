@@ -325,10 +325,10 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/annotationSets/search")
+    @Path("/{sampleId}/annotationSets/{annotationSetName}/search")
     @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                           @ApiParam(value = "annotationSetName", required = true) @QueryParam("annotationSetName") String annotationSetName,
+                                           @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
                                            @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
@@ -412,7 +412,6 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/acls/create")
     @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
     public Response createRole(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String cohortIdStr,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
@@ -439,9 +438,9 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
     public Response updateAcl(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
         try {
             return createOkResponse(null);
         } catch (Exception e) {

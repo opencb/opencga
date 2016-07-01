@@ -19,7 +19,6 @@ package org.opencb.opencga.client.rest;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.acls.SampleAcl;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -41,19 +40,19 @@ public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
         this.aclClass = SampleAcl.class;
     }
 
-    public QueryResponse<Individual> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
+    public QueryResponse<Sample> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "name", sampleName);
-        return execute(SAMPLES_URL, "create", params, Individual.class);
+        return execute(SAMPLES_URL, "create", params, GET, Sample.class);
     }
 
     public QueryResponse<Sample> annotate(String sampleId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(SAMPLES_URL, sampleId, "annotate", params, Sample.class);
+        return execute(SAMPLES_URL, sampleId, "annotate", params, GET, Sample.class);
     }
 
-    public QueryResponse<Sample> loadFromPed(String studyId, String variableSetId, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "studyId", studyId, "variableSetId", variableSetId);
-        return execute(SAMPLES_URL, "load", params, Sample.class);
+    public QueryResponse<Sample> loadFromPed(String studyId, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId);
+        return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
 }
