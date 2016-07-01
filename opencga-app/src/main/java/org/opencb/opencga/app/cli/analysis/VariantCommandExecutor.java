@@ -193,11 +193,11 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             }
 
             try (OutputStream outputStream = VariantQueryCommandUtils.getOutputStream(cliOptions);
-                 VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId);) {
+                 VariantDBIterator iterator = variantFetcher.iterator(query, queryOptions, sessionId)) {
 
                 StudyConfiguration studyConfiguration;
                 final DataWriter<Variant> exporter;
-                switch (VariantQueryCommandUtils.VariantOutputFormat.value(outputFormat)) {
+                switch (VariantQueryCommandUtils.VariantOutputFormat.safeValueOf(outputFormat)) {
                     case VCF:
 //                StudyConfigurationManager studyConfigurationManager = variantDBAdaptor.getStudyConfigurationManager();
 //                Map<Long, List<Sample>> samplesMetadata = variantFetcher.getSamplesMetadata(studyId, query, queryOptions, sessionId);
