@@ -275,14 +275,12 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching annotationSets information");
         ObjectMap objectMap = new ObjectMap();
 
-        /*if (samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap) {
-            objectMap.put("as-map", samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-        }
+        objectMap.put("as-map", samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
 
-        QueryResponse<Sample> sample = openCGAClient.getSampleClient().annotateSetsAllInfo(samplesCommandOptions.annotationSetsAllInfoCommandOptions.,
-                samplesCommandOptions.createCommandOptions.name, objectMap);
+        QueryResponse<Sample> sample = openCGAClient.getSampleClient()
+                .annotationSetsAllInfo(samplesCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
 
-        System.out.println(sample.toString());*/
+        System.out.println(sample.toString());
     }
 
     private void annotationSetsInfo() throws CatalogException, IOException {
@@ -291,32 +289,55 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         objectMap.put("asMap", samplesCommandOptions.annotationSetsInfoCommandOptions.asMap);
 
-        /*if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
+        if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(), samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
         }
 
         if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                     samplesCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
-        }*/
+        }
 
-        /*QueryResponse<Sample> sample = openCGAClient.getSampleClient().annotate(samplesCommandOptions.annotationSetsInfoCommandOptions.id,
+        QueryResponse<Sample> sample = openCGAClient.getSampleClient().annotationSetsInfo(samplesCommandOptions.annotationSetsInfoCommandOptions.id,
                 samplesCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
                 samplesCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
 
-        System.out.println(sample.toString());*/
+        System.out.println(sample.toString());
     }
 
     private void annotationSetsSearch() throws CatalogException, IOException {
         logger.debug("Searching annotationSets");
         ObjectMap objectMap = new ObjectMap();
-        //TODO
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.annotationSetsInfoCommandOptions.annotation);
+        }
+
+        objectMap.put("as-map", samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
+
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient()
+                .annotationSetsSearch(samplesCommandOptions.annotationSetsSearchCommandOptions.id,
+                        samplesCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
+                        samplesCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
+
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
     private void annotationSetsDelete() throws CatalogException, IOException {
         logger.debug("Searching annotationSets");
         ObjectMap objectMap = new ObjectMap();
-        //TODO
+
+        if (StringUtils.isNotEmpty(samplesCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
+                    samplesCommandOptions.annotationSetsDeleteCommandOptions.annotation);
+        }
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient()
+                .annotationSetsDelete(samplesCommandOptions.annotationSetsDeleteCommandOptions.id,
+                        samplesCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
+                        samplesCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
+
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+
     }
     /********************************************  Administration ACLS commands  ***********************************************/
 

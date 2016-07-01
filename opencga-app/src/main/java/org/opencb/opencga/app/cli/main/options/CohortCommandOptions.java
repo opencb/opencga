@@ -29,6 +29,11 @@ public class CohortCommandOptions {
     public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
+    public AnnotationSetsAllInfoCommandOptions annotationSetsAllInfoCommandOptions;
+    public AnnotationSetsSearchCommandOptions annotationSetsSearchCommandOptions;
+    public AnnotationSetsInfoCommandOptions annotationSetsInfoCommandOptions;
+    public AnnotationSetsDeleteCommandOptions annotationSetsDeleteCommandOptions;
+
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
@@ -45,6 +50,11 @@ public class CohortCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+
+        this.annotationSetsAllInfoCommandOptions = new AnnotationSetsAllInfoCommandOptions();
+        this.annotationSetsSearchCommandOptions = new AnnotationSetsSearchCommandOptions();
+        this.annotationSetsInfoCommandOptions = new AnnotationSetsInfoCommandOptions();
+        this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
         this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
@@ -212,6 +222,56 @@ public class CohortCommandOptions {
 
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
         public String nattributes;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsAllInfoCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
+        public boolean asMap = true;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsSearchCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsDeleteCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsInfoCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
+                required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
+        public boolean asMap = true;
     }
 
     @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")

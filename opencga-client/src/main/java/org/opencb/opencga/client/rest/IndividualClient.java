@@ -51,4 +51,31 @@ public class IndividualClient extends AbstractParentClient<Individual, Individua
         return execute(INDIVIDUALS_URL, individualId, "annotate", params, GET, Individual.class);
     }
 
+    public QueryResponse<Individual> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(INDIVIDUALS_URL, "groupBy", params, GET, Individual.class);
+    }
+
+    public QueryResponse<Individual> annotationSetsAllInfo(String individualId, ObjectMap params) throws CatalogException, IOException {
+        return execute(INDIVIDUALS_URL, individualId, "annotationSets", null, "info", params, GET, Individual.class);
+    }
+
+    public QueryResponse<Individual> annotationSetsSearch(String individualId, String annotationSetName, String variableSetId,
+                                                          ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "annotateSetName", annotationSetName, "variableSetId", variableSetId);
+        return execute(INDIVIDUALS_URL, individualId, "annotationSets", null, "search", params, GET, Individual.class);
+    }
+
+    public QueryResponse<Individual> annotationSetsInfo(String individualId, String annotationSetName, String variableSetId,
+                                                        ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "variableSetId", variableSetId);
+        return execute(INDIVIDUALS_URL, individualId, "annotationSets", annotationSetName, "info", params, GET, Individual.class);
+    }
+
+    public QueryResponse<Individual> annotationSetsDelete(String individualId, String annotationSetName, String variableSetId,
+                                                          ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "annotateSetName", annotationSetName, "variableSetId", variableSetId);
+        return execute(INDIVIDUALS_URL, individualId, "annotationSets", annotationSetName, "delete", params, GET, Individual.class);
+    }
+
 }
