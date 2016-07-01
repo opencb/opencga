@@ -18,6 +18,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -348,16 +349,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
         }
 
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.commonOptions.exclude);
+        }
+
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
             queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
             queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
         }
-        /*
-        if (studiesCommandOptions.jobsCommandOptions.count) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams., studiesCommandOptions.jobsCommandOptions.count);
-        }*/
+
+        queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
 
         QueryResponse<Job> jobs = openCGAClient.getStudyClient().getJobs(studiesCommandOptions.filesCommandOptions.id, queryOptions);
         jobs.first().getResult().stream().forEach(file -> System.out.println(jobs.toString()));
@@ -417,6 +423,19 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);
         }
 
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.commonOptions.exclude);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.limit);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.skip);
+        }
+        queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
         QueryResponse<Sample> samples =
                 openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
         System.out.println(samples.toString());
@@ -618,6 +637,23 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.MERGE.key(),
                     studiesCommandOptions.variantsCommandOptions.merge);
         }*/
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.variantsCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.commonOptions.exclude);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.limit);
+        }
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.skip);
+        }
+        queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
+
+        QueryResponse<Variant> samples =
+                openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
+        System.out.println(samples.toString());
     }
 
 

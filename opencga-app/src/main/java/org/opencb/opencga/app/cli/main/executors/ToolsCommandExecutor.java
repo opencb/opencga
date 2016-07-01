@@ -17,6 +17,7 @@
 package org.opencb.opencga.app.cli.main.executors;
 
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
@@ -70,12 +71,25 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
 
     private void help() throws CatalogException, IOException {
         logger.debug("Tool help");
+        System.out.println("PENDING");
 
     }
 
     private void info() throws CatalogException, IOException {
         logger.debug("Getting tool information");
         QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.id)) {
+            queryOptions.put("id", toolsCommandOptions.infoCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.id)) {
+            queryOptions.put("id", toolsCommandOptions.infoCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.infoCommandOptions.commonOptions.exclude);
+        }
         QueryResponse<Tool> tools = openCGAClient.getToolClient().get(toolsCommandOptions.infoCommandOptions.id, queryOptions);
         tools.first().getResult().stream().forEach(tool -> System.out.println(tool.toString()));
     }
@@ -83,6 +97,29 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
     private void search() throws CatalogException, IOException {
         logger.debug("Searching tool");
         QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.id)) {
+            queryOptions.put("id", toolsCommandOptions.searchCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.userId)) {
+            queryOptions.put("userId", toolsCommandOptions.searchCommandOptions.userId);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.alias)) {
+            queryOptions.put("alias", toolsCommandOptions.searchCommandOptions.alias);
+        }
+
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.searchCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.commonOptions.exclude);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.limit);
+        }
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.skip);
+        }
+        queryOptions.put("count", toolsCommandOptions.searchCommandOptions.count);
         QueryResponse<Tool> tools = openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);
         tools.first().getResult().stream().forEach(tool -> System.out.println(tool.toString()));
     }
