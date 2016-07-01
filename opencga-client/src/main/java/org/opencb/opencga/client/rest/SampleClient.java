@@ -55,4 +55,9 @@ public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
+    public QueryResponse<Sample> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(SAMPLES_URL, "groupBy", params, GET, Sample.class);
+    }
+
 }

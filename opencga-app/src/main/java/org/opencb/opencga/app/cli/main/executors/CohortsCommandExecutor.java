@@ -19,12 +19,19 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.acls.CohortAcl;
+import org.opencb.opencga.client.rest.CohortClient;
 
 import java.io.IOException;
 
@@ -65,17 +72,26 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             case "delete":
                 delete();
                 break;
-            case "unshare":
-                unshare();
-                break;
-            case "calculate-stats":
-                calculateStats();
-                break;
-            case "share":
-                share();
+            case "stats":
+                stats();
                 break;
             case "group-by":
                 groupBy();
+                break;
+            case "acls":
+                acls();
+                break;
+            case "acls-create":
+                aclsCreate();
+                break;
+            case "acls-member-delete":
+                aclMemberDelete();
+                break;
+            case "acls-member-info":
+                aclMemberInfo();
+                break;
+            case "acls-member-update":
+                aclMemberUpdate();
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -114,9 +130,24 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private void samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
-        // QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(Long.toString(cohortsCommandOptions
-        // .samplesCommandOptions.id), null);
-        //System.out.println("Samples = " + samples);
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.include);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
+        }
+        queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
+
+        QueryResponse<Sample> samples = openCGAClient.getCohortClient().getSamples(cohortsCommandOptions.samplesCommandOptions.id,
+                queryOptions);
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
     private void annotate() throws CatalogException, IOException {
@@ -141,7 +172,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.updateCommandOptions.samples);
         }
 
-
         QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
                 .update(cohortsCommandOptions.updateCommandOptions.id, objectMap);
         System.out.println("Cohort: " + cohort);
@@ -155,23 +185,116 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         System.out.println("Cohort: " + cohort);
     }
 
-    private void unshare() throws CatalogException, IOException {
-        logger.debug("Unsharing a cohort");
-    }
-
-    private void calculateStats() throws CatalogException {
+    private void stats() throws CatalogException, IOException {
         logger.debug("Calculating variant stats for a set of cohorts");
-        //QueryResponse<Cohort> stats = openCGAClient.getCohortClient(). no esta calculate stats o parecidoo
-        //TODO
+        QueryOptions queryOptions = new QueryOptions();
+        Query query = new Query();
+        queryOptions.put("calculate", cohortsCommandOptions.statsCommandOptions.calculate);
+        queryOptions.put("delete", cohortsCommandOptions.statsCommandOptions.delete);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.statsCommandOptions.log)){
+            queryOptions.put("log", cohortsCommandOptions.statsCommandOptions.log);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.statsCommandOptions.outdirId)){
+            queryOptions.put(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), cohortsCommandOptions.statsCommandOptions.outdirId);
+        }
 
-    }
+        QueryResponse<Object> stats = openCGAClient.getCohortClient().getStats(cohortsCommandOptions.statsCommandOptions.id, query,
+                queryOptions);
+        System.out.println("Stats: " + stats.toString());
 
-    private void share() throws CatalogException, IOException {
-        logger.debug("Sharing a cohort");
     }
 
     private void groupBy() throws CatalogException, IOException {
         logger.debug("Group by cohorts");
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.id)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.ID.key(), cohortsCommandOptions.groupByCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.name)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortsCommandOptions.groupByCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.type)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.TYPE.key(), cohortsCommandOptions.groupByCommandOptions.type);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.status)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), cohortsCommandOptions.groupByCommandOptions.status);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.creationDate)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.CREATION_DATE.key(), cohortsCommandOptions.groupByCommandOptions.creationDate);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.sampleIds)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(), cohortsCommandOptions.groupByCommandOptions.sampleIds);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.attributes)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.ATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.attributes);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.groupByCommandOptions.nattributes)) {
+            objectMap.put(CatalogCohortDBAdaptor.QueryParams.NATTRIBUTES.key(), cohortsCommandOptions.groupByCommandOptions.nattributes);
+        }
+        QueryResponse<Cohort> cohorts = openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.studyId,
+                cohortsCommandOptions.groupByCommandOptions.by,objectMap);
+        cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
+    }
+
+    /********************************************  Administration ACLS commands  ***********************************************/
+
+    private void acls() throws CatalogException,IOException {
+
+        logger.debug("Acls");
+        QueryResponse<CohortAcl> acls = openCGAClient.getCohortClient().getAcls(cohortsCommandOptions.aclsCommandOptions.id);
+
+        System.out.println(acls.toString());
+
+    }
+    private void aclsCreate() throws CatalogException,IOException{
+
+        logger.debug("Creating acl");
+
+        QueryOptions queryOptions = new QueryOptions();
+
+        QueryResponse<CohortAcl> acl =
+                openCGAClient.getCohortClient().createAcl(cohortsCommandOptions.aclsCreateCommandOptions.id,
+                        cohortsCommandOptions.aclsCreateCommandOptions.permissions, cohortsCommandOptions.aclsCreateCommandOptions.members,
+                        queryOptions);
+        System.out.println(acl.toString());
+    }
+    private void aclMemberDelete() throws CatalogException,IOException {
+
+        logger.debug("Creating acl");
+
+        QueryOptions queryOptions = new QueryOptions();
+        QueryResponse<Object> acl = openCGAClient.getCohortClient().deleteAcl(cohortsCommandOptions.aclsMemberDeleteCommandOptions.id,
+                cohortsCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
+        System.out.println(acl.toString());
+    }
+    private void aclMemberInfo() throws CatalogException,IOException {
+
+        logger.debug("Creating acl");
+
+        QueryResponse<CohortAcl> acls = openCGAClient.getCohortClient().getAcl(cohortsCommandOptions.aclsMemberInfoCommandOptions.id,
+                cohortsCommandOptions.aclsMemberInfoCommandOptions.memberId);
+        System.out.println(acls.toString());
+    }
+
+    private void aclMemberUpdate() throws CatalogException,IOException {
+
+        logger.debug("Updating acl");
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
+            objectMap.put(CohortClient.AclParams.ADD_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
+            objectMap.put(CohortClient.AclParams.REMOVE_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
+            objectMap.put(CohortClient.AclParams.SET_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
+        }
+
+        QueryResponse<CohortAcl> acl = openCGAClient.getCohortClient().updateAcl(cohortsCommandOptions.aclsMemberUpdateCommandOptions.id,
+                cohortsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
+        System.out.println(acl.toString());
     }
 
 }

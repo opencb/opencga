@@ -209,10 +209,12 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("annotate", cohortCommandOptions.annotateCommandOptions);
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
-        cohortSubCommands.addCommand("unshare", cohortCommandOptions.unshareCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
-        cohortSubCommands.addCommand("share", cohortCommandOptions.shareCommandOptions);
-        cohortSubCommands.addCommand("group-by", cohortCommandOptions.groupByCommandOptions);
+        cohortSubCommands.addCommand("acls", cohortCommandOptions.aclsCommandOptions);
+        cohortSubCommands.addCommand("acls-create", cohortCommandOptions.aclsCreateCommandOptions);
+        cohortSubCommands.addCommand("acls-member-delete", cohortCommandOptions.aclsMemberDeleteCommandOptions);
+        cohortSubCommands.addCommand("acls-member-info", cohortCommandOptions.aclsMemberInfoCommandOptions);
+        cohortSubCommands.addCommand("acls-member-update", cohortCommandOptions.aclsMemberUpdateCommandOptions);
 
         toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolCommandOptions);

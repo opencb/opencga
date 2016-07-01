@@ -63,4 +63,9 @@ public class CohortClient extends AbstractParentClient<Cohort, CohortAcl> {
         return execute(COHORT_URL, cohortId, "annotate", params, GET, Cohort.class);
     }
 
+    public QueryResponse<Cohort> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(COHORT_URL, "groupBy", params, GET, Cohort.class);
+    }
+
 }

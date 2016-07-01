@@ -200,6 +200,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.skip);
         }
 
+        queryOptions.put("count", samplesCommandOptions.searchCommandOptions.count);
+
         QueryResponse<Sample> samples = openCGAClient.getSampleClient().search(query, queryOptions);
         samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
@@ -234,13 +236,37 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         System.out.println(samples.toString());
     }
 
-    private void groupBy() throws CatalogException {
+    private void groupBy() throws CatalogException, IOException {
         logger.debug("Group By samples");
-        //TODO
-        /*ObjectMap objectMap = new ObjectMap();
-        QueryResponse<SampleAcl> acls = openCGAClient.getSampleClient().(samplesCommandOptions.aclsCommandOptions.id);
 
-        System.out.println(acls.toString());*/
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.id)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.groupByCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.name)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.groupByCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.source)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.groupByCommandOptions.source);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.individualId)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.groupByCommandOptions.individualId);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.annotationSetName)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+                    samplesCommandOptions.groupByCommandOptions.annotationSetName);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.variableSetId)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+                    samplesCommandOptions.groupByCommandOptions.variableSetId);
+        }
+        if (StringUtils.isNotEmpty(samplesCommandOptions.groupByCommandOptions.annotation)) {
+            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
+                    samplesCommandOptions.groupByCommandOptions.annotation);
+        }
+        QueryResponse<Sample> samples = openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.studyId,
+                samplesCommandOptions.groupByCommandOptions.by,objectMap);
+        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
     /********************************************  Annotation commands  ***********************************************/
@@ -248,8 +274,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     private void annotationSetsAllInfo() throws CatalogException, IOException {
         logger.debug("Searching annotationSets information");
         ObjectMap objectMap = new ObjectMap();
-        /*
-        if (samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap) {
+
+        /*if (samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap) {
             objectMap.put("as-map", samplesCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
         }
 
