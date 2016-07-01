@@ -81,8 +81,8 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.id)) {
             queryOptions.put("id", toolsCommandOptions.infoCommandOptions.id);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.id)) {
-            queryOptions.put("id", toolsCommandOptions.infoCommandOptions.id);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.execution)) {
+            queryOptions.put("execution", toolsCommandOptions.infoCommandOptions.execution);
         }
         if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.commonOptions.include)) {
             queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.commonOptions.include);

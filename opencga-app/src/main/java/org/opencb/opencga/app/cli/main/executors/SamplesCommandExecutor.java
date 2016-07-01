@@ -159,33 +159,34 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Searching samples");
 
         Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions();
         query.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(),samplesCommandOptions.searchCommandOptions.studyId);
 
-        QueryOptions queryOptions = new QueryOptions();
+
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.id)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.searchCommandOptions.id);
+            query.put(CatalogSampleDBAdaptor.QueryParams.ID.key(), samplesCommandOptions.searchCommandOptions.id);
         }
 
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.name)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
+            query.put(CatalogSampleDBAdaptor.QueryParams.NAME.key(), samplesCommandOptions.searchCommandOptions.name);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.source)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
+            query.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.searchCommandOptions.source);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.individualId)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
+            query.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(),
                     samplesCommandOptions.searchCommandOptions.individualId);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.annotationSetName)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+            query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
                     samplesCommandOptions.searchCommandOptions.annotationSetName);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.variableSetId)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+            query.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
                     samplesCommandOptions.searchCommandOptions.variableSetId);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.annotation)) {
-            queryOptions.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
+            query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
         }
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.include)) {
             queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.include);

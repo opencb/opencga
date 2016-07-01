@@ -205,6 +205,8 @@ public class OpencgaCliOptionsParser {
         variableSubCommands.addCommand("search", variableCommandOptions.searchCommandOptions);
         variableSubCommands.addCommand("delete", variableCommandOptions.deleteCommandOptions);
         variableSubCommands.addCommand("update", variableCommandOptions.updateCommandOptions);
+        variableSubCommands.addCommand("field-delete", variableCommandOptions.fieldDeleteCommandOptions);
+        variableSubCommands.addCommand("field-rename", variableCommandOptions.fieldRenameCommandOptions);
 
         cohortCommandOptions = new CohortCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("cohorts", cohortCommandOptions);
@@ -240,9 +242,11 @@ public class OpencgaCliOptionsParser {
         JCommander panelSubCommands = jCommander.getCommands().get("panels");
         panelSubCommands.addCommand("create", panelCommandOptions.createCommandOptions);
         panelSubCommands.addCommand("info", panelCommandOptions.infoCommandOptions);
-        panelSubCommands.addCommand("unshare", panelCommandOptions.unshareCommandOptions);
-        panelSubCommands.addCommand("share", panelCommandOptions.shareCommandOptions);
-
+        panelSubCommands.addCommand("acls", panelCommandOptions.aclsCommandOptions);
+        panelSubCommands.addCommand("acls-create", panelCommandOptions.aclsCreateCommandOptions);
+        panelSubCommands.addCommand("acls-member-delete", panelCommandOptions.aclsMemberDeleteCommandOptions);
+        panelSubCommands.addCommand("acls-member-info", panelCommandOptions.aclsMemberInfoCommandOptions);
+        panelSubCommands.addCommand("acls-member-update", panelCommandOptions.aclsMemberUpdateCommandOptions);
 
 
         if (interactive) { //Add interactive commands
