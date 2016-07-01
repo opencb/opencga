@@ -900,7 +900,8 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
-        long studyId = studyManager.getStudyId(studyIdStr);
+        String userId = userManager.getUserId(sessionId);
+        long studyId = studyManager.getStudyId(userId, studyIdStr);
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 
