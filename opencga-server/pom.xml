@@ -165,6 +165,7 @@
                 <artifactId>maven-war-plugin</artifactId>
                 <version>2.6</version>
                 <configuration>
+                    <warName>${opencga.war.name}</warName>
                     <!--
                       Exclude JCL and LOG4J since all logging should go through SLF4J.
                       Note that we're excluding log4j-<version>.jar but keeping

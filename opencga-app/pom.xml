@@ -253,8 +253,8 @@
 
                                 <echo>Coping war file</echo>
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-server/target/opencga-server-${opencga.version}.war"/>
-                                    <arg value="${build.dir}/opencga.war"/>
+                                    <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
                             </target>
                         </configuration>
