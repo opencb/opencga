@@ -55,4 +55,31 @@ public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
         return execute(SAMPLES_URL, "load", params, GET, Sample.class);
     }
 
+    public QueryResponse<Sample> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(SAMPLES_URL, "groupBy", params, GET, Sample.class);
+    }
+
+    public QueryResponse<Sample> annotationSetsAllInfo(String sampleId, ObjectMap params) throws CatalogException, IOException {
+        return execute(SAMPLES_URL, sampleId, "annotationSets", null, "info", params, GET, Sample.class);
+    }
+
+    public QueryResponse<Sample> annotationSetsSearch(String sampleId, String annotationSetName, String variableSetId, ObjectMap params)
+            throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "annotateSetName", annotationSetName, "variableSetId", variableSetId);
+        return execute(SAMPLES_URL, sampleId, "annotationSets", null, "search", params, GET, Sample.class);
+    }
+
+    public QueryResponse<Sample> annotationSetsInfo(String sampleId, String annotationSetName, String variableSetId, ObjectMap params)
+            throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "variableSetId", variableSetId);
+        return execute(SAMPLES_URL, sampleId, "annotationSets", annotationSetName, "info", params, GET, Sample.class);
+    }
+
+    public QueryResponse<Sample> annotationSetsDelete(String sampleId, String annotationSetName, String variableSetId, ObjectMap params)
+            throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "annotateSetName", annotationSetName, "variableSetId", variableSetId);
+        return execute(SAMPLES_URL, sampleId, "annotationSets", annotationSetName, "delete", params, GET, Sample.class);
+    }
+
 }

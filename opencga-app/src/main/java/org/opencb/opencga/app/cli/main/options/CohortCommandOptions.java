@@ -20,10 +20,19 @@ public class CohortCommandOptions {
     public AnnotateCommandOptions annotateCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
     public StatsCommandOptions statsCommandOptions;
-    public ShareCommandOptions shareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
+
+    public AclsCommandOptions aclsCommandOptions;
+    public AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+
+    public AnnotationSetsAllInfoCommandOptions annotationSetsAllInfoCommandOptions;
+    public AnnotationSetsSearchCommandOptions annotationSetsSearchCommandOptions;
+    public AnnotationSetsInfoCommandOptions annotationSetsInfoCommandOptions;
+    public AnnotationSetsDeleteCommandOptions annotationSetsDeleteCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -39,10 +48,19 @@ public class CohortCommandOptions {
         this.annotateCommandOptions = new AnnotateCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
-        this.shareCommandOptions = new ShareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+
+        this.annotationSetsAllInfoCommandOptions = new AnnotationSetsAllInfoCommandOptions();
+        this.annotationSetsSearchCommandOptions = new AnnotationSetsSearchCommandOptions();
+        this.annotationSetsInfoCommandOptions = new AnnotationSetsInfoCommandOptions();
+        this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
+
+        this.aclsCommandOptions = new AclsCommandOptions();
+        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
     }
 
     public class BaseCohortsCommand {
@@ -83,11 +101,6 @@ public class CohortCommandOptions {
                 + "parameter variable-set-id",
                 required = false, arity = 1)
         public String variable;
-
-
-        //  @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without
-        // samples may be extracted from the mapping file", required = false, arity = 1)
-        //  String tagmap = null;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
@@ -96,11 +109,20 @@ public class CohortCommandOptions {
 
     @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
     public class SamplesCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        public boolean count;
     }
 
-    @Parameters(commandNames = {"calculate-stats"},
+    @Parameters(commandNames = {"stats"},
             commandDescription = "Calculate variant stats for a set of cohorts.")
-    class StatsCommandOptions extends BaseCohortsCommand {
+    public class StatsCommandOptions extends BaseCohortsCommand {
 
         @Parameter(names = {"--calculate"}, description = "Calculate cohort stats", arity = 0)
         public boolean calculate;
@@ -113,17 +135,8 @@ public class CohortCommandOptions {
 
         @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file",
                 required = false, arity = 1)
-        public String outdir = "";
+        public String outdirId = "";
 
-      /*  @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-        boolean enqueue;
-
-        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF
-        file")
-        String tagmap = null;
-
-        @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-        public List<String> dashDashParameters;*/
     }
 
     @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate cohort")
@@ -168,47 +181,6 @@ public class CohortCommandOptions {
     public class DeleteCommandOptions extends BaseCohortsCommand {
     }
 
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
-    public class UnshareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-ids", "--cohort-ids"}, description = "Cohorts ids", required = true, arity = 1)
-        public String ids;
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
-        public String permission;
-    }
-
-    @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-ids", "--cohort-ids"}, description = "Cohorts ids", required = true, arity = 1)
-        public String cohortids;
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
-        public String permission;
-
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        public boolean override;
-    }
-
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
 
@@ -250,5 +222,123 @@ public class CohortCommandOptions {
 
         @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
         public String nattributes;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsAllInfoCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
+        public boolean asMap = true;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsSearchCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsDeleteCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+    }
+
+    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Annotate sample")
+    public class AnnotationSetsInfoCommandOptions extends BaseCohortsCommand {
+
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
+                required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
+        public String annotation;
+
+        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
+        public boolean asMap = true;
+    }
+
+    @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
+    public class AclsCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+    }
+
+    @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    public class AclsCreateCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
+                required = false, arity = 1)
+        public String templateId;
+    }
+
+    @Parameters(commandNames = {"acls-member-delete"},
+            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
+    public class AclsMemberDeleteCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acls-member-info"},
+            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberInfoCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acls-member-update"},
+            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberUpdateCommandOptions{
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
+        public String addPermissions;
+
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
+                required = false, arity = 1)
+        public String removePermissions;
+
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
+        public String setPermissions;
     }
 }

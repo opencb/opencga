@@ -63,6 +63,15 @@ public class ToolCommandOptions {
 
         @Parameter(names = {"--alias"}, description = "alias", required = false, arity = 1)
         public String alias;
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        public boolean count;
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Tool help")

@@ -212,14 +212,11 @@ public class JobCommandOptions {
         @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
         public String creationDate;
 
-        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
-        public String modificationDate;
-
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
         @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
-        String attributes;
+        public String attributes;
     }
 
 

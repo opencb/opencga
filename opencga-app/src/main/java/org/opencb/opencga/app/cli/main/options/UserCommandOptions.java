@@ -36,7 +36,7 @@ public class UserCommandOptions {
         return jCommander;
     }
 
-    class BaseUserCommand {
+    public class BaseUserCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;

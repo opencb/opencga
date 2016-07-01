@@ -193,7 +193,35 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
     private void groupBy() throws CatalogException, IOException {
         logger.debug("Group by job");
-        //TODO
+
+        ObjectMap objectMap = new ObjectMap();
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.id)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.ID.key(), jobsCommandOptions.groupByCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.name)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.NAME.key(), jobsCommandOptions.groupByCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.path)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.OUT_DIR_ID.key(), jobsCommandOptions.groupByCommandOptions.path);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.status)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), jobsCommandOptions.groupByCommandOptions.status);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.ownerId)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.groupByCommandOptions.ownerId);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.creationDate)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.description)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.groupByCommandOptions.description);
+        }
+        if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.attributes)) {
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
+        }
+        QueryResponse<Job> jobs = openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.studyId,
+                jobsCommandOptions.groupByCommandOptions.by,objectMap);
+        jobs.first().getResult().stream().forEach(job -> System.out.println(job.toString()));
     }
 
 
