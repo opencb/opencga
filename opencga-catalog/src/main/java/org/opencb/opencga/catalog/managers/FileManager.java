@@ -152,7 +152,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         for (File parent : parents) {
             if (parent.getUri() != null) {
                 String relativePath = filePath.replaceFirst(parent.getPath(), "");
-                return parent.getUri().resolve(relativePath);
+                return Paths.get(parent.getUri()).resolve(relativePath).toUri();
             }
         }
         URI studyUri = getStudyUri(studyId);
