@@ -54,8 +54,11 @@
         if (window.location.port != "80") {
           url += ":" + window.location.port;
         }
-//        url = "http://petstore.swagger.io/v2/swagger.json";
-        url += "/opencga/webservices/rest/swagger.json";
+
+//        url += "/opencga/webservices/rest/swagger.json";
+        var app = window.location.pathname.split('/')[1];
+        console.log("Swagger App: " + app)
+        url = url + "/" + app + "/webservices/rest/swagger.json";
         console.log(">>"+url);
       }
 
