@@ -49,5 +49,9 @@ public class JobClient extends AbstractParentClient<Job, JobAcl> {
     public QueryResponse<Job> visit(String jobId, QueryOptions options) throws CatalogException, IOException {
         return execute(JOBS_URL, jobId, "visit", options, GET, Job.class);
     }
+    public QueryResponse<Job> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(JOBS_URL, "groupBy", params, GET, Job.class);
+    }
 
 }

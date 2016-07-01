@@ -310,8 +310,11 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.changeEmail("user", newEmail, sessionIdUser);
         catalogManager.changePassword("user", PASSWORD, newPassword);
 
-        List<User> userList = catalogManager.getUser("user", userPre.getLastModified(), new QueryOptions("exclude", Arrays.asList
-                ("sessions")), sessionIdUser).getResult();
+        List<User> userList = catalogManager.getUser("user", userPre.getLastModified(),
+                new QueryOptions(QueryOptions.INCLUDE,
+                        Arrays.asList(CatalogUserDBAdaptor.QueryParams.PASSWORD.key(), CatalogUserDBAdaptor.QueryParams.NAME.key(),
+                                CatalogUserDBAdaptor.QueryParams.EMAIL.key(), CatalogUserDBAdaptor.QueryParams.ATTRIBUTES.key())),
+                sessionIdUser).getResult();
         if (userList.isEmpty()) {
             fail("Error. LastModified should have changed");
         }

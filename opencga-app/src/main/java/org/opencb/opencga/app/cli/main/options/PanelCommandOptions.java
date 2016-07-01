@@ -14,8 +14,12 @@ public class PanelCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public ShareCommandOptions shareCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
+
+    public AclsCommandOptions aclsCommandOptions;
+    public AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -27,8 +31,14 @@ public class PanelCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
-        this.shareCommandOptions = new ShareCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
+
+
+        this.aclsCommandOptions = new AclsCommandOptions();
+        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
+
     }
 
     class BasePanelsCommand {
@@ -69,8 +79,74 @@ public class PanelCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BasePanelsCommand {
     }
+    @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
+    public class AclsCommandOptions {
 
-    @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+    }
+
+    @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    public class AclsCreateCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--members"},
+                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
+        public String members;
+
+        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
+        public String permissions;
+
+        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
+                required = false, arity = 1)
+        public String templateId;
+    }
+
+    @Parameters(commandNames = {"acls-member-delete"},
+            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
+    public class AclsMemberDeleteCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acls-member-info"},
+            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberInfoCommandOptions {
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+    }
+
+    @Parameters(commandNames = {"acls-member-update"},
+            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
+    public class AclsMemberUpdateCommandOptions{
+
+        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        public String id;
+
+        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
+        public String memberId;
+
+        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
+        public String addPermissions;
+
+        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
+                required = false, arity = 1)
+        public String removePermissions;
+
+        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
+        public String setPermissions;
+    }
+   /* @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
     public class ShareCommandOptions {
 
         @ParametersDelegate
@@ -106,9 +182,7 @@ public class PanelCommandOptions {
 
         @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
         public String permission;
-
-
-    }
+    }*/
 
 
 }

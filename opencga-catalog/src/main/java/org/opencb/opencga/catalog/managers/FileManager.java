@@ -25,6 +25,8 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.DatasetAcl;
 import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.utils.BioformatDetector;
+import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
@@ -152,7 +154,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         for (File parent : parents) {
             if (parent.getUri() != null) {
                 String relativePath = filePath.replaceFirst(parent.getPath(), "");
-                return parent.getUri().resolve(relativePath);
+                return Paths.get(parent.getUri()).resolve(relativePath).toUri();
             }
         }
         URI studyUri = getStudyUri(studyId);
@@ -986,16 +988,27 @@ public class FileManager extends AbstractManager implements IFileManager {
             return;
         }
 
+        String stringPath = path.toString();
+        logger.info("Path: {}", stringPath);
+
+        if (stringPath.startsWith("/")) {
+            stringPath = stringPath.substring(1);
+        }
+
+        if (!stringPath.endsWith("/")) {
+            stringPath = stringPath + "/";
+        }
+
         // Check if the folder exists
         Query query = new Query()
                 .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), path.toString());
+                .append(CatalogFileDBAdaptor.QueryParams.PATH.key(), stringPath);
 
         if (fileDBAdaptor.count(query).first() == 0) {
             createParents(studyId, userId, studyURI, path.getParent(), checkPermissions);
         } else {
             if (checkPermissions) {
-                long fileId = fileDBAdaptor.getFileId(studyId, path.toString());
+                long fileId = fileDBAdaptor.getFileId(studyId, stringPath);
                 authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.CREATE);
             }
             return;
@@ -1005,7 +1018,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         // Create the folder in catalog
         File folder = new File(-1, path.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, completeURI,
-                path.toString() + "/", userId, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
+                stringPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), "", new File.FileStatus(File.FileStatus.READY),
                 false, 0, -1, Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
         fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
     }
@@ -1090,8 +1103,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             // Create the file
             if (fileDBAdaptor.count(query).first() == 0) {
                 long diskUsage = Files.size(Paths.get(uriOrigin));
+                File.Bioformat bioformat = BioformatDetector.detect(uriOrigin);
+                File.Format format = FormatDetector.detect(uriOrigin);
 
-                File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, uriOrigin,
+                File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, format, bioformat, uriOrigin,
                         filePath.toString(), userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                         Collections.emptyList(), null, null, null);
@@ -1145,10 +1160,11 @@ public class FileManager extends AbstractManager implements IFileManager {
 
                         if (fileDBAdaptor.count(query).first() == 0) {
                             long diskUsage = Files.size(filePath);
-
+                            File.Bioformat bioformat = BioformatDetector.detect(filePath.toUri());
+                            File.Format format = FormatDetector.detect(filePath.toUri());
                             // If the file does not exist, we create it
-                            File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, null, null, filePath.toUri(),
-                                    destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
+                            File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, format, bioformat,
+                                    filePath.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
                                     new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
                                     Collections.emptyList(), null, null, null);
                             fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());

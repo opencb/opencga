@@ -297,6 +297,15 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--description"}, description = "Sample description", required = false, arity = 1)
         public String description;
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
+        public boolean count;
     }
 
     @Parameters(commandNames = {"variants"}, commandDescription = "Study samples information")
@@ -445,6 +454,12 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--merge"}, description = "Merge results", required = false, arity = 1)
         public String merge;
+
+        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
+        public String skip;
     }
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies [PENDING]")

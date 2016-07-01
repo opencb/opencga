@@ -52,10 +52,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -195,6 +192,9 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
+                                @FormDataParam("file") InputStream fileInputStream,
+                                @FormDataParam("file") FormDataContentDisposition fileMetaData,
+
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
                                 @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
                                 @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
@@ -202,17 +202,21 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
                                 @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                                @ApiParam(value = "filename", required = true) @DefaultValue("") @FormDataParam("filename") String filename,
+                                @ApiParam(value = "filename", required = false) @DefaultValue("") @FormDataParam("filename") String filename,
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
-                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
+//                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
 //                                @ApiParam(defaultValue = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
                                 @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
-                                @ApiParam(value = "description", required = true) @DefaultValue("") @FormDataParam("description") String description,
-                                @ApiParam(value = "Create the parent directories if they do not exist", required = true) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+                                @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description") String description,
+                                @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         long t = System.currentTimeMillis();
+
+        if (relativeFilePath.endsWith("/")) {
+            relativeFilePath = relativeFilePath.substring(0, relativeFilePath.length() - 1);
+        }
 
         java.nio.file.Path filePath = null;
         final long studyId;
@@ -232,79 +236,151 @@ public class FileWSServer extends OpenCGAWSServer {
             e.printStackTrace();
         }
 
-        java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
-        java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
+        if (chunkBytes != null) {
 
-        logger.info(relativeFilePath + "");
-        logger.info(folderPath + "");
-        logger.info(filePath + "");
-        boolean resume = Boolean.parseBoolean(resume_upload);
+            java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
+            java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
 
-        try {
-            logger.info("---resume is: " + resume);
-            if (resume) {
-                logger.info("Resume ms :" + (System.currentTimeMillis() - t));
-                return createOkResponse(getResumeFileJSON(folderPath));
-            }
+            logger.info(relativeFilePath + "");
+            logger.info(folderPath + "");
+            logger.info(filePath + "");
+            boolean resume = Boolean.parseBoolean(resume_upload);
 
-            int chunkId = Integer.parseInt(chunk_id);
-            int chunkSize = Integer.parseInt(chunk_size);
-            boolean lastChunk = Boolean.parseBoolean(last_chunk);
-
-            logger.info("---saving chunk: " + chunkId);
-            logger.info("lastChunk: " + lastChunk);
-
-            // WRITE CHUNK TYPE_FILE
-            if (!Files.exists(folderPath)) {
-                logger.info("createDirectory(): " + folderPath);
-                Files.createDirectory(folderPath);
-            }
-            logger.info("check dir " + Files.exists(folderPath));
-            // String hash = StringUtils.sha1(new String(chunkBytes));
-            // logger.info("bytesHash: " + hash);
-            // logger.info("chunkHash: " + chunkHash);
-            // hash = chunkHash;
-            if (chunkBytes.length == chunkSize) {
-                Files.write(folderPath.resolve(chunkId + "_" + chunkBytes.length + "_partial"), chunkBytes);
-            } else {
-                String errorMessage = "Chunk content size (" + chunkBytes.length + ") " +
-                        "!= chunk_size (" + chunk_size + ").";
-                logger.error(errorMessage);
-                return createErrorResponse(new IOException(errorMessage));
-            }
-
-            if (lastChunk) {
-                logger.info("lastChunk is true...");
-                Files.deleteIfExists(completedFilePath);
-                Files.createFile(completedFilePath);
-                List<java.nio.file.Path> chunks = getSortedChunkList(folderPath);
-                logger.info("----ordered chunks length: " + chunks.size());
-                for (java.nio.file.Path partPath : chunks) {
-                    logger.info(partPath.getFileName().toString());
-                    Files.write(completedFilePath, Files.readAllBytes(partPath), StandardOpenOption.APPEND);
+            try {
+                logger.info("---resume is: " + resume);
+                if (resume) {
+                    logger.info("Resume ms :" + (System.currentTimeMillis() - t));
+                    return createOkResponse(getResumeFileJSON(folderPath));
                 }
-                IOUtils.deleteDirectory(folderPath);
-                try {
-                    QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(),
-                            description, parents, sessionId
-                    );
-                    File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
-                            new QueryOptions(queryOptions), sessionId, false);
-                    queryResult.setResult(Collections.singletonList(file));
-                    return createOkResponse(queryResult);
-                } catch (Exception e) {
-                    logger.error(e.toString());
-                    return createErrorResponse(e);
+
+                int chunkId = Integer.parseInt(chunk_id);
+                int chunkSize = Integer.parseInt(chunk_size);
+                boolean lastChunk = Boolean.parseBoolean(last_chunk);
+
+                logger.info("---saving chunk: " + chunkId);
+                logger.info("lastChunk: " + lastChunk);
+
+                // WRITE CHUNK TYPE_FILE
+                if (!Files.exists(folderPath)) {
+                    logger.info("createDirectory(): " + folderPath);
+                    Files.createDirectory(folderPath);
                 }
+                logger.info("check dir " + Files.exists(folderPath));
+                // String hash = StringUtils.sha1(new String(chunkBytes));
+                // logger.info("bytesHash: " + hash);
+                // logger.info("chunkHash: " + chunkHash);
+                // hash = chunkHash;
+                if (chunkBytes.length == chunkSize) {
+                    Files.write(folderPath.resolve(chunkId + "_" + chunkBytes.length + "_partial"), chunkBytes);
+                } else {
+                    String errorMessage = "Chunk content size (" + chunkBytes.length + ") " +
+                            "!= chunk_size (" + chunk_size + ").";
+                    logger.error(errorMessage);
+                    return createErrorResponse(new IOException(errorMessage));
+                }
+
+                if (lastChunk) {
+                    logger.info("lastChunk is true...");
+                    Files.deleteIfExists(completedFilePath);
+                    Files.createFile(completedFilePath);
+                    List<java.nio.file.Path> chunks = getSortedChunkList(folderPath);
+                    logger.info("----ordered chunks length: " + chunks.size());
+                    for (java.nio.file.Path partPath : chunks) {
+                        logger.info(partPath.getFileName().toString());
+                        Files.write(completedFilePath, Files.readAllBytes(partPath), StandardOpenOption.APPEND);
+                    }
+                    IOUtils.deleteDirectory(folderPath);
+                    try {
+                        QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(), description, parents, sessionId);
+                        File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null, new QueryOptions(queryOptions), sessionId, false);
+                        queryResult.setResult(Collections.singletonList(file));
+                        return createOkResponse(queryResult);
+                    } catch (Exception e) {
+                        logger.error(e.toString());
+                        return createErrorResponse(e);
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("e = " + e);
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            System.out.println("e = " + e);
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.info("chunk saved ms :" + (System.currentTimeMillis() - t));
+            return createOkResponse("ok");
+
+        } else if (fileInputStream != null) {
+            logger.info("filePath: {}", filePath.toString());
+
+            // We obtain the basic studyPath where we will upload the file temporarily
+            java.nio.file.Path studyPath = null;
+
+            try {
+                studyPath = Paths.get(catalogManager.getStudyUri(studyId));
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            }
+
+            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + fileMetaData.getFileName()).resolve(fileMetaData.getFileName());
+            logger.info("tempFilePath: {}", tempFilePath.toString());
+            logger.info("tempParent: {}", tempFilePath.getParent().toString());
+
+            // Create the temporal directory and upload the file
+            try {
+                if (!Files.exists(tempFilePath.getParent())) {
+                    logger.info("createDirectory(): " + tempFilePath.getParent());
+                    Files.createDirectory(tempFilePath.getParent());
+                }
+                logger.info("check dir " + Files.exists(tempFilePath.getParent()));
+
+                // Start uploading the file to the temporal directory
+                int read;
+                byte[] bytes = new byte[1024];
+
+                // Upload the file to a temporary folder
+                OutputStream out = new FileOutputStream(new java.io.File(tempFilePath.toString()));
+                while ((read = fileInputStream.read(bytes)) != -1) {
+                    out.write(bytes, 0, read);
+                }
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // Register the file in catalog
+            try {
+                // Create parents directory if necessary
+                catalogManager.createFolder(studyId, Paths.get(relativeFilePath), parents, null, sessionId);
+
+                String destinationPath = Paths.get(relativeFilePath).resolve(fileMetaData.getFileName()).toString();
+
+                // Register the file and move it to the proper directory
+                QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+                        File.Bioformat.valueOf(bioFormat.toUpperCase()), destinationPath, tempFilePath.toUri(), description, parents,
+                        sessionId);
+                File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
+                        new QueryOptions(queryOptions), sessionId, false);
+                queryResult.setResult(Collections.singletonList(file));
+
+                // Remove the temporal directory
+                Files.delete(tempFilePath.getParent());
+
+                return createOkResponse(queryResult);
+
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            } catch (StorageManagerException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            } catch (IOException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            }
+        } else {
+            return createErrorResponse("Upload file", "No file or chunk found");
         }
-        logger.info("chunk saved ms :" + (System.currentTimeMillis() - t));
-        return createOkResponse("ok");
     }
 
     @GET
