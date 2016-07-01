@@ -29,7 +29,7 @@ import java.io.IOException;
  */
 public class VariableSetClient extends AbstractParentClient<VariableSet, VariableSet> {
 
-    private static final String VARIABLES_URL = "variables";
+    private static final String VARIABLES_URL = "variableSet";
 
     protected VariableSetClient(String sessionId, ClientConfiguration configuration, String userId) {
         super(userId, sessionId, configuration);

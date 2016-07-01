@@ -36,13 +36,13 @@ import java.util.Map;
 /**
  * Created by jacobo on 16/12/14.
  */
-@Path("/{version}/variables")
+@Path("/{version}/variableSet")
 @Produces("application/json")
-@Api(value = "Variables", position = 8, description = "Methods for working with 'variables' endpoint")
-public class VariableWSServer extends OpenCGAWSServer {
+@Api(value = "VariableSet", position = 8, description = "Methods for working with 'variableSet' endpoint")
+public class VariableSetWSServer extends OpenCGAWSServer {
 
 
-    public VariableWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }
 
