@@ -8,7 +8,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -165,12 +165,19 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
-                                          StudyConfiguration studyConfiguration, ObjectMap params)
+                                                 StudyConfiguration studyConfiguration, ObjectMap params)
+            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+        return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, params, true, true);
+    }
+
+    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
+                                                 StudyConfiguration studyConfiguration, ObjectMap params, boolean doTransform, boolean doLoad)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
         ObjectMap newParams = new ObjectMap(params);
 
         newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        newParams.putIfAbsent(VariantStorageManager.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
@@ -182,17 +189,13 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
-                newParams, newParams, newParams, newParams, true, true, true);
+                newParams, newParams, newParams, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
             StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-            studyConfiguration.setFileIds(newStudyConfiguration.getFileIds());
-            studyConfiguration.setCohortIds(newStudyConfiguration.getCohortIds());
-            studyConfiguration.setCohorts(newStudyConfiguration.getCohorts());
-            studyConfiguration.setSampleIds(newStudyConfiguration.getSampleIds());
-            studyConfiguration.setSamplesInFiles(newStudyConfiguration.getSamplesInFiles());
-            studyConfiguration.setIndexedFiles(newStudyConfiguration.getIndexedFiles());
-            studyConfiguration.setHeaders(newStudyConfiguration.getHeaders());
+            if (newStudyConfiguration != null) {
+                studyConfiguration.copy(newStudyConfiguration);
+            }
         }
 
         return storageETLResult;

@@ -17,6 +17,8 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.HashMultiset;
+import com.google.common.collect.Multiset;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
@@ -30,7 +32,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.annotation.CellBaseVariantAnnotator;
@@ -41,6 +43,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -48,6 +51,11 @@ import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
+ * Tests that all the VariantDBAdaptor filters and methods work correctly.
+ *
+ * Do not check that all the values are loaded correctly
+ * Do not check that variant annotation is correct
+ *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 @Ignore
@@ -80,8 +88,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                     .append(VariantStorageManager.Options.ANNOTATE.key(), true)
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseVariantAnnotator.class.getName())
                     .append(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+            params.putAll(getOtherParams());
             StorageETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
-            source = VariantStorageManager.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
+            source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);
             fileIndexed = true;
             Integer indexedFileId = studyConfiguration.getIndexedFiles().iterator().next();
@@ -109,16 +118,21 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             cohortIds.put("cohort2", 11);
 
             //Calculate stats
-            dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-            URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration,
-                    options);
-            vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+            if (getOtherParams().getBoolean(VariantStorageManager.Options.CALCULATE_STATS.key(), true)) {
+                dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+                URI stats = vsm.createStats(dbAdaptor, outputUri.resolve("cohort1.cohort2.stats"), cohorts, cohortIds, studyConfiguration,
+                        options);
+                vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
+            }
 
 
         }
         allVariants = dbAdaptor.get(new Query(), new QueryOptions());
         options = new QueryOptions();
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+
+        assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
+
     }
 
     @After
@@ -133,73 +147,46 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
-    public void testGetAllVariants_populationFrequency() {
-        Query query = new Query(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(43, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(677, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(139, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05;" +
-                "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(22, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05 && map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
-
-        query = new Query(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05," +
-                "1000GENOMES_phase_1:AFR<=0.05");
-        queryResult = dbAdaptor.get(query, options);
-        assertEquals(794, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American")
-                .getAltAlleleFreq() > 0.05
-                || map.containsKey("1000GENOMES_phase_1:AFR") && map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)));
-
+    public void testGetAllVariants_populationFrequency_no_indels() {
+        testGetAllVariants_populationFrequency_filtered(new Query(TYPE.key(), VariantType.SNV), variant -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType()));
     }
 
     @Test
-    public void testGetAllVariants_populationFrequency_no_indels() {
+    public void testGetAllVariants_populationFrequency() {
+        testGetAllVariants_populationFrequency_filtered(new Query(), variant -> true);
+    }
+
+    public void testGetAllVariants_populationFrequency_filtered(Query baseQuery, Predicate<Variant> filter) {
         final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
-        Predicate<Variant> filterType = variant -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType());
+        Query query;
 
-        Query query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(42, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05),
-                filterType));
-        assertEquals(0, filterPopulation(map -> !(map.getOrDefault("1000GENOMES_phase_1:AFR",  defaultPopulation).getRefAlleleFreq() <= 0.05), filterType));
+        filterPopulation(map -> (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getRefAlleleFreq() <= 0.05001), filter);
+        filterPopulation(map -> (map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq() <= 0.05001), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(672, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(0, filterPopulation(map -> !(!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05), filterType));
+        filterPopulation(map -> (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05001), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05;1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001;1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05
-                && (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001
+                        && (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05001)), filter);
 
-        query = new Query(TYPE.key(), VariantType.SNV)
-                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:African_American>0.05,1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_ALTERNATE_FREQUENCY.key(), "ESP_6500:AA>0.05001,1000GENOMES_phase_1:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && map.get("ESP_6500:African_American").getAltAlleleFreq() > 0.05
-                || (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05)), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && map.get("ESP_6500:AA").getAltAlleleFreq() > 0.05001
+                        || (!map.containsKey("1000GENOMES_phase_1:AFR") || map.get("1000GENOMES_phase_1:AFR").getAltAlleleFreq() <= 0.05001)), filter);
 
     }
 
@@ -207,90 +194,97 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_population_maf_no_indels() {
         final PopulationFrequency defaultPopulation = new PopulationFrequency(null, null, null, null, 0F, 0F, 0F, 0F, 0F);
         Predicate<Variant> filterType = variant -> EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType());
+        Query baseQuery = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV);
 
-        Query query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.05");
+        Query query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(), "1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(179, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+        filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:African_American>0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(634, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && Math.min(map.get("ESP_6500:African_American").getRefAlleleFreq(),
-                map.get("ESP_6500:African_American").getAltAlleleFreq()) > 0.05), filterType));
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(179, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+        filterPopulation(map -> (Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:African_American>0.05;1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501;1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(32, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && Math.min(map.get("ESP_6500:African_American").getRefAlleleFreq(),
-                map.get("ESP_6500:African_American").getAltAlleleFreq()) > 0.05
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501
                 && Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
-        query = new Query(TYPE.key(), VariantType.SNP + "," + VariantType.SNV)
-                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:African_American>0.05,1000GENOMES_phase_1:AFR<=0.05");
+        query = new Query(baseQuery)
+                .append(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY.key(),"ESP_6500:AA>0.0501,1000GENOMES_phase_1:AFR<=0.0501");
         queryResult = dbAdaptor.get(query, options);
-//        assertEquals(781, queryResult.getNumResults());
-        assertEquals(0, filterPopulation(map -> !(map.containsKey("ESP_6500:African_American") && Math.min(map.get("ESP_6500:African_American").getRefAlleleFreq(),
-                map.get("ESP_6500:African_American").getAltAlleleFreq()) > 0.05
+        filterPopulation(map -> (map.containsKey("ESP_6500:AA") && Math.min(map.get("ESP_6500:AA").getRefAlleleFreq(),
+                map.get("ESP_6500:AA").getAltAlleleFreq()) > 0.0501
                 || Math.min(map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getRefAlleleFreq(),
-                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.05), filterType));
+                map.getOrDefault("1000GENOMES_phase_1:AFR", defaultPopulation).getAltAlleleFreq()) <= 0.0501), filterType);
 
     }
 
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
-        return filterPopulation(queryResult, predicate, v -> true);
+        return filterPopulation(queryResult, v -> true, predicate.negate());
     }
 
-    public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate, Predicate<Variant> filterVariants) {
-        return filterPopulation(queryResult, predicate, filterVariants);
+    public long filterPopulation(Predicate<Map<String, PopulationFrequency>> negate, Predicate<Variant> filterVariants) {
+        return filterPopulation(queryResult, filterVariants, negate);
     }
 
-    public long filterPopulation(QueryResult<Variant> queryResult, Predicate<Map<String, PopulationFrequency>> predicate, Predicate<Variant> filterVariants) {
+    public long filterPopulation(QueryResult<Variant> queryResult, Predicate<Variant> filterVariants, Predicate<Map<String, PopulationFrequency>> predicate) {
         queryResult.getResult().forEach(variant -> {
             assertNotNull(variant);
-            assertNotNull("In" + variant, variant.getAnnotation());
-            assertNotNull("In" + variant, variant.getAnnotation().getPopulationFrequencies());
+            assertNotNull("In " + variant, variant.getAnnotation());
+//            assertNotNull("In " + variant, variant.getAnnotation().getPopulationFrequencies());
         });
-        Set<Variant> set = allVariants.getResult()
+        Set<String> expectedVariants = allVariants.getResult()
                 .stream()
                 .filter(filterVariants.and(variant -> variant.getAnnotation() != null))
-                .filter(variant -> predicate.negate().test(variant.getAnnotation().getPopulationFrequencies() == null
-                        ? Collections.<String, PopulationFrequency>emptyMap()
-                        : variant.getAnnotation().getPopulationFrequencies()
-                        .stream()
-                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p))))
+                .filter(variant -> {
+                    Map<String, PopulationFrequency> map = variant.getAnnotation().getPopulationFrequencies() == null
+                            ? Collections.emptyMap()
+                            : variant.getAnnotation().getPopulationFrequencies()
+                            .stream()
+                            .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p));
+                    return predicate.test(map);
+                })
+                .map(Variant::toString)
                 .collect(Collectors.toSet());
 
-        for (Variant variant : set) {
-            Set<Variant> result = new HashSet<>(queryResult.getResult());
+        assertTrue("Expect to get at least one result", expectedVariants.size() > 0);
+
+        for (String variant : expectedVariants) {
+            Set<String> result = queryResult.getResult().stream().map(Variant::toString).collect(Collectors.toSet());
             if (!result.contains(variant)) {
                 System.out.println("variant missing = " + variant);
             }
         }
         for (Variant variant : queryResult.getResult()) {
-            if (!set.contains(variant)) {
+            if (!expectedVariants.contains(variant.toString())) {
                 System.out.println("variant not suppose to be = " + variant);
             }
         }
 
-        assertEquals(set.size(), queryResult.getNumResults());
-        return queryResult.getResult().stream()
-                .map(variant -> variant.getAnnotation().getPopulationFrequencies().stream()
-                        .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p)))
-                .filter(predicate)
+        assertEquals(expectedVariants.size(), queryResult.getNumResults());
+        long count = queryResult.getResult().stream()
+                .map(variant -> (variant.getAnnotation().getPopulationFrequencies() == null
+                        ? Collections.<String, PopulationFrequency>emptyMap()
+                        : variant.getAnnotation().getPopulationFrequencies()
+                            .stream()
+                            .collect(Collectors.toMap(p -> p.getStudy() + ":" + p.getPopulation(), p -> p))))
+                .filter(predicate.negate())
                 .count();
+        assertEquals(0, count);
+        return count;
     }
 
     @Test
@@ -363,29 +357,33 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_transcriptionAnnotationFlags() {
         //ANNOT_TRANSCRIPTION_FLAGS
         Query query;
-        Map<String, Integer> flags = new HashMap<>();
+        Multiset<String> flags = HashMultiset.create();
+        Set<String> flagsInVariant = new HashSet<>();
         for (Variant variant : allVariants.getResult()) {
-            Set<String> flagsInVariant = new HashSet<>();
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+            if (variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                    if (consequenceType.getTranscriptAnnotationFlags() != null) {
+                        flagsInVariant.addAll(consequenceType.getTranscriptAnnotationFlags());
+                    }
+                }
             }
-            for (String flag : flagsInVariant) {
-                flags.put(flag, flags.getOrDefault(flag, 0) + 1);
-            }
+            flags.addAll(flagsInVariant);
+            flagsInVariant.clear();
         }
 
-        assertTrue(flags.containsKey("basic"));
-        assertTrue(flags.containsKey("CCDS"));
-        assertTrue(flags.containsKey("mRNA_start_NF"));
-        assertTrue(flags.containsKey("mRNA_end_NF"));
-        assertTrue(flags.containsKey("cds_start_NF"));
-        assertTrue(flags.containsKey("cds_end_NF"));
+        System.out.println(flags);
+        assertTrue(flags.contains("basic"));
+        assertTrue(flags.contains("CCDS"));
+        assertTrue(flags.contains("mRNA_start_NF"));
+        assertTrue(flags.contains("mRNA_end_NF"));
+        assertTrue(flags.contains("cds_start_NF"));
+        assertTrue(flags.contains("cds_end_NF"));
 
-        for (Map.Entry<String, Integer> entry : flags.entrySet()) {
-            System.out.println(entry);
-            query = new Query(ANNOT_TRANSCRIPTION_FLAGS.key(), entry.getKey());
+        for (String flag : flags.elementSet()) {
+            System.out.println(flag + ", " + flags.count(flag));
+            query = new Query(ANNOT_TRANSCRIPTION_FLAGS.key(), flag);
             queryResult = dbAdaptor.get(query, null);
-            assertEquals(entry.getValue().intValue(), queryResult.getNumResults());
+            assertEquals(flags.count(flag), queryResult.getNumResults());
         }
 
     }
@@ -450,24 +448,120 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 break;
             }
         }
+    }
 
+    @Test
+    public void testGoQuery() {
+
+        // MMP26 -> GO:0004222,GO:0005578,GO:0006508
+        // CEBPA -> GO:0000050
+
+        int totalResults = 0;
+
+        Query query = new Query(ANNOT_GO.key(), "GO:0006508");
+        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        totalResults = result.getNumResults();
+
+        query = new Query(ANNOT_GO.key(), "GO:0000050");
+        result = dbAdaptor.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        totalResults += result.getNumResults();
+
+        query = new Query(ANNOT_GO.key(), "GO:0006508,GO:0000050");
+        result = dbAdaptor.get(query, null);
+        System.out.println("numResults: " + result.getNumResults());
+        for (Variant variant : result.getResult()) {
+            System.out.println(variant);
+        }
+        assertNotEquals(0, result.getNumResults());
+        assertEquals(result.getNumResults(), totalResults);
+    }
+
+
+    @Test
+    public void testExpressionQuery() {
+        Query query = new Query(ANNOT_EXPRESSION.key(), "non_existing_tissue");
+        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        assertEquals(0, result.getNumResults());
+
+
+        query = new Query(ANNOT_EXPRESSION.key(), "skin");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+        query = new Query(ANNOT_EXPRESSION.key(), "brain");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+        query = new Query(ANNOT_EXPRESSION.key(), "tongue");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+
+        query = new Query(ANNOT_EXPRESSION.key(), "pancreas");
+        result = dbAdaptor.get(query, null);
+        System.out.println("result.getNumResults() = " + result.getNumResults());
+        assertNotEquals(0, result.getNumResults());
+        assertNotEquals(allVariants.getNumResults(), result.getNumResults());
 
     }
+
 
     @Test
     public void testGetAllVariants_proteinKeywords() {
         //ANNOT_PROTEIN_KEYWORDS
         Query query;
         Map<String, Integer> keywords = new HashMap<>();
+        int combinedKeywordsOr = 0;
+        int combinedKeywordsAnd = 0;
+        int combinedKeywordsAndNot = 0;
         for (Variant variant : allVariants.getResult()) {
             Set<String> keywordsInVariant = new HashSet<>();
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                keywordsInVariant.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+            if (variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                    if (consequenceType.getProteinVariantAnnotation() != null && consequenceType.getProteinVariantAnnotation().getKeywords() != null) {
+                        keywordsInVariant.addAll(consequenceType.getProteinVariantAnnotation().getKeywords());
+                    }
+                }
             }
             for (String flag : keywordsInVariant) {
                 keywords.put(flag, keywords.getOrDefault(flag, 0) + 1);
             }
+            if (keywordsInVariant.contains("Complete proteome") || keywordsInVariant.contains("Transmembrane helix")) {
+                combinedKeywordsOr++;
+            }
+            if (keywordsInVariant.contains("Complete proteome") && keywordsInVariant.contains("Transmembrane helix")) {
+                combinedKeywordsAnd++;
+            }
+            if (keywordsInVariant.contains("Complete proteome") && !keywordsInVariant.contains("Transmembrane helix")) {
+                combinedKeywordsAndNot++;
+            }
         }
+
+        assertTrue(combinedKeywordsOr > 0);
+        assertTrue(combinedKeywordsAnd > 0);
+        assertTrue(combinedKeywordsAndNot > 0);
+
+        query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome,Transmembrane helix");
+        assertEquals(combinedKeywordsOr, dbAdaptor.count(query).first().intValue());
+        query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome;Transmembrane helix");
+        assertEquals(combinedKeywordsAnd, dbAdaptor.count(query).first().intValue());
+        query = new Query(ANNOT_PROTEIN_KEYWORDS.key(), "Complete proteome;!Transmembrane helix");
+        assertEquals(combinedKeywordsAndNot, dbAdaptor.count(query).first().intValue());
 
         for (Map.Entry<String, Integer> entry : keywords.entrySet()) {
             System.out.println(entry);
@@ -519,14 +613,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             Set<Double> polyphenInVariant = new HashSet<>();
             Set<String> siftDescInVariant = new HashSet<>();
             Set<String> polyphenDescInVariant = new HashSet<>();
-            for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
-                for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
-                    if (score.getSource().equals("sift")) {
-                        siftInVariant.add(score.getScore());
-                        siftDescInVariant.add(score.getDescription());
-                    } else if (score.getSource().equals("polyphen")) {
-                        polyphenInVariant.add(score.getScore());
-                        polyphenDescInVariant.add(score.getDescription());
+            if (variant.getAnnotation().getConsequenceTypes() != null) {
+                for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
+                    if (consequenceType.getProteinVariantAnnotation() != null) {
+                        if (consequenceType.getProteinVariantAnnotation().getSubstitutionScores() != null) {
+                            for (Score score : consequenceType.getProteinVariantAnnotation().getSubstitutionScores()) {
+                                if (score.getSource().equals("sift")) {
+                                    siftInVariant.add(score.getScore());
+                                    siftDescInVariant.add(score.getDescription());
+                                } else if (score.getSource().equals("polyphen")) {
+                                    polyphenInVariant.add(score.getScore());
+                                    polyphenDescInVariant.add(score.getDescription());
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -583,30 +683,62 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_functionalScore() {
-        //FUNCTIONAL_SCORE
+        //ANNOT_FUNCTIONAL_SCORE
 
-        Query query;
-        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled>5");
         assertTrue(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0) > 0);
         System.out.println("countFunctionalScore(\"cadd_scaled\", allVariants, s -> s > 5.0) = " + countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0));
 
-        assertEquals(countFunctionalScore("cadd_scaled", allVariants, s -> s > 5.0),
-                countFunctionalScore("cadd_scaled", dbAdaptor.get(query, null), s -> s > 5.0));
+        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled>5"), s -> s > 5.0, "cadd_scaled");
 
-        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw<0.5");
-        assertEquals(countFunctionalScore("cadd_raw", allVariants, s -> s < 0.5),
-                countFunctionalScore("cadd_raw", dbAdaptor.get(query, null), s -> s < 0.5));
+        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_raw<0.5"), s1 -> s1 < 0.5, "cadd_raw");
 
-        query = new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5");
-        assertEquals(countFunctionalScore("cadd_scaled", allVariants, s -> s <= 0.5),
-                countFunctionalScore("cadd_scaled", dbAdaptor.get(query, null), s -> s <= 0.5));
+        checkFunctionalScore(new Query(ANNOT_FUNCTIONAL_SCORE.key(), "cadd_scaled<=0.5"), s -> s <= 0.5, "cadd_scaled");
+    }
+
+    @Test
+    public void testGetAllVariants_conservationScore() {
+        //ANNOT_CONSERVATION
+
+        assertTrue(countConservationScore("phastCons", allVariants, s -> s > 0.5) > 0);
+        System.out.println("countFunctionalScore(\"phastCons\", allVariants, s -> s > 0.5) = " + countConservationScore("phastCons", allVariants, s -> s > 0.5));
+
+        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phylop>0.5"), s -> s > 0.5, "phylop");
+
+        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "phastCons<0.5"), s1 -> s1 < 0.5, "phastCons");
+
+        checkConservationScore(new Query(ANNOT_CONSERVATION.key(), "gerp<=0.5"), s -> s <= 0.5, "gerp");
+    }
+
+    public void checkConservationScore(Query query, Predicate<Double> doublePredicate, String source) {
+        checkScore(query, doublePredicate, source, VariantAnnotation::getConservation);
+    }
+
+    public void checkFunctionalScore(Query query, Predicate<Double> doublePredicate, String source) {
+        checkScore(query, doublePredicate, source, VariantAnnotation::getFunctionalScore);
+    }
+
+    public void checkScore(Query query, Predicate<Double> doublePredicate, String source, Function<VariantAnnotation, List<Score>> mapper) {
+        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        long expected = countScore(source, allVariants, doublePredicate, mapper);
+        long actual = countScore(source, result, doublePredicate, mapper);
+        assertTrue(expected > 0);
+        assertEquals(expected, result.getNumResults());
+        assertEquals(expected, actual);
+    }
+
+    private long countConservationScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {
+        return countScore(source, variantQueryResult, doublePredicate, VariantAnnotation::getConservation);
     }
 
     private long countFunctionalScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate) {
+        return countScore(source, variantQueryResult, doublePredicate, VariantAnnotation::getFunctionalScore);
+    }
+
+    private long countScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate, Function<VariantAnnotation, List<Score>> mapper) {
         long c = 0;
         for (Variant variant : variantQueryResult.getResult()) {
-            for (Score score : variant.getAnnotation().getFunctionalScore()) {
-                if (score.getSource().equals(source)) {
+            for (Score score : mapper.apply(variant.getAnnotation())) {
+                if (score.getSource().equalsIgnoreCase(source)) {
                     if (doublePredicate.test(score.getScore())) {
                         c++;
                     }
@@ -655,7 +787,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         while (iterator.hasNext()) {
             next = iterator.next();
             if (next.getChromosome().equals(prev.getChromosome())) {
-                assertTrue(next + " <= " + prev, next.getStart() <= prev.getStart());
+                assertTrue(prev + " >= " + next, prev.getStart() >= next.getStart());
             }
             prev = next;
         }
@@ -699,6 +831,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertTrue(lastStart <= variant.getStart());
             lastStart = variant.getStart();
         }
+    }
+
+    @Test
+    public void testGetAllVariants_studies() {
+
+        Query query = new Query(STUDIES.key(), studyConfiguration.getStudyName());
+        long numResults = dbAdaptor.count(query).first();
+        assertEquals(allVariants.getNumResults(), numResults);
+
+        query = new Query(STUDIES.key(), studyConfiguration.getStudyId());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(allVariants.getNumResults(), numResults);
+
+        query = new Query(STUDIES.key(), "!" + studyConfiguration.getStudyId());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(0, numResults);
+
+        query = new Query(STUDIES.key(), "!" + studyConfiguration.getStudyName());
+        numResults = dbAdaptor.count(query).first();
+        assertEquals(0, numResults);
+
     }
 
     @Test
@@ -800,8 +953,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
         )));
 
-        query = new Query(GENOTYPE.key(), "NA19600:1|1").append(
-                STUDIES.key(), STUDY_NAME);
+        query = new Query(GENOTYPE.key(), "NA19600:1|1")
+                .append(STUDIES.key(), STUDY_NAME);
         queryResult = dbAdaptor.get(query, new QueryOptions());
         assertEquals(282, queryResult.getNumTotalResults());
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("1|1", vse.getSampleData("NA19600", "GT")
@@ -826,12 +979,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
         )));
 
-        //This works, but is incorrect. Better use "./."
-        query = new Query(GENOTYPE.key(), na19600 + ":-1/-1");
-        queryResult = dbAdaptor.get(query, new QueryOptions());
-        assertEquals(9, queryResult.getNumTotalResults());
-        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
-        )));
+//        //This works, but is incorrect. Better use "./."
+//        query = new Query(GENOTYPE.key(), na19600 + ":-1/-1");
+//        queryResult = dbAdaptor.get(query, new QueryOptions());
+//        assertEquals(9, queryResult.getNumTotalResults());
+//        queryResult.getResult().forEach(v -> v.getStudiesMap().forEach((s, vse) -> assertEquals("./.", vse.getSampleData("NA19600", "GT")
+//        )));
 
 
         //Get all variants with 1|1 for na19600 and 0|0 or 1|0 for na19685
@@ -1015,6 +1168,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         queryResult.getResult().stream().map(variant -> variant.getStudiesMap().get("1000g").getStats())
                 .forEach(map -> assertTrue(map.get(StudyEntry.DEFAULT_COHORT).getMissingAlleles() > 4));
 
+    }
+
+    protected ObjectMap getOtherParams() {
+        return new ObjectMap();
     }
 /*
     @Test

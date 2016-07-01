@@ -115,7 +115,8 @@ public class ArchiveResultToVariantConverter {
         String genotype = VariantTableStudyRow.NOCALL;
         var.setType(VariantType.NO_VARIATION);
         StudyEntry se = var.getStudies().get(0);
-        int gtpos = se.getFormatPositions().get("GT");
+        Map<String, Integer> formatPositions = se.getFormatPositions();
+        int gtpos = formatPositions.get("GT");
         List<List<String>> sdLst = se.getSamplesData();
         List<List<String>> oLst = new ArrayList<>(sdLst.size());
         for (List<String> sd : sdLst) {

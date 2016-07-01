@@ -16,22 +16,21 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.NotSupportedException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,7 +48,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     private VariantTableHelper variantTablehelper;
 
-    private HBaseStudyConfigurationManager scm;
+    protected HBaseStudyConfigurationManager scm;
+    protected StudyConfiguration studyConfiguration;
 
     public AbstractVariantTableDriver() { /* nothing */ }
 
@@ -106,7 +106,8 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
         /* -------------------------------*/
         // Validate input CHECK
-        if (!gh.getHBaseManager().act(inTable, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)))) {
+        HBaseManager hBaseManager = gh.getHBaseManager();
+        if (!hBaseManager.act(inTable, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)))) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
         }
 
@@ -139,16 +140,84 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         return succeed ? 0 : 1;
     }
 
-    protected void check(List<Integer> fileIds) throws StorageHadoopException, IOException {}
+    protected void check(List<Integer> fileIds) throws StorageManagerException, IOException {
+        Configuration conf = getConf();
+        HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
 
-    protected void onError() {}
+        long lock = scm.lockStudy(getHelper().getStudyId());
+        studyConfiguration = loadStudyConfiguration();
 
-    protected void onSuccess() {}
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation batchFileOperation;
+        if (!batches.isEmpty()) {
+            batchFileOperation = batches.get(batches.size() - 1);
+            BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
+            if (currentStatus != null) {
+                switch (currentStatus) {
+                    case READY:
+                        batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, batchFileOperation.getTimestamp() + 1);
+                        break;
+                    case RUNNING:
+                        if (!conf.getBoolean(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT_RESUME, false)) {
+                            throw new StorageHadoopException("Unable to process a new batch. Ongoing batch operation: "
+                                    + batchFileOperation);
+                        }
+                        // Do not break. Resuming last loading, go to error case.
+                    case ERROR:
+                        if (batchFileOperation.getFileIds().equals(fileIds)) {
+                            LOG.info("Resuming Last batch loading due to error.");
+                        } else {
+                            throw new StorageHadoopException("Unable to resume last batch operation. "
+                                    + "Must have the same files from the previous batch: " + batchFileOperation);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Unknown Status " + currentStatus);
+                }
+            }
+        } else {
+            batchFileOperation = new BatchFileOperation(getJobOperationName(), fileIds, 1);
+        }
+        batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
+        batches.add(batchFileOperation);
+
+        scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        scm.unLockStudy(studyConfiguration.getStudyId(), lock);
+        conf.setLong(TIMESTAMP, batchFileOperation.getTimestamp());
+    }
+
+    protected void onError() {
+        try {
+            HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+            long lock = scm.lockStudy(getHelper().getStudyId());
+            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.ERROR);
+            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+            scm.unLockStudy(studyConfiguration.getStudyId(), lock);
+        } catch (IOException | StorageManagerException e) {
+            e.printStackTrace();
+        }
+    }
+
+    protected void onSuccess() {
+        try {
+            HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
+            long lock = scm.lockStudy(getHelper().getStudyId());
+            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
+            BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
+            batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);
+            scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+            scm.unLockStudy(studyConfiguration.getStudyId(), lock);
+        } catch (IOException | StorageManagerException e) {
+            e.printStackTrace();
+        }
+    }
 
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation#operationName}
+     * Used to create the jobName and as {@link BatchFileOperation#operationName}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *
@@ -233,7 +302,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         int studyId = getHelper().getStudyId();
         QueryResult<StudyConfiguration> res = scm.getStudyConfiguration(studyId, new QueryOptions());
         if (res.getResult().size() != 1) {
-            throw new NotSupportedException();
+            throw new IllegalStateException("StudyConfiguration " + studyId + " not found! " + res.getResult().size());
         }
         return res.first();
     }
