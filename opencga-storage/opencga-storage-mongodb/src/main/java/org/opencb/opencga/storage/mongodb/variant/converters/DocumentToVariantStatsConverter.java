@@ -112,7 +112,7 @@ public class DocumentToVariantStatsConverter implements ComplexTypeConverter<Var
 
         int[] alleleCounts = {0, 0};
         if (stats.getGenotypesCount().isEmpty()) {
-            if (stats.getMafAllele().equals(stats.getRefAllele())) {
+            if (stats.getRefAllele().equals(stats.getMafAllele())) {
                 stats.setRefAlleleFreq(stats.getMaf());
                 stats.setAltAlleleFreq(1 - stats.getMaf());
             } else {

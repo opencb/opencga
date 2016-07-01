@@ -218,7 +218,7 @@ public class VariantQueryCommandUtils {
             }
         }
 
-        if (returnVariants && of.isMultiStudyOutput()) {
+        if (returnVariants && !of.isMultiStudyOutput()) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
