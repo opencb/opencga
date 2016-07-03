@@ -590,6 +590,12 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\" , \"HP:0002812\"", required = false, arity = 1)
         public String hpo;
 
+        @Parameter(names = {"--go"}, description = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"", required = false, arity = 1)
+        public String go;
+
+        @Parameter(names = {"--expression"}, description = "List of tissues of interest. e.g. \"tongue\"", required = false, arity = 1)
+        public String expression;
+
         @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", required = false, arity = 1)
         public String proteinKeywords;
 

@@ -649,11 +649,17 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.update(studyId, new ObjectMap("alias", newStudyAlias), null, sessionId);
     }
 
+    public QueryResult createGroup(String studyId, String groupId, String userList, String sessionId) throws CatalogException {
+        return studyManager.createGroup(studyId, groupId, userList, sessionId);
+    }
+
+    @Deprecated
     public QueryResult addUsersToGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         return authorizationManager.addUsersToGroup(userId, studyId, groupId, userIds);
     }
 
+    @Deprecated
     public QueryResult removeUsersFromGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         authorizationManager.removeUsersFromGroup(userId, studyId, groupId, userIds);
@@ -900,7 +906,8 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<File> link(URI uriOrigin, String pathDestiny, String studyIdStr, ObjectMap params, String sessionId)
             throws CatalogException, IOException {
-        long studyId = studyManager.getStudyId(studyIdStr);
+        String userId = userManager.getUserId(sessionId);
+        long studyId = studyManager.getStudyId(userId, studyIdStr);
         return fileManager.link(uriOrigin, pathDestiny, studyId, params, sessionId);
     }
 

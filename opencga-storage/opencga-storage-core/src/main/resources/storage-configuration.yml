@@ -115,7 +115,7 @@ storageEngines:
       hadoop.env: "HADOOP_USER_CLASSPATH_FIRST=true,HADOOP_CLASSPATH=${OPENCGA.INSTALLATION.DIR}/libs/protobuf-java-3.0.0-beta-1.jar"
       opencga.storage.hadoop.jar-with-dependencies: "${OPENCGA.INSTALLATION.DIR}/opencga-storage-hadoop-${opencga.version}-jar-with-dependencies.jar"
       opencga.archive.chunk_size: 1000
-      opencga.archive.table.compression: "gz"
+      opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"
       fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:

@@ -36,13 +36,13 @@ import java.util.Map;
 /**
  * Created by jacobo on 16/12/14.
  */
-@Path("/{version}/variables")
+@Path("/{version}/variableSet")
 @Produces("application/json")
-@Api(value = "Variables", position = 8, description = "Methods for working with 'variables' endpoint")
-public class VariableWSServer extends OpenCGAWSServer {
+@Api(value = "VariableSet", position = 8, description = "Methods for working with 'variableSet' endpoint")
+public class VariableSetWSServer extends OpenCGAWSServer {
 
 
-    public VariableWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+    public VariableSetWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
         super(uriInfo, httpServletRequest);
     }
 
@@ -111,7 +111,9 @@ public class VariableWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{variableSetId}/update")
     @ApiOperation(value = "Update some user variableSet using GET method [PENDING]", position = 3)
-    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId) throws IOException {
+    public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
+                           @ApiParam(value = "name", required = true) @QueryParam("name") String name,
+                           @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {
         return createErrorResponse("update - GET", "PENDING");
     }
 

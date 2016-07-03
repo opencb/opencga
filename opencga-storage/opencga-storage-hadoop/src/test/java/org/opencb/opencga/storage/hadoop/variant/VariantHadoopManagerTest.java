@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -50,6 +50,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();
+    private QueryResult<Variant> allVariantsQueryResult;
 
     @Before
     public void before() throws Exception {
@@ -59,13 +60,15 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
 
             URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
+//            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
 
             studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
             etlResult = VariantStorageManagerTestUtils.runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
                     new ObjectMap(Options.TRANSFORM_FORMAT.key(), "avro")
                             .append(Options.FILE_ID.key(), FILE_ID)
-                            .append(Options.ANNOTATE.key(), false)
+                            .append(Options.ANNOTATE.key(), true)
                             .append(Options.CALCULATE_STATS.key(), false)
+                            .append(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, false)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, true)
                             .append(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, true)
             );
@@ -73,9 +76,15 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             source = variantStorageManager.readVariantSource(etlResult.getTransformResult());
             VariantGlobalStats stats = source.getStats();
             Assert.assertNotNull(stats);
+
+            allVariantsQueryResult = null;
         }
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
+
+        if (allVariantsQueryResult == null) {
+            allVariantsQueryResult = dbAdaptor.get(new Query(), new QueryOptions());
+        }
 
     }
 
@@ -114,7 +123,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
 
         // Group by Gene
         HashMap<String, Long> genesCount = new HashMap<>();
-        for (Variant variant : dbAdaptor) {
+        for (Variant variant : allVariantsQueryResult.getResult()) {
             HashSet<String> genesInVariant = new HashSet<>();
             for (ConsequenceType consequenceType : variant.getAnnotation().getConsequenceTypes()) {
                 String geneName = consequenceType.getGeneName();
@@ -171,6 +180,9 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             int num = 0;
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {
+                if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
+                    continue;
+                }
                 Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
                 System.out.println("Variant = " + variant);
                 if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {

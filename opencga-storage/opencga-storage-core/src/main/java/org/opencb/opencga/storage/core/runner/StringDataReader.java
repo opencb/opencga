@@ -93,7 +93,7 @@ public class StringDataReader implements DataReader<String> {
     @Override
     public List<String> read() {
         try {
-            if (++readLines % 1000 == 0) {
+            if (++readLines % 100000 == 0) {
                 logger.info("read lines = " + readLines);
             }
             return Collections.singletonList(reader.readLine());
@@ -113,7 +113,7 @@ public class StringDataReader implements DataReader<String> {
                     return batch;
                 }
                 batch.add(line);
-                if (++readLines % 1000 == 0) {
+                if (++readLines % 100000 == 0) {
                     logger.info("read lines = " + readLines);
                 }
             }

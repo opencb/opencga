@@ -269,6 +269,22 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("get study Acl", startTime, studyAcl);
     }
 
+    @Override
+    public QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Group group = new Group(groupId, userIds);
+        Document query = new Document(PRIVATE_ID, studyId);
+        Document update = new Document("$push", new Document(QueryParams.GROUPS.key(), getMongoDBDocument(group, "Group")));
+
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Unable to create the group " + groupId);
+        }
+
+        return endQuery("Create group", startTime, getGroup(studyId, groupId, Collections.emptyList()));
+    }
 
 
     private long getDiskUsageByStudy(int studyId) {

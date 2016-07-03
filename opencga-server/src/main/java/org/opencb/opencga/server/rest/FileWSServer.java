@@ -52,10 +52,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
@@ -195,6 +192,9 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
     public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
+                                @FormDataParam("file") InputStream fileInputStream,
+                                @FormDataParam("file") FormDataContentDisposition fileMetaData,
+
                                 @DefaultValue("") @FormDataParam("chunk_id") String chunk_id,
                                 @DefaultValue("false") @FormDataParam("last_chunk") String last_chunk,
                                 @DefaultValue("") @FormDataParam("chunk_total") String chunk_total,
@@ -202,17 +202,21 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
                                 @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                                @ApiParam(value = "filename", required = true) @DefaultValue("") @FormDataParam("filename") String filename,
+                                @ApiParam(value = "filename", required = false) @DefaultValue("") @FormDataParam("filename") String filename,
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
-                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
+//                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
 //                                @ApiParam(defaultValue = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
                                 @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
-                                @ApiParam(value = "description", required = true) @DefaultValue("") @FormDataParam("description") String description,
-                                @ApiParam(value = "Create the parent directories if they do not exist", required = true) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
+                                @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description") String description,
+                                @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
         long t = System.currentTimeMillis();
+
+        if (relativeFilePath.endsWith("/")) {
+            relativeFilePath = relativeFilePath.substring(0, relativeFilePath.length() - 1);
+        }
 
         java.nio.file.Path filePath = null;
         final long studyId;
@@ -232,79 +236,151 @@ public class FileWSServer extends OpenCGAWSServer {
             e.printStackTrace();
         }
 
-        java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
-        java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
+        if (chunkBytes != null) {
 
-        logger.info(relativeFilePath + "");
-        logger.info(folderPath + "");
-        logger.info(filePath + "");
-        boolean resume = Boolean.parseBoolean(resume_upload);
+            java.nio.file.Path completedFilePath = filePath.getParent().resolve("_" + filename);
+            java.nio.file.Path folderPath = filePath.getParent().resolve("__" + filename);
 
-        try {
-            logger.info("---resume is: " + resume);
-            if (resume) {
-                logger.info("Resume ms :" + (System.currentTimeMillis() - t));
-                return createOkResponse(getResumeFileJSON(folderPath));
-            }
+            logger.info(relativeFilePath + "");
+            logger.info(folderPath + "");
+            logger.info(filePath + "");
+            boolean resume = Boolean.parseBoolean(resume_upload);
 
-            int chunkId = Integer.parseInt(chunk_id);
-            int chunkSize = Integer.parseInt(chunk_size);
-            boolean lastChunk = Boolean.parseBoolean(last_chunk);
-
-            logger.info("---saving chunk: " + chunkId);
-            logger.info("lastChunk: " + lastChunk);
-
-            // WRITE CHUNK TYPE_FILE
-            if (!Files.exists(folderPath)) {
-                logger.info("createDirectory(): " + folderPath);
-                Files.createDirectory(folderPath);
-            }
-            logger.info("check dir " + Files.exists(folderPath));
-            // String hash = StringUtils.sha1(new String(chunkBytes));
-            // logger.info("bytesHash: " + hash);
-            // logger.info("chunkHash: " + chunkHash);
-            // hash = chunkHash;
-            if (chunkBytes.length == chunkSize) {
-                Files.write(folderPath.resolve(chunkId + "_" + chunkBytes.length + "_partial"), chunkBytes);
-            } else {
-                String errorMessage = "Chunk content size (" + chunkBytes.length + ") " +
-                        "!= chunk_size (" + chunk_size + ").";
-                logger.error(errorMessage);
-                return createErrorResponse(new IOException(errorMessage));
-            }
-
-            if (lastChunk) {
-                logger.info("lastChunk is true...");
-                Files.deleteIfExists(completedFilePath);
-                Files.createFile(completedFilePath);
-                List<java.nio.file.Path> chunks = getSortedChunkList(folderPath);
-                logger.info("----ordered chunks length: " + chunks.size());
-                for (java.nio.file.Path partPath : chunks) {
-                    logger.info(partPath.getFileName().toString());
-                    Files.write(completedFilePath, Files.readAllBytes(partPath), StandardOpenOption.APPEND);
+            try {
+                logger.info("---resume is: " + resume);
+                if (resume) {
+                    logger.info("Resume ms :" + (System.currentTimeMillis() - t));
+                    return createOkResponse(getResumeFileJSON(folderPath));
                 }
-                IOUtils.deleteDirectory(folderPath);
-                try {
-                    QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
-                            File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(),
-                            description, parents, sessionId
-                    );
-                    File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
-                            new QueryOptions(queryOptions), sessionId, false);
-                    queryResult.setResult(Collections.singletonList(file));
-                    return createOkResponse(queryResult);
-                } catch (Exception e) {
-                    logger.error(e.toString());
-                    return createErrorResponse(e);
+
+                int chunkId = Integer.parseInt(chunk_id);
+                int chunkSize = Integer.parseInt(chunk_size);
+                boolean lastChunk = Boolean.parseBoolean(last_chunk);
+
+                logger.info("---saving chunk: " + chunkId);
+                logger.info("lastChunk: " + lastChunk);
+
+                // WRITE CHUNK TYPE_FILE
+                if (!Files.exists(folderPath)) {
+                    logger.info("createDirectory(): " + folderPath);
+                    Files.createDirectory(folderPath);
                 }
+                logger.info("check dir " + Files.exists(folderPath));
+                // String hash = StringUtils.sha1(new String(chunkBytes));
+                // logger.info("bytesHash: " + hash);
+                // logger.info("chunkHash: " + chunkHash);
+                // hash = chunkHash;
+                if (chunkBytes.length == chunkSize) {
+                    Files.write(folderPath.resolve(chunkId + "_" + chunkBytes.length + "_partial"), chunkBytes);
+                } else {
+                    String errorMessage = "Chunk content size (" + chunkBytes.length + ") " +
+                            "!= chunk_size (" + chunk_size + ").";
+                    logger.error(errorMessage);
+                    return createErrorResponse(new IOException(errorMessage));
+                }
+
+                if (lastChunk) {
+                    logger.info("lastChunk is true...");
+                    Files.deleteIfExists(completedFilePath);
+                    Files.createFile(completedFilePath);
+                    List<java.nio.file.Path> chunks = getSortedChunkList(folderPath);
+                    logger.info("----ordered chunks length: " + chunks.size());
+                    for (java.nio.file.Path partPath : chunks) {
+                        logger.info(partPath.getFileName().toString());
+                        Files.write(completedFilePath, Files.readAllBytes(partPath), StandardOpenOption.APPEND);
+                    }
+                    IOUtils.deleteDirectory(folderPath);
+                    try {
+                        QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()), File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(), description, parents, sessionId);
+                        File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null, new QueryOptions(queryOptions), sessionId, false);
+                        queryResult.setResult(Collections.singletonList(file));
+                        return createOkResponse(queryResult);
+                    } catch (Exception e) {
+                        logger.error(e.toString());
+                        return createErrorResponse(e);
+                    }
+                }
+            } catch (IOException e) {
+                System.out.println("e = " + e);
+                // TODO Auto-generated catch block
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            System.out.println("e = " + e);
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            logger.info("chunk saved ms :" + (System.currentTimeMillis() - t));
+            return createOkResponse("ok");
+
+        } else if (fileInputStream != null) {
+            logger.info("filePath: {}", filePath.toString());
+
+            // We obtain the basic studyPath where we will upload the file temporarily
+            java.nio.file.Path studyPath = null;
+
+            try {
+                studyPath = Paths.get(catalogManager.getStudyUri(studyId));
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            }
+
+            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + fileMetaData.getFileName()).resolve(fileMetaData.getFileName());
+            logger.info("tempFilePath: {}", tempFilePath.toString());
+            logger.info("tempParent: {}", tempFilePath.getParent().toString());
+
+            // Create the temporal directory and upload the file
+            try {
+                if (!Files.exists(tempFilePath.getParent())) {
+                    logger.info("createDirectory(): " + tempFilePath.getParent());
+                    Files.createDirectory(tempFilePath.getParent());
+                }
+                logger.info("check dir " + Files.exists(tempFilePath.getParent()));
+
+                // Start uploading the file to the temporal directory
+                int read;
+                byte[] bytes = new byte[1024];
+
+                // Upload the file to a temporary folder
+                OutputStream out = new FileOutputStream(new java.io.File(tempFilePath.toString()));
+                while ((read = fileInputStream.read(bytes)) != -1) {
+                    out.write(bytes, 0, read);
+                }
+                out.flush();
+                out.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            // Register the file in catalog
+            try {
+                // Create parents directory if necessary
+                catalogManager.createFolder(studyId, Paths.get(relativeFilePath), parents, null, sessionId);
+
+                String destinationPath = Paths.get(relativeFilePath).resolve(fileMetaData.getFileName()).toString();
+
+                // Register the file and move it to the proper directory
+                QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+                        File.Bioformat.valueOf(bioFormat.toUpperCase()), destinationPath, tempFilePath.toUri(), description, parents,
+                        sessionId);
+                File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
+                        new QueryOptions(queryOptions), sessionId, false);
+                queryResult.setResult(Collections.singletonList(file));
+
+                // Remove the temporal directory
+                Files.delete(tempFilePath.getParent());
+
+                return createOkResponse(queryResult);
+
+            } catch (CatalogException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            } catch (StorageManagerException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            } catch (IOException e) {
+                e.printStackTrace();
+                return createErrorResponse("Upload file", e.getMessage());
+            }
+        } else {
+            return createErrorResponse("Upload file", "No file or chunk found");
         }
-        logger.info("chunk saved ms :" + (System.currentTimeMillis() - t));
-        return createOkResponse("ok");
     }
 
     @GET
@@ -709,17 +785,17 @@ public class FileWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
     })
     public Response getVariants(@ApiParam(value = "", required = true) @PathParam("fileId") String fileIdCsv,
-                                @ApiParam(value = "CSV list of variant ids") @QueryParam("ids") String ids,
-                                @ApiParam(value = "CSV list of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
-                                @ApiParam(value = "CSV list of chromosomes") @QueryParam("chromosome") String chromosome,
-                                @ApiParam(value = "CSV list of genes") @QueryParam("gene") String gene,
+                                @ApiParam(value = "List of variant ids") @QueryParam("ids") String ids,
+                                @ApiParam(value = "List of regions: {chr}:{start}-{end}") @QueryParam("region") String region,
+                                @ApiParam(value = "List of chromosomes") @QueryParam("chromosome") String chromosome,
+                                @ApiParam(value = "List of genes") @QueryParam("gene") String gene,
                                 @ApiParam(value = "Variant type: [SNV, MNV, INDEL, SV, CNV]") @QueryParam("type") String type,
-                                @ApiParam(value = "Filter by reference") @QueryParam("reference") String reference,
-                                @ApiParam(value = "Filter by alternate") @QueryParam("alternate") String alternate,
+                                @ApiParam(value = "Reference allele") @QueryParam("reference") String reference,
+                                @ApiParam(value = "Main alternate allele") @QueryParam("alternate") String alternate,
 //                                @ApiParam(value = "") @QueryParam("studies") String studies,
-                                @ApiParam(value = "CSV list of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
-                                @ApiParam(value = "CSV list of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
-                                @ApiParam(value = "CSV list of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
+                                @ApiParam(value = "List of studies to be returned") @QueryParam("returnedStudies") String returnedStudies,
+                                @ApiParam(value = "List of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
+                                @ApiParam(value = "List of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
                                 @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("maf") String maf,
                                 @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
@@ -730,15 +806,26 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Consequence type SO term list. e.g. SO:0000045,SO:0000046") @QueryParam("annot-ct") String annot_ct,
                                 @ApiParam(value = "XRef") @QueryParam("annot-xref") String annot_xref,
                                 @ApiParam(value = "Biotype") @QueryParam("annot-biotype") String annot_biotype,
-                                @ApiParam(value = "Polyphen value: [<|>|<=|>=]{number}") @QueryParam("polyphen") String polyphen,
-                                @ApiParam(value = "Sift value: [<|>|<=|>=]{number}") @QueryParam("sift") String sift,
+                                @ApiParam(value = "Polyphen, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9 , =benign") @QueryParam("polyphen") String polyphen,
+                                @ApiParam(value = "Sift, protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. >0.1 , ~=tolerant") @QueryParam("sift") String sift,
 //                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
-                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1") @QueryParam("conservation") String conservation,
+                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1,gerp>0.1") @QueryParam("conservation") String conservation,
                                 @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("annot-population-maf") String annotPopulationMaf,
                                 @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
                                 @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
+                                @ApiParam(value = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno") @QueryParam("annot-transcription-flags") String transcriptionFlags,
+                                @ApiParam(value = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"") @QueryParam("annot-gene-trait-id") String geneTraitId,
+                                @ApiParam(value = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"") @QueryParam("annot-gene-trait-name") String geneTraitName,
+                                @ApiParam(value = "List of HPO terms. e.g. \"HP:0000545\"") @QueryParam("annot-hpo") String hpo,
+                                @ApiParam(value = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"") @QueryParam("annot-go") String go,
+                                @ApiParam(value = "List of tissues of interest. e.g. \"tongue\"") @QueryParam("annot-expression") String expression,
+                                @ApiParam(value = "List of protein variant annotation keywords") @QueryParam("annot-protein-keywords") String proteinKeyword,
+                                @ApiParam(value = "List of drug names") @QueryParam("annot-drug") String drug,
+                                @ApiParam(value = "Functional score: {functional_score}[<|>|<=|>=]{number} e.g. cadd_scaled>5.2 , cadd_raw<=0.3") @QueryParam("annot-functional-score") String functional,
+
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
 //                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
+//                                @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
                                 @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
                                 @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,

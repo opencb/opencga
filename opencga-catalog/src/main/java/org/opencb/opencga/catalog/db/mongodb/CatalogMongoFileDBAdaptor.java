@@ -72,7 +72,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         String ownerId = dbAdaptorFactory.getCatalogStudyDBAdaptor().getStudyOwnerId(studyId);
 
         if (filePathExists(studyId, file.getPath())) {
-            throw CatalogDBException.alreadyExists("File from study { id:" + studyId + "}", "path", file.getPath());
+            throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath());
         }
 
         //new File Id
@@ -88,7 +88,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         try {
             fileCollection.insert(fileDocument, null);
         } catch (DuplicateKeyException e) {
-            throw CatalogDBException.alreadyExists("File from study { id:" + studyId + "}", "path", file.getPath());
+            throw CatalogDBException.alreadyExists("File", studyId, "path", file.getPath(), e);
         }
 
         // Update the diskUsage field from the study collection

@@ -135,6 +135,10 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
         return configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
     }
 
+    public VariantReaderUtils getVariantReaderUtils() {
+        return new VariantReaderUtils();
+    }
+
     /**
      * Get the StudyConfigurationManager.
      * <p>
@@ -195,6 +199,8 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
      * @param source VariantSource to fill. Can be null
      * @return Read VariantSource
      * @throws StorageManagerException if the format is not valid or there is an error reading
+     *
+     * @deprecated use {@link VariantReaderUtils#readVariantSource(java.net.URI)}
      */
     @Deprecated
     public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {

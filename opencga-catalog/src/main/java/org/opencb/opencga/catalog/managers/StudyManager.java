@@ -28,6 +28,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -583,6 +584,101 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         studyAclQueryResult.setResult(studyAclList);
 
         return studyAclQueryResult;
+    }
+
+    @Override
+    public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        // Create the list of users
+        List<String> userList;
+        if (users != null && !users.isEmpty()) {
+            userList = Arrays.asList(users.split(","));
+        } else {
+            userList = Collections.emptyList();
+        }
+
+        // Check group exists
+        if (existsGroup(studyId, groupId)) {
+            throw new CatalogException("The group " + groupId + " already exists.");
+        }
+
+        // Check the list of users is ok
+        for (String user : userList) {
+            userDBAdaptor.checkUserExists(user);
+        }
+
+        // Check that none of the users belong to other group
+        StringBuilder errorMessage = new StringBuilder("Cannot create group. These users already belong to other group: ");
+        boolean errorFlag = false;
+        for (String user : userList) {
+            if (memberBelongsToGroup(studyId, user)) {
+                errorMessage.append(user).append(",");
+                errorFlag = true;
+            }
+        }
+
+        if (errorFlag) {
+            throw new CatalogException(errorMessage.toString());
+        }
+
+        // Create the group
+        return studyDBAdaptor.createGroup(studyId, groupId, userList);
+    }
+
+    private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
+        Query query = new Query()
+                .append(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(CatalogStudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        return studyDBAdaptor.count(query).first() > 0;
+    }
+
+    private boolean memberBelongsToGroup(long studyId, String member) throws CatalogDBException {
+        Query query = new Query()
+                .append(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), member);
+        return studyDBAdaptor.count(query).first() > 0;
+    }
+
+    @Override
+    public QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        return null;
+    }
+
+    @Override
+    public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+
+        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+    }
+
+    @Override
+    public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
+                                          @Nullable String setUsers, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        return null;
+    }
+
+    @Override
+    public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        return null;
     }
 
     @Override

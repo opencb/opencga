@@ -10,7 +10,7 @@
 {"collection": "study", "fields": {"_projectId": 1}, "options": {}}
 
 {"collection": "job", "fields": {"name": 1, "_studyId": 1}, "options": {}}
-{"collection": "job", "fields": {"toolId": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "job", "fields": {"toolId": 1, "_studyId": 1}, "options": {}}
 {"collection": "job", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
 {"collection": "job", "fields": {"input": 1}, "options": {}}
 {"collection": "job", "fields": {"output": 1}, "options": {}}
@@ -50,7 +50,7 @@
 {"collection": "individual", "fields": {"_studyId": 1}, "options": {}}
 
 {"collection": "cohort", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
-{"collection": "cohort", "fields": {"type": 1, "_studyId": 1}, "options": {"unique": true}}
+{"collection": "cohort", "fields": {"type": 1, "_studyId": 1}, "options": {}}
 {"collection": "cohort", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}
 {"collection": "cohort", "fields": {"acls.member": 1, "_studyId": 1}, "options": {}}
 {"collection": "cohort", "fields": {"annotationSets.name": 1}, "options": {}}
@@ -58,6 +58,6 @@
 {"collection": "cohort", "fields": {"annotationSets.annotations.name": 1, "annotationSets.annotations.value": 1}, "options": {}}
 
 {"collection": "dataset", "fields": {"name": 1, "_studyId": 1}, "options": {"unique": true}}
-{"collection": "dataset", "fields": {"files": 1}, "options": {"unique": true}}
+{"collection": "dataset", "fields": {"files": 1}, "options": {}}
 {"collection": "dataset", "fields": {"acls.member": 1, "_studyId": 1}, "options": {}}
 {"collection": "dataset", "fields": {"status.name": 1, "_studyId": 1}, "options": {}}

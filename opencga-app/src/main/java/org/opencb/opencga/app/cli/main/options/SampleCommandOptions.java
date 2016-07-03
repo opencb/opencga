@@ -25,12 +25,12 @@ public class SampleCommandOptions {
     public AnnotationSetsInfoCommandOptions annotationSetsInfoCommandOptions;
     public AnnotationSetsDeleteCommandOptions annotationSetsDeleteCommandOptions;
 
+    public AclsCommandOptions aclsCommandOptions;
     public AclsCreateCommandOptions aclsCreateCommandOptions;
     public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
     public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-    public AclsCommandOptions aclsCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -202,7 +202,7 @@ public class SampleCommandOptions {
         public String individualId;
 
         @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
-        public String annotationSetId;
+        public String annotationSetName;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;

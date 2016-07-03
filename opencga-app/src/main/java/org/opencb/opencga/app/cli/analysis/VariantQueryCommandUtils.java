@@ -34,8 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
-import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.AVRO;
-import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.VCF;
+import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
@@ -46,17 +45,35 @@ public class VariantQueryCommandUtils {
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
 
     public enum VariantOutputFormat {
-        VCF,
+        VCF(false),
         JSON,
         AVRO,
-        STATS,
+        STATS(false),
         CELLBASE;
+
+        private final boolean multiStudy;
+
+        VariantOutputFormat() {
+            this.multiStudy = true;
+        }
+
+        VariantOutputFormat(boolean multiStudy) {
+            this.multiStudy = multiStudy;
+        }
+
+        public boolean isMultiStudyOutput() {
+            return multiStudy;
+        }
 
         static boolean isGzip(String value) {
             return value.endsWith(".gz");
         }
 
-        static VariantOutputFormat value(String value) {
+        static boolean isSnappy(String value) {
+            return value.endsWith(".snappy");
+        }
+
+        static VariantOutputFormat safeValueOf(String value) {
             int index = value.indexOf(".");
             if (index >= 0) {
                 value = value.substring(0, index);
@@ -142,6 +159,8 @@ public class VariantQueryCommandUtils {
         addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
         addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
         addParam(query, ANNOT_HPO, queryVariantsOptions.hpo);
+        addParam(query, ANNOT_GO, queryVariantsOptions.go);
+        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.expression);
         addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
         addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
 
@@ -191,15 +210,15 @@ public class VariantQueryCommandUtils {
                 && StringUtils.isEmpty(queryVariantsOptions.rank);
 
 
-        String outputFormat = "vcf";
+        VariantOutputFormat of = VCF;
         if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            if (queryVariantsOptions.outputFormat.equals("json") || queryVariantsOptions.outputFormat.equals("json.gz")) {
-                outputFormat = "json";
+            of = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+            if (of == null) {
+                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
             }
         }
 
-        outputFormat = outputFormat.toLowerCase();
-        if (returnVariants && (outputFormat.startsWith("vcf") || outputFormat.startsWith("stats"))) {
+        if (returnVariants && !of.isMultiStudyOutput()) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
@@ -253,10 +272,9 @@ public class VariantQueryCommandUtils {
         boolean gzip = true;
         VariantOutputFormat outputFormat;
         if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            outputFormat = VariantOutputFormat.value(queryVariantsOptions.outputFormat);
+            outputFormat = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
             if (outputFormat == null) {
-                logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
-                throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
+                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
             } else {
                 gzip = VariantOutputFormat.isGzip(queryVariantsOptions.outputFormat);
             }
@@ -285,6 +303,11 @@ public class VariantQueryCommandUtils {
         logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
 
         return outputStream;
+    }
+
+    public static ParameterException variantFormatNotSupported(String outputFormat) {
+        logger.error("Format '{}' not supported", outputFormat);
+        return new ParameterException("Format '" + outputFormat + "' not supported");
     }
 
     private static void addParam(Query query, VariantDBAdaptor.VariantQueryParams key, String value) {

@@ -12,11 +12,13 @@ import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.zip.GZIPInputStream;
 
 /**
  * Created on 31/03/16.
@@ -70,7 +72,7 @@ public class VariantReaderUtils {
     }
 
     public static String getMetaFromInputFile(String input) {
-        return input.replace("variants.", "file.").replace("file.avro", "file.json");
+        return input.replace("variants.", "file.").replace("file.avro", "file.json").replace("file.proto", "file.json");
     }
 
     /**
@@ -78,7 +80,7 @@ public class VariantReaderUtils {
      *
      * InputStream must point to a json object.
      *
-     * @param inputStream Input variant file (avro, json, vcf)
+     * @param inputStream Input variant source file
      * @return Read VariantSource
      * @throws IOException if there is an error reading
      */
@@ -111,6 +113,18 @@ public class VariantReaderUtils {
             source = new VariantSource("", "", "", "");
         }
 
+        // If it's a sourceFile
+        if (input.toString().endsWith("file.json.gz") || input.toString().endsWith("file.json")) {
+            boolean gzip = input.toString().endsWith("file.json.gz");
+            try (InputStream inputStream = gzip
+                    ? new GZIPInputStream(new FileInputStream(input.toFile()))
+                    : new FileInputStream(input.toFile())) {
+                return VariantReaderUtils.readVariantSource(inputStream);
+            } catch (IOException | RuntimeException e) {
+                throw new StorageManagerException("Unable to read VariantSource", e);
+            }
+        }
+
         VariantReader reader = getVariantReader(input, source);
         try {
             reader.open();
@@ -123,7 +137,7 @@ public class VariantReaderUtils {
             }
             reader.post();
             reader.close();
-        } catch (Exception e) {
+        } catch (IOException | RuntimeException e) {
             throw new StorageManagerException("Unable to read VariantSource", e);
         }
 

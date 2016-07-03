@@ -110,7 +110,7 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
                 }
                 Map<String, ObjectMap> myIndexes = new HashMap<>();
                 myIndexes.put("fields", new ObjectMap((Map) hashMap.get("fields")));
-                myIndexes.put("options", new ObjectMap((Map) hashMap.get("options")));
+                myIndexes.put("options", new ObjectMap((Map) hashMap.getOrDefault("options", Collections.emptyMap())));
                 indexes.get(collection).add(myIndexes);
             } catch (IOException e) {
                 e.printStackTrace();

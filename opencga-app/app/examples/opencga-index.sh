@@ -13,9 +13,9 @@ export OPENCGA_ANALYSIS_BIN=$OPENCGA_HOME'/bin/opencga-analysis.sh'
 
 
 user=admin
-password=admin
-project_alias=1000g
-study_alias=ph1
+password=demo
+project_alias=p1
+study_alias=s1
 uri_arg=""
 study_uri=""
 
@@ -26,6 +26,7 @@ pedigree_file=false
 link=false
 enqueue=""
 annotate=""
+aggrergation="NONE"
 calculateStats=""
 log_level=info
 input_files=()
@@ -37,24 +38,25 @@ function getFileId() {
 }
 
 function main() {
-while getopts "htu:s:i:p:l:U:d:qacxTL" opt; do
+while getopts "htu:s:i:p:l:U:d:qacg:xTL" opt; do
 	#echo $opt "=" $OPTARG
 	case "$opt" in
 	h)
 	    echo "Usage: "
 	    echo "       -h             :   "
-	    echo "       -u user_name   : User name. [admin] "
-	    echo "       -s study_alias : Study alias. [ph1] "
+	    echo "       -u user_name   : User name. [${user}] "
+	    echo "       -s study_alias : Study alias. [${study_alias}] "
 	    echo "    *  -i vcf_file    : VCF input file  "
 	    echo "       -x             : Link file instead of copy  "
 	    echo "       -p ped_file    : Pedigree input file  "
-	    echo "       -l log_level   : error, warn, info, debug [info] "
+	    echo "       -l log_level   : error, warn, info, debug [${log_level}] "
 	    echo "       -d database    : database name [opencga_test_<userId>] "
 	    echo "       -T             : If present it only runs the transform stage. Loading requires -L "
 	    echo "       -L             : If present only the load stage is executed. Transformation requires -T "
 	    echo "       -t             : Transform and Load in 2 steps [DEPRECATED] "
 	    echo "       -a             : Annotate database  "
 	    echo "       -c             : Calculate stats  "
+	    echo "       -g             : Aggregated study type [BASIC], accepted {BASIC, EVS, EXAC} "
 	    echo "       -U uri         : Study URI location "
 	    echo "       -q             : Enqueue index jobs. Leave jobs \"PREPARED\". Require a daemon."
 	    #echo "       -             :   "
@@ -122,6 +124,10 @@ while getopts "htu:s:i:p:l:U:d:qacxTL" opt; do
 	    calculateStats="--calculate-stats"
 	    echo "Calculate stats over cohort ALL"
 	    ;;
+	g)
+	    aggrergation=${OPTARG}
+	    echo "Aggregated stats ${aggrergation}"
+	    ;;
 	q)
 	    enqueue="--enqueue"
 	    echo "Queuing index jobs"
@@ -152,15 +158,21 @@ $OPENCGA_BIN users create -u $user -p $password -n $user -e user@email.com --log
 sid=`$OPENCGA_BIN users login -u $user -p $password --log-level ${log_level}`
 
 
-$OPENCGA_BIN projects create -a ${project_alias} -d "1000 genomes" -n "1000 Genomes" --session-id $sid --log-level ${log_level}
+$OPENCGA_BIN projects create -a ${project_alias} -d "Default project" -n "Default project" --session-id $sid --log-level ${log_level}
 $OPENCGA_BIN users list --session-id $sid -R
 
 if [ "$database" == "" ]; then
 	database="opencga_test_${user}"
 fi
 
-$OPENCGA_BIN studies create -a ${study_alias}  -n "Phase 1" --session-id $sid --project-id $user@${project_alias} -d "Default study" --type CONTROL_SET --log-level ${log_level} $uri_arg "$study_uri" --datastore "variant:mongodb:${database}"
-$OPENCGA_BIN files create-folder -s $user@${project_alias}:${study_alias} --session-id $sid --log-level ${log_level} --path data/jobs/
+$OPENCGA_BIN studies create -a ${study_alias}  -n "Study ${study_alias}" --session-id $sid --project-id $user@${project_alias} \
+            -d "Default study"                         \
+            --type CONTROL_SET                         \
+            --aggregation-type ${aggrergation}         \
+            $uri_arg "$study_uri"                      \
+            --datastore "variant:mongodb:${database}"  \
+            --log-level ${log_level}
+$OPENCGA_BIN files create-folder -s $user@${project_alias}:${study_alias} --session-id $sid --log-level ${log_level} --path data/jobs/ --parents
 
 
 $OPENCGA_BIN users list --session-id $sid -R

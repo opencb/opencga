@@ -10,6 +10,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
@@ -196,6 +197,67 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * the study id is not valid or the members given do not exist.
      */
     QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
+
+    //-----------------     GROUPS         ------------------
+
+    /**
+     * Creates a group in the study.
+     *
+     * @param studyStr study where the group will be added.
+     * @param groupId name of the group that will be used as a unique identifier.
+     * @param userList Comma separated list of users that will be added to the group.
+     * @param sessionId session id of the user that wants to perform this action.
+     * @return the group that has been created.
+     * @throws CatalogException when the group already exists or any of the users already belong to a group.
+     */
+    QueryResult<Group> createGroup(String studyStr, String groupId, String userList, String sessionId) throws CatalogException;
+
+    /**
+     * Obtain all the groups that are present in the study.
+     *
+     * @param studyStr study.
+     * @param sessionId session id of the user that wants to perform this action.
+     * @return all the groups present in the study.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException;
+
+    /**
+     * Obtain the group asked.
+     *
+     * @param studyStr study.
+     * @param groupId group asked.
+     * @param sessionId session id of the user that wants to perform this action.
+     * @return the group asked from the study.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException;
+
+    /**
+     * Update the members of a group.
+     *
+     * @param studyStr study.
+     * @param groupId group id.
+     * @param addUsers Comma separated list of users that will be added to the group.
+     * @param removeUsers Comma separated list of users that will be removed from the group.
+     * @param setUsers Comma separated list of users that will be set to the group. Previous users will be removed.
+     * @param sessionId session id of the user that wants to perform this action.
+     * @return the group after the update action.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
+                                   @Nullable String setUsers, String sessionId) throws CatalogException;
+
+    /**
+     * Delete the group.
+     *
+     * @param studyStr study.
+     * @param groupId group id.
+     * @param sessionId session id of the user that wants to perform this action.
+     * @return the group recently deleted.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException;
 
     // DISEASE PANEL METHODS
     /**

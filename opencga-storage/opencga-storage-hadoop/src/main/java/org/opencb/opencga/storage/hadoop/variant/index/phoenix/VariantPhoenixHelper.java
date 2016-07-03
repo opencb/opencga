@@ -4,6 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.QueryUtil;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
@@ -16,6 +17,7 @@ import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Properties;
 
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION;
 import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper.VariantColumn.*;
 
 /**
@@ -69,6 +71,9 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public static final String POPULATION_FREQUENCY_PREFIX = "PF_";
+    public static final String FUNCTIONAL_SCORE_PREFIX = "FS_";
+
     public enum VariantColumn implements Column {
         CHROMOSOME("CHROMOSOME", PVarchar.INSTANCE),
         POSITION("POSITION", PUnsignedInt.INSTANCE),
@@ -79,14 +84,22 @@ public class VariantPhoenixHelper {
         GENES("GENES", PVarcharArray.INSTANCE),
         BIOTYPE("BIOTYPE", PVarcharArray.INSTANCE),
         TRANSCRIPTS("TRANSCRIPTS", PVarcharArray.INSTANCE),
+        TRANSCRIPTION_FLAGS("FLAGS", PVarcharArray.INSTANCE),
+        GENE_TRAITS_NAME("GT_NAME", PVarcharArray.INSTANCE),
+        GENE_TRAITS_ID("GT_ID", PVarcharArray.INSTANCE),
+        PROTEIN_KEYWORDS("PROT_KW", PVarcharArray.INSTANCE),
+        DRUG("DRUG", PVarcharArray.INSTANCE),
 
         //Protein substitution scores
         POLYPHEN("POLYPHEN", PFloatArray.INSTANCE),
+        POLYPHEN_DESC("POLYPHEN_DESC", PVarcharArray.INSTANCE),
         SIFT("SIFT", PFloatArray.INSTANCE),
+        SIFT_DESC("SIFT_DESC", PVarcharArray.INSTANCE),
 
         //Conservation Scores
         PHASTCONS("PHASTCONS", PFloat.INSTANCE),
         PHYLOP("PHYLOP", PFloat.INSTANCE),
+        GERP("GERP", PFloat.INSTANCE),
 
         FULL_ANNOTATION("FULL_ANNOTATION", PVarchar.INSTANCE);
 
@@ -136,8 +149,8 @@ public class VariantPhoenixHelper {
     }
 
     public Connection newJdbcConnection(HBaseCredentials credentials) throws SQLException {
+      return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost()); // this one was working before hbase version
 //        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost(), credentials.getUser(), credentials.getPass());
-        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost());
     }
 
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
@@ -181,21 +194,26 @@ public class VariantPhoenixHelper {
     }
 
     public static String buildCreateView(String tableName, String columnFamily) {
-        return "CREATE VIEW IF NOT EXISTS \"" + tableName + "\" " + "("
-                + CHROMOSOME + " " + CHROMOSOME.sqlType() + " NOT NULL, "
-                + POSITION + " " + POSITION.sqlType() + " NOT NULL, "
-                + REFERENCE + " " + REFERENCE.sqlType() + " , "
-                + ALTERNATE + " " + ALTERNATE.sqlType() + " , "
-                + GENES + " " + GENES.sqlType() + " , "
-                + BIOTYPE + " " + BIOTYPE.sqlType() + " , "
-                + SO + " " + SO.sqlType() + " , "
-                + POLYPHEN + " " + POLYPHEN.sqlType() + " , "
-                + SIFT + " " + SIFT.sqlType() + " , "
-                + PHYLOP + " " + PHYLOP.sqlType() + " , "
-                + PHASTCONS + " " + PHASTCONS.sqlType() + " , "
-                + FULL_ANNOTATION + " " + FULL_ANNOTATION.sqlType() + " "
-                + "CONSTRAINT PK PRIMARY KEY (" + CHROMOSOME + ", " + POSITION + ", " + REFERENCE + ", " + ALTERNATE + ") " + ") "
-                + "DEFAULT_COLUMN_FAMILY='" + columnFamily + "'";
+        StringBuilder sb = new StringBuilder().append("CREATE VIEW IF NOT EXISTS \"").append(tableName).append("\" ").append("(");
+        for (VariantColumn variantColumn : VariantColumn.values()) {
+            switch (variantColumn) {
+                case CHROMOSOME:
+                case POSITION:
+                    sb.append(" ").append(variantColumn).append(" ").append(variantColumn.sqlType()).append(" NOT NULL , ");
+                    break;
+                default:
+                    sb.append(" ").append(variantColumn).append(" ").append(variantColumn.sqlType()).append(" , ");
+                    break;
+            }
+        }
+
+        return sb.append(" ")
+                .append("CONSTRAINT PK PRIMARY KEY (")
+                    .append(CHROMOSOME).append(", ")
+                    .append(POSITION).append(", ")
+                    .append(REFERENCE).append(", ")
+                    .append(ALTERNATE).append(") ").append(") ")
+                .append("DEFAULT_COLUMN_FAMILY='").append(columnFamily).append("'").toString();
     }
 
     public String buildAlterViewAddColumn(String tableName, String column, String type) {
@@ -204,6 +222,43 @@ public class VariantPhoenixHelper {
 
     public String buildAlterViewAddColumn(String tableName, String column, String type, boolean ifNotExists) {
         return "ALTER VIEW \"" + tableName + "\" ADD " + (ifNotExists ? "IF NOT EXISTS " : "") + "\"" + column + "\" " + type;
+    }
+
+    public static Column getFunctionalScoreColumn(String source) {
+        return Column.build(FUNCTIONAL_SCORE_PREFIX + source.toUpperCase(), PFloat.INSTANCE);
+    }
+
+    public static Column getPopulationFrequencyColumn(String study, String population) {
+        return Column.build(POPULATION_FREQUENCY_PREFIX + study.toUpperCase() + ":" + population.toUpperCase(), PFloat.INSTANCE);
+    }
+
+    public static Column getPopulationFrequencyColumn(String studyPopulation) {
+        return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopulation.toUpperCase(), PFloat.INSTANCE);
+    }
+
+    public static Column getConservationScoreColumn(String source)
+            throws VariantQueryException {
+        return getConservationScoreColumn(source, source, true);
+    }
+
+    public static Column getConservationScoreColumn(String source, String rawValue, boolean throwException)
+            throws VariantQueryException {
+        source = source.toUpperCase();
+        switch (source) {
+            case "PHASTCONS":
+                return PHASTCONS;
+            case "PHYLOP":
+                return PHYLOP;
+            case "GERP":
+                return GERP;
+            default:
+                if (throwException) {
+                    throw VariantQueryException.malformedParam(ANNOT_CONSERVATION, rawValue, "Unknown conservation value.");
+                } else {
+                    logger.warn("Unknown Conservation source {}", rawValue);
+                }
+                return null;
+        }
     }
 
     public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {

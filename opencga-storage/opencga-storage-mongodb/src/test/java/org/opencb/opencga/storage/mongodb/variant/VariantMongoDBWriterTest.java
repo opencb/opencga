@@ -37,7 +37,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.run.Task;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -466,7 +466,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
 
     public MongoDBVariantWriteResult stageVariants(StudyConfiguration studyConfiguration, List<Variant> variants, int fileId) {
         MongoDBCollection stage = dbAdaptor.getDB().getCollection("stage");
-        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, variants.size());
+        MongoDBVariantStageLoader variantStageLoader = new MongoDBVariantStageLoader(stage, studyConfiguration.getStudyId(), fileId, variants.size(), false);
 
         variantStageLoader.insert(variants);
 
@@ -484,7 +484,7 @@ public class VariantMongoDBWriterTest implements MongoVariantStorageManagerTestU
         MongoDBCollection variantsCollection = dbAdaptor.getDB().getCollection("variants");
         MongoDBVariantStageReader reader = new MongoDBVariantStageReader(stage, studyConfiguration.getStudyId(), chromosomes);
         MongoDBVariantMerger dbMerger = new MongoDBVariantMerger(dbAdaptor, studyConfiguration, fileIds,
-                variantsCollection, reader.countAproxNumVariants(), studyConfiguration.getIndexedFiles());
+                variantsCollection, reader.countAproxNumVariants(), studyConfiguration.getIndexedFiles(), false);
 
         reader.open();
         reader.pre();

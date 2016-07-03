@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.storage.core.exceptions;
 
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
+
 /**
  * Created by jacobo on 1/02/15.
  */
@@ -27,5 +29,22 @@ public class StorageManagerException extends Exception {
 
     public StorageManagerException(String message) {
         super(message);
+    }
+
+
+    public static StorageManagerException alreadyLoaded(int fileId, StudyConfiguration sc) {
+        return unableToExecute("Already loaded", fileId, sc);
+    }
+
+    public static StorageManagerException alreadyLoaded(int fileId, String fileName) {
+        return unableToExecute("Already loaded", fileId, fileName);
+    }
+
+    public static StorageManagerException unableToExecute(String action, int fileId, StudyConfiguration sc) {
+        return unableToExecute(action, fileId, sc.getFileIds().inverse().get(fileId));
+    }
+
+    public static StorageManagerException unableToExecute(String message, int fileId, String fileName) {
+        return new StorageManagerException("Unable to perform action over file \"" + fileName + "\" (" + fileId + "). " + message);
     }
 }

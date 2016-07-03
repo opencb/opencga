@@ -29,7 +29,7 @@ import java.io.IOException;
  */
 public class VariableSetClient extends AbstractParentClient<VariableSet, VariableSet> {
 
-    private static final String VARIABLES_URL = "variables";
+    private static final String VARIABLES_URL = "variableSet";
 
     protected VariableSetClient(String sessionId, ClientConfiguration configuration, String userId) {
         super(userId, sessionId, configuration);
@@ -56,9 +56,15 @@ public class VariableSetClient extends AbstractParentClient<VariableSet, Variabl
         return execute(VARIABLES_URL, "field/delete", params, GET, VariableSet.class);
     }
 
-    public QueryResponse<VariableSet> renameVariable(String variableSetid, String oldVariableName, String newVariableName, ObjectMap params)
+    public QueryResponse<VariableSet> fieldRename(String variableSetId, String oldVariableName, String newVariableName, ObjectMap params)
             throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "variableSetId", variableSetid, "oldName", oldVariableName, "newName", newVariableName);
-        return execute(VARIABLES_URL, "field/rename", params, GET, VariableSet.class);
+        params = addParamsToObjectMap(params, "variableSetId", variableSetId, "oldName", oldVariableName, "newName", newVariableName);
+        return execute(VARIABLES_URL, variableSetId, "field", null, "rename", params, GET, VariableSet.class);
+    }
+
+    public QueryResponse<VariableSet> fieldDelete(String variableSetId, String variableName, ObjectMap params)
+            throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "variableSetId", variableSetId, "variableName", variableName);
+        return execute(VARIABLES_URL, variableSetId, "field", null, "delete", params, GET, VariableSet.class);
     }
 }
