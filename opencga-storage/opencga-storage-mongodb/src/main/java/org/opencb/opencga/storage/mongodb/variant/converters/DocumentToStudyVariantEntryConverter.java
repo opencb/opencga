@@ -97,7 +97,7 @@ public class DocumentToStudyVariantEntryConverter implements ComplexTypeConverte
      * @param returnedFiles    If present, reads the information of this files from FILES_FIELD
      * @param samplesConverter The object used to convert the samples. If null, won't convert
      */
-    public DocumentToStudyVariantEntryConverter(boolean includeSrc, List<Integer> returnedFiles,
+    public DocumentToStudyVariantEntryConverter(boolean includeSrc, Collection<Integer> returnedFiles,
                                                 DocumentToSamplesConverter samplesConverter) {
         this(includeSrc);
         this.returnedFiles = (returnedFiles != null) ? new HashSet<>(returnedFiles) : null;
