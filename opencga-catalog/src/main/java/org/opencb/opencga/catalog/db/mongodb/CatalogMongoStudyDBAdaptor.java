@@ -402,6 +402,48 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         return endQuery("getGroup", startTime, groups);
     }
 
+    @Override
+    public QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Check that the members exist.
+        for (String member : members) {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
+        }
+
+        // Check that the members do not belong to other group.
+        List<Group> result = getGroup(studyId, null, members).getResult();
+        if (result.size() > 0) {
+            Set<String> usersSet = new HashSet<>(members.size());
+            usersSet.addAll(members.stream().collect(Collectors.toList()));
+
+            for (Group group : result) {
+                // Remove the members that already existed in other groups different than the one to be set.
+                if (!group.getName().equals(groupId)) {
+                    List<String> usersToRemove = new ArrayList<>();
+                    for (String userId : group.getUserIds()) {
+                        if (usersSet.contains(userId)) {
+                            usersToRemove.add(userId);
+                        }
+                    }
+                    if (usersToRemove.size() > 0) {
+                        removeUsersFromGroup(studyId, group.getName(), usersToRemove);
+                    }
+                }
+            }
+        }
+
+        Document query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId);
+        Document update = new Document("$set", new Document("groups.$.userIds", members));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Unable to set users to group " + groupId);
+        }
+
+        return endQuery("set users to group", startTime, getGroup(studyId, null, groupId, null));
+    }
+
     @Deprecated
     @Override
     public QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options)
@@ -441,10 +483,9 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
+    public QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        checkStudyId(studyId);
         // Check that the members exist.
         for (String member : members) {
             dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
@@ -466,39 +507,27 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
                         }
                     }
                     if (usersToRemove.size() > 0) {
-                        removeMembersFromGroup(studyId, group.getName(), usersToRemove);
+                        removeUsersFromGroup(studyId, group.getName(), usersToRemove);
                     }
                 }
             }
         }
 
-        Document query;
-        Document update;
-        if (groupExists(studyId, groupId)) {
-            query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId);
-            update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
-        } else {
-            Group group = new Group(groupId, members);
-            query = new Document(PRIVATE_ID, studyId);
-            update = new Document("$push", new Document(QueryParams.GROUPS.key(), getMongoDBDocument(group, "Group")));
-        }
+        Document query = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId);
+        Document update = new Document("$addToSet", new Document("groups.$.userIds", new Document("$each", members)));
         QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            throw new CatalogDBException("Unable to add members to group " + groupId);
+            throw new CatalogDBException("Unable to add members to group " + groupId + ". Maybe the users already belong to the group?");
         }
 
-        return endQuery("addMemberToGroup", startTime, getGroup(studyId, null, groupId, null));
+        return endQuery("add users to group", startTime, getGroup(studyId, null, groupId, null));
     }
 
     @Override
-    public void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
-        checkStudyId(studyId);
+    public void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException {
         for (String member : members) {
             dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(member);
-        }
-        if (!groupExists(studyId, groupId)) {
-            throw new CatalogDBException("Group \"" + groupId + "\" does not exist in study " + studyId);
         }
 
         Bson and = Filters.and(Filters.eq(PRIVATE_ID, studyId), Filters.eq("groups.name", groupId));
@@ -507,12 +536,19 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove members from group " + groupId);
         }
+    }
 
-        // Remove the group in case there are no users in it
-        Bson queryBson = new Document(PRIVATE_ID, studyId).append(QueryParams.GROUP_NAME.key(), groupId).append(
-                QueryParams.GROUP_USER_IDS.key(), new Document("$eq", Collections.emptyList()));
-        pull = new Document("$pull", new Document("groups", new Document("userIds", Collections.emptyList())));
-        studyCollection.update(queryBson, pull, null);
+    @Override
+    public void deleteGroup(long studyId, String groupId) throws CatalogDBException {
+        Bson queryBson = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.GROUP_NAME.key(), groupId);
+        Document pull = new Document("$pull", new Document("groups", new Document("name", groupId)));
+        QueryResult<UpdateResult> update = studyCollection.update(queryBson, pull, null);
+
+        if (update.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Could not remove the group " + groupId);
+        }
     }
 
     @Override

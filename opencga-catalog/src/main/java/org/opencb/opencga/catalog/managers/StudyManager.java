@@ -593,6 +593,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         studyDBAdaptor.checkStudyId(studyId);
 
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
 
         // Fix the groupId
         if (!groupId.startsWith("@")) {
@@ -653,7 +654,23 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     public QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         long studyId = getStudyId(userId, studyStr);
-        return null;
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogStudyDBAdaptor.QueryParams.GROUPS.key());
+
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+        List<Group> groupList;
+        if (studyQueryResult != null && studyQueryResult.getNumResults() == 1) {
+            groupList = studyQueryResult.first().getGroups();
+        } else {
+            groupList = Collections.emptyList();
+        }
+
+        return new QueryResult<>("Get all groups", studyQueryResult.getDbTime(), groupList.size(), groupList.size(),
+                studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), groupList);
     }
 
     @Override
@@ -662,6 +679,12 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         long studyId = getStudyId(userId, studyStr);
         studyDBAdaptor.checkStudyId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
 
         return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
     }
@@ -671,14 +694,61 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                                           @Nullable String setUsers, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         long studyId = getStudyId(userId, studyStr);
-        return null;
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        // Check the group exists
+        Query query = new Query()
+                .append(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(CatalogStudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        if (studyDBAdaptor.count(query).first() == 0) {
+            throw new CatalogException("The group " + groupId + " does not exist.");
+        }
+
+        List<String> userList;
+        if (setUsers != null) {
+            userList = Arrays.asList(setUsers.split(","));
+            studyDBAdaptor.setUsersToGroup(studyId, groupId, userList);
+        } else {
+            if (addUsers != null) {
+                userList = Arrays.asList(addUsers.split(","));
+                studyDBAdaptor.addUsersToGroup(studyId, groupId, userList);
+            }
+
+            if (removeUsers != null) {
+                userList = Arrays.asList(removeUsers.split(","));
+                studyDBAdaptor.removeUsersFromGroup(studyId, groupId, userList);
+            }
+        }
+
+        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
     }
 
     @Override
     public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         long studyId = getStudyId(userId, studyStr);
-        return null;
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+        group.setId("Delete group");
+
+        studyDBAdaptor.deleteGroup(studyId, groupId);
+
+        return group;
     }
 
     @Override

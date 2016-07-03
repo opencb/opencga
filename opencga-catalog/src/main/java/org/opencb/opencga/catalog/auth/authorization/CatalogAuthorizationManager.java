@@ -1279,7 +1279,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
-        return studyDBAdaptor.addMembersToGroup(studyId, groupId, members);
+        return studyDBAdaptor.addUsersToGroup(studyId, groupId, members);
     }
 
     @Override
@@ -1288,7 +1288,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         if (!groupId.startsWith("@")) {
             groupId = "@" + groupId;
         }
-        studyDBAdaptor.removeMembersFromGroup(studyId, groupId, members);
+        studyDBAdaptor.removeUsersFromGroup(studyId, groupId, members);
     }
 
     @Override

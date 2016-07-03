@@ -536,24 +536,11 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups")
-    @ApiOperation(value = "Return the groups present in the studies [PENDING]", position = 13, response = Group[].class)
+    @ApiOperation(value = "Return the groups present in the studies", position = 13, response = Group[].class)
     public Response getGroups(@ApiParam(value = "Comma separated list of studies", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-//            long studyId = catalogManager.getStudyId(studyIdStr);
-//            List<QueryResult> queryResults = new LinkedList<>();
-//            if (!addUsers.isEmpty() && !removeUsers.isEmpty()) {
-//                return createErrorResponse("groups", "Must specify at least one user to add or remove from one group");
-//            }
-//            if (!addUsers.isEmpty()) {
-//                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUsers, sessionId));
-//            }
-//            if (!removeUsers.isEmpty()) {
-//                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUsers, sessionId));
-//            }
-//            if (queryResults.isEmpty()) {
-//                return createErrorResponse("groups", "Must specify at least a user to add or remove from one group");
-//            }
-            return createOkResponse(null);
+            QueryResult<Group> allGroups = catalogManager.getAllGroups(studyIdStr, sessionId);
+            return createOkResponse(allGroups);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -576,11 +563,12 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/info")
-    @ApiOperation(value = "Return the group [PENDING]", position = 15)
+    @ApiOperation(value = "Return the group", position = 15)
     public Response getGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                              @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
         try {
-            return createOkResponse(null);
+            QueryResult<Group> group = catalogManager.getGroup(studyIdStr, groupId, sessionId);
+            return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -588,14 +576,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/update")
-    @ApiOperation(value = "Updates the members of the group [PENDING]", position = 16)
+    @ApiOperation(value = "Updates the members of the group", position = 16)
     public Response addMembersToGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
-                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
-                                      @ApiParam(value = "Comma separated list of users that will be part of the group. Previous users will be removed.", required = false) @DefaultValue("") @QueryParam("setUsers") String setUsers,
-                                      @ApiParam(value = "Comma separated list of users that will be removed from the group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
+                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @QueryParam("addUsers") String addUsers,
+                                      @ApiParam(value = "Comma separated list of users that will be part of the group. Previous users will be removed.", required = false) @QueryParam("setUsers") String setUsers,
+                                      @ApiParam(value = "Comma separated list of users that will be removed from the group", required = false) @QueryParam("removeUsers") String removeUsers) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateGroup(studyIdStr, groupId, addUsers, removeUsers, setUsers, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -603,12 +591,12 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/delete")
-    @ApiOperation(value = "Delete the group [PENDING]", position = 17, notes = "Delete the group selected from the study. When filled in with a list of users," +
+    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study. When filled in with a list of users," +
             " it will just take them out from the group leaving the group untouched.")
     public Response deleteMembersFromGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                            @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.deleteGroup(studyIdStr, groupId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

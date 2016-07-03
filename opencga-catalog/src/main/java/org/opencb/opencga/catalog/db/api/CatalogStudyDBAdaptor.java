@@ -115,6 +115,17 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException;
 
     /**
+     * Adds the members to the groupId getting rid of the former users.
+     *
+     * @param studyId study id.
+     * @param groupId group id.
+     * @param members new list of users that will compose the group.
+     * @return The group after being updated.
+     * @throws CatalogDBException when any of the members do not exist.
+     */
+    QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
      *
      * @param studyId studyId
@@ -123,7 +134,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @return The group that has been updated/created.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.
@@ -133,7 +144,16 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param members List of members that are going to be removed from the group.
      * @throws CatalogDBException when any of the studyId, groupId or members do not exist.
      */
-    void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
+     * Delete a group.
+     *
+     * @param studyId study id.
+     * @param groupId Group id to be deleted.
+     * @throws CatalogDBException if the groupId could not be removed.
+     */
+    void deleteGroup(long studyId, String groupId) throws CatalogDBException;
 
     /**
      * Adds the studyAcl given to the study.

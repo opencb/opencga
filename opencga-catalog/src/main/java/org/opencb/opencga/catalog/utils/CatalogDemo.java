@@ -84,7 +84,7 @@ public final class CatalogDemo {
         // user5 will have the role "admin"
         catalogManager.shareStudy(studyId, "user5", Collections.emptyList(), "admin", false, userSessions.get("user1"));
         // user5 will add the rest of users. user2, user3 and user4 go to group "members"
-        catalogManager.addUsersToGroup(studyId, "members", "user2,user3,user4", sessionId);
+        catalogManager.createGroup(Long.toString(studyId), "members", "user2,user3,user4", sessionId);
 //        // @members will have the role "analyst"
         catalogManager.shareStudy(studyId, "@members", Collections.emptyList(), "analyst", false, sessionId);
 //        // Add anonymous user to the role "denyAll". Later we will give it permissions to see some concrete samples.

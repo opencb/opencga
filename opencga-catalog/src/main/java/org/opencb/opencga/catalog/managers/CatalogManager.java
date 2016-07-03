@@ -653,6 +653,23 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.createGroup(studyId, groupId, userList, sessionId);
     }
 
+    public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        return studyManager.getGroup(studyStr, groupId, sessionId);
+    }
+
+    public QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException {
+        return studyManager.getAllGroups(studyStr, sessionId);
+    }
+
+    public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
+                                   @Nullable String setUsers, String sessionId) throws CatalogException {
+        return studyManager.updateGroup(studyStr, groupId, addUsers, removeUsers, setUsers, sessionId);
+    }
+
+    public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        return studyManager.deleteGroup(studyStr, groupId, sessionId);
+    }
+
     @Deprecated
     public QueryResult addUsersToGroup(long studyId, String groupId, String userIds, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
