@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.models.acls.IndividualAcl;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -40,6 +41,8 @@ public class Individual {
     private Population population;
     private String creationDate;
     private Status status;
+    private List<OntologyTerm> ontologyTerms;
+
     private List<IndividualAcl> acls;
     private List<AnnotationSet> annotationSets;
 
@@ -73,13 +76,13 @@ public class Individual {
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
                       Population population, Status status, List<IndividualAcl> acls, List<AnnotationSet> annotationSets,
                       Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, gender, race, species, population, TimeUtils.getTime(), status, acls,
-                annotationSets, attributes);
+        this(id, name, fatherId, motherId, family, gender, race, species, population, TimeUtils.getTime(), status, Collections.emptyList(),
+                acls, annotationSets, attributes);
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
-                      Population population, String creationDate, Status status, List<IndividualAcl> acls,
-                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                      Population population, String creationDate, Status status, List<OntologyTerm> ontologyTerms,
+                      List<IndividualAcl>  acls, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -91,6 +94,7 @@ public class Individual {
         this.population = population;
         this.creationDate = creationDate;
         this.status = status;
+        this.ontologyTerms = ontologyTerms;
         this.acls = acls;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -321,6 +325,7 @@ public class Individual {
         sb.append(", population=").append(population);
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
+        sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", acls=").append(acls);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -424,6 +429,15 @@ public class Individual {
 
     public Individual setStatus(Status status) {
         this.status = status;
+        return this;
+    }
+
+    public List<OntologyTerm> getOntologyTerms() {
+        return ontologyTerms;
+    }
+
+    public Individual setOntologyTerms(List<OntologyTerm> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
         return this;
     }
 

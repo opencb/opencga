@@ -33,6 +33,7 @@ public class Sample {
     private String creationDate;
     private Status status;
     private String description;
+    private List<OntologyTerm> ontologyTerms;
 
     private List<SampleAcl> acls;
     private List<AnnotationSet> annotationSets;
@@ -56,13 +57,15 @@ public class Sample {
         this.creationDate = TimeUtils.getTime();
         this.status = new Status();
         this.description = description;
+        this.ontologyTerms = Collections.emptyList();
         this.acls = acls;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
 
     public Sample(long id, String name, String source, long individualId, String creationDate, Status status, String description,
-                  List<SampleAcl> acls, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                  List<OntologyTerm> ontologyTerms, List<SampleAcl> acls, List<AnnotationSet> annotationSets,
+                  Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.source = source;
@@ -70,6 +73,7 @@ public class Sample {
         this.creationDate = creationDate;
         this.status = status;
         this.description = description;
+        this.ontologyTerms = ontologyTerms;
         this.acls = acls;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -85,6 +89,7 @@ public class Sample {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", acls=").append(acls);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -152,6 +157,15 @@ public class Sample {
 
     public Sample setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public List<OntologyTerm> getOntologyTerms() {
+        return ontologyTerms;
+    }
+
+    public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
         return this;
     }
 
