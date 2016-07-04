@@ -26,6 +26,7 @@ import org.opencb.opencga.storage.mongodb.variant.VariantMongoDBAdaptor;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToSamplesConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyVariantEntryConverter;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
+import org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1028,7 +1029,19 @@ public class MongoDBVariantMerger implements ParallelTaskRunner.Task<Document, M
 
     public static boolean isNewVariant(Document document, boolean newStudy) {
         // If the document has only the study, _id, end, ref and alt fields.
-        return newStudy && document.size() == 5;
+        if (!newStudy || document.size() != 5) {
+            for (Map.Entry<String, Object> entry : document.entrySet()) {
+                if (!entry.getKey().equals(VariantStringIdComplexTypeConverter.ID_FIELD)
+                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.END_FIELD)
+                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.REF_FIELD)
+                        && !entry.getKey().equals(VariantStringIdComplexTypeConverter.ALT_FIELD)) {
+                    if (!isNewStudy((Document) entry.getValue())) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private boolean sameVariant(Variant variant, Variant other) {

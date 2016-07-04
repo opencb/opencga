@@ -468,9 +468,9 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             for (String chromosome : variantSource.getStats().getChromosomeCounts().keySet()) {
                 if (studyConfiguration.getIndexedFiles().contains(fileId)) {
                     chromosomeInLoadedFiles.put(chromosome, fileId);
-                } else {
+                } else if (fileIds.contains(fileId)) {
                     chromosomeInFilesToLoad.put(chromosome, fileId);
-                }
+                } // else { ignore files that are not loaded, and are not going to be loaded }
             }
         }
 

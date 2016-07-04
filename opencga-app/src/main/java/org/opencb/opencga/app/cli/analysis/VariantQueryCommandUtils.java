@@ -224,7 +224,7 @@ public class VariantQueryCommandUtils {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
             } else if (returnedStudiesSize == 0 && studyIds.size() != 1 //If there are no returned studies, and there are more than one study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
-                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned "
+                throw new Exception("Only one study is allowed when returning " + of + ", please use '--return-study' to select the returned "
                         + "study. Available studies: " + studyIds);
             } else {
                 if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one

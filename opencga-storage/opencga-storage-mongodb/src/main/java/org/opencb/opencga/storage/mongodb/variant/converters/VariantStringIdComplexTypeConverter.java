@@ -24,6 +24,10 @@ public class VariantStringIdComplexTypeConverter implements ComplexTypeConverter
 
     public static final String SEPARATOR = ":";
     public static final char SEPARATOR_CHAR = ':';
+    public static final String ID_FIELD = "_id";
+    public static final String END_FIELD = "end";
+    public static final String REF_FIELD = "ref";
+    public static final String ALT_FIELD = "alt";
 
     public Variant convertToDataModelType(String object) {
         String[] split = object.split(SEPARATOR, -1);
@@ -32,19 +36,19 @@ public class VariantStringIdComplexTypeConverter implements ComplexTypeConverter
 
     @Override
     public Variant convertToDataModelType(Document object) {
-        String[] split = object.getString("_id").split(SEPARATOR, -1);
+        String[] split = object.getString(ID_FIELD).split(SEPARATOR, -1);
         return new Variant(split[0].trim(), Integer.parseInt(split[1].trim()),
-                object.getInteger("end"),
-                object.getString("ref"),
-                object.getString("alt"));
+                object.getInteger(END_FIELD),
+                object.getString(REF_FIELD),
+                object.getString(ALT_FIELD));
     }
 
     @Override
     public Document convertToStorageType(Variant variant) {
-        return new Document("_id", buildId(variant))
-                .append("ref", variant.getReference())
-                .append("alt", variant.getAlternate())
-                .append("end", variant.getEnd());
+        return new Document(ID_FIELD, buildId(variant))
+                .append(REF_FIELD, variant.getReference())
+                .append(ALT_FIELD, variant.getAlternate())
+                .append(END_FIELD, variant.getEnd());
     }
 
 

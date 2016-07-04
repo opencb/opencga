@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 
 import static com.mongodb.client.model.Filters.*;
 import static com.mongodb.client.model.Updates.*;
+import static org.opencb.opencga.storage.mongodb.variant.converters.VariantStringIdComplexTypeConverter.*;
 
 /**
  * Created on 07/04/16.
@@ -158,14 +159,14 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
                 queries.add(eq("_id", id.getString("_id")));
                 if (binaryList.size() == 1) {
                     updates.add(combine(resumeStageLoad ? addToSet(fieldName, binaryList.get(0)) : push(fieldName, binaryList.get(0)),
-                            setOnInsert("end", id.get("end")),
-                            setOnInsert("ref", id.get("ref")),
-                            setOnInsert("alt", id.get("alt"))));
+                            setOnInsert(END_FIELD, id.get(END_FIELD)),
+                            setOnInsert(REF_FIELD, id.get(REF_FIELD)),
+                            setOnInsert(ALT_FIELD, id.get(ALT_FIELD))));
                 } else {
                     updates.add(combine(resumeStageLoad ? addEachToSet(fieldName, binaryList) : pushEach(fieldName, binaryList),
-                            setOnInsert("end", id.get("end")),
-                            setOnInsert("ref", id.get("ref")),
-                            setOnInsert("alt", id.get("alt"))));
+                            setOnInsert(END_FIELD, id.get(END_FIELD)),
+                            setOnInsert(REF_FIELD, id.get(REF_FIELD)),
+                            setOnInsert(ALT_FIELD, id.get(ALT_FIELD))));
                 }
             }
         }

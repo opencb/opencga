@@ -228,6 +228,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
             throws IOException, FileFormatException, StorageManagerException {
 
 
+        params.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         variantStorageManager.getConfiguration()
                 .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
         StorageETLResult storageETLResult =

@@ -64,6 +64,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -260,26 +261,25 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                         exporter = new VariantStatsPopulationFrequencyExporter(outputStream);
                         break;
                     default:
-                        throw new ParameterException("Unknwon output format " + outputFormat);
+                        throw new ParameterException("Unknown output format " + outputFormat);
                 }
 
+                ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
+                        .setNumTasks(1)
+                        .setBatchSize(10)
+                        .setAbortOnFail(true)
+                        .build();
                 ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(batchSize -> {
                     List<Variant> variants = new ArrayList<>(batchSize);
                     while (iterator.hasNext() && variants.size() < batchSize) {
                         variants.add(iterator.next());
                     }
                     return variants;
-                }, batch -> batch, exporter, new ParallelTaskRunner.Config(1, 10, 10, true, true));
+                }, batch -> batch, exporter, config);
                 ptr.run();
-//                exporter.open();
-//                exporter.pre();
-//                while (iterator.hasNext()) {
-//                    exporter.write(iterator.next());
-//                }
-//                exporter.post();
-//                exporter.close();
+                logger.info("Time fetching data: " + iterator.getTimeFetching(TimeUnit.MILLISECONDS) / 1000.0 + "s");
+                logger.info("Time converting data: " + iterator.getTimeConverting(TimeUnit.MILLISECONDS) / 1000.0 + "s");
 
-//                iterator.close();
             }
         }
     }
