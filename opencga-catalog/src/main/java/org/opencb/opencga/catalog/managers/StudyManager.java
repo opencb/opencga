@@ -488,6 +488,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 Collections.singletonList(studySummary));
     }
 
+    @Deprecated
     @Override
     public QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
@@ -747,6 +748,11 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         group.setId("Delete group");
 
         studyDBAdaptor.deleteGroup(studyId, groupId);
+
+        // Remove the permissions the group might have had
+        if (authorizationManager.memberHasPermissionsInStudy(studyId, groupId)) {
+            authorizationManager.removeStudyAcl(userId, studyId, groupId);
+        }
 
         return group;
     }

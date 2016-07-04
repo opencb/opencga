@@ -417,6 +417,7 @@ public interface AuthorizationManager {
      */
     void filterDatasets(String userId, long studyId, List<Dataset> datasets) throws CatalogException;
 
+    @Deprecated
     /**
      * Adds the members to the groupId specified.
      *
@@ -428,10 +429,12 @@ public interface AuthorizationManager {
      * @throws CatalogException when the userId does not have the proper permissions to add other users to groups.
      */
     QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException;
+    @Deprecated
     default QueryResult<Group> addUsersToGroup(String userId, long studyId, String groupId, String members) throws CatalogException {
         return addUsersToGroup(userId, studyId, groupId, Arrays.asList(members.split(",")));
     }
 
+    @Deprecated
     /**
      * Removes the members from the groupId specified.
      *
@@ -442,6 +445,7 @@ public interface AuthorizationManager {
      * @throws CatalogException when the userId does not have the proper permissions to remove other users from groups.
      */
     void removeUsersFromGroup(String userId, long studyId, String groupId, List<String> members) throws CatalogException;
+    @Deprecated
     default void removeUsersFromGroup(String userId, long studyId, String groupId, String members) throws CatalogException {
         removeUsersFromGroup(userId, studyId, groupId, Arrays.asList(members.split(",")));
     }
@@ -455,17 +459,65 @@ public interface AuthorizationManager {
      * @param permissions List of permissions to be added to the members. If a template is provided, the permissions present here will be
      *                    added to the list of permissions present in the template.
      * @param template Template to be used to get the default permissions from. Might be null.
-     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
-     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
      * @return a queryResult containing the complete studyAcl where the members have been added to.
      * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
      */
-    QueryResult<StudyAcl> createStudyPermissions(String userId, long studyId, List<String> members, List<String> permissions,
-                                                 @Nullable String template, boolean override) throws CatalogException;
-    default QueryResult<StudyAcl> createStudyPermissions(String userId, long studyId, String members, List<String> permissions,
-                                                         @Nullable String template, boolean override) throws CatalogException {
-        return createStudyPermissions(userId, studyId, Arrays.asList(members.split(",")), permissions, template, override);
+    QueryResult<StudyAcl> createStudyAcls(String userId, long studyId, List<String> members, List<String> permissions,
+                                          @Nullable String template) throws CatalogException;
+    default QueryResult<StudyAcl> createStudyAcls(String userId, long studyId, String members, String permissions,
+                                                  @Nullable String template) throws CatalogException {
+        List<String> permissionList;
+        if (permissions != null && !permissions.isEmpty()) {
+            permissionList = Arrays.asList(permissions.split(","));
+        } else {
+            permissionList = Collections.emptyList();
+        }
+
+        List<String> memberList;
+        if (members != null && !members.isEmpty()) {
+            memberList = Arrays.asList(members.split(","));
+        } else {
+            memberList = Collections.emptyList();
+        }
+
+        return createStudyAcls(userId, studyId, memberList, permissionList, template);
     }
+
+    /**
+     * Return all the ACLs defined in the study.
+     *
+     * @param userId user id asking for the ACLs.
+     * @param studyId study id.
+     * @return a list of studyAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the study does not have proper permissions.
+     */
+    QueryResult<StudyAcl> getAllStudyAcls(String userId, long studyId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param userId user asking for the ACL.
+     * @param studyId study id.
+     * @param member member whose permissions will be retrieved.
+     * @return the studyAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    QueryResult<StudyAcl> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
+
+    /**
+     * Removes the ACLs defined for the member.
+     *
+     * @param userId user asking to remove the ACLs.
+     * @param studyId study id.
+     * @param member member whose permissions will be taken out.
+     * @return the studyAcl prior to the deletion.
+     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
+     * defined.
+     */
+    QueryResult<StudyAcl> removeStudyAcl(String userId, long studyId, String member) throws CatalogException;
+
+    QueryResult<StudyAcl> updateStudyAcl(String userId, long studyId, String member, @Nullable String addPermissions,
+                                         @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
 
     /**
      * Removes the members from the roleId specified.
@@ -476,7 +528,9 @@ public interface AuthorizationManager {
      * @throws CatalogException when the userId does not have the proper permissions to remove other users from roles, or the members or
      * roleId do not exist.
      */
+    @Deprecated
     void removeStudyPermissions(String userId, long studyId, List<String> members) throws CatalogException;
+    @Deprecated
     default void removeStudyPermissions(String userId, long studyId, String members)
             throws CatalogException {
         removeStudyPermissions(userId, studyId, Arrays.asList(members.split(",")));

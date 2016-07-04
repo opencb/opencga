@@ -683,18 +683,48 @@ public class CatalogManager implements AutoCloseable {
         return new QueryResult("removeUsersFromGroup");
     }
 
-    public QueryResult shareStudy(long studyId, String members, List<String> permissions, @Nullable String templateId, boolean override,
-                                  String sessionId) throws CatalogException {
+    public QueryResult<StudyAcl> createStudyAcls(String studyStr, String members, String permissions, @Nullable String templateId,
+                                                 String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return authorizationManager.createStudyPermissions(userId, studyId, members, permissions, templateId, override);
+        long studyId = studyManager.getStudyId(userId, studyStr);
+        return authorizationManager.createStudyAcls(userId, studyId, members, permissions, templateId);
     }
 
+    public QueryResult<StudyAcl> getAllStudyAcls(String studyStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long studyId = studyManager.getStudyId(userId, studyStr);
+        return authorizationManager.getAllStudyAcls(userId, studyId);
+    }
+
+    public QueryResult<StudyAcl> getStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long studyId = studyManager.getStudyId(userId, studyStr);
+        return authorizationManager.getStudyAcl(userId, studyId, member);
+    }
+
+    public QueryResult<StudyAcl> updateStudyAcl(String studyStr, String member, @Nullable String addPermissions,
+                                                @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long studyId = studyManager.getStudyId(userId, studyStr);
+        return authorizationManager.updateStudyAcl(userId, studyId, member, addPermissions, removePermissions, setPermissions);
+
+    }
+
+    public QueryResult<StudyAcl> removeStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long studyId = studyManager.getStudyId(userId, studyStr);
+        return authorizationManager.removeStudyAcl(userId, studyId, member);
+    }
+
+    @Deprecated
     public QueryResult unshareStudy(long studyId, String members, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         authorizationManager.removeStudyPermissions(userId, studyId, members);
         return new QueryResult("unshareStudy");
     }
 
+    @Deprecated
     public QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
         return studyManager.getStudyAcls(studyStr, members, sessionId);
     }

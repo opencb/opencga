@@ -70,7 +70,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
      * ***************************
      */
 
-//    @Override
+    //    @Override
 //    public boolean studyExists(int studyId) {
 //        QueryResult<Long> count = studyCollection.count(new BasicDBObject(PRIVATE_ID, studyId));
 //        return count.getResult().get(0) != 0;
@@ -552,6 +552,24 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
+    public QueryResult<StudyAcl> createStudyAcl(long studyId, StudyAcl studyAcl) throws CatalogDBException {
+        long startTime = startQuery();
+
+        // Push the new acl to the list of acls.
+        Document queryDocument = new Document(PRIVATE_ID, studyId);
+        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(studyAcl, "StudyAcl")));
+        QueryResult<UpdateResult> updateResult = studyCollection.update(queryDocument, update, null);
+
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("setStudyAcl: An error occurred when trying to share study " + studyId
+                    + " with " + studyAcl.getMember());
+        }
+
+        return endQuery("setStudyAcl", startTime, Arrays.asList(studyAcl));
+    }
+
+    @Override
+    @Deprecated
     public QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
@@ -593,6 +611,74 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
 
         return endQuery("setStudyAcl", startTime, Arrays.asList(studyAcl));
+    }
+
+    @Override
+    public void removeStudyAcl(long studyId, String member) throws CatalogDBException {
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().unsetSampleAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogFileDBAdaptor().unsetFileAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogJobDBAdaptor().unsetJobAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogDatasetDBAdaptor().unsetDatasetAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().unsetIndividualAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().unsetCohortAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogPanelDBAdaptor().unsetPanelAclsInStudy(studyId, Arrays.asList(member));
+
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.ACLS_MEMBER.key(), member);
+        Bson update = new Document()
+                .append("$pull", new Document("acls", new Document("member", member)));
+        QueryResult<UpdateResult> updateResult = studyCollection.update(query, update, null);
+        if (updateResult.first().getModifiedCount() == 0) {
+            throw new CatalogDBException("remove study ACL: An error occurred when trying to remove the ACLS defined for " + member);
+        }
+    }
+
+    @Override
+    public QueryResult<StudyAcl> setAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.ACLS_MEMBER.key(), member);
+        Document update = new Document("$set", new Document("acls.$.permissions", permissions));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Unable to set the new permissions to " + member);
+        }
+
+        return endQuery("Set Acls to member", startTime, getStudyAcl(studyId, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<StudyAcl> addAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.ACLS_MEMBER.key(), member);
+        Document update = new Document("$addToSet", new Document("acls.$.permissions", new Document("$each", permissions)));
+        QueryResult<UpdateResult> queryResult = studyCollection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Unable to add new permissions to " + member + ". Maybe the member already had those"
+                    + " permissions?");
+        }
+
+        return endQuery("Add Acls to member", startTime, getStudyAcl(studyId, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
+        Document query = new Document()
+                .append(PRIVATE_ID, studyId)
+                .append(QueryParams.ACLS_MEMBER.key(), member);
+        Bson pull = Updates.pullAll("acls.$.permissions", permissions);
+        QueryResult<UpdateResult> update = studyCollection.update(query, pull, null);
+        if (update.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("Unable to remove the permissions from " + member + ". Maybe it didn't have those permissions?");
+        }
     }
 
     @Override
