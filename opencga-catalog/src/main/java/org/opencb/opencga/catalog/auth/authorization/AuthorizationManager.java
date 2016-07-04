@@ -679,6 +679,70 @@ public interface AuthorizationManager {
 
     //------------------------- End of file ACL ----------------------
 
+    //------------------------- Individual ACL -----------------------------
+
+    QueryResult<IndividualAcl> createIndividualAcls(String userId, long individualId, List<String> members, List<String> permissions)
+            throws CatalogException;
+
+    default QueryResult<IndividualAcl> createIndividualAcls(String userId, long individualId, String members, String permissions)
+            throws CatalogException {
+
+        List<String> permissionList;
+        if (permissions != null && !permissions.isEmpty()) {
+            permissionList = Arrays.asList(permissions.split(","));
+        } else {
+            permissionList = Collections.emptyList();
+        }
+
+        List<String> memberList;
+        if (members != null && !members.isEmpty()) {
+            memberList = Arrays.asList(members.split(","));
+        } else {
+            memberList = Collections.emptyList();
+        }
+
+        return createIndividualAcls(userId, individualId, memberList, permissionList);
+    }
+
+    /**
+     * Return all the ACLs defined for the individual.
+     *
+     * @param userId user id asking for the ACLs.
+     * @param individualId individual id.
+     * @return a list of IndividualAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
+     */
+    QueryResult<IndividualAcl> getAllIndividualAcls(String userId, long individualId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param userId user asking for the ACL.
+     * @param individualId individual id.
+     * @param member member whose permissions will be retrieved.
+     * @return the IndividualAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    QueryResult<IndividualAcl> getIndividualAcl(String userId, long individualId, String member) throws CatalogException;
+
+    /**
+     * Removes the ACLs defined for the member.
+     *
+     * @param userId user asking to remove the ACLs.
+     * @param individualId individual id.
+     * @param member member whose permissions will be taken out.
+     * @return the IndividualAcl prior to the deletion.
+     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
+     * defined.
+     */
+    QueryResult<IndividualAcl> removeIndividualAcl(String userId, long individualId, String member) throws CatalogException;
+
+    QueryResult<IndividualAcl> updateIndividualAcl(String userId, long individualId, String member, @Nullable String addPermissions,
+                                       @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+
+
+    //------------------------- End of individual ACL ----------------------
+
     /**
      * Checks if the member belongs to one role or not.
      *

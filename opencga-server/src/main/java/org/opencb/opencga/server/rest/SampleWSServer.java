@@ -412,7 +412,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleIds}/acls/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleIds") String sampleIdsStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             return createOkResponse(catalogManager.createSampleAcls(sampleIdsStr, members, permissions, sessionId));

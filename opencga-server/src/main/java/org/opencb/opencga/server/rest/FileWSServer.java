@@ -1175,7 +1175,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19,
             response = QueryResponse.class)
     public Response createRole(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
             return createOkResponse(catalogManager.createFileAcls(fileIdStr, members, permissions, sessionId));
