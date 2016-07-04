@@ -960,6 +960,7 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.setFileACL(fileIds, userIds, acl, sessionId);
     }
 
+    @Deprecated
     public QueryResult shareFile(String fileIds, String members, List<String> permissions, boolean override, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
@@ -971,6 +972,7 @@ public class CatalogManager implements AutoCloseable {
 //        return authorizationManager.unsetFileACL(fileIds, userIds, sessionId);
 //    }
 
+    @Deprecated
     public QueryResult unshareFile(String fileIds, String members, String permissions, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         List<Long> fileList = fileManager.getFileIds(userId, fileIds);
@@ -978,6 +980,64 @@ public class CatalogManager implements AutoCloseable {
                 ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
         authorizationManager.unsetFilePermissions(userId, fileList, members, permissionList);
         return new QueryResult("unshareFile");
+    }
+
+    public List<QueryResult<FileAcl>> getAllFileAcls(String fileIdsStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        String[] fileNameSplit = fileIdsStr.split(",");
+        List<Long> fileIds = fileManager.getFileIds(userId, fileIdsStr);
+        List<QueryResult<FileAcl>> aclList = new ArrayList<>(fileIds.size());
+        for (int i = 0; i < fileIds.size(); i++) {
+            Long fileId = fileIds.get(i);
+            QueryResult<FileAcl> allFileAcls = authorizationManager.getAllFileAcls(userId, fileId);
+            allFileAcls.setId(fileNameSplit[i]);
+            aclList.add(allFileAcls);
+        }
+        return aclList;
+    }
+
+    public List<QueryResult<FileAcl>> createFileAcls(String fileIdsStr, String members, String permissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        String[] fileNameSplit = fileIdsStr.split(",");
+        List<Long> fileIds = fileManager.getFileIds(userId, fileIdsStr);
+        List<QueryResult<FileAcl>> fileAclList = new ArrayList<>(fileIds.size());
+        for (int i = 0; i < fileIds.size(); i++) {
+            Long fileId = fileIds.get(i);
+            QueryResult<FileAcl> fileAcls = authorizationManager.createFileAcls(userId, fileId, members, permissions);
+            fileAcls.setId(fileNameSplit[i]);
+            fileAclList.add(fileAcls);
+        }
+        return fileAclList;
+    }
+
+    public List<QueryResult<FileAcl>> removeFileAcl(String fileIdsStr, String member, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        String[] fileNameSplit = fileIdsStr.split(",");
+        List<Long> fileIds = fileManager.getFileIds(userId, fileIdsStr);
+        List<QueryResult<FileAcl>> fileAclList = new ArrayList<>(fileIds.size());
+        for (int i = 0; i < fileIds.size(); i++) {
+            Long fileId = fileIds.get(i);
+            QueryResult<FileAcl> fileAcls = authorizationManager.removeFileAcl(userId, fileId, member);
+            fileAcls.setId(fileNameSplit[i]);
+            fileAclList.add(fileAcls);
+        }
+        return fileAclList;
+    }
+
+    public QueryResult<FileAcl> getFileAcl(String fileIdStr, String member, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long fileId = fileManager.getFileId(userId, fileIdStr);
+        return authorizationManager.getFileAcl(userId, fileId, member);
+    }
+
+    public QueryResult<FileAcl> updateFileAcl(String fileIdStr, String member, @Nullable String addPermissions,
+                                                  @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long fileId = fileManager.getFileId(userId, fileIdStr);
+        return authorizationManager.updateFileAcl(userId, fileId, member, addPermissions, removePermissions, setPermissions);
+
     }
 
     /*Require role admin*/
