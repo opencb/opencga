@@ -628,6 +628,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<FileAcl> setFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions,
                                                    boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the files.
@@ -667,6 +668,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public void unsetFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions) throws CatalogException {
         // Check if the userId has proper permissions for all the files.
         for (Long fileId : fileIds) {
@@ -685,6 +687,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<SampleAcl> setSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions,
                                                        boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the samples.
@@ -724,6 +727,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions)
             throws CatalogException {
         // Check if the userId has proper permissions for all the samples.
@@ -743,6 +747,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<CohortAcl> setCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions,
                                                        boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the cohorts.
@@ -820,6 +825,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }*/
 
     @Override
+    @Deprecated
     public void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions)
             throws CatalogException {
         // Check if the userId has proper permissions for all the cohorts.
@@ -839,6 +845,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<IndividualAcl> setIndividualPermissions(String userId, List<Long> individualIds, String userIds,
                                                                List<String> permissions, boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the individuals.
@@ -880,6 +887,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions)
             throws CatalogException {
         // Check if the userId has proper permissions for all the individuals.
@@ -899,6 +907,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<JobAcl> setJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions,
                                                  boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the jobs.
@@ -938,6 +947,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public void unsetJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions) throws CatalogException {
         // Check if the userId has proper permissions for all the jobs.
         for (Long jobId : jobIds) {
@@ -956,6 +966,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<DatasetAcl> setDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions,
                                                          boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the datasets.
@@ -995,6 +1006,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions)
             throws CatalogException {
         // Check if the userId has proper permissions for all the datasets.
@@ -1014,6 +1026,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds,
                                                                    List<String> permissions, boolean override) throws CatalogException {
         // Check if the userId has proper permissions for all the panels.
@@ -1053,6 +1066,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
     }
 
     @Override
+    @Deprecated
     public void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions)
             throws CatalogException {
         // Check if the userId has proper permissions for all the disease panels.
@@ -1475,6 +1489,170 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             throw new CatalogException("Error: It is not allowed removing the permissions to the owner of the study.");
         }
         studyDBAdaptor.unsetStudyAcl(studyId, members);
+    }
+
+    @Override
+    public QueryResult<SampleAcl> createSampleAcls(String userId, long sampleId, List<String> members, List<String> permissions)
+            throws CatalogException {
+        sampleDBAdaptor.checkSampleId(sampleId);
+        // Check if the userId has proper permissions for all the samples.
+        checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+
+        // Check if all the members have a permission already set at the study level.
+        Set<Long> studySet = new HashSet<>();
+        sampleDBAdaptor.checkSampleId(sampleId);
+        long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        studySet.add(studyId);
+        for (String member : members) {
+            if (!member.equals("*") && !member.equals("anonymous") && !memberHasPermissionsInStudy(studyId, member)) {
+                throw new CatalogException("Cannot create ACL for " + member + ". First, a general study permission must be "
+                        + "defined for that member.");
+            }
+        }
+
+        // Check all the members exist in all the possible different studies
+        checkMembers(dbAdaptorFactory, studyId, members);
+
+        // Set the permissions
+        int timeSpent = 0;
+        List<SampleAcl> sampleAclList = new ArrayList<>(members.size());
+        for (String member : members) {
+            SampleAcl sampleAcl = new SampleAcl(member, permissions);
+            QueryResult<SampleAcl> sampleAclQueryResult = sampleDBAdaptor.createAcl(sampleId, sampleAcl);
+            timeSpent += sampleAclQueryResult.getDbTime();
+            sampleAclList.add(sampleAclQueryResult.first());
+        }
+
+        return new QueryResult<>("create sample acl", timeSpent, sampleAclList.size(), sampleAclList.size(), "", "", sampleAclList);
+    }
+
+    @Override
+    public QueryResult<SampleAcl> getAllSampleAcls(String userId, long sampleId) throws CatalogException {
+        sampleDBAdaptor.checkSampleId(sampleId);
+        // Check if the userId has proper permissions for all the samples.
+        checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+
+        // Obtain the Acls
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleId);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogSampleDBAdaptor.QueryParams.ACLS.key());
+        QueryResult<Sample> queryResult = sampleDBAdaptor.get(query, queryOptions);
+
+        List<SampleAcl> aclList;
+        if (queryResult != null && queryResult.getNumResults() == 1) {
+            aclList = queryResult.first().getAcls();
+        } else {
+            aclList = Collections.emptyList();
+        }
+        return new QueryResult<>("get sample acls", queryResult.getDbTime(), aclList.size(), aclList.size(), queryResult.getWarningMsg(),
+                queryResult.getErrorMsg(), aclList);
+    }
+
+    @Override
+    public QueryResult<SampleAcl> getSampleAcl(String userId, long sampleId, String member) throws CatalogException {
+        sampleDBAdaptor.checkSampleId(sampleId);
+
+        long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
+
+        try {
+            checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+        } catch (CatalogException e) {
+            // It will be OK if the userId asking for the ACLs wants to see its own permissions
+            if (member.startsWith("@")) { //group
+                // If the userId does not belong to the group...
+                QueryResult<Group> groupBelonging = getGroupBelonging(studyId, userId);
+                if (groupBelonging.getNumResults() != 1 || !groupBelonging.first().getName().equals(member)) {
+                    throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
+                            + member);
+                }
+            } else {
+                // If the userId asking to see the permissions is not asking to see their own permissions
+                if (!userId.equals(member)) {
+                    throw new CatalogAuthorizationException("The user " + userId + " does not have permissions to see the ACLs of "
+                            + member);
+                }
+            }
+        }
+
+        List<String> members = new ArrayList<>(2);
+        members.add(member);
+        if (!member.startsWith("@") && !member.equalsIgnoreCase("anonymous") && !member.equals("*")) {
+            QueryResult<Group> groupBelonging = getGroupBelonging(studyId, member);
+            if (groupBelonging != null && groupBelonging.getNumResults() == 1) {
+                members.add(groupBelonging.first().getName());
+            }
+        }
+
+        return sampleDBAdaptor.getAcl(studyId, members);
+    }
+
+    @Override
+    public QueryResult<SampleAcl> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException {
+        sampleDBAdaptor.checkSampleId(sampleId);
+        checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+
+        long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
+
+        // Obtain the ACLs the member had
+        QueryResult<SampleAcl> sampleAcl = sampleDBAdaptor.getAcl(sampleId, Arrays.asList(member));
+        if (sampleAcl == null || sampleAcl.getNumResults() == 0) {
+            throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
+                    + "defined");
+        }
+
+        sampleDBAdaptor.removeAcl(sampleId, member);
+
+        sampleAcl.setId("Remove sample ACLs");
+        return sampleAcl;
+    }
+
+    @Override
+    public QueryResult<SampleAcl> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
+                                                  @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException {
+        sampleDBAdaptor.checkSampleId(sampleId);
+        checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+
+        long studyId = sampleDBAdaptor.getStudyIdBySampleId(sampleId);
+        checkMembers(dbAdaptorFactory, studyId, Arrays.asList(member));
+
+        // Check that the member has permissions
+        Query query = new Query()
+                .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleId)
+                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
+        QueryResult<Long> count = sampleDBAdaptor.count(query);
+        if (count == null || count.first() == 0) {
+            throw new CatalogException("Could not update ACLs for " + member + ". It seems the member does not have any permissions set "
+                    + "yet.");
+        }
+
+        List<String> permissions;
+        if (setPermissions != null) {
+            permissions = Arrays.asList(setPermissions.split(","));
+            // Check if the permissions are correct
+            checkPermissions(permissions, SampleAcl.SamplePermissions::valueOf);
+
+            sampleDBAdaptor.setAclsToMember(sampleId, member, permissions);
+        } else {
+            if (addPermissions != null) {
+                permissions = Arrays.asList(addPermissions.split(","));
+                // Check if the permissions are correct
+                checkPermissions(permissions, SampleAcl.SamplePermissions::valueOf);
+
+                sampleDBAdaptor.addAclsToMember(sampleId, member, permissions);
+            }
+
+            if (removePermissions != null) {
+                permissions = Arrays.asList(removePermissions.split(","));
+                // Check if the permissions are correct
+                checkPermissions(permissions, SampleAcl.SamplePermissions::valueOf);
+
+                sampleDBAdaptor.removeAclsFromMember(sampleId, member, permissions);
+            }
+        }
+
+        return sampleDBAdaptor.getAcl(sampleId, Arrays.asList(member));
     }
 
     @Override

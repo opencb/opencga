@@ -729,6 +729,64 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getStudyAcls(studyStr, members, sessionId);
     }
 
+    public List<QueryResult<SampleAcl>> getAllSampleAcls(String sampleIdsStr, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        String[] sampleNameSplit = sampleIdsStr.split(",");
+        List<Long> sampleIds = sampleManager.getSampleIds(userId, sampleIdsStr);
+        List<QueryResult<SampleAcl>> sampleAclList = new ArrayList<>(sampleIds.size());
+        for (int i = 0; i < sampleIds.size(); i++) {
+            Long sampleId = sampleIds.get(i);
+            QueryResult<SampleAcl> allSampleAcls = authorizationManager.getAllSampleAcls(userId, sampleId);
+            allSampleAcls.setId(sampleNameSplit[i]);
+            sampleAclList.add(allSampleAcls);
+        }
+        return sampleAclList;
+    }
+
+    public List<QueryResult<SampleAcl>> createSampleAcls(String sampleIdsStr, String members, String permissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        String[] sampleNameSplit = sampleIdsStr.split(",");
+        List<Long> sampleIds = sampleManager.getSampleIds(userId, sampleIdsStr);
+        List<QueryResult<SampleAcl>> sampleAclList = new ArrayList<>(sampleIds.size());
+        for (int i = 0; i < sampleIds.size(); i++) {
+            Long sampleId = sampleIds.get(i);
+            QueryResult<SampleAcl> sampleAcls = authorizationManager.createSampleAcls(userId, sampleId, members, permissions);
+            sampleAcls.setId(sampleNameSplit[i]);
+            sampleAclList.add(sampleAcls);
+        }
+        return sampleAclList;
+    }
+
+    public List<QueryResult<SampleAcl>> removeSampleAcl(String sampleIdsStr, String member, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        String[] sampleNameSplit = sampleIdsStr.split(",");
+        List<Long> sampleIds = sampleManager.getSampleIds(userId, sampleIdsStr);
+        List<QueryResult<SampleAcl>> sampleAclList = new ArrayList<>(sampleIds.size());
+        for (int i = 0; i < sampleIds.size(); i++) {
+            Long sampleId = sampleIds.get(i);
+            QueryResult<SampleAcl> sampleAcls = authorizationManager.removeSampleAcl(userId, sampleId, member);
+            sampleAcls.setId(sampleNameSplit[i]);
+            sampleAclList.add(sampleAcls);
+        }
+        return sampleAclList;
+    }
+
+    public QueryResult<SampleAcl> getSampleAcl(String sampleIdStr, String member, String sessionId) throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long sampleId = sampleManager.getSampleId(userId, sampleIdStr);
+        return authorizationManager.getSampleAcl(userId, sampleId, member);
+    }
+
+    public QueryResult<SampleAcl> updateSampleAcl(String sampleIdStr, String member, @Nullable String addPermissions,
+                                                @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+            throws CatalogException {
+        String userId = getUserIdBySessionId(sessionId);
+        long sampleId = sampleManager.getSampleId(userId, sampleIdStr);
+        return authorizationManager.updateSampleAcl(userId, sampleId, member, addPermissions, removePermissions, setPermissions);
+
+    }
+
     /**
      * Modify some params from the specified study.
      * <p>

@@ -137,6 +137,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the FileAcl applied to the different file ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the files.
      */
+    @Deprecated
     QueryResult<FileAcl> setFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions, boolean override)
             throws CatalogException;
 
@@ -149,6 +150,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the files.
      */
+    @Deprecated
     void unsetFilePermissions(String userId, List<Long> fileIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
@@ -163,6 +165,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the SampleAcl applied to the different sample ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the samples.
      */
+    @Deprecated
     QueryResult<SampleAcl> setSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions,
                                                 boolean override) throws CatalogException;
 
@@ -175,6 +178,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the samples.
      */
+    @Deprecated
     void unsetSamplePermissions(String userId, List<Long> sampleIds, String userIds, List<String> permissions) throws CatalogException;
 
     //@Deprecated
@@ -190,6 +194,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the CohortAcl applied to the different cohort ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
+    @Deprecated
     QueryResult<CohortAcl> setCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions,
                                                 boolean override) throws CatalogException;
 
@@ -230,6 +235,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the cohorts.
      */
+    @Deprecated
     void unsetCohortPermissions(String userId, List<Long> cohortIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
@@ -244,6 +250,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the IndividualAcl applied to the different individual ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the individuals.
      */
+    @Deprecated
     QueryResult<IndividualAcl> setIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions,
                                                         boolean override) throws CatalogException;
 
@@ -256,6 +263,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the individuals.
      */
+    @Deprecated
     void unsetIndividualPermissions(String userId, List<Long> individualIds, String userIds, List<String> permissions)
             throws CatalogException;
 
@@ -271,6 +279,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the JobAcl applied to the different job ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
+    @Deprecated
     QueryResult<JobAcl> setJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions, boolean override)
             throws CatalogException;
 
@@ -283,6 +292,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the jobs.
      */
+    @Deprecated
     void unsetJobPermissions(String userId, List<Long> jobIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
@@ -297,6 +307,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the DatasetAcl applied to the different dataset ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
      */
+    @Deprecated
     QueryResult<DatasetAcl> setDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions,
                                                   boolean override) throws CatalogException;
 
@@ -309,6 +320,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the datasets.
      */
+    @Deprecated
     void unsetDatasetPermissions(String userId, List<Long> datasetIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
@@ -323,6 +335,7 @@ public interface AuthorizationManager {
      * @return A queryResult containing the DiseasePanelAcl applied to the different panel ids.
      * @throws CatalogException when the user ordering the action does not have permission to share the panels.
      */
+    @Deprecated
     QueryResult<DiseasePanelAcl> setDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions,
                                                             boolean override) throws CatalogException;
 
@@ -335,6 +348,7 @@ public interface AuthorizationManager {
      * @param permissions Comma separated list of permissions to be removed. If the list is empty, it will remove all the permissions.
      * @throws CatalogException when the user ordering the action does not have permission to share the panels.
      */
+    @Deprecated
     void unsetDiseasePanelPermissions(String userId, List<Long> panelIds, String userIds, List<String> permissions) throws CatalogException;
 
     /**
@@ -535,6 +549,70 @@ public interface AuthorizationManager {
             throws CatalogException {
         removeStudyPermissions(userId, studyId, Arrays.asList(members.split(",")));
     }
+
+    //------------------------- Sample ACL -----------------------------
+
+    QueryResult<SampleAcl> createSampleAcls(String userId, long sampleId, List<String> members, List<String> permissions)
+            throws CatalogException;
+
+    default QueryResult<SampleAcl> createSampleAcls(String userId, long sampleId, String members, String permissions)
+            throws CatalogException {
+
+        List<String> permissionList;
+        if (permissions != null && !permissions.isEmpty()) {
+            permissionList = Arrays.asList(permissions.split(","));
+        } else {
+            permissionList = Collections.emptyList();
+        }
+
+        List<String> memberList;
+        if (members != null && !members.isEmpty()) {
+            memberList = Arrays.asList(members.split(","));
+        } else {
+            memberList = Collections.emptyList();
+        }
+
+        return createSampleAcls(userId, sampleId, memberList, permissionList);
+    }
+
+    /**
+     * Return all the ACLs defined for the sample.
+     *
+     * @param userId user id asking for the ACLs.
+     * @param sampleId sample id.
+     * @return a list of sampleAcls.
+     * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
+     */
+    QueryResult<SampleAcl> getAllSampleAcls(String userId, long sampleId) throws CatalogException;
+
+    /**
+     * Return the ACL defined for the member.
+     *
+     * @param userId user asking for the ACL.
+     * @param sampleId sample id.
+     * @param member member whose permissions will be retrieved.
+     * @return the SampleAcl for the member.
+     * @throws CatalogException if the user does not have proper permissions to see the member permissions.
+     */
+    QueryResult<SampleAcl> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
+
+    /**
+     * Removes the ACLs defined for the member.
+     *
+     * @param userId user asking to remove the ACLs.
+     * @param sampleId study id.
+     * @param member member whose permissions will be taken out.
+     * @return the SampleAcl prior to the deletion.
+     * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
+     * defined.
+     */
+    QueryResult<SampleAcl> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException;
+
+    QueryResult<SampleAcl> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
+                                         @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+
+
+    //------------------------- End of sample ACL ----------------------
 
     /**
      * Checks if the member belongs to one role or not.

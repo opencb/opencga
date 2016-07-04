@@ -587,13 +587,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     public void removeAcl(long studyId, String member) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().unsetSampleAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAcl(studyId, member);
         dbAdaptorFactory.getCatalogFileDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogJobDBAdaptor().unsetJobAclsInStudy(studyId, Arrays.asList(member));
-        dbAdaptorFactory.getCatalogDatasetDBAdaptor().unsetDatasetAclsInStudy(studyId, Arrays.asList(member));
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().unsetIndividualAclsInStudy(studyId, Arrays.asList(member));
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().unsetCohortAclsInStudy(studyId, Arrays.asList(member));
-        dbAdaptorFactory.getCatalogPanelDBAdaptor().unsetPanelAclsInStudy(studyId, Arrays.asList(member));
+        dbAdaptorFactory.getCatalogJobDBAdaptor().removeAcl(studyId, member);
+        dbAdaptorFactory.getCatalogDatasetDBAdaptor().removeAcl(studyId, member);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAcl(studyId, member);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAcl(studyId, member);
+        dbAdaptorFactory.getCatalogPanelDBAdaptor().removeAcl(studyId, member);
 
         CatalogMongoDBUtils.removeAcl(studyId, member, studyCollection);
     }

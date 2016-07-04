@@ -187,6 +187,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
+    @Deprecated
     public QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
@@ -207,6 +208,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
+    @Deprecated
     public QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);

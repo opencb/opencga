@@ -67,8 +67,10 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
 
     QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
     @Deprecated
