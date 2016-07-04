@@ -18,7 +18,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 01/06/16.
  */
-public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel> {
+public interface CatalogPanelDBAdaptor extends CatalogDBAdaptor<DiseasePanel>, CatalogAclDBAdaptor<DiseasePanelAcl> {
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER, ""),

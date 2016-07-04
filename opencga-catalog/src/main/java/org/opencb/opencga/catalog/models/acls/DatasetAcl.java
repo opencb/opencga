@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.models.acls;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,10 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 12/05/16.
  */
-public class DatasetAcl {
-
-    private String member;
-    private EnumSet<DatasetPermissions> permissions;
+public class DatasetAcl extends ParentAcl<DatasetAcl.DatasetPermissions> {
 
     public enum DatasetPermissions {
         VIEW,
@@ -22,15 +20,15 @@ public class DatasetAcl {
     }
 
     public DatasetAcl() {
+        this("", Collections.emptyList());
     }
 
     public DatasetAcl(String member, EnumSet<DatasetPermissions> permissions) {
-        this.member = member;
-        this.permissions = permissions;
+        super(member, permissions);
     }
 
     public DatasetAcl(String member, ObjectMap permissions) {
-        this.member = member;
+        super(member, EnumSet.noneOf(DatasetPermissions.class));
 
         EnumSet<DatasetPermissions> aux = EnumSet.allOf(DatasetPermissions.class);
         for (DatasetPermissions permission : aux) {
@@ -41,29 +39,11 @@ public class DatasetAcl {
     }
 
     public DatasetAcl(String member, List<String> permissions) {
-        this.member = member;
-        this.permissions = EnumSet.noneOf(DatasetPermissions.class);
+        super(member, EnumSet.noneOf(DatasetPermissions.class));
+
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(DatasetPermissions::valueOf).collect(Collectors.toList()));
         }
-    }
-
-    public String getMember() {
-        return member;
-    }
-
-    public DatasetAcl setMember(String member) {
-        this.member = member;
-        return this;
-    }
-
-    public EnumSet<DatasetPermissions> getPermissions() {
-        return permissions;
-    }
-
-    public DatasetAcl setPermissions(EnumSet<DatasetPermissions> permissions) {
-        this.permissions = permissions;
-        return this;
     }
 
 }

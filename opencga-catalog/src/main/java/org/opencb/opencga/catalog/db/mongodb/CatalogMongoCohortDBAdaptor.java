@@ -789,4 +789,50 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         }
         return endQuery("Extract samples from cohorts", startTime, Collections.singletonList(0L));
     }
+
+    @Override
+    public QueryResult<CohortAcl> createAcl(long id, CohortAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAcl(id, acl, cohortCollection, "CohortAcl");
+        return endQuery("create cohort Acl", startTime, Arrays.asList(acl));
+    }
+
+    @Override
+    public QueryResult<CohortAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<CohortAcl> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection);
+        Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
+
+        if (cohort != null) {
+            acl = cohort.getAcls();
+        }
+
+        return endQuery("get cohort Acl", startTime, acl);
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAcl(id, member, cohortCollection);
+    }
+
+    @Override
+    public QueryResult<CohortAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, cohortCollection);
+        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<CohortAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, cohortCollection);
+        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, cohortCollection);
+    }
 }

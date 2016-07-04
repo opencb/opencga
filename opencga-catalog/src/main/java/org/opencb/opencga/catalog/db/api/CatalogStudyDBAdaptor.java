@@ -35,7 +35,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
+public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogAclDBAdaptor<StudyAcl> {
 
     /*
      * Study methods
@@ -86,17 +86,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     long getProjectIdByStudyId(long studyId) throws CatalogDBException;
 
     String getStudyOwnerId(long studyId) throws CatalogDBException;
-
-    /**
-     * Obtains the studyAcl given the following parameters. If only the studyId is given, a list containing all the studyAcls will be
-     * returned.
-     *
-     * @param studyId Study id.
-     * @param members List of members to look for permissions. Can only be existing users or groups.
-     * @return A queryResult object containing a list of studyAcls that satisfies the query.
-     * @throws CatalogDBException when the studyId does not exist, or the roleId or the members introduced do not exist in the database.
-     */
-    QueryResult<StudyAcl> getStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
     QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException;
 
@@ -154,59 +143,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @throws CatalogDBException if the groupId could not be removed.
      */
     void deleteGroup(long studyId, String groupId) throws CatalogDBException;
-
-    //------------------------------ ACLS ---------------------------
-
-    /**
-     * Creates a new studyAcl in study.
-     *
-     * @param studyId study id.
-     * @param studyAcl studyAcl.
-     * @return the new created studyAcl.
-     * @throws CatalogDBException if there is any internal error.
-     */
-    QueryResult<StudyAcl> createStudyAcl(long studyId, StudyAcl studyAcl) throws CatalogDBException;
-
-    /**
-     * Removes the studyAcl of the member.
-     *
-     * @param studyId study id.
-     * @param member member whose permissions will be taken out.
-     * @throws CatalogDBException when there is an internal error.
-     */
-    void removeStudyAcl(long studyId, String member) throws CatalogDBException;
-
-    /**
-     * Adds the permissions to the member getting rid of the former permissions the member might have had.
-     *
-     * @param studyId study id.
-     * @param member member.
-     * @param permissions new list of permissions to be applied.
-     * @return a studyAcl with the new set of permissions.
-     * @throws CatalogDBException when there is an internal error.
-     */
-    QueryResult<StudyAcl> setAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException;
-
-    /**
-     * Adds new permissions to the former list of permissions the member had.
-     *
-     * @param studyId study id.
-     * @param member member.
-     * @param permissions new permissions that will be added.
-     * @return a studyAcl after the permissions update.
-     * @throws CatalogDBException when there is an internal error.
-     */
-    QueryResult<StudyAcl> addAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException;
-
-    /**
-     * Remove the permissions passed from the ACLs the member had.
-     *
-     * @param studyId study id.
-     * @param member member.
-     * @param permissions List of permissions that will be taken out from the list of permissions of the member.
-     * @throws CatalogDBException when there is an internal error.
-     */
-    void removeAclsFromMember(long studyId, String member, List<String> permissions) throws CatalogDBException;
 
     /**
      * Adds the studyAcl given to the study.

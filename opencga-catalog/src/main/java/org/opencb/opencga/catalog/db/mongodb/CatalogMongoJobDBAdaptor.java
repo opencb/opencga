@@ -844,4 +844,50 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             return new Document();
         }
     }
+
+    @Override
+    public QueryResult<JobAcl> createAcl(long id, JobAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAcl(id, acl, jobCollection, "JobAcl");
+        return endQuery("create job Acl", startTime, Arrays.asList(acl));
+    }
+
+    @Override
+    public QueryResult<JobAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<JobAcl> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection);
+        Job job = jobConverter.convertToDataModelType(aggregate.first());
+
+        if (job != null) {
+            acl = job.getAcls();
+        }
+
+        return endQuery("get job Acl", startTime, acl);
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAcl(id, member, jobCollection);
+    }
+
+    @Override
+    public QueryResult<JobAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, jobCollection);
+        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<JobAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, jobCollection);
+        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, jobCollection);
+    }
 }

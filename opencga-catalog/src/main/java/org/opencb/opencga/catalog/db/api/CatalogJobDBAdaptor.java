@@ -32,7 +32,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
+public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job>, CatalogAclDBAdaptor<JobAcl> {
 
     default boolean jobExists(long jobId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;

@@ -535,7 +535,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
             }
         }
         List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.getStudyAcl(studyId, memberList);
+        QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.getAcl(studyId, memberList);
 
         if (members.size() == 0) {
             return studyAclQueryResult;

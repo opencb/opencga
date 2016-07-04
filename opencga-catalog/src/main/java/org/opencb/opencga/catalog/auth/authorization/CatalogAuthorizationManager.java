@@ -1325,7 +1325,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         int timeSpent = 0;
         for (String member : members) {
             StudyAcl studyAcl = new StudyAcl(member, studyPermissions);
-            QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.createStudyAcl(studyId, studyAcl);
+            QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.createAcl(studyId, studyAcl);
             timeSpent += studyAclQueryResult.getDbTime();
             studyAclList.add(studyAclQueryResult.first());
         }
@@ -1387,7 +1387,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return studyDBAdaptor.getStudyAcl(studyId, members);
+        return studyDBAdaptor.getAcl(studyId, members);
     }
 
     @Override
@@ -1403,13 +1403,13 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         }
 
         // Obtain the ACLs the member had
-        QueryResult<StudyAcl> studyAcl = studyDBAdaptor.getStudyAcl(studyId, Arrays.asList(member));
+        QueryResult<StudyAcl> studyAcl = studyDBAdaptor.getAcl(studyId, Arrays.asList(member));
         if (studyAcl == null || studyAcl.getNumResults() == 0) {
             throw new CatalogException("Could not remove the ACLs for " + member + ". It seems " + member + " did not have any ACLs "
                     + "defined");
         }
 
-        studyDBAdaptor.removeStudyAcl(studyId, member);
+        studyDBAdaptor.removeAcl(studyId, member);
 
         studyAcl.setId("Remove study ACLs");
         return studyAcl;
@@ -1458,7 +1458,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
             }
         }
 
-        return studyDBAdaptor.getStudyAcl(studyId, Arrays.asList(member));
+        return studyDBAdaptor.getAcl(studyId, Arrays.asList(member));
     }
 
     @Deprecated
@@ -1622,7 +1622,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
      * @throws CatalogException when there is a database error.
      */
     StudyAcl getStudyAclBelonging(long studyId, List<String> members) throws CatalogException {
-        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getStudyAcl(studyId, members);
+        QueryResult<StudyAcl> studyQueryResult = studyDBAdaptor.getAcl(studyId, members);
         if (studyQueryResult.getNumResults() > 0) {
             return studyQueryResult.first();
         }
