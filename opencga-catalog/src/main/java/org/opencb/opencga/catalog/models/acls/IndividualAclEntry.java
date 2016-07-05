@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class IndividualAcl extends AbstractAcl<IndividualAcl.IndividualPermissions> {
+public class IndividualAclEntry extends AbstractAclEntry<IndividualAclEntry.IndividualPermissions> {
 
     public enum IndividualPermissions {
         VIEW,
@@ -23,15 +23,15 @@ public class IndividualAcl extends AbstractAcl<IndividualAcl.IndividualPermissio
         DELETE_ANNOTATIONS
     }
 
-    public IndividualAcl() {
+    public IndividualAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public IndividualAcl(String member, EnumSet<IndividualPermissions> permissions) {
+    public IndividualAclEntry(String member, EnumSet<IndividualPermissions> permissions) {
         super(member, permissions);
     }
 
-    public IndividualAcl(String member, ObjectMap permissions) {
+    public IndividualAclEntry(String member, ObjectMap permissions) {
         super(member, EnumSet.noneOf(IndividualPermissions.class));
 
         EnumSet<IndividualPermissions> aux = EnumSet.allOf(IndividualPermissions.class);
@@ -42,7 +42,7 @@ public class IndividualAcl extends AbstractAcl<IndividualAcl.IndividualPermissio
         }
     }
 
-    public IndividualAcl(String member, List<String> permissions) {
+    public IndividualAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(IndividualPermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(IndividualPermissions::valueOf).collect(Collectors.toList()));

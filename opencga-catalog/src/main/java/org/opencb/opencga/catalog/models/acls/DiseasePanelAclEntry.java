@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanelAcl extends AbstractAcl<DiseasePanelAcl.DiseasePanelPermissions> {
+public class DiseasePanelAclEntry extends AbstractAclEntry<DiseasePanelAclEntry.DiseasePanelPermissions> {
 
     public enum DiseasePanelPermissions {
         VIEW,
@@ -19,15 +19,15 @@ public class DiseasePanelAcl extends AbstractAcl<DiseasePanelAcl.DiseasePanelPer
         SHARE
     }
 
-    public DiseasePanelAcl() {
+    public DiseasePanelAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public DiseasePanelAcl(String member, EnumSet<DiseasePanelPermissions> permissions) {
+    public DiseasePanelAclEntry(String member, EnumSet<DiseasePanelPermissions> permissions) {
         super(member, permissions);
     }
 
-    public DiseasePanelAcl(String member, ObjectMap permissions) {
+    public DiseasePanelAclEntry(String member, ObjectMap permissions) {
         super(member, EnumSet.noneOf(DiseasePanelPermissions.class));
 
         EnumSet<DiseasePanelPermissions> aux = EnumSet.allOf(DiseasePanelPermissions.class);
@@ -38,7 +38,7 @@ public class DiseasePanelAcl extends AbstractAcl<DiseasePanelAcl.DiseasePanelPer
         }
     }
 
-    public DiseasePanelAcl(String member, List<String> permissions) {
+    public DiseasePanelAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(DiseasePanelPermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(DiseasePanelPermissions::valueOf).collect(Collectors.toList()));

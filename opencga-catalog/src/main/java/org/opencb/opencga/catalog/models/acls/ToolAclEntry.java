@@ -10,24 +10,24 @@ import java.util.stream.Collectors;
 /**
  * Created by sgallego on 6/30/16.
  */
-public class ToolAcl extends AbstractAcl<ToolAcl.ToolPermissions> {
+public class ToolAclEntry extends AbstractAclEntry<ToolAclEntry.ToolPermissions> {
 
     public enum ToolPermissions {
-        VIEW,
+        EXECUTE,
         UPDATE,
         DELETE,
         SHARE
     }
 
-    public ToolAcl() {
+    public ToolAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public ToolAcl(String member, EnumSet<ToolPermissions> permissions) {
+    public ToolAclEntry(String member, EnumSet<ToolPermissions> permissions) {
         super(member, permissions);
     }
 
-    public ToolAcl(String member, ObjectMap permissions) {
+    public ToolAclEntry(String member, ObjectMap permissions) {
         super(member, EnumSet.noneOf(ToolPermissions.class));
 
         EnumSet<ToolPermissions> aux = EnumSet.allOf(ToolPermissions.class);
@@ -38,7 +38,7 @@ public class ToolAcl extends AbstractAcl<ToolAcl.ToolPermissions> {
         }
     }
 
-    public ToolAcl(String member, List<String> permissions) {
+    public ToolAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(ToolPermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(ToolPermissions::valueOf).collect(Collectors.toList()));

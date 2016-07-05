@@ -10,9 +10,9 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class SampleAcl extends AbstractAcl<SampleAcl.SamplePermissions> {
+public class CohortAclEntry extends AbstractAclEntry<CohortAclEntry.CohortPermissions> {
 
-    public enum SamplePermissions {
+    public enum CohortPermissions {
         VIEW,
         UPDATE,
         DELETE,
@@ -23,30 +23,30 @@ public class SampleAcl extends AbstractAcl<SampleAcl.SamplePermissions> {
         DELETE_ANNOTATIONS
     }
 
-    public SampleAcl() {
+    public CohortAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public SampleAcl(String member, EnumSet<SamplePermissions> permissions) {
+    public CohortAclEntry(String member, EnumSet<CohortPermissions> permissions) {
         super(member, permissions);
     }
 
-    public SampleAcl(String member, ObjectMap permissions) {
-        super(member, EnumSet.noneOf(SamplePermissions.class));
+    public CohortAclEntry(String member, ObjectMap permissions) {
+        super(member, EnumSet.noneOf(CohortPermissions.class));
 
-        EnumSet<SamplePermissions> aux = EnumSet.allOf(SamplePermissions.class);
-        for (SamplePermissions permission : aux) {
+        EnumSet<CohortPermissions> aux = EnumSet.allOf(CohortPermissions.class);
+        for (CohortPermissions permission : aux) {
             if (permissions.containsKey(permission.name()) && permissions.getBoolean(permission.name())) {
                 this.permissions.add(permission);
             }
         }
     }
 
-    public SampleAcl(String member, List<String> permissions) {
-        super(member, EnumSet.noneOf(SamplePermissions.class));
+    public CohortAclEntry(String member, List<String> permissions) {
+        super(member, EnumSet.noneOf(CohortPermissions.class));
+
         if (permissions.size() > 0) {
-            this.permissions.addAll(permissions.stream().map(SamplePermissions::valueOf).collect(Collectors.toList()));
+            this.permissions.addAll(permissions.stream().map(CohortPermissions::valueOf).collect(Collectors.toList()));
         }
     }
-
 }

@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.CohortAcl;
+import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class CohortClient extends AbstractParentClient<Cohort, CohortAcl> {
+public class CohortClient extends AbstractParentClient<Cohort, CohortAclEntry> {
 
     private static final String COHORT_URL = "cohorts";
 
@@ -40,7 +40,7 @@ public class CohortClient extends AbstractParentClient<Cohort, CohortAcl> {
 
         this.category = COHORT_URL;
         this.clazz = Cohort.class;
-        this.aclClass = CohortAcl.class;
+        this.aclClass = CohortAclEntry.class;
     }
 
     public QueryResponse<Cohort> create(String studyId, String cohortName, ObjectMap params) throws CatalogException, IOException {

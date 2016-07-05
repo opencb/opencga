@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class IndividualClient extends AbstractParentClient<Individual, IndividualAcl> {
+public class IndividualClient extends AbstractParentClient<Individual, IndividualAclEntry> {
 
     private static final String INDIVIDUALS_URL = "individuals";
 
@@ -37,7 +37,7 @@ public class IndividualClient extends AbstractParentClient<Individual, Individua
 
         this.category = INDIVIDUALS_URL;
         this.clazz = Individual.class;
-        this.aclClass = IndividualAcl.class;
+        this.aclClass = IndividualAclEntry.class;
     }
 
     public QueryResponse<Individual> create(String studyId, String individualName, ObjectMap params) throws CatalogException, IOException {

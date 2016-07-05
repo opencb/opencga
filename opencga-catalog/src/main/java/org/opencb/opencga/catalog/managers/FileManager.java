@@ -22,9 +22,9 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.DatasetAcl;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.BioformatDetector;
 import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -412,7 +412,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         } else {
             if (!newParent) {
                 //If parent has been created, for sure we have permissions to create the new file.
-                authorizationManager.checkFilePermission(parentFileId, userId, FileAcl.FilePermissions.CREATE);
+                authorizationManager.checkFilePermission(parentFileId, userId, FileAclEntry.FilePermissions.CREATE);
             }
         }
 
@@ -439,7 +439,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 //        authorizationManager.checkFilePermission(id, userId, CatalogPermission.READ);
-        authorizationManager.checkFilePermission(id, userId, FileAcl.FilePermissions.VIEW);
+        authorizationManager.checkFilePermission(id, userId, FileAclEntry.FilePermissions.VIEW);
 
         QueryResult<File> fileQueryResult = fileDBAdaptor.getFile(id, options);
         authorizationManager.filterFiles(userId, getStudyId(id), fileQueryResult.getResult());
@@ -504,7 +504,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             throw new CatalogException("Can not modify root folder");
         }
 
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.UPDATE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
         for (String s : parameters.keySet()) {
             switch (s) { //Special cases
                 //Can be modified anytime
@@ -571,7 +571,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DELETE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
         long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
         long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
@@ -656,7 +656,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         fileDBAdaptor.checkFileId(fileId);
 
         // Check 2. User has the proper permissions to delete the file.
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DELETE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
         // Check if we can obtain the file from the dbAdaptor properly.
         QueryResult<File> fileQueryResult = fileDBAdaptor.getFile(fileId, options);
@@ -766,7 +766,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<File> removedFileResult;
 
         // Check permissions for the current file
-        authorizationManager.checkFilePermission(fileOrDirectory.getId(), userId, FileAcl.FilePermissions.DELETE);
+        authorizationManager.checkFilePermission(fileOrDirectory.getId(), userId, FileAclEntry.FilePermissions.DELETE);
 
         // Not external file
         URI fileUri = getFileUri(fileOrDirectory);
@@ -983,7 +983,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     private void createParents(long studyId, String userId, URI studyURI, Path path, boolean checkPermissions) throws CatalogException {
         if (path == null) {
             if (checkPermissions) {
-                authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_FILES);
+                authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
             }
             return;
         }
@@ -1009,7 +1009,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         } else {
             if (checkPermissions) {
                 long fileId = fileDBAdaptor.getFileId(studyId, stringPath);
-                authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.CREATE);
+                authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.CREATE);
             }
             return;
         }
@@ -1047,7 +1047,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             // If no destiny is given, everything will be linked to the root folder of the study.
             // FIXME use / as a empty
             catalogPath = Paths.get("");
-            authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_FILES);
+            authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_FILES);
         } else {
             catalogPath = Paths.get(pathDestiny);
 
@@ -1087,7 +1087,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             } else {
                 // Check if the user has permissions to link files in the directory
                 long fileId = fileDBAdaptor.getFileId(studyId, catalogPath.toString() + "/");
-                authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.CREATE);
+                authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.CREATE);
             }
         }
 
@@ -1241,7 +1241,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long studyId = getStudyId(fileId);
 
         // Check 2. User has the proper permissions to delete the file.
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DELETE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DELETE);
 
         // Check if we can obtain the file from the dbAdaptor properly.
         QueryResult<File> fileQueryResult = fileDBAdaptor.getFile(fileId, options);
@@ -1430,7 +1430,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_FILES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1453,7 +1453,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_FILES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1477,7 +1477,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_FILES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_FILES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -1493,7 +1493,7 @@ public class FileManager extends AbstractManager implements IFileManager {
 
     @Deprecated
     private QueryResult<File> checkCanDeleteFile(File file, String userId) throws CatalogException {
-        authorizationManager.checkFilePermission(file.getId(), userId, FileAcl.FilePermissions.DELETE);
+        authorizationManager.checkFilePermission(file.getId(), userId, FileAclEntry.FilePermissions.DELETE);
 
         switch (file.getStatus().getName()) {
             case File.FileStatus.TRASHED:
@@ -1525,7 +1525,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         long projectId = studyDBAdaptor.getProjectIdByStudyId(studyId);
         String ownerId = projectDBAdaptor.getProjectOwnerId(projectId);
 
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.UPDATE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.UPDATE);
         QueryResult<File> fileResult = fileDBAdaptor.getFile(fileId, null);
         File file = fileResult.first();
 
@@ -1613,13 +1613,13 @@ public class FileManager extends AbstractManager implements IFileManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_DATASETS);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_DATASETS);
 
         for (Long fileId : files) {
             if (fileDBAdaptor.getStudyIdByFileId(fileId) != studyId) {
                 throw new CatalogException("Can't create a dataset with files from different studies.");
             }
-            authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.VIEW);
+            authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.VIEW);
         }
 
         Dataset dataset = new Dataset(-1, name, TimeUtils.getTime(), description, files, new Status(), attributes);
@@ -1638,7 +1638,7 @@ public class FileManager extends AbstractManager implements IFileManager {
         QueryResult<Dataset> queryResult = datasetDBAdaptor.getDataset(dataSetId, options);
 
         for (Long fileId : queryResult.first().getFiles()) {
-            authorizationManager.checkDatasetPermission(fileId, userId, DatasetAcl.DatasetPermissions.VIEW);
+            authorizationManager.checkDatasetPermission(fileId, userId, DatasetAclEntry.DatasetPermissions.VIEW);
         }
 
         return queryResult;
@@ -1674,11 +1674,11 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<DatasetAcl> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException {
+    public QueryResult<DatasetAclEntry> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Long datasetId = getDatasetId(userId, datasetStr);
-        authorizationManager.checkDatasetPermission(datasetId, userId, DatasetAcl.DatasetPermissions.SHARE);
+        authorizationManager.checkDatasetPermission(datasetId, userId, DatasetAclEntry.DatasetPermissions.SHARE);
         Long studyId = getStudyIdByDataset(datasetId);
 
         // Split and obtain the set of members (users + groups), users and groups
@@ -1721,7 +1721,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<DatasetAcl> datasetAclQueryResult = datasetDBAdaptor.getDatasetAcl(datasetId, memberList);
+        QueryResult<DatasetAclEntry> datasetAclQueryResult = datasetDBAdaptor.getDatasetAcl(datasetId, memberList);
 
         if (members.size() == 0) {
             return datasetAclQueryResult;
@@ -1730,32 +1730,33 @@ public class FileManager extends AbstractManager implements IFileManager {
         // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
         // instead of the group.
         // We loop over the results and recreate one sampleAcl per member
-        Map<String, DatasetAcl> datasetAclHashMap = new HashMap<>();
-        for (DatasetAcl datasetAcl : datasetAclQueryResult.getResult()) {
+        Map<String, DatasetAclEntry> datasetAclHashMap = new HashMap<>();
+        for (DatasetAclEntry datasetAcl : datasetAclQueryResult.getResult()) {
             if (memberList.contains(datasetAcl.getMember())) {
                 if (datasetAcl.getMember().startsWith("@")) {
                     // Check if the user was demanding the group directly or a user belonging to the group
                     if (groupIds.contains(datasetAcl.getMember())) {
-                        datasetAclHashMap.put(datasetAcl.getMember(), new DatasetAcl(datasetAcl.getMember(), datasetAcl.getPermissions()));
+                        datasetAclHashMap.put(datasetAcl.getMember(),
+                                new DatasetAclEntry(datasetAcl.getMember(), datasetAcl.getPermissions()));
                     } else {
                         // Obtain the user(s) belonging to that group whose permissions wanted the userId
                         if (groupUsers.containsKey(datasetAcl.getMember())) {
                             for (String tmpUserId : groupUsers.get(datasetAcl.getMember())) {
                                 if (userIds.contains(tmpUserId)) {
-                                    datasetAclHashMap.put(tmpUserId, new DatasetAcl(tmpUserId, datasetAcl.getPermissions()));
+                                    datasetAclHashMap.put(tmpUserId, new DatasetAclEntry(tmpUserId, datasetAcl.getPermissions()));
                                 }
                             }
                         }
                     }
                 } else {
                     // Add the user
-                    datasetAclHashMap.put(datasetAcl.getMember(), new DatasetAcl(datasetAcl.getMember(), datasetAcl.getPermissions()));
+                    datasetAclHashMap.put(datasetAcl.getMember(), new DatasetAclEntry(datasetAcl.getMember(), datasetAcl.getPermissions()));
                 }
             }
         }
 
         // We recreate the output that is in DatasetAclHashMap but in the same order the members were queried.
-        List<DatasetAcl> datasetAclList = new ArrayList<>(datasetAclHashMap.size());
+        List<DatasetAclEntry> datasetAclList = new ArrayList<>(datasetAclHashMap.size());
         for (String member : members) {
             if (datasetAclHashMap.containsKey(member)) {
                 datasetAclList.add(datasetAclHashMap.get(member));
@@ -1776,7 +1777,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public DataInputStream grep(long fileId, String pattern, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.VIEW);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.VIEW);
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
         boolean ignoreCase = options.getBoolean("ignoreCase");
@@ -1788,7 +1789,7 @@ public class FileManager extends AbstractManager implements IFileManager {
     public DataInputStream download(long fileId, int start, int limit, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.DOWNLOAD);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.DOWNLOAD);
 
         URI fileUri = getFileUri(read(fileId, null, sessionId).first());
 
@@ -1801,11 +1802,11 @@ public class FileManager extends AbstractManager implements IFileManager {
     }
 
     @Override
-    public QueryResult<FileAcl> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException {
+    public QueryResult<FileAclEntry> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Long fileId = getFileId(userId, fileStr);
-        authorizationManager.checkFilePermission(fileId, userId, FileAcl.FilePermissions.SHARE);
+        authorizationManager.checkFilePermission(fileId, userId, FileAclEntry.FilePermissions.SHARE);
         Long studyId = getStudyId(fileId);
 
         // Split and obtain the set of members (users + groups), users and groups
@@ -1848,7 +1849,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             }
         }
         List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<FileAcl> fileAclQueryResult = fileDBAdaptor.getFileAcl(fileId, memberList);
+        QueryResult<FileAclEntry> fileAclQueryResult = fileDBAdaptor.getFileAcl(fileId, memberList);
 
         if (members.size() == 0) {
             return fileAclQueryResult;
@@ -1857,32 +1858,32 @@ public class FileManager extends AbstractManager implements IFileManager {
         // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
         // instead of the group.
         // We loop over the results and recreate one fileAcl per member
-        Map<String, FileAcl> fileAclHashMap = new HashMap<>();
-        for (FileAcl fileAcl : fileAclQueryResult.getResult()) {
+        Map<String, FileAclEntry> fileAclHashMap = new HashMap<>();
+        for (FileAclEntry fileAcl : fileAclQueryResult.getResult()) {
             if (memberList.contains(fileAcl.getMember())) {
                 if (fileAcl.getMember().startsWith("@")) {
                     // Check if the user was demanding the group directly or a user belonging to the group
                     if (groupIds.contains(fileAcl.getMember())) {
-                        fileAclHashMap.put(fileAcl.getMember(), new FileAcl(fileAcl.getMember(), fileAcl.getPermissions()));
+                        fileAclHashMap.put(fileAcl.getMember(), new FileAclEntry(fileAcl.getMember(), fileAcl.getPermissions()));
                     } else {
                         // Obtain the user(s) belonging to that group whose permissions wanted the userId
                         if (groupUsers.containsKey(fileAcl.getMember())) {
                             for (String tmpUserId : groupUsers.get(fileAcl.getMember())) {
                                 if (userIds.contains(tmpUserId)) {
-                                    fileAclHashMap.put(tmpUserId, new FileAcl(tmpUserId, fileAcl.getPermissions()));
+                                    fileAclHashMap.put(tmpUserId, new FileAclEntry(tmpUserId, fileAcl.getPermissions()));
                                 }
                             }
                         }
                     }
                 } else {
                     // Add the user
-                    fileAclHashMap.put(fileAcl.getMember(), new FileAcl(fileAcl.getMember(), fileAcl.getPermissions()));
+                    fileAclHashMap.put(fileAcl.getMember(), new FileAclEntry(fileAcl.getMember(), fileAcl.getPermissions()));
                 }
             }
         }
 
         // We recreate the output that is in fileAclHashMap but in the same order the members were queried.
-        List<FileAcl> fileAclList = new ArrayList<>(fileAclHashMap.size());
+        List<FileAclEntry> fileAclList = new ArrayList<>(fileAclHashMap.size());
         for (String member : members) {
             if (fileAclHashMap.containsKey(member)) {
                 fileAclList.add(fileAclHashMap.get(member));

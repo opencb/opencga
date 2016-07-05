@@ -27,55 +27,58 @@ public interface AuthorizationManager {
 
     String OTHER_USERS_ID = "*";
 
-    static EnumSet<StudyAcl.StudyPermissions> getAdminAcls() {
-        return EnumSet.allOf(StudyAcl.StudyPermissions.class);
+    static EnumSet<StudyAclEntry.StudyPermissions> getAdminAcls() {
+        return EnumSet.allOf(StudyAclEntry.StudyPermissions.class);
     }
 
-    static EnumSet<StudyAcl.StudyPermissions> getAnalystAcls() {
-        return EnumSet.of(StudyAcl.StudyPermissions.VIEW_STUDY,
-                StudyAcl.StudyPermissions.UPDATE_STUDY, StudyAcl.StudyPermissions.CREATE_VARIABLE_SET,
-                StudyAcl.StudyPermissions.VIEW_VARIABLE_SET, StudyAcl.StudyPermissions.UPDATE_VARIABLE_SET,
-                StudyAcl.StudyPermissions.CREATE_FILES, StudyAcl.StudyPermissions.VIEW_FILE_HEADERS,
-                StudyAcl.StudyPermissions.VIEW_FILE_CONTENTS, StudyAcl.StudyPermissions.VIEW_FILES,
-                StudyAcl.StudyPermissions.UPDATE_FILES, StudyAcl.StudyPermissions.DOWNLOAD_FILES,
-                StudyAcl.StudyPermissions.CREATE_JOBS, StudyAcl.StudyPermissions.VIEW_JOBS, StudyAcl.StudyPermissions.UPDATE_JOBS,
-                StudyAcl.StudyPermissions.CREATE_SAMPLES, StudyAcl.StudyPermissions.VIEW_SAMPLES, StudyAcl.StudyPermissions.UPDATE_SAMPLES,
-                StudyAcl.StudyPermissions.CREATE_SAMPLE_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS,
-                StudyAcl.StudyPermissions.UPDATE_SAMPLE_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_INDIVIDUALS,
-                StudyAcl.StudyPermissions.VIEW_INDIVIDUALS, StudyAcl.StudyPermissions.UPDATE_INDIVIDUALS,
-                StudyAcl.StudyPermissions.CREATE_INDIVIDUAL_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS,
-                StudyAcl.StudyPermissions.UPDATE_INDIVIDUAL_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_COHORTS,
-                StudyAcl.StudyPermissions.VIEW_COHORTS, StudyAcl.StudyPermissions.UPDATE_COHORTS,
-                StudyAcl.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
-                StudyAcl.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAcl.StudyPermissions.CREATE_DATASETS,
-                StudyAcl.StudyPermissions.VIEW_DATASETS, StudyAcl.StudyPermissions.UPDATE_DATASETS,
-                StudyAcl.StudyPermissions.CREATE_PANELS, StudyAcl.StudyPermissions.VIEW_PANELS, StudyAcl.StudyPermissions.UPDATE_PANELS);
+    static EnumSet<StudyAclEntry.StudyPermissions> getAnalystAcls() {
+        return EnumSet.of(StudyAclEntry.StudyPermissions.VIEW_STUDY,
+                StudyAclEntry.StudyPermissions.UPDATE_STUDY, StudyAclEntry.StudyPermissions.CREATE_VARIABLE_SET,
+                StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET, StudyAclEntry.StudyPermissions.UPDATE_VARIABLE_SET,
+                StudyAclEntry.StudyPermissions.CREATE_FILES, StudyAclEntry.StudyPermissions.VIEW_FILE_HEADERS,
+                StudyAclEntry.StudyPermissions.VIEW_FILE_CONTENTS, StudyAclEntry.StudyPermissions.VIEW_FILES,
+                StudyAclEntry.StudyPermissions.UPDATE_FILES, StudyAclEntry.StudyPermissions.DOWNLOAD_FILES,
+                StudyAclEntry.StudyPermissions.CREATE_JOBS, StudyAclEntry.StudyPermissions.VIEW_JOBS,
+                StudyAclEntry.StudyPermissions.UPDATE_JOBS, StudyAclEntry.StudyPermissions.CREATE_SAMPLES,
+                StudyAclEntry.StudyPermissions.VIEW_SAMPLES, StudyAclEntry.StudyPermissions.UPDATE_SAMPLES,
+                StudyAclEntry.StudyPermissions.CREATE_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_SAMPLE_ANNOTATIONS,
+                StudyAclEntry.StudyPermissions.UPDATE_SAMPLE_ANNOTATIONS, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS,
+                StudyAclEntry.StudyPermissions.VIEW_INDIVIDUALS, StudyAclEntry.StudyPermissions.UPDATE_INDIVIDUALS,
+                StudyAclEntry.StudyPermissions.CREATE_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_INDIVIDUAL_ANNOTATIONS,
+                StudyAclEntry.StudyPermissions.UPDATE_INDIVIDUAL_ANNOTATIONS, StudyAclEntry.StudyPermissions.CREATE_COHORTS,
+                StudyAclEntry.StudyPermissions.VIEW_COHORTS, StudyAclEntry.StudyPermissions.UPDATE_COHORTS,
+                StudyAclEntry.StudyPermissions.CREATE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.VIEW_COHORT_ANNOTATIONS,
+                StudyAclEntry.StudyPermissions.UPDATE_COHORT_ANNOTATIONS, StudyAclEntry.StudyPermissions.CREATE_DATASETS,
+                StudyAclEntry.StudyPermissions.VIEW_DATASETS, StudyAclEntry.StudyPermissions.UPDATE_DATASETS,
+                StudyAclEntry.StudyPermissions.CREATE_PANELS, StudyAclEntry.StudyPermissions.VIEW_PANELS,
+                StudyAclEntry.StudyPermissions.UPDATE_PANELS);
     }
 
-    static EnumSet<StudyAcl.StudyPermissions> getLockedAcls() {
-        return EnumSet.noneOf(StudyAcl.StudyPermissions.class);
+    static EnumSet<StudyAclEntry.StudyPermissions> getLockedAcls() {
+        return EnumSet.noneOf(StudyAclEntry.StudyPermissions.class);
     }
 
-    void checkProjectPermission(long projectId, String userId, StudyAcl.StudyPermissions permission) throws CatalogException;
+    void checkProjectPermission(long projectId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException;
 
-    void checkStudyPermission(long studyId, String userId, StudyAcl.StudyPermissions permission) throws CatalogException;
+    void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission) throws CatalogException;
 
-    void checkStudyPermission(long studyId, String userId, StudyAcl.StudyPermissions permission, String message) throws CatalogException;
-
-    void checkFilePermission(long fileId, String userId, FileAcl.FilePermissions permission) throws CatalogException;
-
-    void checkSamplePermission(long sampleId, String userId, SampleAcl.SamplePermissions permission) throws CatalogException;
-
-    void checkIndividualPermission(long individualId, String userId, IndividualAcl.IndividualPermissions permission)
+    void checkStudyPermission(long studyId, String userId, StudyAclEntry.StudyPermissions permission, String message)
             throws CatalogException;
 
-    void checkJobPermission(long jobId, String userId, JobAcl.JobPermissions permission) throws CatalogException;
+    void checkFilePermission(long fileId, String userId, FileAclEntry.FilePermissions permission) throws CatalogException;
 
-    void checkCohortPermission(long cohortId, String userId, CohortAcl.CohortPermissions permission) throws CatalogException;
+    void checkSamplePermission(long sampleId, String userId, SampleAclEntry.SamplePermissions permission) throws CatalogException;
 
-    void checkDatasetPermission(long datasetId, String userId, DatasetAcl.DatasetPermissions permission) throws CatalogException;
+    void checkIndividualPermission(long individualId, String userId, IndividualAclEntry.IndividualPermissions permission)
+            throws CatalogException;
 
-    void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAcl.DiseasePanelPermissions permission)
+    void checkJobPermission(long jobId, String userId, JobAclEntry.JobPermissions permission) throws CatalogException;
+
+    void checkCohortPermission(long cohortId, String userId, CohortAclEntry.CohortPermissions permission) throws CatalogException;
+
+    void checkDatasetPermission(long datasetId, String userId, DatasetAclEntry.DatasetPermissions permission) throws CatalogException;
+
+    void checkDiseasePanelPermission(long panelId, String userId, DiseasePanelAclEntry.DiseasePanelPermissions permission)
             throws CatalogException;
 
     /**
@@ -172,10 +175,10 @@ public interface AuthorizationManager {
      * @return a queryResult containing the complete studyAcl where the members have been added to.
      * @throws CatalogException when the userId does not have the proper permissions or the members or the roleId do not exist.
      */
-    QueryResult<StudyAcl> createStudyAcls(String userId, long studyId, List<String> members, List<String> permissions,
-                                          @Nullable String template) throws CatalogException;
-    default QueryResult<StudyAcl> createStudyAcls(String userId, long studyId, String members, String permissions,
-                                                  @Nullable String template) throws CatalogException {
+    QueryResult<StudyAclEntry> createStudyAcls(String userId, long studyId, List<String> members, List<String> permissions,
+                                               @Nullable String template) throws CatalogException;
+    default QueryResult<StudyAclEntry> createStudyAcls(String userId, long studyId, String members, String permissions,
+                                                       @Nullable String template) throws CatalogException {
         List<String> permissionList;
         if (permissions != null && !permissions.isEmpty()) {
             permissionList = Arrays.asList(permissions.split(","));
@@ -201,7 +204,7 @@ public interface AuthorizationManager {
      * @return a list of studyAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the study does not have proper permissions.
      */
-    QueryResult<StudyAcl> getAllStudyAcls(String userId, long studyId) throws CatalogException;
+    QueryResult<StudyAclEntry> getAllStudyAcls(String userId, long studyId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -212,7 +215,7 @@ public interface AuthorizationManager {
      * @return the studyAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<StudyAcl> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
+    QueryResult<StudyAclEntry> getStudyAcl(String userId, long studyId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -224,19 +227,19 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<StudyAcl> removeStudyAcl(String userId, long studyId, String member) throws CatalogException;
+    QueryResult<StudyAclEntry> removeStudyAcl(String userId, long studyId, String member) throws CatalogException;
 
-    QueryResult<StudyAcl> updateStudyAcl(String userId, long studyId, String member, @Nullable String addPermissions,
-                                         @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<StudyAclEntry> updateStudyAcl(String userId, long studyId, String member, @Nullable String addPermissions,
+                                              @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
 
     //------------------------- End of study ACL ----------------------
 
     //------------------------- Sample ACL -----------------------------
 
-    QueryResult<SampleAcl> createSampleAcls(String userId, long sampleId, List<String> members, List<String> permissions)
+    QueryResult<SampleAclEntry> createSampleAcls(String userId, long sampleId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<SampleAcl> createSampleAcls(String userId, long sampleId, String members, String permissions)
+    default QueryResult<SampleAclEntry> createSampleAcls(String userId, long sampleId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -264,7 +267,7 @@ public interface AuthorizationManager {
      * @return a list of sampleAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<SampleAcl> getAllSampleAcls(String userId, long sampleId) throws CatalogException;
+    QueryResult<SampleAclEntry> getAllSampleAcls(String userId, long sampleId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -275,7 +278,7 @@ public interface AuthorizationManager {
      * @return the SampleAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<SampleAcl> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
+    QueryResult<SampleAclEntry> getSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -287,10 +290,11 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<SampleAcl> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException;
+    QueryResult<SampleAclEntry> removeSampleAcl(String userId, long sampleId, String member) throws CatalogException;
 
-    QueryResult<SampleAcl> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
-                                         @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<SampleAclEntry> updateSampleAcl(String userId, long sampleId, String member, @Nullable String addPermissions,
+                                                @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException;
 
 
     //------------------------- End of sample ACL ----------------------
@@ -298,10 +302,10 @@ public interface AuthorizationManager {
 
     //------------------------- File ACL -----------------------------
 
-    QueryResult<FileAcl> createFileAcls(String userId, long fileId, List<String> members, List<String> permissions)
+    QueryResult<FileAclEntry> createFileAcls(String userId, long fileId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<FileAcl> createFileAcls(String userId, long fileId, String members, String permissions)
+    default QueryResult<FileAclEntry> createFileAcls(String userId, long fileId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -329,7 +333,7 @@ public interface AuthorizationManager {
      * @return a list of FileAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<FileAcl> getAllFileAcls(String userId, long fileId) throws CatalogException;
+    QueryResult<FileAclEntry> getAllFileAcls(String userId, long fileId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -340,7 +344,7 @@ public interface AuthorizationManager {
      * @return the FileAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<FileAcl> getFileAcl(String userId, long fileId, String member) throws CatalogException;
+    QueryResult<FileAclEntry> getFileAcl(String userId, long fileId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -352,20 +356,20 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<FileAcl> removeFileAcl(String userId, long fileId, String member) throws CatalogException;
+    QueryResult<FileAclEntry> removeFileAcl(String userId, long fileId, String member) throws CatalogException;
 
-    QueryResult<FileAcl> updateFileAcl(String userId, long fileId, String member, @Nullable String addPermissions,
-                                           @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<FileAclEntry> updateFileAcl(String userId, long fileId, String member, @Nullable String addPermissions,
+                                            @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
 
 
     //------------------------- End of file ACL ----------------------
 
     //------------------------- Individual ACL -----------------------------
 
-    QueryResult<IndividualAcl> createIndividualAcls(String userId, long individualId, List<String> members, List<String> permissions)
+    QueryResult<IndividualAclEntry> createIndividualAcls(String userId, long individualId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<IndividualAcl> createIndividualAcls(String userId, long individualId, String members, String permissions)
+    default QueryResult<IndividualAclEntry> createIndividualAcls(String userId, long individualId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -393,7 +397,7 @@ public interface AuthorizationManager {
      * @return a list of IndividualAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<IndividualAcl> getAllIndividualAcls(String userId, long individualId) throws CatalogException;
+    QueryResult<IndividualAclEntry> getAllIndividualAcls(String userId, long individualId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -404,7 +408,7 @@ public interface AuthorizationManager {
      * @return the IndividualAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<IndividualAcl> getIndividualAcl(String userId, long individualId, String member) throws CatalogException;
+    QueryResult<IndividualAclEntry> getIndividualAcl(String userId, long individualId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -416,20 +420,21 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<IndividualAcl> removeIndividualAcl(String userId, long individualId, String member) throws CatalogException;
+    QueryResult<IndividualAclEntry> removeIndividualAcl(String userId, long individualId, String member) throws CatalogException;
 
-    QueryResult<IndividualAcl> updateIndividualAcl(String userId, long individualId, String member, @Nullable String addPermissions,
-                                       @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<IndividualAclEntry> updateIndividualAcl(String userId, long individualId, String member, @Nullable String addPermissions,
+                                                        @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException;
 
 
     //------------------------- End of individual ACL ----------------------
 
     //------------------------- Cohort ACL -----------------------------
 
-    QueryResult<CohortAcl> createCohortAcls(String userId, long cohortId, List<String> members, List<String> permissions)
+    QueryResult<CohortAclEntry> createCohortAcls(String userId, long cohortId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<CohortAcl> createCohortAcls(String userId, long cohortId, String members, String permissions)
+    default QueryResult<CohortAclEntry> createCohortAcls(String userId, long cohortId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -457,7 +462,7 @@ public interface AuthorizationManager {
      * @return a list of CohortAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<CohortAcl> getAllCohortAcls(String userId, long cohortId) throws CatalogException;
+    QueryResult<CohortAclEntry> getAllCohortAcls(String userId, long cohortId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -468,7 +473,7 @@ public interface AuthorizationManager {
      * @return the CohortAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<CohortAcl> getCohortAcl(String userId, long cohortId, String member) throws CatalogException;
+    QueryResult<CohortAclEntry> getCohortAcl(String userId, long cohortId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -480,19 +485,20 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<CohortAcl> removeCohortAcl(String userId, long cohortId, String member) throws CatalogException;
+    QueryResult<CohortAclEntry> removeCohortAcl(String userId, long cohortId, String member) throws CatalogException;
 
-    QueryResult<CohortAcl> updateCohortAcl(String userId, long cohortId, String member, @Nullable String addPermissions,
-                                           @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<CohortAclEntry> updateCohortAcl(String userId, long cohortId, String member, @Nullable String addPermissions,
+                                                @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException;
 
     //------------------------- End of cohort ACL ----------------------
 
     //------------------------- Dataset ACL -----------------------------
 
-    QueryResult<DatasetAcl> createDatasetAcls(String userId, long datasetId, List<String> members, List<String> permissions)
+    QueryResult<DatasetAclEntry> createDatasetAcls(String userId, long datasetId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<DatasetAcl> createDatasetAcls(String userId, long datasetId, String members, String permissions)
+    default QueryResult<DatasetAclEntry> createDatasetAcls(String userId, long datasetId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -520,7 +526,7 @@ public interface AuthorizationManager {
      * @return a list of DatasetAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<DatasetAcl> getAllDatasetAcls(String userId, long datasetId) throws CatalogException;
+    QueryResult<DatasetAclEntry> getAllDatasetAcls(String userId, long datasetId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -531,7 +537,7 @@ public interface AuthorizationManager {
      * @return the DatasetAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<DatasetAcl> getDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
+    QueryResult<DatasetAclEntry> getDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -543,20 +549,21 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<DatasetAcl> removeDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
+    QueryResult<DatasetAclEntry> removeDatasetAcl(String userId, long datasetId, String member) throws CatalogException;
 
-    QueryResult<DatasetAcl> updateDatasetAcl(String userId, long datasetId, String member, @Nullable String addPermissions,
-                                             @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<DatasetAclEntry> updateDatasetAcl(String userId, long datasetId, String member, @Nullable String addPermissions,
+                                                  @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException;
 
 
     //------------------------- End of dataset ACL ----------------------
 
     //------------------------- Job ACL -----------------------------
 
-    QueryResult<JobAcl> createJobAcls(String userId, long jobId, List<String> members, List<String> permissions)
+    QueryResult<JobAclEntry> createJobAcls(String userId, long jobId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<JobAcl> createJobAcls(String userId, long jobId, String members, String permissions)
+    default QueryResult<JobAclEntry> createJobAcls(String userId, long jobId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -584,7 +591,7 @@ public interface AuthorizationManager {
      * @return a list of JobAcls.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<JobAcl> getAllJobAcls(String userId, long jobId) throws CatalogException;
+    QueryResult<JobAclEntry> getAllJobAcls(String userId, long jobId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -595,7 +602,7 @@ public interface AuthorizationManager {
      * @return the JobAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<JobAcl> getJobAcl(String userId, long jobId, String member) throws CatalogException;
+    QueryResult<JobAclEntry> getJobAcl(String userId, long jobId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -607,20 +614,20 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<JobAcl> removeJobAcl(String userId, long jobId, String member) throws CatalogException;
+    QueryResult<JobAclEntry> removeJobAcl(String userId, long jobId, String member) throws CatalogException;
 
-    QueryResult<JobAcl> updateJobAcl(String userId, long jobId, String member, @Nullable String addPermissions,
-                                     @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<JobAclEntry> updateJobAcl(String userId, long jobId, String member, @Nullable String addPermissions,
+                                          @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
 
 
     //------------------------- End of job ACL ----------------------
 
     //------------------------- Panel ACL -----------------------------
 
-    QueryResult<DiseasePanelAcl> createPanelAcls(String userId, long panelId, List<String> members, List<String> permissions)
+    QueryResult<DiseasePanelAclEntry> createPanelAcls(String userId, long panelId, List<String> members, List<String> permissions)
             throws CatalogException;
 
-    default QueryResult<DiseasePanelAcl> createPanelAcls(String userId, long panelId, String members, String permissions)
+    default QueryResult<DiseasePanelAclEntry> createPanelAcls(String userId, long panelId, String members, String permissions)
             throws CatalogException {
 
         List<String> permissionList;
@@ -648,7 +655,7 @@ public interface AuthorizationManager {
      * @return a list of DiseasePanelAcl.
      * @throws CatalogException when the user asking to retrieve all the ACLs defined in the sample does not have proper permissions.
      */
-    QueryResult<DiseasePanelAcl> getAllPanelAcls(String userId, long panelId) throws CatalogException;
+    QueryResult<DiseasePanelAclEntry> getAllPanelAcls(String userId, long panelId) throws CatalogException;
 
     /**
      * Return the ACL defined for the member.
@@ -659,7 +666,7 @@ public interface AuthorizationManager {
      * @return the DiseasePanelAcl for the member.
      * @throws CatalogException if the user does not have proper permissions to see the member permissions.
      */
-    QueryResult<DiseasePanelAcl> getPanelAcl(String userId, long panelId, String member) throws CatalogException;
+    QueryResult<DiseasePanelAclEntry> getPanelAcl(String userId, long panelId, String member) throws CatalogException;
 
     /**
      * Removes the ACLs defined for the member.
@@ -671,10 +678,11 @@ public interface AuthorizationManager {
      * @throws CatalogException if the user asking to remove the ACLs does not have proper permissions or the member does not have any ACL
      * defined.
      */
-    QueryResult<DiseasePanelAcl> removePanelAcl(String userId, long panelId, String member) throws CatalogException;
+    QueryResult<DiseasePanelAclEntry> removePanelAcl(String userId, long panelId, String member) throws CatalogException;
 
-    QueryResult<DiseasePanelAcl> updatePanelAcl(String userId, long panelId, String member, @Nullable String addPermissions,
-                                         @Nullable String removePermissions, @Nullable String setPermissions) throws CatalogException;
+    QueryResult<DiseasePanelAclEntry> updatePanelAcl(String userId, long panelId, String member, @Nullable String addPermissions,
+                                                     @Nullable String removePermissions, @Nullable String setPermissions)
+            throws CatalogException;
 
 
     //------------------------- End of panel ACL ----------------------

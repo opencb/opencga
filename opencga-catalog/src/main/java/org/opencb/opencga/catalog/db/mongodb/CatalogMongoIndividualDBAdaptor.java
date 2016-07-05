@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -288,27 +288,28 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(individualId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, individualId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<IndividualAcl> individualAcl = null;
+        List<IndividualAclEntry> individualAcl = null;
         QueryResult<Document> aggregate = individualCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         Individual individual = individualConverter.convertToDataModelType(aggregate.first());
 
         if (individual != null) {
-            individualAcl = individual.getAcls();
+            individualAcl = individual.getAcl();
         }
 
         return endQuery("get individual Acl", startTime, individualAcl);
     }
 
     @Override
-    public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> setIndividualAcl(long individualId, IndividualAclEntry acl, boolean override)
+            throws CatalogDBException {
         long startTime = startQuery();
         long studyId = getStudyIdByIndividualId(individualId);
 
@@ -320,14 +321,14 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<IndividualAcl> individualAcl = getIndividualAcl(individualId, group.getUserIds());
+            QueryResult<IndividualAclEntry> individualAcl = getIndividualAcl(individualId, group.getUserIds());
             if (individualAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in individual. At least one user in " + group.getName()
                         + " has already defined permissions for individual " + individualId);
             }
         } else {
             // Check if the members of the new acl already have some permissions set
-            QueryResult<IndividualAcl> individualAcls = getIndividualAcl(individualId, acl.getMember());
+            QueryResult<IndividualAclEntry> individualAcls = getIndividualAcl(individualId, acl.getMember());
 
             if (individualAcls.getNumResults() > 0 && override) {
                 unsetIndividualAcl(individualId, Arrays.asList(member), Collections.emptyList());
@@ -339,7 +340,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, individualId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "IndividualAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "IndividualAcl")));
         QueryResult<UpdateResult> updateResult = individualCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -357,12 +358,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, individualId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Document query = new Document(PRIVATE_ID, individualId).append(QueryParams.ACL_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls", new Document("member", member)));
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
             } else {
-                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
             }
             QueryResult<UpdateResult> updateResult = individualCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -373,7 +374,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // Remove possible IndividualAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(QueryParams.ID.key(), individualId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        individualCollection.update(queryBson, update, null);
@@ -386,14 +387,14 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             individualCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 //
 //        // Remove possible IndividualAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-//                .append(CatalogJobDBAdaptor.QueryParams.ACLS_MEMBER.key(),
+//                .append(CatalogJobDBAdaptor.QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        individualCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
@@ -914,22 +915,22 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<IndividualAcl> createAcl(long id, IndividualAcl acl) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> createAcl(long id, IndividualAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(id, acl, individualCollection, "IndividualAcl");
         return endQuery("create individual Acl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public QueryResult<IndividualAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<IndividualAcl> acl = null;
+        List<IndividualAclEntry> acl = null;
         QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection, logger);
         Individual individual = individualConverter.convertToDataModelType(aggregate.first());
 
         if (individual != null) {
-            acl = individual.getAcls();
+            acl = individual.getAcl();
         }
 
         return endQuery("get individual Acl", startTime, acl);
@@ -941,14 +942,14 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<IndividualAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(id, member, permissions, individualCollection);
         return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<IndividualAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(id, member, permissions, individualCollection);
         return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));

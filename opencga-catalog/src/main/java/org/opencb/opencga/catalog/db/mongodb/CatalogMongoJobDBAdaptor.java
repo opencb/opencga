@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -178,27 +178,27 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException {
+    public QueryResult<JobAclEntry> getJobAcl(long jobId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkJobId(jobId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, jobId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<JobAcl> jobAcl = null;
+        List<JobAclEntry> jobAcl = null;
         QueryResult<Document> aggregate = jobCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         Job job = jobConverter.convertToDataModelType(aggregate.first());
 
         if (job != null) {
-            jobAcl = job.getAcls();
+            jobAcl = job.getAcl();
         }
 
         return endQuery("get job Acl", startTime, jobAcl);
     }
 
     @Override
-    public QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<JobAclEntry> setJobAcl(long jobId, JobAclEntry acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         long studyId = getStudyIdByJobId(jobId);
 
@@ -210,14 +210,14 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<JobAcl> jobAcl = getJobAcl(jobId, group.getUserIds());
+            QueryResult<JobAclEntry> jobAcl = getJobAcl(jobId, group.getUserIds());
             if (jobAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in job. At least one user in " + group.getName()
                         + " has already defined permissions for job " + jobId);
             }
         } else {
             // Check if the members of the new acl already have some permissions set
-            QueryResult<JobAcl> jobAcls = getJobAcl(jobId, acl.getMember());
+            QueryResult<JobAclEntry> jobAcls = getJobAcl(jobId, acl.getMember());
 
             if (jobAcls.getNumResults() > 0 && override) {
                 unsetJobAcl(jobId, Arrays.asList(member), Collections.emptyList());
@@ -229,7 +229,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, jobId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "JobAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "JobAcl")));
         QueryResult<UpdateResult> updateResult = jobCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -246,12 +246,12 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, jobId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Document query = new Document(PRIVATE_ID, jobId).append(QueryParams.ACL_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls", new Document("member", member)));
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
             } else {
-                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
             }
             QueryResult<UpdateResult> updateResult = jobCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -262,7 +262,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
 //        // Remove possible jobAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(QueryParams.ID.key(), jobId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        jobCollection.update(queryBson, update, null);
@@ -275,14 +275,14 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             jobCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
         // Remove possible JobAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        jobCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
@@ -846,22 +846,22 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<JobAcl> createAcl(long id, JobAcl acl) throws CatalogDBException {
+    public QueryResult<JobAclEntry> createAcl(long id, JobAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(id, acl, jobCollection, "JobAcl");
         return endQuery("create job Acl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public QueryResult<JobAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<JobAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<JobAcl> acl = null;
+        List<JobAclEntry> acl = null;
         QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection, logger);
         Job job = jobConverter.convertToDataModelType(aggregate.first());
 
         if (job != null) {
-            acl = job.getAcls();
+            acl = job.getAcl();
         }
 
         return endQuery("get job Acl", startTime, acl);
@@ -873,14 +873,14 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     }
 
     @Override
-    public QueryResult<JobAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<JobAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(id, member, permissions, jobCollection);
         return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<JobAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<JobAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(id, member, permissions, jobCollection);
         return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));

@@ -6,7 +6,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.acls.CohortAcl;
+import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -17,7 +17,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 3/22/16.
  */
-public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, CatalogAclDBAdaptor<CohortAcl> {
+public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, CatalogAclDBAdaptor<CohortAclEntry> {
 
     enum QueryParams implements QueryParam {
         ID("id", DECIMAL, ""),
@@ -29,9 +29,9 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, Catalo
         STATUS_DATE("status.date", TEXT, ""),
         DESCRIPTION("description", TEXT, ""),
 
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         SAMPLES("samples", DECIMAL, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
@@ -142,13 +142,13 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, Catalo
 
     QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException;
 
-    default QueryResult<CohortAcl> getCohortAcl(long cohortId, String member) throws CatalogDBException {
+    default QueryResult<CohortAclEntry> getCohortAcl(long cohortId, String member) throws CatalogDBException {
         return getCohortAcl(cohortId, Arrays.asList(member));
     }
 
-    QueryResult<CohortAcl> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
+    QueryResult<CohortAclEntry> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
 
-    QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<CohortAclEntry> setCohortAcl(long cohortId, CohortAclEntry acl, boolean override) throws CatalogDBException;
 
     void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException;
 

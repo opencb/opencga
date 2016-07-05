@@ -17,7 +17,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -41,7 +41,7 @@ public class Study {
     private String cipher;
 
     private List<Group> groups;
-    private List<StudyAcl> acls;
+    private List<StudyAclEntry> acl;
 
     private List<Experiment> experiments;
 
@@ -77,7 +77,7 @@ public class Study {
     }
 
     public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
-                 long diskUsage, String cipher, List<Group> groups, List<StudyAcl> acls, List<Experiment> experiments, List<File> files,
+                 long diskUsage, String cipher, List<Group> groups, List<StudyAclEntry> acl, List<Experiment> experiments, List<File> files,
                  List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
                  List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores,
                  Map<String, Object> stats, Map<String, Object> attributes) {
@@ -92,7 +92,7 @@ public class Study {
         this.diskUsage = diskUsage;
         this.cipher = cipher;
         this.groups = groups;
-        this.acls = acls;
+        this.acl = acl;
         this.experiments = experiments;
         this.files = files;
         this.jobs = jobs;
@@ -136,7 +136,7 @@ public class Study {
         sb.append(", diskUsage=").append(diskUsage);
         sb.append(", cipher='").append(cipher).append('\'');
         sb.append(", groups=").append(groups);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", experiments=").append(experiments);
         sb.append(", files=").append(files);
         sb.append(", jobs=").append(jobs);
@@ -253,12 +253,12 @@ public class Study {
         return this;
     }
 
-    public List<StudyAcl> getAcls() {
-        return acls;
+    public List<StudyAclEntry> getAcl() {
+        return acl;
     }
 
-    public Study setAcls(List<StudyAcl> acls) {
-        this.acls = acls;
+    public Study setAcl(List<StudyAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

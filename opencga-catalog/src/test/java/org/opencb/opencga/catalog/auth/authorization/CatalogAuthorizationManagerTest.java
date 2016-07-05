@@ -18,9 +18,9 @@ import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 
 import java.io.IOException;
 import java.net.URI;
@@ -49,17 +49,17 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     private final String groupMember = "@members";
 
     private final String ALL_FILE_PERMISSIONS = join(
-            EnumSet.allOf(FileAcl.FilePermissions.class)
+            EnumSet.allOf(FileAclEntry.FilePermissions.class)
                     .stream()
-                    .map(FileAcl.FilePermissions::name)
+                    .map(FileAclEntry.FilePermissions::name)
                     .collect(Collectors.toList()),
             ",");
     private final String DENY_FILE_PERMISSIONS = "";
 
     private final String ALL_SAMPLE_PERMISSIONS = join(
-            EnumSet.allOf(SampleAcl.SamplePermissions.class)
+            EnumSet.allOf(SampleAclEntry.SamplePermissions.class)
                     .stream()
-                    .map(SampleAcl.SamplePermissions::name)
+                    .map(SampleAclEntry.SamplePermissions::name)
                     .collect(Collectors.toList()),
             ",");
     private final String DENY_SAMPLE_PERMISSIONS = "";
@@ -285,7 +285,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 //        catalogManager.addUsersToGroup(s1, group, newUser, studyAdmin1SessionId);
         catalogManager.createGroup(Long.toString(s1), group, newUser, studyAdmin1SessionId);
         catalogManager.createStudyAcls(Long.toString(s1), group, "", AuthorizationManager.ROLE_ANALYST, studyAdmin1SessionId);
-        QueryResult<StudyAcl> studyAcls = catalogManager.getStudyAcls(Long.toString(s1), Arrays.asList(group), studyAdmin1SessionId);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getStudyAcls(Long.toString(s1), Arrays.asList(group), studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(group, studyAcls.first().getMember());
         assertArrayEquals(AuthorizationManager.getAnalystAcls().toArray(), studyAcls.first().getPermissions().toArray());
@@ -309,7 +309,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void changeUserRole() throws CatalogException {
-        QueryResult<StudyAcl> studyAcls = catalogManager.getStudyAcls(Long.toString(s1), Arrays.asList(externalUser), studyAdmin1SessionId);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getStudyAcls(Long.toString(s1), Arrays.asList(externalUser), studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(externalUser, studyAcls.first().getMember());
 
@@ -330,7 +330,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void removeUserFromRole() throws CatalogException {
 //        catalogManager.unshareStudy(s1, externalUser, studyAdmin1SessionId);
         catalogManager.removeStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
-        QueryResult<StudyAcl> studyAcls = catalogManager.getStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getStudyAcl(Long.toString(s1), externalUser, studyAdmin1SessionId);
         assertEquals(0, studyAcls.getNumResults());
     }
 
@@ -344,7 +344,7 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
 
     @Test
     public void removeGroupFromRole() throws CatalogException {
-        QueryResult<StudyAcl> studyAcls = catalogManager.getStudyAcl(Long.toString(s1), groupAdmin, studyAdmin1SessionId);
+        QueryResult<StudyAclEntry> studyAcls = catalogManager.getStudyAcl(Long.toString(s1), groupAdmin, studyAdmin1SessionId);
         assertEquals(1, studyAcls.getNumResults());
         assertEquals(groupAdmin, studyAcls.first().getMember());
         assertArrayEquals(AuthorizationManager.getAdminAcls().toArray(), studyAcls.first().getPermissions().toArray());

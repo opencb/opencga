@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -236,15 +236,15 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<StudyAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<StudyAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<StudyAcl> acl = null;
+        List<StudyAclEntry> acl = null;
         QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, studyCollection, logger);
         Study study = studyConverter.convertToDataModelType(aggregate.first());
 
         if (study != null) {
-            acl = study.getAcls();
+            acl = study.getAcl();
         }
 
         return endQuery("get study Acl", startTime, acl);
@@ -533,7 +533,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<StudyAcl> createAcl(long studyId, StudyAcl studyAcl) throws CatalogDBException {
+    public QueryResult<StudyAclEntry> createAcl(long studyId, StudyAclEntry studyAcl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(studyId, studyAcl, studyCollection, "StudyAcl");
         return endQuery("create Acl", startTime, Arrays.asList(studyAcl));
@@ -541,7 +541,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
     @Override
     @Deprecated
-    public QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException {
+    public QueryResult<StudyAclEntry> setStudyAcl(long studyId, StudyAclEntry studyAcl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
 
 //        checkStudyId(studyId);
@@ -554,13 +554,13 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         if (member.startsWith("@")) {
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
-            QueryResult<StudyAcl> aclQueryResult = getAcl(studyId, group.getUserIds());
+            QueryResult<StudyAclEntry> aclQueryResult = getAcl(studyId, group.getUserIds());
             if (aclQueryResult.getNumResults() > 0) {
                 throw new CatalogDBException("The permissions could not be set. At least one user belonging to " + group.getName()
                         + " already have permissions set on its own.");
             }
         } else {
-            QueryResult<StudyAcl> studyAcls = getAcl(studyId, Arrays.asList(member));
+            QueryResult<StudyAclEntry> studyAcls = getAcl(studyId, Arrays.asList(member));
 
             // Check if the user already has permissions
             if (studyAcls.getNumResults() > 0 && override) {
@@ -573,7 +573,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, studyId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(studyAcl, "StudyAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(studyAcl, "StudyAcl")));
         QueryResult<UpdateResult> updateResult = studyCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -598,14 +598,14 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<StudyAcl> setAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<StudyAclEntry> setAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(studyId, member, permissions, studyCollection);
         return endQuery("Set Acls to member", startTime, getAcl(studyId, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<StudyAcl> addAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<StudyAclEntry> addAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(studyId, member, permissions, studyCollection);
         return endQuery("Add Acls to member", startTime, getAcl(studyId, Arrays.asList(member)));
@@ -633,7 +633,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         /*
         * Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-                .append(QueryParams.ACLS_MEMBER.key(),
+                .append(QueryParams.ACL_MEMBER.key(),
                         new Document("$exists", true).append("$eq", Collections.emptyList()));
         Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
         sampleCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
@@ -641,8 +641,8 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             QueryResult<UpdateResult> updateResult = studyCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetStudyAcl: An error occurred when trying to stop sharing study " + studyId

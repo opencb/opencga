@@ -36,7 +36,7 @@ import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.AbstractAclEntry;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -115,14 +115,14 @@ class CatalogMongoDBUtils {
 
     //--------------- ACL operations -------------------------/
 
-    static void createAcl(long id, AbstractAcl acl, MongoDBCollection collection, String clazz) throws CatalogDBException {
+    static void createAcl(long id, AbstractAclEntry acl, MongoDBCollection collection, String clazz) throws CatalogDBException {
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, id);
-        Document update = new Document("$push", new Document(CatalogFileDBAdaptor.QueryParams.ACLS.key(), getMongoDBDocument(acl, clazz)));
+        Document update = new Document("$push", new Document(CatalogFileDBAdaptor.QueryParams.ACL.key(), getMongoDBDocument(acl, clazz)));
         QueryResult<UpdateResult> updateResult = collection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("create Acl: An error occurred when trying to create acls for " + id + " for " + acl.getMember());
+            throw new CatalogDBException("create Acl: An error occurred when trying to create acl for " + id + " for " + acl.getMember());
         }
     }
 
@@ -131,12 +131,12 @@ class CatalogMongoDBUtils {
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
         aggregation.add(Aggregates.project(Projections.include(CatalogFileDBAdaptor.QueryParams.ID.key(),
-                CatalogFileDBAdaptor.QueryParams.ACLS.key())));
-        aggregation.add(Aggregates.unwind("$" + CatalogFileDBAdaptor.QueryParams.ACLS.key()));
+                CatalogFileDBAdaptor.QueryParams.ACL.key())));
+        aggregation.add(Aggregates.unwind("$" + CatalogFileDBAdaptor.QueryParams.ACL.key()));
 
         List<Bson> filters = new ArrayList<>();
         if (members != null && members.size() > 0) {
-            filters.add(Filters.in(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), members));
+            filters.add(Filters.in(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), members));
         }
 
         if (filters.size() > 0) {
@@ -154,20 +154,20 @@ class CatalogMongoDBUtils {
     static void removeAcl(long id, String member, MongoDBCollection collection) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
         Bson update = new Document()
-                .append("$pull", new Document("acls", new Document("member", member)));
+                .append("$pull", new Document("acl", new Document("member", member)));
         QueryResult<UpdateResult> updateResult = collection.update(query, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACLS defined for " + member);
+            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACL defined for " + member);
         }
     }
 
     static void setAclsToMember(long id, String member, List<String> permissions, MongoDBCollection collection) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
-        Document update = new Document("$set", new Document("acls.$.permissions", permissions));
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+        Document update = new Document("$set", new Document("acl.$.permissions", permissions));
         QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
@@ -178,8 +178,8 @@ class CatalogMongoDBUtils {
     static void addAclsToMember(long id, String member, List<String> permissions, MongoDBCollection collection) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
-        Document update = new Document("$addToSet", new Document("acls.$.permissions", new Document("$each", permissions)));
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+        Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
         QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
@@ -192,8 +192,8 @@ class CatalogMongoDBUtils {
             throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
-        Bson pull = Updates.pullAll("acls.$.permissions", permissions);
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+        Bson pull = Updates.pullAll("acl.$.permissions", permissions);
         QueryResult<UpdateResult> update = collection.update(query, pull, null);
         if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove the permissions from " + member + ". Maybe it didn't have those permissions?");

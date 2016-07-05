@@ -7,7 +7,7 @@ import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,10 +65,10 @@ public interface IIndividualManager extends ResourceManager<Long, Individual> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the individual id is not valid or the members given do not exist.
      */
-    QueryResult<IndividualAcl> getIndividualAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<IndividualAcl>> getIndividualAcls(List<String> individualIds, List<String> members, String sessionId)
+    QueryResult<IndividualAclEntry> getIndividualAcls(String individualStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<IndividualAclEntry>> getIndividualAcls(List<String> individualIds, List<String> members, String sessionId)
             throws CatalogException {
-        List<QueryResult<IndividualAcl>> result = new ArrayList<>(individualIds.size());
+        List<QueryResult<IndividualAclEntry>> result = new ArrayList<>(individualIds.size());
         for (String individualStr : individualIds) {
             result.add(getIndividualAcls(individualStr, members, sessionId));
         }

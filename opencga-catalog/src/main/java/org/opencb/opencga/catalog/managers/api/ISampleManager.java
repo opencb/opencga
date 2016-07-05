@@ -8,8 +8,8 @@ import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.CohortAcl;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -73,10 +73,10 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the sample id is not valid or the members given do not exist.
      */
-    QueryResult<SampleAcl> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<SampleAcl>> getSampleAcls(List<String> sampleIds, List<String> members, String sessionId)
+    QueryResult<SampleAclEntry> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<SampleAclEntry>> getSampleAcls(List<String> sampleIds, List<String> members, String sessionId)
             throws CatalogException {
-        List<QueryResult<SampleAcl>> result = new ArrayList<>(sampleIds.size());
+        List<QueryResult<SampleAclEntry>> result = new ArrayList<>(sampleIds.size());
         for (String sampleStr : sampleIds) {
             result.add(getSampleAcls(sampleStr, members, sessionId));
         }
@@ -219,10 +219,10 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the cohort id is not valid or the members given do not exist.
      */
-    QueryResult<CohortAcl> getCohortAcls(String cohortStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<CohortAcl>> getCohortAcls(List<String> cohortIds, List<String> members, String sessionId)
+    QueryResult<CohortAclEntry> getCohortAcls(String cohortStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<CohortAclEntry>> getCohortAcls(List<String> cohortIds, List<String> members, String sessionId)
             throws CatalogException {
-        List<QueryResult<CohortAcl>> result = new ArrayList<>(cohortIds.size());
+        List<QueryResult<CohortAclEntry>> result = new ArrayList<>(cohortIds.size());
         for (String cohortStr : cohortIds) {
             result.add(getCohortAcls(cohortStr, members, sessionId));
         }

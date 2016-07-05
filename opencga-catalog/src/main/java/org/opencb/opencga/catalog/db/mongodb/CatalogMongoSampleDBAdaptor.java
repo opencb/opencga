@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.db.api.*;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -188,20 +188,20 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     @Deprecated
-    public QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), userId));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), userId));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<SampleAcl> sampleAcl = null;
+        List<SampleAclEntry> sampleAcl = null;
         QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
         if (sampleList.size() > 0) {
-            sampleAcl = sampleList.get(0).getAcls();
+            sampleAcl = sampleList.get(0).getAcl();
         }
 
         return endQuery("getSampleAcl", startTime, sampleAcl);
@@ -209,20 +209,20 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     @Deprecated
-    public QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<SampleAcl> sampleAcl = null;
+        List<SampleAclEntry> sampleAcl = null;
         QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
         if (sampleList.size() > 0) {
-            sampleAcl = sampleList.get(0).getAcls();
+            sampleAcl = sampleList.get(0).getAcl();
         }
 
         return endQuery("getSampleAcl", startTime, sampleAcl);
@@ -275,7 +275,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> setSampleAcl(long sampleId, SampleAclEntry acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         long studyId = getStudyIdBySampleId(sampleId);
 
@@ -287,14 +287,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<SampleAcl> fileAcl = getSampleAcl(sampleId, group.getUserIds());
+            QueryResult<SampleAclEntry> fileAcl = getSampleAcl(sampleId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in sample. At least one user in " + group.getName()
                         + " has already defined permissions for sample " + sampleId);
             }
         } else {
             // Check if the members of the new acl already have some permissions set
-            QueryResult<SampleAcl> sampleAcls = getSampleAcl(sampleId, acl.getMember());
+            QueryResult<SampleAclEntry> sampleAcls = getSampleAcl(sampleId, acl.getMember());
 
             if (sampleAcls.getNumResults() > 0 && override) {
                 unsetSampleAcl(sampleId, Arrays.asList(member), Collections.emptyList());
@@ -306,7 +306,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, sampleId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "SampleAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "SampleAcl")));
         QueryResult<UpdateResult> updateResult = sampleCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -348,12 +348,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, sampleId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Document query = new Document(PRIVATE_ID, sampleId).append(QueryParams.ACL_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls", new Document("member", member)));
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
             } else {
-                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
             }
             QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -364,7 +364,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove possible SampleAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(QueryParams.ID.key(), sampleId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        sampleCollection.update(queryBson, update, null);
@@ -377,14 +377,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             sampleCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 //
 //        // Remove possible SampleAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        sampleCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
@@ -1095,22 +1095,22 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> createAcl(long id, SampleAcl acl) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> createAcl(long id, SampleAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(id, acl, sampleCollection, "SampleAcl");
         return endQuery("create sample Acl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public QueryResult<SampleAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<SampleAcl> acl = null;
+        List<SampleAclEntry> acl = null;
         QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection, logger);
         Sample sample = sampleConverter.convertToDataModelType(aggregate.first());
 
         if (sample != null) {
-            acl = sample.getAcls();
+            acl = sample.getAcl();
         }
 
         return endQuery("get sample Acl", startTime, acl);
@@ -1122,14 +1122,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(id, member, permissions, sampleCollection);
         return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<SampleAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(id, member, permissions, sampleCollection);
         return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));

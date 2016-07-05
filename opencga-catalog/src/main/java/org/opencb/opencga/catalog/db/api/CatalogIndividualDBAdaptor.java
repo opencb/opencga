@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>, CatalogAclDBAdaptor<IndividualAcl> {
+public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>, CatalogAclDBAdaptor<IndividualAclEntry> {
 
     default boolean individualExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -71,13 +71,13 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> deleteIndividual(long individualId, QueryOptions options) throws CatalogDBException;
 
-    default QueryResult<IndividualAcl> getIndividualAcl(long individualId, String member) throws CatalogDBException {
+    default QueryResult<IndividualAclEntry> getIndividualAcl(long individualId, String member) throws CatalogDBException {
         return getIndividualAcl(individualId, Arrays.asList(member));
     }
 
-    QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+    QueryResult<IndividualAclEntry> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
 
-    QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<IndividualAclEntry> setIndividualAcl(long individualId, IndividualAclEntry acl, boolean override) throws CatalogDBException;
 
     void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException;
 
@@ -103,9 +103,9 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

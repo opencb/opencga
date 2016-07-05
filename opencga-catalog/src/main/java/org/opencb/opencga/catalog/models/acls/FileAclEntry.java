@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class FileAcl extends AbstractAcl<FileAcl.FilePermissions> {
+public class FileAclEntry extends AbstractAclEntry<FileAclEntry.FilePermissions> {
 
     public enum FilePermissions {
         VIEW_HEADER,  // Includes permission to view the sample ids from a VCF file.
@@ -23,15 +23,15 @@ public class FileAcl extends AbstractAcl<FileAcl.FilePermissions> {
         SHARE
     }
 
-    public FileAcl() {
+    public FileAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public FileAcl(String member, EnumSet<FilePermissions> permissions) {
+    public FileAclEntry(String member, EnumSet<FilePermissions> permissions) {
         super(member, permissions);
     }
 
-    public FileAcl(String member, ObjectMap permissions) {
+    public FileAclEntry(String member, ObjectMap permissions) {
         super(member, EnumSet.noneOf(FilePermissions.class));
 
         EnumSet<FilePermissions> aux = EnumSet.allOf(FilePermissions.class);
@@ -42,7 +42,7 @@ public class FileAcl extends AbstractAcl<FileAcl.FilePermissions> {
         }
     }
 
-    public FileAcl(String member, List<String> permissions) {
+    public FileAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(FilePermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(FilePermissions::valueOf).collect(Collectors.toList()));

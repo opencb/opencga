@@ -126,7 +126,7 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, ids, "unshare", params, Object.class);
     }*/
 
-//    public QueryResponse<StudyAcl> getAcls(String studyId) throws IOException {
+//    public QueryResponse<StudyAcl> getAcl(String studyId) throws IOException {
 //        return execute(STUDY_URL, studyId, "acls", new ObjectMap(), GET, StudyAcl.class);
 //    }
 //

@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.JobAclEntry;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -59,9 +59,9 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the job id is not valid or the members given do not exist.
      */
-    QueryResult<JobAcl> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<JobAcl>> getJobAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
-        List<QueryResult<JobAcl>> result = new ArrayList<>(jobIds.size());
+    QueryResult<JobAclEntry> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<JobAclEntry>> getJobAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
+        List<QueryResult<JobAclEntry>> result = new ArrayList<>(jobIds.size());
         for (String jobId : jobIds) {
             result.add(getJobAcls(jobId, members, sessionId));
         }

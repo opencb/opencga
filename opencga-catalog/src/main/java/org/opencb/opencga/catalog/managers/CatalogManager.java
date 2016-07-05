@@ -683,27 +683,27 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("removeUsersFromGroup");
 //    }
 
-    public QueryResult<StudyAcl> createStudyAcls(String studyStr, String members, String permissions, @Nullable String templateId,
-                                                 String sessionId) throws CatalogException {
+    public QueryResult<StudyAclEntry> createStudyAcls(String studyStr, String members, String permissions, @Nullable String templateId,
+                                                      String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long studyId = studyManager.getStudyId(userId, studyStr);
         return authorizationManager.createStudyAcls(userId, studyId, members, permissions, templateId);
     }
 
-    public QueryResult<StudyAcl> getAllStudyAcls(String studyStr, String sessionId) throws CatalogException {
+    public QueryResult<StudyAclEntry> getAllStudyAcls(String studyStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long studyId = studyManager.getStudyId(userId, studyStr);
         return authorizationManager.getAllStudyAcls(userId, studyId);
     }
 
-    public QueryResult<StudyAcl> getStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<StudyAclEntry> getStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long studyId = studyManager.getStudyId(userId, studyStr);
         return authorizationManager.getStudyAcl(userId, studyId, member);
     }
 
-    public QueryResult<StudyAcl> updateStudyAcl(String studyStr, String member, @Nullable String addPermissions,
-                                                @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+    public QueryResult<StudyAclEntry> updateStudyAcl(String studyStr, String member, @Nullable String addPermissions,
+                                                     @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long studyId = studyManager.getStudyId(userId, studyStr);
@@ -711,7 +711,7 @@ public class CatalogManager implements AutoCloseable {
 
     }
 
-    public QueryResult<StudyAcl> removeStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<StudyAclEntry> removeStudyAcl(String studyStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long studyId = studyManager.getStudyId(userId, studyStr);
         return authorizationManager.removeStudyAcl(userId, studyId, member);
@@ -725,62 +725,62 @@ public class CatalogManager implements AutoCloseable {
 //    }
 
     @Deprecated
-    public QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
+    public QueryResult<StudyAclEntry> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
         return studyManager.getStudyAcls(studyStr, members, sessionId);
     }
 
-    public List<QueryResult<SampleAcl>> getAllSampleAcls(String sampleIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<SampleAclEntry>> getAllSampleAcls(String sampleIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] sampleNameSplit = sampleIdsStr.split(",");
         List<Long> sampleIds = sampleManager.getSampleIds(userId, sampleIdsStr);
-        List<QueryResult<SampleAcl>> sampleAclList = new ArrayList<>(sampleIds.size());
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleIds.size());
         for (int i = 0; i < sampleIds.size(); i++) {
             Long sampleId = sampleIds.get(i);
-            QueryResult<SampleAcl> allSampleAcls = authorizationManager.getAllSampleAcls(userId, sampleId);
+            QueryResult<SampleAclEntry> allSampleAcls = authorizationManager.getAllSampleAcls(userId, sampleId);
             allSampleAcls.setId(sampleNameSplit[i]);
             sampleAclList.add(allSampleAcls);
         }
         return sampleAclList;
     }
 
-    public List<QueryResult<SampleAcl>> createSampleAcls(String sampleIdsStr, String members, String permissions, String sessionId)
+    public List<QueryResult<SampleAclEntry>> createSampleAcls(String sampleIdsStr, String members, String permissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] sampleNameSplit = sampleIdsStr.split(",");
         List<Long> sampleIds = sampleManager.getSampleIds(userId, sampleIdsStr);
-        List<QueryResult<SampleAcl>> sampleAclList = new ArrayList<>(sampleIds.size());
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleIds.size());
         for (int i = 0; i < sampleIds.size(); i++) {
             Long sampleId = sampleIds.get(i);
-            QueryResult<SampleAcl> sampleAcls = authorizationManager.createSampleAcls(userId, sampleId, members, permissions);
+            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.createSampleAcls(userId, sampleId, members, permissions);
             sampleAcls.setId(sampleNameSplit[i]);
             sampleAclList.add(sampleAcls);
         }
         return sampleAclList;
     }
 
-    public List<QueryResult<SampleAcl>> removeSampleAcl(String sampleIdsStr, String member, String sessionId) throws CatalogException {
+    public List<QueryResult<SampleAclEntry>> removeSampleAcl(String sampleIdsStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] sampleNameSplit = sampleIdsStr.split(",");
         List<Long> sampleIds = sampleManager.getSampleIds(userId, sampleIdsStr);
-        List<QueryResult<SampleAcl>> sampleAclList = new ArrayList<>(sampleIds.size());
+        List<QueryResult<SampleAclEntry>> sampleAclList = new ArrayList<>(sampleIds.size());
         for (int i = 0; i < sampleIds.size(); i++) {
             Long sampleId = sampleIds.get(i);
-            QueryResult<SampleAcl> sampleAcls = authorizationManager.removeSampleAcl(userId, sampleId, member);
+            QueryResult<SampleAclEntry> sampleAcls = authorizationManager.removeSampleAcl(userId, sampleId, member);
             sampleAcls.setId(sampleNameSplit[i]);
             sampleAclList.add(sampleAcls);
         }
         return sampleAclList;
     }
 
-    public QueryResult<SampleAcl> getSampleAcl(String sampleIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<SampleAclEntry> getSampleAcl(String sampleIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long sampleId = sampleManager.getSampleId(userId, sampleIdStr);
         return authorizationManager.getSampleAcl(userId, sampleId, member);
     }
 
-    public QueryResult<SampleAcl> updateSampleAcl(String sampleIdStr, String member, @Nullable String addPermissions,
-                                                @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
+    public QueryResult<SampleAclEntry> updateSampleAcl(String sampleIdStr, String member, @Nullable String addPermissions,
+                                                       @Nullable String removePermissions, @Nullable String setPermissions,
+                                                       String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long sampleId = sampleManager.getSampleId(userId, sampleIdStr);
         return authorizationManager.updateSampleAcl(userId, sampleId, member, addPermissions, removePermissions, setPermissions);
@@ -982,57 +982,57 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("unshareFile");
 //    }
 
-    public List<QueryResult<FileAcl>> getAllFileAcls(String fileIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<FileAclEntry>> getAllFileAcls(String fileIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] fileNameSplit = fileIdsStr.split(",");
         List<Long> fileIds = fileManager.getFileIds(userId, fileIdsStr);
-        List<QueryResult<FileAcl>> aclList = new ArrayList<>(fileIds.size());
+        List<QueryResult<FileAclEntry>> aclList = new ArrayList<>(fileIds.size());
         for (int i = 0; i < fileIds.size(); i++) {
             Long fileId = fileIds.get(i);
-            QueryResult<FileAcl> allFileAcls = authorizationManager.getAllFileAcls(userId, fileId);
+            QueryResult<FileAclEntry> allFileAcls = authorizationManager.getAllFileAcls(userId, fileId);
             allFileAcls.setId(fileNameSplit[i]);
             aclList.add(allFileAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<FileAcl>> createFileAcls(String fileIdsStr, String members, String permissions, String sessionId)
+    public List<QueryResult<FileAclEntry>> createFileAcls(String fileIdsStr, String members, String permissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] fileNameSplit = fileIdsStr.split(",");
         List<Long> fileIds = fileManager.getFileIds(userId, fileIdsStr);
-        List<QueryResult<FileAcl>> fileAclList = new ArrayList<>(fileIds.size());
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(fileIds.size());
         for (int i = 0; i < fileIds.size(); i++) {
             Long fileId = fileIds.get(i);
-            QueryResult<FileAcl> fileAcls = authorizationManager.createFileAcls(userId, fileId, members, permissions);
+            QueryResult<FileAclEntry> fileAcls = authorizationManager.createFileAcls(userId, fileId, members, permissions);
             fileAcls.setId(fileNameSplit[i]);
             fileAclList.add(fileAcls);
         }
         return fileAclList;
     }
 
-    public List<QueryResult<FileAcl>> removeFileAcl(String fileIdsStr, String member, String sessionId) throws CatalogException {
+    public List<QueryResult<FileAclEntry>> removeFileAcl(String fileIdsStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] fileNameSplit = fileIdsStr.split(",");
         List<Long> fileIds = fileManager.getFileIds(userId, fileIdsStr);
-        List<QueryResult<FileAcl>> fileAclList = new ArrayList<>(fileIds.size());
+        List<QueryResult<FileAclEntry>> fileAclList = new ArrayList<>(fileIds.size());
         for (int i = 0; i < fileIds.size(); i++) {
             Long fileId = fileIds.get(i);
-            QueryResult<FileAcl> fileAcls = authorizationManager.removeFileAcl(userId, fileId, member);
+            QueryResult<FileAclEntry> fileAcls = authorizationManager.removeFileAcl(userId, fileId, member);
             fileAcls.setId(fileNameSplit[i]);
             fileAclList.add(fileAcls);
         }
         return fileAclList;
     }
 
-    public QueryResult<FileAcl> getFileAcl(String fileIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<FileAclEntry> getFileAcl(String fileIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long fileId = fileManager.getFileId(userId, fileIdStr);
         return authorizationManager.getFileAcl(userId, fileId, member);
     }
 
-    public QueryResult<FileAcl> updateFileAcl(String fileIdStr, String member, @Nullable String addPermissions,
-                                                  @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+    public QueryResult<FileAclEntry> updateFileAcl(String fileIdStr, String member, @Nullable String addPermissions,
+                                                   @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long fileId = fileManager.getFileId(userId, fileIdStr);
@@ -1165,29 +1165,29 @@ public class CatalogManager implements AutoCloseable {
         return jobManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
     }
 
-    public List<QueryResult<JobAcl>> getAllJobAcls(String jobIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<JobAclEntry>> getAllJobAcls(String jobIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] jobNameSplit = jobIdsStr.split(",");
         List<Long> jobIds = jobManager.getJobIds(userId, jobIdsStr);
-        List<QueryResult<JobAcl>> aclList = new ArrayList<>(jobIds.size());
+        List<QueryResult<JobAclEntry>> aclList = new ArrayList<>(jobIds.size());
         for (int i = 0; i < jobIds.size(); i++) {
             Long jobId = jobIds.get(i);
-            QueryResult<JobAcl> allJobAcls = authorizationManager.getAllJobAcls(userId, jobId);
+            QueryResult<JobAclEntry> allJobAcls = authorizationManager.getAllJobAcls(userId, jobId);
             allJobAcls.setId(jobNameSplit[i]);
             aclList.add(allJobAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<JobAcl>> createJobAcls(String jobIdsStr, String members, String permissions,
-                                                   String sessionId) throws CatalogException {
+    public List<QueryResult<JobAclEntry>> createJobAcls(String jobIdsStr, String members, String permissions,
+                                                        String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] jobNameSplit = jobIdsStr.split(",");
         List<Long> jobIds = jobManager.getJobIds(userId, jobIdsStr);
-        List<QueryResult<JobAcl>> jobAclList = new ArrayList<>(jobIds.size());
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobIds.size());
         for (int i = 0; i < jobIds.size(); i++) {
             Long jobId = jobIds.get(i);
-            QueryResult<JobAcl> jobAcls = authorizationManager.createJobAcls(userId, jobId, members,
+            QueryResult<JobAclEntry> jobAcls = authorizationManager.createJobAcls(userId, jobId, members,
                     permissions);
             jobAcls.setId(jobNameSplit[i]);
             jobAclList.add(jobAcls);
@@ -1195,29 +1195,29 @@ public class CatalogManager implements AutoCloseable {
         return jobAclList;
     }
 
-    public List<QueryResult<JobAcl>> removeJobAcl(String jobIdsStr, String member, String sessionId)
+    public List<QueryResult<JobAclEntry>> removeJobAcl(String jobIdsStr, String member, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] jobNameStr = jobIdsStr.split(",");
         List<Long> jobIds = jobManager.getJobIds(userId, jobIdsStr);
-        List<QueryResult<JobAcl>> jobAclList = new ArrayList<>(jobIds.size());
+        List<QueryResult<JobAclEntry>> jobAclList = new ArrayList<>(jobIds.size());
         for (int i = 0; i < jobIds.size(); i++) {
             Long jobId = jobIds.get(i);
-            QueryResult<JobAcl> jobAcls = authorizationManager.removeJobAcl(userId, jobId, member);
+            QueryResult<JobAclEntry> jobAcls = authorizationManager.removeJobAcl(userId, jobId, member);
             jobAcls.setId(jobNameStr[i]);
             jobAclList.add(jobAcls);
         }
         return jobAclList;
     }
 
-    public QueryResult<JobAcl> getJobAcl(String jobIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<JobAclEntry> getJobAcl(String jobIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long jobId = jobManager.getJobId(userId, jobIdStr);
         return authorizationManager.getJobAcl(userId, jobId, member);
     }
 
-    public QueryResult<JobAcl> updateJobAcl(String jobIdStr, String member, @Nullable String addPermissions,
-                                            @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
+    public QueryResult<JobAclEntry> updateJobAcl(String jobIdStr, String member, @Nullable String addPermissions,
+                                                 @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long jobId = jobManager.getJobId(userId, jobIdStr);
@@ -1282,29 +1282,29 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("unshareIndividual");
 //    }
 
-    public List<QueryResult<IndividualAcl>> getAllIndividualAcls(String individualIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<IndividualAclEntry>> getAllIndividualAcls(String individualIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] individualNameSplit = individualIdsStr.split(",");
         List<Long> individualIds = individualManager.getIndividualIds(userId, individualIdsStr);
-        List<QueryResult<IndividualAcl>> aclList = new ArrayList<>(individualIds.size());
+        List<QueryResult<IndividualAclEntry>> aclList = new ArrayList<>(individualIds.size());
         for (int i = 0; i < individualIds.size(); i++) {
             Long individualId = individualIds.get(i);
-            QueryResult<IndividualAcl> allIndividualAcls = authorizationManager.getAllIndividualAcls(userId, individualId);
+            QueryResult<IndividualAclEntry> allIndividualAcls = authorizationManager.getAllIndividualAcls(userId, individualId);
             allIndividualAcls.setId(individualNameSplit[i]);
             aclList.add(allIndividualAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<IndividualAcl>> createIndividualAcls(String individualIdsStr, String members, String permissions,
-                                                                 String sessionId) throws CatalogException {
+    public List<QueryResult<IndividualAclEntry>> createIndividualAcls(String individualIdsStr, String members, String permissions,
+                                                                      String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] individualNameSplit = individualIdsStr.split(",");
         List<Long> individualIds = individualManager.getIndividualIds(userId, individualIdsStr);
-        List<QueryResult<IndividualAcl>> individualAclList = new ArrayList<>(individualIds.size());
+        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualIds.size());
         for (int i = 0; i < individualIds.size(); i++) {
             Long individualId = individualIds.get(i);
-            QueryResult<IndividualAcl> individualAcls = authorizationManager.createIndividualAcls(userId, individualId, members,
+            QueryResult<IndividualAclEntry> individualAcls = authorizationManager.createIndividualAcls(userId, individualId, members,
                     permissions);
             individualAcls.setId(individualNameSplit[i]);
             individualAclList.add(individualAcls);
@@ -1312,30 +1312,31 @@ public class CatalogManager implements AutoCloseable {
         return individualAclList;
     }
 
-    public List<QueryResult<IndividualAcl>> removeIndividualAcl(String individualIdsStr, String member, String sessionId)
+    public List<QueryResult<IndividualAclEntry>> removeIndividualAcl(String individualIdsStr, String member, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] individualNameStr = individualIdsStr.split(",");
         List<Long> individualIds = individualManager.getIndividualIds(userId, individualIdsStr);
-        List<QueryResult<IndividualAcl>> individualAclList = new ArrayList<>(individualIds.size());
+        List<QueryResult<IndividualAclEntry>> individualAclList = new ArrayList<>(individualIds.size());
         for (int i = 0; i < individualIds.size(); i++) {
             Long individualId = individualIds.get(i);
-            QueryResult<IndividualAcl> individualAcls = authorizationManager.removeIndividualAcl(userId, individualId, member);
+            QueryResult<IndividualAclEntry> individualAcls = authorizationManager.removeIndividualAcl(userId, individualId, member);
             individualAcls.setId(individualNameStr[i]);
             individualAclList.add(individualAcls);
         }
         return individualAclList;
     }
 
-    public QueryResult<IndividualAcl> getIndividualAcl(String individualIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<IndividualAclEntry> getIndividualAcl(String individualIdStr, String member, String sessionId)
+            throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long individualId = individualManager.getIndividualId(userId, individualIdStr);
         return authorizationManager.getIndividualAcl(userId, individualId, member);
     }
 
-    public QueryResult<IndividualAcl> updateIndividualAcl(String individualIdStr, String member, @Nullable String addPermissions,
-                                              @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
+    public QueryResult<IndividualAclEntry> updateIndividualAcl(String individualIdStr, String member, @Nullable String addPermissions,
+                                                               @Nullable String removePermissions, @Nullable String setPermissions,
+                                                               String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long individualId = individualManager.getIndividualId(userId, individualIdStr);
         return authorizationManager.updateIndividualAcl(userId, individualId, member, addPermissions, removePermissions, setPermissions);
@@ -1540,29 +1541,29 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteCohort(cohortId, options, sessionId);
     }
 
-    public List<QueryResult<CohortAcl>> getAllCohortAcls(String cohortIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<CohortAclEntry>> getAllCohortAcls(String cohortIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] cohortNameSplit = cohortIdsStr.split(",");
         List<Long> cohortIds = sampleManager.getCohortIds(userId, cohortIdsStr);
-        List<QueryResult<CohortAcl>> aclList = new ArrayList<>(cohortIds.size());
+        List<QueryResult<CohortAclEntry>> aclList = new ArrayList<>(cohortIds.size());
         for (int i = 0; i < cohortIds.size(); i++) {
             Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAcl> allCohortAcls = authorizationManager.getAllCohortAcls(userId, cohortId);
+            QueryResult<CohortAclEntry> allCohortAcls = authorizationManager.getAllCohortAcls(userId, cohortId);
             allCohortAcls.setId(cohortNameSplit[i]);
             aclList.add(allCohortAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<CohortAcl>> createCohortAcls(String cohortIdsStr, String members, String permissions,
-                                                         String sessionId) throws CatalogException {
+    public List<QueryResult<CohortAclEntry>> createCohortAcls(String cohortIdsStr, String members, String permissions,
+                                                              String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] cohortNameSplit = cohortIdsStr.split(",");
         List<Long> cohortIds = sampleManager.getCohortIds(userId, cohortIdsStr);
-        List<QueryResult<CohortAcl>> cohortAclList = new ArrayList<>(cohortIds.size());
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
         for (int i = 0; i < cohortIds.size(); i++) {
             Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAcl> cohortAcls = authorizationManager.createCohortAcls(userId, cohortId, members,
+            QueryResult<CohortAclEntry> cohortAcls = authorizationManager.createCohortAcls(userId, cohortId, members,
                     permissions);
             cohortAcls.setId(cohortNameSplit[i]);
             cohortAclList.add(cohortAcls);
@@ -1570,30 +1571,30 @@ public class CatalogManager implements AutoCloseable {
         return cohortAclList;
     }
 
-    public List<QueryResult<CohortAcl>> removeCohortAcl(String cohortIdsStr, String member, String sessionId)
+    public List<QueryResult<CohortAclEntry>> removeCohortAcl(String cohortIdsStr, String member, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] cohortNameStr = cohortIdsStr.split(",");
         List<Long> cohortIds = sampleManager.getCohortIds(userId, cohortIdsStr);
-        List<QueryResult<CohortAcl>> cohortAclList = new ArrayList<>(cohortIds.size());
+        List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
         for (int i = 0; i < cohortIds.size(); i++) {
             Long cohortId = cohortIds.get(i);
-            QueryResult<CohortAcl> cohortAcls = authorizationManager.removeCohortAcl(userId, cohortId, member);
+            QueryResult<CohortAclEntry> cohortAcls = authorizationManager.removeCohortAcl(userId, cohortId, member);
             cohortAcls.setId(cohortNameStr[i]);
             cohortAclList.add(cohortAcls);
         }
         return cohortAclList;
     }
 
-    public QueryResult<CohortAcl> getCohortAcl(String cohortIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<CohortAclEntry> getCohortAcl(String cohortIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long cohortId = sampleManager.getCohortId(userId, cohortIdStr);
         return authorizationManager.getCohortAcl(userId, cohortId, member);
     }
 
-    public QueryResult<CohortAcl> updateCohortAcl(String cohortIdStr, String member, @Nullable String addPermissions,
-                                                  @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
+    public QueryResult<CohortAclEntry> updateCohortAcl(String cohortIdStr, String member, @Nullable String addPermissions,
+                                                       @Nullable String removePermissions, @Nullable String setPermissions,
+                                                       String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long cohortId = sampleManager.getCohortId(userId, cohortIdStr);
         return authorizationManager.updateCohortAcl(userId, cohortId, member, addPermissions, removePermissions, setPermissions);
@@ -1696,29 +1697,29 @@ public class CatalogManager implements AutoCloseable {
         return studyManager.getDiseasePanel(panelStr, options, sessionId);
     }
 
-    public List<QueryResult<DiseasePanelAcl>> getAllPanelAcls(String panelIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<DiseasePanelAclEntry>> getAllPanelAcls(String panelIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] panelNameSplit = panelIdsStr.split(",");
         List<Long> panelIds = studyManager.getDiseasePanelIds(userId, panelIdsStr);
-        List<QueryResult<DiseasePanelAcl>> aclList = new ArrayList<>(panelIds.size());
+        List<QueryResult<DiseasePanelAclEntry>> aclList = new ArrayList<>(panelIds.size());
         for (int i = 0; i < panelIds.size(); i++) {
             Long panelId = panelIds.get(i);
-            QueryResult<DiseasePanelAcl> allPanelAcls = authorizationManager.getAllPanelAcls(userId, panelId);
+            QueryResult<DiseasePanelAclEntry> allPanelAcls = authorizationManager.getAllPanelAcls(userId, panelId);
             allPanelAcls.setId(panelNameSplit[i]);
             aclList.add(allPanelAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<DiseasePanelAcl>> createPanelAcls(String panelIdsStr, String members, String permissions,
-                                                       String sessionId) throws CatalogException {
+    public List<QueryResult<DiseasePanelAclEntry>> createPanelAcls(String panelIdsStr, String members, String permissions,
+                                                                   String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] panelNameSplit = panelIdsStr.split(",");
         List<Long> panelIds = studyManager.getDiseasePanelIds(userId, panelIdsStr);
-        List<QueryResult<DiseasePanelAcl>> panelAclList = new ArrayList<>(panelIds.size());
+        List<QueryResult<DiseasePanelAclEntry>> panelAclList = new ArrayList<>(panelIds.size());
         for (int i = 0; i < panelIds.size(); i++) {
             Long panelId = panelIds.get(i);
-            QueryResult<DiseasePanelAcl> panelAcls = authorizationManager.createPanelAcls(userId, panelId, members,
+            QueryResult<DiseasePanelAclEntry> panelAcls = authorizationManager.createPanelAcls(userId, panelId, members,
                     permissions);
             panelAcls.setId(panelNameSplit[i]);
             panelAclList.add(panelAcls);
@@ -1726,30 +1727,30 @@ public class CatalogManager implements AutoCloseable {
         return panelAclList;
     }
 
-    public List<QueryResult<DiseasePanelAcl>> removePanelAcl(String panelIdsStr, String member, String sessionId)
+    public List<QueryResult<DiseasePanelAclEntry>> removePanelAcl(String panelIdsStr, String member, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] panelNameStr = panelIdsStr.split(",");
         List<Long> panelIds = studyManager.getDiseasePanelIds(userId, panelIdsStr);
-        List<QueryResult<DiseasePanelAcl>> panelAclList = new ArrayList<>(panelIds.size());
+        List<QueryResult<DiseasePanelAclEntry>> panelAclList = new ArrayList<>(panelIds.size());
         for (int i = 0; i < panelIds.size(); i++) {
             Long panelId = panelIds.get(i);
-            QueryResult<DiseasePanelAcl> panelAcls = authorizationManager.removePanelAcl(userId, panelId, member);
+            QueryResult<DiseasePanelAclEntry> panelAcls = authorizationManager.removePanelAcl(userId, panelId, member);
             panelAcls.setId(panelNameStr[i]);
             panelAclList.add(panelAcls);
         }
         return panelAclList;
     }
 
-    public QueryResult<DiseasePanelAcl> getPanelAcl(String panelIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<DiseasePanelAclEntry> getPanelAcl(String panelIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long panelId = studyManager.getDiseasePanelId(userId, panelIdStr);
         return authorizationManager.getPanelAcl(userId, panelId, member);
     }
 
-    public QueryResult<DiseasePanelAcl> updatePanelAcl(String panelIdStr, String member, @Nullable String addPermissions,
-                                                @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
+    public QueryResult<DiseasePanelAclEntry> updatePanelAcl(String panelIdStr, String member, @Nullable String addPermissions,
+                                                            @Nullable String removePermissions, @Nullable String setPermissions,
+                                                            String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long panelId = studyManager.getDiseasePanelId(userId, panelIdStr);
         return authorizationManager.updatePanelAcl(userId, panelId, member, addPermissions, removePermissions, setPermissions);
@@ -1759,29 +1760,29 @@ public class CatalogManager implements AutoCloseable {
     Dataset methods
      */
 
-    public List<QueryResult<DatasetAcl>> getAllDatasetAcls(String datasetIdsStr, String sessionId) throws CatalogException {
+    public List<QueryResult<DatasetAclEntry>> getAllDatasetAcls(String datasetIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] datasetNameSplit = datasetIdsStr.split(",");
         List<Long> datasetIds = fileManager.getDatasetIds(userId, datasetIdsStr);
-        List<QueryResult<DatasetAcl>> aclList = new ArrayList<>(datasetIds.size());
+        List<QueryResult<DatasetAclEntry>> aclList = new ArrayList<>(datasetIds.size());
         for (int i = 0; i < datasetIds.size(); i++) {
             Long datasetId = datasetIds.get(i);
-            QueryResult<DatasetAcl> allDatasetAcls = authorizationManager.getAllDatasetAcls(userId, datasetId);
+            QueryResult<DatasetAclEntry> allDatasetAcls = authorizationManager.getAllDatasetAcls(userId, datasetId);
             allDatasetAcls.setId(datasetNameSplit[i]);
             aclList.add(allDatasetAcls);
         }
         return aclList;
     }
 
-    public List<QueryResult<DatasetAcl>> createDatasetAcls(String datasetIdsStr, String members, String permissions,
-                                                           String sessionId) throws CatalogException {
+    public List<QueryResult<DatasetAclEntry>> createDatasetAcls(String datasetIdsStr, String members, String permissions,
+                                                                String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] datasetNameSplit = datasetIdsStr.split(",");
         List<Long> datasetIds = fileManager.getDatasetIds(userId, datasetIdsStr);
-        List<QueryResult<DatasetAcl>> datasetAclList = new ArrayList<>(datasetIds.size());
+        List<QueryResult<DatasetAclEntry>> datasetAclList = new ArrayList<>(datasetIds.size());
         for (int i = 0; i < datasetIds.size(); i++) {
             Long datasetId = datasetIds.get(i);
-            QueryResult<DatasetAcl> datasetAcls = authorizationManager.createDatasetAcls(userId, datasetId, members,
+            QueryResult<DatasetAclEntry> datasetAcls = authorizationManager.createDatasetAcls(userId, datasetId, members,
                     permissions);
             datasetAcls.setId(datasetNameSplit[i]);
             datasetAclList.add(datasetAcls);
@@ -1789,30 +1790,30 @@ public class CatalogManager implements AutoCloseable {
         return datasetAclList;
     }
 
-    public List<QueryResult<DatasetAcl>> removeDatasetAcl(String datasetIdsStr, String member, String sessionId)
+    public List<QueryResult<DatasetAclEntry>> removeDatasetAcl(String datasetIdsStr, String member, String sessionId)
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] datasetNameStr = datasetIdsStr.split(",");
         List<Long> datasetIds = fileManager.getDatasetIds(userId, datasetIdsStr);
-        List<QueryResult<DatasetAcl>> datasetAclList = new ArrayList<>(datasetIds.size());
+        List<QueryResult<DatasetAclEntry>> datasetAclList = new ArrayList<>(datasetIds.size());
         for (int i = 0; i < datasetIds.size(); i++) {
             Long datasetId = datasetIds.get(i);
-            QueryResult<DatasetAcl> datasetAcls = authorizationManager.removeDatasetAcl(userId, datasetId, member);
+            QueryResult<DatasetAclEntry> datasetAcls = authorizationManager.removeDatasetAcl(userId, datasetId, member);
             datasetAcls.setId(datasetNameStr[i]);
             datasetAclList.add(datasetAcls);
         }
         return datasetAclList;
     }
 
-    public QueryResult<DatasetAcl> getDatasetAcl(String datasetIdStr, String member, String sessionId) throws CatalogException {
+    public QueryResult<DatasetAclEntry> getDatasetAcl(String datasetIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long datasetId = fileManager.getDatasetId(userId, datasetIdStr);
         return authorizationManager.getDatasetAcl(userId, datasetId, member);
     }
 
-    public QueryResult<DatasetAcl> updateDatasetAcl(String datasetIdStr, String member, @Nullable String addPermissions,
-                                                    @Nullable String removePermissions, @Nullable String setPermissions, String sessionId)
-            throws CatalogException {
+    public QueryResult<DatasetAclEntry> updateDatasetAcl(String datasetIdStr, String member, @Nullable String addPermissions,
+                                                         @Nullable String removePermissions, @Nullable String setPermissions,
+                                                         String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         long datasetId = fileManager.getDatasetId(userId, datasetIdStr);
         return authorizationManager.updateDatasetAcl(userId, datasetId, member, addPermissions, removePermissions, setPermissions);

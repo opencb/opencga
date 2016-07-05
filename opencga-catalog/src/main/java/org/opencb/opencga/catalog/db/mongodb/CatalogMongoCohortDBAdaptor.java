@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.CohortAcl;
+import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -306,29 +306,29 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<CohortAcl> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
+    public QueryResult<CohortAclEntry> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
         checkCohortId(cohortId);
 
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, cohortId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<CohortAcl> cohortAcl = null;
+        List<CohortAclEntry> cohortAcl = null;
         QueryResult<Document> aggregate = cohortCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
 
         if (cohort != null) {
-            cohortAcl = cohort.getAcls();
+            cohortAcl = cohort.getAcl();
         }
 
         return endQuery("get cohort Acl", startTime, cohortAcl);
     }
 
     @Override
-    public QueryResult<CohortAcl> setCohortAcl(long cohortId, CohortAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<CohortAclEntry> setCohortAcl(long cohortId, CohortAclEntry acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         long studyId = getStudyIdByCohortId(cohortId);
 
@@ -340,14 +340,14 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<CohortAcl> fileAcl = getCohortAcl(cohortId, group.getUserIds());
+            QueryResult<CohortAclEntry> fileAcl = getCohortAcl(cohortId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + group.getName()
                         + " has already defined permissions for cohort " + cohortId);
             }
         } else {
             // Check if the members of the new acl already have some permissions set
-            QueryResult<CohortAcl> cohortAcls = getCohortAcl(cohortId, acl.getMember());
+            QueryResult<CohortAclEntry> cohortAcls = getCohortAcl(cohortId, acl.getMember());
 
             if (cohortAcls.getNumResults() > 0 && override) {
                 unsetCohortAcl(cohortId, Arrays.asList(member), Collections.emptyList());
@@ -359,7 +359,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, cohortId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "CohortAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "CohortAcl")));
         QueryResult<UpdateResult> updateResult = cohortCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -376,12 +376,12 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, cohortId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Document query = new Document(PRIVATE_ID, cohortId).append(QueryParams.ACL_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls", new Document("member", member)));
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
             } else {
-                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
             }
             QueryResult<UpdateResult> updateResult = cohortCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -392,7 +392,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
 //        // Remove possible cohortAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(QueryParams.ID.key(), cohortId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        cohortCollection.update(queryBson, update, null);
@@ -405,14 +405,14 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             cohortCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
 //        // Remove possible CohortAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-//                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_MEMBER.key(),
+//                .append(CatalogSampleDBAdaptor.QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        cohortCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
@@ -791,22 +791,22 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<CohortAcl> createAcl(long id, CohortAcl acl) throws CatalogDBException {
+    public QueryResult<CohortAclEntry> createAcl(long id, CohortAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(id, acl, cohortCollection, "CohortAcl");
         return endQuery("create cohort Acl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public QueryResult<CohortAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<CohortAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<CohortAcl> acl = null;
+        List<CohortAclEntry> acl = null;
         QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection, logger);
         Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
 
         if (cohort != null) {
-            acl = cohort.getAcls();
+            acl = cohort.getAcl();
         }
 
         return endQuery("get cohort Acl", startTime, acl);
@@ -818,14 +818,14 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<CohortAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<CohortAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(id, member, permissions, cohortCollection);
         return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<CohortAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<CohortAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(id, member, permissions, cohortCollection);
         return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));

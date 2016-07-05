@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -89,7 +89,7 @@ public class Job {
     private List<Long> input;    // input files to this job
     private List<Long> output;   // output files of this job
     private List<String> tags;
-    private List<JobAcl> acls;
+    private List<JobAclEntry> acl;
 
     private Map<String, String> params;
     private Map<String, Object> attributes;
@@ -132,7 +132,7 @@ public class Job {
 //        this.outDir = outDir;
         this.input = input;
         this.output = output;
-        this.acls = Collections.emptyList();
+        this.acl = Collections.emptyList();
         this.tags = tags;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
@@ -152,7 +152,7 @@ public class Job {
 
     public Job(long id, String name, String userId, long toolId, String toolName, String date, String description, long startTime,
                long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
-               long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAcl> acls,
+               long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
                Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
         this.id = id;
         this.name = name;
@@ -174,7 +174,7 @@ public class Job {
         this.input = input;
         this.output = output;
         this.tags = tags;
-        this.acls = acls;
+        this.acl = acl;
         this.params = params;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
@@ -193,7 +193,7 @@ public class Job {
 
     public Job(long id, String name, String userId, long toolId, String toolName, String date, String description, long startTime, long
             endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage, long
-            outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAcl> acls, Map<String, String>
+            outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl, Map<String, String>
             params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
         this.id = id;
         this.name = name;
@@ -215,7 +215,7 @@ public class Job {
         this.input = input;
         this.output = output;
         this.tags = tags;
-        this.acls = acls;
+        this.acl = acl;
         this.params = params;
         this.attributes = attributes;
         this.resourceManagerAttributes = resourceManagerAttributes;
@@ -314,7 +314,7 @@ public class Job {
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", params=").append(params);
         sb.append(", attributes=").append(attributes);
         sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
@@ -504,12 +504,12 @@ public class Job {
         return this;
     }
 
-    public List<JobAcl> getAcls() {
-        return acls;
+    public List<JobAclEntry> getAcl() {
+        return acl;
     }
 
-    public Job setAcls(List<JobAcl> acls) {
-        this.acls = acls;
+    public Job setAcl(List<JobAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

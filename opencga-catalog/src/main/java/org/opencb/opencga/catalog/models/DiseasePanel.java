@@ -1,6 +1,6 @@
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
+import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,7 +20,7 @@ public class DiseasePanel {
     private List<String> variants;
 
     private PanelStatus status;
-    private List<DiseasePanelAcl> acls;
+    private List<DiseasePanelAclEntry> acl;
 
 
     public DiseasePanel() {
@@ -35,12 +35,12 @@ public class DiseasePanel {
         this.genes = genes;
         this.regions = regions;
         this.variants = variants;
-        this.acls = Collections.emptyList();
+        this.acl = Collections.emptyList();
         this.status = status;
     }
 
     public DiseasePanel(long id, String name, String disease, String description, List<String> genes, List<String> regions,
-                        List<String> variants, PanelStatus status, List<DiseasePanelAcl> acls) {
+                        List<String> variants, PanelStatus status, List<DiseasePanelAclEntry> acl) {
         this.id = id;
         this.name = name;
         this.disease = disease;
@@ -49,7 +49,7 @@ public class DiseasePanel {
         this.regions = regions;
         this.variants = variants;
         this.status = status;
-        this.acls = acls;
+        this.acl = acl;
     }
 
 
@@ -95,7 +95,7 @@ public class DiseasePanel {
         sb.append(", regions=").append(regions);
         sb.append(", variants=").append(variants);
         sb.append(", status=").append(status);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append('}');
         return sb.toString();
     }
@@ -172,12 +172,12 @@ public class DiseasePanel {
         return this;
     }
 
-    public List<DiseasePanelAcl> getAcls() {
-        return acls;
+    public List<DiseasePanelAclEntry> getAcl() {
+        return acl;
     }
 
-    public DiseasePanel setAcls(List<DiseasePanelAcl> acls) {
-        this.acls = acls;
+    public DiseasePanel setAcl(List<DiseasePanelAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

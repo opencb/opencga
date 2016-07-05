@@ -27,7 +27,7 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +37,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, CatalogAclDBAdaptor<SampleAcl> {
+public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, CatalogAclDBAdaptor<SampleAclEntry> {
 
     default boolean sampleExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -68,15 +68,15 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
     QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
+    QueryResult<SampleAclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
+    QueryResult<SampleAclEntry> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException;
 
-    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<SampleAclEntry> setSampleAcl(long sampleId, SampleAclEntry acl, boolean override) throws CatalogDBException;
 
     @Deprecated
     QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException;
@@ -143,19 +143,9 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
-        @Deprecated
-        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
-        @Deprecated
-        ACL_READ("acls.read", BOOLEAN, ""),
-        @Deprecated
-        ACL_WRITE("acls.write", BOOLEAN, ""),
-        @Deprecated
-        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
-        @Deprecated
-        ACL_DELETE("acls.delete", BOOLEAN, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),

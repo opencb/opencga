@@ -35,9 +35,8 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
-import org.opencb.opencga.client.rest.AbstractParentClient;
 import org.opencb.opencga.client.rest.StudyClient;
 
 import java.io.IOException;
@@ -658,12 +657,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
 
 
-    /********************************************  Administration ACLS commands  ***********************************************/
+    /********************************************  Administration ACL commands  ***********************************************/
 
     private void acls() throws CatalogException,IOException {
 
         logger.debug("Acls");
-        QueryResponse<StudyAcl> acls = openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.id);
+        QueryResponse<StudyAclEntry> acls = openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.id);
 
         System.out.println(acls.toString());
 
@@ -679,7 +678,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put("templateId", studiesCommandOptions.aclsCreateCommandOptions.templateId);
         }
 
-        QueryResponse<StudyAcl> acl =
+        QueryResponse<StudyAclEntry> acl =
                 openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.id,
                         studiesCommandOptions.aclsCreateCommandOptions.permissions, studiesCommandOptions.aclsCreateCommandOptions.members,
                         queryOptions);
@@ -700,7 +699,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Creating acl");
 
-        QueryResponse<StudyAcl> acls = openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.id,
+        QueryResponse<StudyAclEntry> acls = openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.id,
                 studiesCommandOptions.aclsMemberInfoCommandOptions.memberId);
         System.out.println(acls.toString());
     }
@@ -720,7 +719,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(StudyClient.AclParams.SET_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
         }
 
-        QueryResponse<StudyAcl> acl = openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.id,
+        QueryResponse<StudyAclEntry> acl = openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.id,
                 studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
 
         System.out.println(acl.toString());

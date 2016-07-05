@@ -27,7 +27,7 @@ import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.JobAclEntry;
 import org.opencb.opencga.client.rest.JobClient;
 
 import java.io.IOException;
@@ -225,12 +225,12 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
     }
 
 
-    /********************************************  Administration ACLS commands  ***********************************************/
+    /********************************************  Administration ACL commands  ***********************************************/
 
     private void acls() throws CatalogException,IOException {
 
         logger.debug("Acls");
-        QueryResponse<JobAcl> acls = openCGAClient.getJobClient().getAcls(jobsCommandOptions.aclsCommandOptions.id);
+        QueryResponse<JobAclEntry> acls = openCGAClient.getJobClient().getAcls(jobsCommandOptions.aclsCommandOptions.id);
 
         System.out.println(acls.toString());
 
@@ -246,7 +246,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put("templateId", jobsCommandOptions.aclsCreateCommandOptions.templateId);
         }
 
-        QueryResponse<JobAcl> acl =
+        QueryResponse<JobAclEntry> acl =
                 openCGAClient.getJobClient().createAcl(jobsCommandOptions.aclsCreateCommandOptions.id,
                         jobsCommandOptions.aclsCreateCommandOptions.permissions, jobsCommandOptions.aclsCreateCommandOptions.members,
                         queryOptions);
@@ -267,7 +267,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Creating acl");
 
-        QueryResponse<JobAcl> acls = openCGAClient.getJobClient().getAcl(jobsCommandOptions.aclsMemberInfoCommandOptions.id,
+        QueryResponse<JobAclEntry> acls = openCGAClient.getJobClient().getAcl(jobsCommandOptions.aclsMemberInfoCommandOptions.id,
                 jobsCommandOptions.aclsMemberInfoCommandOptions.memberId);
         System.out.println(acls.toString());
     }
@@ -287,7 +287,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(JobClient.AclParams.SET_PERMISSIONS.key(), jobsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
         }
 
-        QueryResponse<JobAcl> acl = openCGAClient.getJobClient().updateAcl(jobsCommandOptions.aclsMemberUpdateCommandOptions.id,
+        QueryResponse<JobAclEntry> acl = openCGAClient.getJobClient().updateAcl(jobsCommandOptions.aclsMemberUpdateCommandOptions.id,
                 jobsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
 
         System.out.println(acl.toString());

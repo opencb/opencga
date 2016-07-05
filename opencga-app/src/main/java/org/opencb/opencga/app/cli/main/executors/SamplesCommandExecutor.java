@@ -24,11 +24,10 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.SampleCommandOptions;
-import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 import org.opencb.opencga.client.rest.SampleClient;
 
 import java.io.IOException;
@@ -340,13 +339,13 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
 
     }
-    /********************************************  Administration ACLS commands  ***********************************************/
+    /********************************************  Administration ACL commands  ***********************************************/
 
     private void acls() throws CatalogException,IOException {
 
         logger.debug("Acls");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<SampleAcl> acls = openCGAClient.getSampleClient().getAcls(samplesCommandOptions.aclsCommandOptions.id);
+        QueryResponse<SampleAclEntry> acls = openCGAClient.getSampleClient().getAcls(samplesCommandOptions.aclsCommandOptions.id);
 
         System.out.println(acls.toString());
 
@@ -361,7 +360,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogStudyDBAdaptor.QueryParams.TEMPLATE_ID.key(), studiesCommandOptions.aclsCreateCommandOptions.templateId);
         }*/
 
-        QueryResponse<SampleAcl> acl =
+        QueryResponse<SampleAclEntry> acl =
                 openCGAClient.getSampleClient().createAcl(samplesCommandOptions.aclsCreateCommandOptions.id,
                         samplesCommandOptions.aclsCreateCommandOptions.permissions, samplesCommandOptions.aclsCreateCommandOptions.members,
                         queryOptions);
@@ -380,7 +379,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Creating acl");
 
-        QueryResponse<SampleAcl> acls = openCGAClient.getSampleClient().getAcl(samplesCommandOptions.aclsMemberInfoCommandOptions.id,
+        QueryResponse<SampleAclEntry> acls = openCGAClient.getSampleClient().getAcl(samplesCommandOptions.aclsMemberInfoCommandOptions.id,
                 samplesCommandOptions.aclsMemberInfoCommandOptions.memberId);
         System.out.println(acls.toString());
     }
@@ -400,7 +399,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(SampleClient.AclParams.SET_PERMISSIONS.key(), samplesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
         }
 
-        QueryResponse<SampleAcl> acl = openCGAClient.getSampleClient().updateAcl(samplesCommandOptions.aclsMemberUpdateCommandOptions.id,
+        QueryResponse<SampleAclEntry> acl = openCGAClient.getSampleClient().updateAcl(samplesCommandOptions.aclsMemberUpdateCommandOptions.id,
                 samplesCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
         System.out.println(acl.toString());
     }
