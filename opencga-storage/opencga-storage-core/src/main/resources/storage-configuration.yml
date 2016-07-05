@@ -89,6 +89,7 @@ storageEngines:
       password: "${OPENCGA.STORAGE.VARIANT.DB.PASSWORD}"
       options:    ## This is intended for database specific options such as --authenticationDatabase in MongoDB
         authenticationDatabase: ${OPENCGA.STORAGE.VARIANT.DB.AUTHENTICATION_DATABASE}
+        readPreference: "secondaryPreferred"
 
 ## For using this plugin you need to have a Hadoop cluster and run the CLI from a well configured Hadoop client
 - id: "hadoop"

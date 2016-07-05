@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.mongodb.variant.load;
 
 import com.google.common.collect.LinkedListMultimap;
 import com.google.common.collect.ListMultimap;
+import com.mongodb.ErrorCategory;
 import com.mongodb.MongoBulkWriteException;
 import com.mongodb.bulk.BulkWriteError;
 import com.mongodb.bulk.BulkWriteResult;
@@ -41,7 +42,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
     public static final boolean NEW_STUDY_DEFAULT = true;
 
     private static final QueryOptions QUERY_OPTIONS = new QueryOptions(MongoDBCollection.UPSERT, true);
-    private final Pattern writeResultErrorPattern = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
+    public static final Pattern DUP_KEY_WRITE_RESULT_ERROR_PATTERN = Pattern.compile("^.*dup key: \\{ : \"([^\"]*)\" \\}$");
 
     private final MongoDBCollection collection;
     private final int studyId;
@@ -188,8 +189,8 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
 
             nonInsertedIds = new HashSet<>();
             for (BulkWriteError writeError : e.getWriteErrors()) {
-                if (writeError.getCode() == 11000) { //Dup Key error code
-                    Matcher matcher = writeResultErrorPattern.matcher(writeError.getMessage());
+                if (ErrorCategory.fromErrorCode(writeError.getCode()).equals(ErrorCategory.DUPLICATE_KEY)) { //Dup Key error code
+                    Matcher matcher = DUP_KEY_WRITE_RESULT_ERROR_PATTERN.matcher(writeError.getMessage());
                     if (matcher.find()) {
                         String id = matcher.group(1);
                         nonInsertedIds.add(id);
@@ -197,7 +198,7 @@ public class MongoDBVariantStageLoader implements DataWriter<Variant> {
                         logger.warn("DupKey exception inserting '{}'. Retry!", id);
                     } else {
                         logger.error("WriteError with code {} does not match with the pattern {}",
-                                writeError.getCode(), writeResultErrorPattern.pattern());
+                                writeError.getCode(), DUP_KEY_WRITE_RESULT_ERROR_PATTERN.pattern());
                         throw e;
                     }
                 } else {
