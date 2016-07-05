@@ -442,7 +442,7 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
 
         List<DiseasePanelAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, panelCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, panelCollection, logger);
         DiseasePanel panel = panelConverter.convertToDataModelType(aggregate.first());
 
         if (panel != null) {

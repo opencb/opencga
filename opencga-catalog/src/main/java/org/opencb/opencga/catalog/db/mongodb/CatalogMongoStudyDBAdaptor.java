@@ -44,7 +44,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
-import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.*;
 
 /**
  * Created on 07/09/15.
@@ -241,7 +240,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         long startTime = startQuery();
 
         List<StudyAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, studyCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, studyCollection, logger);
         Study study = studyConverter.convertToDataModelType(aggregate.first());
 
         if (study != null) {

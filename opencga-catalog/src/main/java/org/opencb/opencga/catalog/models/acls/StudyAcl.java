@@ -9,7 +9,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class StudyAcl extends ParentAcl<StudyAcl.StudyPermissions> {
+public class StudyAcl extends AbstractAcl<StudyAcl.StudyPermissions> {
 
     public StudyAcl() {
     }

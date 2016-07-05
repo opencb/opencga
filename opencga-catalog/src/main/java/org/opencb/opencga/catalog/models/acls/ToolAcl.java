@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by sgallego on 6/30/16.
  */
-public class ToolAcl extends ParentAcl<ToolAcl.ToolPermissions> {
+public class ToolAcl extends AbstractAcl<ToolAcl.ToolPermissions> {
 
     public enum ToolPermissions {
         VIEW,

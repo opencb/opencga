@@ -1018,7 +1018,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         long startTime = startQuery();
 
         List<FileAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection, logger);
         File file = fileConverter.convertToDataModelType(aggregate.first());
 
         if (file != null) {

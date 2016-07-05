@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class SampleAcl extends ParentAcl<SampleAcl.SamplePermissions> {
+public class SampleAcl extends AbstractAcl<SampleAcl.SamplePermissions> {
 
     public enum SamplePermissions {
         VIEW,

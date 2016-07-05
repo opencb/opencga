@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class IndividualAcl extends ParentAcl<IndividualAcl.IndividualPermissions> {
+public class IndividualAcl extends AbstractAcl<IndividualAcl.IndividualPermissions> {
 
     public enum IndividualPermissions {
         VIEW,

@@ -1106,7 +1106,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
 
         List<SampleAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection, logger);
         Sample sample = sampleConverter.convertToDataModelType(aggregate.first());
 
         if (sample != null) {

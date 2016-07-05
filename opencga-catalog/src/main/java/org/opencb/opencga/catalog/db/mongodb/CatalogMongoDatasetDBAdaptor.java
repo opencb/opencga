@@ -512,7 +512,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         long startTime = startQuery();
 
         List<DatasetAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, datasetCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, datasetCollection, logger);
         Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
 
         if (dataset != null) {

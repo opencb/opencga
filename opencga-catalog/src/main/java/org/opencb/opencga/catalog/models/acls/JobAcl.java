@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class JobAcl extends ParentAcl<JobAcl.JobPermissions> {
+public class JobAcl extends AbstractAcl<JobAcl.JobPermissions> {
 
     public enum JobPermissions {
         VIEW,

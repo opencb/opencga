@@ -925,7 +925,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startTime = startQuery();
 
         List<IndividualAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection, logger);
         Individual individual = individualConverter.convertToDataModelType(aggregate.first());
 
         if (individual != null) {

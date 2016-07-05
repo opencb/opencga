@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class CohortAcl extends ParentAcl<CohortAcl.CohortPermissions> {
+public class CohortAcl extends AbstractAcl<CohortAcl.CohortPermissions> {
 
     public enum CohortPermissions {
         VIEW,

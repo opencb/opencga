@@ -36,7 +36,8 @@ import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.ParentAcl;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.slf4j.Logger;
 
 import java.io.IOException;
 import java.util.*;
@@ -114,7 +115,7 @@ class CatalogMongoDBUtils {
 
     //--------------- ACL operations -------------------------/
 
-    static void createAcl(long id, ParentAcl acl, MongoDBCollection collection, String clazz) throws CatalogDBException {
+    static void createAcl(long id, AbstractAcl acl, MongoDBCollection collection, String clazz) throws CatalogDBException {
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, id);
         Document update = new Document("$push", new Document(CatalogFileDBAdaptor.QueryParams.ACLS.key(), getMongoDBDocument(acl, clazz)));
@@ -125,7 +126,8 @@ class CatalogMongoDBUtils {
         }
     }
 
-    static QueryResult<Document> getAcl(long id, List<String> members, MongoDBCollection collection) throws CatalogDBException {
+    static QueryResult<Document> getAcl(long id, List<String> members, MongoDBCollection collection, Logger logger)
+            throws CatalogDBException {
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
         aggregation.add(Aggregates.project(Projections.include(CatalogFileDBAdaptor.QueryParams.ID.key(),
@@ -136,9 +138,14 @@ class CatalogMongoDBUtils {
         if (members != null && members.size() > 0) {
             filters.add(Filters.in(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), members));
         }
+
         if (filters.size() > 0) {
             Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
             aggregation.add(Aggregates.match(filter));
+        }
+
+        for (Bson bson : aggregation) {
+            logger.debug("Filter: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         }
 
         return collection.aggregate(aggregation, null);

@@ -65,11 +65,11 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{panelId}/acls")
-    @ApiOperation(value = "Returns the acls of the panel [PENDING]", position = 18)
-    public Response getAcls(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String studyIdStr) {
+    @Path("/{panelIds}/acls")
+    @ApiOperation(value = "Return the acls of the panel", position = 18)
+    public Response getAcls(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getAllPanelAcls(panelIdsStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -77,14 +77,13 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{panelId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
-    public Response createRole(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String studyIdStr,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+    @Path("/{panelIds}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    public Response createRole(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.createPanelAcls(panelIdsStr, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -92,11 +91,11 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panelId}/acls/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
-    public Response getAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
+    @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
+    public Response getAcl(@ApiParam(value = "Panel id", required = true) @PathParam("panelId") String panelIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getPanelAcl(panelIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -104,26 +103,26 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{panelId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
-    public Response updateAcl(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String studyIdStr,
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String panelIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updatePanelAcl(panelIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{panelId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
-    public Response deleteAcl(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String studyIdStr,
+    @Path("/{panelIds}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member", position = 22)
+    public Response deleteAcl(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.removePanelAcl(panelIdsStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

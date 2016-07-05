@@ -857,7 +857,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         long startTime = startQuery();
 
         List<JobAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection, logger);
         Job job = jobConverter.convertToDataModelType(aggregate.first());
 
         if (job != null) {

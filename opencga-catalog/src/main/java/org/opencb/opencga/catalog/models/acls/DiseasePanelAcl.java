@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanelAcl extends ParentAcl<DiseasePanelAcl.DiseasePanelPermissions> {
+public class DiseasePanelAcl extends AbstractAcl<DiseasePanelAcl.DiseasePanelPermissions> {
 
     public enum DiseasePanelPermissions {
         VIEW,

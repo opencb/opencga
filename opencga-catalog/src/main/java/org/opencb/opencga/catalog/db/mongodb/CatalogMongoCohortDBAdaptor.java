@@ -802,7 +802,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         long startTime = startQuery();
 
         List<CohortAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection);
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection, logger);
         Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
 
         if (cohort != null) {

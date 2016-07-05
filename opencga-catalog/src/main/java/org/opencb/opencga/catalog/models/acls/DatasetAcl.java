@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 12/05/16.
  */
-public class DatasetAcl extends ParentAcl<DatasetAcl.DatasetPermissions> {
+public class DatasetAcl extends AbstractAcl<DatasetAcl.DatasetPermissions> {
 
     public enum DatasetPermissions {
         VIEW,

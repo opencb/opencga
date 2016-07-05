@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class FileAcl extends ParentAcl<FileAcl.FilePermissions> {
+public class FileAcl extends AbstractAcl<FileAcl.FilePermissions> {
 
     public enum FilePermissions {
         VIEW_HEADER,  // Includes permission to view the sample ids from a VCF file.
