@@ -36,7 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
+public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>, CatalogAclDBAdaptor<IndividualAcl> {
 
     default boolean individualExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;

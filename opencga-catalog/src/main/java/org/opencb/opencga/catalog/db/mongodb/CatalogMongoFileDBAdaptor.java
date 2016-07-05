@@ -15,7 +15,10 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
-import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
+import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.FileConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
@@ -1001,5 +1004,51 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryOptions multi = new QueryOptions(MongoDBCollection.MULTI, true);
         QueryResult<UpdateResult> updateQueryResult = fileCollection.update(bsonQuery, update, multi);
         return endQuery("Extract samples from files", startTime, Collections.singletonList(updateQueryResult.first().getModifiedCount()));
+    }
+
+    @Override
+    public QueryResult<FileAcl> createAcl(long id, FileAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAcl(id, acl, fileCollection, "FileAcl");
+        return endQuery("create file Acl", startTime, Arrays.asList(acl));
+    }
+
+    @Override
+    public QueryResult<FileAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<FileAcl> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection);
+        File file = fileConverter.convertToDataModelType(aggregate.first());
+
+        if (file != null) {
+            acl = file.getAcls();
+        }
+
+        return endQuery("get file Acl", startTime, acl);
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAcl(id, member, fileCollection);
+    }
+
+    @Override
+    public QueryResult<FileAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, fileCollection);
+        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<FileAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, fileCollection);
+        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, fileCollection);
     }
 }

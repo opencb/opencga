@@ -500,4 +500,49 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         }
     }
 
+    @Override
+    public QueryResult<DatasetAcl> createAcl(long id, DatasetAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAcl(id, acl, datasetCollection, "DatasetAcl");
+        return endQuery("create dataset Acl", startTime, Arrays.asList(acl));
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<DatasetAcl> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, datasetCollection);
+        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
+
+        if (dataset != null) {
+            acl = dataset.getAcls();
+        }
+
+        return endQuery("get dataset Acl", startTime, acl);
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAcl(id, member, datasetCollection);
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, datasetCollection);
+        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<DatasetAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, datasetCollection);
+        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, datasetCollection);
+    }
 }

@@ -196,6 +196,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the study id is not valid or the members given do not exist.
      */
+    @Deprecated
     QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
 
     //-----------------     GROUPS         ------------------

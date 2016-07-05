@@ -536,24 +536,11 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups")
-    @ApiOperation(value = "Return the groups present in the studies [PENDING]", position = 13, response = Group[].class)
+    @ApiOperation(value = "Return the groups present in the studies", position = 13, response = Group[].class)
     public Response getGroups(@ApiParam(value = "Comma separated list of studies", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-//            long studyId = catalogManager.getStudyId(studyIdStr);
-//            List<QueryResult> queryResults = new LinkedList<>();
-//            if (!addUsers.isEmpty() && !removeUsers.isEmpty()) {
-//                return createErrorResponse("groups", "Must specify at least one user to add or remove from one group");
-//            }
-//            if (!addUsers.isEmpty()) {
-//                queryResults.add(catalogManager.addUsersToGroup(studyId, groupId, addUsers, sessionId));
-//            }
-//            if (!removeUsers.isEmpty()) {
-//                queryResults.add(catalogManager.removeUsersFromGroup(studyId, groupId, removeUsers, sessionId));
-//            }
-//            if (queryResults.isEmpty()) {
-//                return createErrorResponse("groups", "Must specify at least a user to add or remove from one group");
-//            }
-            return createOkResponse(null);
+            QueryResult<Group> allGroups = catalogManager.getAllGroups(studyIdStr, sessionId);
+            return createOkResponse(allGroups);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -576,11 +563,12 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/info")
-    @ApiOperation(value = "Return the group [PENDING]", position = 15)
+    @ApiOperation(value = "Return the group", position = 15)
     public Response getGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                              @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
         try {
-            return createOkResponse(null);
+            QueryResult<Group> group = catalogManager.getGroup(studyIdStr, groupId, sessionId);
+            return createOkResponse(group);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -588,14 +576,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/update")
-    @ApiOperation(value = "Updates the members of the group [PENDING]", position = 16)
+    @ApiOperation(value = "Updates the members of the group", position = 16)
     public Response addMembersToGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                       @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId,
-                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @DefaultValue("") @QueryParam("addUsers") String addUsers,
-                                      @ApiParam(value = "Comma separated list of users that will be part of the group. Previous users will be removed.", required = false) @DefaultValue("") @QueryParam("setUsers") String setUsers,
-                                      @ApiParam(value = "Comma separated list of users that will be removed from the group", required = false) @DefaultValue("") @QueryParam("removeUsers") String removeUsers) {
+                                      @ApiParam(value = "Comma separated list of users that will be added to the group", required = false) @QueryParam("addUsers") String addUsers,
+                                      @ApiParam(value = "Comma separated list of users that will be part of the group. Previous users will be removed.", required = false) @QueryParam("setUsers") String setUsers,
+                                      @ApiParam(value = "Comma separated list of users that will be removed from the group", required = false) @QueryParam("removeUsers") String removeUsers) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateGroup(studyIdStr, groupId, addUsers, removeUsers, setUsers, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -603,12 +591,12 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/groups/{groupId}/delete")
-    @ApiOperation(value = "Delete the group [PENDING]", position = 17, notes = "Delete the group selected from the study. When filled in with a list of users," +
+    @ApiOperation(value = "Delete the group", position = 17, notes = "Delete the group selected from the study. When filled in with a list of users," +
             " it will just take them out from the group leaving the group untouched.")
     public Response deleteMembersFromGroup(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                            @ApiParam(value = "groupId", required = true) @DefaultValue("") @PathParam("groupId") String groupId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.deleteGroup(studyIdStr, groupId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -616,10 +604,10 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls")
-    @ApiOperation(value = "Return the acls of the study [PENDING]", position = 18)
+    @ApiOperation(value = "Return the acls of the study", position = 18)
     public Response getAcls(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getAllStudyAcls(studyIdStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -628,17 +616,13 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [PENDING]", position = 19)
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19)
     public Response createRole(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
-                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @QueryParam("members") String members,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String templateId) {
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @QueryParam("templateId") String templateId) {
         try {
-            System.out.println("studyIdStr = " + studyIdStr);
-            System.out.println("templateId = " + templateId);
-            System.out.println("permissions = " + permissions);
-            System.out.println("members = " + members);
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.createStudyAcls(studyIdStr, members, permissions, templateId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -646,11 +630,11 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/{memberId}/info")
-    @ApiOperation(value = "Return the set of permissions granted for the user or group [PENDING]", position = 20)
+    @ApiOperation(value = "Return the set of permissions granted for the user or group", position = 20)
     public Response getAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getStudyAcl(studyIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -658,18 +642,14 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the user or group [PENDING]", position = 21)
+    @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
     public Response updateAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
         try {
-            System.out.println("studyIdStr = " + studyIdStr);
-            System.out.println("addPermissions = " + addPermissions);
-            System.out.println("removePermissions = " + removePermissions);
-            System.out.println("setPermissions = " + setPermissions);
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateStudyAcl(studyIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -677,11 +657,11 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the user or group [PENDING]", position = 22)
+    @ApiOperation(value = "Delete all the permissions granted for the user or group", position = 22)
     public Response deleteAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.removeStudyAcl(studyIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

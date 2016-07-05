@@ -912,4 +912,50 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                 .update(query, new ObjectMap(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1)).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
     }
+
+    @Override
+    public QueryResult<IndividualAcl> createAcl(long id, IndividualAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAcl(id, acl, individualCollection, "IndividualAcl");
+        return endQuery("create individual Acl", startTime, Arrays.asList(acl));
+    }
+
+    @Override
+    public QueryResult<IndividualAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<IndividualAcl> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection);
+        Individual individual = individualConverter.convertToDataModelType(aggregate.first());
+
+        if (individual != null) {
+            acl = individual.getAcls();
+        }
+
+        return endQuery("get individual Acl", startTime, acl);
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAcl(id, member, individualCollection);
+    }
+
+    @Override
+    public QueryResult<IndividualAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, individualCollection);
+        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<IndividualAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, individualCollection);
+        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, individualCollection);
+    }
 }

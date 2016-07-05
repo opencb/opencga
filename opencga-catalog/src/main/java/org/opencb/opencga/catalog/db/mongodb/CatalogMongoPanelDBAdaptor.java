@@ -430,4 +430,49 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
+    @Override
+    public QueryResult<DiseasePanelAcl> createAcl(long id, DiseasePanelAcl acl) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAcl(id, acl, panelCollection, "DiseasePanelAcl");
+        return endQuery("create panel Acl", startTime, Arrays.asList(acl));
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+
+        List<DiseasePanelAcl> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, panelCollection);
+        DiseasePanel panel = panelConverter.convertToDataModelType(aggregate.first());
+
+        if (panel != null) {
+            acl = panel.getAcls();
+        }
+
+        return endQuery("get panel Acl", startTime, acl);
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAcl(id, member, panelCollection);
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, panelCollection);
+        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public QueryResult<DiseasePanelAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, panelCollection);
+        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+    }
+
+    @Override
+    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, panelCollection);
+    }
 }

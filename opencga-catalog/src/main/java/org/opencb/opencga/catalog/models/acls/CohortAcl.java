@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.models.acls;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,10 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class CohortAcl {
-
-    private String member;
-    private EnumSet<CohortPermissions> permissions;
+public class CohortAcl extends ParentAcl<CohortAcl.CohortPermissions> {
 
     public enum CohortPermissions {
         VIEW,
@@ -26,15 +24,15 @@ public class CohortAcl {
     }
 
     public CohortAcl() {
+        this("", Collections.emptyList());
     }
 
     public CohortAcl(String member, EnumSet<CohortPermissions> permissions) {
-        this.member = member;
-        this.permissions = permissions;
+        super(member, permissions);
     }
 
     public CohortAcl(String member, ObjectMap permissions) {
-        this.member = member;
+        super(member, EnumSet.noneOf(CohortPermissions.class));
 
         EnumSet<CohortPermissions> aux = EnumSet.allOf(CohortPermissions.class);
         for (CohortPermissions permission : aux) {
@@ -45,28 +43,10 @@ public class CohortAcl {
     }
 
     public CohortAcl(String member, List<String> permissions) {
-        this.member = member;
-        this.permissions = EnumSet.noneOf(CohortPermissions.class);
+        super(member, EnumSet.noneOf(CohortPermissions.class));
+
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(CohortPermissions::valueOf).collect(Collectors.toList()));
         }
-    }
-
-    public String getMember() {
-        return member;
-    }
-
-    public CohortAcl setMember(String member) {
-        this.member = member;
-        return this;
-    }
-
-    public EnumSet<CohortPermissions> getPermissions() {
-        return permissions;
-    }
-
-    public CohortAcl setPermissions(EnumSet<CohortPermissions> permissions) {
-        this.permissions = permissions;
-        return this;
     }
 }

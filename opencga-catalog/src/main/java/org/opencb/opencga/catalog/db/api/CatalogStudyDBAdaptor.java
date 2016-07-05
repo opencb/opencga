@@ -35,7 +35,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
+public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogAclDBAdaptor<StudyAcl> {
 
     /*
      * Study methods
@@ -87,17 +87,6 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     String getStudyOwnerId(long studyId) throws CatalogDBException;
 
-    /**
-     * Obtains the studyAcl given the following parameters. If only the studyId is given, a list containing all the studyAcls will be
-     * returned.
-     *
-     * @param studyId Study id.
-     * @param members List of members to look for permissions. Can only be existing users or groups.
-     * @return A queryResult object containing a list of studyAcls that satisfies the query.
-     * @throws CatalogDBException when the studyId does not exist, or the roleId or the members introduced do not exist in the database.
-     */
-    QueryResult<StudyAcl> getStudyAcl(long studyId, List<String> members) throws CatalogDBException;
-
     QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException;
 
     @Deprecated
@@ -115,6 +104,17 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException;
 
     /**
+     * Adds the members to the groupId getting rid of the former users.
+     *
+     * @param studyId study id.
+     * @param groupId group id.
+     * @param members new list of users that will compose the group.
+     * @return The group after being updated.
+     * @throws CatalogDBException when any of the members do not exist.
+     */
+    QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
      *
      * @param studyId studyId
@@ -123,7 +123,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @return The group that has been updated/created.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.
@@ -133,7 +133,16 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param members List of members that are going to be removed from the group.
      * @throws CatalogDBException when any of the studyId, groupId or members do not exist.
      */
-    void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
+     * Delete a group.
+     *
+     * @param studyId study id.
+     * @param groupId Group id to be deleted.
+     * @throws CatalogDBException if the groupId could not be removed.
+     */
+    void deleteGroup(long studyId, String groupId) throws CatalogDBException;
 
     /**
      * Adds the studyAcl given to the study.
@@ -145,6 +154,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @return A queryResult with the studyAcl after the update.
      * @throws CatalogDBException when the user already has permissions if override is false.
      */
+    @Deprecated
     QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException;
 
     /**
@@ -154,6 +164,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param members List of members whose permissions will be removed.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
+    @Deprecated
     void unsetStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
 //    QueryResult<StudyAcl> getStudyAcls(long studyId, String userId, String groupId) throws CatalogDBException;

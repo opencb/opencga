@@ -9,24 +9,17 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class StudyAcl {
-
-//    private String role;
-    private String member;
-    private EnumSet<StudyPermissions> permissions;
+public class StudyAcl extends ParentAcl<StudyAcl.StudyPermissions> {
 
     public StudyAcl() {
     }
 
     public StudyAcl(String member, EnumSet<StudyPermissions> permissions) {
-//        this.role = role;
-        this.member = member;
-        this.permissions = permissions;
+        super(member, permissions);
     }
 
     public StudyAcl(String member, ObjectMap permissions) {
-//        this.role = role;
-        this.member = member;
+        super(member, EnumSet.noneOf(StudyPermissions.class));
 
         EnumSet<StudyPermissions> aux = EnumSet.allOf(StudyPermissions.class);
         for (StudyPermissions permission : aux) {
@@ -37,48 +30,11 @@ public class StudyAcl {
     }
 
     public StudyAcl(String member, List<String> permissions) {
-//        this.role = role;
-        this.member = member;
-        this.permissions = EnumSet.noneOf(StudyPermissions.class);
+        super(member, EnumSet.noneOf(StudyPermissions.class));
+
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(StudyPermissions::valueOf).collect(Collectors.toList()));
         }
-    }
-
-//    public String getRole() {
-//        return role;
-//    }
-//
-//    public StudyAcl setRole(String role) {
-//        this.role = role;
-//        return this;
-//    }
-
-//    public List<String> getUsers() {
-//        return users;
-//    }
-//
-//    public StudyAcl setUsers(List<String> users) {
-//        this.users = users;
-//        return this;
-//    }
-
-    public String getMember() {
-        return member;
-    }
-
-    public StudyAcl setMember(String member) {
-        this.member = member;
-        return this;
-    }
-
-    public EnumSet<StudyPermissions> getPermissions() {
-        return permissions;
-    }
-
-    public StudyAcl setPermissions(EnumSet<StudyPermissions> permissions) {
-        this.permissions = permissions;
-        return this;
     }
 
     // Study Permissions

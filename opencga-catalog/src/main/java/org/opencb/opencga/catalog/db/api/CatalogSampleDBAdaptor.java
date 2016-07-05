@@ -37,7 +37,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
+public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, CatalogAclDBAdaptor<SampleAcl> {
 
     default boolean sampleExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -67,8 +67,10 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample> {
 
     QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
     @Deprecated
