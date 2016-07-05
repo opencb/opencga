@@ -350,7 +350,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream().map(entry -> new Annotation(entry.getKey(), entry.getValue())).collect(Collectors
                         .toSet()),
-                annotationSet.getDate(), null);
+                annotationSet.getCreationDate(), null);
         auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
 

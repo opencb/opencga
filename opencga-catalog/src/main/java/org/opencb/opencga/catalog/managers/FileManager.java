@@ -1078,7 +1078,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                     File folder = new File(-1, catalogPath.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                             File.Bioformat.NONE, uriOrigin, catalogPath.toString() + "/", userId, TimeUtils.getTime(), TimeUtils.getTime(),
                             description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
-                            Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                            Collections.emptyList(), -1, Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                     fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
 
                 } else {
@@ -1109,7 +1109,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                 File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, format, bioformat, uriOrigin,
                         filePath.toString(), userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
                         new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
-                        Collections.emptyList(), null, null, null);
+                        Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                 return fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
             } else {
                 throw new CatalogException("Cannot link " + filePath.getFileName().toString() + ". A file with the same name was found"
@@ -1137,7 +1137,8 @@ public class FileManager extends AbstractManager implements IFileManager {
                             File folder = new File(-1, dir.getFileName().toString(), File.Type.DIRECTORY, File.Format.PLAIN,
                                     File.Bioformat.NONE, dir.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(),
                                     description, new File.FileStatus(File.FileStatus.READY), true, 0, -1,
-                                    Collections.emptyList(), -1, Collections.emptyList(), null, null, null);
+                                    Collections.emptyList(), -1, Collections.emptyList(), null, Collections.emptyMap(),
+                                    Collections.emptyMap());
                             fileDBAdaptor.createFile(studyId, folder, new QueryOptions());
                         }
 
@@ -1166,7 +1167,7 @@ public class FileManager extends AbstractManager implements IFileManager {
                             File subfile = new File(-1, filePath.getFileName().toString(), File.Type.FILE, format, bioformat,
                                     filePath.toUri(), destinyPath, userId, TimeUtils.getTime(), TimeUtils.getTime(), description,
                                     new File.FileStatus(File.FileStatus.READY), true, diskUsage, -1, Collections.emptyList(), -1,
-                                    Collections.emptyList(), null, null, null);
+                                    Collections.emptyList(), null, Collections.emptyMap(), Collections.emptyMap());
                             fileDBAdaptor.createFile(studyId, subfile, new QueryOptions());
 
                         } else {

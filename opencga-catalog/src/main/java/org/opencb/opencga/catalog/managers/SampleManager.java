@@ -176,7 +176,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
         return queryResult;
@@ -688,7 +688,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
         auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
         return queryResult;

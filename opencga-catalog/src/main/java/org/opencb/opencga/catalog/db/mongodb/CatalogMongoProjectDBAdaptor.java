@@ -426,28 +426,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("Set project acl", startTime, pushResult);
     }
 
-    //Join fields from other collections
-    private void joinFields(User user, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (user.getProjects() != null) {
-            for (Project project : user.getProjects()) {
-                joinFields(project, options);
-            }
-        }
-    }
-
-    private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (options.getBoolean("includeStudies")) {
-            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudiesInProject(project.getId(), options).getResult());
-        }
-    }
-
-
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
@@ -490,7 +468,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies")) {
+                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")) {
             for (Project project : projectQueryResult.getResult()) {
                 Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
                 try {

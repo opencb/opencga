@@ -66,7 +66,7 @@ public class Job {
     /**
      * Job creation date.
      */
-    private String date;
+    private String creationDate;
     private String description;
 
     /**
@@ -109,7 +109,7 @@ public class Job {
     }
 
     @Deprecated
-    public Job(long id, String name, String userId, String toolName, String date, String description, long startTime, long endTime,
+    public Job(long id, String name, String userId, String toolName, String creationDate, String description, long startTime, long endTime,
                String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId, URI tmpOutDirUri,
                List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
                Map<String, Object> resourceManagerAttributes) {
@@ -117,7 +117,7 @@ public class Job {
         this.name = name;
         this.userId = userId;
         this.toolName = toolName;
-        this.date = date;
+        this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -150,7 +150,7 @@ public class Job {
         errorDescription = null;
     }
 
-    public Job(long id, String name, String userId, long toolId, String toolName, String date, String description, long startTime,
+    public Job(long id, String name, String userId, long toolId, String toolName, String creationDate, String description, long startTime,
                long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
                long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
                Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
@@ -159,7 +159,7 @@ public class Job {
         this.userId = userId;
         this.toolId = toolId;
         this.toolName = toolName;
-        this.date = date;
+        this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -191,16 +191,17 @@ public class Job {
         this.errorDescription = null;
     }
 
-    public Job(long id, String name, String userId, long toolId, String toolName, String date, String description, long startTime, long
-            endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage, long
-            outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl, Map<String, String>
-            params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error, String errorDescription) {
+    public Job(long id, String name, String userId, long toolId, String toolName, String creationDate, String description, long startTime,
+               long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
+               long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
+               Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error,
+               String errorDescription) {
         this.id = id;
         this.name = name;
         this.userId = userId;
         this.toolId = toolId;
         this.toolName = toolName;
-        this.date = date;
+        this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -299,7 +300,7 @@ public class Job {
         sb.append(", userId='").append(userId).append('\'');
         sb.append(", toolId=").append(toolId);
         sb.append(", toolName='").append(toolName).append('\'');
-        sb.append(", date='").append(date).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", description='").append(description).append('\'');
         sb.append(", startTime=").append(startTime);
         sb.append(", endTime=").append(endTime);
@@ -369,12 +370,12 @@ public class Job {
         return this;
     }
 
-    public String getDate() {
-        return date;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public Job setDate(String date) {
-        this.date = date;
+    public Job setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

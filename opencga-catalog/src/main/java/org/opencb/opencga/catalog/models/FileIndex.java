@@ -24,7 +24,9 @@ import java.util.Map;
 public class FileIndex {
 
     private String userId;
-    private String date;
+    // The date can be seen in the status object
+    @Deprecated
+    private String creationDate;
     private IndexStatus status;
     @Deprecated
     private long jobId;
@@ -36,18 +38,18 @@ public class FileIndex {
     public FileIndex() {
     }
 
-    public FileIndex(String userId, String date, IndexStatus status, long jobId, Map<String, Object> attributes) {
+    public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, Map<String, Object> attributes) {
         this.userId = userId;
-        this.date = date;
+        this.creationDate = creationDate;
         this.status = status;
         this.jobId = jobId;
         this.attributes = attributes;
     }
 
-    public FileIndex(String userId, String date, IndexStatus status, long jobId, LocalFileIndex localFileIndex,
+    public FileIndex(String userId, String creationDate, IndexStatus status, long jobId, LocalFileIndex localFileIndex,
                      Map<String, Object> attributes) {
         this.userId = userId;
-        this.date = date;
+        this.creationDate = creationDate;
         this.status = status;
         this.jobId = jobId;
         this.localFileIndex = localFileIndex;
@@ -142,7 +144,7 @@ public class FileIndex {
     public String toString() {
         final StringBuilder sb = new StringBuilder("FileIndex{");
         sb.append("userId='").append(userId).append('\'');
-        sb.append(", date='").append(date).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", jobId=").append(jobId);
         sb.append(", localFileIndex=").append(localFileIndex);
@@ -160,12 +162,12 @@ public class FileIndex {
         return this;
     }
 
-    public String getDate() {
-        return date;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public FileIndex setDate(String date) {
-        this.date = date;
+    public FileIndex setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

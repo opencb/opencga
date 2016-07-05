@@ -139,8 +139,8 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         long startTime = startQuery();
         Map<String, Object> jobParameters = new HashMap<>();
 
-        String[] acceptedParams = {"name", "userId", "toolName", "date", "description", "outputError", "commandLine", "status", "outdir",
-                "error", "errorDescription", };
+        String[] acceptedParams = {"name", "userId", "toolName", "creationDate", "description", "outputError", "commandLine", "status",
+        "outdir", "error", "errorDescription", };
         filterStringParams(parameters, jobParameters, acceptedParams);
 
         Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap(("status"), Job.Status.class);
@@ -572,9 +572,9 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         long startTime = startQuery();
         Map<String, Object> jobParameters = new HashMap<>();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(), QueryParams.DATE.key(),
-                QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(), QueryParams.COMMAND_LINE.key(),
-                QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.USER_ID.key(), QueryParams.TOOL_NAME.key(),
+                QueryParams.CREATION_DATE.key(), QueryParams.DESCRIPTION.key(), QueryParams.OUTPUT_ERROR.key(),
+                QueryParams.COMMAND_LINE.key(), QueryParams.OUT_DIR_ID.key(), QueryParams.ERROR.key(), QueryParams.ERROR_DESCRIPTION.key(),
         };
         filterStringParams(parameters, jobParameters, acceptedParams);
 

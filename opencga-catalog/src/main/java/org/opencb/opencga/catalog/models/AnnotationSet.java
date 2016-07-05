@@ -29,7 +29,7 @@ public class AnnotationSet {
     private String name;
     private long variableSetId;
     private Set<Annotation> annotations;
-    private String date;
+    private String creationDate;
 
     private Map<String, Object> attributes;
 
@@ -37,12 +37,12 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String date,
+    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String creationDate,
                          Map<String, Object> attributes) {
         this.name = name;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
-        this.date = date;
+        this.creationDate = creationDate;
         this.attributes = attributes;
     }
 
@@ -52,7 +52,7 @@ public class AnnotationSet {
         sb.append("id='").append(name).append('\'');
         sb.append(", variableSetId=").append(variableSetId);
         sb.append(", annotations=").append(annotations);
-        sb.append(", date='").append(date).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", attributes=").append(attributes);
         sb.append('}');
         return sb.toString();
@@ -78,7 +78,7 @@ public class AnnotationSet {
         if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) {
             return false;
         }
-        if (date != null ? !date.equals(that.date) : that.date != null) {
+        if (creationDate != null ? !creationDate.equals(that.creationDate) : that.creationDate != null) {
             return false;
         }
         return !(attributes != null ? !attributes.equals(that.attributes) : that.attributes != null);
@@ -90,7 +90,7 @@ public class AnnotationSet {
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + toIntExact(variableSetId);
         result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
-        result = 31 * result + (date != null ? date.hashCode() : 0);
+        result = 31 * result + (creationDate != null ? creationDate.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
         return result;
     }
@@ -119,12 +119,12 @@ public class AnnotationSet {
         this.annotations = annotations;
     }
 
-    public String getDate() {
-        return date;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public void setDate(String date) {
-        this.date = date;
+    public void setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
     }
 
     public Map<String, Object> getAttributes() {

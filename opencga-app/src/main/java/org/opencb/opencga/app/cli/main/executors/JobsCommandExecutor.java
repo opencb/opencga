@@ -147,7 +147,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             query.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), ownerId);
         }
         if (StringUtils.isNotEmpty(date)) {
-            query.put(CatalogJobDBAdaptor.QueryParams.DATE.key(), date);
+            query.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), date);
         }
         if (StringUtils.isNotEmpty(input)) {
             query.put(CatalogJobDBAdaptor.QueryParams.INPUT.key(), input);
@@ -211,7 +211,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), jobsCommandOptions.groupByCommandOptions.ownerId);
         }
         if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.creationDate)) {
-            objectMap.put(CatalogJobDBAdaptor.QueryParams.DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);
+            objectMap.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), jobsCommandOptions.groupByCommandOptions.creationDate);
         }
         if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.description)) {
             objectMap.put(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(), jobsCommandOptions.groupByCommandOptions.description);

@@ -338,7 +338,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogJobDBAdaptor.QueryParams.USER_ID.key(), studiesCommandOptions.jobsCommandOptions.ownerId);
         }
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.date)) {
-            queryOptions.put(CatalogJobDBAdaptor.QueryParams.DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
+            queryOptions.put(CatalogJobDBAdaptor.QueryParams.CREATION_DATE.key(), studiesCommandOptions.jobsCommandOptions.date);
         }
 
         if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.inputFiles)) {

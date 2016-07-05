@@ -205,7 +205,7 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
         ANNOTATIONS("annotations", TEXT_ARRAY, ""),
         ANNOTATIONS_ID("annotations.id", TEXT, ""),
         ANNOTATIONS_VALUE("annotations.value", TEXT, ""), // We don't really know the type. It is defined  in VariableSet.
-        DATE("date", TEXT, ""),
+        CREATION_DATE("creationDate", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]");

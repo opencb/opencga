@@ -218,7 +218,7 @@ public class AnalysisOutputRecorder {
                     break;
             }
         } else {
-            index = new FileIndex(job.getUserId(), job.getDate(), new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), job.getId(),
+            index = new FileIndex(job.getUserId(), job.getCreationDate(), new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), job.getId(),
                     new HashMap<>());
             logger.warn("Expected INDEX object on the indexed file " +
                     "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");

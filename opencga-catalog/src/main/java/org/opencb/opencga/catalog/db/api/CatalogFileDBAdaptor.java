@@ -71,7 +71,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAcl
 
         //INDEX("index", TEXT, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
-        INDEX_DATE("index.date", TEXT, ""),
+        INDEX_CREATION_DATE("index.creationDate", TEXT, ""),
         INDEX_STATUS_NAME("index.status.name", TEXT, ""),
         INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),

@@ -281,7 +281,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogA
 //        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
 //        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
 //        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
-//        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
+//        JOB_CREATION_DATE("jobs.creationDate", TEXT_ARRAY, ""),
 //        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
 //        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
 
