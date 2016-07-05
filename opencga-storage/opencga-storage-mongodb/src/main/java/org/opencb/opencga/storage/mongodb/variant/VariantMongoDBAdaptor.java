@@ -392,8 +392,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         DocumentToVariantConverter converter = getDocumentToVariantConverter(query, options);
         options.putIfAbsent(MongoDBCollection.BATCH_SIZE, 100);
 
-        // Short queries with timeout or limit don't need the persistent cursor.
-        if (options.containsKey(QueryOptions.TIMEOUT) || options.containsKey(QueryOptions.LIMIT)) {
+        // Short unsorted queries with timeout or limit don't need the persistent cursor.
+        if (options.containsKey(QueryOptions.TIMEOUT)
+                || options.containsKey(QueryOptions.LIMIT)
+                || !options.containsKey(QueryOptions.SORT)) {
             FindIterable<Document> dbCursor = variantsCollection.nativeQuery().find(mongoQuery, projection, options);
             return new VariantMongoDBIterator(dbCursor, converter);
         } else {

@@ -240,26 +240,30 @@ public class VariantQueryCommandUtils {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
-            queryOptions.add("include", queryVariantsOptions.include);
+            queryOptions.add(QueryOptions.INCLUDE, queryVariantsOptions.include);
         }
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.exclude + ",_id");
+            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.exclude + ",_id");
         }
 //        else {
 //            queryOptions.put("exclude", "_id");
 //        }
 
         if (queryVariantsOptions.skip > 0) {
-            queryOptions.add("skip", queryVariantsOptions.skip);
+            queryOptions.add(QueryOptions.SKIP, queryVariantsOptions.skip);
         }
 
         if (queryVariantsOptions.limit > 0) {
-            queryOptions.add("limit", queryVariantsOptions.limit);
+            queryOptions.add(QueryOptions.LIMIT, queryVariantsOptions.limit);
         }
 
         if (queryVariantsOptions.count) {
             queryOptions.add("count", true);
+        }
+
+        if (queryVariantsOptions.sort) {
+            queryOptions.add(QueryOptions.SORT, true);
         }
 
         return queryOptions;
@@ -284,7 +288,7 @@ public class VariantQueryCommandUtils {
 
         // output format has priority over output name
         OutputStream outputStream;
-        if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
+        if (isStandardOutput(queryVariantsOptions)) {
             // Unclosable OutputStream
             outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
         } else {
@@ -303,6 +307,10 @@ public class VariantQueryCommandUtils {
         logger.debug("using %s output stream", gzip ? "gzipped" : "plain");
 
         return outputStream;
+    }
+
+    public static boolean isStandardOutput(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions) {
+        return queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty();
     }
 
     public static ParameterException variantFormatNotSupported(String outputFormat) {
