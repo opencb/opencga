@@ -708,7 +708,10 @@ public class OpenCGAMainOld {
                             query.append(CatalogSampleDBAdaptor.QueryParams.NAME.key(), c.sampleNames);
                         }
                         if (c.annotation != null && !c.annotation.isEmpty()) {
-                            query.append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), c.annotation);
+                            for (String s : c.annotation) {
+                                String[] strings = org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.splitOperator(s);
+                                query.append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + strings[0], strings[1] + strings[2]);
+                            }
                         }
                         if (c.variableSetId != null && !c.variableSetId.isEmpty()) {
                             query.append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), c.variableSetId);

@@ -281,7 +281,8 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                     extraFieldsSet.addAll(sampleDatas.keySet());
                 }
             }
-            for (Iterator<String> iterator = extraFields.iterator(); iterator.hasNext(); ) {
+            Iterator<String> iterator = extraFields.iterator();
+            while (iterator.hasNext()) {
                 String extraField = iterator.next();
                 if (!extraFieldsSet.contains(extraField.toLowerCase())) {
                     iterator.remove();
