@@ -87,6 +87,7 @@ public class CatalogManager implements AutoCloseable {
     private IJobManager jobManager;
     private IIndividualManager individualManager;
     private ISampleManager sampleManager;
+    private ICohortManager cohortManager;
     private Properties properties;
     private AuthenticationManager authenticationManager;
     private CatalogAuditManager auditManager;
@@ -192,6 +193,8 @@ public class CatalogManager implements AutoCloseable {
         sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         individualManager = new IndividualManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+                catalogIOManagerFactory, catalogConfiguration);
+        cohortManager = new CohortManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
     }
 
@@ -1583,35 +1586,35 @@ public class CatalogManager implements AutoCloseable {
      */
 
     public long getStudyIdByCohortId(long cohortId) throws CatalogException {
-        return sampleManager.getStudyIdByCohortId(cohortId);
+        return cohortManager.getStudyId(cohortId);
     }
 
     public QueryResult<Cohort> getCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        return sampleManager.readCohort(cohortId, options, sessionId);
+        return cohortManager.read(cohortId, options, sessionId);
     }
 
     public QueryResult<Cohort> getAllCohorts(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        return sampleManager.readAllCohort(studyId, query, options, sessionId);
+        return cohortManager.readAll(studyId, query, options, sessionId);
     }
 
     public QueryResult<Cohort> createCohort(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
                                             Map<String, Object> attributes, String sessionId) throws CatalogException {
-        return sampleManager.createCohort(studyId, name, type, description, sampleIds, attributes, sessionId);
+        return cohortManager.create(studyId, name, type, description, sampleIds, attributes, sessionId);
     }
 
     public QueryResult<Cohort> modifyCohort(long cohortId, ObjectMap updateParams, QueryOptions options, String sessionId)
             throws CatalogException {
-        return sampleManager.updateCohort(cohortId, updateParams, options, sessionId);
+        return cohortManager.update(cohortId, updateParams, options, sessionId);
     }
 
     public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        return sampleManager.deleteCohort(cohortId, options, sessionId);
+        return cohortManager.delete(cohortId, options, sessionId);
     }
 
     public List<QueryResult<CohortAclEntry>> getAllCohortAcls(String cohortIdsStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] cohortNameSplit = cohortIdsStr.split(",");
-        List<Long> cohortIds = sampleManager.getCohortIds(userId, cohortIdsStr);
+        List<Long> cohortIds = cohortManager.getCohortIds(userId, cohortIdsStr);
         List<QueryResult<CohortAclEntry>> aclList = new ArrayList<>(cohortIds.size());
         for (int i = 0; i < cohortIds.size(); i++) {
             Long cohortId = cohortIds.get(i);
@@ -1626,7 +1629,7 @@ public class CatalogManager implements AutoCloseable {
                                                               String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] cohortNameSplit = cohortIdsStr.split(",");
-        List<Long> cohortIds = sampleManager.getCohortIds(userId, cohortIdsStr);
+        List<Long> cohortIds = cohortManager.getCohortIds(userId, cohortIdsStr);
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
         for (int i = 0; i < cohortIds.size(); i++) {
             Long cohortId = cohortIds.get(i);
@@ -1642,7 +1645,7 @@ public class CatalogManager implements AutoCloseable {
             throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
         String[] cohortNameStr = cohortIdsStr.split(",");
-        List<Long> cohortIds = sampleManager.getCohortIds(userId, cohortIdsStr);
+        List<Long> cohortIds = cohortManager.getCohortIds(userId, cohortIdsStr);
         List<QueryResult<CohortAclEntry>> cohortAclList = new ArrayList<>(cohortIds.size());
         for (int i = 0; i < cohortIds.size(); i++) {
             Long cohortId = cohortIds.get(i);
@@ -1655,7 +1658,7 @@ public class CatalogManager implements AutoCloseable {
 
     public QueryResult<CohortAclEntry> getCohortAcl(String cohortIdStr, String member, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        long cohortId = sampleManager.getCohortId(userId, cohortIdStr);
+        long cohortId = cohortManager.getCohortId(userId, cohortIdStr);
         return authorizationManager.getCohortAcl(userId, cohortId, member);
     }
 
@@ -1663,72 +1666,53 @@ public class CatalogManager implements AutoCloseable {
                                                        @Nullable String removePermissions, @Nullable String setPermissions,
                                                        String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        long cohortId = sampleManager.getCohortId(userId, cohortIdStr);
+        long cohortId = cohortManager.getCohortId(userId, cohortIdStr);
         return authorizationManager.updateCohortAcl(userId, cohortId, member, addPermissions, removePermissions, setPermissions);
     }
 
-//    @Deprecated
-//    public QueryResult shareCohorts(String cohortIds, String members, List<String> permissions, boolean override, String sessionId)
-//            throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
-//        return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
-//    }
-//
-//    @Deprecated
-//    public QueryResult unshareCohorts(String cohortIds, String userIds, String permissions, String sessionId) throws CatalogException {
-//        String userId = getUserIdBySessionId(sessionId);
-//        List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
-//        List<String> permissionList = permissions != null && !permissions.isEmpty()
-//                ? Arrays.asList(permissions.split(",")) : Collections.emptyList();
-//        authorizationManager.unsetCohortPermissions(userId, cohortList, userIds, permissionList);
-//        return new QueryResult("unshareCohorts");
-//    }
-
-   /* public QueryResult updateAcl(String cohortId, String member, List<String> permissions, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        List<Long> cohortList = sampleManager.getCohortIds(userId, cohortId);
-        return authorizationManager.setCohortPermissions(userId, cohortList, member, permissions);
-    }*/
-
-   /* public QueryResult getAcl(String cohortId, String sessionId)
-            throws CatalogException {
-        String userId = getUserIdBySessionId(sessionId);
-        //List<Long> cohortList = sampleManager.getCohortIds(userId, cohortIds);
-
-        List<String> permissions
-        return authorizationManager.setCohortPermissions(userId, cohortList, members, permissions, override);
-    }*/
-
     public long getCohortId(String cohortStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return sampleManager.getCohortId(userId, cohortStr);
+        return cohortManager.getCohortId(userId, cohortStr);
     }
 
     public List<Long> getCohortIds(String cohortStr, String sessionId) throws CatalogException {
         String userId = getUserIdBySessionId(sessionId);
-        return sampleManager.getCohortIds(userId, cohortStr);
-    }
-
-    public QueryResult<AnnotationSet> annotateCohort(String cohortId, String annotationSetName, long variableSetId,
-                                                     Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
-            throws CatalogException {
-        return sampleManager.annotateCohort(cohortId, annotationSetName, variableSetId, annotations, attributes, true, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortId, String annotationSetName, Map<String, Object> annotations,
-                                                             String sessionId) throws CatalogException {
-        return sampleManager.updateCohortAnnotation(cohortId, annotationSetName, annotations, sessionId);
-    }
-
-    public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortId, String annotationId, String sessionId)
-            throws CatalogException {
-        return sampleManager.deleteCohortAnnotation(cohortId, annotationId, sessionId);
+        return cohortManager.getCohortIds(userId, cohortStr);
     }
 
     public QueryResult cohortGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
-        return sampleManager.cohortGroupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
+        return cohortManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> createCohortAnnotationSet(String cohortIdStr, long variableSetId, String annotationSetName,
+                                                                Map<String, Object> annotations, Map<String, Object> attributes,
+                                                                String sessionId) throws CatalogException {
+        return cohortManager.createAnnotationSet(cohortIdStr, variableSetId, annotationSetName, annotations, attributes, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> getAllCohortAnnotationSets(String cohortIdStr, String sessionId) throws CatalogException {
+        return cohortManager.getAllAnnotationSets(cohortIdStr, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> getCohortAnnotationSet(String cohortIdStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return cohortManager.getAnnotationSet(cohortIdStr, annotationSetName, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> updateCohortAnnotationSet(String cohortIdStr, String annotationSetName,
+                                                                Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException {
+        return cohortManager.updateAnnotationSet(cohortIdStr, annotationSetName, newAnnotations, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteCohortAnnotationSet(String cohortIdStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return cohortManager.deleteAnnotationSet(cohortIdStr, annotationSetName, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteCohortAnnotations(String cohortIdStr, String annotationSetName, String annotations,
+                                                              String sessionId) throws CatalogException {
+        return cohortManager.deleteAnnotations(cohortIdStr, annotationSetName, annotations, sessionId);
     }
 
     /*

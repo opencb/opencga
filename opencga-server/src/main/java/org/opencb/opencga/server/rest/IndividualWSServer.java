@@ -268,7 +268,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/annotationSets/{annotationSetName}/info")
-    @ApiOperation(value = "Return the annotation set [PENDING]", position = 16)
+    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
