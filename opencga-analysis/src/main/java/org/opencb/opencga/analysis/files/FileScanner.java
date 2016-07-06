@@ -3,13 +3,14 @@ package org.opencb.opencga.analysis.files;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.utils.BioformatDetector;
 import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.slf4j.Logger;
@@ -55,7 +56,7 @@ public class FileScanner {
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
         Query query = new Query();
-        query.put(CatalogFileDBAdaptor.QueryParams.FILE_STATUS.key(), Arrays.asList(
+        query.put(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), Arrays.asList(
                 File.FileStatus.READY, File.FileStatus.MISSING, File.FileStatus.TRASHED));
         QueryResult<File> files = catalogManager.getAllFiles(study.getId(), query, new QueryOptions(), sessionId);
 
@@ -185,10 +186,11 @@ public class FileScanner {
             long fileScanStart = System.currentTimeMillis();
             URI uri = iterator.next();
             URI generatedFile = directoryToScan.relativize(uri);
-            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
+            String filePath = URI.create(directory.getPath()).resolve(generatedFile).toString();
+//            String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
 
-            QueryResult<File> searchFile = catalogManager.searchFile(studyId, new Query("path", filePath), sessionId);
-
+            Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), filePath);
+            QueryResult<File> searchFile = catalogManager.searchFile(studyId, query, sessionId);
             File file = null;
             boolean returnFile = false;
             if (searchFile.getNumResults() != 0) {
@@ -198,7 +200,8 @@ public class FileScanner {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
                         // Delete completely the file/folder !
-                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(), sessionId);
+                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(FileManager.SKIP_TRASH, true),
+                                sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;
@@ -230,15 +233,17 @@ public class FileScanner {
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
-                if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
-                    logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
-                    logger.debug("Set status to " + File.FileStatus.READY);
-                    returnFile = true;      //Return file because was missing
+                if (file.getType() == File.Type.FILE) {
+                    if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
+                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
+                        logger.debug("Set status to " + File.FileStatus.READY);
+                        returnFile = true;      //Return file because was missing
+                    }
+                    long start = System.currentTimeMillis();
+                    catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
+                    long end = System.currentTimeMillis();
+                    uploadFilesTime += end - start;
                 }
-                long start = System.currentTimeMillis();
-                catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
-                long end = System.currentTimeMillis();
-                uploadFilesTime += end - start;
             }
 
             try {
