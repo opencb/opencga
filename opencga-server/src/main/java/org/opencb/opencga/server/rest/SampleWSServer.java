@@ -22,6 +22,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.utils.CatalogSampleAnnotationsLoader;
@@ -34,6 +36,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -325,7 +328,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/annotationSets/{annotationSetName}/search")
+    @Path("/{sampleId}/annotationSets/search")
     @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                            @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
@@ -337,61 +340,82 @@ public class SampleWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{sampleId}/annotationSets/info")
-    @ApiOperation(value = "Returns the annotation sets of the sample [PENDING]", position = 12)
+    @ApiOperation(value = "Return the annotation sets of the sample [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                         @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.getAllSampleAnnotationSets(sampleStr, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST
     @Path("/{sampleId}/annotationSets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample [PENDING]", position = 13)
-    public Response annotateSamplePOST(@ApiParam(value = "SampleID", required = true) @PathParam("sampleId") String sampleStr,
+    @ApiOperation(value = "Create an annotation set for the sample [NOT TESTED]", position = 13)
+    public Response annotateSamplePOST(@ApiParam(value = "SampleId", required = true) @PathParam("sampleId") String sampleStr,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
                                        @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
                                        Map<String, Object> annotations) {
         try {
-//            QueryResult<AnnotationSet> queryResult;
-//            queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
-//                    annotations, Collections.emptyMap(), sessionId);
-//            return createOkResponse(queryResult);
-            return createOkResponse(null);
-        } catch (Exception e) {
+            QueryResult<AnnotationSet> queryResult = catalogManager.createSampleAnnotationSet(sampleStr, variableSetId, annotateSetName,
+                    annotations, Collections.emptyMap(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
     @Path("/{sampleId}/annotationSets/{annotationSetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [PENDING]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
-        return createErrorResponse("Search", "not implemented");
+                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+            if (annotations != null) {
+                queryResult = catalogManager.deleteSampleAnnotations(sampleStr, annotationSetName, annotations, sessionId);
+            } else {
+                queryResult = catalogManager.deleteSampleAnnotationSet(sampleStr, annotationSetName, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST
     @Path("/{sampleId}/annotationSets/{annotationSetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [PENDING]", position = 15)
-    public Response updateAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") long sampleId,
+    @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
+    public Response updateAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleIdStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
+//                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
                                         Map<String, Object> annotations) {
-        return createErrorResponse("Search", "not implemented");
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.updateSampleAnnotationSet(sampleIdStr, annotationSetName,
+                    annotations, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/{sampleId}/annotationSets/{annotationSetName}/info")
-    @ApiOperation(value = "Returns the annotation set [PENDING]", position = 16)
+    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                        @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.getSampleAnnotationSet(sampleStr, annotationSetName, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
 

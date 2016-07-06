@@ -189,7 +189,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/annotationSets/{annotationSetName}/search")
+    @Path("/{individualId}/annotationSets/search")
     @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                            @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
@@ -201,7 +201,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/annotationSets/info")
-    @ApiOperation(value = "Returns all the annotation sets of the individual [NOT TESTED]", position = 12)
+    @ApiOperation(value = "Return all the annotation sets of the individual [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                          @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
@@ -238,7 +238,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
         try {
             QueryResult<AnnotationSet> queryResult;
             if (annotations != null) {
-                queryResult = catalogManager.deleteIndividualAnnotationSet(individualStr, annotationSetName, annotations, sessionId);
+                queryResult = catalogManager.deleteIndividualAnnotations(individualStr, annotationSetName, annotations, sessionId);
             } else {
                 queryResult = catalogManager.deleteIndividualAnnotationSet(individualStr, annotationSetName, sessionId);
             }
@@ -268,7 +268,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/annotationSets/{annotationSetName}/info")
-    @ApiOperation(value = "Returns the annotation set [PENDING]", position = 16)
+    @ApiOperation(value = "Return the annotation set [PENDING]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                       @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {

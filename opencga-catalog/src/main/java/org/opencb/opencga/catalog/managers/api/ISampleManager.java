@@ -18,7 +18,7 @@ import java.util.Map;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface ISampleManager extends ResourceManager<Long, Sample> {
+public interface ISampleManager extends ResourceManager<Long, Sample>, IAnnotationSetManager {
 
     Long getStudyId(long sampleId) throws CatalogException;
 
@@ -83,14 +83,16 @@ public interface ISampleManager extends ResourceManager<Long, Sample> {
         return result;
     }
 
-
+    @Deprecated
     QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet,
                                         String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<AnnotationSet> updateAnnotation(long sampleId, String annotationSetName, Map<String, Object> newAnnotations,
                                                 String sessionId) throws CatalogException;
 
+    @Deprecated
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException;
 
     /**

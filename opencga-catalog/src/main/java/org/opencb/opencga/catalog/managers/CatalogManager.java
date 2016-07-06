@@ -1368,8 +1368,8 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.deleteAnnotationSet(individualIdStr, annotationSetName, sessionId);
     }
 
-    public QueryResult<AnnotationSet> deleteIndividualAnnotationSet(String individualIdStr, String annotationSetName, String annotations,
-                                                                    String sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> deleteIndividualAnnotations(String individualIdStr, String annotationSetName, String annotations,
+                                                                  String sessionId) throws CatalogException {
         return individualManager.deleteAnnotations(individualIdStr, annotationSetName, annotations, sessionId);
     }
 
@@ -1431,6 +1431,7 @@ public class CatalogManager implements AutoCloseable {
 //        return new QueryResult("unshareSample");
 //    }
 
+    @Deprecated
     public QueryResult<AnnotationSet> annotateSample(long sampleId, String id, long variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
@@ -1438,6 +1439,7 @@ public class CatalogManager implements AutoCloseable {
         return annotateSample(sampleId, id, variableSetId, annotations, attributes, true, sessionId);
     }
 
+    @Deprecated
     public QueryResult<AnnotationSet> annotateSample(long sampleId, String annotationSetName, long variableSetId,
                                                      Map<String, Object> annotations,
                                                      Map<String, Object> attributes,
@@ -1447,12 +1449,46 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.annotate(sampleId, annotationSetName, variableSetId, annotations, attributes, checkAnnotationSet, sessionId);
     }
 
+    @Deprecated
     public QueryResult<AnnotationSet> updateSampleAnnotation(long sampleId, String annotationSetName,
                                                              Map<String, Object> annotations,
                                                              String sessionId)
             throws CatalogException {
         return sampleManager.updateAnnotation(sampleId, annotationSetName, annotations, sessionId);
     }
+
+    public QueryResult<AnnotationSet> createSampleAnnotationSet(String sampleIdStr, long variableSetId, String annotationSetName,
+                                                                Map<String, Object> annotations, Map<String, Object> attributes,
+                                                                String sessionId) throws CatalogException {
+        return sampleManager.createAnnotationSet(sampleIdStr, variableSetId, annotationSetName, annotations, attributes, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> getAllSampleAnnotationSets(String sampleIdStr, String sessionId) throws CatalogException {
+        return sampleManager.getAllAnnotationSets(sampleIdStr, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> getSampleAnnotationSet(String sampleIdStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return sampleManager.getAnnotationSet(sampleIdStr, annotationSetName, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> updateSampleAnnotationSet(String sampleIdStr, String annotationSetName,
+                                                                Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException {
+        return sampleManager.updateAnnotationSet(sampleIdStr, annotationSetName, newAnnotations, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteSampleAnnotationSet(String sampleIdStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return sampleManager.deleteAnnotationSet(sampleIdStr, annotationSetName, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteSampleAnnotations(String sampleIdStr, String annotationSetName, String annotations,
+                                                              String sessionId) throws CatalogException {
+        return sampleManager.deleteAnnotations(sampleIdStr, annotationSetName, annotations, sessionId);
+    }
+
+
 
     public QueryResult sampleGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
         return sampleManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
