@@ -27,8 +27,10 @@ package org.opencb.opencga.storage.mongodb.variant;
  */
 public class MongoDBVariantWriteResult {
 
-    /** Number of new variants inserted in the Database. */
+    /** Number of new variants inserted in the Database. Variants never seen in any other study */
     private long newVariants;
+//    /** Number of new variants for this study. Variants already seen in other studies, but first time in the current study*/
+//    private long newStudy;
     /** Number of existing variants, updated with new information. */
     private long updatedVariants;
     /** Number of existing variants that were not present in the loaded variants. Missing variants. */

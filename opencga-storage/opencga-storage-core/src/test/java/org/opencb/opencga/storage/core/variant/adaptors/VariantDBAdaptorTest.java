@@ -47,8 +47,10 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly.
@@ -334,23 +336,34 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566");
         queryResult = dbAdaptor.get(query, null);
-        assertEquals(911, queryResult.getNumResults());
+        assertThat(queryResult, everyResult(hasAnnotation(hasSO(hasItem("SO:0001566")))));
+        assertThat(queryResult, numTotalResults(gt(0L)));
+//        assertEquals(911, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "1566");
         queryResult = dbAdaptor.get(query, null);
-        assertEquals(911, queryResult.getNumResults());
+        assertThat(queryResult, everyResult(hasAnnotation(hasSO(hasItem("SO:0001566")))));
+        assertThat(queryResult, numTotalResults(gt(0L)));
+//        assertEquals(911, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566,SO:0001583");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(947, queryResult.getNumResults());
+        assertThat(queryResult, everyResult(hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
+        assertThat(queryResult, numTotalResults(gt(0L)));
+//        assertEquals(947, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "1566,SO:0001583");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(947, queryResult.getNumResults());
+        assertThat(queryResult, everyResult(hasAnnotation(hasSO(anyOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
+        assertThat(queryResult, numTotalResults(gt(0L)));
+//        assertEquals(947, queryResult.getNumResults());
 
         query = new Query(ANNOT_CONSEQUENCE_TYPE.key(), "SO:0001566;SO:0001583");
         queryResult = dbAdaptor.get(query, options);
-        assertEquals(396, queryResult.getNumResults());
+        assertThat(queryResult, everyResult(hasAnnotation(hasSO(allOf(hasItem("SO:0001566"), hasItem("SO:0001583"))))));
+        assertThat(queryResult, numTotalResults(gt(0L)));
+
+//        assertEquals(396, queryResult.getNumResults());
     }
 
     @Test
@@ -372,12 +385,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         }
 
         System.out.println(flags);
-        assertTrue(flags.contains("basic"));
-        assertTrue(flags.contains("CCDS"));
-        assertTrue(flags.contains("mRNA_start_NF"));
-        assertTrue(flags.contains("mRNA_end_NF"));
-        assertTrue(flags.contains("cds_start_NF"));
-        assertTrue(flags.contains("cds_end_NF"));
+        assertThat(flags, hasItem("basic"));
+        assertThat(flags, hasItem("CCDS"));
+        assertThat(flags, hasItem("mRNA_start_NF"));
+        assertThat(flags, hasItem("mRNA_end_NF"));
+        assertThat(flags, hasItem("cds_start_NF"));
+        assertThat(flags, hasItem("cds_end_NF"));
 
         for (String flag : flags.elementSet()) {
             System.out.println(flag + ", " + flags.count(flag));

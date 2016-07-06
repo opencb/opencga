@@ -20,6 +20,7 @@ import org.opencb.biodata.models.variant.Variant;
 
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by jacobo on 9/01/15.
@@ -34,12 +35,20 @@ public abstract class VariantDBIterator implements Iterator<Variant>, AutoClosea
         return timeConverting;
     }
 
+    public long getTimeConverting(TimeUnit timeUnit) {
+        return timeUnit.convert(timeConverting, TimeUnit.NANOSECONDS);
+    }
+
     public void setTimeFetching(long timeFetching) {
         this.timeFetching = timeFetching;
     }
 
     public long getTimeFetching() {
         return timeFetching;
+    }
+
+    public long getTimeFetching(TimeUnit timeUnit) {
+        return timeUnit.convert(timeFetching, TimeUnit.NANOSECONDS);
     }
 
     public void setTimeConverting(long timeConverting) {

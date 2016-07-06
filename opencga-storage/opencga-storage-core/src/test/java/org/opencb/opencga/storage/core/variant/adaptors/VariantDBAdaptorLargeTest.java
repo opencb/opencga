@@ -412,8 +412,7 @@ public abstract class VariantDBAdaptorLargeTest extends VariantStorageManagerTes
             assertThat(returnedFileIds, anyOf(hasItem(file1), hasItem(file2)));
 
             Set<String> returnedStudiesIds = variant.getStudies().stream().map(StudyEntry::getStudyId).collect(Collectors.toSet());
-            assertThat("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds, hasItem(studyConfiguration1.getStudyName
-                    ()));
+            assertThat("Returned studies :" + returnedStudiesIds.toString(), returnedStudiesIds, hasItem(studyConfiguration1.getStudyName()));
         }
     }
 

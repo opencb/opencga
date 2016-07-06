@@ -468,6 +468,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 values.set(0, values.get(0).replace("0/0", "0|0"));
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
+            variant.resetLength();
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
         }

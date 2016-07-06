@@ -2219,21 +2219,23 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
      * Where STUDY is optional if defaultStudyConfiguration is provided
      *
      * @param key                       Stats field to filter
-     * @param value                     Value to parse
+     * @param filter                    Filter to parse
      * @param builder                   QueryBuilder
      * @param defaultStudyConfiguration
      */
-    private QueryBuilder addStatsFilter(String key, String value, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
-        if (value.contains(":") || defaultStudyConfiguration != null) {
+    private QueryBuilder addStatsFilter(String key, String filter, QueryBuilder builder, StudyConfiguration defaultStudyConfiguration) {
+        if (filter.contains(":") || defaultStudyConfiguration != null) {
             Integer studyId;
             Integer cohortId;
-            String operatorValue;
-            if (value.contains(":")) {
-                String[] studyValue = value.split(":");
-                String[] cohortValue = VariantDBAdaptorUtils.splitOperator(studyValue[1]);
+            String operator;
+            String valueStr;
+            if (filter.contains(":")) {
+                String[] studyValue = filter.split(":");
+                String[] cohortOpValue = VariantDBAdaptorUtils.splitOperator(studyValue[1]);
                 String study = studyValue[0];
-                String cohort = cohortValue[0];
-                operatorValue = cohortValue[1];
+                String cohort = cohortOpValue[0];
+                operator = cohortOpValue[1];
+                valueStr = cohortOpValue[2];
                 studyId = getInteger(study);
                 cohortId = getInteger(cohort);
                 if (studyId == null) {
@@ -2247,15 +2249,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     cohortId = studyConfiguration.getCohortIds().get(cohort);
                 }
             } else {
-                String study = defaultStudyConfiguration.getStudyName();
+//                String study = defaultStudyConfiguration.getStudyName();
                 studyId = defaultStudyConfiguration.getStudyId();
-                String[] cohortValue = splitKeyValue(value);
-                String cohort = cohortValue[0];
+                String[] cohortOpValue = VariantDBAdaptorUtils.splitOperator(filter);
+                String cohort = cohortOpValue[0];
                 cohortId = getInteger(cohort);
                 if (cohortId == null) {
                     cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
                 }
-                operatorValue = cohortValue[1];
+                operator = cohortOpValue[1];
+                valueStr = cohortOpValue[2];
             }
 
             QueryBuilder statsBuilder = new QueryBuilder();
@@ -2263,10 +2266,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             if (cohortId != null) {
                 statsBuilder.and(DocumentToVariantStatsConverter.COHORT_ID).is(cohortId);
             }
-            addCompQueryFilter(key, operatorValue, statsBuilder);
+            addCompQueryFilter(key, valueStr, statsBuilder, operator);
             builder.and(DocumentToVariantConverter.STATS_FIELD).elemMatch(statsBuilder.get());
         } else {
-            addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, value, builder);
+            addCompQueryFilter(DocumentToVariantConverter.STATS_FIELD + "." + key, filter, builder);
         }
         return builder;
     }
