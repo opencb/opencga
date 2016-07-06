@@ -5,7 +5,6 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
 
 import java.util.Arrays;
@@ -17,7 +16,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 3/22/16.
  */
-public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, CatalogAclDBAdaptor<CohortAclEntry> {
+public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, CatalogAclDBAdaptor<CohortAclEntry>,
+        CatalogAnnotationSetDBAdaptor {
 
     enum QueryParams implements QueryParam {
         ID("id", DECIMAL, ""),
@@ -122,24 +122,10 @@ public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, Catalo
 
     QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions queryOptions) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AnnotationSet> annotateCohort(long cohortId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
-    QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
-
-    /**
-     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
-     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
-     * from a variableSet.
-     * @param variableSetId Id of the variable to be renamed.
-     * @param oldName Name of the field to be renamed.
-     * @param newName New name that will be set.
-     * @return a QueryResult containing the number of annotations that have been changed.
-     * @throws CatalogDBException when there is an error with database transactions.
-     */
-    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
-
-    QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException;
-
+    @Deprecated
     QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException;
 
     default QueryResult<CohortAclEntry> getCohortAcl(long cohortId, String member) throws CatalogDBException {

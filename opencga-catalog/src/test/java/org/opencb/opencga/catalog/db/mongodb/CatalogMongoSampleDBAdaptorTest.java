@@ -95,8 +95,8 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
+        catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot1);
+        catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot2);
 
         Sample sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
         Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream()
@@ -105,7 +105,7 @@ public class CatalogMongoSampleDBAdaptorTest {
         assertEquals(annot1, annotationSets.get(annot1.getName()));
         assertEquals(annot2, annotationSets.get(annot2.getName()));
 
-        catalogSampleDBAdaptor.deleteAnnotation(sampleId, annot1.getName());
+        catalogSampleDBAdaptor.deleteAnnotationSet(sampleId, annot1.getName());
 
         sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
         annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getName, Function.identity()));
@@ -122,7 +122,6 @@ public class CatalogMongoSampleDBAdaptorTest {
                 null);
 
         assertEquals(3, catalogSampleDBAdaptor.addVariableToAnnotations(3, variable).first().longValue());
-
     }
 
     @Test
@@ -149,12 +148,12 @@ public class CatalogMongoSampleDBAdaptorTest {
         AnnotationSet annot1 = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot2 = new AnnotationSet("annot2", 3, annotationSet, "", Collections.emptyMap());
         AnnotationSet annot3 = new AnnotationSet("annot3", 2, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot3, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot1, false);
-        catalogSampleDBAdaptor.annotateSample(sampleId, annot2, false);
+        catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot3);
+        catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot1);
+        catalogSampleDBAdaptor.createAnnotationSet(sampleId, annot2);
 
         AnnotationSet annot4 = new AnnotationSet("annot4", 3, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(s2.getId(), annot4, false);
+        catalogSampleDBAdaptor.createAnnotationSet(s2.getId(), annot4);
     }
 
     @Test
@@ -182,7 +181,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                 .stream().collect(Collectors.toSet());
         AnnotationSet expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
 
-        catalogSampleDBAdaptor.annotateSample(sampleId, expectedAnnot, false);
+        catalogSampleDBAdaptor.createAnnotationSet(sampleId, expectedAnnot);
         AnnotationSet annot = catalogSampleDBAdaptor.getSample(sampleId, null).first().getAnnotationSets().get(0);
         assertEquals(expectedAnnot, annot);
 
@@ -193,7 +192,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                 new Annotation("key5", 2.3))
                 .stream().collect(Collectors.toSet());
         expectedAnnot = new AnnotationSet("annot1", 3, annotationSet, "", Collections.emptyMap());
-        catalogSampleDBAdaptor.annotateSample(sampleId, expectedAnnot, true);
+        catalogSampleDBAdaptor.updateAnnotationSet(sampleId, expectedAnnot);
         annot = catalogSampleDBAdaptor.getSample(sampleId, null).first().getAnnotationSets().get(0);
         assertEquals(expectedAnnot, annot);
 

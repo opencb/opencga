@@ -998,4 +998,25 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
         CatalogMongoDBUtils.deleteAnnotationSet(id, annotationSetName, individualCollection);
     }
+
+    @Override
+    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
+        long startTime = startQuery();
+        long addedAnnotations = CatalogMongoDBUtils.addVariableToAnnotations(variableSetId, variable, individualCollection);
+        return endQuery("Add annotation", startTime, Collections.singletonList(addedAnnotations));
+    }
+
+    @Override
+    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
+        long startTime = startQuery();
+        long renamedAnnotations = CatalogMongoDBUtils.renameAnnotationField(variableSetId, oldName, newName, individualCollection);
+        return endQuery("Rename annotation name", startTime, Collections.singletonList(renamedAnnotations));
+    }
+
+    @Override
+    public QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException {
+        long startTime = startQuery();
+        long removedAnnotations = CatalogMongoDBUtils.removeAnnotationField(variableSetId, annotationName, individualCollection);
+        return endQuery("Remove annotation", startTime, Collections.singletonList(removedAnnotations));
+    }
 }

@@ -3,6 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
+import org.opencb.opencga.catalog.models.Variable;
 
 import javax.annotation.Nullable;
 
@@ -50,4 +51,35 @@ public interface CatalogAnnotationSetDBAdaptor {
      */
     void deleteAnnotationSet(long id, String annotationSetName) throws CatalogDBException;
 
+    /**
+     * Add the variable to all the possible annotations from the variableSetId using the default value.
+     *
+     * @param variableSetId variable set id to identify the annotations that will add a new annotation.
+     * @param variable new variable that will be added.
+     * @return the number of annotations that add the new annotation.
+     * @throws CatalogDBException if the variable could not be added to an existing annotationSet.
+     */
+    QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
+
+    /**
+     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
+     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
+     * from a variableSet.
+     * @param variableSetId Id of the variable to be renamed.
+     * @param oldName Name of the field to be renamed.
+     * @param newName New name that will be set.
+     * @return the number of annotations that renamed the name.
+     * @throws CatalogDBException when there is an error with database transactions.
+     */
+    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
+
+    /**
+     * Remove the annotation with annotationName from the annotation set.
+     *
+     * @param variableSetId variable set id for which the annotationSets have to delete the annotation.
+     * @param annotationName Annotation name.
+     * @return the number of annotations that deleted the annotation.
+     * @throws CatalogDBException when there is an error in the database.
+     */
+    QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
 }
