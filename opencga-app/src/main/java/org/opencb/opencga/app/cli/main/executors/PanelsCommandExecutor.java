@@ -55,13 +55,13 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 info();
                 break;
-            case "acls":
+            case "acl":
                 acls();
                 break;
-            case "acls-create":
+            case "acl-create":
                 aclsCreate();
                 break;
-            case "acls-member-delete":
+            case "acl-member-delete":
                 aclMemberDelete();
                 break;
             case "acl-member-info":

@@ -122,8 +122,8 @@ public class SampleWSServer extends OpenCGAWSServer {
                                   @ApiParam(value = "id") @QueryParam("id") String id,
                                   @ApiParam(value = "name") @QueryParam("name") String name,
                                   @ApiParam(value = "source") @QueryParam("source") String source,
-                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
-                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
+//                                  @ApiParam(value = "acls") @QueryParam("acls") String acls,
+//                                  @ApiParam(value = "acls.users") @QueryParam("acls.users") String acl_userIds,
                                   @ApiParam(value = "individualId") @QueryParam("individualId") String individualId,
                                   @ApiParam(value = "annotationSetName") @QueryParam("annotationSetName") String annotationSetName,
                                   @ApiParam(value = "variableSetId") @QueryParam("variableSetId") String variableSetId,
@@ -397,8 +397,8 @@ public class SampleWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{sampleIds}/acls")
-    @ApiOperation(value = "Returns the acls of the samples", position = 18)
+    @Path("/{sampleIds}/acl")
+    @ApiOperation(value = "Returns the acl of the samples", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleIds") String sampleIdsStr) {
         try {
             return createOkResponse(catalogManager.getAllSampleAcls(sampleIdsStr, sessionId));
@@ -409,7 +409,7 @@ public class SampleWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{sampleIds}/acls/create")
+    @Path("/{sampleIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleIds") String sampleIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
@@ -422,7 +422,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/acls/{memberId}/info")
+    @Path("/{sampleId}/acl/{memberId}/info")
     @ApiOperation(value = "Returns the set of permissions granted for the member", position = 20)
     public Response getAcl(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
@@ -434,7 +434,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleId}/acls/{memberId}/update")
+    @Path("/{sampleId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
@@ -449,7 +449,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{sampleIds}/acls/{memberId}/delete")
+    @Path("/{sampleIds}/acl/{memberId}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of sample ids", required = true) @PathParam("sampleIds") String sampleIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {

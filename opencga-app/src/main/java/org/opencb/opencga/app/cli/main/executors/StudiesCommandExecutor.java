@@ -99,19 +99,19 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             case "variants":
                 variants();
                 break;
-            case "acls":
+            case "acl":
                 acls();
                 break;
-            case "acls-create":
+            case "acl-create":
                 aclsCreate();
                 break;
-            case "acls-member-delete":
+            case "acl-member-delete":
                 aclMemberDelete();
                 break;
-            case "acls-member-info":
+            case "acl-member-info":
                 aclMemberInfo();
                 break;
-            case "acls-member-update":
+            case "acl-member-update":
                 aclMemberUpdate();
                 break;
             case "groups":

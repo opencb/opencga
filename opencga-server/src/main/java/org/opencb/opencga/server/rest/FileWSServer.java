@@ -1159,8 +1159,8 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileIds}/acls")
-    @ApiOperation(value = "Return the acls defined for the file or folder", position = 18, response = QueryResponse.class)
+    @Path("/{fileIds}/acl")
+    @ApiOperation(value = "Return the acl defined for the file or folder", position = 18, response = QueryResponse.class)
     public Response getAcls(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr) {
         try {
             return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, sessionId));
@@ -1171,7 +1171,7 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{fileIds}/acls/create")
+    @Path("/{fileIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19,
             response = QueryResponse.class)
     public Response createRole(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr,
@@ -1185,7 +1185,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/info")
+    @Path("/{fileId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the permissions granted for the user or group", position = 20, response = QueryResponse.class)
     public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
@@ -1197,7 +1197,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/update")
+    @Path("/{fileId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the permissions granted for the user or group", position = 21, response = QueryResponse.class)
     public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
@@ -1215,7 +1215,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileIds}/acls/{memberId}/delete")
+    @Path("/{fileIds}/acl/{memberId}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
             response = QueryResponse.class)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdsStr,
