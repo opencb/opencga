@@ -199,8 +199,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 //        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
 
-        List<String> extraFields = studyConfiguration.getAttributes()
-                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        // Make a copy of the extraFields. They may be modified
+        List<String> extraFields = new LinkedList<>(studyConfiguration.getAttributes()
+                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()));
         boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
                 || studyConfiguration.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyConfiguration.getAttributes()
@@ -272,6 +273,20 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
             List<Document> fileObjects = (List<Document>) object.get(DocumentToStudyVariantEntryConverter.FILES_FIELD);
             Map<Integer, Document> files = fileObjects.stream()
                     .collect(Collectors.toMap(f -> (Integer) f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD), f -> f));
+
+            Set<String> extraFieldsSet = new HashSet<>();
+            for (Integer fid : studyConfiguration.getIndexedFiles()) {
+                if (files.containsKey(fid)) {
+                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    extraFieldsSet.addAll(sampleDatas.keySet());
+                }
+            }
+            for (Iterator<String> iterator = extraFields.iterator(); iterator.hasNext(); ) {
+                String extraField = iterator.next();
+                if (!extraFieldsSet.contains(extraField.toLowerCase())) {
+                    iterator.remove();
+                }
+            }
 
             for (Integer fid : studyConfiguration.getIndexedFiles()) {
                 if (files.containsKey(fid)) {
@@ -532,10 +547,12 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 
                 byte[] byteArray = builder.build().toByteArray();
                 if (compressExtraParams) {
-                    try {
-                        byteArray = CompressionUtils.compress(byteArray);
-                    } catch (IOException e) {
-                        throw new UncheckedIOException(e);
+                    if (byteArray.length > 50) {
+                        try {
+                            byteArray = CompressionUtils.compress(byteArray);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
                     }
                 }
                 otherFields.append(extraField.toLowerCase(), byteArray);
