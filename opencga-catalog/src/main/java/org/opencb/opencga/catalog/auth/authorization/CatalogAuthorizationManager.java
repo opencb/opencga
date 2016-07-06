@@ -1053,7 +1053,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get sample acls", queryResult.getDbTime(), aclList.size(), aclList.size(), queryResult.getWarningMsg(),
+        return new QueryResult<>("get sample acl", queryResult.getDbTime(), aclList.size(), aclList.size(), queryResult.getWarningMsg(),
                 queryResult.getErrorMsg(), aclList);
     }
 
@@ -1221,7 +1221,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get file acls", queryResult.getDbTime(), aclList.size(), aclList.size(), queryResult.getWarningMsg(),
+        return new QueryResult<>("get file acl", queryResult.getDbTime(), aclList.size(), aclList.size(), queryResult.getWarningMsg(),
                 queryResult.getErrorMsg(), aclList);
     }
 
@@ -1389,7 +1389,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get individual acls", queryResult.getDbTime(), aclList.size(), aclList.size(),
+        return new QueryResult<>("get individual acl", queryResult.getDbTime(), aclList.size(), aclList.size(),
                 queryResult.getWarningMsg(), queryResult.getErrorMsg(), aclList);
     }
 
@@ -1556,7 +1556,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get cohort acls", queryResult.getDbTime(), aclList.size(), aclList.size(),
+        return new QueryResult<>("get cohort acl", queryResult.getDbTime(), aclList.size(), aclList.size(),
                 queryResult.getWarningMsg(), queryResult.getErrorMsg(), aclList);
     }
 
@@ -1724,7 +1724,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get dataset acls", queryResult.getDbTime(), aclList.size(), aclList.size(),
+        return new QueryResult<>("get dataset acl", queryResult.getDbTime(), aclList.size(), aclList.size(),
                 queryResult.getWarningMsg(), queryResult.getErrorMsg(), aclList);
     }
 
@@ -1891,7 +1891,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get job acls", queryResult.getDbTime(), aclList.size(), aclList.size(),
+        return new QueryResult<>("get job acl", queryResult.getDbTime(), aclList.size(), aclList.size(),
                 queryResult.getWarningMsg(), queryResult.getErrorMsg(), aclList);
     }
 
@@ -2061,7 +2061,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         } else {
             aclList = Collections.emptyList();
         }
-        return new QueryResult<>("get panel acls", queryResult.getDbTime(), aclList.size(), aclList.size(),
+        return new QueryResult<>("get panel acl", queryResult.getDbTime(), aclList.size(), aclList.size(),
                 queryResult.getWarningMsg(), queryResult.getErrorMsg(), aclList);
     }
 

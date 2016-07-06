@@ -384,8 +384,8 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobIds}/acls")
-    @ApiOperation(value = "Return the acls of the job", position = 18)
+    @Path("/{jobIds}/acl")
+    @ApiOperation(value = "Return the acl of the job", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr) {
         try {
             return createOkResponse(catalogManager.getAllJobAcls(jobIdsStr, sessionId));
@@ -396,7 +396,7 @@ public class JobWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{jobIds}/acls/create")
+    @Path("/{jobIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
@@ -409,7 +409,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobId}/acls/{memberId}/info")
+    @Path("/{jobId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
     public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
@@ -421,7 +421,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobId}/acls/{memberId}/update")
+    @Path("/{jobId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
@@ -436,7 +436,7 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobIds}/acls/{memberId}/delete")
+    @Path("/{jobIds}/acl/{memberId}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {

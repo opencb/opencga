@@ -65,8 +65,8 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{panelIds}/acls")
-    @ApiOperation(value = "Return the acls of the panel", position = 18)
+    @Path("/{panelIds}/acl")
+    @ApiOperation(value = "Return the acl of the panel", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr) {
         try {
             return createOkResponse(catalogManager.getAllPanelAcls(panelIdsStr, sessionId));
@@ -77,7 +77,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{panelIds}/acls/create")
+    @Path("/{panelIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
@@ -90,7 +90,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{panelId}/acls/{memberId}/info")
+    @Path("/{panelId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
     public Response getAcl(@ApiParam(value = "Panel id", required = true) @PathParam("panelId") String panelIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
@@ -102,7 +102,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{panelId}/acls/{memberId}/update")
+    @Path("/{panelId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "panelId", required = true) @PathParam("panelId") String panelIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
@@ -117,7 +117,7 @@ public class DiseasePanelWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{panelIds}/acls/{memberId}/delete")
+    @Path("/{panelIds}/acl/{memberId}/delete")
     @ApiOperation(value = "Delete all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of panel ids", required = true) @PathParam("panelIds") String panelIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {

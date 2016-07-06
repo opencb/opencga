@@ -376,8 +376,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualIds}/acls")
-    @ApiOperation(value = "Return the acls of the individual", position = 18)
+    @Path("/{individualIds}/acl")
+    @ApiOperation(value = "Return the acl of the individual", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIdsStr) {
         try {
             return createOkResponse(catalogManager.getAllIndividualAcls(individualIdsStr, sessionId));
@@ -388,7 +388,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{individualIds}/acls/create")
+    @Path("/{individualIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createAcl   (@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
@@ -401,7 +401,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/acls/{memberId}/info")
+    @Path("/{individualId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
     public Response getAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
@@ -413,7 +413,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualId}/acls/{memberId}/update")
+    @Path("/{individualId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
@@ -428,7 +428,7 @@ public class IndividualWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{individualIds}/acls/{memberId}/delete")
+    @Path("/{individualIds}/acl/{memberId}/delete")
     @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "Comma separated list of individual ids", required = true) @PathParam("individualIds") String individualIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {

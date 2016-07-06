@@ -473,8 +473,8 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohortIds}/acls")
-    @ApiOperation(value = "Return the acls of the cohort", position = 18)
+    @Path("/{cohortIds}/acl")
+    @ApiOperation(value = "Return the acl of the cohort", position = 18)
     public Response getAcls(@ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohortIds") String cohortIdsStr) {
         try {
             return createOkResponse(catalogManager.getAllCohortAcls(cohortIdsStr, sessionId));
@@ -485,7 +485,7 @@ public class CohortWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{cohortIds}/acls/create")
+    @Path("/{cohortIds}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
     public Response createRole(@ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohortIds") String cohortIdsStr,
                                @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
@@ -498,7 +498,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohortId}/acls/{memberId}/info")
+    @Path("/{cohortId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
     public Response getAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
@@ -510,7 +510,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohortId}/acls/{memberId}/update")
+    @Path("/{cohortId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
@@ -525,7 +525,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohortId}/acls/{memberId}/delete")
+    @Path("/{cohortId}/acl/{memberId}/delete")
     @ApiOperation(value = "Delete all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {

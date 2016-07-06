@@ -137,26 +137,26 @@ public abstract class AbstractParentClient<T, A> {
 //    }
 
     public QueryResponse<A> getAcls(String id) throws IOException {
-        return execute(category, id, "acls", new ObjectMap(), GET, aclClass);
+        return execute(category, id, "acl", new ObjectMap(), GET, aclClass);
     }
 
     public QueryResponse<A> getAcl(String id, String memberId) throws CatalogException, IOException {
-        return execute(category, id, "acls", memberId, "info", new ObjectMap(), GET, aclClass);
+        return execute(category, id, "acl", memberId, "info", new ObjectMap(), GET, aclClass);
     }
 
     public QueryResponse<A> createAcl(String id, String permissions, String members, ObjectMap params) throws CatalogException,
             IOException {
         params = addParamsToObjectMap(params,  "permissions", permissions, "members", members);
-        return execute(category, id, "acls", null, "create", params, GET, aclClass);
+        return execute(category, id, "acl", null, "create", params, GET, aclClass);
     }
 
     public QueryResponse<Object> deleteAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "memberId", memberId);
-        return execute(category, id, "acls", memberId, "delete", params, GET, Object.class);
+        return execute(category, id, "acl", memberId, "delete", params, GET, Object.class);
     }
 
     public QueryResponse<A> updateAcl(String id, String memberId, ObjectMap params) throws CatalogException, IOException {
-        return execute(category, id, "acls", memberId, "update", params, GET, aclClass);
+        return execute(category, id, "acl", memberId, "update", params, GET, aclClass);
     }
 
     protected <T> QueryResponse<T> execute(String category, String action, Map<String, Object> params, String method, Class<T> clazz)
