@@ -64,6 +64,10 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -152,6 +156,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         queryCliOptions.study = exportCliOptions.studies;
         queryCliOptions.returnStudy = exportCliOptions.studies;
         queryCliOptions.limit = exportCliOptions.queryOptions.limit;
+        queryCliOptions.sort = true;
         queryCliOptions.skip = exportCliOptions.queryOptions.skip;
         queryCliOptions.region = exportCliOptions.queryOptions.region;
         queryCliOptions.regionFile = exportCliOptions.queryOptions.regionFile;
@@ -263,14 +268,28 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                         throw new ParameterException("Unknwon output format " + outputFormat);
                 }
 
+                ParallelTaskRunner.Task<Variant, Variant> progressTask;
+                ExecutorService executor;
+                if (VariantQueryCommandUtils.isStandardOutput(cliOptions)) {
+                    progressTask = batch -> batch;
+                    executor = null;
+                } else {
+                    AtomicLong total = new AtomicLong(0);
+                    executor = asyncCount(query, queryOptions, variantFetcher, total);
+                    progressTask = getProgressTask(total);
+                }
                 ParallelTaskRunner<Variant, Variant> ptr = new ParallelTaskRunner<>(batchSize -> {
                     List<Variant> variants = new ArrayList<>(batchSize);
                     while (iterator.hasNext() && variants.size() < batchSize) {
                         variants.add(iterator.next());
                     }
                     return variants;
-                }, batch -> batch, exporter, new ParallelTaskRunner.Config(1, 10, 10, true, true));
+                }, progressTask, exporter, new ParallelTaskRunner.Config(1, 10, 10, true, true));
+
                 ptr.run();
+                if (executor != null) {
+                    executor.shutdownNow();
+                }
 //                exporter.open();
 //                exporter.pre();
 //                while (iterator.hasNext()) {
@@ -282,6 +301,35 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
 //                iterator.close();
             }
         }
+    }
+
+    private ParallelTaskRunner.Task<Variant, Variant> getProgressTask(AtomicLong total) {
+        AtomicLong counter = new AtomicLong(0);
+        int counterBatchSize = 10000;
+
+        return batch -> {
+            long pre = counter.getAndAdd(batch.size());
+            long batchNumber = (pre + batch.size()) / counterBatchSize;
+            long preBatchNumber = pre / counterBatchSize;
+            if (batchNumber != preBatchNumber) {
+                long t = total.get();
+                String totalString = t > 0 ? (t + " " + (batchNumber * counterBatchSize * 10000 / t) / 100.0 + "%") : "?";
+                logger.info("Export variants " + batchNumber * counterBatchSize + "/" + totalString);
+            }
+            return batch;
+        };
+    }
+
+    private ExecutorService asyncCount(Query query, QueryOptions queryOptions, VariantFetcher variantFetcher, AtomicLong total) {
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        executor.submit((Callable) () -> {
+            Long count = variantFetcher.count(query, sessionId).first();
+            count = Math.min(queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE), count - queryOptions.getLong(QueryOptions.SKIP, 0));
+            total.set(count);
+            return count;
+        });
+        executor.shutdown();
+        return executor;
     }
 
 
