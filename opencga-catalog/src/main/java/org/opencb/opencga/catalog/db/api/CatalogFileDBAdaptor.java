@@ -54,7 +54,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAcl
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         @Deprecated
-        FILE_STATUS("fileStatus", TEXT, ""),
+        FILE_STATUS("status.name", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),

@@ -86,7 +86,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
         //TODO: Add annotationSets
-        Document sampleObject = getMongoDBDocument(sample, "sample");
+        Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
         sampleObject.put(PRIVATE_ID, sampleId);
         sampleCollection.insert(sampleObject, null);

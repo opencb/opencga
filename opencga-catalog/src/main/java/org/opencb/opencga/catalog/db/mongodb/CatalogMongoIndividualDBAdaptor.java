@@ -90,7 +90,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         individual.setId(individualId);
 
-        Document individualDocument = getMongoDBDocument(individual, "Individual");
+        Document individualDocument = individualConverter.convertToStorageType(individual);
         individualDocument.put(PRIVATE_ID, individualId);
         individualDocument.put(PRIVATE_STUDY_ID, studyId);
         QueryResult<WriteResult> insert = individualCollection.insert(individualDocument, null);

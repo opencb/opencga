@@ -56,7 +56,7 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
         long jobId = getNewId();
         job.setId(jobId);
 
-        Document jobObject = getMongoDBDocument(job, "job");
+        Document jobObject = jobConverter.convertToStorageType(job);
         jobObject.put(PRIVATE_ID, jobId);
         jobObject.put(PRIVATE_STUDY_ID, studyId);
         QueryResult insertResult = jobCollection.insert(jobObject, null); //TODO: Check results.get(0).getN() != 0

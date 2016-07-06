@@ -101,7 +101,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
-        Document projectDocument = getMongoDBDocument(project, "Project");
+        Document projectDocument = projectConverter.convertToStorageType(project);
 //        DBObject update = new BasicDBObject("$push", new BasicDBObject("projects", projectDBObject));
         Bson update = Updates.push("projects", projectDocument);
 

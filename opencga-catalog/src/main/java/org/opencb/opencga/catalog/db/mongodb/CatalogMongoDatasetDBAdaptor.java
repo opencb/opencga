@@ -74,7 +74,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         long newId = getNewId();
         dataset.setId(newId);
 
-        Document datasetObject = getMongoDBDocument(dataset, "Dataset");
+        Document datasetObject = datasetConverter.convertToStorageType(dataset);
         datasetCollection.insert(datasetObject, null);
 
         return endQuery("createDataset", startTime, getDataset(dataset.getId(), options));

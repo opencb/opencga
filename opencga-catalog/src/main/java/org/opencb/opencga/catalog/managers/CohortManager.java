@@ -60,9 +60,14 @@ public class CohortManager extends AbstractManager implements ICohortManager {
         description = ParamUtils.defaultString(description, "");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
-        if (!sampleIds.isEmpty() && readAll(studyId, new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), null, sessionId)
-                .getResult().size() != sampleIds.size()) {
-            throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
+        if (!sampleIds.isEmpty()) {
+            Query query = new Query()
+                    .append(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
+                    .append(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds);
+            QueryResult<Long> count = sampleDBAdaptor.count(query);
+            if (count.first() != sampleIds.size()) {
+                throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
+            }
         }
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_COHORTS);

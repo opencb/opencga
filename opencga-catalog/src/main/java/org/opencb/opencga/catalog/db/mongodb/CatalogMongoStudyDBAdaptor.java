@@ -125,7 +125,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         study.setPanels(Collections.emptyList());
 
         //Create DBObject
-        Document studyObject = getMongoDBDocument(study, "Study");
+        Document studyObject = studyConverter.convertToStorageType(study);
         studyObject.put(PRIVATE_ID, newId);
 
         //Set ProjectId
