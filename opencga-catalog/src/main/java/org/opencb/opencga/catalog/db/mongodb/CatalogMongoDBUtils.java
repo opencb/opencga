@@ -34,11 +34,13 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AbstractAclEntry;
 import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
@@ -145,7 +147,7 @@ class CatalogMongoDBUtils {
         }
 
         for (Bson bson : aggregation) {
-            logger.debug("Filter: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+            logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         }
 
         return collection.aggregate(aggregation, null);
@@ -201,6 +203,99 @@ class CatalogMongoDBUtils {
     }
 
     //--------------- End ACL operations ---------------------/
+
+    //--------------- Annotation operations ------------------/
+
+    static void createAnnotationSet(long id, AnnotationSet annotationSet, MongoDBCollection collection) throws CatalogDBException {
+        // Check if there already exists an annotation set with the same name
+        QueryResult<Long> count = collection.count(
+                new Document()
+                        .append("annotationSets.name", annotationSet.getName())
+                        .append(PRIVATE_ID, id));
+
+        if (count.first() > 0) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
+        }
+
+        Document document = getMongoDBDocument(annotationSet, "AnnotationSet");
+
+        // Insert the annotation set in the database
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_ID, id),
+                Filters.eq("annotationSets.name", new Document("$ne", annotationSet.getName()))
+        );
+        Bson update = new Document("$push", new Document(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), document));
+        QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
+        }
+    }
+
+    static QueryResult<Document> getAnnotationSet(long id, @Nullable String annotationSetName, MongoDBCollection collection,
+                                                       Logger logger) {
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
+        aggregation.add(Aggregates.project(Projections.include(CatalogIndividualDBAdaptor.QueryParams.ID.key(),
+                CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key())));
+        aggregation.add(Aggregates.unwind("$" + CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key()));
+
+        List<Bson> filters = new ArrayList<>();
+        if (annotationSetName != null && !annotationSetName.isEmpty()) {
+            filters.add(Filters.eq("annotationSets.name", annotationSetName));
+        }
+
+        if (filters.size() > 0) {
+            Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
+            aggregation.add(Aggregates.match(filter));
+        }
+
+        for (Bson bson : aggregation) {
+            logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+        }
+
+        return collection.aggregate(aggregation, null);
+    }
+
+    static void updateAnnotationSet(long id, AnnotationSet annotationSet, MongoDBCollection collection) throws CatalogDBException {
+        // Check if there already exists an annotation set with the same name
+        QueryResult<Long> count = collection.count(
+                new Document()
+                        .append("annotationSets.name", annotationSet.getName())
+                        .append(PRIVATE_ID, id));
+
+        if (count.first() == 0) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
+        }
+
+        Document document = getMongoDBDocument(annotationSet, "AnnotationSet");
+
+        // Insert the annotation set in the database
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_ID, id),
+                Filters.eq("annotationSets.name", annotationSet.getName())
+        );
+        Bson update = new Document("$set", new Document(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key() + ".$", document));
+        QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("The annotation set could not be updated.");
+        }
+    }
+
+    static void deleteAnnotationSet(long id, String annotationSetName, MongoDBCollection collection) throws CatalogDBException {
+        Bson eq = Filters.eq(PRIVATE_ID, id);
+        Bson pull = Updates.pull(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key(), new Document("name", annotationSetName));
+        QueryResult<UpdateResult> update = collection.update(eq, pull, null);
+        if (update.first().getModifiedCount() < 1) {
+            throw new CatalogDBException("Could not delete the annotation set");
+        }
+    }
+
+    //--------------- End annotation operations --------------/
+
+
+
 
     /*
     * Helper methods

@@ -41,6 +41,7 @@ import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -958,5 +959,43 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
         CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, individualCollection);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> createAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.createAnnotationSet(id, annotationSet, individualCollection);
+        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAnnotationSet(id, annotationSetName, individualCollection, logger);
+
+        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Document document : aggregate.getResult()) {
+            Individual individual = individualConverter.convertToDataModelType(document);
+            annotationSets.add(individual.getAnnotationSets().get(0));
+        }
+
+        return endQuery("Get individual annotation set", startTime, annotationSets);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
+        long startTime = startQuery();
+        CatalogMongoDBUtils.updateAnnotationSet(id, annotationSet, individualCollection);
+        return endQuery("Update annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
+    }
+
+    @Override
+    public void deleteAnnotationSet(long id, String annotationSetName) throws CatalogDBException {
+        QueryResult<AnnotationSet> annotationSet = getAnnotationSet(id, annotationSetName);
+        if (annotationSet == null || annotationSet.getNumResults() == 0) {
+            throw CatalogDBException.idNotFound("Annotation set", annotationSetName);
+        }
+        CatalogMongoDBUtils.deleteAnnotationSet(id, annotationSetName, individualCollection);
     }
 }

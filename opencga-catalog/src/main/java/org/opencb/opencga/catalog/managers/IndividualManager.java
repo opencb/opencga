@@ -20,6 +20,7 @@ import org.opencb.opencga.catalog.managers.api.IIndividualManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -276,6 +277,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
+    @Deprecated
     public QueryResult<AnnotationSet> annotate(long individualId, String annotationSetName, long variableSetId, Map<String, Object>
             annotations, Map<String, Object> attributes, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
@@ -308,6 +310,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         return queryResult;
     }
 
+    @Deprecated
     public QueryResult<AnnotationSet> updateAnnotation(long individualId, String annotationSetName, Map<String, Object> newAnnotations,
                                                        String sessionId) throws CatalogException {
 
@@ -358,6 +361,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     }
 
     @Override
+    @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotation(long individualId, String annotationId, String sessionId) throws CatalogException {
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
@@ -469,4 +473,109 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
+
+    @Override
+    public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
+                                                          Map<String, Object> annotations, Map<String, Object> attributes,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
+        ParamUtils.checkObj(annotations, "annotations");
+        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long individualId = getIndividualId(userId, id);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.CREATE_ANNOTATIONS);
+
+        VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
+
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(individualId, variableSet, annotationSetName,
+                annotations, attributes, individualDBAdaptor);
+
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId,
+                new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
+
+        return annotationSet;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(id, "id");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long individualId = getIndividualId(userId, id);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+
+        return individualDBAdaptor.getAnnotationSet(individualId, null);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long individualId = getIndividualId(userId, id);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+
+        return individualDBAdaptor.getAnnotationSet(individualId, annotationSetName);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
+        ParamUtils.checkObj(newAnnotations, "newAnnotations");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long individualId = getIndividualId(userId, id);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.UPDATE_ANNOTATIONS);
+
+        // Update the annotation
+        QueryResult<AnnotationSet> queryResult =
+                AnnotationManager.updateAnnotationSet(individualId, annotationSetName, newAnnotations, individualDBAdaptor, studyDBAdaptor);
+
+        if (queryResult == null || queryResult.getNumResults() == 0) {
+            throw new CatalogException("There was an error with the update");
+        }
+
+        AnnotationSet annotationSet = queryResult.first();
+
+        // Audit the changes
+        AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
+                newAnnotations.entrySet().stream()
+                        .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+        auditManager.recordUpdate(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
+                Collections.singletonList(annotationSetUpdate)), "update annotation", null);
+
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long individualId = getIndividualId(userId, id);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.DELETE_ANNOTATIONS);
+
+        QueryResult<AnnotationSet> annotationSet = individualDBAdaptor.getAnnotationSet(individualId, annotationSetName);
+        if (annotationSet == null || annotationSet.getNumResults() == 0) {
+            throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
+                    + "be found in the database.");
+        }
+
+        individualDBAdaptor.deleteAnnotationSet(individualId, annotationSetName);
+
+        auditManager.recordDeletion(AuditRecord.Resource.individual, individualId, userId, new ObjectMap("annotationSets",
+                Collections.singletonList(annotationSet.first())), "delete annotation", null);
+
+        return annotationSet;
+    }
+
 }

@@ -25,6 +25,7 @@ import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -127,8 +128,8 @@ public class CatalogAnnotationsValidator {
      * @param annotationSets All the AnnotationSets of the sample
      * @throws CatalogException CatalogException
      */
-    public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet, List<AnnotationSet> annotationSets)
-            throws CatalogException {
+    public static void checkAnnotationSet(VariableSet variableSet, AnnotationSet annotationSet,
+                                          @Nullable List<AnnotationSet> annotationSets) throws CatalogException {
         if (variableSet.getId() != annotationSet.getVariableSetId()) {
             throw new CatalogException("VariableSet does not match with the AnnotationSet");
         }

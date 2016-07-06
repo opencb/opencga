@@ -1342,6 +1342,37 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.updateIndividualAcl(userId, individualId, member, addPermissions, removePermissions, setPermissions);
     }
 
+    public QueryResult<AnnotationSet> createIndividualAnnotationSet(String individualIdStr, long variableSetId, String annotationSetName,
+                                                          Map<String, Object> annotations, Map<String, Object> attributes, String sessionId)
+            throws CatalogException {
+        return individualManager.createAnnotationSet(individualIdStr, variableSetId, annotationSetName, annotations, attributes, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> getAllIndividualAnnotationSets(String individualIdStr, String sessionId) throws CatalogException {
+        return individualManager.getAllAnnotationSets(individualIdStr, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> getIndividualAnnotationSet(String individualIdStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return individualManager.getAnnotationSet(individualIdStr, annotationSetName, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> updateIndividualAnnotationSet(String individualIdStr, String annotationSetName,
+                                                                    Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException {
+        return individualManager.updateAnnotationSet(individualIdStr, annotationSetName, newAnnotations, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteIndividualAnnotationSet(String individualIdStr, String annotationSetName, String sessionId)
+            throws CatalogException {
+        return individualManager.deleteAnnotationSet(individualIdStr, annotationSetName, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> deleteIndividualAnnotationSet(String individualIdStr, String annotationSetName, String annotations,
+                                                                    String sessionId) throws CatalogException {
+        return individualManager.deleteAnnotations(individualIdStr, annotationSetName, annotations, sessionId);
+    }
+
     /*
      * Samples methods
      * ***************************

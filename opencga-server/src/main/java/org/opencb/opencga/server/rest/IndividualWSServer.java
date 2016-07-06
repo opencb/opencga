@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Variable;
@@ -200,51 +201,69 @@ public class IndividualWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{individualId}/annotationSets/info")
-    @ApiOperation(value = "Returns the annotation sets of the sample [PENDING]", position = 12)
+    @ApiOperation(value = "Returns all the annotation sets of the individual [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                         @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.getAllIndividualAnnotationSets(individualStr, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST
     @Path("/{individualId}/annotationSets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample [PENDING]", position = 13)
+    @ApiOperation(value = "Create an annotation set for the individual [NOT TESTED]", position = 13)
     public Response annotateSamplePOST(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
+                                       @ApiParam(value = "Annotation set name. Must be unique for the individual", required = true) @QueryParam("annotateSetName") String annotateSetName,
                                        Map<String, Object> annotations) {
         try {
-//            QueryResult<AnnotationSet> queryResult;
-//            queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
-//                    annotations, Collections.emptyMap(), sessionId);
-//            return createOkResponse(queryResult);
-            return createOkResponse(null);
-        } catch (Exception e) {
+            QueryResult<AnnotationSet> queryResult = catalogManager.createIndividualAnnotationSet(individualStr, variableSetId,
+                    annotateSetName, annotations, Collections.emptyMap(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
     @Path("/{individualId}/annotationSets/{annotationSetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [PENDING]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
-        return createErrorResponse("Search", "not implemented");
+                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+            if (annotations != null) {
+                queryResult = catalogManager.deleteIndividualAnnotationSet(individualStr, annotationSetName, annotations, sessionId);
+            } else {
+                queryResult = catalogManager.deleteIndividualAnnotationSet(individualStr, annotationSetName, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST
     @Path("/{individualId}/annotationSets/{annotationSetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [PENDING]", position = 15)
-    public Response updateAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") long individualId,
+    @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
+    public Response updateAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
+//                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+//                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
                                         Map<String, Object> annotations) {
-        return createErrorResponse("Search", "not implemented");
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.updateIndividualAnnotationSet(individualStr, annotationSetName,
+                    annotations, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
@@ -252,9 +271,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Returns the annotation set [PENDING]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                      @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.getIndividualAnnotationSet(individualStr, annotationSetName, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
     @GET
     @Path("/{individualId}/update")
