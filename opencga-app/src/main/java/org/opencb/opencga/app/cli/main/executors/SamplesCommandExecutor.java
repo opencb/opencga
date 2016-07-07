@@ -135,7 +135,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.loadCommandOptions.variableSetId);
         }
 
-        QueryResponse<Sample> sample = openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.id, objectMap);
+        QueryResponse<Sample> sample = openCGAClient.getSampleClient()
+                .loadFromPed(samplesCommandOptions.loadCommandOptions.studyId, objectMap);
 
         System.out.println(sample.toString());
     }

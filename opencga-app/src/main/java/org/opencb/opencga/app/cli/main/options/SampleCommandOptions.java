@@ -68,7 +68,7 @@ public class SampleCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a sample")
     public class CreateCommandOptions {
 
         @ParametersDelegate
@@ -77,7 +77,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--name"}, description = "cohort name", required = true, arity = 1)
+        @Parameter(names = {"--name"}, description = "Sample name", required = true, arity = 1)
         public String name;
 
         @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
@@ -90,8 +90,8 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
     public class LoadCommandOptions {
 
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        public String studyId;
 
         @Parameter(names = {"--file-id"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
         public String fileId;

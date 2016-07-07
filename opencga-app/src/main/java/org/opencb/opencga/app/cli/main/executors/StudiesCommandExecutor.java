@@ -146,11 +146,9 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String name = studiesCommandOptions.createCommandOptions.name;
         String projectId = studiesCommandOptions.createCommandOptions.projectId;
         String description = studiesCommandOptions.createCommandOptions.description;
-        String status = studiesCommandOptions.createCommandOptions.status;
 
         ObjectMap o = new ObjectMap();
         o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(),description);
-        o.append(CatalogStudyDBAdaptor.QueryParams.STATUS_NAME.key(),status);
         openCGAClient.getStudyClient().create(projectId, name, alias, o);
         System.out.println("Done.");
     }

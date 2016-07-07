@@ -102,10 +102,6 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
         public String description;
-
-        @Parameter(names = {"--status"}, description = "Status.",
-                required = false, arity = 1)
-        public String status;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")

@@ -202,7 +202,7 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
                                 @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                                @ApiParam(value = "filename", required = false) @DefaultValue("") @FormDataParam("filename") String filename,
+                                @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
 //                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
@@ -321,7 +321,11 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse("Upload file", e.getMessage());
             }
 
-            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + fileMetaData.getFileName()).resolve(fileMetaData.getFileName());
+            if (filename == null) {
+                filename = fileMetaData.getFileName();
+            }
+
+            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + filename).resolve(filename);
             logger.info("tempFilePath: {}", tempFilePath.toString());
             logger.info("tempParent: {}", tempFilePath.getParent().toString());
 
@@ -353,7 +357,7 @@ public class FileWSServer extends OpenCGAWSServer {
                 // Create parents directory if necessary
                 catalogManager.createFolder(studyId, Paths.get(relativeFilePath), parents, null, sessionId);
 
-                String destinationPath = Paths.get(relativeFilePath).resolve(fileMetaData.getFileName()).toString();
+                String destinationPath = Paths.get(relativeFilePath).resolve(filename).toString();
 
                 // Register the file and move it to the proper directory
                 QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
