@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Sample {
+public class Sample implements Annotable {
 
     private long id;
     private String name;

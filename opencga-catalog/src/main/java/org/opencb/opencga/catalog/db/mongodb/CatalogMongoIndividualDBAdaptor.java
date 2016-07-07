@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -41,7 +42,6 @@ import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -53,7 +53,7 @@ import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembe
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
+public class CatalogMongoIndividualDBAdaptor extends CatalogMongoAnnotationDBAdaptor implements CatalogIndividualDBAdaptor {
 
     private final MongoDBCollection individualCollection;
     private IndividualConverter individualConverter;
@@ -63,6 +63,16 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
         this.individualConverter = new IndividualConverter();
+    }
+
+    @Override
+    protected GenericConverter<? extends Annotable, Document> getConverter() {
+        return individualConverter;
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
+        return individualCollection;
     }
 
     @Override
@@ -961,62 +971,4 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, individualCollection);
     }
 
-    @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.createAnnotationSet(id, annotationSet, individualCollection);
-        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAnnotationSet(id, annotationSetName, individualCollection, logger);
-
-        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
-        for (Document document : aggregate.getResult()) {
-            Individual individual = individualConverter.convertToDataModelType(document);
-            annotationSets.add(individual.getAnnotationSets().get(0));
-        }
-
-        return endQuery("Get individual annotation set", startTime, annotationSets);
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.updateAnnotationSet(id, annotationSet, individualCollection);
-        return endQuery("Update annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
-    }
-
-    @Override
-    public void deleteAnnotationSet(long id, String annotationSetName) throws CatalogDBException {
-        QueryResult<AnnotationSet> annotationSet = getAnnotationSet(id, annotationSetName);
-        if (annotationSet == null || annotationSet.getNumResults() == 0) {
-            throw CatalogDBException.idNotFound("Annotation set", annotationSetName);
-        }
-        CatalogMongoDBUtils.deleteAnnotationSet(id, annotationSetName, individualCollection);
-    }
-
-    @Override
-    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
-        long startTime = startQuery();
-        long addedAnnotations = CatalogMongoDBUtils.addVariableToAnnotations(variableSetId, variable, individualCollection);
-        return endQuery("Add annotation", startTime, Collections.singletonList(addedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
-        long startTime = startQuery();
-        long renamedAnnotations = CatalogMongoDBUtils.renameAnnotationField(variableSetId, oldName, newName, individualCollection);
-        return endQuery("Rename annotation name", startTime, Collections.singletonList(renamedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException {
-        long startTime = startQuery();
-        long removedAnnotations = CatalogMongoDBUtils.removeAnnotationField(variableSetId, annotationName, individualCollection);
-        return endQuery("Remove annotation", startTime, Collections.singletonList(removedAnnotations));
-    }
 }

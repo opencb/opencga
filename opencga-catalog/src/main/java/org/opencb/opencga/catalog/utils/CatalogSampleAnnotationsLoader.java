@@ -194,7 +194,10 @@ public class CatalogSampleAnnotationsLoader {
                     }
                     break;
                 default:
-                    annotations.put(variable.getName(), individual.getFields()[fields.get(variable.getName())]);
+                    Integer idx = fields.get(variable.getName());
+                    if (idx != null) {
+                        annotations.put(variable.getName(), individual.getFields()[idx]);
+                    }
                     break;
             }
         }

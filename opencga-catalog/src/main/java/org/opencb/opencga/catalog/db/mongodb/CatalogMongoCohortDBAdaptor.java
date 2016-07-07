@@ -17,13 +17,13 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
+import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -32,16 +32,26 @@ import java.util.stream.Collectors;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
-public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implements CatalogCohortDBAdaptor {
+public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor implements CatalogCohortDBAdaptor {
 
     private final MongoDBCollection cohortCollection;
     private CohortConverter cohortConverter;
 
     public CatalogMongoCohortDBAdaptor(MongoDBCollection cohortCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
-        super(LoggerFactory.getLogger(CatalogMongoSampleDBAdaptor.class));
+        super(LoggerFactory.getLogger(CatalogMongoCohortDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
         this.cohortConverter = new CohortConverter();
+    }
+
+    @Override
+    protected GenericConverter<? extends Annotable, Document> getConverter() {
+        return cohortConverter;
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
+        return cohortCollection;
     }
 
     @Override
@@ -130,65 +140,6 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         return endQuery("", startTime, Collections.singletonList(annotationSet));
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.createAnnotationSet(id, annotationSet, cohortCollection);
-        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAnnotationSet(id, annotationSetName, cohortCollection, logger);
-
-        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
-        for (Document document : aggregate.getResult()) {
-            Cohort cohort = cohortConverter.convertToDataModelType(document);
-            annotationSets.add(cohort.getAnnotationSets().get(0));
-        }
-
-        return endQuery("Get cohort annotation set", startTime, annotationSets);
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.updateAnnotationSet(id, annotationSet, cohortCollection);
-        return endQuery("Update annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
-    }
-
-    @Override
-    public void deleteAnnotationSet(long id, String annotationSetName) throws CatalogDBException {
-        QueryResult<AnnotationSet> annotationSet = getAnnotationSet(id, annotationSetName);
-        if (annotationSet == null || annotationSet.getNumResults() == 0) {
-            throw CatalogDBException.idNotFound("Annotation set", annotationSetName);
-        }
-        CatalogMongoDBUtils.deleteAnnotationSet(id, annotationSetName, cohortCollection);
-    }
-
-    @Override
-    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
-        long startTime = startQuery();
-        long addedAnnotations = CatalogMongoDBUtils.addVariableToAnnotations(variableSetId, variable, cohortCollection);
-        return endQuery("Add annotation", startTime, Collections.singletonList(addedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
-        long startTime = startQuery();
-        long renamedAnnotations = CatalogMongoDBUtils.renameAnnotationField(variableSetId, oldName, newName, cohortCollection);
-        return endQuery("Rename annotation name", startTime, Collections.singletonList(renamedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException {
-        long startTime = startQuery();
-        long removedAnnotations = CatalogMongoDBUtils.removeAnnotationField(variableSetId, annotationName, cohortCollection);
-        return endQuery("Remove annotation", startTime, Collections.singletonList(removedAnnotations));
     }
 
     @Override

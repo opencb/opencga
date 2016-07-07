@@ -103,6 +103,8 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
                 null, "", null, null));
         variables.add(new Variable("Population", "", Variable.VariableType.CATEGORICAL, null, true, false, populations, 0, null, "",
                 null, null));
+        variables.add(new Variable("NonExistingField", "", Variable.VariableType.NUMERIC, "", false, false, Collections.emptyList(), 0, null, "",
+                null, null));
 
         VariableSet variableSet = new VariableSet(5, "", false, "", variables, null);
 

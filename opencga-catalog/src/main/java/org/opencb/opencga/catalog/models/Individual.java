@@ -28,7 +28,7 @@ import static java.lang.Math.toIntExact;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Individual {
+public class Individual implements Annotable {
 
     private long id;
     private String name;
