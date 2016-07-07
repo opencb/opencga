@@ -27,7 +27,7 @@ import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.client.rest.IndividualClient;
 
 import java.io.IOException;
@@ -82,19 +82,19 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             case "annotation-sets-info":
                 annotationSetsInfo();
                 break;
-            case "acls":
+            case "acl":
                 acls();
                 break;
-            case "acls-create":
+            case "acl-create":
                 aclsCreate();
                 break;
-            case "acls-member-delete":
+            case "acl-member-delete":
                 aclMemberDelete();
                 break;
-            case "acls-member-info":
+            case "acl-member-info":
                 aclMemberInfo();
                 break;
-            case "acls-member-update":
+            case "acl-member-update":
                 aclMemberUpdate();
                 break;
             default:
@@ -370,12 +370,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    /********************************************  Administration ACLS commands  ***********************************************/
+    /********************************************  Administration ACL commands  ***********************************************/
 
     private void acls() throws CatalogException,IOException {
 
         logger.debug("Acls");
-        QueryResponse<IndividualAcl> acls = openCGAClient.getIndividualClient().getAcls(individualsCommandOptions.aclsCommandOptions.id);
+        QueryResponse<IndividualAclEntry> acls = openCGAClient.getIndividualClient().getAcls(individualsCommandOptions.aclsCommandOptions.id);
 
         System.out.println(acls.toString());
 
@@ -386,7 +386,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         QueryOptions queryOptions = new QueryOptions();
 
-        QueryResponse<IndividualAcl> acl =
+        QueryResponse<IndividualAclEntry> acl =
                 openCGAClient.getIndividualClient().createAcl(individualsCommandOptions.aclsCreateCommandOptions.id,
                         individualsCommandOptions.aclsCreateCommandOptions.permissions, individualsCommandOptions.aclsCreateCommandOptions.members,
                         queryOptions);
@@ -405,7 +405,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Creating acl");
 
-        QueryResponse<IndividualAcl> acls = openCGAClient.getIndividualClient().getAcl(individualsCommandOptions.aclsMemberInfoCommandOptions.id,
+        QueryResponse<IndividualAclEntry> acls = openCGAClient.getIndividualClient().getAcl(individualsCommandOptions.aclsMemberInfoCommandOptions.id,
                 individualsCommandOptions.aclsMemberInfoCommandOptions.memberId);
         System.out.println(acls.toString());
     }
@@ -425,7 +425,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(IndividualClient.AclParams.SET_PERMISSIONS.key(), individualsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
         }
 
-        QueryResponse<IndividualAcl> acl = openCGAClient.getIndividualClient().updateAcl(individualsCommandOptions.aclsMemberUpdateCommandOptions.id,
+        QueryResponse<IndividualAclEntry> acl = openCGAClient.getIndividualClient().updateAcl(individualsCommandOptions.aclsMemberUpdateCommandOptions.id,
                 individualsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
         System.out.println(acl.toString());
     }

@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 12/05/16.
  */
-public class DatasetAcl extends ParentAcl<DatasetAcl.DatasetPermissions> {
+public class DatasetAclEntry extends AbstractAclEntry<DatasetAclEntry.DatasetPermissions> {
 
     public enum DatasetPermissions {
         VIEW,
@@ -19,15 +19,15 @@ public class DatasetAcl extends ParentAcl<DatasetAcl.DatasetPermissions> {
         SHARE
     }
 
-    public DatasetAcl() {
+    public DatasetAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public DatasetAcl(String member, EnumSet<DatasetPermissions> permissions) {
+    public DatasetAclEntry(String member, EnumSet<DatasetPermissions> permissions) {
         super(member, permissions);
     }
 
-    public DatasetAcl(String member, ObjectMap permissions) {
+    public DatasetAclEntry(String member, ObjectMap permissions) {
         super(member, EnumSet.noneOf(DatasetPermissions.class));
 
         EnumSet<DatasetPermissions> aux = EnumSet.allOf(DatasetPermissions.class);
@@ -38,7 +38,7 @@ public class DatasetAcl extends ParentAcl<DatasetAcl.DatasetPermissions> {
         }
     }
 
-    public DatasetAcl(String member, List<String> permissions) {
+    public DatasetAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(DatasetPermissions.class));
 
         if (permissions.size() > 0) {

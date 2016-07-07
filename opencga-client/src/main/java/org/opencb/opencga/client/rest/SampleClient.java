@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
+public class SampleClient extends AbstractParentClient<Sample, SampleAclEntry> {
 
     private static final String SAMPLES_URL = "samples";
 
@@ -37,7 +37,7 @@ public class SampleClient extends AbstractParentClient<Sample, SampleAcl> {
 
         this.category = SAMPLES_URL;
         this.clazz = Sample.class;
-        this.aclClass = SampleAcl.class;
+        this.aclClass = SampleAclEntry.class;
     }
 
     public QueryResponse<Sample> create(String studyId, String sampleName, ObjectMap params) throws CatalogException, IOException {

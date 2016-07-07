@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -35,7 +35,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogAclDBAdaptor<StudyAcl> {
+public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogAclDBAdaptor<StudyAclEntry> {
 
     /*
      * Study methods
@@ -155,7 +155,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogA
      * @throws CatalogDBException when the user already has permissions if override is false.
      */
     @Deprecated
-    QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException;
+    QueryResult<StudyAclEntry> setStudyAcl(long studyId, StudyAclEntry studyAcl, boolean override) throws CatalogDBException;
 
     /**
      * Remove the permissions for the members.
@@ -241,9 +241,9 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogA
         LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -281,7 +281,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogA
 //        JOB_NAME("jobs.name", TEXT_ARRAY, ""),
 //        JOB_USER_ID("jobs.userId", TEXT_ARRAY, ""),
 //        JOB_TOOL_NAME("jobs.toolName", TEXT_ARRAY, ""),
-//        JOB_DATE("jobs.date", TEXT_ARRAY, ""),
+//        JOB_CREATION_DATE("jobs.creationDate", TEXT_ARRAY, ""),
 //        JOB_STATUS("jobs.status", TEXT_ARRAY, ""),
 //        JOB_DISK_USAGE("jobs.diskUsage", DECIMAL, ""),
 

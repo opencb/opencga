@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
@@ -35,7 +35,7 @@ public class Sample {
     private String description;
     private List<OntologyTerm> ontologyTerms;
 
-    private List<SampleAcl> acls;
+    private List<SampleAclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -48,7 +48,7 @@ public class Sample {
         this(id, name, source, individualId, description, Collections.emptyList(), new LinkedList<>(), new HashMap<>());
     }
 
-    public Sample(long id, String name, String source, long individualId, String description, List<SampleAcl> acls,
+    public Sample(long id, String name, String source, long individualId, String description, List<SampleAclEntry> acl,
                   List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -58,13 +58,13 @@ public class Sample {
         this.status = new Status();
         this.description = description;
         this.ontologyTerms = Collections.emptyList();
-        this.acls = acls;
+        this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
 
     public Sample(long id, String name, String source, long individualId, String creationDate, Status status, String description,
-                  List<OntologyTerm> ontologyTerms, List<SampleAcl> acls, List<AnnotationSet> annotationSets,
+                  List<OntologyTerm> ontologyTerms, List<SampleAclEntry> acl, List<AnnotationSet> annotationSets,
                   Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -74,7 +74,7 @@ public class Sample {
         this.status = status;
         this.description = description;
         this.ontologyTerms = ontologyTerms;
-        this.acls = acls;
+        this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -90,7 +90,7 @@ public class Sample {
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", ontologyTerms=").append(ontologyTerms);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -169,12 +169,12 @@ public class Sample {
         return this;
     }
 
-    public List<SampleAcl> getAcls() {
-        return acls;
+    public List<SampleAclEntry> getAcl() {
+        return acl;
     }
 
-    public Sample setAcls(List<SampleAcl> acls) {
-        this.acls = acls;
+    public Sample setAcl(List<SampleAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

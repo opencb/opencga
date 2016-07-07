@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +47,7 @@ public class CatalogConfiguration {
     private Execution execution;
     private Audit audit;
 
-    private List<StudyAcl> acls;
+    private List<StudyAclEntry> acl;
 
     private EmailServer emailServer;
     private DatabaseCredentials database;
@@ -109,7 +109,7 @@ public class CatalogConfiguration {
         sb.append(", monitor=").append(monitor);
         sb.append(", execution=").append(execution);
         sb.append(", audit=").append(audit);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", emailServer=").append(emailServer);
         sb.append(", database=").append(database);
         sb.append('}');
@@ -233,12 +233,12 @@ public class CatalogConfiguration {
         return this;
     }
 
-    public List<StudyAcl> getAcls() {
-        return acls;
+    public List<StudyAclEntry> getAcl() {
+        return acl;
     }
 
-    public CatalogConfiguration setAcls(List<StudyAcl> acls) {
-        this.acls = acls;
+    public CatalogConfiguration setAcl(List<StudyAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 }

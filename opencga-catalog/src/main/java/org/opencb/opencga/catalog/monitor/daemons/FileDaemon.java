@@ -82,7 +82,7 @@ public class FileDaemon extends MonitorParentDaemon {
             try {
                 //TODO: skip if the file is a non-empty folder
                 long deleteTimeMillis = TimeUtils.toDate(file.getStatus().getDate()).toInstant().toEpochMilli();
-//                long deleteDate = new ObjectMap(file.getAttributes()).getLong(file.getName().getDate(), 0);
+//                long deleteDate = new ObjectMap(file.getAttributes()).getLong(file.getName().getCreationDate(), 0);
                 if ((currentTimeMillis - deleteTimeMillis) > deleteDelayMillis) {
 //                            QueryResult<Study> studyQueryResult =
 //                                    catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);

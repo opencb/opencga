@@ -1159,11 +1159,11 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/acls")
-    @ApiOperation(value = "Return the acls defined for the file or folder [PENDING]", position = 18, response = QueryResponse.class)
-    public Response getAcls(@ApiParam(value = "File id", required = true) @PathParam("fileId") String studyIdStr) {
+    @Path("/{fileIds}/acl")
+    @ApiOperation(value = "Return the acl defined for the file or folder", position = 18, response = QueryResponse.class)
+    public Response getAcls(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1171,35 +1171,35 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{fileId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [PENDING]", position = 19,
+    @Path("/{fileIds}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19,
             response = QueryResponse.class)
-    public Response createRole(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+    public Response createRole(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.createFileAcls(fileIdStr, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/info")
-    @ApiOperation(value = "Return the permissions granted for the user or group [PENDING]", position = 20, response = QueryResponse.class)
-    public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String studyIdStr,
+    @Path("/{fileId}/acl/{memberId}/info")
+    @ApiOperation(value = "Return the permissions granted for the user or group", position = 20, response = QueryResponse.class)
+    public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getFileAcl(fileIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group [PENDING]", position = 21, response = QueryResponse.class)
-    public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
+    @Path("/{fileId}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the permissions granted for the user or group", position = 21, response = QueryResponse.class)
+    public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false)
                               @QueryParam("addPermissions") String addPermissions,
@@ -1208,20 +1208,20 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                               @QueryParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateFileAcl(fileIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the user or group [PENDING]", position = 22,
+    @Path("/{fileIds}/acl/{memberId}/delete")
+    @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
             response = QueryResponse.class)
-    public Response deleteAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
+    public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdsStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.removeFileAcl(fileIdsStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -27,6 +27,7 @@ import com.mongodb.client.model.Projections;
 import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import com.mongodb.util.JSON;
+import org.apache.commons.collections.map.LinkedMap;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.*;
@@ -36,8 +37,10 @@ import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.ParentAcl;
+import org.opencb.opencga.catalog.models.acls.AbstractAclEntry;
+import org.slf4j.Logger;
 
+import javax.annotation.Nullable;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.Function;
@@ -46,6 +49,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.PRIVATE_ID;
 
 /**
@@ -114,31 +118,37 @@ class CatalogMongoDBUtils {
 
     //--------------- ACL operations -------------------------/
 
-    static void createAcl(long id, ParentAcl acl, MongoDBCollection collection, String clazz) throws CatalogDBException {
+    static void createAcl(long id, AbstractAclEntry acl, MongoDBCollection collection, String clazz) throws CatalogDBException {
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, id);
-        Document update = new Document("$push", new Document(CatalogFileDBAdaptor.QueryParams.ACLS.key(), getMongoDBDocument(acl, clazz)));
+        Document update = new Document("$push", new Document(CatalogFileDBAdaptor.QueryParams.ACL.key(), getMongoDBDocument(acl, clazz)));
         QueryResult<UpdateResult> updateResult = collection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("create Acl: An error occurred when trying to create acls for " + id + " for " + acl.getMember());
+            throw new CatalogDBException("create Acl: An error occurred when trying to create acl for " + id + " for " + acl.getMember());
         }
     }
 
-    static QueryResult<Document> getAcl(long id, List<String> members, MongoDBCollection collection) throws CatalogDBException {
+    static QueryResult<Document> getAcl(long id, List<String> members, MongoDBCollection collection, Logger logger)
+            throws CatalogDBException {
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
         aggregation.add(Aggregates.project(Projections.include(CatalogFileDBAdaptor.QueryParams.ID.key(),
-                CatalogFileDBAdaptor.QueryParams.ACLS.key())));
-        aggregation.add(Aggregates.unwind("$" + CatalogFileDBAdaptor.QueryParams.ACLS.key()));
+                CatalogFileDBAdaptor.QueryParams.ACL.key())));
+        aggregation.add(Aggregates.unwind("$" + CatalogFileDBAdaptor.QueryParams.ACL.key()));
 
         List<Bson> filters = new ArrayList<>();
         if (members != null && members.size() > 0) {
-            filters.add(Filters.in(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), members));
+            filters.add(Filters.in(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), members));
         }
+
         if (filters.size() > 0) {
             Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
             aggregation.add(Aggregates.match(filter));
+        }
+
+        for (Bson bson : aggregation) {
+            logger.debug("Get Acl: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         }
 
         return collection.aggregate(aggregation, null);
@@ -147,20 +157,20 @@ class CatalogMongoDBUtils {
     static void removeAcl(long id, String member, MongoDBCollection collection) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
         Bson update = new Document()
-                .append("$pull", new Document("acls", new Document("member", member)));
+                .append("$pull", new Document("acl", new Document("member", member)));
         QueryResult<UpdateResult> updateResult = collection.update(query, update, null);
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACLS defined for " + member);
+            throw new CatalogDBException("remove ACL: An error occurred when trying to remove the ACL defined for " + member);
         }
     }
 
     static void setAclsToMember(long id, String member, List<String> permissions, MongoDBCollection collection) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
-        Document update = new Document("$set", new Document("acls.$.permissions", permissions));
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+        Document update = new Document("$set", new Document("acl.$.permissions", permissions));
         QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
@@ -171,8 +181,8 @@ class CatalogMongoDBUtils {
     static void addAclsToMember(long id, String member, List<String> permissions, MongoDBCollection collection) throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
-        Document update = new Document("$addToSet", new Document("acls.$.permissions", new Document("$each", permissions)));
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+        Document update = new Document("$addToSet", new Document("acl.$.permissions", new Document("$each", permissions)));
         QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
@@ -185,8 +195,8 @@ class CatalogMongoDBUtils {
             throws CatalogDBException {
         Document query = new Document()
                 .append(PRIVATE_ID, id)
-                .append(CatalogFileDBAdaptor.QueryParams.ACLS_MEMBER.key(), member);
-        Bson pull = Updates.pullAll("acls.$.permissions", permissions);
+                .append(CatalogFileDBAdaptor.QueryParams.ACL_MEMBER.key(), member);
+        Bson pull = Updates.pullAll("acl.$.permissions", permissions);
         QueryResult<UpdateResult> update = collection.update(query, pull, null);
         if (update.first().getModifiedCount() != 1) {
             throw new CatalogDBException("Unable to remove the permissions from " + member + ". Maybe it didn't have those permissions?");
@@ -194,6 +204,307 @@ class CatalogMongoDBUtils {
     }
 
     //--------------- End ACL operations ---------------------/
+
+    //--------------- Annotation operations ------------------/
+
+    enum AnnotationSetParams implements QueryParam {
+        ID("id", TEXT, ""),
+        VARIABLE_SET_ID("variableSetId", DOUBLE, ""),
+
+        ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
+        ANNOTATION_SETS_NAME("annotationSets.name", TEXT, ""),
+        ANNOTATION_SETS_VARIABLE_SET_ID("annotationSets.variableSetId", DECIMAL, ""),
+        ANNOTATION_SETS_ANNOTATIONS("annotationSets.annotations", TEXT_ARRAY, ""),
+        ANNOTATION_SETS_ANNOTATIONS_NAME("annotationSets.annotations.name", TEXT, ""),
+        ANNOTATION_SETS_ANNOTATIONS_VALUE("annotationSets.annotations.value", TEXT, ""),
+
+        ANNOTATIONS("annotations", TEXT_ARRAY, ""),
+        NAME("name", TEXT, ""),
+        VALUE("value", TEXT, "");
+
+        private static Map<String, AnnotationSetParams> map;
+        static {
+            map = new LinkedMap();
+            for (AnnotationSetParams params : AnnotationSetParams.values()) {
+                map.put(params.key(), params);
+            }
+        }
+
+        private final String key;
+        private Type type;
+        private String description;
+
+        AnnotationSetParams(String key, Type type, String description) {
+            this.key = key;
+            this.type = type;
+            this.description = description;
+        }
+
+        @Override
+        public String key() {
+            return key;
+        }
+
+        @Override
+        public Type type() {
+            return type;
+        }
+
+        @Override
+        public String description() {
+            return description;
+        }
+
+        public static Map<String, AnnotationSetParams> getMap() {
+            return map;
+        }
+
+        public static AnnotationSetParams getParam(String key) {
+            return map.get(key);
+        }
+    }
+
+    static void createAnnotationSet(long id, AnnotationSet annotationSet, MongoDBCollection collection) throws CatalogDBException {
+        // Check if there already exists an annotation set with the same name
+        QueryResult<Long> count = collection.count(
+                new Document()
+                        .append(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSet.getName())
+                        .append(PRIVATE_ID, id));
+
+        if (count.first() > 0) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", AnnotationSetParams.NAME.key(), annotationSet.getName());
+        }
+
+        Document document = getMongoDBDocument(annotationSet, "AnnotationSet");
+
+        // Insert the annotation set in the database
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_ID, id),
+                Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), new Document("$ne", annotationSet.getName()))
+        );
+        Bson update = new Document("$push", new Document(AnnotationSetParams.ANNOTATION_SETS.key(), document));
+        QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", AnnotationSetParams.NAME.key(), annotationSet.getName());
+        }
+    }
+
+    static QueryResult<Document> getAnnotationSet(long id, @Nullable String annotationSetName, MongoDBCollection collection,
+                                                       Logger logger) {
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
+        aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ID.key(), AnnotationSetParams.ANNOTATION_SETS.key())));
+        aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS.key()));
+
+        List<Bson> filters = new ArrayList<>();
+        if (annotationSetName != null && !annotationSetName.isEmpty()) {
+            filters.add(Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName));
+        }
+
+        if (filters.size() > 0) {
+            Bson filter = filters.size() == 1 ? filters.get(0) : Filters.and(filters);
+            aggregation.add(Aggregates.match(filter));
+        }
+
+        for (Bson bson : aggregation) {
+            logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
+        }
+
+        return collection.aggregate(aggregation, null);
+    }
+
+    static void updateAnnotationSet(long id, AnnotationSet annotationSet, MongoDBCollection collection) throws CatalogDBException {
+        // Check if there already exists an annotation set with the same name
+        QueryResult<Long> count = collection.count(
+                new Document()
+                        .append(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSet.getName())
+                        .append(PRIVATE_ID, id));
+
+        if (count.first() == 0) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
+        }
+
+        Document document = getMongoDBDocument(annotationSet, "AnnotationSet");
+
+        // Insert the annotation set in the database
+        Bson query = Filters.and(
+                Filters.eq(PRIVATE_ID, id),
+                Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSet.getName())
+        );
+        Bson update = new Document("$set", new Document(AnnotationSetParams.ANNOTATION_SETS.key() + ".$", document));
+        QueryResult<UpdateResult> queryResult = collection.update(query, update, null);
+
+        if (queryResult.first().getModifiedCount() != 1) {
+            throw new CatalogDBException("The annotation set could not be updated.");
+        }
+    }
+
+    static void deleteAnnotationSet(long id, String annotationSetName, MongoDBCollection collection) throws CatalogDBException {
+        Bson eq = Filters.eq(PRIVATE_ID, id);
+        Bson pull = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key(),
+                new Document(AnnotationSetParams.NAME.key(), annotationSetName));
+
+        QueryResult<UpdateResult> update = collection.update(eq, pull, null);
+        if (update.first().getModifiedCount() < 1) {
+            throw new CatalogDBException("Could not delete the annotation set");
+        }
+    }
+
+    static long addVariableToAnnotations(long variableSetId, Variable variable, MongoDBCollection collection) throws CatalogDBException {
+        Annotation annotation = new Annotation(variable.getName(), variable.getDefaultValue());
+
+        // Obtain the annotation names of the annotations that are using the variableSet variableSetId
+        List<Bson> aggregation = new ArrayList<>(4);
+        aggregation.add(Aggregates.match(Filters.eq(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), variableSetId)));
+        aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS.key()));
+        aggregation.add(Aggregates.project(Projections.include(
+                AnnotationSetParams.ANNOTATION_SETS_NAME.key(), AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key()
+        )));
+        aggregation.add(Aggregates.match(Filters.eq(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), variableSetId)));
+        QueryResult<Document> aggregationResult = collection.aggregate(aggregation, null);
+
+        // Store the different annotation names in the set
+        Set<String> annotationNames = new HashSet<>(aggregationResult.getNumResults());
+        for (Document document : aggregationResult.getResult()) {
+            annotationNames.add((String) ((Document) document.get(AnnotationSetParams.ANNOTATION_SETS.key()))
+                    .get(AnnotationSetParams.NAME.key()));
+        }
+
+        // Prepare the update event
+        Bson update = Updates.push(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.ANNOTATIONS.key(),
+                getMongoDBDocument(annotation, "Annotation"));
+
+        // Construct the query dynamically for each different annotation set and make the update
+        long modifiedCount = 0;
+        Bson bsonQuery;
+        for (String annotationId : annotationNames) {
+            bsonQuery = Filters.elemMatch(AnnotationSetParams.ANNOTATION_SETS.key(), Filters.and(
+                    Filters.eq(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId),
+                    Filters.eq(AnnotationSetParams.NAME.key(), annotationId)
+            ));
+
+            modifiedCount += collection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
+                    .getModifiedCount();
+        }
+        return modifiedCount;
+    }
+
+    static long renameAnnotationField(long variableSetId, String oldName, String newName, MongoDBCollection collection)
+            throws CatalogDBException {
+        long renamedAnnotations = 0;
+        List<Document> aggregateResult = getAnnotationDocuments(variableSetId, oldName, collection);
+
+        if (aggregateResult.size() > 0) {
+            // Each document will be a cohort, sample or individual
+            for (Document entity : aggregateResult) {
+                Object entityId = entity.get(AnnotationSetParams.ID.key());
+                Document annotationSet = ((Document) entity.get(AnnotationSetParams.ANNOTATION_SETS.key()));
+
+                String annotationSetName = annotationSet.getString(AnnotationSetParams.NAME.key());
+
+                // Build a query to look for the particular annotations
+                Bson bsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_ID, entityId),
+                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName),
+                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key(), oldName)
+                );
+
+                // And extract those annotations from the annotation set
+                Bson update = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.ANNOTATIONS.key(),
+                        Filters.eq(AnnotationSetParams.NAME.key(), oldName));
+
+                QueryResult<UpdateResult> queryResult = collection.update(bsonQuery, update, null);
+
+                if (queryResult.first().getModifiedCount() != 1) {
+                    throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
+                            + annotationSet.getString(AnnotationSetParams.NAME.key()) + "} - An unexpected error happened when "
+                            + "extracting the annotation " + oldName + ". Please, report this error to the OpenCGA developers.");
+                }
+
+                // Obtain the value of the annotation
+                Object value = ((Document) annotationSet.get(AnnotationSetParams.ANNOTATIONS.key())).get(AnnotationSetParams.VALUE.key());
+
+                // Create a new annotation with the new id and the former value
+                Annotation annotation = new Annotation(newName, value);
+
+                bsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_ID, entityId),
+                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName)
+                );
+
+                // Push the again the annotation with the new name
+                update = Updates.push(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.ANNOTATIONS.key(),
+                        getMongoDBDocument(annotation, "Annotation"));
+                queryResult = collection.update(bsonQuery, update, null);
+
+                if (queryResult.first().getModifiedCount() != 1) {
+                    throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
+                            + annotationSetName + "} - A critical error happened when trying to rename the annotation " + oldName
+                            + ". Please, report this error to the OpenCGA developers.");
+                }
+                renamedAnnotations += 1;
+
+            }
+        }
+        return renamedAnnotations;
+    }
+
+    static long removeAnnotationField(long variableSetId, String fieldId, MongoDBCollection collection) throws CatalogDBException {
+        long removedAnnotations = 0;
+        List<Document> aggregateResult = getAnnotationDocuments(variableSetId, fieldId, collection);
+
+        if (aggregateResult.size() > 0) {
+            // Each document will be a cohort, sample or individual
+            for (Document entity : aggregateResult) {
+                Object entityId = entity.get(AnnotationSetParams.ID.key());
+                Document annotationSet = ((Document) entity.get(AnnotationSetParams.ANNOTATION_SETS.key()));
+
+                String annotationSetName = annotationSet.getString(AnnotationSetParams.NAME.key());
+
+                // Build a query to look for the particular annotations
+                Bson bsonQuery = Filters.and(
+                        Filters.eq(PRIVATE_ID, entityId),
+                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_NAME.key(), annotationSetName),
+                        Filters.eq(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key(), fieldId)
+                );
+
+                // Extract those annotations
+                Bson update = Updates.pull(AnnotationSetParams.ANNOTATION_SETS.key() + ".$." + AnnotationSetParams.ANNOTATIONS.key(),
+                        Filters.eq(AnnotationSetParams.NAME.key(), fieldId));
+                QueryResult<UpdateResult> queryResult = collection.update(bsonQuery, update, null);
+                if (queryResult.first().getModifiedCount() != 1) {
+                    throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
+                            + annotationSetName + "} - An unexpected error happened when extracting the annotation " + fieldId
+                            + ". Please, report this error to the OpenCGA developers.");
+                }
+
+                removedAnnotations += 1;
+
+            }
+        }
+        return removedAnnotations;
+    }
+
+    private static List<Document> getAnnotationDocuments(long variableSetId, String oldName, MongoDBCollection collection) {
+        List<Bson> aggregation = new ArrayList<>();
+        aggregation.add(Aggregates.match(
+                Filters.elemMatch(AnnotationSetParams.ANNOTATION_SETS.key(),
+                        Filters.eq(AnnotationSetParams.VARIABLE_SET_ID.key(), variableSetId))));
+        aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ANNOTATION_SETS.key(), AnnotationSetParams.ID.key())));
+        aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS.key()));
+        aggregation.add(Aggregates.match(Filters.eq(AnnotationSetParams.ANNOTATION_SETS_VARIABLE_SET_ID.key(), variableSetId)));
+        aggregation.add(Aggregates.unwind("$" + AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS.key()));
+        aggregation.add(Aggregates.match(
+                Filters.eq(AnnotationSetParams.ANNOTATION_SETS_ANNOTATIONS_NAME.key(), oldName)));
+
+        return collection.aggregate(aggregation, new QueryOptions()).getResult();
+    }
+
+    //--------------- End annotation operations --------------/
+
+
+
 
     /*
     * Helper methods

@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 
 import java.util.Arrays;
 
@@ -39,7 +39,7 @@ public class CatalogMongoMetaDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void getAcl() throws CatalogDBException {
-        QueryResult<StudyAcl> aclQueryResult = catalogDBAdaptor.getCatalogMetaDBAdaptor().getDaemonAcl(Arrays.asList("admin"));
+        QueryResult<StudyAclEntry> aclQueryResult = catalogDBAdaptor.getCatalogMetaDBAdaptor().getDaemonAcl(Arrays.asList("admin"));
         assertEquals(1, aclQueryResult.getNumResults());
         assertEquals("admin", aclQueryResult.first().getMember());
     }

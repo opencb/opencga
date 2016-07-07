@@ -21,7 +21,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -33,7 +33,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAclDBAdaptor<FileAcl> {
+public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAclDBAdaptor<FileAclEntry> {
 
     enum QueryParams implements QueryParam {
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),
@@ -54,15 +54,15 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAcl
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         @Deprecated
-        FILE_STATUS("fileStatus", TEXT, ""),
+        FILE_STATUS("status.name", TEXT, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         EXPERIMENT_ID("experimentId", INTEGER_ARRAY, ""),
         SAMPLE_IDS("sampleIds", INTEGER_ARRAY, ""),
 
         JOB_ID("jobId", INTEGER_ARRAY, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
 //        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
 //        ACL_READ("acls.read", BOOLEAN, ""),
 //        ACL_WRITE("acls.write", BOOLEAN, ""),
@@ -71,7 +71,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAcl
 
         //INDEX("index", TEXT, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
-        INDEX_DATE("index.date", TEXT, ""),
+        INDEX_CREATION_DATE("index.creationDate", TEXT, ""),
         INDEX_STATUS_NAME("index.status.name", TEXT, ""),
         INDEX_STATUS_MESSAGE("index.status.message", TEXT, ""),
         INDEX_JOB_ID("index.jobId", TEXT, ""),
@@ -244,7 +244,7 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAcl
      * @return A map of files containing a map of user - AclEntries.
      * @throws CatalogDBException when the study does not exist.
      */
-    QueryResult<Map<String, Map<String, FileAcl>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+    QueryResult<Map<String, Map<String, FileAclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException;
 
     @Deprecated
@@ -253,13 +253,13 @@ public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAcl
     @Deprecated
     QueryResult<AclEntry> unsetFileAcl(long fileId, String userId) throws CatalogDBException;
 
-    default QueryResult<FileAcl> getFileAcl(long fileId, String member) throws CatalogDBException {
+    default QueryResult<FileAclEntry> getFileAcl(long fileId, String member) throws CatalogDBException {
         return getFileAcl(fileId, Arrays.asList(member));
     }
 
-    QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
+    QueryResult<FileAclEntry> getFileAcl(long fileId, List<String> members) throws CatalogDBException;
 
-    QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<FileAclEntry> setFileAcl(long fileId, FileAclEntry acl, boolean override) throws CatalogDBException;
 
     void unsetFileAcl(long fileId, List<String> members, List<String> permissions) throws CatalogDBException;
 

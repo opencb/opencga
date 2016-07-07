@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.JobAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job>, CatalogAclDBAdaptor<JobAcl> {
+public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job>, CatalogAclDBAdaptor<JobAclEntry> {
 
     default boolean jobExists(long jobId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
@@ -90,13 +90,13 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job>, CatalogAclDB
     @Deprecated
     QueryResult<Job> modifyJob(long jobId, ObjectMap parameters) throws CatalogDBException;
 
-    default QueryResult<JobAcl> getJobAcl(long jobId, String member) throws CatalogDBException {
+    default QueryResult<JobAclEntry> getJobAcl(long jobId, String member) throws CatalogDBException {
         return getJobAcl(jobId, Arrays.asList(member));
     }
 
-    QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException;
+    QueryResult<JobAclEntry> getJobAcl(long jobId, List<String> members) throws CatalogDBException;
 
-    QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<JobAclEntry> setJobAcl(long jobId, JobAclEntry acl, boolean override) throws CatalogDBException;
 
     void unsetJobAcl(long jobId, List<String> members, List<String> permissions) throws CatalogDBException;
 
@@ -138,7 +138,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job>, CatalogAclDB
         NAME("name", TEXT_ARRAY, ""),
         USER_ID("userId", TEXT_ARRAY, ""),
         TOOL_NAME("toolName", TEXT_ARRAY, ""),
-        DATE("date", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         START_TIME("startTime", INTEGER_ARRAY, ""),
         END_TIME("endTime", INTEGER_ARRAY, ""),
@@ -156,9 +156,9 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job>, CatalogAclDB
         INPUT("input", INTEGER_ARRAY, ""),
         OUTPUT("output", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

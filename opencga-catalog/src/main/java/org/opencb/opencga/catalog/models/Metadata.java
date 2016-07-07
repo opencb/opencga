@@ -24,7 +24,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 public class Metadata {
 
     private String version;
-    private String date;
+    private String creationDate;
     private String open;
 
     private long idCounter;
@@ -34,13 +34,13 @@ public class Metadata {
         this("v2", TimeUtils.getTime(), "public");
     }
 
-    public Metadata(String version, String date, String open) {
-        this(version, date, open, 0);
+    public Metadata(String version, String creationDate, String open) {
+        this(version, creationDate, open, 0);
     }
 
-    public Metadata(String version, String date, String open, long idCounter) {
+    public Metadata(String version, String creationDate, String open, long idCounter) {
         this.version = version;
-        this.date = date;
+        this.creationDate = creationDate;
         this.open = open;
         this.idCounter = idCounter;
     }
@@ -49,7 +49,7 @@ public class Metadata {
     public String toString() {
         final StringBuilder sb = new StringBuilder("Metadata{");
         sb.append("version='").append(version).append('\'');
-        sb.append(", date='").append(date).append('\'');
+        sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", open='").append(open).append('\'');
         sb.append(", idCounter=").append(idCounter);
         sb.append('}');
@@ -65,12 +65,12 @@ public class Metadata {
         return this;
     }
 
-    public String getDate() {
-        return date;
+    public String getCreationDate() {
+        return creationDate;
     }
 
-    public Metadata setDate(String date) {
-        this.date = date;
+    public Metadata setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
         return this;
     }
 

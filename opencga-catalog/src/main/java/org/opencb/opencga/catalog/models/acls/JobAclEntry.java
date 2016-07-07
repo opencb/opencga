@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class JobAcl extends ParentAcl<JobAcl.JobPermissions> {
+public class JobAclEntry extends AbstractAclEntry<JobAclEntry.JobPermissions> {
 
     public enum JobPermissions {
         VIEW,
@@ -19,15 +19,15 @@ public class JobAcl extends ParentAcl<JobAcl.JobPermissions> {
         SHARE
     }
 
-    public JobAcl() {
+    public JobAclEntry() {
         this("", Collections.emptyList());
     }
 
-    public JobAcl(String member, EnumSet<JobPermissions> permissions) {
+    public JobAclEntry(String member, EnumSet<JobPermissions> permissions) {
         super(member, permissions);
     }
 
-    public JobAcl(String member, ObjectMap permissions) {
+    public JobAclEntry(String member, ObjectMap permissions) {
         super(member, EnumSet.noneOf(JobPermissions.class));
 
         EnumSet<JobPermissions> aux = EnumSet.allOf(JobPermissions.class);
@@ -38,7 +38,7 @@ public class JobAcl extends ParentAcl<JobAcl.JobPermissions> {
         }
     }
 
-    public JobAcl(String member, List<String> permissions) {
+    public JobAclEntry(String member, List<String> permissions) {
         super(member, EnumSet.noneOf(JobPermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(JobPermissions::valueOf).collect(Collectors.toList()));

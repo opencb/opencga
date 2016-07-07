@@ -26,8 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.Variable;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,8 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, CatalogAclDBAdaptor<SampleAcl> {
+public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, CatalogAclDBAdaptor<SampleAclEntry>,
+        CatalogAnnotationSetDBAdaptor {
 
     default boolean sampleExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -68,15 +68,15 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
     QueryResult<Sample> modifySample(long sampleId, QueryOptions parameters) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
+    QueryResult<SampleAclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException;
 
     @Deprecated
-    QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
+    QueryResult<SampleAclEntry> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException;
 
     @Deprecated
     QueryResult<AclEntry> setSampleAcl(long sampleId, AclEntry acl) throws CatalogDBException;
 
-    QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException;
+    QueryResult<SampleAclEntry> setSampleAcl(long sampleId, SampleAclEntry acl, boolean override) throws CatalogDBException;
 
     @Deprecated
     QueryResult<AclEntry> unsetSampleAcl(long sampleId, String userId) throws CatalogDBException;
@@ -108,24 +108,10 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
 
     List<Long> getStudyIdsBySampleIds(String sampleIds) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<AnnotationSet> annotateSample(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
-    QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException;
-
-    /**
-     * This method will rename the id of all the annotations corresponding to the variableSetId changing oldName per newName.
-     * This method cannot be called by any of the managers and will be only called when the user wants to rename the field of a variable
-     * from a variableSet.
-     * @param variableSetId Id of the variable to be renamed.
-     * @param oldName Name of the field to be renamed.
-     * @param newName New name that will be set.
-     * @return a QueryResult containing the number of annotations that have been changed.
-     * @throws CatalogDBException when there is an error with database transactions.
-     */
-    QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException;
-
-    QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException;
-
+    @Deprecated
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
@@ -143,19 +129,9 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
 
         STUDY_ID("studyId", INTEGER_ARRAY, ""),
 
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
-        @Deprecated
-        ACL_USER_ID("acls.userId", TEXT_ARRAY, ""),
-        @Deprecated
-        ACL_READ("acls.read", BOOLEAN, ""),
-        @Deprecated
-        ACL_WRITE("acls.write", BOOLEAN, ""),
-        @Deprecated
-        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
-        @Deprecated
-        ACL_DELETE("acls.delete", BOOLEAN, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
 
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", INTEGER, ""),
@@ -209,13 +185,14 @@ public interface CatalogSampleDBAdaptor extends CatalogDBAdaptor<Sample>, Catalo
         }
     }
 
+    @Deprecated
     enum AnnotationSetParams implements QueryParam {
         ID("id", TEXT, ""),
         VARIABLE_SET_ID("variableSetId", DOUBLE, ""),
         ANNOTATIONS("annotations", TEXT_ARRAY, ""),
         ANNOTATIONS_ID("annotations.id", TEXT, ""),
         ANNOTATIONS_VALUE("annotations.value", TEXT, ""), // We don't really know the type. It is defined  in VariableSet.
-        DATE("date", TEXT, ""),
+        CREATION_DATE("creationDate", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]");

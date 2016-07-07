@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 
 import javax.annotation.Nullable;
@@ -197,7 +197,7 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
      * the study id is not valid or the members given do not exist.
      */
     @Deprecated
-    QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
+    QueryResult<StudyAclEntry> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException;
 
     //-----------------     GROUPS         ------------------
 

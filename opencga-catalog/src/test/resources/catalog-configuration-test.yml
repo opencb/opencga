@@ -39,7 +39,7 @@ emailServer:
   from: ""
   ssl: false
 
-acls:
+acl:
 - member: "admin"
   permissions:
   - "VIEW_FILE_HEADERS"
