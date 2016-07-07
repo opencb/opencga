@@ -30,6 +30,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
@@ -37,7 +38,6 @@ import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -49,7 +49,7 @@ import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembe
 /**
  * Created by hpccoll1 on 14/08/15.
  */
-public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
+public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor implements CatalogSampleDBAdaptor {
 
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
@@ -59,6 +59,16 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.sampleConverter = new SampleConverter();
+    }
+
+    @Override
+    protected GenericConverter<? extends Annotable, Document> getConverter() {
+        return sampleConverter;
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
+        return sampleCollection;
     }
 
     /*
@@ -568,65 +578,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> createAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.createAnnotationSet(id, annotationSet, sampleCollection);
-        return endQuery("Create annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
-        long startTime = startQuery();
-
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAnnotationSet(id, annotationSetName, sampleCollection, logger);
-
-        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
-        for (Document document : aggregate.getResult()) {
-            Sample sample = sampleConverter.convertToDataModelType(document);
-            annotationSets.add(sample.getAnnotationSets().get(0));
-        }
-
-        return endQuery("Get sample annotation set", startTime, annotationSets);
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.updateAnnotationSet(id, annotationSet, sampleCollection);
-        return endQuery("Update annotation set", startTime, getAnnotationSet(id, annotationSet.getName()));
-    }
-
-    @Override
-    public void deleteAnnotationSet(long id, String annotationSetName) throws CatalogDBException {
-        QueryResult<AnnotationSet> annotationSet = getAnnotationSet(id, annotationSetName);
-        if (annotationSet == null || annotationSet.getNumResults() == 0) {
-            throw CatalogDBException.idNotFound("Annotation set", annotationSetName);
-        }
-        CatalogMongoDBUtils.deleteAnnotationSet(id, annotationSetName, sampleCollection);
-    }
-
-    @Override
-    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
-        long startTime = startQuery();
-        long addedAnnotations = CatalogMongoDBUtils.addVariableToAnnotations(variableSetId, variable, sampleCollection);
-        return endQuery("Add annotation", startTime, Collections.singletonList(addedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
-        long startTime = startQuery();
-        long renamedAnnotations = CatalogMongoDBUtils.renameAnnotationField(variableSetId, oldName, newName, sampleCollection);
-        return endQuery("Rename annotation name", startTime, Collections.singletonList(renamedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException {
-        long startTime = startQuery();
-        long removedAnnotations = CatalogMongoDBUtils.removeAnnotationField(variableSetId, annotationName, sampleCollection);
-        return endQuery("Remove annotation", startTime, Collections.singletonList(removedAnnotations));
     }
 
     @Deprecated
