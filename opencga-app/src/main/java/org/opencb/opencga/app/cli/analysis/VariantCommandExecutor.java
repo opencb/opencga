@@ -42,11 +42,12 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -64,11 +65,11 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -275,9 +276,18 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                     progressTask = batch -> batch;
                     executor = null;
                 } else {
-                    AtomicLong total = new AtomicLong(0);
-                    executor = asyncCount(query, queryOptions, variantFetcher, total);
-                    progressTask = getProgressTask(total);
+                    executor = Executors.newSingleThreadExecutor();
+                    Future<Long> future = executor.submit(() -> {
+                        Long count = variantFetcher.count(query, sessionId).first();
+                        count = Math.min(queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE), count - queryOptions.getLong(QueryOptions.SKIP, 0));
+                        return count;
+                    });
+                    executor.shutdown();
+                    ProgressLogger progressLogger = new ProgressLogger("Export variants", future, 200);
+                    progressTask = batch -> {
+                        progressLogger.increment(batch.size());
+                        return batch;
+                    };
                 }
                 ParallelTaskRunner.Config config = ParallelTaskRunner.Config.builder()
                         .setNumTasks(1)
@@ -290,7 +300,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
                         variants.add(iterator.next());
                     }
                     return variants;
-                }, batch -> batch, exporter, config);
+                }, progressTask, exporter, config);
 
                 ptr.run();
                 if (executor != null) {
@@ -302,36 +312,6 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             }
         }
     }
-
-    private ParallelTaskRunner.Task<Variant, Variant> getProgressTask(AtomicLong total) {
-        AtomicLong counter = new AtomicLong(0);
-        int counterBatchSize = 10000;
-
-        return batch -> {
-            long pre = counter.getAndAdd(batch.size());
-            long batchNumber = (pre + batch.size()) / counterBatchSize;
-            long preBatchNumber = pre / counterBatchSize;
-            if (batchNumber != preBatchNumber) {
-                long t = total.get();
-                String totalString = t > 0 ? (t + " " + (batchNumber * counterBatchSize * 10000 / t) / 100.0 + "%") : "?";
-                logger.info("Export variants " + batchNumber * counterBatchSize + "/" + totalString);
-            }
-            return batch;
-        };
-    }
-
-    private ExecutorService asyncCount(Query query, QueryOptions queryOptions, VariantFetcher variantFetcher, AtomicLong total) {
-        ExecutorService executor = Executors.newSingleThreadExecutor();
-        executor.submit((Callable) () -> {
-            Long count = variantFetcher.count(query, sessionId).first();
-            count = Math.min(queryOptions.getLong(QueryOptions.LIMIT, Long.MAX_VALUE), count - queryOptions.getLong(QueryOptions.SKIP, 0));
-            total.set(count);
-            return count;
-        });
-        executor.shutdown();
-        return executor;
-    }
-
 
     private void delete() {
         throw new UnsupportedOperationException();

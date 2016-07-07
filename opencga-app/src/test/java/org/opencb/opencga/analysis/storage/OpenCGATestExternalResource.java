@@ -89,7 +89,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         InputStream inputStream;
         catalogManagerExternalResource.getCatalogConfiguration().serialize(
-                new FileOutputStream(conf.resolve("catalog-configuration-test.yml").toFile()));
+                new FileOutputStream(conf.resolve("catalog-configuration.yml").toFile()));
         inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
         Files.copy(inputStream, conf.resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
