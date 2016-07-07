@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -146,6 +147,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager) {
         this.studyConfigurationManager.set(studyConfigurationManager);
+    }
+
+    @Override
+    public CellBaseClient getCellBaseClient() {
+        throw new UnsupportedOperationException();
     }
 
     @Override

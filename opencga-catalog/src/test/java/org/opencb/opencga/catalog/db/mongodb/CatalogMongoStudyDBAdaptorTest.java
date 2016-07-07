@@ -131,7 +131,7 @@ public class CatalogMongoStudyDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         QueryResult<VariableSet> queryResult = catalogStudyDBAdaptor.addFieldToVariableSet(18, variable);
 
         // Check that the new variable has been inserted in the variableSet
-        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getId().equals(variable1.getId())).findAny()
+        assertTrue(queryResult.first().getVariables().stream().filter(variable1 -> variable.getName().equals(variable1.getName())).findAny()
                 .isPresent());
 
         // We try to insert the same one again.

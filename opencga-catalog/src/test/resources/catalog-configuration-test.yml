@@ -1,23 +1,36 @@
 ---
 logLevel: "INFO"
 logFile: null
+
 openRegister: true
-userDefaultDiskQuota: 0
+userDefaultDiskQuota: 200000
+
 dataDir: "file:///tmp/opencga/sessions"
 tempJobsDir: "file:///tmp/opencga/sessions/jobs"
 toolsDir: "tools"
+
 admin:
   password: "admin"
   email: "admin@admin.com"
+
+audit:
+  maxDocuments: 20000000 # Maximum number of documents that will be created in the audit collection.
+  maxSize: 100000000000  # Maximum size that the audit collection will have in bytes.
+  javaClass: ""          # Java class of the audit implementation to be used to audit.
+  exclude: []            # Array of resource:action to select pairwise resource-actions to be excluded for audit purposes.
+
 monitor:
-  daysToRemove: 0
-  executionSleepTime: 0
-  fileSleepTime: 0
+  daysToRemove: 30
+  executionDaemonInterval: 4000 # number of milliseconds between checks
+  fileDaemonInterval: 8000      # number of milliseconds between checks
+  port: 9092
+
 execution:
-  mode: null
-  defaultQueue: null
-  availableQueues: null
-  toolsPerQueue: null
+  mode: "local"
+  defaultQueue: ""
+  availableQueues: ""
+  toolsPerQueue: {}
+
 emailServer:
   host: "localhost"
   port: ""
@@ -25,6 +38,17 @@ emailServer:
   password: ""
   from: ""
   ssl: false
+
+acls:
+- member: "admin"
+  permissions:
+  - "VIEW_FILE_HEADERS"
+  - "VIEW_FILE_CONTENTS"
+  - "VIEW_FILES"
+  - "UPDATE_FILES"
+  - "VIEW_JOBS"
+  - "UPDATE_JOBS"
+
 database:
   hosts:
   - "localhost:27017"

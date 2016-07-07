@@ -36,7 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
+public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>, CatalogAclDBAdaptor<IndividualAcl> {
 
     default boolean individualExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -77,9 +77,9 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
 
-    QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException;
+    QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl, boolean override) throws CatalogDBException;
 
-    void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+    void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetIndividualAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
@@ -93,7 +93,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         FAMILY("family", TEXT, ""),
         GENDER("gender", TEXT, ""),
         RACE("race", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         SPECIES("species", TEXT, ""),
@@ -104,7 +104,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -113,7 +113,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         STUDY_ID("studyId", DECIMAL, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
-        ANNOTATION_SET_ID("annotationSetId", TEXT, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT, ""),
         ANNOTATION("annotation", TEXT, "");
 
         private static Map<String, QueryParams> map;
@@ -172,7 +172,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         population(Type.TEXT, ""),
 
         variableSetId(Type.NUMERICAL, ""),
-        annotationSetId(Type.NUMERICAL, ""),
+        annotationSetName(Type.NUMERICAL, ""),
         annotation(Type.TEXT, ""),
 
         attributes("attributes", Type.TEXT, ""),

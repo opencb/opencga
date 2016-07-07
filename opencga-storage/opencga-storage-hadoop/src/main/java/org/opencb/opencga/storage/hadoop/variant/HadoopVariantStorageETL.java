@@ -38,7 +38,7 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
 //        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
 
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+        int studyId = getStudyId();
         int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");

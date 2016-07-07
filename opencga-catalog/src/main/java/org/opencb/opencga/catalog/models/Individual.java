@@ -16,10 +16,11 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -38,16 +39,25 @@ public class Individual {
     private String race;
     private Species species;
     private Population population;
+    private String creationDate;
     private Status status;
+    private List<OntologyTerm> ontologyTerms;
+
     private List<IndividualAcl> acls;
     private List<AnnotationSet> annotationSets;
+
     private Map<String, Object> attributes;
+
+    public enum Gender {
+        MALE, FEMALE, UNKNOWN
+    }
+
 
     public Individual() {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
-                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) throws CatalogException {
+                      Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -63,52 +73,31 @@ public class Individual {
         this.attributes = attributes;
     }
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Individual{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", fatherId=").append(fatherId);
-        sb.append(", motherId=").append(motherId);
-        sb.append(", family='").append(family).append('\'');
-        sb.append(", gender=").append(gender);
-        sb.append(", race='").append(race).append('\'');
-        sb.append(", species=").append(species);
-        sb.append(", population=").append(population);
-        sb.append(", status=").append(status);
-        sb.append(", acls=").append(acls);
-        sb.append(", annotationSets=").append(annotationSets);
-        sb.append(", attributes=").append(attributes);
-        sb.append('}');
-        return sb.toString();
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
+                      Population population, Status status, List<IndividualAcl> acls, List<AnnotationSet> annotationSets,
+                      Map<String, Object> attributes) {
+        this(id, name, fatherId, motherId, family, gender, race, species, population, TimeUtils.getTime(), status, Collections.emptyList(),
+                acls, annotationSets, attributes);
     }
 
-    public long getId() {
-        return id;
-    }
-
-    public Individual setId(long id) {
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
+                      Population population, String creationDate, Status status, List<OntologyTerm> ontologyTerms,
+                      List<IndividualAcl>  acls, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
-        return this;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public Individual setName(String name) {
         this.name = name;
-        return this;
-
-    }
-
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.fatherId = fatherId;
+        this.motherId = motherId;
+        this.family = family;
+        this.gender = gender;
+        this.race = race;
+        this.species = species;
+        this.population = population;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.ontologyTerms = ontologyTerms;
+        this.acls = acls;
         this.annotationSets = annotationSets;
-        return this;
+        this.attributes = attributes;
     }
 
     @Override
@@ -171,104 +160,13 @@ public class Individual {
         return toIntExact(result);
     }
 
-    public long getFatherId() {
-        return fatherId;
-    }
 
-    public Individual setFatherId(long fatherId) {
-        this.fatherId = fatherId;
-        return this;
-    }
-
-    public long getMotherId() {
-        return motherId;
-    }
-
-    public Individual setMotherId(long motherId) {
-        this.motherId = motherId;
-        return this;
-    }
-
-    public String getFamily() {
-        return family;
-    }
-
-    public Individual setFamily(String family) {
-        this.family = family;
-        return this;
-    }
-
-    public Gender getGender() {
-        return gender;
-    }
-
-    public Individual setGender(Gender gender) {
-        this.gender = gender;
-        return this;
-    }
-
-    public String getRace() {
-        return race;
-    }
-
-    public Individual setRace(String race) {
-        this.race = race;
-        return this;
-    }
-
-    public Species getSpecies() {
-        return species;
-    }
-
-    public Individual setSpecies(Species species) {
-        this.species = species;
-        return this;
-    }
-
-    public Population getPopulation() {
-        return population;
-    }
-
-    public Individual setPopulation(Population population) {
-        this.population = population;
-        return this;
-    }
-
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public Individual setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-        return this;
-    }
-
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
-    public List<IndividualAcl> getAcls() {
-        return acls;
-    }
-
-    public Individual setAcls(List<IndividualAcl> acls) {
-        this.acls = acls;
-        return this;
-    }
-
-    public enum Gender {
-        MALE, FEMALE, UNKNOWN
-    }
-
-    // internal class
     public static class Species {
+
         private String taxonomyCode;
         private String scientificName;
         private String commonName;
+
 
         public Species() {
         }
@@ -337,10 +235,13 @@ public class Individual {
         }
     }
 
+
     public static class Population {
+
         private String name;
         private String subpopulation;
         private String description;
+
 
         public Population() {
         }
@@ -408,4 +309,163 @@ public class Individual {
             this.description = description;
         }
     }
+
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Individual{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", fatherId=").append(fatherId);
+        sb.append(", motherId=").append(motherId);
+        sb.append(", family='").append(family).append('\'');
+        sb.append(", gender=").append(gender);
+        sb.append(", race='").append(race).append('\'');
+        sb.append(", species=").append(species);
+        sb.append(", population=").append(population);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", ontologyTerms=").append(ontologyTerms);
+        sb.append(", acls=").append(acls);
+        sb.append(", annotationSets=").append(annotationSets);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
+    }
+
+    public long getId() {
+        return id;
+    }
+
+    public Individual setId(long id) {
+        this.id = id;
+        return this;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Individual setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public long getFatherId() {
+        return fatherId;
+    }
+
+    public Individual setFatherId(long fatherId) {
+        this.fatherId = fatherId;
+        return this;
+    }
+
+    public long getMotherId() {
+        return motherId;
+    }
+
+    public Individual setMotherId(long motherId) {
+        this.motherId = motherId;
+        return this;
+    }
+
+    public String getFamily() {
+        return family;
+    }
+
+    public Individual setFamily(String family) {
+        this.family = family;
+        return this;
+    }
+
+    public Gender getGender() {
+        return gender;
+    }
+
+    public Individual setGender(Gender gender) {
+        this.gender = gender;
+        return this;
+    }
+
+    public String getRace() {
+        return race;
+    }
+
+    public Individual setRace(String race) {
+        this.race = race;
+        return this;
+    }
+
+    public Species getSpecies() {
+        return species;
+    }
+
+    public Individual setSpecies(Species species) {
+        this.species = species;
+        return this;
+    }
+
+    public Population getPopulation() {
+        return population;
+    }
+
+    public Individual setPopulation(Population population) {
+        this.population = population;
+        return this;
+    }
+
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public Individual setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Individual setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
+    public List<OntologyTerm> getOntologyTerms() {
+        return ontologyTerms;
+    }
+
+    public Individual setOntologyTerms(List<OntologyTerm> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
+        return this;
+    }
+
+    public List<IndividualAcl> getAcls() {
+        return acls;
+    }
+
+    public Individual setAcls(List<IndividualAcl> acls) {
+        this.acls = acls;
+        return this;
+    }
+
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Individual setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
+        return this;
+    }
+
 }

@@ -29,8 +29,11 @@ import java.io.OutputStream;
 public class ClientConfiguration {
 
     private String version;
+    private int sessionDuration;
+
     private RestConfig rest;
     private GrpcConfig grpc;
+
 
     public ClientConfiguration() {
     }
@@ -68,6 +71,14 @@ public class ClientConfiguration {
         jsonMapper.writerWithDefaultPrettyPrinter().writeValue(configurationOutputStream, this);
     }
 
+    public int getSessionDuration() {
+        return sessionDuration;
+    }
+
+    public void setSessionDuration(int sessionDuration) {
+        this.sessionDuration = sessionDuration;
+    }
+
     public RestConfig getRest() {
         return rest;
     }
@@ -85,5 +96,4 @@ public class ClientConfiguration {
         this.grpc = grpc;
         return this;
     }
-
 }

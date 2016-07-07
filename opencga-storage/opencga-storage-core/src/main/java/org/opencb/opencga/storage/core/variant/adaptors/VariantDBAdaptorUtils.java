@@ -155,6 +155,25 @@ public class VariantDBAdaptorUtils {
         }
     }
 
+    /**
+     * Splits the string with the specified operation.
+     *
+     * @param value     Value to split
+     * @param operation Operation that defines the split delimiter
+     * @return          List of values, without the delimiter
+     */
+    public static List<String> splitValue(String value, QueryOperation operation) {
+        List<String> list;
+        if (operation == null) {
+            list = Collections.singletonList(value);
+        } else if (operation == QueryOperation.AND) {
+            list = Arrays.asList(value.split(QueryOperation.AND.separator()));
+        } else {
+            list = Arrays.asList(value.split(QueryOperation.OR.separator()));
+        }
+        return list;
+    }
+
     public static String[] splitOperator(String value) {
         Matcher matcher = OPERATION_PATTERN.matcher(value);
         String key;
@@ -170,25 +189,6 @@ public class VariantDBAdaptorUtils {
         }
 
         return new String[]{key.trim(), operator.trim(), filter.trim()};
-    }
-
-    /**
-     * Splits the string with the specified operation.
-     *
-     * @param value     Value to split
-     * @param operation Operation indicating the splitter element
-     * @return          List of splitted values
-     */
-    public static List<String> splitValue(String value, QueryOperation operation) {
-        List<String> list;
-        if (operation == null) {
-            list = Collections.singletonList(value);
-        } else if (operation == QueryOperation.AND) {
-            list = Arrays.asList(value.split(AND));
-        } else {
-            list = Arrays.asList(value.split(OR));
-        }
-        return list;
     }
 
 }

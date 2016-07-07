@@ -332,7 +332,7 @@ public class ThreadRunner {
         private boolean lastBatch;
         private boolean lastBatchSent;
 
-        public Node(List<EXECUTOR> tasks, String name) {
+        Node(List<EXECUTOR> tasks, String name) {
             this.tasks = tasks;
             this.name = name;
             taskQueue = new ArrayBlockingQueue<>(tasks.size(), false, tasks);

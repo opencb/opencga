@@ -26,7 +26,7 @@ import static java.lang.Math.toIntExact;
  */
 public class AnnotationSet {
 
-    private String id;
+    private String name;
     private long variableSetId;
     private Set<Annotation> annotations;
     private String date;
@@ -37,9 +37,9 @@ public class AnnotationSet {
     public AnnotationSet() {
     }
 
-    public AnnotationSet(String id, long variableSetId, Set<Annotation> annotations, String date,
+    public AnnotationSet(String name, long variableSetId, Set<Annotation> annotations, String date,
                          Map<String, Object> attributes) {
-        this.id = id;
+        this.name = name;
         this.variableSetId = variableSetId;
         this.annotations = annotations;
         this.date = date;
@@ -49,7 +49,7 @@ public class AnnotationSet {
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("AnnotationSet{");
-        sb.append("id='").append(id).append('\'');
+        sb.append("id='").append(name).append('\'');
         sb.append(", variableSetId=").append(variableSetId);
         sb.append(", annotations=").append(annotations);
         sb.append(", date='").append(date).append('\'');
@@ -72,7 +72,7 @@ public class AnnotationSet {
         if (variableSetId != that.variableSetId) {
             return false;
         }
-        if (id != null ? !id.equals(that.id) : that.id != null) {
+        if (name != null ? !name.equals(that.name) : that.name != null) {
             return false;
         }
         if (annotations != null ? !annotations.equals(that.annotations) : that.annotations != null) {
@@ -87,7 +87,7 @@ public class AnnotationSet {
 
     @Override
     public int hashCode() {
-        int result = id != null ? id.hashCode() : 0;
+        int result = name != null ? name.hashCode() : 0;
         result = 31 * result + toIntExact(variableSetId);
         result = 31 * result + (annotations != null ? annotations.hashCode() : 0);
         result = 31 * result + (date != null ? date.hashCode() : 0);
@@ -95,12 +95,12 @@ public class AnnotationSet {
         return result;
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public long getVariableSetId() {

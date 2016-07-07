@@ -17,6 +17,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
 
@@ -29,14 +30,16 @@ public class Sample {
     private String name;
     private String source;
     private long individualId;
+    private String creationDate;
+    private Status status;
     private String description;
+    private List<OntologyTerm> ontologyTerms;
 
     private List<SampleAcl> acls;
     private List<AnnotationSet> annotationSets;
 
-    private Status status;
-
     private Map<String, Object> attributes;
+
 
     public Sample() {
     }
@@ -50,9 +53,27 @@ public class Sample {
         this.id = id;
         this.name = name;
         this.source = source;
-        this.status = new Status();
         this.individualId = individualId;
+        this.creationDate = TimeUtils.getTime();
+        this.status = new Status();
         this.description = description;
+        this.ontologyTerms = Collections.emptyList();
+        this.acls = acls;
+        this.annotationSets = annotationSets;
+        this.attributes = attributes;
+    }
+
+    public Sample(long id, String name, String source, long individualId, String creationDate, Status status, String description,
+                  List<OntologyTerm> ontologyTerms, List<SampleAcl> acls, List<AnnotationSet> annotationSets,
+                  Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.source = source;
+        this.individualId = individualId;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.description = description;
+        this.ontologyTerms = ontologyTerms;
         this.acls = acls;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
@@ -64,9 +85,11 @@ public class Sample {
         sb.append("id=").append(id);
         sb.append(", name='").append(name).append('\'');
         sb.append(", source='").append(source).append('\'');
-        sb.append(", status='").append(status).append('\'');
         sb.append(", individualId=").append(individualId);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
+        sb.append(", ontologyTerms=").append(ontologyTerms);
         sb.append(", acls=").append(acls);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
@@ -101,14 +124,6 @@ public class Sample {
         return this;
     }
 
-    public Status getStatus() {
-        return status;
-    }
-
-    public void setStatus(Status status) {
-        this.status = status;
-    }
-
     public long getIndividualId() {
         return individualId;
     }
@@ -118,12 +133,39 @@ public class Sample {
         return this;
     }
 
+    public String getCreationDate() {
+        return creationDate;
+    }
+
+    public Sample setCreationDate(String creationDate) {
+        this.creationDate = creationDate;
+        return this;
+    }
+
+    public Status getStatus() {
+        return status;
+    }
+
+    public Sample setStatus(Status status) {
+        this.status = status;
+        return this;
+    }
+
     public String getDescription() {
         return description;
     }
 
     public Sample setDescription(String description) {
         this.description = description;
+        return this;
+    }
+
+    public List<OntologyTerm> getOntologyTerms() {
+        return ontologyTerms;
+    }
+
+    public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
+        this.ontologyTerms = ontologyTerms;
         return this;
     }
 
@@ -153,4 +195,5 @@ public class Sample {
         this.attributes = attributes;
         return this;
     }
+
 }

@@ -25,7 +25,7 @@ import java.util.Set;
  */
 public class Variable {
 
-    private String id;
+    private String name;
     private String category;
 
     /**
@@ -53,10 +53,10 @@ public class Variable {
     public Variable() {
     }
 
-    public Variable(String id, String category, VariableType type, Object defaultValue, boolean required,
-                    boolean multiValue, List<String> allowedValues, long rank, String dependsOn, String description,
-                    Set<Variable> variableSet, Map<String, Object> attributes) {
-        this.id = id;
+    public Variable(String name, String category, VariableType type, Object defaultValue, boolean required, boolean multiValue,
+                    List<String> allowedValues, long rank, String dependsOn, String description, Set<Variable> variableSet,
+                    Map<String, Object> attributes) {
+        this.name = name;
         this.category = category;
         this.type = type;
         this.defaultValue = defaultValue;
@@ -70,10 +70,18 @@ public class Variable {
         this.attributes = attributes;
     }
 
+    public enum VariableType {
+        BOOLEAN,
+        CATEGORICAL,
+        NUMERIC,
+        TEXT,
+        OBJECT
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Variable{");
-        sb.append("id='").append(id).append('\'');
+        sb.append("name='").append(name).append('\'');
         sb.append(", category='").append(category).append('\'');
         sb.append(", type=").append(type);
         sb.append(", defaultValue=").append(defaultValue);
@@ -100,7 +108,7 @@ public class Variable {
 
         Variable variable = (Variable) o;
 
-        if (!id.equals(variable.id)) {
+        if (!name.equals(variable.name)) {
             return false;
         }
 
@@ -109,15 +117,15 @@ public class Variable {
 
     @Override
     public int hashCode() {
-        return id.hashCode();
+        return name.hashCode();
     }
 
-    public String getId() {
-        return id;
+    public String getName() {
+        return name;
     }
 
-    public void setId(String id) {
-        this.id = id;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getCategory() {
@@ -206,13 +214,5 @@ public class Variable {
 
     public void setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
-    }
-
-    public enum VariableType {
-        BOOLEAN,
-        CATEGORICAL,
-        NUMERIC,
-        TEXT,
-        OBJECT
     }
 }

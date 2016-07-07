@@ -16,11 +16,11 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.models.Project;
+import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -39,19 +39,20 @@ import java.util.Map;
 public class UserWSServer extends OpenCGAWSServer {
 
 
-    public UserWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public UserWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Creates a new user", position = 1)
+    @ApiOperation(value = "Creates a new user", position = 1, response = User.class)
     public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                                @ApiParam(value = "email", required = true) @QueryParam("email") String email,
-                               @ApiParam(value = "organization", required = true) @QueryParam("organization") String organization,
-                               @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
+                               @ApiParam(value = "password", required = true) @QueryParam("password") String password,
+                               @ApiParam(value = "organization", required = false) @QueryParam("organization") String organization,
+                               @ApiParam(value = "[PENDING] Create a default project after creating the user", required = false, defaultValue = "false")
+                                   @QueryParam("createDefaultProject") boolean defaultProject) {
         try {
             queryOptions.remove("password");
             QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, queryOptions);
@@ -63,31 +64,41 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/info")
-    @ApiOperation(value = "Retrieves all user info", position = 2)
+    @ApiOperation(value = "Return the user information including its projects and studies", position = 2, response = User.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response getInfo(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                            @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult", required = false) @QueryParam("lastActivity") String lastActivity) {
+                            @ApiParam(value = "If matches with the user's last activity, return an empty QueryResult") @QueryParam("lastModified") String lastModified) {
         try {
-            QueryResult result = catalogManager.getUser(userId, lastActivity, queryOptions, sessionId);
+            System.out.println("userId = " + userId);
+            System.out.println("catalogManager = " + catalogManager);
+            System.out.println("sessionId = " + sessionId);
+            System.out.println("queryOptions = " + queryOptions);
+            QueryResult result = catalogManager.getUser(userId, lastModified, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{userId}/login")
-    @ApiOperation(value = "User login returns a valid session ID token", position = 3)
+    @ApiOperation(value = "User login returns a valid session ID token [DEPRECATED]", position = 3)
     public Response login(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                          @ApiParam(value = "password", required = false) @QueryParam("password") String password) {
+                          @ApiParam(value = "password", required = true) @QueryParam("password") String password) {
         sessionIp = httpServletRequest.getRemoteAddr();
         QueryResult queryResult;
         try {
             queryOptions.remove("password"); //Remove password from query options
-            if (userId.equalsIgnoreCase("anonymous")) {
-                queryResult = catalogManager.loginAsAnonymous(sessionIp);
-            } else {
-                queryResult = catalogManager.login(userId, password, sessionIp);
-            }
+//            if (userId.equalsIgnoreCase("anonymous")) {
+//                queryResult = catalogManager.loginAsAnonymous(sessionIp);
+//            } else {
+//                queryResult = catalogManager.login(userId, password, sessionIp);
+//            }
+            queryResult = catalogManager.login(userId, password, sessionIp);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -111,25 +122,27 @@ public class UserWSServer extends OpenCGAWSServer {
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{userId}/change-password")
-    @ApiOperation(value = "User password change", position = 5)
+    @ApiOperation(value = "User password change [DEPRECATED]", position = 5)
     public Response changePassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                    @ApiParam(value = "Old password", required = true) @QueryParam("password") String password,
-                                   @ApiParam(value = "New password", required = true) @QueryParam("npassword") String nPassword1) {
+                                   @ApiParam(value = "New password", required = true) @QueryParam("npassword") String nPassword) {
         try {
-            queryOptions.remove("password"); //Remove password from query options
+            queryOptions.remove("password");
             queryOptions.remove("npassword");
-            QueryResult result = catalogManager.changePassword(userId, password, nPassword1, sessionId);
+            QueryResult result = catalogManager.changePassword(userId, password, nPassword);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
+    @Deprecated
     @GET
     @Path("/{userId}/change-email")
-    @ApiOperation(value = "User email change", position = 6)
+    @ApiOperation(value = "User email change", position = 6, notes = "Deprecated method. Moved to update.")
     public Response changeEmail(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                 @ApiParam(value = "New email", required = true) @QueryParam("nemail") String nEmail) {
         try {
@@ -142,11 +155,10 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/reset-password")
-    @ApiOperation(value = "User email change", position = 7)
-    public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
-                                  @ApiParam(value = "email", required = true) @QueryParam("email") String email) {
+    @ApiOperation(value = "Reset password", position = 7, notes = "Reset the user password and send a new one to the e-mail stored in catalog.")
+    public Response resetPassword(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
-            QueryResult result = catalogManager.resetPassword(userId, email);
+            QueryResult result = catalogManager.resetPassword(userId);
             return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -156,7 +168,13 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/projects")
-    @ApiOperation(value = "Project information", position = 8)
+    @ApiOperation(value = "Return projects", position = 8, notes = "Return all the projects and studies belonging to the user", response = Project[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query")
+    })
     public Response getAllProjects(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId) {
         try {
             QueryResult queryResult = catalogManager.getAllProjects(userId, queryOptions, sessionId);
@@ -168,7 +186,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{userId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 9)
+    @ApiOperation(value = "Update some user attributes using GET method", position = 9, response = User.class)
     public Response update(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                            @ApiParam(value = "name", required = false) @QueryParam("name") String name,
                            @ApiParam(value = "email", required = false) @QueryParam("email") String email,
@@ -203,7 +221,7 @@ public class UserWSServer extends OpenCGAWSServer {
     @POST
     @Path("/{userId}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update some user attributes using POST method", position = 9)
+    @ApiOperation(value = "Update some user attributes using POST method", position = 9, response = User.class)
     public Response updateByPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
                                  @ApiParam(name = "params", value = "Parameters to modify", required = true) Map<String, Object> params) {
         try {
@@ -222,6 +240,50 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             catalogManager.deleteUser(userId, null, sessionId);
             return createOkResponse("User '" + userId + "' deleted");
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{userId}/login")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "User login returns a valid session ID token", position = 3)
+    public Response loginPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                              @ApiParam(value = "Json containing the param 'password'", required = true) Map<String, String> map) {
+        sessionIp = httpServletRequest.getRemoteAddr();
+        QueryResult queryResult;
+        try {
+            if (!map.containsKey("password")) {
+                throw new Exception("The json does not contain the key password.");
+            }
+            String password = map.get("password");
+            queryResult = catalogManager.login(userId, password, sessionIp);
+//            if (userId.equalsIgnoreCase("anonymous")) {
+//                queryResult = catalogManager.loginAsAnonymous(sessionIp);
+//            } else {
+//                queryResult = catalogManager.login(userId, password, sessionIp);
+//            }
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/{userId}/change-password")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "User password change", position = 5)
+    public Response changePasswordPost(@ApiParam(value = "userId", required = true) @PathParam("userId") String userId,
+                                   @ApiParam(value = "Json containing the params 'password' and 'npassword'", required = true) Map<String, String> map) {
+        try {
+            if (!map.containsKey("password") || !map.containsKey("password")) {
+                throw new Exception("The json must contain the keys password and npassword.");
+            }
+            String password = map.get("password");
+            String nPassword = map.get("npassword");
+            QueryResult result = catalogManager.changePassword(userId, password, nPassword);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

@@ -55,7 +55,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     @BeforeClass
     public static void _beforeClass() throws Exception {
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
-        Path rootDir = getTmpRootDir();
+        newRootDir();
         if (rootDir.toFile().exists()) {
             IOUtils.deleteDirectory(rootDir);
             Files.createDirectories(rootDir);
@@ -95,10 +95,14 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
 //        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
 
         if (rootDir == null) {
-            rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+RandomStringUtils.randomAlphanumeric(10));
-            Files.createDirectories(rootDir);
+            newRootDir();
         }
         return rootDir;
+    }
+
+    private static void newRootDir() throws IOException {
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+ RandomStringUtils.randomAlphanumeric(10));
+        Files.createDirectories(rootDir);
     }
 
     public static void setRootDir(Path rootDir) {
@@ -161,12 +165,19 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
-                                          StudyConfiguration studyConfiguration, ObjectMap params)
+                                                 StudyConfiguration studyConfiguration, ObjectMap params)
+            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+        return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, params, true, true);
+    }
+
+    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
+                                                 StudyConfiguration studyConfiguration, ObjectMap params, boolean doTransform, boolean doLoad)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
         ObjectMap newParams = new ObjectMap(params);
 
         newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        newParams.putIfAbsent(VariantStorageManager.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
@@ -178,17 +189,13 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
-                newParams, newParams, newParams, newParams, true, true, true);
+                newParams, newParams, newParams, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
             StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-            studyConfiguration.setFileIds(newStudyConfiguration.getFileIds());
-            studyConfiguration.setCohortIds(newStudyConfiguration.getCohortIds());
-            studyConfiguration.setCohorts(newStudyConfiguration.getCohorts());
-            studyConfiguration.setSampleIds(newStudyConfiguration.getSampleIds());
-            studyConfiguration.setSamplesInFiles(newStudyConfiguration.getSamplesInFiles());
-            studyConfiguration.setIndexedFiles(newStudyConfiguration.getIndexedFiles());
-            studyConfiguration.setHeaders(newStudyConfiguration.getHeaders());
+            if (newStudyConfiguration != null) {
+                studyConfiguration.copy(newStudyConfiguration);
+            }
         }
 
         return storageETLResult;
@@ -221,6 +228,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
             throws IOException, FileFormatException, StorageManagerException {
 
 
+        params.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         variantStorageManager.getConfiguration()
                 .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
         StorageETLResult storageETLResult =

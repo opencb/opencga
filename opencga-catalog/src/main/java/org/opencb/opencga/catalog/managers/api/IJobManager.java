@@ -8,8 +8,10 @@ import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.acls.JobAcl;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -19,6 +21,52 @@ import java.util.Map;
 public interface IJobManager extends ResourceManager<Long, Job> {
 
     Long getStudyId(long jobId) throws CatalogException;
+
+    /**
+     * Obtains the numeric job id given a string.
+     *
+     * @param userId User id of the user asking for the job id.
+     * @param jobStr Job id in string format. Could be one of [id | user@aliasProject:aliasStudy:jobName
+     *                | user@aliasStudy:jobName | aliasStudy:jobName | jobName].
+     * @return the numeric job id.
+     * @throws CatalogException when more than one job id is found or the study or project ids cannot be resolved.
+     */
+    Long getJobId(String userId, String jobStr) throws CatalogException;
+
+    /**
+     * Obtains the list of job ids corresponding to the comma separated list of job strings given in jobStr.
+     *
+     * @param userId User demanding the action.
+     * @param jobStr Comma separated list of job ids.
+     * @return A list of job ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getJobIds(String userId, String jobStr) throws CatalogException {
+        List<Long> jobIds = new ArrayList<>();
+        for (String jobId : jobStr.split(",")) {
+            jobIds.add(getJobId(userId, jobId));
+        }
+        return jobIds;
+    }
+
+    /**
+     * Retrieve the job Acls for the given members in the job.
+     *
+     * @param jobStr Job id of which the acls will be obtained.
+     * @param members userIds/groupIds for which the acls will be retrieved. When this is null, it will obtain all the acls.
+     * @param sessionId Session of the user that wants to retrieve the acls.
+     * @return A queryResult containing the job acls.
+     * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
+     * the job id is not valid or the members given do not exist.
+     */
+    QueryResult<JobAcl> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<JobAcl>> getJobAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
+        List<QueryResult<JobAcl>> result = new ArrayList<>(jobIds.size());
+        for (String jobId : jobIds) {
+            result.add(getJobAcls(jobId, members, sessionId));
+        }
+        return result;
+    }
 
     QueryResult<ObjectMap> visit(long jobId, String sessionId) throws CatalogException;
 

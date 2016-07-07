@@ -41,14 +41,13 @@ public class Experiment {
     public Experiment() {
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,
-                      String lab, String center, String responsible, String description) {
-        this(id, name, type, platform, manufacturer, date, lab, center, responsible,
-                description, new HashMap<String, Object>());
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date, String lab,
+                      String center, String responsible, String description) {
+        this(id, name, type, platform, manufacturer, date, lab, center, responsible, description, new HashMap<>());
     }
 
-    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,
-                      String lab, String center, String responsible, String description, Map<String, Object> attributes) {
+    public Experiment(int id, String name, String type, String platform, String manufacturer, String date,  String lab,
+                      String center, String responsible, String description, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -84,88 +83,99 @@ public class Experiment {
         return id;
     }
 
-    public void setId(long id) {
+    public Experiment setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Experiment setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
+    public Experiment setType(String type) {
         this.type = type;
+        return this;
     }
 
     public String getPlatform() {
         return platform;
     }
 
-    public void setPlatform(String platform) {
+    public Experiment setPlatform(String platform) {
         this.platform = platform;
+        return this;
     }
 
     public String getManufacturer() {
         return manufacturer;
     }
 
-    public void setManufacturer(String manufacturer) {
+    public Experiment setManufacturer(String manufacturer) {
         this.manufacturer = manufacturer;
+        return this;
     }
 
     public String getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public Experiment setDate(String date) {
         this.date = date;
+        return this;
     }
 
     public String getLab() {
         return lab;
     }
 
-    public void setLab(String lab) {
+    public Experiment setLab(String lab) {
         this.lab = lab;
+        return this;
     }
 
     public String getCenter() {
         return center;
     }
 
-    public void setCenter(String center) {
+    public Experiment setCenter(String center) {
         this.center = center;
+        return this;
     }
 
     public String getResponsible() {
         return responsible;
     }
 
-    public void setResponsible(String responsible) {
+    public Experiment setResponsible(String responsible) {
         this.responsible = responsible;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Experiment setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public Map<String, Object> getAttributes() {
         return attributes;
     }
 
-    public void setAttributes(Map<String, Object> attributes) {
+    public Experiment setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
+        return this;
     }
 
 }

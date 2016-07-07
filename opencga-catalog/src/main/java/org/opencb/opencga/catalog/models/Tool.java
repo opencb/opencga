@@ -31,7 +31,7 @@ public class Tool {
     private Object manifest;
     private Object result;
     private String path;
-    private List<AclEntry> acl;
+    private List<AclEntry> acls;
 
     public Tool() {
         this("", "", "", null, null, "");
@@ -41,7 +41,7 @@ public class Tool {
         this(-1, alias, name, description, manifest, result, path, new LinkedList());
     }
 
-    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
+    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acls) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -49,7 +49,7 @@ public class Tool {
         this.manifest = manifest;
         this.result = result;
         this.path = path;
-        this.acl = acl;
+        this.acls = acls;
     }
 
     @Override
@@ -62,7 +62,7 @@ public class Tool {
         sb.append(", manifest=").append(manifest);
         sb.append(", result=").append(result);
         sb.append(", path='").append(path).append('\'');
-        sb.append(", acl=").append(acl);
+        sb.append(", acls=").append(acls);
         sb.append('}');
         return sb.toString();
     }
@@ -71,65 +71,72 @@ public class Tool {
         return id;
     }
 
-    public void setId(long id) {
+    public Tool setId(long id) {
         this.id = id;
+        return this;
     }
 
     public String getAlias() {
         return alias;
     }
 
-    public void setAlias(String alias) {
+    public Tool setAlias(String alias) {
         this.alias = alias;
+        return this;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
+    public Tool setName(String name) {
         this.name = name;
+        return this;
     }
 
     public String getDescription() {
         return description;
     }
 
-    public void setDescription(String description) {
+    public Tool setDescription(String description) {
         this.description = description;
+        return this;
     }
 
     public Object getManifest() {
         return manifest;
     }
 
-    public void setManifest(Object manifest) {
+    public Tool setManifest(Object manifest) {
         this.manifest = manifest;
+        return this;
     }
 
     public Object getResult() {
         return result;
     }
 
-    public void setResult(Object result) {
+    public Tool setResult(Object result) {
         this.result = result;
+        return this;
     }
 
     public String getPath() {
         return path;
     }
 
-    public void setPath(String path) {
+    public Tool setPath(String path) {
         this.path = path;
+        return this;
     }
 
-
-    public List<AclEntry> getAcl() {
-        return acl;
+    public List<AclEntry> getAcls() {
+        return acls;
     }
 
-    public void setAcl(List<AclEntry> acl) {
-        this.acl = acl;
+    public Tool setAcls(List<AclEntry> acls) {
+        this.acls = acls;
+        return this;
     }
 
 }

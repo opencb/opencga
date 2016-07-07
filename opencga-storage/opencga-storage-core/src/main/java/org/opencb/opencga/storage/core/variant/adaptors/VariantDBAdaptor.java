@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
@@ -110,6 +111,11 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
                 "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\""),
         ANNOT_GENE_TRAITS_NAME("annot-gene-trait-name", TEXT_ARRAY,
                 "List of gene trait association names. e.g. \"Cardiovascular Diseases\""),
+        ANNOT_HPO("annot-hpo", TEXT_ARRAY,
+                "List of HPO terms. e.g. \"HP:0000545\""),
+        ANNOT_GO("annot-go", TEXT_ARRAY,
+                "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\""),
+        ANNOT_EXPRESSION("annot-expression", TEXT_ARRAY, "List of tissues of interest. e.g. \"tongue\""),
         ANNOT_PROTEIN_KEYWORDS("annot-protein-keywords", TEXT_ARRAY,
                 "List of protein variant annotation keywords"),
         ANNOT_DRUG("annot-drug", TEXT_ARRAY,
@@ -321,6 +327,16 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
 
+    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        throw new UnsupportedOperationException();
+    }
+
+    StudyConfigurationManager getStudyConfigurationManager();
+
+    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
+
+    CellBaseClient getCellBaseClient();
+
     void close() throws IOException;
 
 
@@ -375,14 +391,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     default QueryResult groupBy(String field, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
-
-    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        throw new UnsupportedOperationException();
-    }
-
-    StudyConfigurationManager getStudyConfigurationManager();
-
-    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     @Deprecated
     default VariantDBIterator iterator(QueryOptions options) {

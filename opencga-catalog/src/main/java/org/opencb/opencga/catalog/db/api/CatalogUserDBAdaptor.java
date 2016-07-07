@@ -21,7 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 
@@ -54,7 +54,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult<User> insertUser(User user, QueryOptions options) throws CatalogDBException;
 
-    QueryResult<User> getUser(String userId, QueryOptions options, String lastActivity) throws CatalogDBException;
+    QueryResult<User> getUser(String userId, QueryOptions options, String lastModified) throws CatalogDBException;
 
 //    @Deprecated
 //    default QueryResult<User> modifyUser(String userId, ObjectMap parameters) throws CatalogDBException {
@@ -73,7 +73,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
     @Deprecated
     QueryResult<ObjectMap> login(String userId, String password, Session session) throws CatalogDBException;
 
-    QueryResult<Session> addSession(String userId, Session session) throws CatalogDBException;
+    QueryResult<ObjectMap> addSession(String userId, Session session) throws CatalogDBException;
 
     QueryResult logout(String userId, String sessionId) throws CatalogDBException;
 
@@ -83,7 +83,7 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     QueryResult changePassword(String userId, String oldPassword, String newPassword) throws CatalogDBException;
 
-    void updateUserLastActivity(String userId) throws CatalogDBException;
+    void updateUserLastModified(String userId) throws CatalogDBException;
 
     QueryResult resetPassword(String userId, String email, String newCryptPass) throws CatalogDBException;
 
@@ -91,11 +91,11 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
 
     String getUserIdBySessionId(String sessionId);
 
-    void addQueryFilter(String userId, Filter filter) throws CatalogDBException;
+    void addQueryFilter(String userId, QueryFilter queryFilter) throws CatalogDBException;
 
     QueryResult<Long> deleteQueryFilter(String userId, String filterId) throws CatalogDBException;
 
-    QueryResult<Filter> getQueryFilter(String userId, String filterId) throws CatalogDBException;
+    QueryResult<QueryFilter> getQueryFilter(String userId, String filterId) throws CatalogDBException;
 
     enum QueryParams implements QueryParam {
         ID("id", TEXT_ARRAY, ""),
@@ -103,10 +103,10 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         EMAIL("email", TEXT_ARRAY, ""),
         PASSWORD("password", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         DISK_QUOTA("diskQuota", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -119,13 +119,14 @@ public interface CatalogUserDBAdaptor extends CatalogDBAdaptor<User> {
         PROJECT_ALIAS("projects.alias", TEXT_ARRAY, ""),
         PROJECT_ORGANIZATION("projects.organization", TEXT_ARRAY, ""),
         PROJECT_STATUS("projects.status", TEXT_ARRAY, ""),
-        PROJECT_LAST_ACTIVITY("projects.lastActivity", TEXT_ARRAY, ""),
+        PROJECT_LAST_MODIFIED("projects.lastModified", TEXT_ARRAY, ""),
 
         TOOL_ID("tools.id", INTEGER_ARRAY, ""),
         TOOL_NAME("tools.name", TEXT_ARRAY, ""),
         TOOL_ALIAS("tools.alias", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check whether login, logout makes sense.
+        SESSIONS("sessions", TEXT_ARRAY, ""),
         SESSION_ID("sessions.id", TEXT_ARRAY, ""),
         SESSION_IP("sessions.ip", TEXT_ARRAY, ""),
         SESSION_LOGIN("sessions.login", TEXT_ARRAY, ""),

@@ -1,7 +1,7 @@
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import org.ga4gh.methods.SearchVariantsRequest;
 import org.ga4gh.methods.SearchVariantsResponse;
 import org.ga4gh.models.Variant;
@@ -28,12 +28,11 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 
 @Path("/{version}/ga4gh")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "GA4GH", position = 20, description = "Global Alliance for Genomics & Health RESTful API")
+@Api(value = "GA4GH", position = 13, description = "Global Alliance for Genomics & Health RESTful API")
 public class Ga4ghWSServer extends OpenCGAWSServer {
 
-    public Ga4ghWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public Ga4ghWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @POST

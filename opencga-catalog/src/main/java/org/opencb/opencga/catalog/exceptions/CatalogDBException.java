@@ -51,15 +51,54 @@ public class CatalogDBException extends CatalogException {
     }
 
     public static CatalogDBException alreadyExists(String name, String key, String value) {
-        return new CatalogDBException(name + " { " + key + ":\"" + value + "\"} already exists");
+        return generalAlreadyExists(name, -1, key, value, null);
+    }
+
+    public static CatalogDBException alreadyExists(String name, String key, String value, Exception e) {
+        return generalAlreadyExists(name, -1, key, value, e);
+    }
+
+    public static CatalogDBException alreadyExists(String name, long fromStudyId, String key, String value) {
+        return generalAlreadyExists(name, fromStudyId, key, value, null);
+    }
+
+    public static CatalogDBException alreadyExists(String name, long fromStudyId, String key, String value, Exception e) {
+        return generalAlreadyExists(name, fromStudyId, key, value, e);
     }
 
     public static CatalogDBException alreadyExists(String name, long id) {
-        return new CatalogDBException(name + " { id:" + id + "} already exists");
+        return generalAlreadyExists(name, -1, "id", id, null);
+    }
+
+    public static CatalogDBException alreadyExists(String name, long id, Exception e) {
+        return generalAlreadyExists(name, -1, "id", id, e);
+    }
+
+    private static CatalogDBException generalAlreadyExists(String name, long fromStudyId, String key, Object value, Exception e) {
+        StringBuilder sb = new StringBuilder(name);
+        sb.append(" { ").append(key).append(" : ");
+        if (value == null) {
+            sb.append("null");
+        } else if (value instanceof Number) {
+            sb.append(value);
+        } else {
+            sb.append("\"").append(value.toString()).append("\"");
+        }
+        sb.append(" }");
+        if (fromStudyId >= 0) {
+            sb.append(" from study { id : ").append(fromStudyId).append(" }");
+        }
+        sb.append(" already exists.");
+
+        if (e == null) {
+            return new CatalogDBException(sb.toString());
+        } else {
+            return new CatalogDBException(sb.toString(), e);
+        }
     }
 
     public static CatalogDBException updateError(String name, long id) {
-        return new CatalogDBException(name + " {id: " + id + "} could not be updated.");
+        return new CatalogDBException(name + " { id: " + id + " } could not be updated.");
     }
 
     public static CatalogDBException deleteError(String name) {
@@ -76,6 +115,10 @@ public class CatalogDBException extends CatalogException {
 
     public static CatalogDBException queryNotFound(String name) {
         return new CatalogDBException(name + ": The query used to delete did not report any result.");
+    }
+
+    public static CatalogDBException queryParamNotFound(String name, String resource) {
+        return new CatalogDBException("The query param " + name + " does not exist for searching over " + resource + ".");
     }
 
     public static CatalogDBException fileInUse(long id, long count) {

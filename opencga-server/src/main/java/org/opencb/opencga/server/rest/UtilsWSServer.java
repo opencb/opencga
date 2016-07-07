@@ -46,9 +46,8 @@ import java.util.Properties;
 @Produces("application/json")
 public class UtilsWSServer extends OpenCGAWSServer {
 
-    public UtilsWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                         @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public UtilsWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @POST

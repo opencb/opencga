@@ -16,13 +16,11 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.glassfish.jersey.media.multipart.FormDataParam;
+import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.core.exception.VersionException;
@@ -44,18 +42,21 @@ import java.util.Map;
  */
 @Path("/{version}/tools")
 @Produces(MediaType.APPLICATION_JSON)
-@Api(value = "Tools", position = 8, description = "Methods for working with 'tools' endpoint")
+@Api(value = "Tools", position = 11, description = "Methods for working with 'tools' endpoint")
 public class ToolWSServer extends OpenCGAWSServer {
 
 
-    public ToolWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public ToolWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
     @GET
     @Path("/{toolId}/info")
-    @ApiOperation(value = "Tool info", position = 2)
+    @ApiOperation(value = "Tool info", position = 2, response = Tool.class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@PathParam(value = "toolId") @DefaultValue("") @FormDataParam("toolId") String toolId,
                          @ApiParam(value = "execution", required = false)  @DefaultValue("") @QueryParam("execution") String execution) {
         String[] toolIds = toolId.split(",");
@@ -64,9 +65,9 @@ public class ToolWSServer extends OpenCGAWSServer {
             for (String id : toolIds) {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
-                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                tool.setManifest(analysisJobExecutor.getAnalysis());
-                tool.setResult(analysisJobExecutor.getResult());
+                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                tool.setManifest(toolManager.getAnalysis());
+                tool.setResult(toolManager.getResult());
                 results.add(toolResult);
             }
             return createOkResponse(results);
@@ -77,7 +78,14 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/search")
-    @ApiOperation(value = "Search tools", position = 2)
+    @ApiOperation(value = "Search tools", position = 2, response = Tool[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
     public Response search(@ApiParam(value = "id", required = false) @QueryParam(value = "id") @DefaultValue("") String toolId,
                            @ApiParam(value = "userId", required = false) @QueryParam(value = "userId") @DefaultValue("") String userId,
                            @ApiParam(value = "alias", required = false) @QueryParam(value = "alias") @DefaultValue("") String alias) {
@@ -86,9 +94,9 @@ public class ToolWSServer extends OpenCGAWSServer {
             parseQueryParams(params, CatalogUserDBAdaptor.ToolQueryParams::getParam, query, qOptions);
             QueryResult<Tool> toolResult = catalogManager.getAllTools(query, qOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
-                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
-                tool.setManifest(analysisJobExecutor.getAnalysis());
-                tool.setResult(analysisJobExecutor.getResult());
+                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
+                tool.setManifest(toolManager.getAnalysis());
+                tool.setResult(toolManager.getResult());
             }
             return createOkResponse(toolResult);
         } catch (Exception e) {
@@ -106,8 +114,8 @@ public class ToolWSServer extends OpenCGAWSServer {
             List<String> results = new LinkedList<>();
             for (String id : toolIds) {
                 Tool tool = catalogManager.getTool(catalogManager.getToolId(id), sessionId).getResult().get(0);
-                AnalysisJobExecutor analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                String help = analysisJobExecutor.help("");
+                ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+                String help = toolManager.help("");
                 System.out.println(help);
                 results.add(help);
             }
@@ -119,7 +127,7 @@ public class ToolWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{toolId}/update")
-    @ApiOperation(value = "Update some user attributes using GET method", position = 4)
+    @ApiOperation(value = "Update some user attributes using GET method", position = 4, response = Tool.class)
     public Response update(@ApiParam(value = "toolId", required = true) @PathParam("toolId") String toolId) throws IOException {
         return createErrorResponse("update - GET", "PENDING");
     }

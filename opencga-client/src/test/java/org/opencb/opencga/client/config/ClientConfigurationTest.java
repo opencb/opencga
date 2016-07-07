@@ -17,13 +17,9 @@
 package org.opencb.opencga.client.config;
 
 import org.junit.Test;
-import org.opencb.datastore.core.ObjectMap;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
-
-import static org.junit.Assert.*;
 
 /**
  * Created by imedina on 04/05/16.
@@ -33,6 +29,8 @@ public class ClientConfigurationTest {
     @Test
     public void testDefault() {
         ClientConfiguration clientConfiguration = new ClientConfiguration();
+
+        clientConfiguration.setSessionDuration(120);
 
         RestConfig restConfig = new RestConfig("localhost:9090/opencga", 200, 10000, 2000);
         GrpcConfig grpcConfig = new GrpcConfig("localhost:9091");
@@ -49,7 +47,7 @@ public class ClientConfigurationTest {
 
     @Test
     public void testLoad() throws Exception {
-        ClientConfiguration storageConfiguration = ClientConfiguration.load(getClass().getResource("/client-configuration-test.yml").openStream());
+        ClientConfiguration storageConfiguration = ClientConfiguration.load(getClass().getResource("/client-configuration.yml").openStream());
         System.out.println("clientConfiguration = " + storageConfiguration);
     }
 }

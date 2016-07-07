@@ -27,6 +27,7 @@ import javax.ws.rs.core.Response;
  * Created by jacobo on 23/10/14.
  */
 
+@Deprecated
 @Path("/admin")
 public class AdminServlet extends DaemonServlet {
 

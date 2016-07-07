@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.models.acls;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,10 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class IndividualAcl {
-
-    private List<String> users;
-    private EnumSet<IndividualPermissions> permissions;
+public class IndividualAcl extends ParentAcl<IndividualAcl.IndividualPermissions> {
 
     public enum IndividualPermissions {
         VIEW,
@@ -26,15 +24,15 @@ public class IndividualAcl {
     }
 
     public IndividualAcl() {
+        this("", Collections.emptyList());
     }
 
-    public IndividualAcl(List<String> users, EnumSet<IndividualPermissions> permissions) {
-        this.users = users;
-        this.permissions = permissions;
+    public IndividualAcl(String member, EnumSet<IndividualPermissions> permissions) {
+        super(member, permissions);
     }
 
-    public IndividualAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public IndividualAcl(String member, ObjectMap permissions) {
+        super(member, EnumSet.noneOf(IndividualPermissions.class));
 
         EnumSet<IndividualPermissions> aux = EnumSet.allOf(IndividualPermissions.class);
         for (IndividualPermissions permission : aux) {
@@ -44,29 +42,11 @@ public class IndividualAcl {
         }
     }
 
-    public IndividualAcl(List<String> users, List<String> permissions) {
-        this.users = users;
-        this.permissions = EnumSet.noneOf(IndividualPermissions.class);
+    public IndividualAcl(String member, List<String> permissions) {
+        super(member, EnumSet.noneOf(IndividualPermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(IndividualPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
-    }
-
-    public IndividualAcl setUsers(List<String> users) {
-        this.users = users;
-        return this;
-    }
-
-    public EnumSet<IndividualPermissions> getPermissions() {
-        return permissions;
-    }
-
-    public IndividualAcl setPermissions(EnumSet<IndividualPermissions> permissions) {
-        this.permissions = permissions;
-        return this;
-    }
 }

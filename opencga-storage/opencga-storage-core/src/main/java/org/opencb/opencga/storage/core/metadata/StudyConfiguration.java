@@ -256,6 +256,10 @@ public class StudyConfiguration {
         return this;
     }
 
+    public BatchFileOperation lastBatch() {
+        return getBatches().get(getBatches().size() - 1);
+    }
+
     public VariantSource.Aggregation getAggregation() {
         return aggregation;
     }
@@ -390,6 +394,7 @@ public class StudyConfiguration {
      * @return      Map between sampleName and position
      */
     public static BiMap<String, Integer> getIndexedSamplesPosition(StudyConfiguration studyConfiguration, int ... fileIds) {
+        Objects.requireNonNull(studyConfiguration, "StudyConfiguration is required");
         BiMap<String, Integer> samplesPosition = HashBiMap.create(studyConfiguration.getSampleIds().size());
         int position = 0;
         BiMap<Integer, String> idSamples = studyConfiguration.sampleIds.inverse();

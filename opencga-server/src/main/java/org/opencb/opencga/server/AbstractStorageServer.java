@@ -77,6 +77,15 @@ public abstract class AbstractStorageServer {
         }
     }
 
+    public AbstractStorageServer(Configuration configuration, CatalogConfiguration catalogConfiguration,
+                                 StorageConfiguration storageConfiguration) {
+        logger.info("Loading configuration files");
+        this.configuration = configuration;
+        this.catalogConfiguration = catalogConfiguration;
+        this.storageConfiguration = storageConfiguration;
+        this.port = configuration.getRest().getPort();
+    }
+
     private void initDefaultConfigurationFiles() {
         try {
             if (System.getenv("OPENCGA_HOME") != null) {

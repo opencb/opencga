@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
@@ -51,6 +51,29 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
     }
 
     @Override
+    public long getProjectId(String userId, String projectStr) throws CatalogDBException {
+        if (StringUtils.isNumeric(projectStr)) {
+            return Long.parseLong(projectStr);
+        }
+
+        String userOwner;
+        String projectAlias;
+
+        String[] split = projectStr.split("@");
+        if (split.length == 2) {
+            // user@project
+            userOwner = split[0];
+            projectAlias = split[1];
+        } else {
+            // project
+            userOwner = userId;
+            projectAlias = projectStr;
+        }
+        return projectDBAdaptor.getProjectId(userOwner, projectAlias);
+    }
+
+    @Deprecated
+    @Override
     public long getProjectId(String projectId) throws CatalogException {
         if (StringUtils.isNumeric(projectId)) {
             return Long.parseLong(projectId);
@@ -91,8 +114,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             e.printStackTrace();
             projectDBAdaptor.delete(project.getId(), new QueryOptions());
         }
-        userDBAdaptor.updateUserLastActivity(userId);
-        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        userDBAdaptor.updateUserLastModified(userId);
+//        auditManager.recordCreation(AuditRecord.Resource.project, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.project, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -128,6 +153,10 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         query = ParamUtils.defaultObject(query, Query::new);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        if (userId.isEmpty()) {
+            throw new CatalogException("The session id is not valid.");
+        }
+
         String ownerId = query.getString("ownerId", query.getString("userId", userId));
 
         ParamUtils.checkParameter(ownerId, "ownerId");
@@ -167,7 +196,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
                 throw new CatalogDBException("Parameter '" + s + "' can't be changed");
             }
         }
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         QueryResult<Project> queryResult = new QueryResult<>();
         if (parameters.size() > 0) {
             queryResult = projectDBAdaptor.update(projectId, parameters);
@@ -187,7 +216,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
             throw new CatalogException("Permission denied: Only the owner of the project can update it.");
         }
 
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         QueryResult queryResult = projectDBAdaptor.renameProjectAlias(projectId, newProjectAlias);
         auditManager.recordUpdate(AuditRecord.Resource.project, projectId, userId, new ObjectMap("alias", newProjectAlias), null, null);
         return queryResult;

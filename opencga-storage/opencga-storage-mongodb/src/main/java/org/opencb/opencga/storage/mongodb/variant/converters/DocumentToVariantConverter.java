@@ -73,11 +73,15 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        FIELDS_MAP.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
 //        FIELDS_MAP.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
         FIELDS_MAP.put("sourceEntries", STUDIES_FIELD);
+        FIELDS_MAP.put("studies", STUDIES_FIELD);
         FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
         FIELDS_MAP.put("sourceEntries.cohortStats", STATS_FIELD);
+        FIELDS_MAP.put("studies.stats", STATS_FIELD);
+        FIELDS_MAP.put("stats", STATS_FIELD);
     }
 
-    private DocumentToStudyVariantEntryConverter variantSourceEntryConverter;
+    private DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
+    private Set<Integer> returnStudies;
     private DocumentToVariantAnnotationConverter variantAnnotationConverter;
     private DocumentToVariantStatsConverter statsConverter;
     private final VariantStringIdComplexTypeConverter idConverter = new VariantStringIdComplexTypeConverter();
@@ -98,15 +102,36 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
      * the studies the variant was read from can be provided in case those
      * should be processed during the conversion.
      *
-     * @param variantSourceEntryConverter The object used to convert the files
+     * @param variantStudyEntryConverter The object used to convert the files
      * @param statsConverter Stats converter
      */
-    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantSourceEntryConverter,
+    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
                                       DocumentToVariantStatsConverter statsConverter) {
-        this.variantSourceEntryConverter = variantSourceEntryConverter;
+        this(variantStudyEntryConverter, statsConverter, null);
+    }
+
+    /**
+     * Create a converter between {@link Variant} and {@link Document} entities. A converter for
+     * the studies the variant was read from can be provided in case those
+     * should be processed during the conversion.
+     *
+     * @param variantStudyEntryConverter The object used to convert the files
+     * @param statsConverter Stats converter
+     * @param returnStudies List of studies to return
+     */
+    public DocumentToVariantConverter(DocumentToStudyVariantEntryConverter variantStudyEntryConverter,
+                                      DocumentToVariantStatsConverter statsConverter, Collection<Integer> returnStudies) {
+        this.variantStudyEntryConverter = variantStudyEntryConverter;
         this.variantAnnotationConverter = new DocumentToVariantAnnotationConverter();
         this.statsConverter = statsConverter;
         addDefaultId = true;
+        if (returnStudies != null) {
+            if (returnStudies instanceof Set) {
+                this.returnStudies = (Set<Integer>) returnStudies;
+            } else {
+                this.returnStudies = new HashSet<>(returnStudies);
+            }
+        }
     }
 
 
@@ -144,12 +169,15 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         }
 
         // Files
-        if (variantSourceEntryConverter != null) {
-            List mongoFiles = (List) object.get(STUDIES_FIELD);
+        if (variantStudyEntryConverter != null) {
+            List mongoFiles = object.get(STUDIES_FIELD, List.class);
             if (mongoFiles != null) {
                 for (Object o : mongoFiles) {
                     Document dbo = (Document) o;
-                    variant.addStudyEntry(variantSourceEntryConverter.convertToDataModelType(dbo));
+                    if (returnStudies == null
+                            || returnStudies.contains(((Number) dbo.get(DocumentToStudyVariantEntryConverter.STUDYID_FIELD)).intValue())) {
+                        variant.addStudyEntry(variantStudyEntryConverter.convertToDataModelType(dbo));
+                    }
                 }
             }
         }
@@ -220,10 +248,10 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
         mongoVariant.append(HGVS_FIELD, hgvs);
 
         // Files
-        if (variantSourceEntryConverter != null) {
+        if (variantStudyEntryConverter != null) {
             List<Document> mongoFiles = new LinkedList<>();
             for (StudyEntry archiveFile : variant.getStudies()) {
-                mongoFiles.add(variantSourceEntryConverter.convertToStorageType(archiveFile));
+                mongoFiles.add(variantStudyEntryConverter.convertToStorageType(archiveFile));
             }
             mongoVariant.append(STUDIES_FIELD, mongoFiles);
         }

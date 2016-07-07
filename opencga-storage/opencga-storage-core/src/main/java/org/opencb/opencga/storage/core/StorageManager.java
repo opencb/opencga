@@ -123,7 +123,7 @@ public abstract class StorageManager<DBADAPTOR> {
             etlResult.setPostLoadResult(inputFileUri);
         } catch (Exception e) {
             etlResult.setLoadError(e);
-            throw new StorageETLException("Exception executing load.", e, results);
+            throw new StorageETLException("Exception executing load: " + e.getMessage(), e, results);
         } finally {
             etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
             etlResult.setLoadStats(storageETL.getLoadStats());
