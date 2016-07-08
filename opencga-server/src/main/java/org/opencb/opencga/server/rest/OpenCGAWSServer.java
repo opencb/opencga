@@ -445,7 +445,7 @@ public class OpenCGAWSServer {
     protected Response buildResponse(Response.ResponseBuilder responseBuilder) {
         Response response = responseBuilder
                 .header("Access-Control-Allow-Origin", "*")
-                .header("Access-Control-Allow-Headers", "x-requested-with, content-type")
+                .header("Access-Control-Allow-Headers", "X-Requested-With, Content-Type")
                 .header("Access-Control-Allow-Credentials", "true")
                 .header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .build();
