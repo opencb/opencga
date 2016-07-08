@@ -217,9 +217,34 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void upload() throws CatalogException {
+    private void upload() throws CatalogException, IOException {
         logger.debug("uploading file");
-        //TODO
+
+        ObjectMap objectMap = new ObjectMap()
+                .append("fileFormat", filesCommandOptions.uploadCommandOptions.fileFormat)
+                .append("bioFormat", filesCommandOptions.uploadCommandOptions.bioFormat)
+                .append("parents", filesCommandOptions.uploadCommandOptions.parents);
+
+        if (filesCommandOptions.uploadCommandOptions.catalogPath != null) {
+            objectMap.append("relativeFilePath", filesCommandOptions.uploadCommandOptions.catalogPath);
+        }
+
+        if (filesCommandOptions.uploadCommandOptions.description != null) {
+            objectMap.append("description", filesCommandOptions.uploadCommandOptions.description);
+        }
+
+        if (filesCommandOptions.uploadCommandOptions.fileName != null) {
+            objectMap.append("fileName", filesCommandOptions.uploadCommandOptions.fileName);
+        }
+
+        QueryResponse<File> upload = openCGAClient.getFileClient().upload(filesCommandOptions.uploadCommandOptions.studyId,
+                filesCommandOptions.uploadCommandOptions.inputFile, objectMap);
+
+        if (!upload.getError().isEmpty()) {
+            logger.error(upload.getError());
+        } else {
+            upload.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
     }
 
     private void delete() throws CatalogException, IOException {

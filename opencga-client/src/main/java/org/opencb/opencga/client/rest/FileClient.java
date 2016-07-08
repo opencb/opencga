@@ -100,6 +100,11 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "refresh", options, GET, File.class);
     }
 
+    public QueryResponse<File> upload(String studyId, String filePath, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "file", filePath);
+        return execute(FILES_URL, "upload", params, POST, File.class);
+    }
+
     /**
      * @deprecated  As of release 0.8, replaced by {@link #get(String id, QueryOptions options)}
      * @param fileId fileId.
