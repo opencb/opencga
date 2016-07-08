@@ -4,7 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.tools.VariantFileUtils;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;

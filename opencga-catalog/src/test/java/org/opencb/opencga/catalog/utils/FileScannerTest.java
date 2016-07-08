@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.files;
+package org.opencb.opencga.catalog.utils;
 
 import org.junit.Before;
 import org.junit.Rule;

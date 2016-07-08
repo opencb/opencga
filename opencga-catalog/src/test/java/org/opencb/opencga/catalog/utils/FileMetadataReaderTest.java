@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.files;
+package org.opencb.opencga.catalog.utils;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -7,24 +7,23 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,7 +55,7 @@ public class FileMetadataReaderTest {
     private final List<String> expectedSampleNames = Arrays.asList("NA19600", "NA19660", "NA19661", "NA19685");
 
     @Before
-    public void setUp() throws IOException, CatalogException {
+    public void setUp() throws IOException, CatalogException, URISyntaxException {
         catalogManager = catalogManagerExternalResource.getCatalogManager();
 
         catalogManager.createUser("user", "User Name", "mail@ebi.ac.uk", PASSWORD, "", null, null);
@@ -64,13 +63,15 @@ public class FileMetadataReaderTest {
         project = catalogManager.createProject("Project about some genomes", "1000G", "", "ACME", null, sessionIdUser).first();
         study = catalogManager.createStudy(project.getId(), "Phase 1", "phase1", Study.Type.TRIO, "Done", sessionIdUser).first();
         folder = catalogManager.createFolder(study.getId(), Paths.get("data/vcf/"), true, null, sessionIdUser).first();
-        Path vcfPath = Paths.get("/tmp", VCF_FILE_NAME);
-        Files.copy(this.getClass().getClassLoader().getResourceAsStream(VCF_FILE_NAME), vcfPath, StandardCopyOption.REPLACE_EXISTING);
+
+        Path vcfPath = catalogManagerExternalResource.getOpencgaHome().resolve(VCF_FILE_NAME);
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream("biofiles/" + VCF_FILE_NAME), vcfPath, StandardCopyOption.REPLACE_EXISTING);
         vcfFileUri = vcfPath.toUri();
 
-        Path bamPath = Paths.get("/tmp", BAM_FILE_NAME);
-        Files.copy(this.getClass().getClassLoader().getResourceAsStream(BAM_FILE_NAME), bamPath, StandardCopyOption.REPLACE_EXISTING);
+        Path bamPath = catalogManagerExternalResource.getOpencgaHome().resolve(BAM_FILE_NAME);
+        Files.copy(this.getClass().getClassLoader().getResourceAsStream("biofiles/" + BAM_FILE_NAME), bamPath, StandardCopyOption.REPLACE_EXISTING);
         bamFileUri = bamPath.toUri();
+
     }
 
     @Test
@@ -85,7 +86,7 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
-        assertEquals(21473, file.getDiskUsage());
+        assertEquals(21499, file.getDiskUsage());
 
         new CatalogFileUtils(catalogManager).upload(vcfFileUri, file, null, sessionIdUser, false, false, true, true, Integer.MAX_VALUE);
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
@@ -95,11 +96,11 @@ public class FileMetadataReaderTest {
         assertEquals(File.Bioformat.VARIANT, file.getBioformat());
         assertNotNull(file.getAttributes().get("variantSource"));
         assertEquals(4, file.getSampleIds().size());
-        assertEquals(21473, file.getDiskUsage());
+        assertEquals(21499, file.getDiskUsage());
     }
 
     @Test
-    public void testGetBasicMetadata() throws CatalogException, IOException, StorageManagerException {
+    public void testGetBasicMetadata() throws CatalogException, IOException {
         byte[] bytes = StringUtils.randomString(1000).getBytes();
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN,
                 File.Bioformat.NONE, folder.getPath() + "test.txt", bytes, "", false, sessionIdUser).first();
@@ -131,7 +132,7 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetMetadataFromVcf()
-            throws CatalogException, StorageManagerException {
+            throws CatalogException {
         QueryResult<File> fileQueryResult = catalogManager.createFile(study.getId(), File.Format.PLAIN,
                 File.Bioformat.NONE, folder.getPath() + VCF_FILE_NAME, "", false, -1, sessionIdUser);
 
@@ -171,7 +172,7 @@ public class FileMetadataReaderTest {
 
 
     @Test
-    public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException, StorageManagerException {
+    public void testGetMetadataFromVcfWithAlreadyExistingSamples() throws CatalogException {
         //Create the samples in the same order than in the file
         for (String sampleName : expectedSampleNames) {
             catalogManager.createSample(study.getId(), sampleName, "", "", Collections.emptyMap(), new QueryOptions(), sessionIdUser);
@@ -180,7 +181,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException, StorageManagerException {
+    public void testGetMetadataFromVcfWithAlreadyExistingSamplesUnsorted() throws CatalogException {
         //Create samples in a different order than the file order
         catalogManager.createSample(study.getId(), expectedSampleNames.get(2), "", "", Collections.emptyMap(), new QueryOptions(), sessionIdUser);
         catalogManager.createSample(study.getId(), expectedSampleNames.get(0), "", "", Collections.emptyMap(), new QueryOptions(), sessionIdUser);
@@ -191,7 +192,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException, StorageManagerException {
+    public void testGetMetadataFromVcfWithSomeExistingSamples() throws CatalogException {
         catalogManager.createSample(study.getId(), expectedSampleNames.get(2), "", "", Collections.emptyMap(), new QueryOptions(), sessionIdUser);
         catalogManager.createSample(study.getId(), expectedSampleNames.get(0), "", "", Collections.emptyMap(), new QueryOptions(), sessionIdUser);
 
@@ -199,7 +200,7 @@ public class FileMetadataReaderTest {
     }
 
     @Test
-    public void testDoNotOverwriteSampleIds() throws CatalogException, StorageManagerException {
+    public void testDoNotOverwriteSampleIds() throws CatalogException {
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN,
                 File.Bioformat.NONE, folder.getPath() + VCF_FILE_NAME, "", false, -1, sessionIdUser).first();
 
@@ -227,7 +228,7 @@ public class FileMetadataReaderTest {
 
     @Test
     public void testGetMetadataFromBam()
-            throws CatalogException, StorageManagerException {
+            throws CatalogException {
 
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN,
                 File.Bioformat.NONE, folder.getPath() + BAM_FILE_NAME, "", false, -1, sessionIdUser).first();

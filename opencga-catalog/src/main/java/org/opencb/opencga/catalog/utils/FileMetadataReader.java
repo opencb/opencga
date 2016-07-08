@@ -5,7 +5,7 @@ import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
-import org.opencb.biodata.tools.VariantFileUtils;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
