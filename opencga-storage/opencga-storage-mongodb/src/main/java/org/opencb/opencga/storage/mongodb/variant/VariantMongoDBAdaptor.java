@@ -647,39 +647,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
-        if (studyIds.isEmpty()) {
-            studyIds = utils.getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
-        }
-        return studyIds;
-    }
-
-    @Override
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-
-        List<Integer> studyIds = getReturnedStudies(query, options);
-
-        List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
-        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
-
-        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
-        for (Integer studyId : studyIds) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
-            if (sc == null) {
-                continue;
-            }
-            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
-            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
-            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
-            samples.put(studyId, sampleNames);
-        }
-
-        return samples;
-    }
-
-    @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         return updateStats(variantStatsWrappers, studyName, queryOptions);
     }
@@ -2590,6 +2557,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public CellBaseClient getCellBaseClient() {
         return cellBaseClient;
+    }
+
+    @Override
+    public VariantDBAdaptorUtils getDBAdaptorUtils() {
+        return utils;
     }
 
     private ClientConfiguration toClientConfiguration(CellBaseConfiguration configuration) {

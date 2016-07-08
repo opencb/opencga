@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -23,16 +23,20 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.stats.VariantStatsToHBaseConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -140,6 +144,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
+    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return new HadoopVariantSourceDBAdaptor(this.getConnection(), configuration);
+    }
+
+    @Override
     public StudyConfigurationManager getStudyConfigurationManager() {
         return studyConfigurationManager.get();
     }
@@ -152,6 +161,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public CellBaseClient getCellBaseClient() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public VariantDBAdaptorUtils getDBAdaptorUtils() {
+        return queryParser.getUtils();
     }
 
     @Override
@@ -327,7 +341,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
         } else {
-            logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
             logger.info(sql);
@@ -338,6 +351,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 //            } catch (SQLException e) {
 //                throw new RuntimeException(e);
 //            }
+
+            logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
                 Statement statement = phoenixCon.createStatement();
                 ResultSet resultSet = statement.executeQuery(sql);
@@ -346,6 +361,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
 
+//            logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
 //            Scan scan = parseQuery(query, options);
 //            try {
 //                Table table = hbaseCon.getTable(TableName.valueOf(variantTable));
@@ -392,32 +408,30 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+        return updateStats(variantStatsWrappers, studyName, queryOptions);
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+        return updateStats(variantStatsWrappers,
+                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), queryOptions);
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
                                    QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+
+        VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
+        List<Put> puts = converter.apply(variantStatsWrappers);
+
+        long start = System.currentTimeMillis();
+        try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
+            table.put(puts);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return new QueryResult<>("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 
     @Override
@@ -468,7 +482,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 
-    protected Connection getConnection() {
+    public Connection getConnection() {
         return this.genomeHelper.getHBaseManager().getConnection();
     }
 

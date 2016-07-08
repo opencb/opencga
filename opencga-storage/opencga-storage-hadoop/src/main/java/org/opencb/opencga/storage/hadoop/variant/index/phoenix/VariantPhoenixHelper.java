@@ -27,6 +27,9 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantPhoenixHelper {
 
+    public static final String STATS_PREFIX = "ST_";
+    public static final String POPULATION_FREQUENCY_PREFIX = "PF_";
+    public static final String FUNCTIONAL_SCORE_PREFIX = "FS_";
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
     public interface Column {
@@ -71,8 +74,6 @@ public class VariantPhoenixHelper {
         }
     }
 
-    public static final String POPULATION_FREQUENCY_PREFIX = "PF_";
-    public static final String FUNCTIONAL_SCORE_PREFIX = "FS_";
 
     public enum VariantColumn implements Column {
         CHROMOSOME("CHROMOSOME", PVarchar.INSTANCE),
@@ -259,6 +260,14 @@ public class VariantPhoenixHelper {
                 }
                 return null;
         }
+    }
+
+    public static Column getMafColumn(int studyId, int cohortId) {
+        return Column.build(STATS_PREFIX + studyId + "_" + cohortId + "_MAF", PFloat.INSTANCE);
+    }
+
+    public static Column getStatsColumn(int studyId, int cohortId) {
+        return Column.build(STATS_PREFIX + studyId + "_" + cohortId, PFloat.INSTANCE);
     }
 
     public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {

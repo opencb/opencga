@@ -23,6 +23,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     private final StudyConfigurationManager scm;
     private final HBaseToVariantAnnotationConverter annotationConverter;
+    private final HBaseToVariantStatsConverter statsConverter;
     private final GenomeHelper genomeHelper;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
@@ -61,6 +63,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         this.genomeHelper = genomeHelper;
         this.scm = scm;
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
+        this.statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
     }
 
     @Override
@@ -232,8 +235,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
 
-            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
-//            StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
+//            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
+            StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
             studyEntry.setSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
             studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));

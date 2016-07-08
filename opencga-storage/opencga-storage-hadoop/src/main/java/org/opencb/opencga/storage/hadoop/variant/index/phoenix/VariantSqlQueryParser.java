@@ -88,6 +88,9 @@ public class VariantSqlQueryParser {
         return sb.toString();
     }
 
+    public VariantDBAdaptorUtils getUtils() {
+        return utils;
+    }
 
     /**
      * Select only the required columns.
