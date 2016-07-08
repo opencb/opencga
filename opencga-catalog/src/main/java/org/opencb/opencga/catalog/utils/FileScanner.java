@@ -1,4 +1,4 @@
-package org.opencb.opencga.analysis.files;
+package org.opencb.opencga.catalog.utils;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -11,8 +11,6 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.utils.BioformatDetector;
-import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,11 +45,14 @@ public class FileScanner {
 
     /**
      * Check tracking from all files from a study.
+     *
      * Set file status File.Status.MISSING if the file (fileUri) is unreachable
      * Set file status to File.Status.READY if was File.Status.MISSING and file (fileUri) is reachable
-     * @param study         The study to ckeck
-     * @param sessionId     User sessionId
-     * @throws CatalogException
+     *
+     * @param study             The study to check
+     * @param sessionId         User sessionId
+     * @param calculateChecksum Calculate checksum for "found files"
+     * @throws CatalogException if a Catalog error occurs
      * @return found and lost files
      */
     public List<File> checkStudyFiles(Study study, boolean calculateChecksum, String sessionId) throws CatalogException {
@@ -71,13 +72,14 @@ public class FileScanner {
     }
 
     /**
-     * Scan the study folder, add all untracked files and check tracking
+     * Scan the study folder, add all untracked files and check tracking.
      *
      * @param study                 Study to resync
-     * @param calculateChecksum     Calculate Checksum of files
+     * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
+     * @param sessionId             User sessionId
      * @return                      New, lost and found files
-     * @throws CatalogException
-     * @throws IOException
+     * @throws CatalogException     if a Catalog error occurs
+     * @throws IOException          if an I/O error occurs
      */
     public List<File> reSync(Study study, boolean calculateChecksum, String sessionId)
             throws CatalogException, IOException {
@@ -99,10 +101,12 @@ public class FileScanner {
     }
 
     /**
-     * Return all untracked files in a study folder
+     * Return all untracked files in a study folder.
+     *
      * @param study         Study to scan
+     * @param sessionId     User sessionId
      * @return              Untracked files
-     * @throws CatalogException
+     * @throws CatalogException     if a Catalog error occurs
      */
     public Map<String, URI> untrackedFiles(Study study, String sessionId)
             throws CatalogException {
@@ -114,7 +118,8 @@ public class FileScanner {
         linkedFolders.put("", studyUri);
         Query query = new Query(CatalogFileDBAdaptor.QueryParams.URI.key(), "~.*"); //Where URI exists)
         QueryOptions queryOptions = new QueryOptions("include", "projects.studies.files.path,projects.studies.files.uri");
-        catalogManager.getAllFiles(studyId, query, queryOptions, sessionId).getResult().forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
+        catalogManager.getAllFiles(studyId, query, queryOptions, sessionId).getResult()
+                .forEach(f -> linkedFolders.put(f.getPath(), f.getUri()));
 
         Map<String, URI> untrackedFiles = new HashMap<>();
         for (Map.Entry<String, URI> entry : linkedFolders.entrySet()) {
@@ -124,7 +129,8 @@ public class FileScanner {
             }
             Stream<URI> files = ioManager.listFilesStream(entry.getValue());
 
-            for (Iterator<URI> iterator = files.iterator(); iterator.hasNext(); ) {
+            Iterator<URI> iterator = files.iterator();
+            while (iterator.hasNext()) {
                 URI uri = iterator.next();
                 String filePath = entry.getKey() + entry.getValue().relativize(uri).toString();
 
@@ -138,16 +144,22 @@ public class FileScanner {
                 }*/
             }
         }
-        return untrackedFiles ;
+        return untrackedFiles;
     }
+
 
     /**
      * Scans the files inside the specified URI and adds to the provided directory.
      *
      * @param directory             Directory where add found files
      * @param directoryToScan       Directory to scan
-     * @throws CatalogException
+     * @param policy                What to do when there is a file in the target path. See {@link FileScannerPolicy}
+     * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
+     * @param deleteSource          After moving, deletes the source file. If false, force copy.
+     * @param sessionId             User sessionId
      * @return found and new files.
+     * @throws IOException          if an I/O error occurs
+     * @throws CatalogException     if a Catalog error occurs
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, String sessionId)
@@ -160,9 +172,14 @@ public class FileScanner {
      *
      * @param directory             Directory where add found files
      * @param directoryToScan       Directory to scan
+     * @param policy                What to do when there is a file in the target path. See {@link FileScannerPolicy}
+     * @param calculateChecksum     Calculates checksum of all the files in the directory to scan
+     * @param deleteSource          After moving, deletes the source file. If false, force copy.
      * @param jobId                 If any, the job that has generated this files
-     * @throws CatalogException
+     * @param sessionId             User sessionId
      * @return found and new files.
+     * @throws IOException          if an I/O error occurs
+     * @throws CatalogException     if a Catalog error occurs
      */
     public List<File> scan(File directory, URI directoryToScan, FileScannerPolicy policy,
                            boolean calculateChecksum, boolean deleteSource, long jobId, String sessionId)
@@ -182,7 +199,8 @@ public class FileScanner {
         Stream<URI> uris = catalogManager.getCatalogIOManagerFactory().get(directoryToScan).listFilesStream(directoryToScan);
         List<File> files = new LinkedList<>();
         FileMetadataReader fileMetadataReader = FileMetadataReader.get(catalogManager);
-        for (Iterator<URI> iterator = uris.iterator(); iterator.hasNext(); ) {
+        Iterator<URI> iterator = uris.iterator();
+        while (iterator.hasNext()) {
             long fileScanStart = System.currentTimeMillis();
             URI uri = iterator.next();
             URI generatedFile = directoryToScan.relativize(uri);
@@ -210,6 +228,8 @@ public class FileScanner {
 //                        throw new UnsupportedOperationException("Unimplemented policy 'rename'");
 //                    case DO_ERROR:
 //                        throw new UnsupportedOperationException("Unimplemented policy 'error'");
+                    default:
+                        throw new UnsupportedOperationException("Unimplemented policy '" + policy + "'");
                 }
             }
 
@@ -220,15 +240,19 @@ public class FileScanner {
                     file = catalogManager.createFolder(studyId, Paths.get(filePath), true, null, sessionId).first();
                 } else {
                     start = System.currentTimeMillis();
-                    file = catalogManager.createFile(studyId, FormatDetector.detect(uri), BioformatDetector.detect(uri), filePath, "", true, jobId, sessionId).first();
+                    File.Format format = FormatDetector.detect(uri);
+                    File.Bioformat bioformat = BioformatDetector.detect(uri);
+                    file = catalogManager.createFile(studyId, format, bioformat, filePath, "", true, jobId, sessionId).first();
                     end = System.currentTimeMillis();
-                    createFilesTime += createFileTime = end - start;
+                    createFileTime = end - start;
+                    createFilesTime += createFileTime;
 
                     /** Moves the file to the read output **/
                     start = System.currentTimeMillis();
                     catalogFileUtils.upload(uri, file, null, sessionId, false, false, deleteSource, calculateChecksum);
                     end = System.currentTimeMillis();
-                    uploadFilesTime += uploadFileTime = end - start;
+                    uploadFileTime = end - start;
+                    uploadFilesTime += uploadFileTime;
                     returnFile = true;      //Return file because is new
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
@@ -250,17 +274,19 @@ public class FileScanner {
                 long start = System.currentTimeMillis();
                 fileMetadataReader.setMetadataInformation(file, null, null, sessionId, false);
                 long end = System.currentTimeMillis();
-                metadataReadTime += metadataFileTime = end - start;
+                metadataFileTime = end - start;
+                metadataReadTime += metadataFileTime;
             } catch (Exception e) {
-                logger.error("Unable to read metadata information from file { id:" + file.getId() + ", name: \"" + file.getName() + "\" }", e);
+                logger.error("Unable to read metadata information from file "
+                        + "{ id:" + file.getId() + ", name: \"" + file.getName() + "\" }", e);
             }
 
             if (returnFile) { //Return only new and found files.
                 files.add(catalogManager.getFile(file.getId(), sessionId).first());
             }
             logger.info("Added file {}", filePath);
-            logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart ) /1000.0,
-                    createFileTime/1000.0, uploadFileTime/1000.0, metadataFileTime/1000.0);
+            logger.debug("{}s (create {}s, upload {}s, metadata {}s)", (System.currentTimeMillis() - fileScanStart) / 1000.0,
+                    createFileTime / 1000.0, uploadFileTime / 1000.0, metadataFileTime / 1000.0);
         }
         logger.debug("Create catalog file entries: " + createFilesTime / 1000.0 + "s");
         logger.debug("Upload files: " + uploadFilesTime / 1000.0 + "s");

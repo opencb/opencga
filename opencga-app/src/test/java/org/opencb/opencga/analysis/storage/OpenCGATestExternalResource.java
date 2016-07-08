@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.app.cli.analysis.AnalysisMain;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;

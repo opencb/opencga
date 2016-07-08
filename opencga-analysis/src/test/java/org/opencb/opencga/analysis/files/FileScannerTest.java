@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.Study;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.core.common.IOUtils;
 
 import java.io.IOException;

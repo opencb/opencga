@@ -16,6 +16,7 @@ import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.StringUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;

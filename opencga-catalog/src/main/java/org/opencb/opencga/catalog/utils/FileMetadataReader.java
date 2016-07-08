@@ -1,30 +1,31 @@
-package org.opencb.opencga.analysis.files;
+package org.opencb.opencga.catalog.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.biodata.formats.alignment.sam.io.AlignmentSamDataReader;
 import org.opencb.biodata.models.alignment.AlignmentHeader;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
+import org.opencb.biodata.tools.VariantFileUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.exceptions.CatalogIOException;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Sample;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.managers.CatalogFileUtils;
-import org.opencb.opencga.catalog.utils.BioformatDetector;
-import org.opencb.opencga.catalog.utils.FormatDetector;
-import org.opencb.opencga.catalog.utils.ParamUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -36,6 +37,8 @@ import java.util.stream.Collectors;
 public class FileMetadataReader {
 
     public static final String VARIANT_STATS = "variantStats";
+    private static final QueryOptions STUDY_QUERY_OPTIONS =
+            new QueryOptions("include", Arrays.asList("projects.studies.id", "projects.studies.name", "projects.studies.alias"));
     private final CatalogManager catalogManager;
     protected static Logger logger = LoggerFactory.getLogger(FileMetadataReader.class);
     public static final String CREATE_MISSING_SAMPLES = "createMissingSamples";
@@ -49,7 +52,7 @@ public class FileMetadataReader {
 
     /**
      * Creates a file entry in catalog reading metadata information from the fileUri.
-     * Do not upload or sync file. Created file status will be <b>STAGE</b>
+     * Do not upload or sync file. Created file status will be {@link File.FileStatus#STAGE}
      *
      * @param studyId     Study on where the file entry is created
      * @param fileUri     File URI to read metadata information.
@@ -58,10 +61,11 @@ public class FileMetadataReader {
      * @param parents     Create parent folders or not
      * @param options     Other options
      * @param sessionId   User sessionId
-     * @return The created file with status <b>STAGE</b>
-     * @throws CatalogException
+     * @return The created file with status {@link File.FileStatus#STAGE}
+     * @throws CatalogException  if a Catalog error occurs
      */
-    public QueryResult<File> create(long studyId, URI fileUri, String path, String description, boolean parents, QueryOptions options, String sessionId) throws CatalogException {
+    public QueryResult<File> create(long studyId, URI fileUri, String path, String description, boolean parents,
+                                    QueryOptions options, String sessionId) throws CatalogException {
 
         File.Type type = fileUri.getPath().endsWith("/") ? File.Type.DIRECTORY : File.Type.FILE;
         File.Format format = FormatDetector.detect(fileUri);
@@ -78,7 +82,7 @@ public class FileMetadataReader {
 
         try {
             modifiedFile = setMetadataInformation(fileResult.first(), fileUri, options, sessionId, false);
-        } catch (CatalogException | StorageManagerException e) {
+        } catch (CatalogException e) {
             logger.error("Fail at getting the metadata information", e);
         }
         fileResult.setResult(Collections.singletonList(modifiedFile));
@@ -101,11 +105,10 @@ public class FileMetadataReader {
      * @param sessionId     User sessionId
      * @param simulate      Simulate the metadata modifications.
      * @return              If there are no modifications, return the same input file. Else, return the updated file
-     * @throws CatalogException
-     * @throws StorageManagerException
+     * @throws CatalogException if a Catalog error occurs
      */
     public File setMetadataInformation(final File file, URI fileUri, QueryOptions options, String sessionId, boolean simulate)
-            throws CatalogException, StorageManagerException {
+            throws CatalogException {
         long studyId = catalogManager.getStudyIdByFileId(file.getId());
         if (fileUri == null) {
             fileUri = catalogManager.getFileUri(file);
@@ -146,7 +149,7 @@ public class FileMetadataReader {
             switch (bioformat) {
                 case ALIGNMENT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias"), sessionId).first();
+                    study = catalogManager.getStudy(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
                     AlignmentHeader alignmentHeader = readAlignmentHeader(study, file, fileUri);
@@ -159,10 +162,15 @@ public class FileMetadataReader {
                 }
                 case VARIANT: {
 //                    start = System.currentTimeMillis();
-                    study = catalogManager.getStudy(studyId, new QueryOptions("include", "projects.studies.id,projects.studies.name,projects.studies.alias"), sessionId).first();
+                    study = catalogManager.getStudy(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
 //                    logger.trace("getStudy = " + (System.currentTimeMillis() - start) / 1000.0);
 
-                    VariantSource variantSource = readVariantSource(study, file, fileUri);
+                    VariantSource variantSource = null;
+                    try {
+                        variantSource = readVariantSource(study, file, fileUri);
+                    } catch (IOException e) {
+                        throw new CatalogIOException("Unable to read VariantSource", e);
+                    }
                     if (variantSource != null) {
                         HashMap<String, Object> attributes = new HashMap<>();
                         attributes.put("variantSource", variantSource);
@@ -205,13 +213,12 @@ public class FileMetadataReader {
      * @param simulate              Simulate the creation of samples.
      * @param options               Options
      * @param sessionId             User sessionId
-     * @return
-     * @throws CatalogException
-     * @throws StorageManagerException
+     * @return                      List of samples in the given file
+     * @throws CatalogException if a Catalog error occurs
      */
     public List<Sample> getFileSamples(Study study, File file, URI fileUri, final ObjectMap fileModifyParams,
                                        boolean createMissingSamples, boolean simulate, QueryOptions options, String sessionId)
-            throws CatalogException, StorageManagerException {
+            throws CatalogException {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         List<Sample> sampleList;
@@ -241,12 +248,18 @@ public class FileMetadataReader {
                         } else if (variantSourceObj instanceof Map) {
                             sortedSampleNames = new ObjectMap((Map) variantSourceObj).getAsStringList("samples");
                         } else {
-                            logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}", variantSourceObj.getClass(), VariantSource.class, Map.class);
+                            logger.warn("Unexpected object type of variantSource ({}) in file attributes. Expected {} or {}",
+                                    variantSourceObj.getClass(), VariantSource.class, Map.class);
                         }
                     }
 
                     if (sortedSampleNames == null) {
-                        VariantSource variantSource = readVariantSource(study, file, fileUri);
+                        VariantSource variantSource = null;
+                        try {
+                            variantSource = readVariantSource(study, file, fileUri);
+                        } catch (IOException e) {
+                            throw new CatalogIOException("Unable to read VariantSource", e);
+                        }
                         if (variantSource != null) {
                             attributes.put("variantSource", variantSource);
                             sortedSampleNames = variantSource.getSamples();
@@ -269,7 +282,8 @@ public class FileMetadataReader {
                         } else if (alignmentHeaderObj instanceof Map) {
                             sortedSampleNames = getSampleFromAlignmentHeader((Map) alignmentHeaderObj);
                         } else {
-                            logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}", alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
+                            logger.warn("Unexpected object type of AlignmentHeader ({}) in file attributes. Expected {} or {}",
+                                    alignmentHeaderObj.getClass(), AlignmentHeader.class, Map.class);
                         }
                     }
                     if (sortedSampleNames == null) {
@@ -311,7 +325,8 @@ public class FileMetadataReader {
                             sampleList.add(new Sample(-1, sampleName, file.getName(), -1, null));
                         } else {
                             try {
-                                sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(), null, null, null, sessionId).first());
+                                sampleList.add(catalogManager.createSample(study.getId(), sampleName, file.getName(),
+                                        null, null, null, sessionId).first());
                             } catch (CatalogException e) {
                                 Query query = new Query("name", sampleName);
                                 QueryOptions queryOptions = new QueryOptions("include", includeSampleNameId);
@@ -372,11 +387,12 @@ public class FileMetadataReader {
     }
 
     public static VariantSource readVariantSource(Study study, File file, URI fileUri)
-            throws StorageManagerException {
+            throws IOException {
         if (file.getFormat() == File.Format.VCF || FormatDetector.detect(fileUri) == File.Format.VCF) {
             //TODO: Fix aggregate and studyType
-            VariantSource source = new VariantSource(file.getName(), Long.toString(file.getId()), Long.toString(study.getId()), study.getName());
-            return VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), source);
+            VariantSource source = new VariantSource(file.getName(), Long.toString(file.getId()),
+                    Long.toString(study.getId()), study.getName());
+            return VariantFileUtils.readVariantSource(Paths.get(fileUri.getPath()), source);
         } else {
             return null;
         }
@@ -388,12 +404,15 @@ public class FileMetadataReader {
                 || FormatDetector.detect(fileUri) == File.Format.SAM
                 || FormatDetector.detect(fileUri) == File.Format.BAM) {
             AlignmentSamDataReader reader = new AlignmentSamDataReader(Paths.get(fileUri), study.getName());
-            reader.open();
-            reader.pre();
-            reader.post();
-            reader.close();
-    //        reader.getSamHeader().get
-            return reader.getHeader();
+            try {
+                reader.open();
+                reader.pre();
+                reader.post();
+                //        reader.getSamHeader().get
+                return reader.getHeader();
+            } finally {
+                reader.close();
+            }
         } else {
             return null;
         }
@@ -405,7 +424,7 @@ public class FileMetadataReader {
      *
      * @param job           Job that executed successfully the transform step
      * @param sessionId     User sessionId
-     * @throws CatalogException
+     * @throws CatalogException if a Catalog error occurs
      */
     public void updateVariantFileStats(Job job, String sessionId) throws CatalogException {
         long studyId = catalogManager.getStudyIdByJobId(job.getId());
@@ -420,7 +439,7 @@ public class FileMetadataReader {
         if (inputFile.getBioformat().equals(File.Bioformat.VARIANT)) {
             query = new Query()
                     .append(CatalogFileDBAdaptor.QueryParams.ID.key(), job.getOutput())
-                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".variants");
+                    .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), "~" + inputFile.getName() + ".file");
             fileQueryResult = catalogManager.getAllFiles(studyId, query, new QueryOptions(), sessionId);
             if (fileQueryResult.getResult().isEmpty()) {
                 return;
@@ -428,11 +447,11 @@ public class FileMetadataReader {
 
             File variantsFile = fileQueryResult.first();
             URI fileUri = catalogManager.getFileUri(variantsFile);
-            try {
-                VariantSource variantSource = VariantStorageManager.readVariantSource(Paths.get(fileUri.getPath()), null);
+            try (InputStream is = Files.newInputStream(Paths.get(fileUri.getPath()))) {
+                VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
                 VariantGlobalStats stats = variantSource.getStats();
                 catalogManager.modifyFile(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)), sessionId);
-            } catch (StorageManagerException e) {
+            } catch (IOException e) {
                 throw new CatalogException(e);
             }
         }
