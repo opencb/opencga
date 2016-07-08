@@ -62,6 +62,15 @@
         <welcome-file>index.html</welcome-file>
     </welcome-file-list>
 
+    <filter>
+        <filter-name>CorsFilter</filter-name>
+        <filter-class>org.apache.catalina.filters.CorsFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CorsFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+    </filter-mapping>
+
      <!--swagger-->
     <servlet>
         <servlet-name>Jersey2Config</servlet-name>
