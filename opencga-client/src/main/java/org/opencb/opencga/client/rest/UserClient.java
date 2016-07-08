@@ -40,6 +40,17 @@ public class UserClient extends AbstractParentClient<User, User> {
         this.clazz = User.class;
     }
 
+    public QueryResponse<User> create(String user, String password, ObjectMap params) {
+        QueryResponse<User> response = null;
+        params = addParamsToObjectMap(params, "userId", user, "password", password);
+        try {
+            response = execute(USERS_URL, "create", params, POST, User.class);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+        return response;
+    }
+
     QueryResponse<ObjectMap> login(String user, String password) {
         QueryResponse<ObjectMap> response = null;
         try {

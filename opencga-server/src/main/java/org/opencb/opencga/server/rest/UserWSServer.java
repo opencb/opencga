@@ -18,7 +18,9 @@ package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.core.exception.VersionException;
@@ -45,6 +47,7 @@ public class UserWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
+    @Deprecated
     @ApiOperation(value = "Creates a new user", position = 1, response = User.class)
     public Response createUser(@ApiParam(value = "userId", required = true) @QueryParam("userId") String userId,
                                @ApiParam(value = "name", required = true) @QueryParam("name") String name,
@@ -240,6 +243,29 @@ public class UserWSServer extends OpenCGAWSServer {
         try {
             catalogManager.deleteUser(userId, null, sessionId);
             return createOkResponse("User '" + userId + "' deleted");
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @POST
+    @Path("/create")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Create a new user", position = 1, response = User.class)
+    public Response createUserPost(@ApiParam(value = "Json containing the params 'userId', 'name', 'email', 'password', 'organization'", required = true) Map<String, String> map) {
+        try {
+            if (!map.containsKey("userId") || !map.containsKey("name") || !map.containsKey("email") || !map.containsKey("password")) {
+                createErrorResponse(new CatalogException("userId, name, email or password not present"));
+            }
+
+            String userId = map.get("userId");
+            String name = map.get("name");
+            String email = map.get("email");
+            String password = map.get("password");
+            String organization = map.containsKey("organization") ? map.get("organization") : "";
+
+            QueryResult queryResult = catalogManager.createUser(userId, name, email, password, organization, null, new QueryOptions());
+            return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

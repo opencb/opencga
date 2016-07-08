@@ -99,7 +99,7 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Load samples from a ped file", position = 3)
     public Response loadSamples(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
                                 @ApiParam(value = "fileId", required = false) @QueryParam("fileId") String fileIdStr,
-                                @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId) {
+                                @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") Long variableSetId) {
         try {
             long fileId = catalogManager.getFileId(fileIdStr, sessionId);
             CatalogSampleAnnotationsLoader loader = new CatalogSampleAnnotationsLoader(catalogManager);

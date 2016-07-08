@@ -114,13 +114,20 @@ public class CatalogManager implements AutoCloseable {
         configureIOManager(catalogConfiguration);
         logger.debug("CatalogManager configureManager");
         configureManagers(catalogConfiguration);
-
 //        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
 //            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
 ////            Admin admin = catalogConfiguration.getAdmin();
 ////            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
 ////            catalogDBAdaptorFactory.initializeCatalogDB(admin);
 //        }
+    }
+
+    public void validateAdminPassword() throws CatalogException {
+        try {
+            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
+        } catch (CatalogException e) {
+            throw new CatalogException("The admin password is incorrect");
+        }
     }
 
     @Deprecated

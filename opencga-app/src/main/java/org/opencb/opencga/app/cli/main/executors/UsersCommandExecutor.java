@@ -18,15 +18,18 @@ package org.opencb.opencga.app.cli.main.executors;
 
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
+import java.util.Collections;
 
 /**
  * Created by imedina on 02/03/15.
@@ -82,7 +85,56 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void create() throws CatalogException, IOException {
-        logger.debug("Creating user");
+        logger.debug("Creating user...");
+
+        ObjectMap params = new ObjectMap()
+                .append("name", usersCommandOptions.createCommandOptions.userName)
+                .append("email", usersCommandOptions.createCommandOptions.userEmail)
+                .append("password", usersCommandOptions.createCommandOptions.userPassword);
+
+        if (usersCommandOptions.createCommandOptions.userOrganization != null) {
+            params.append("organization", usersCommandOptions.createCommandOptions.userOrganization);
+        }
+
+        QueryResponse<User> userQueryResponse = openCGAClient.getUserClient().create(usersCommandOptions.createCommandOptions.user,
+                usersCommandOptions.createCommandOptions.userPassword, params);
+
+        if (userQueryResponse != null && userQueryResponse.first().getNumResults() == 1) {
+            logger.info("User {} successfully created", usersCommandOptions.createCommandOptions.user);
+        } else {
+            logger.error("User {} could not be created due to ", usersCommandOptions.createCommandOptions.user,
+                    userQueryResponse.getError());
+            return;
+        }
+
+        openCGAClient.login(usersCommandOptions.createCommandOptions.user, usersCommandOptions.createCommandOptions.userPassword);
+
+        logger.info("Creating project...");
+
+        params = new ObjectMap();
+
+        String alias = usersCommandOptions.createCommandOptions.projectAlias != null
+                ? usersCommandOptions.createCommandOptions.projectAlias : "default";
+        String name = usersCommandOptions.createCommandOptions.projectName != null
+                ? usersCommandOptions.createCommandOptions.projectName : "Default";
+
+        if (usersCommandOptions.createCommandOptions.projectDescription != null) {
+            params.append("description", usersCommandOptions.createCommandOptions.projectDescription);
+        }
+
+        if (usersCommandOptions.createCommandOptions.projectOrganization != null) {
+            params.append("description", usersCommandOptions.createCommandOptions.projectOrganization);
+        }
+
+        QueryResponse<Project> projectQueryResponse = openCGAClient.getProjectClient().create(name, alias, params);
+
+        openCGAClient.logout();
+
+        if (projectQueryResponse != null && projectQueryResponse.first().getNumResults() == 1) {
+            logger.info("Project {} has been created successfully", name);
+        } else {
+            logger.error("Project {} could not be created due to ", name, projectQueryResponse.getError());
+        }
     }
 
     private void info() throws CatalogException, IOException {

@@ -78,8 +78,11 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating a new project");
         ObjectMap o = new ObjectMap();
         o.append(CatalogProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
+        if (projectsCommandOptions.createCommandOptions.organization != null) {
+            o.append("organization", projectsCommandOptions.createCommandOptions.organization);
+        }
         openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
-                projectsCommandOptions.createCommandOptions.alias, projectsCommandOptions.createCommandOptions.organization, o);
+                projectsCommandOptions.createCommandOptions.alias, o);
 
         System.out.println("Created");
     }

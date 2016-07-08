@@ -59,7 +59,7 @@ public class ProjectCommandOptions {
         @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = true, arity = 1)
+        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = false, arity = 1)
         public String organization;
     }
 

@@ -93,6 +93,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.validateAdminPassword();
+
         User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
@@ -156,6 +158,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.validateAdminPassword();
+
         User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
                 new QueryOptions("force", true), null).first();
         System.out.println("The user has been successfully deleted from the database: " + user.toString());
@@ -183,6 +187,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.validateAdminPassword();
+        
         User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
                 new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),
                         usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();

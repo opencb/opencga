@@ -122,24 +122,31 @@ public class CatalogSampleAnnotationsLoaderTest extends GenericTest {
 //        variableSetId = 7;
 
 //        Query query = new Query("variableSetId", variableSetId).append("annotation", "family:GB84");
-        Query query = new Query("variableSetId", variableSetId).append("annotation.family", "GB84");
+        Query query = new Query("variableSetId", variableSetId)
+                .append("annotation.family", "GB84");
         QueryOptions options = new QueryOptions("limit", 2);
 
-        System.out.println(catalogManager.getAllSamples(studyId, query, options, sessionId));
+        QueryResult<Sample> allSamples = catalogManager.getAllSamples(studyId, query, options, sessionId);
+        System.out.println(allSamples);
+        Assert.assertNotEquals(0, allSamples.getNumResults());
+        query.remove("annotation.family");
 
         query.put("annotation.sex", "2");
         query.put("annotation.Population","ITU");
         QueryResult<Sample> femaleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(femaleIta);
+        Assert.assertNotEquals(0, femaleIta.getNumResults());
 
         query.put("annotation.sex", "1");
         query.put("annotation.Population", "ITU");
         QueryResult<Sample> maleIta = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(maleIta);
+        Assert.assertNotEquals(0, maleIta.getNumResults());
 
         query.remove("annotation.sex");
         QueryResult<Sample> ita = catalogManager.getAllSamples(studyId, query, options, sessionId);
         System.out.println(ita);
+        Assert.assertNotEquals(0, ita.getNumResults());
 
         Assert.assertEquals("Fail sample query", ita.getNumTotalResults(), maleIta.getNumTotalResults() + femaleIta.getNumTotalResults());
     }
