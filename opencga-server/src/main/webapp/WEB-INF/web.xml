@@ -51,8 +51,8 @@
 
 
         <init-param>
-            <param-name>com.sun.jersey.spi.container.ContainerResponseFilters</param-name>
-            <param-value>org.opencb.opencga.server.rest.CorsResponseFilter</param-value>
+            <param-name>javax.ws.rs.Application</param-name>
+            <param-value>org.opencb.opencga.server.rest.OpenCgaRegistry</param-value>
         </init-param>
 
         <load-on-startup>1</load-on-startup>
