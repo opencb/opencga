@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;

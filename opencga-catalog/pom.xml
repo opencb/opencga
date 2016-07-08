@@ -91,6 +91,14 @@
             <testResource>
                 <directory>src/test/resources</directory>
                 <filtering>true</filtering>
+                <excludes>
+                    <exclude>**/biofiles/</exclude>
+                </excludes>
+            </testResource>
+            <testResource>
+                <directory>src/test/resources/biofiles</directory>
+                <targetPath>biofiles/</targetPath>
+                <filtering>false</filtering>
             </testResource>
         </testResources>
         <plugins>

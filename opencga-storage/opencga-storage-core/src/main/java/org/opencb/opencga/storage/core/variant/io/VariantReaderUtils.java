@@ -1,12 +1,10 @@
 package org.opencb.opencga.storage.core.variant.io;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import htsjdk.variant.vcf.VCFHeader;
 import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.tools.variant.converter.VCFHeaderToAvroVcfHeaderConverter;
-import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.io.avro.VariantAvroReader;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonReader;
@@ -127,17 +125,8 @@ public class VariantReaderUtils {
 
         VariantReader reader = getVariantReader(input, source);
         try {
-            reader.open();
-            reader.pre();
-            String variantFileHeader = reader.getHeader();
-            source.addMetadata("variantFileHeader", variantFileHeader);
-            if (source.getHeader() == null) {
-                VCFHeader header = VariantFileMetadataToVCFHeaderConverter.parseVcfHeader(variantFileHeader);
-                source.setHeader(new VCFHeaderToAvroVcfHeaderConverter().convert(header));
-            }
-            reader.post();
-            reader.close();
-        } catch (IOException | RuntimeException e) {
+            source = VariantFileUtils.readVariantSource(reader, source);
+        } catch (IOException e) {
             throw new StorageManagerException("Unable to read VariantSource", e);
         }
 

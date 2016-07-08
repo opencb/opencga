@@ -27,6 +27,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -583,5 +584,44 @@ public class SampleManager extends AbstractManager implements ISampleManager {
                 Collections.singletonList(annotationSet.first())), "delete annotation", null);
 
         return annotationSet;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), id);
+
+        if (variableSetId > 0) {
+            query.append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        }
+        if (annotation != null) {
+            query.append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
+
+        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
+
+        List<AnnotationSet> annotationSets;
+
+        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
+            logger.debug("No samples found");
+            annotationSets = Collections.emptyList();
+        } else {
+            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
+                    sampleQueryResult.first().getAnnotationSets().size());
+            annotationSets = sampleQueryResult.first().getAnnotationSets();
+        }
+
+        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
+                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
     }
 }

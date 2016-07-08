@@ -114,13 +114,20 @@ public class CatalogManager implements AutoCloseable {
         configureIOManager(catalogConfiguration);
         logger.debug("CatalogManager configureManager");
         configureManagers(catalogConfiguration);
-
 //        if (!catalogDBAdaptorFactory.isCatalogDBReady()) {
 //            catalogDBAdaptorFactory.installCatalogDB(catalogConfiguration);
 ////            Admin admin = catalogConfiguration.getAdmin();
 ////            admin.setPassword(CatalogAuthenticationManager.cipherPassword(admin.getPassword()));
 ////            catalogDBAdaptorFactory.initializeCatalogDB(admin);
 //        }
+    }
+
+    public void validateAdminPassword() throws CatalogException {
+        try {
+            authenticationManager.authenticate("admin", catalogConfiguration.getAdmin().getPassword(), true);
+        } catch (CatalogException e) {
+            throw new CatalogException("The admin password is incorrect");
+        }
     }
 
     @Deprecated
@@ -1376,6 +1383,12 @@ public class CatalogManager implements AutoCloseable {
         return individualManager.deleteAnnotations(individualIdStr, annotationSetName, annotations, sessionId);
     }
 
+    public QueryResult<AnnotationSet> searchIndividualAnnotationSets(String individualIdStr, long variableSetId,
+                                                                     @Nullable String annotation, String sessionId)
+            throws CatalogException {
+        return individualManager.searchAnnotationSet(individualIdStr, variableSetId, annotation, sessionId);
+    }
+
     /*
      * Samples methods
      * ***************************
@@ -1491,7 +1504,10 @@ public class CatalogManager implements AutoCloseable {
         return sampleManager.deleteAnnotations(sampleIdStr, annotationSetName, annotations, sessionId);
     }
 
-
+    public QueryResult<AnnotationSet> searchSampleAnnotationSets(String sampleIdStr, long variableSetId,
+                                                                 @Nullable String annotation, String sessionId) throws CatalogException {
+        return sampleManager.searchAnnotationSet(sampleIdStr, variableSetId, annotation, sessionId);
+    }
 
     public QueryResult sampleGroupBy(Query query, QueryOptions qOptions, String fields, String sessionId) throws CatalogException {
         return sampleManager.groupBy(query, Arrays.asList(fields.split(",")), qOptions, sessionId);
@@ -1713,6 +1729,11 @@ public class CatalogManager implements AutoCloseable {
     public QueryResult<AnnotationSet> deleteCohortAnnotations(String cohortIdStr, String annotationSetName, String annotations,
                                                               String sessionId) throws CatalogException {
         return cohortManager.deleteAnnotations(cohortIdStr, annotationSetName, annotations, sessionId);
+    }
+
+    public QueryResult<AnnotationSet> searchCohortAnnotationSets(String cohortIdStr, long variableSetId,
+                                                                 @Nullable String annotation, String sessionId) throws CatalogException {
+        return cohortManager.searchAnnotationSet(cohortIdStr, variableSetId, annotation, sessionId);
     }
 
     /*

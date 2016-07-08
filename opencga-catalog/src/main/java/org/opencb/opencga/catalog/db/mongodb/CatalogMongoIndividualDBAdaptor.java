@@ -811,6 +811,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoAnnotationDBAda
         // We declare variableMap here just in case we have different annotation queries
         Map<String, Variable> variableMap = null;
 
+        if (query.containsKey(QueryParams.ANNOTATION.key())) {
+            fixAnnotationQuery(query);
+        }
+
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())

@@ -88,6 +88,9 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
 
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String projectId;
 

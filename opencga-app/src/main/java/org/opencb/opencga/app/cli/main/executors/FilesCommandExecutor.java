@@ -21,13 +21,12 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -217,9 +216,34 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         //TODO
     }
 
-    private void upload() throws CatalogException {
+    private void upload() throws CatalogException, IOException {
         logger.debug("uploading file");
-        //TODO
+
+        ObjectMap objectMap = new ObjectMap()
+                .append("fileFormat", filesCommandOptions.uploadCommandOptions.fileFormat)
+                .append("bioFormat", filesCommandOptions.uploadCommandOptions.bioFormat)
+                .append("parents", filesCommandOptions.uploadCommandOptions.parents);
+
+        if (filesCommandOptions.uploadCommandOptions.catalogPath != null) {
+            objectMap.append("relativeFilePath", filesCommandOptions.uploadCommandOptions.catalogPath);
+        }
+
+        if (filesCommandOptions.uploadCommandOptions.description != null) {
+            objectMap.append("description", filesCommandOptions.uploadCommandOptions.description);
+        }
+
+        if (filesCommandOptions.uploadCommandOptions.fileName != null) {
+            objectMap.append("fileName", filesCommandOptions.uploadCommandOptions.fileName);
+        }
+
+        QueryResponse<File> upload = openCGAClient.getFileClient().upload(filesCommandOptions.uploadCommandOptions.studyId,
+                filesCommandOptions.uploadCommandOptions.inputFile, objectMap);
+
+        if (!upload.getError().isEmpty()) {
+            logger.error(upload.getError());
+        } else {
+            upload.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        }
     }
 
     private void delete() throws CatalogException, IOException {

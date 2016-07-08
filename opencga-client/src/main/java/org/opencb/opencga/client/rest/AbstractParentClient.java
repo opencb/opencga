@@ -18,6 +18,9 @@ package org.opencb.opencga.client.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
+import org.glassfish.jersey.media.multipart.FormDataMultiPart;
+import org.glassfish.jersey.media.multipart.MultiPartFeature;
+import org.glassfish.jersey.media.multipart.file.FileDataBodyPart;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -27,6 +30,7 @@ import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -219,7 +223,11 @@ public abstract class AbstractParentClient<T, A> {
             params.put(QueryOptions.SKIP, skip);
             params.put(QueryOptions.LIMIT, limit);
 
-            queryResponse = (QueryResponse<T>) callRest(path, params, clazz, method);
+            if (!action.equals("upload")) {
+                queryResponse = (QueryResponse<T>) callRest(path, params, clazz, method);
+            } else {
+                queryResponse = (QueryResponse<T>) callUploadRest(path, params, clazz);
+            }
             int numResults = queryResponse.getResponse().get(0).getNumResults();
 
             if (finalQueryResponse == null) {
@@ -289,6 +297,40 @@ public abstract class AbstractParentClient<T, A> {
             jsonString = path.request().accept(MediaType.APPLICATION_JSON).post(Entity.entity(params, MediaType.APPLICATION_JSON),
                     String.class);
         }
+        return parseResult(jsonString, clazz);
+    }
+
+    /**
+     * Call to upload WS.
+     *
+     * @param path Path of the WS.
+     * @param params Params to be passed to the WS.
+     * @param clazz Expected return class.
+     * @return A queryResponse object containing the results of the query.
+     * @throws IOException if the path is wrong and cannot be converted to a proper url.
+     */
+    protected QueryResponse<T> callUploadRest(WebTarget path, Map<String, Object> params, Class clazz) throws IOException {
+
+        String jsonString;
+
+        String filePath = ((String) params.get("file"));
+        params.remove("file");
+
+        path.register(MultiPartFeature.class);
+
+        final FileDataBodyPart filePart = new FileDataBodyPart("file", new File(filePath));
+        FormDataMultiPart formDataMultiPart = new FormDataMultiPart();
+        // Add the rest of the parameters to the form
+        for (Map.Entry<String, Object> stringObjectEntry : params.entrySet()) {
+            formDataMultiPart.field(stringObjectEntry.getKey(), stringObjectEntry.getValue().toString());
+        }
+        final FormDataMultiPart multipart = (FormDataMultiPart) formDataMultiPart.bodyPart(filePart);
+
+        jsonString = path.request().post(Entity.entity(multipart, multipart.getMediaType()), String.class);
+
+        formDataMultiPart.close();
+        multipart.close();
+
         return parseResult(jsonString, clazz);
     }
 

@@ -34,6 +34,7 @@ import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.AbstractAclEntry;
@@ -539,6 +540,39 @@ class CatalogMongoDBUtils {
 
     static boolean isOtherKnownOption(String key) {
         return OTHER_OPTIONS.contains(key);
+    }
+
+    /**
+     * Changes the format of the queries. Queries retrieved from the WS come as "annotation": "nestedKey.subkey=5,sex=male".
+     * That will be changed to "annotation.nestedKey.subkey" : "=5"; "annotation.sex": "=male"
+     *
+     * @param query queryObject
+     */
+    public static void fixAnnotationQuery(Query query) {
+        if (!query.containsKey(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key())) {
+            return;
+        }
+
+        Pattern annotationPattern = Pattern.compile("^([annotation.]?[a-zA-Z\\.]+)([\\^=<>~!\\^\\$]+.*)$");
+
+        List<String> valueList = query.getAsStringList(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key());
+        for (String annotation : valueList) {
+            Matcher matcher = annotationPattern.matcher(annotation);
+            String key;
+            String queryValueString;
+            if (matcher.find()) {
+                key = matcher.group(1);
+                if (!key.startsWith(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + ".")) {
+                    key = CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key() + "." + key;
+                }
+                queryValueString = matcher.group(2);
+
+                query.append(key, queryValueString);
+            }
+        }
+
+        // Remove the current query
+        query.remove(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key());
     }
 
     public static void addAnnotationQueryFilter(String optionKey, Query query, Map<String, Variable> variableMap,
