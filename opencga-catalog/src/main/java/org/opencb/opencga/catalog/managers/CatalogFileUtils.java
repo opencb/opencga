@@ -56,6 +56,19 @@ public class CatalogFileUtils {
         this.catalogManager = catalogManager;
     }
 
+    /**
+     * Upload file to a created entry file in Catalog.
+     *
+     * @param sourceUri         File URI to be moved into Catalog workspace
+     * @param file              File from Catalog
+     * @param sourceChecksum    Optional: Source checksum
+     * @param sessionId         Valid sessionID to modify the File in Catalog
+     * @param ignoreStatus      Ignore the status (uploading, uploaded, ready) from Catalog
+     * @param overwrite         Overwrite if there is a file in the target
+     * @param deleteSource      After moving, delete file. If false, force copy.
+     * @param calculateChecksum Calculate checksum
+     * @throws CatalogException CatalogException
+     */
     public void upload(URI sourceUri, File file, String sourceChecksum, String sessionId,
                        boolean ignoreStatus, boolean overwrite, boolean deleteSource, boolean calculateChecksum)
             throws CatalogException {

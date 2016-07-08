@@ -22,7 +22,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -390,9 +390,6 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createOkResponse(queryResult);
 
             } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse("Upload file", e.getMessage());
-            } catch (StorageManagerException e) {
                 e.printStackTrace();
                 return createErrorResponse("Upload file", e.getMessage());
             } catch (IOException e) {
