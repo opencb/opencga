@@ -19,11 +19,11 @@ package org.opencb.opencga.server.rest;
 import org.glassfish.jersey.server.ResourceConfig;
 
 /**
- * Created by imedina on 08/07/16.
+ * Created by imedina on 09/07/16.
  */
-public class OpenCGARegistry {
+public class OpenCgaRegistry extends ResourceConfig {
 
-    public OpenCGARegistry() {
-
+    public OpenCgaRegistry() {
+        register(CorsResponseFilter.class);
     }
 }
