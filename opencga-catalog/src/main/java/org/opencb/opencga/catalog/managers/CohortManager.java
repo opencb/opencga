@@ -26,6 +26,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -360,5 +361,39 @@ public class CohortManager extends AbstractManager implements ICohortManager {
                 Collections.singletonList(annotationSet.first())), "delete annotation", null);
 
         return annotationSet;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long cohortId = getCohortId(userId, id);
+        authorizationManager.checkCohortPermission(cohortId, userId, CohortAclEntry.CohortPermissions.VIEW_ANNOTATIONS);
+
+        Query query = new Query(CatalogCohortDBAdaptor.QueryParams.ID.key(), id);
+
+        if (variableSetId > 0) {
+            query.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        }
+        if (annotation != null) {
+            query.append(CatalogCohortDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogCohortDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.get(query, queryOptions);
+
+        List<AnnotationSet> annotationSets;
+
+        if (cohortQueryResult == null || cohortQueryResult.getNumResults() == 0) {
+            annotationSets = Collections.emptyList();
+        } else {
+            annotationSets = cohortQueryResult.first().getAnnotationSets();
+        }
+
+        return new QueryResult<>("Search annotation sets", cohortQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
+                cohortQueryResult.getWarningMsg(), cohortQueryResult.getErrorMsg(), annotationSets);
     }
 }

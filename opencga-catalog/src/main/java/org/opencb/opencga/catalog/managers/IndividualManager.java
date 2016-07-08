@@ -27,6 +27,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -576,6 +577,40 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
                 Collections.singletonList(annotationSet.first())), "delete annotation", null);
 
         return annotationSet;
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long individualId = getIndividualId(userId, id);
+        authorizationManager.checkIndividualPermission(individualId, userId, IndividualAclEntry.IndividualPermissions.VIEW_ANNOTATIONS);
+
+        Query query = new Query(CatalogIndividualDBAdaptor.QueryParams.ID.key(), id);
+
+        if (variableSetId > 0) {
+            query.append(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        }
+        if (annotation != null) {
+            query.append(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
+        }
+
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+        QueryResult<Individual> individualQueryResult = individualDBAdaptor.get(query, queryOptions);
+
+        List<AnnotationSet> annotationSets;
+
+        if (individualQueryResult == null || individualQueryResult.getNumResults() == 0) {
+            annotationSets = Collections.emptyList();
+        } else {
+            annotationSets = individualQueryResult.first().getAnnotationSets();
+        }
+
+        return new QueryResult<>("Search annotation sets", individualQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
+                individualQueryResult.getWarningMsg(), individualQueryResult.getErrorMsg(), annotationSets);
     }
 
 }

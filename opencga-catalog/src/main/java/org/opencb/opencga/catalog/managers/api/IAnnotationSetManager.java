@@ -4,6 +4,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 
+import javax.annotation.Nullable;
 import java.util.Map;
 
 /**
@@ -92,4 +93,17 @@ public interface IAnnotationSetManager {
             throws CatalogException {
         throw new CatalogException("Operation still not implemented");
     }
+
+    /**
+     * Searches for annotation sets matching the parameters.
+     *
+     * @param id id of the entity storing the annotation.
+     * @param variableSetId variable set id.
+     * @param annotation comma separated list of annotations by which to look for the annotationSets.
+     * @param sessionId session id of the user asking for the annotationSets
+     * @return a queryResult object containing the list of annotation sets that matches the query.
+     * @throws CatalogException when the session id is not valid, the user does not have permissions to look for annotationSets.
+     */
+    QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation, String sessionId)
+        throws CatalogException;
 }

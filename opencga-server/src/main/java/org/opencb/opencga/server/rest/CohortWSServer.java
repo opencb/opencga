@@ -350,13 +350,18 @@ public class CohortWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{cohortId}/annotationSets/search")
-    @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
+    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                            @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                           @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.searchCohortAnnotationSets(cohortStr, variableSetId, annotation, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
