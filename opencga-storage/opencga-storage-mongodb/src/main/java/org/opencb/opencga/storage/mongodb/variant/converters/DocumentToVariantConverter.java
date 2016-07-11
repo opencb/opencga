@@ -58,40 +58,58 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //    public static final String GENE_FIELD = "gene";
 
     public static final Map<String, String> FIELDS_MAP;
-    public static final Set<String> REQUIRED_FIELDS_MAP;
-    public static final String EXCLUDE_STUDIES_SAMPLES_DATA_FIELD = "studies.samplesData";
-    public static final String EXCLUDE_STUDIES_FILES_FIELD = "studies.files";
+    public static final Set<String> REQUIRED_FIELDS_SET;
+    public static final Set<String> EXCLUDE_STUDIES_SAMPLES_DATA_FIELD;
+    public static final Set<String> EXCLUDE_STUDIES_FILES_FIELD;
+
 
     static {
-        FIELDS_MAP = new HashMap<>();
-        REQUIRED_FIELDS_MAP = new HashSet<>();
-        REQUIRED_FIELDS_MAP.add(CHROMOSOME_FIELD);
-        REQUIRED_FIELDS_MAP.add(START_FIELD);
-        REQUIRED_FIELDS_MAP.add(END_FIELD);
-        REQUIRED_FIELDS_MAP.add(REFERENCE_FIELD);
-        REQUIRED_FIELDS_MAP.add(ALTERNATE_FIELD);
-        REQUIRED_FIELDS_MAP.add(TYPE_FIELD);
+        Set<String> requiredFieldsSet = new HashSet<>();
+        requiredFieldsSet.add(CHROMOSOME_FIELD);
+        requiredFieldsSet.add(START_FIELD);
+        requiredFieldsSet.add(END_FIELD);
+        requiredFieldsSet.add(REFERENCE_FIELD);
+        requiredFieldsSet.add(ALTERNATE_FIELD);
+        requiredFieldsSet.add(TYPE_FIELD);
+        REQUIRED_FIELDS_SET = Collections.unmodifiableSet(requiredFieldsSet);
 
-        FIELDS_MAP.put("chromosome", CHROMOSOME_FIELD);
-        FIELDS_MAP.put("start", START_FIELD);
-        FIELDS_MAP.put("end", END_FIELD);
-        FIELDS_MAP.put("length", LENGTH_FIELD);
-        FIELDS_MAP.put("reference", REFERENCE_FIELD);
-        FIELDS_MAP.put("alternate", ALTERNATE_FIELD);
-        FIELDS_MAP.put("ids", IDS_FIELD);
-        FIELDS_MAP.put("type", TYPE_FIELD);
-        FIELDS_MAP.put("hgvs", HGVS_FIELD);
-//        FIELDS_MAP.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
-//        FIELDS_MAP.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
-        FIELDS_MAP.put("sourceEntries", STUDIES_FIELD);
-        FIELDS_MAP.put("studies", STUDIES_FIELD);
-        FIELDS_MAP.put(EXCLUDE_STUDIES_SAMPLES_DATA_FIELD, null);
-        FIELDS_MAP.put(EXCLUDE_STUDIES_FILES_FIELD, null);
-        FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
-        FIELDS_MAP.put("sourceEntries.cohortStats", STATS_FIELD);
-        FIELDS_MAP.put("studies.stats", STATS_FIELD);
-        FIELDS_MAP.put("stats", STATS_FIELD);
-        FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
+        HashSet<String> samplesData = new HashSet<>();
+        samplesData.add("studies.samplesData");
+        samplesData.add("samplesData");
+        samplesData.add("samples");
+        EXCLUDE_STUDIES_SAMPLES_DATA_FIELD = Collections.unmodifiableSet(samplesData);
+
+        HashSet<String> files = new HashSet<>();
+        files.add("studies.files");
+        files.add("files");
+        EXCLUDE_STUDIES_FILES_FIELD = Collections.unmodifiableSet(files);
+
+        Map<String, String> fieldsMap = new HashMap<>();
+        fieldsMap.put("chromosome", CHROMOSOME_FIELD);
+        fieldsMap.put("start", START_FIELD);
+        fieldsMap.put("end", END_FIELD);
+        fieldsMap.put("length", LENGTH_FIELD);
+        fieldsMap.put("reference", REFERENCE_FIELD);
+        fieldsMap.put("alternate", ALTERNATE_FIELD);
+        fieldsMap.put("ids", IDS_FIELD);
+        fieldsMap.put("type", TYPE_FIELD);
+        fieldsMap.put("hgvs", HGVS_FIELD);
+//        fieldsMap.put("hgvs.type", HGVS_FIELD + "." + HGVS_TYPE_FIELD);
+//        fieldsMap.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
+        fieldsMap.put("sourceEntries", STUDIES_FIELD);
+        fieldsMap.put("studies", STUDIES_FIELD);
+        for (String key : EXCLUDE_STUDIES_SAMPLES_DATA_FIELD) {
+            fieldsMap.put(key, null);
+        }
+        for (String key : EXCLUDE_STUDIES_FILES_FIELD) {
+            fieldsMap.put(key, null);
+        }
+        fieldsMap.put("annotation", ANNOTATION_FIELD);
+        fieldsMap.put("sourceEntries.cohortStats", STATS_FIELD);
+        fieldsMap.put("studies.stats", STATS_FIELD);
+        fieldsMap.put("stats", STATS_FIELD);
+        fieldsMap.put("annotation", ANNOTATION_FIELD);
+        FIELDS_MAP = Collections.unmodifiableMap(fieldsMap);
     }
 
     private DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
