@@ -267,18 +267,18 @@ public class VariantSqlQueryParser {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        addVariantFilters(query, options, filters);
+        StudyConfiguration defaultStudyConfiguration = addVariantFilters(query, options, filters);
 
         // Annotation filters:
         addAnnotFilters(query, dynamicColumns, filters);
 
         // Stats filters:
-        addStatsFilters(query, filters);
+        addStatsFilters(query, defaultStudyConfiguration, filters);
 
         return filters;
     }
 
-    protected void addVariantFilters(Query query, QueryOptions options, List<String> filters) {
+    protected StudyConfiguration addVariantFilters(Query query, QueryOptions options, List<String> filters) {
         addSimpleQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
         addSimpleQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
@@ -392,6 +392,8 @@ public class VariantSqlQueryParser {
                 filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
             }
         }
+
+        return defaultStudyConfiguration;
     }
 
     private void unsupportedFilter(Query query, VariantQueryParams param) {
@@ -527,7 +529,25 @@ public class VariantSqlQueryParser {
         }, null, filters);
     }
 
-    protected void addStatsFilters(Query query, List<String> filters) {
+    protected void addStatsFilters(Query query, StudyConfiguration defaultStudyConfiguration, List<String> filters) {
+        addQueryFilter(query, STATS_MAF, (keyOpValue, v) -> {
+
+            String key = keyOpValue[0];
+            String[] studyCohort = key.split(":");
+            String cohort;
+            final StudyConfiguration sc;
+            if (studyCohort.length == 2) {
+                String study = studyCohort[0];
+                cohort = studyCohort[1];
+                sc = utils.getStudyConfiguration(study, defaultStudyConfiguration);
+            } else {
+                cohort = studyCohort[0];
+                sc = defaultStudyConfiguration;
+            }
+            int cohortId = utils.getCohortId(cohort, sc);
+
+            return VariantPhoenixHelper.getMafColumn(sc.getStudyId(), cohortId);
+        }, null, filters);
         unsupportedFilter(query, STATS_MAF);
 
         unsupportedFilter(query, STATS_MGF);
@@ -578,7 +598,7 @@ public class VariantSqlQueryParser {
      *
      * @param query             Query with the values
      * @param param             Param to read from the query
-     * @param columnParser      Column parser. Given the [key, op, value], returns a {@link Column}
+     * @param columnParser      Column parser. Given the [key, op, value] and the original value, returns a {@link Column}
      * @param operatorParser    Operator parser. Given the [key, op, value], returns a valid SQL operator
      * @param valueParser       Value parser. Given the [key, op, value], transforms the value to make the query.
      * @param extraFilters      Provides extra filters to be concatenated to the filter.

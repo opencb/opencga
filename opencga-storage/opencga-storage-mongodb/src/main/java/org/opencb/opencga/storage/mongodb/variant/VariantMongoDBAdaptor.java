@@ -2203,27 +2203,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String cohort = cohortOpValue[0];
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
-                studyId = getInteger(study);
-                cohortId = getInteger(cohort);
-                if (studyId == null) {
-                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
-                    studyId = studyConfiguration.getStudyId();
-                    if (cohortId == null) {
-                        cohortId = studyConfiguration.getCohortIds().get(cohort);
-                    }
-                } else if (cohortId == null) {
-                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                    cohortId = studyConfiguration.getCohortIds().get(cohort);
-                }
+
+                StudyConfiguration studyConfiguration = utils.getStudyConfiguration(study, defaultStudyConfiguration);
+                cohortId = utils.getCohortId(cohort, studyConfiguration);
+                studyId = studyConfiguration.getStudyId();
             } else {
 //                String study = defaultStudyConfiguration.getStudyName();
                 studyId = defaultStudyConfiguration.getStudyId();
                 String[] cohortOpValue = VariantDBAdaptorUtils.splitOperator(filter);
                 String cohort = cohortOpValue[0];
-                cohortId = getInteger(cohort);
-                if (cohortId == null) {
-                    cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
-                }
+                cohortId = utils.getCohortId(cohort, defaultStudyConfiguration);
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
             }

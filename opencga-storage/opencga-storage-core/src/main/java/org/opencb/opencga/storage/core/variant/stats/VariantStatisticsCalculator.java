@@ -130,6 +130,8 @@ public class VariantStatisticsCalculator {
                 skippedFiles++;
                 continue;
             }
+            // Clear any stats from the input
+            study.setStats(new HashMap<>());
 
             if (!isAggregated(aggregation) && samples != null) {
                 for (Map.Entry<String, Set<String>> cohort : samples.entrySet()) {

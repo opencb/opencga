@@ -1,19 +1,20 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.hamcrest.Description;
-import org.hamcrest.FeatureMatcher;
-import org.hamcrest.Matcher;
-import org.hamcrest.TypeSafeDiagnosingMatcher;
+import org.hamcrest.*;
 import org.hamcrest.core.Every;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.QueryResult;
 
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.hamcrest.CoreMatchers.*;
 
 /**
  * Created on 05/07/16
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 public class VariantMatchers {
 
     public static <T> FeatureMatcher<QueryResult<T>, List<T>> hasResult(Matcher<? super List<T>> subMatcher) {
-        return new FeatureMatcher<QueryResult<T>, List<T>>(subMatcher, "A query result where", "QueryResult") {
+        return new FeatureMatcher<QueryResult<T>, List<T>>(subMatcher, "a query result where", "QueryResult") {
             @Override
             protected List<T> featureValueOf(QueryResult<T> actual) {
                 return actual.getResult();
@@ -31,12 +32,21 @@ public class VariantMatchers {
         };
     }
 
+    public static <T> Matcher<QueryResult<T>> everyResult(QueryResult<T> allValues, Matcher<T> subMatcher) {
+        return everyResult(allValues.getResult(), subMatcher);
+    }
+
+    public static <T> Matcher<QueryResult<T>> everyResult(List<T> allValues, Matcher<T> subMatcher) {
+        long count = count(allValues, subMatcher);
+        return allOf(numResults(is((int) count)), everyResult(subMatcher));
+    }
+
     public static <T> Matcher<QueryResult<T>> everyResult(Matcher<T> subMatcher) {
         return hasResult(Every.everyItem(subMatcher));
     }
 
     public static Matcher<QueryResult<?>> numTotalResults(Matcher<Long> subMatcher) {
-        return new FeatureMatcher<QueryResult<?>, Long>(subMatcher, "QueryResult with NumTotalResults", "NumTotalResults") {
+        return new FeatureMatcher<QueryResult<?>, Long>(subMatcher, "a queryResult with numTotalResults", "NumTotalResults") {
             @Override
             protected Long featureValueOf(QueryResult<?> actual) {
                 return actual.getNumTotalResults();
@@ -44,15 +54,13 @@ public class VariantMatchers {
         };
     }
     public static Matcher<QueryResult<?>> numResults(Matcher<Integer> subMatcher) {
-        return new FeatureMatcher<QueryResult<?>, Integer>(subMatcher, "QueryResult with NumResults", "NumResults") {
+        return new FeatureMatcher<QueryResult<?>, Integer>(subMatcher, "a queryResult with numResults", "NumResults") {
             @Override
             protected Integer featureValueOf(QueryResult<?> actual) {
                 return actual.getNumResults();
             }
         };
     }
-
-
 
     public static Matcher<Variant> hasAnnotation(Matcher<? super VariantAnnotation> subMatcher) {
         return new FeatureMatcher<Variant, VariantAnnotation>(subMatcher, "with variant annotation", "VariantAnnotation") {
@@ -82,6 +90,42 @@ public class VariantMatchers {
                         .flatMap(Collection::stream)
                         .map(SequenceOntologyTerm::getAccession)
                         .collect(Collectors.toSet());
+            }
+        };
+    }
+
+    public static Matcher<Variant> firstStudy(Matcher<? super StudyEntry> subMatcher) {
+        return new FeatureMatcher<Variant, StudyEntry>(subMatcher, "with first study", "Study") {
+            @Override
+            protected StudyEntry featureValueOf(Variant actual) {
+                return actual.getStudies().get(0);
+            }
+        };
+    }
+
+    public static Matcher<Variant> withStudy(final String study, Matcher<? super StudyEntry> subMatcher) {
+        return new FeatureMatcher<Variant, StudyEntry>(subMatcher, "with study " + study, "Study") {
+            @Override
+            protected StudyEntry featureValueOf(Variant actual) {
+                return actual.getStudy(study);
+            }
+        };
+    }
+
+    public static Matcher<StudyEntry> withStats(final String cohortName, Matcher<? super VariantStats> subMatcher) {
+        return new FeatureMatcher<StudyEntry, VariantStats>(subMatcher, "with stats " + cohortName, "Stats") {
+            @Override
+            protected VariantStats featureValueOf(StudyEntry actual) {
+                return actual.getStats(cohortName);
+            }
+        };
+    }
+
+    public static Matcher<VariantStats> withMaf(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with maf", "MAF") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getMaf();
             }
         };
     }
@@ -122,6 +166,16 @@ public class VariantMatchers {
                 description.appendText("< " + n);
             }
         };
+    }
+
+    public static <T> long count(List<T> objects, Matcher<T> matcher) {
+        long c = 0;
+        for (T t: objects) {
+            if (matcher.matches(t)) {
+                c++;
+            }
+        }
+        return c;
     }
 
 //    private static class VariantVariantAnnotationFeatureMatcher extends FeatureMatcher<Variant, VariantAnnotation> {
