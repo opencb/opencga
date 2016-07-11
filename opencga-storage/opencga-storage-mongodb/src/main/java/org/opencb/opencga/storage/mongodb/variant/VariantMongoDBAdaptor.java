@@ -1450,8 +1450,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 }
             }
         } else { //Include all
-            for (String values : DocumentToVariantConverter.FIELDS_MAP.values()) {
-                projection.put(values, 1);
+            for (String field : DocumentToVariantConverter.FIELDS_MAP.values()) {
+                if (field != null) {
+                    projection.put(field, 1);
+                }
             }
             if (options.containsKey(QueryOptions.EXCLUDE)) { // Exclude some
                 List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
@@ -1464,6 +1466,10 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                     }
                 }
             }
+        }
+
+        for (String field : DocumentToVariantConverter.REQUIRED_FIELDS_MAP) {
+            projection.put(field, 1);
         }
 
 //        if (query.containsKey(VariantQueryParams.RETURNED_FILES.key()) && projection.containsKey(DocumentToVariantConverter
@@ -1826,17 +1832,26 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (query.containsKey(VariantQueryParams.UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
-        if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
+        if (options.getAsStringList(QueryOptions.EXCLUDE).contains(DocumentToVariantConverter.EXCLUDE_STUDIES_SAMPLES_DATA_FIELD)) {
+            samplesConverter.setReturnedSamples(Collections.singletonList("none"));
+        } else if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             //Remove the studyName, if any
             samplesConverter.setReturnedSamples(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                    .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList()));
+                    .stream()
+                    .map(s -> s.contains(":") ? s.split(":")[1] : s)
+                    .collect(Collectors.toList()));
         }
-        DocumentToStudyVariantEntryConverter studyEntryConverter = new DocumentToStudyVariantEntryConverter(false,
-                query.containsKey(VariantQueryParams.RETURNED_FILES.key())
-                        ? query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key())
-                        : null,
-                samplesConverter
-        );
+        DocumentToStudyVariantEntryConverter studyEntryConverter;
+        Collection<Integer> returnedFiles;
+        if (options.getAsStringList(QueryOptions.EXCLUDE).contains(DocumentToVariantConverter.EXCLUDE_STUDIES_FILES_FIELD)) {
+            returnedFiles = Collections.emptyList();
+        } else if (query.containsKey(VariantQueryParams.RETURNED_FILES.key())) {
+            returnedFiles = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());
+        } else {
+            returnedFiles = null;
+        }
+
+        studyEntryConverter = new DocumentToStudyVariantEntryConverter(false, returnedFiles, samplesConverter);
         studyEntryConverter.setStudyConfigurationManager(studyConfigurationManager);
         List<Integer> returnedStudies = query.containsKey(VariantQueryParams.RETURNED_STUDIES.key())
                 ? utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options)
