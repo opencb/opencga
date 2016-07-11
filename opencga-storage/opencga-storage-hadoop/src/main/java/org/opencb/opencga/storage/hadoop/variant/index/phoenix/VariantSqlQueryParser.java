@@ -124,6 +124,11 @@ public class VariantSqlQueryParser {
                 for (String studyColumn : STUDY_COLUMNS) {
                     sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
                 }
+                StudyConfiguration studyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    Column statsColumn = getStatsColumn(studyId, cohortId);
+                    sb.append(",\"").append(statsColumn.column()).append('"');
+                }
             }
 
             sb.append(',').append(VariantColumn.FULL_ANNOTATION);

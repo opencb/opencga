@@ -101,7 +101,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     private static void newRootDir() throws IOException {
-        rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+ RandomStringUtils.randomAlphanumeric(10));
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + System.currentTimeMillis() + "_" + RandomStringUtils.randomAlphanumeric(5));
         Files.createDirectories(rootDir);
     }
 

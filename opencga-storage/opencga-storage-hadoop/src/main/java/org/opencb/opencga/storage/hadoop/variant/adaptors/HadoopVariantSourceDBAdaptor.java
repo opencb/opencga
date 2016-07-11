@@ -50,10 +50,9 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     @Override
-    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration, QueryOptions queryOptions) {
-
+    public QueryResult updateSourceStats(VariantSourceStats variantSourceStats, StudyConfiguration studyConfiguration,
+                                         QueryOptions queryOptions) {
         logger.warn("Unimplemented method!");
-
         return null;
     }
 

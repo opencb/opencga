@@ -91,6 +91,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                     .append(VariantAnnotationManager.VARIANT_ANNOTATOR_CLASSNAME, CellBaseVariantAnnotator.class.getName())
                     .append(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
             params.putAll(getOtherParams());
+            params.put(VariantStorageManager.Options.CALCULATE_STATS.key(), false);
             StorageETLResult etlResult = runDefaultETL(smallInputUri, getVariantStorageManager(), studyConfiguration, params);
             source = variantStorageManager.getVariantReaderUtils().readVariantSource(Paths.get(etlResult.getTransformResult().getPath()).toUri());
             NUM_VARIANTS = getExpectedNumLoadedVariants(source);

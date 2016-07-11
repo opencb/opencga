@@ -4,6 +4,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.QueryUtil;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -28,8 +29,11 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
 public class VariantPhoenixHelper {
 
     public static final String STATS_PREFIX = "ST_";
+    public static final byte[] STATS_PREFIX_BYTES = Bytes.toBytes(STATS_PREFIX);
     public static final String POPULATION_FREQUENCY_PREFIX = "PF_";
     public static final String FUNCTIONAL_SCORE_PREFIX = "FS_";
+    public static final String PROTOBUF_SUFIX = "_PB";
+    public static final byte[] PROTOBUF_SUFIX_BYTES = Bytes.toBytes(PROTOBUF_SUFIX);
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
 
     public interface Column {
@@ -168,6 +172,17 @@ public class VariantPhoenixHelper {
         }
     }
 
+    public void updateStatsFields(Connection con, String tableName, StudyConfiguration studyConfiguration) throws SQLException {
+        for (Integer cohortId : studyConfiguration.getCohortIds().values()) {
+            Column column = getMafColumn(studyConfiguration.getStudyId(), cohortId);
+            String sql = buildAlterViewAddColumn(tableName, column.column(), column.sqlType(), true);
+            execute(con, sql);
+            column = getStatsColumn(studyConfiguration.getStudyId(), cohortId);
+            sql = buildAlterViewAddColumn(tableName, column.column(), column.sqlType(), true);
+            execute(con, sql);
+        }
+    }
+
     public void registerNewStudy(Connection con, String table, Integer studyId) throws SQLException {
         execute(con, buildCreateView(table));
         addView(con, table, studyId, PUnsignedInt.INSTANCE, VariantTableStudyRow.HOM_REF, VariantTableStudyRow.PASS_CNT,
@@ -267,7 +282,7 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getStatsColumn(int studyId, int cohortId) {
-        return Column.build(STATS_PREFIX + studyId + "_" + cohortId, PFloat.INSTANCE);
+        return Column.build(STATS_PREFIX + studyId + "_" + cohortId + PROTOBUF_SUFIX, PVarbinary.INSTANCE);
     }
 
     public static byte[] toBytes(Collection collection, PArrayDataType arrayType) {

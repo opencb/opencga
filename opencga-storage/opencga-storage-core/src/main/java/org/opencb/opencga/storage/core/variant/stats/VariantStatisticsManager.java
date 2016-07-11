@@ -318,6 +318,8 @@ public class VariantStatisticsManager {
     public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
             throws IOException {
 
+        variantDBAdaptor.preUpdateStats(studyConfiguration);
+
         /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());
         InputStream variantInputStream;

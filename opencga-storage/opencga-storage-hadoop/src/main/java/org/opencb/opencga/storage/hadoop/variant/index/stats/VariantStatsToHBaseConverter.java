@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.stats;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PBinary;
 import org.apache.phoenix.schema.types.PFloat;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -50,31 +49,42 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
             Integer cohortId = studyConfiguration.getCohortIds().get(entry.getKey());
             Column mafColumn = VariantPhoenixHelper.getMafColumn(studyId, cohortId);
-            Column statsColumn = VariantPhoenixHelper.getMafColumn(studyId, cohortId);
+            Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
 
             VariantStats stats = entry.getValue();
             add(put, mafColumn.bytes(), stats.getMaf(), PFloat.INSTANCE);
 
             VariantProto.VariantStats.Builder builder = VariantProto.VariantStats.newBuilder()
                     .setAltAlleleFreq(stats.getAltAlleleFreq())
-                    .setRefAlleleFreq(stats.getRefAlleleFreq());
+                    .setAltAlleleCount(stats.getAltAlleleCount())
+                    .setRefAlleleFreq(stats.getRefAlleleFreq())
+                    .setRefAlleleCount(stats.getRefAlleleCount())
+                    .setMissingAlleles(stats.getMissingAlleles())
+                    .setMissingGenotypes(stats.getMissingGenotypes());
+
             if (stats.getMafAllele() != null) {
                 builder.setMaf(stats.getMaf())
                         .setMafAllele(stats.getMafAllele());
             }
+
             if (stats.getMgfGenotype() != null) {
                 builder.setMgf(stats.getMgf())
                         .setMgfGenotype(stats.getMgfGenotype());
             }
-            builder.setMissingAlleles(stats.getMissingAlleles())
-                    .setMissingGenotypes(stats.getMissingGenotypes());
-            if (stats.getGenotypesCount() != null && !stats.getGenotypesCount().isEmpty()) {
-                Map<String, Integer> map = new HashMap<>();
+
+            if (stats.getGenotypesCount() != null) {
+                Map<String, Integer> map = new HashMap<>(stats.getGenotypesCount().size());
                 stats.getGenotypesCount().forEach((genotype, count) -> map.put(genotype.toString(), count));
                 builder.putAllGenotypesCount(map);
             }
-            add(put, statsColumn.bytes(), builder.build().toByteArray(), PBinary.INSTANCE);
 
+            if (stats.getGenotypesFreq() != null) {
+                Map<String, Float> map = new HashMap<>(stats.getGenotypesFreq().size());
+                stats.getGenotypesFreq().forEach((genotype, freq) -> map.put(genotype.toString(), freq));
+                builder.putAllGenotypesFreq(map);
+            }
+
+            add(put, statsColumn.bytes(), builder.build().toByteArray(), statsColumn.getPDataType());
         }
         return put;
     }

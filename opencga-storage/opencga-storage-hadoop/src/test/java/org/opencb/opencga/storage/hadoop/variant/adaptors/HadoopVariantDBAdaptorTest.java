@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -15,6 +16,15 @@ import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTest
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
 public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements HadoopVariantStorageManagerTestUtils {
+
+
+    @Before
+    public void setUp() throws Exception {
+        HadoopVariantStorageManagerTestUtils.printHBaseVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+
+
+    }
+
 
     @ClassRule
     public static ExternalResource externalResource = new HadoopExternalResource();

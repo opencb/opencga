@@ -407,6 +407,19 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         throw new UnsupportedOperationException();
     }
 
+
+    @Override
+    /**
+     * Ensure that all the annotation fields exist are defined.
+     */
+    public void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {
+        try {
+            phoenixHelper.updateStatsFields(phoenixCon, variantTable, studyConfiguration);
+        } catch (SQLException e) {
+            throw new IOException(e);
+        }
+    }
+
     @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
         return updateStats(variantStatsWrappers, studyName, queryOptions);
@@ -429,7 +442,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
             table.put(puts);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new UncheckedIOException(e);
         }
         return new QueryResult<>("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }

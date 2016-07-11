@@ -334,6 +334,8 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         return samples;
     }
 
+    default void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {}
+
     QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
     QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
