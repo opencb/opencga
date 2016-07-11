@@ -326,7 +326,32 @@ public class VariantSqlQueryParser {
 
         unsupportedFilter(query, FILES);
 
-        unsupportedFilter(query, COHORTS);
+        if (isValidParam(query, COHORTS)) {
+            for (String cohort : query.getAsStringList(COHORTS.key())) {
+                boolean negated = false;
+                if (cohort.startsWith("!")) {
+                    cohort = cohort.substring(1);
+                    negated = true;
+                }
+                String[] studyCohort = cohort.split(":");
+                StudyConfiguration studyConfiguration;
+                if (studyCohort.length == 2) {
+                    studyConfiguration = utils.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration);
+                    cohort = studyCohort[1];
+                } else if (studyCohort.length == 1) {
+                    studyConfiguration = defaultStudyConfiguration;
+                } else {
+                    throw VariantQueryException.malformedParam(COHORTS, query.getString((COHORTS.key())), "Expected {study}:{cohort}");
+                }
+                int cohortId = utils.getCohortId(cohort, studyConfiguration);
+                Column column = VariantPhoenixHelper.getStatsColumn(studyConfiguration.getStudyId(), cohortId);
+                if (negated) {
+                    filters.add(column + " IS NULL");
+                } else {
+                    filters.add(column + " IS NOT NULL");
+                }
+            }
+        }
 
         //
         //
@@ -533,22 +558,22 @@ public class VariantSqlQueryParser {
         addQueryFilter(query, STATS_MAF, (keyOpValue, v) -> {
 
             String key = keyOpValue[0];
-            String[] studyCohort = key.split(":");
+            int indexOf = key.lastIndexOf(":");
+
             String cohort;
             final StudyConfiguration sc;
-            if (studyCohort.length == 2) {
-                String study = studyCohort[0];
-                cohort = studyCohort[1];
+            if (indexOf > 0) {
+                String study = key.substring(0, indexOf);
+                cohort = key.substring(indexOf + 1);
                 sc = utils.getStudyConfiguration(study, defaultStudyConfiguration);
             } else {
-                cohort = studyCohort[0];
+                cohort = key;
                 sc = defaultStudyConfiguration;
             }
             int cohortId = utils.getCohortId(cohort, sc);
 
             return VariantPhoenixHelper.getMafColumn(sc.getStudyId(), cohortId);
         }, null, filters);
-        unsupportedFilter(query, STATS_MAF);
 
         unsupportedFilter(query, STATS_MGF);
 

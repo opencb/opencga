@@ -1133,22 +1133,22 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants_cohorts() throws Exception {
 
         queryResult = dbAdaptor.get(new Query(COHORTS.key(), "1000g:cohort2"), null);
-        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+        assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
         queryResult = dbAdaptor.get(new Query(COHORTS.key(), "1000g:cohort1"), null);
-        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+        assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
         queryResult = dbAdaptor.get(new Query(STUDIES.key(), "1000g")
                 .append(COHORTS.key(), "cohort1"), null);
-        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+        assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
         queryResult = dbAdaptor.get(new Query(STUDIES.key(), 1)
                 .append(COHORTS.key(), "cohort1"), null);
-        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+        assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
         queryResult = dbAdaptor.get(new Query(STUDIES.key(), 1)
                 .append(COHORTS.key(), 10), null);
-        assertEquals(NUM_VARIANTS, queryResult.getNumResults());
+        assertEquals(allVariants.getNumResults(), queryResult.getNumResults());
 
         queryResult = dbAdaptor.get(new Query(STUDIES.key(), 1)
                 .append(COHORTS.key(), "!cohort1"), null);
@@ -1158,7 +1158,9 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_cohorts_fail1() throws Exception {
-        thrown.expect(VariantQueryException.class);
+        VariantQueryException expected = VariantQueryException.cohortNotFound("cohort5_dont_exists", 1, studyConfiguration.getCohortIds().keySet());
+        thrown.expect(expected.getClass());
+        thrown.expectMessage(expected.getMessage());
         queryResult = dbAdaptor.get(new Query(STUDIES.key(), 1)
                 .append(COHORTS.key(), "!cohort5_dont_exists"), null);
     }

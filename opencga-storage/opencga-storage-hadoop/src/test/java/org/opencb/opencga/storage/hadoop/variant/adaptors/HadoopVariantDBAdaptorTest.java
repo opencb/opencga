@@ -20,9 +20,7 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
     @Before
     public void setUp() throws Exception {
-        HadoopVariantStorageManagerTestUtils.printHBaseVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
-
-
+//        HadoopVariantStorageManagerTestUtils.printHBaseVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
     }
 
 

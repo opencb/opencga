@@ -1321,35 +1321,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                 } else {
                                     String study;
                                     String cohort;
-                                    Integer studyId;
                                     Integer cohortId;
                                     if (defaultStudyConfiguration != null && indexOf < 0) {
                                         cohort = s;
-                                        cohortId = getInteger(cohort);
-                                        if (cohortId == null) {
-                                            cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
-                                        }
+                                        cohortId = utils.getCohortId(cohort, defaultStudyConfiguration);
                                     } else {
                                         study = s.substring(0, indexOf);
                                         cohort = s.substring(indexOf + 1);
-                                        studyId = getInteger(study);
-                                        cohortId = getInteger(cohort);
-
-                                        if (studyId == null) {
-                                            StudyConfiguration studyConfiguration =
-                                                    studyConfigurationManager.getStudyConfiguration(study, null).first();
-                                            studyId = studyConfiguration.getStudyId();
-                                            if (cohortId == null) {
-                                                cohortId = studyConfiguration.getCohortIds().get(cohort);
-                                            }
-                                        } else if (cohortId == null) {
-                                            StudyConfiguration studyConfiguration =
-                                                    studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                                            cohortId = studyConfiguration.getCohortIds().get(cohort);
-                                        }
-                                    }
-                                    if (cohortId == null) {
-                                        throw new VariantQueryException("Unknown cohort \"" + s + "\"");
+                                        StudyConfiguration studyConfiguration =
+                                                utils.getStudyConfiguration(study, defaultStudyConfiguration);
+                                        cohortId = utils.getCohortId(cohort, studyConfiguration);
                                     }
                                     return cohortId;
                                 }
