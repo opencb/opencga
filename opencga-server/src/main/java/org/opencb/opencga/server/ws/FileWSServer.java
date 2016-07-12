@@ -997,4 +997,20 @@ public class FileWSServer extends OpenCGAWSServer {
         }
     }
 
+    @GET
+    @Path("/{folderId}/scan")
+    @ApiOperation(value = "Scans a folder", position = 6)
+    public Response scan(@PathParam(value = "folderId") @FormDataParam("folderId") String folderIdStr,
+                         @ApiParam(value = "calculateChecksum") @QueryParam("calculateChecksum") @DefaultValue("false") boolean calculateChecksum) {
+        try {
+            int folderId = catalogManager.getFileId(folderIdStr);
+            File directory = catalogManager.getFile(folderId, sessionId).first();
+            List<File> scan = new FileScanner(catalogManager)
+                    .scan(directory, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
+            return createOkResponse(scan, MediaType.TEXT_PLAIN_TYPE);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
 }
