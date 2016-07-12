@@ -1007,7 +1007,7 @@ public class FileWSServer extends OpenCGAWSServer {
             File directory = catalogManager.getFile(folderId, sessionId).first();
             List<File> scan = new FileScanner(catalogManager)
                     .scan(directory, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
-            return createOkResponse(scan, MediaType.TEXT_PLAIN_TYPE);
+            return createOkResponse(new QueryResult<>("Scan", 0, scan.size(), scan.size(), "", "", scan));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
