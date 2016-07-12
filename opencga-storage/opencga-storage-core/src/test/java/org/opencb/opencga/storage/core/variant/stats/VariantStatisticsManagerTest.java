@@ -52,8 +52,8 @@ public abstract class VariantStatisticsManagerTest extends VariantStorageManager
     public void before() throws Exception {
         studyConfiguration = newStudyConfiguration();
         clearDB(DB_NAME);
-        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration, new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(),
-                false));
+        runDefaultETL(inputUri, getVariantStorageManager(), studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.ANNOTATE.key(), false));
         dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
     }
 

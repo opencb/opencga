@@ -182,7 +182,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         newParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), FILE_ID);
-        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
         newParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
