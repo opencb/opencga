@@ -116,7 +116,6 @@ public class VariantGrpcService extends GenericGrpcService implements VariantSer
                 .setLength(var.getLength())
                 .setReference(var.getReference())
                 .setAlternate(var.getAlternate())
-                .setId(var.getId())
                 .build();
 
         return build;

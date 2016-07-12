@@ -186,6 +186,9 @@ public class FileScanner {
             URI uri = iterator.next();
             URI generatedFile = directoryToScan.relativize(uri);
             String filePath = Paths.get(directory.getPath(), generatedFile.toString()).toString();
+            if (generatedFile.getPath().endsWith("/")) {
+                filePath += "/";
+            }
 
             QueryResult<File> searchFile = catalogManager.searchFile(studyId, new QueryOptions("path", filePath), sessionId);
 
@@ -229,15 +232,17 @@ public class FileScanner {
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
-                if (file.getStatus().equals(File.Status.MISSING)) {
-                    logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
-                    logger.debug("Set status to " + File.Status.READY);
-                    returnFile = true;      //Return file because was missing
+                if (file.getType() != File.Type.FOLDER) {
+                    if (file.getStatus().equals(File.Status.MISSING)) {
+                        logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
+                        logger.debug("Set status to " + File.Status.READY);
+                        returnFile = true;      //Return file because was missing
+                    }
+                    long start = System.currentTimeMillis();
+                    catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
+                    long end = System.currentTimeMillis();
+                    uploadFilesTime += end - start;
                 }
-                long start = System.currentTimeMillis();
-                catalogFileUtils.upload(uri, file, null, sessionId, true, true, deleteSource, calculateChecksum);
-                long end = System.currentTimeMillis();
-                uploadFilesTime += end - start;
             }
 
             try {

@@ -117,9 +117,14 @@ public class FileScannerTest extends TestCase {
     @Test
     public void testReplaceExisting() throws IOException, CatalogException {
         CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/file1.txt");
+        Files.createDirectory(Paths.get("/tmp/catalog_scan_test_folder/s/"));
+        CatalogManagerTest.createDebugFile("/tmp/catalog_scan_test_folder/s/file2.txt");
 
         File file = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "file1.txt",
                 CatalogManagerTest.createDebugFile().toURI(), "", false, sessionIdUser).first();
+
+        File file2 = catalogManager.createFile(study.getId(), File.Format.PLAIN, File.Bioformat.NONE, folder.getPath() + "s/file2.txt",
+                CatalogManagerTest.createDebugFile().toURI(), "", true, sessionIdUser).first();
 
         FileScanner fileScanner = new FileScanner(catalogManager);
         fileScanner.scan(folder, directory.toUri(), FileScanner.FileScannerPolicy.REPLACE, true, true, sessionIdUser);
