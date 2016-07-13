@@ -24,7 +24,11 @@ import java.util.stream.Stream;
  */
 public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
-    public static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] { VariantType.SNV, VariantType.SNP };
+    public static final VariantType[] TARGET_VARIANT_TYPE = new VariantType[] {
+            VariantType.SNV, VariantType.SNP,
+            VariantType.INDEL, VariantType.INSERTION, VariantType.DELETION,
+            VariantType.MNV, VariantType.MNP,
+    };
 
     /*
      *

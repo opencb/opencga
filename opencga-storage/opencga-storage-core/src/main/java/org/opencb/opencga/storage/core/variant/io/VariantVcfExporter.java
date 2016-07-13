@@ -117,9 +117,9 @@ public class VariantVcfExporter {
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
 
         int studyId = studyConfiguration.getStudyId();
-        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_PR",1,VCFHeaderLineType.Float,"Pass rate"));
-        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_CR",1,VCFHeaderLineType.Float,"Call rate"));
-        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_OPR",1,VCFHeaderLineType.Float,"Overall Pass rate"));
+        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_PR", 1, VCFHeaderLineType.Float, "Pass rate"));
+        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_CR", 1, VCFHeaderLineType.Float, "Call rate"));
+        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_OPR", 1, VCFHeaderLineType.Float, "Overall Pass rate"));
 
         // check if variant annotations are exported in the INFO column
         List<String> annotations = null;
@@ -233,8 +233,9 @@ public class VariantVcfExporter {
      * * If some normalization has been applied, the source entries may have an attribute ORI like: "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
      *
      * @param variant A variant object to be converted
-     * @param studyConfiguration
-     *@param annotations Variant annotation  @return The variant in HTSJDK format
+     * @param studyConfiguration StudyConfiguration
+     * @param annotations Variant annotation  @return The variant in HTSJDK format
+     * @return VariantContext
      */
     public VariantContext convertVariantToVariantContext(Variant variant, StudyConfiguration studyConfiguration,
                                                          List<String> annotations) { //, StudyConfiguration
@@ -301,14 +302,14 @@ public class VariantVcfExporter {
                     String genotypeFilter = sampleData.get("FT");
                     if (StringUtils.isBlank(genotypeFilter)) {
                         genotypeFilter = ".";
-                    } else if(StringUtils.equals("PASS",genotypeFilter)) {
+                    } else if (StringUtils.equals("PASS", genotypeFilter)) {
                         genotypeFilter = "1";
                     } else {
                         genotypeFilter = "0";
                     }
                     genotypes.add(new GenotypeBuilder().name(sampleName).alleles(alleles)
                             .phased(genotype.isPhased())
-                            .attribute("PF",genotypeFilter)
+                            .attribute("PF", genotypeFilter)
                             .make());
                 }
             }

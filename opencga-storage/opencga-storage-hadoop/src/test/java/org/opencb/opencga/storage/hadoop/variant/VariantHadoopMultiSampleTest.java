@@ -20,9 +20,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
+import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
@@ -30,6 +32,9 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.net.URI;
 import java.util.*;
 
@@ -214,7 +219,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             inputFiles.add(getResourceUri(fileName));
         }
 
-
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
         options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
@@ -227,8 +231,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             System.out.println(storageETLResult);
         }
 
-        printVariantsFromArchiveTable(studyConfiguration);
-
+        try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("platinum.merged.archive.json").getPath()))){
+            printVariantsFromArchiveTable(studyConfiguration, out);
+        }
 
 //        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
@@ -253,6 +258,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             assertNotNull(vcfMeta);
         }
 
+        FileStudyConfigurationManager.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
+        studyConfiguration.setHeaders(Collections.singletonMap(0, dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), 0).getMeta().getVariantSource().getMetadata().get("variantFileHeader").toString()));
+        VariantVcfExporter exporter = new VariantVcfExporter();
+        try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
+            exporter.export(dbAdaptor.iterator(), studyConfiguration, out, new QueryOptions());
+        }
     }
 
     @Test
@@ -354,7 +365,12 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         assertEquals("0/1", variants.get("1:13000:T:G").getStudy(studyName).getSampleData("s2", "GT"));
     }
 
+
     public VariantHadoopDBAdaptor printVariantsFromArchiveTable(StudyConfiguration studyConfiguration) throws Exception {
+        return printVariantsFromArchiveTable(studyConfiguration, System.out);
+    }
+
+    public VariantHadoopDBAdaptor printVariantsFromArchiveTable(StudyConfiguration studyConfiguration, PrintStream out) throws Exception {
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
 
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
@@ -363,10 +379,10 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
                 try {
                     byte[] value = result.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
                     if (value != null) {
-                        System.out.println(VariantTableStudyRowsProto.parseFrom(value));
+                        out.println(VariantTableStudyRowsProto.parseFrom(value));
                     }
                 } catch (Exception e) {
-                    System.out.println("e.getMessage() = " + e.getMessage());
+                    System.err.println("e.getMessage() = " + e.getMessage());
                 }
             }
             return 0;
