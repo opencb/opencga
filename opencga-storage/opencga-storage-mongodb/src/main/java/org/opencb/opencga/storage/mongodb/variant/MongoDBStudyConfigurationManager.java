@@ -16,26 +16,33 @@
 
 package org.opencb.opencga.storage.mongodb.variant;
 
+import com.mongodb.DuplicateKeyException;
+import com.mongodb.MongoWriteException;
 import com.mongodb.client.model.Projections;
+import com.mongodb.client.model.Updates;
 import com.mongodb.client.result.UpdateResult;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
+import org.opencb.opencga.storage.mongodb.utils.MongoLock;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToStudyConfigurationConverter;
 
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
-import static org.opencb.commons.datastore.mongodb.MongoDBCollection.REPLACE;
+import static com.mongodb.client.model.Updates.set;
 import static org.opencb.commons.datastore.mongodb.MongoDBCollection.UPSERT;
 
 /**
@@ -49,6 +56,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     private final boolean closeConnection;
 
     private final DocumentToStudyConfigurationConverter studyConfigurationConverter = new DocumentToStudyConfigurationConverter();
+    private final MongoLock mongoLock;
 
     public MongoDBStudyConfigurationManager(MongoCredentials credentials, String collectionName) throws UnknownHostException {
         super(null);
@@ -57,6 +65,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         closeConnection = true;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         this.collectionName = collectionName;
+        mongoLock = new MongoLock(db.getCollection(collectionName), "_lock");
     }
 
     public MongoDBStudyConfigurationManager(MongoDataStoreManager mongoManager, MongoCredentials credentials, String collectionName)
@@ -67,6 +76,7 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         closeConnection = false;
         db = mongoManager.get(credentials.getMongoDbName(), credentials.getMongoDBConfiguration());
         this.collectionName = collectionName;
+        mongoLock = new MongoLock(db.getCollection(collectionName), "_lock");
     }
 
     @Override
@@ -77,6 +87,30 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
     @Override
     protected QueryResult<StudyConfiguration> internalGetStudyConfiguration(int studyId, Long timeStamp, QueryOptions options) {
         return internalGetStudyConfiguration(studyId, null, timeStamp, options);
+    }
+
+    @Override
+    public long lockStudy(int studyId, long lockDuration, long timeout) throws InterruptedException, TimeoutException {
+        try {
+            // Ensure document exists
+            MongoDBCollection coll = db.getCollection(collectionName);
+            coll.update(new Document("_id", studyId), set("id", studyId), new QueryOptions(MongoDBCollection.UPSERT, true));
+        } catch (MongoWriteException e) {
+            // Duplicated key exception
+            if (e.getError().getCode() != 11000) {
+                throw e;
+            }
+        } catch (DuplicateKeyException ignore) {
+            // Ignore this exception.
+            // With UPSERT=true, this command should never throw DuplicatedKeyException.
+            // See https://jira.mongodb.org/browse/SERVER-14322
+        }
+        return mongoLock.lock(studyId, lockDuration, timeout);
+    }
+
+    @Override
+    public void unLockStudy(int studyId, long lockId) {
+        mongoLock.unlock(studyId, lockId);
     }
 
     private QueryResult<StudyConfiguration> internalGetStudyConfiguration(Integer studyId, String studyName, Long timeStamp, QueryOptions
@@ -101,7 +135,12 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         if (queryResult.getResult().isEmpty()) {
             studyConfiguration = null;
         } else {
-            studyConfiguration = queryResult.first();
+            if (queryResult.first().getStudyName() == null) {
+                // If the studyName is null, it may be only a lock instead of a real study configuration
+                studyConfiguration = null;
+            } else {
+                studyConfiguration = queryResult.first();
+            }
         }
 
         if (studyConfiguration == null) {
@@ -117,8 +156,11 @@ public class MongoDBStudyConfigurationManager extends StudyConfigurationManager 
         MongoDBCollection coll = db.getCollection(collectionName);
         Document studyMongo = new DocumentToStudyConfigurationConverter().convertToStorageType(studyConfiguration);
 
+        // Update field by field, instead of replacing the whole object to preserve existing fields like "_lock"
         Document query = new Document("_id", studyConfiguration.getStudyId());
-        QueryResult<UpdateResult> queryResult = coll.update(query, studyMongo, new QueryOptions(UPSERT, true).append(REPLACE, true));
+        List<Bson> updates = new ArrayList<>(studyMongo.size());
+        studyMongo.forEach((s, o) -> updates.add(new Document("$set", new Document(s, o))));
+        QueryResult<UpdateResult> queryResult = coll.update(query, Updates.combine(updates), new QueryOptions(UPSERT, true));
 //        studyConfigurationMap.put(studyConfiguration.getStudyId(), studyConfiguration);
 
         return queryResult;

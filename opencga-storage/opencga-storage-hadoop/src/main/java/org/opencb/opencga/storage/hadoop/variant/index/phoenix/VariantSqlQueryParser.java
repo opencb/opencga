@@ -6,7 +6,7 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
@@ -88,6 +88,9 @@ public class VariantSqlQueryParser {
         return sb.toString();
     }
 
+    public VariantDBAdaptorUtils getUtils() {
+        return utils;
+    }
 
     /**
      * Select only the required columns.
@@ -120,6 +123,11 @@ public class VariantSqlQueryParser {
             for (Integer studyId : studyIds) {
                 for (String studyColumn : STUDY_COLUMNS) {
                     sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
+                }
+                StudyConfiguration studyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
+                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                    Column statsColumn = getStatsColumn(studyId, cohortId);
+                    sb.append(",\"").append(statsColumn.column()).append('"');
                 }
             }
 
@@ -259,18 +267,18 @@ public class VariantSqlQueryParser {
         List<String> filters = new LinkedList<>();
 
         // Variant filters:
-        addVariantFilters(query, options, filters);
+        StudyConfiguration defaultStudyConfiguration = addVariantFilters(query, options, filters);
 
         // Annotation filters:
         addAnnotFilters(query, dynamicColumns, filters);
 
         // Stats filters:
-        addStatsFilters(query, filters);
+        addStatsFilters(query, defaultStudyConfiguration, filters);
 
         return filters;
     }
 
-    protected void addVariantFilters(Query query, QueryOptions options, List<String> filters) {
+    protected StudyConfiguration addVariantFilters(Query query, QueryOptions options, List<String> filters) {
         addSimpleQueryFilter(query, REFERENCE, VariantColumn.REFERENCE, filters);
 
         addSimpleQueryFilter(query, ALTERNATE, VariantColumn.ALTERNATE, filters);
@@ -318,7 +326,32 @@ public class VariantSqlQueryParser {
 
         unsupportedFilter(query, FILES);
 
-        unsupportedFilter(query, COHORTS);
+        if (isValidParam(query, COHORTS)) {
+            for (String cohort : query.getAsStringList(COHORTS.key())) {
+                boolean negated = false;
+                if (cohort.startsWith("!")) {
+                    cohort = cohort.substring(1);
+                    negated = true;
+                }
+                String[] studyCohort = cohort.split(":");
+                StudyConfiguration studyConfiguration;
+                if (studyCohort.length == 2) {
+                    studyConfiguration = utils.getStudyConfiguration(studyCohort[0], defaultStudyConfiguration);
+                    cohort = studyCohort[1];
+                } else if (studyCohort.length == 1) {
+                    studyConfiguration = defaultStudyConfiguration;
+                } else {
+                    throw VariantQueryException.malformedParam(COHORTS, query.getString((COHORTS.key())), "Expected {study}:{cohort}");
+                }
+                int cohortId = utils.getCohortId(cohort, studyConfiguration);
+                Column column = VariantPhoenixHelper.getStatsColumn(studyConfiguration.getStudyId(), cohortId);
+                if (negated) {
+                    filters.add(column + " IS NULL");
+                } else {
+                    filters.add(column + " IS NOT NULL");
+                }
+            }
+        }
 
         //
         //
@@ -384,6 +417,8 @@ public class VariantSqlQueryParser {
                 filters.add(gts.stream().collect(Collectors.joining(" OR ", " ( ", " ) ")));
             }
         }
+
+        return defaultStudyConfiguration;
     }
 
     private void unsupportedFilter(Query query, VariantQueryParams param) {
@@ -519,8 +554,26 @@ public class VariantSqlQueryParser {
         }, null, filters);
     }
 
-    protected void addStatsFilters(Query query, List<String> filters) {
-        unsupportedFilter(query, STATS_MAF);
+    protected void addStatsFilters(Query query, StudyConfiguration defaultStudyConfiguration, List<String> filters) {
+        addQueryFilter(query, STATS_MAF, (keyOpValue, v) -> {
+
+            String key = keyOpValue[0];
+            int indexOf = key.lastIndexOf(":");
+
+            String cohort;
+            final StudyConfiguration sc;
+            if (indexOf > 0) {
+                String study = key.substring(0, indexOf);
+                cohort = key.substring(indexOf + 1);
+                sc = utils.getStudyConfiguration(study, defaultStudyConfiguration);
+            } else {
+                cohort = key;
+                sc = defaultStudyConfiguration;
+            }
+            int cohortId = utils.getCohortId(cohort, sc);
+
+            return VariantPhoenixHelper.getMafColumn(sc.getStudyId(), cohortId);
+        }, null, filters);
 
         unsupportedFilter(query, STATS_MGF);
 
@@ -570,7 +623,7 @@ public class VariantSqlQueryParser {
      *
      * @param query             Query with the values
      * @param param             Param to read from the query
-     * @param columnParser      Column parser. Given the [key, op, value], returns a {@link Column}
+     * @param columnParser      Column parser. Given the [key, op, value] and the original value, returns a {@link Column}
      * @param operatorParser    Operator parser. Given the [key, op, value], returns a valid SQL operator
      * @param valueParser       Value parser. Given the [key, op, value], transforms the value to make the query.
      * @param extraFilters      Provides extra filters to be concatenated to the filter.

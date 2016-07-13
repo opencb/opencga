@@ -19,19 +19,20 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 
@@ -110,6 +111,11 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
                 "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\""),
         ANNOT_GENE_TRAITS_NAME("annot-gene-trait-name", TEXT_ARRAY,
                 "List of gene trait association names. e.g. \"Cardiovascular Diseases\""),
+        ANNOT_HPO("annot-hpo", TEXT_ARRAY,
+                "List of HPO terms. e.g. \"HP:0000545\""),
+        ANNOT_GO("annot-go", TEXT_ARRAY,
+                "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\""),
+        ANNOT_EXPRESSION("annot-expression", TEXT_ARRAY, "List of tissues of interest. e.g. \"tongue\""),
         ANNOT_PROTEIN_KEYWORDS("annot-protein-keywords", TEXT_ARRAY,
                 "List of protein variant annotation keywords"),
         ANNOT_DRUG("annot-drug", TEXT_ARRAY,
@@ -292,7 +298,13 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult groupBy(Query query, List<String> fields, QueryOptions options);
 
-    List<Integer> getReturnedStudies(Query query, QueryOptions options);
+    default List<Integer> getReturnedStudies(Query query, QueryOptions options) {
+        List<Integer> studyIds = getDBAdaptorUtils().getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
+        if (studyIds.isEmpty()) {
+            studyIds = getDBAdaptorUtils().getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
+        }
+        return studyIds;
+    }
     /**
      * Returns all the possible samples to be returned by an specific query.
      *
@@ -300,7 +312,29 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
      * @param options   Query Options
      * @return  Map key: StudyId, value: list of sampleIds
      */
-    Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options);
+    default Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
+        List<Integer> studyIds = getReturnedStudies(query, options);
+
+        List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
+                .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
+        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
+
+        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
+        for (Integer studyId : studyIds) {
+            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
+            if (sc == null) {
+                continue;
+            }
+            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
+            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
+            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
+            samples.put(studyId, sampleNames);
+        }
+
+        return samples;
+    }
+
+    default void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {}
 
     QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions);
 
@@ -311,8 +345,7 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     QueryResult deleteStats(String studyName, String cohortName, QueryOptions options);
 
 
-    default void preUpdateAnnotations() throws IOException {
-    }
+    default void preUpdateAnnotations() throws IOException {}
 
     QueryResult addAnnotations(List<VariantAnnotation> variantAnnotations, QueryOptions queryOptions);
 
@@ -320,6 +353,18 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
 
     QueryResult deleteAnnotation(String annotationId, Query query, QueryOptions queryOptions);
 
+
+    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        throw new UnsupportedOperationException();
+    }
+
+    StudyConfigurationManager getStudyConfigurationManager();
+
+    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
+
+    CellBaseClient getCellBaseClient();
+
+    VariantDBAdaptorUtils getDBAdaptorUtils();
 
     void close() throws IOException;
 
@@ -375,14 +420,6 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
     default QueryResult groupBy(String field, QueryOptions options) {
         throw new UnsupportedOperationException();
     }
-
-    default VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        throw new UnsupportedOperationException();
-    }
-
-    StudyConfigurationManager getStudyConfigurationManager();
-
-    void setStudyConfigurationManager(StudyConfigurationManager studyConfigurationManager);
 
     @Deprecated
     default VariantDBIterator iterator(QueryOptions options) {

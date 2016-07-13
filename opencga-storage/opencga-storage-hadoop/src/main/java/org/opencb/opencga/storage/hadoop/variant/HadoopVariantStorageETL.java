@@ -7,7 +7,9 @@ import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
@@ -38,7 +40,7 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
 //        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         URI vcfMeta = URI.create(VariantReaderUtils.getMetaFromInputFile(input.toString()));
 
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+        int studyId = getStudyId();
         int fileId = options.getInt(VariantStorageManager.Options.FILE_ID.key());
 
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");

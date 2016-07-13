@@ -35,7 +35,7 @@ import org.opencb.opencga.storage.app.cli.CommandExecutor;
 import org.opencb.opencga.storage.app.cli.OptionsParser;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.benchmark.BenchmarkManager;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
@@ -283,8 +283,7 @@ public class VariantCommandExecutor extends CommandExecutor {
                         if (queryVariantsCommandOptions.annotations != null) {
                             options.add("annotations", queryVariantsCommandOptions.annotations);
                         }
-                        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
-                        variantVcfExporter.export(iterator, studyConfigurationResult.first(), outputStream, options);
+                        VariantVcfExporter.htsExport(iterator, studyConfigurationResult.first(), outputStream, options);
                     } else {
                         logger.warn("no study found named " + query.getAsStringList(RETURNED_STUDIES.key()).get(0));
                     }

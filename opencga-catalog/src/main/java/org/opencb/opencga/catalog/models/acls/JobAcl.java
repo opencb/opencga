@@ -2,6 +2,7 @@ package org.opencb.opencga.catalog.models.acls;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -9,10 +10,7 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class JobAcl {
-
-    private List<String> users;
-    private EnumSet<JobPermissions> permissions;
+public class JobAcl extends ParentAcl<JobAcl.JobPermissions> {
 
     public enum JobPermissions {
         VIEW,
@@ -22,15 +20,15 @@ public class JobAcl {
     }
 
     public JobAcl() {
+        this("", Collections.emptyList());
     }
 
-    public JobAcl(List<String> users, EnumSet<JobPermissions> permissions) {
-        this.users = users;
-        this.permissions = permissions;
+    public JobAcl(String member, EnumSet<JobPermissions> permissions) {
+        super(member, permissions);
     }
 
-    public JobAcl(List<String> users, ObjectMap permissions) {
-        this.users = users;
+    public JobAcl(String member, ObjectMap permissions) {
+        super(member, EnumSet.noneOf(JobPermissions.class));
 
         EnumSet<JobPermissions> aux = EnumSet.allOf(JobPermissions.class);
         for (JobPermissions permission : aux) {
@@ -40,29 +38,11 @@ public class JobAcl {
         }
     }
 
-    public JobAcl(List<String> users, List<String> permissions) {
-        this.users = users;
-        this.permissions = EnumSet.noneOf(JobPermissions.class);
+    public JobAcl(String member, List<String> permissions) {
+        super(member, EnumSet.noneOf(JobPermissions.class));
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(JobPermissions::valueOf).collect(Collectors.toList()));
         }
     }
 
-    public List<String> getUsers() {
-        return users;
-    }
-
-    public JobAcl setUsers(List<String> users) {
-        this.users = users;
-        return this;
-    }
-
-    public EnumSet<JobPermissions> getPermissions() {
-        return permissions;
-    }
-
-    public JobAcl setPermissions(EnumSet<JobPermissions> permissions) {
-        this.permissions = permissions;
-        return this;
-    }
 }

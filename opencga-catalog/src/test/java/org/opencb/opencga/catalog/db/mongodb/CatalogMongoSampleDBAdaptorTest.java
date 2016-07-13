@@ -65,8 +65,8 @@ public class CatalogMongoSampleDBAdaptorTest {
         catalogSampleDBAdaptor = dbAdaptorFactory.getCatalogSampleDBAdaptor();
 
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
-        acl_s1_user1 = new SampleAcl(Arrays.asList(user1.getId()), Arrays.asList());
-        acl_s1_user2 = new SampleAcl(Arrays.asList(user2.getId()), Arrays.asList(
+        acl_s1_user1 = new SampleAcl(user1.getId(), Arrays.asList());
+        acl_s1_user2 = new SampleAcl(user2.getId(), Arrays.asList(
                 SampleAcl.SamplePermissions.VIEW.name(),
                 SampleAcl.SamplePermissions.VIEW_ANNOTATIONS.name(),
                 SampleAcl.SamplePermissions.SHARE.name(),
@@ -74,8 +74,8 @@ public class CatalogMongoSampleDBAdaptorTest {
         ));
         s1 = catalogSampleDBAdaptor.createSample(studyId, new Sample(0, "s1", "", -1, "", Arrays.asList(acl_s1_user1, acl_s1_user2), null,
                 null), null).first();
-        acl_s2_user1 = new SampleAcl(Arrays.asList(user1.getId()), Arrays.asList());
-        acl_s2_user2 = new SampleAcl(Arrays.asList(user2.getId()), Arrays.asList(
+        acl_s2_user1 = new SampleAcl(user1.getId(), Arrays.asList());
+        acl_s2_user2 = new SampleAcl(user2.getId(), Arrays.asList(
                 SampleAcl.SamplePermissions.VIEW.name(),
                 SampleAcl.SamplePermissions.VIEW_ANNOTATIONS.name(),
                 SampleAcl.SamplePermissions.SHARE.name(),
@@ -100,18 +100,18 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         Sample sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
         Map<String, AnnotationSet> annotationSets = sample.getAnnotationSets().stream()
-                .collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+                .collect(Collectors.toMap(AnnotationSet::getName, Function.identity()));
         assertEquals(2, annotationSets.size());
-        assertEquals(annot1, annotationSets.get(annot1.getId()));
-        assertEquals(annot2, annotationSets.get(annot2.getId()));
+        assertEquals(annot1, annotationSets.get(annot1.getName()));
+        assertEquals(annot2, annotationSets.get(annot2.getName()));
 
-        catalogSampleDBAdaptor.deleteAnnotation(sampleId, annot1.getId());
+        catalogSampleDBAdaptor.deleteAnnotation(sampleId, annot1.getName());
 
         sample = catalogSampleDBAdaptor.getSample(sampleId, new QueryOptions()).first();
-        annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getId, Function.identity()));
+        annotationSets = sample.getAnnotationSets().stream().collect(Collectors.toMap(AnnotationSet::getName, Function.identity()));
         assertEquals(1, annotationSets.size());
-        assertFalse(annotationSets.containsKey(annot1.getId()));
-        assertEquals(annot2, annotationSets.get(annot2.getId()));
+        assertFalse(annotationSets.containsKey(annot1.getName()));
+        assertEquals(annot2, annotationSets.get(annot2.getName()));
 
     }
 
@@ -225,31 +225,51 @@ public class CatalogMongoSampleDBAdaptorTest {
 
     @Test
     public void setSampleAclNew() throws Exception {
-        SampleAcl acl_s1_user3 = new SampleAcl(Arrays.asList(user3.getId()), Collections.emptyList());
+        SampleAcl acl_s1_user3 = new SampleAcl(user3.getId(), Collections.emptyList());
 
-        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3);
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3, true);
         QueryResult<SampleAcl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user3.getId());
         assertFalse(sampleAcl.getResult().isEmpty());
         assertEquals(acl_s1_user3.getPermissions(), sampleAcl.first().getPermissions());
 
-        SampleAcl acl_s1_user4 = new SampleAcl(Arrays.asList(user4.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
-        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4);
+        SampleAcl acl_s1_user4 = new SampleAcl(user4.getId(), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4, true);
 
         sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user4.getId());
         assertFalse(sampleAcl.getResult().isEmpty());
         assertEquals(acl_s1_user4.getPermissions(), sampleAcl.first().getPermissions());
     }
 
+    // Remove all the permissions for the users
     @Test
     public void unsetSampleAcl() throws Exception {
-        SampleAcl acl_s1_user3 = new SampleAcl(Arrays.asList(user3.getId()), Collections.emptyList());
-        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3);
+        SampleAcl acl_s1_user3 = new SampleAcl(user3.getId(), Collections.emptyList());
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user3, true);
 
-        SampleAcl acl_s1_user4 = new SampleAcl(Arrays.asList(user4.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
-        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4);
+        SampleAcl acl_s1_user4 = new SampleAcl(user4.getId(), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), acl_s1_user4, true);
 
         // Unset permissions
-        catalogSampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user3.getId(), user4.getId()));
+        catalogSampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user3.getId(), user4.getId()), Collections.emptyList());
+        QueryResult<SampleAcl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user3.getId(), user4.getId()));
+        assertEquals(0, sampleAcl.getNumResults());
+    }
+
+    // Remove some concrete permissions
+    @Test
+    public void unsetSampleAcl2() throws Exception {
+        // Unset permissions
+        QueryResult<SampleAcl> sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user2.getId()));
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(4, sampleAcl.first().getPermissions().size());
+        catalogSampleDBAdaptor.unsetSampleAcl(s1.getId(), Arrays.asList(user2.getId()),
+                Arrays.asList("VIEW_ANNOTATIONS", "DELETE", "VIEW"));
+        sampleAcl = catalogSampleDBAdaptor.getSampleAcl(s1.getId(), Arrays.asList(user2.getId()));
+        assertEquals(1, sampleAcl.getNumResults());
+        assertEquals(2, sampleAcl.first().getPermissions().size());
+        assertTrue(sampleAcl.first().getPermissions().containsAll(Arrays.asList(SampleAcl.SamplePermissions.UPDATE,
+                SampleAcl.SamplePermissions.SHARE)));
+
     }
 
     @Test
@@ -257,9 +277,9 @@ public class CatalogMongoSampleDBAdaptorTest {
         assertEquals(acl_s1_user2.getPermissions(),
                 catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first().getPermissions());
 
-        SampleAcl newAcl = new SampleAcl(Arrays.asList(user2.getId()), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
+        SampleAcl newAcl = new SampleAcl(user2.getId(), Arrays.asList(SampleAcl.SamplePermissions.DELETE.name()));
         assertTrue(!acl_s1_user2.getPermissions().equals(newAcl.getPermissions()));
-        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), newAcl);
+        catalogSampleDBAdaptor.setSampleAcl(s1.getId(), newAcl, true);
 
         assertEquals(newAcl.getPermissions(), catalogSampleDBAdaptor.getSampleAcl(s1.getId(), user2.getId()).first().getPermissions());
     }
@@ -286,7 +306,7 @@ public class CatalogMongoSampleDBAdaptorTest {
                 new QueryOptions());
         assertEquals(createResult.first().getId(), deleteResult.first().getId());
         assertEquals(1, deleteResult.getNumResults());
-        assertEquals(Status.DELETED, deleteResult.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, deleteResult.first().getStatus().getName());
     }
 
     @Test
@@ -316,7 +336,7 @@ public class CatalogMongoSampleDBAdaptorTest {
 
         Sample hg0097 = new Sample(0, "HG0097", "1000g", 0, "A description");
         QueryResult<Sample> createResult = dbAdaptorFactory.getCatalogSampleDBAdaptor().createSample(studyId, hg0097, null);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort("Cohort", Cohort.Type.COLLECTION, "", "",
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort("Cohort", Study.Type.COLLECTION, "", "",
                 Collections.singletonList(createResult.first().getId()), null), null);
 
         thrown.expect(CatalogDBException.class);
@@ -337,7 +357,7 @@ public class CatalogMongoSampleDBAdaptorTest {
             for (int i = 0; i < numThreads; i++) {
                 threads.add(new Thread(() -> {
                     try {
-                        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort(cohortName, Cohort.Type.COLLECTION,
+                        dbAdaptorFactory.getCatalogCohortDBAdaptor().createCohort(studyId, new Cohort(cohortName, Study.Type.COLLECTION,
                                 "", "", Collections.emptyList(), null), null);
                     } catch (CatalogException ignore) {
                         numFailures.incrementAndGet();

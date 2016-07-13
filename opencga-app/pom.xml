@@ -50,15 +50,15 @@
         </dependency>
         <dependency>
             <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-server</artifactId>
             <version>${opencga.version}</version>
             <!--<type>war</type>-->
         </dependency>
 
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-        </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
@@ -89,12 +89,6 @@
             <version>${jersey.version}</version>
         </dependency>
 
-        <!--<dependency>-->
-            <!--<groupId>org.opencb.opencga</groupId>-->
-            <!--<artifactId>opencga-storage-app</artifactId>-->
-            <!--<version>${opencga.version}</version>-->
-            <!--<scope>test</scope>-->
-        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-catalog</artifactId>
@@ -109,6 +103,14 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-client</artifactId>
+            <version>${opencga.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
         <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
@@ -151,13 +153,22 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <!--<configurationDirectory>conf/</configurationDirectory>-->
+                    <!--By default, "etc".-->
+                    <configurationDirectory>conf</configurationDirectory>
+                    <!--Do we need to include the configuration folder in the classpath?-->
                     <includeConfigurationDirectoryInClasspath>false</includeConfigurationDirectoryInClasspath>
                     <extraJvmArguments>-Xms256m -Xmx2048m</extraJvmArguments>
                     <programs>
                         <program>
                             <name>opencga.sh</name>
-                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMainOld</mainClass>
+                            <platforms>
+                                <platform>unix</platform>
+                            </platforms>
+                        </program>
+                        <program>
+                            <name>opencga-rest.sh</name>
+                            <mainClass>org.opencb.opencga.app.cli.main.OpencgaMain</mainClass>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -184,28 +195,6 @@
                             </platforms>
                         </program>
                     </programs>
-
-                    <!--<daemons>-->
-                        <!--<daemon>-->
-                            <!--<id>daemon-1</id>-->
-                            <!--<mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>-->
-                            <!--<commandLineArguments>-->
-                                <!--<commandLineArgument>argument_one</commandLineArgument>-->
-                            <!--</commandLineArguments>-->
-                            <!--<generatorConfigurations>-->
-                                <!--<generatorConfiguration>-->
-                                    <!--<generator>jsw</generator>-->
-                                    <!--<includes>-->
-                                        <!--<include>linux-x86-64</include>-->
-                                    <!--</includes>-->
-                                <!--</generatorConfiguration>-->
-                            <!--</generatorConfigurations>-->
-                            <!--<platforms>-->
-                                <!--<platform>jsw</platform>-->
-                            <!--</platforms>-->
-                        <!--</daemon>-->
-                    <!--</daemons>-->
-
                 </configuration>
             </plugin>
             <plugin>
@@ -262,13 +251,14 @@
                                     <arg value="${project.basedir}/../opencga-core/target/classes/configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-catalog/target/classes/catalog-configuration.yml"/>
                                     <arg value="${project.basedir}/../opencga-storage/opencga-storage-core/target/classes/storage-configuration.yml"/>
+                                    <arg value="${project.basedir}/../opencga-client/target/classes/client-configuration.yml"/>
                                     <arg value="${build.dir}/conf"/>
                                 </exec>
 
                                 <echo>Coping war file</echo>
                                 <exec executable="cp">
-                                    <arg value="${project.basedir}/../opencga-server/target/opencga-server-${opencga.version}.war"/>
-                                    <arg value="${build.dir}/opencga.war"/>
+                                    <arg value="${project.basedir}/../opencga-server/target/${opencga.war.name}.war"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
                             </target>
                         </configuration>

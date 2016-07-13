@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.models;
 /**
  * Created by jacobo on 11/09/14.
  */
+@Deprecated
 public class AclEntry {
 
     public static final String USER_OTHERS_ID = "*";

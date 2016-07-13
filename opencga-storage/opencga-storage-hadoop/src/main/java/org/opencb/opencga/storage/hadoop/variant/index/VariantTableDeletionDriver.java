@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 
 /**

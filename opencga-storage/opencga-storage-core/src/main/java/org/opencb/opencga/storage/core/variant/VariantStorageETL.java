@@ -27,9 +27,9 @@ import org.opencb.commons.run.Task;
 import org.opencb.hpg.bigdata.core.io.avro.AvroFileWriter;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
@@ -118,24 +118,24 @@ public abstract class VariantStorageETL implements StorageETL {
             options.put(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key(), true);
         } else {
             long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
-            options.remove(Options.STUDY_CONFIGURATION.key());
+            try {
+                //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
+                studyConfiguration = getStudyConfiguration(true);
 
-            //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-            studyConfiguration = getStudyConfiguration(options);
-
-            if (studyConfiguration == null) {
-                logger.info("Creating a new StudyConfiguration");
-                checkStudyId(studyId);
-                studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
-                studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                if (studyConfiguration == null) {
+                    logger.info("Creating a new StudyConfiguration");
+                    checkStudyId(studyId);
+                    studyConfiguration = new StudyConfiguration(studyId, options.getString(Options.STUDY_NAME.key()));
+                    studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
+                }
+                fileId = checkNewFile(studyConfiguration, fileId, fileName);
+                options.put(Options.FILE_ID.key(), fileId);
+                dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+            } finally {
+                dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
             }
-            fileId = checkNewFile(studyConfiguration, fileId, fileName);
-            options.put(Options.FILE_ID.key(), fileId);
-            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
         }
         options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
-
 
         return input;
     }
@@ -333,7 +333,7 @@ public abstract class VariantStorageETL implements StorageETL {
             StringDataReader dataReader = new StringDataReader(input);
 
             //Writers
-            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile);
+            StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);
 
             final VariantSource finalSource = source;
             final Path finalOutputFileJsonFile = outputMetaFile;
@@ -427,15 +427,35 @@ public abstract class VariantStorageETL implements StorageETL {
     @Override
     public URI preLoad(URI input, URI output) throws StorageManagerException {
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
-        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
         options.remove(Options.STUDY_CONFIGURATION.key());
 
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
         //Get the studyConfiguration. If there is no StudyConfiguration, create a empty one.
-        StudyConfiguration studyConfiguration = checkOrCreateStudyConfiguration();
+        StudyConfiguration studyConfiguration;
+        try {
+            studyConfiguration = checkOrCreateStudyConfiguration();
+            VariantSource source = readVariantSource(input, options);
+            securePreLoad(studyConfiguration, source);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
 
-        VariantSource source = readVariantSource(input, options);
+        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        return input;
+    }
+
+    /**
+     * PreLoad step for modify the StudyConfiguration.
+     * This step is executed inside a study lock.
+     *
+     * @see StudyConfigurationManager#lockStudy(int)
+     * @param studyConfiguration    StudyConfiguration
+     * @param source                VariantSource
+     * @throws StorageManagerException  If any condition is wrong
+     */
+    protected void securePreLoad(StudyConfiguration studyConfiguration, VariantSource source) throws StorageManagerException {
 
         /*
          * Before load file, check and add fileName to the StudyConfiguration.
@@ -479,6 +499,7 @@ public abstract class VariantStorageETL implements StorageETL {
             // First indexed file
             // Use the EXCLUDE_GENOTYPES value from CLI. Write in StudyConfiguration.attributes
             boolean excludeGenotypes = options.getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
+            studyConfiguration.setAggregation(options.get(Options.AGGREGATED_TYPE.key(), VariantSource.Aggregation.class));
             studyConfiguration.getAttributes().put(Options.EXCLUDE_GENOTYPES.key(), excludeGenotypes);
         } else {
             // Not first indexed file
@@ -496,11 +517,50 @@ public abstract class VariantStorageETL implements StorageETL {
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-        options.put(Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        // Check Extra genotype fields
+        if (options.containsKey(Options.EXTRA_GENOTYPE_FIELDS.key())
+                && StringUtils.isNotEmpty(options.getString(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+            List<String> extraFields = options.getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+            if (studyConfiguration.getIndexedFiles().isEmpty()) {
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS.key(), extraFields);
+            } else {
+                if (!extraFields.equals(studyConfiguration.getAttributes().getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()))) {
+                    throw new StorageManagerException("Unable to change Stored Extra Fields if there are already indexed files.");
+                }
+            }
+            if (!studyConfiguration.getAttributes().containsKey(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key())) {
+                List<String> extraFieldsType = new ArrayList<>(extraFields.size());
+                for (String extraField : extraFields) {
+                    List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
+                    String type = "String";
+                    for (Map<String, Object> format : formats) {
+                        if (format.get("ID").toString().equals(extraField)) {
+                            if ("1".equals(format.get("Number"))) {
+                                type = Objects.toString(format.get("Type"));
+                            } else {
+                                //Fields with arity != 1 are loaded as String
+                                type = "String";
+                            }
+                            break;
+                        }
+                    }
+                    switch (type) {
+                        case "String":
+                        case "Float":
+                        case "Integer":
+                            break;
+                        case "Character":
+                        default:
+                            type = "String";
+                            break;
 
-        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
-        return input;
+                    }
+                    extraFieldsType.add(type);
+                    System.err.println(extraField + " : " + type);
+                }
+                studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
+            }
+        }
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
@@ -641,6 +701,10 @@ public abstract class VariantStorageETL implements StorageETL {
         }
     }
 
+    protected int getStudyId() {
+        return options.getInt(Options.STUDY_ID.key());
+    }
+
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -652,14 +716,19 @@ public abstract class VariantStorageETL implements StorageETL {
         int studyId = options.getInt(Options.STUDY_ID.key(), -1);
         long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
 
-        //Update StudyConfiguration
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
-        studyConfiguration.getIndexedFiles().addAll(fileIds);
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        // Check loaded variants BEFORE updating the StudyConfiguration
+        checkLoadedVariants(input, fileIds, getStudyConfiguration(), options);
 
-        dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        StudyConfiguration studyConfiguration;
+        try {
+            //Update StudyConfiguration
+            studyConfiguration = getStudyConfiguration(true);
+            securePostLoad(fileIds, studyConfiguration);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
 
-        checkLoadedVariants(input, fileIds, studyConfiguration, options);
 
         if (annotate) {
 
@@ -741,6 +810,10 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
+        studyConfiguration.getIndexedFiles().addAll(fileIds);
+    }
+
     @Override
     public void close() throws StorageManagerException {
         if (dbAdaptor != null) {
@@ -780,6 +853,20 @@ public abstract class VariantStorageETL implements StorageETL {
     /* --------------------------------------- */
 
     public final StudyConfiguration getStudyConfiguration() throws StorageManagerException {
+        return getStudyConfiguration(false);
+    }
+
+    /**
+     * Reads the study configuration.
+     *
+     * @param forceFetch If true, forces to get the StudyConfiguration from the database. Ignores current one.
+     * @return           The study configuration.
+     * @throws StorageManagerException If the study configuration is not found
+     */
+    public final StudyConfiguration getStudyConfiguration(boolean forceFetch) throws StorageManagerException {
+        if (forceFetch) {
+            options.remove(Options.STUDY_CONFIGURATION.key());
+        }
         return getStudyConfiguration(options);
     }
 
@@ -852,7 +939,7 @@ public abstract class VariantStorageETL implements StorageETL {
             }
         }
         if (studyConfiguration.getIndexedFiles().contains(fileId)) {
-            throw new StorageManagerException("File " + fileName + " (" + fileId + ")" + " was already already loaded ");
+            throw StorageManagerException.alreadyLoaded(fileId, fileName);
         }
 
         return fileId;

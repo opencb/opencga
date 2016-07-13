@@ -9,24 +9,17 @@ import java.util.stream.Collectors;
 /**
  * Created by pfurio on 11/05/16.
  */
-public class StudyAcl {
-
-    private String role;
-    private List<String> users;
-    private EnumSet<StudyPermissions> permissions;
+public class StudyAcl extends ParentAcl<StudyAcl.StudyPermissions> {
 
     public StudyAcl() {
     }
 
-    public StudyAcl(String role, List<String> users, EnumSet<StudyPermissions> permissions) {
-        this.role = role;
-        this.users = users;
-        this.permissions = permissions;
+    public StudyAcl(String member, EnumSet<StudyPermissions> permissions) {
+        super(member, permissions);
     }
 
-    public StudyAcl(String role, List<String> users, ObjectMap permissions) {
-        this.role = role;
-        this.users = users;
+    public StudyAcl(String member, ObjectMap permissions) {
+        super(member, EnumSet.noneOf(StudyPermissions.class));
 
         EnumSet<StudyPermissions> aux = EnumSet.allOf(StudyPermissions.class);
         for (StudyPermissions permission : aux) {
@@ -36,40 +29,12 @@ public class StudyAcl {
         }
     }
 
-    public StudyAcl(String role, List<String> users, List<String> permissions) {
-        this.role = role;
-        this.users = users;
-        this.permissions = EnumSet.noneOf(StudyPermissions.class);
+    public StudyAcl(String member, List<String> permissions) {
+        super(member, EnumSet.noneOf(StudyPermissions.class));
+
         if (permissions.size() > 0) {
             this.permissions.addAll(permissions.stream().map(StudyPermissions::valueOf).collect(Collectors.toList()));
         }
-    }
-
-    public String getRole() {
-        return role;
-    }
-
-    public StudyAcl setRole(String role) {
-        this.role = role;
-        return this;
-    }
-
-    public List<String> getUsers() {
-        return users;
-    }
-
-    public StudyAcl setUsers(List<String> users) {
-        this.users = users;
-        return this;
-    }
-
-    public EnumSet<StudyPermissions> getPermissions() {
-        return permissions;
-    }
-
-    public StudyAcl setPermissions(EnumSet<StudyPermissions> permissions) {
-        this.permissions = permissions;
-        return this;
     }
 
     // Study Permissions
@@ -80,6 +45,7 @@ public class StudyAcl {
     private static final int COHORT = 4;
     private static final int INDIVIDUAL = 5;
     private static final int DATASET = 6;
+    private static final int DISEASE_PANEL = 7;
 
     public enum StudyPermissions {
         VIEW_STUDY,
@@ -145,7 +111,14 @@ public class StudyAcl {
         VIEW_DATASETS(DatasetAcl.DatasetPermissions.VIEW.name(), DATASET),
         UPDATE_DATASETS(DatasetAcl.DatasetPermissions.UPDATE.name(), DATASET),
         DELETE_DATASETS(DatasetAcl.DatasetPermissions.DELETE.name(), DATASET),
-        SHARE_DATASETS(DatasetAcl.DatasetPermissions.SHARE.name(), DATASET);
+        SHARE_DATASETS(DatasetAcl.DatasetPermissions.SHARE.name(), DATASET),
+
+        // DISEASE PANELS
+        CREATE_PANELS,
+        VIEW_PANELS(DiseasePanelAcl.DiseasePanelPermissions.VIEW.name(), DISEASE_PANEL),
+        UPDATE_PANELS(DiseasePanelAcl.DiseasePanelPermissions.UPDATE.name(), DISEASE_PANEL),
+        DELETE_PANELS(DiseasePanelAcl.DiseasePanelPermissions.DELETE.name(), DISEASE_PANEL),
+        SHARE_PANELS(DiseasePanelAcl.DiseasePanelPermissions.SHARE.name(), DISEASE_PANEL);
 
         private String permission;
         private int type;
@@ -197,6 +170,13 @@ public class StudyAcl {
         public DatasetAcl.DatasetPermissions getDatasetPermission() {
             if (this.type == DATASET) {
                 return DatasetAcl.DatasetPermissions.valueOf(this.permission);
+            }
+            return null;
+        }
+
+        public DiseasePanelAcl.DiseasePanelPermissions getDiseasePanelPermission() {
+            if (this.type == DISEASE_PANEL) {
+                return DiseasePanelAcl.DiseasePanelPermissions.valueOf(this.permission);
             }
             return null;
         }

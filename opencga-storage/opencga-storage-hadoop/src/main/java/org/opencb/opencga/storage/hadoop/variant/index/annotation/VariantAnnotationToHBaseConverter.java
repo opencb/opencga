@@ -3,16 +3,14 @@ package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 import org.apache.hadoop.hbase.client.Put;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PIntegerArray;
-import org.apache.phoenix.schema.types.PVarcharArray;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.AbstractPhoenixConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -23,7 +21,7 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  *
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnotation, Put> {
+public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter implements Converter<VariantAnnotation, Put> {
 
 
     private final GenomeHelper genomeHelper;
@@ -137,32 +135,9 @@ public class VariantAnnotationToHBaseConverter implements Converter<VariantAnnot
         return put;
     }
 
-    public <T> void addNotNull(Collection<T> collection, T value) {
-        if (value != null) {
-            collection.add(value);
-        }
-    }
-
-    public <T> void addAllNotNull(Collection<T> collection, Collection<T> values) {
-        if (values != null) {
-            collection.addAll(values);
-        }
-    }
-
-    public void addVarcharArray(Put put, byte[] column, Collection<String> collection) {
-        addArray(put, column, collection, PVarcharArray.INSTANCE);
-    }
-
-    public void addIntegerArray(Put put, byte[] column, Collection<Integer> collection) {
-        addArray(put, column, collection, PIntegerArray.INSTANCE);
-    }
-
-    public void addArray(Put put, byte[] column, Collection collection, PArrayDataType arrayType) {
-        if (collection.size() == 0) {
-            return;
-        }
-        byte[] arrayBytes = VariantPhoenixHelper.toBytes(collection, arrayType);
-        put.addColumn(genomeHelper.getColumnFamily(), column, arrayBytes);
+    @Override
+    protected GenomeHelper getGenomeHelper() {
+        return genomeHelper;
     }
 
 }

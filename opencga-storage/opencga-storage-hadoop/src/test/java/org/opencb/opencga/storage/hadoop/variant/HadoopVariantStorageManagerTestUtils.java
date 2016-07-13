@@ -6,25 +6,29 @@ import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.hbase.HBaseTestingUtility;
 import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.Admin;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.types.PFloat;
+import org.apache.phoenix.schema.types.PInteger;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
+import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -227,6 +231,46 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
             }
             return 0;
         }
+    }
+
+
+    static void printHBaseVariantsTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
+        System.out.println("Query from HBase : " + VariantStorageManagerTestUtils.DB_NAME);
+        HBaseManager hm = new HBaseManager(configuration.get());
+        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        int numVariants = hm.act(VariantStorageManagerTestUtils.DB_NAME, table -> {
+            int num = 0;
+            ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
+            for (Result result : resultScanner) {
+                if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
+                    continue;
+                }
+                Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
+                System.out.println("Variant = " + variant);
+                for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
+                    String key = Bytes.toString(entry.getKey());
+                    if (key.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)) {
+                        System.out.println("\t" + key + " = " + entry.getValue().length + " " + Arrays.toString(entry.getValue()));
+                    } else {
+                        if (entry.getValue().length == 4) {
+                            System.out.println("\t" + key + " = "
+                                    + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
+                                    + PFloat.INSTANCE.toObject(entry.getValue()));
+                        } else {
+                            System.out.println("\t" + key + " = "
+                                    + entry.getValue().length + " , "
+                                    + Bytes.toString(entry.getValue()));
+                        }
+                    }
+                }
+                System.out.println("--------------------");
+                if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {
+                    num++;
+                }
+            }
+            resultScanner.close();
+            return num;
+        });
     }
 
 }

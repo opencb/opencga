@@ -19,7 +19,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 04/05/16.
  */
-public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
+public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset>, CatalogAclDBAdaptor<DatasetAcl> {
 
     enum QueryParams implements QueryParam {
 
@@ -29,11 +29,11 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
         DESCRIPTION("description", TEXT, ""),
         FILES("files", INTEGER_ARRAY, ""),
         STATUS("status", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -135,9 +135,9 @@ public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset> {
 
     QueryResult<DatasetAcl> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
 
-    QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl) throws CatalogDBException;
+    QueryResult<DatasetAcl> setDatasetAcl(long datasetId, DatasetAcl acl, boolean override) throws CatalogDBException;
 
-    void unsetDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
+    void unsetDatasetAcl(long datasetId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 

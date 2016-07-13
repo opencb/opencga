@@ -2,7 +2,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 
 import java.util.*;
@@ -81,7 +81,13 @@ public class VariantDBAdaptorUtils {
     }
 
     public Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated) {
-        return getStudyId(studyObj, options, skipNegated, getStudyConfigurationManager().getStudies(options));
+        if (studyObj instanceof Integer) {
+            return ((Integer) studyObj);
+        } else if (studyObj instanceof String && StringUtils.isNumeric((String) studyObj)) {
+            return Integer.parseInt((String) studyObj);
+        } else {
+            return getStudyId(studyObj, options, skipNegated, getStudyConfigurationManager().getStudies(options));
+        }
     }
 
     private Integer getStudyId(Object studyObj, QueryOptions options, boolean skipNegated, Map<String, Integer> studies) {
@@ -110,6 +116,46 @@ public class VariantDBAdaptorUtils {
         return studyId;
     }
 
+    /**
+     * Given a study reference (name or id) and a default study, returns the associated StudyConfiguration.
+     *
+     *
+     * @param study     Study reference (name or id)
+     * @param defaultStudyConfiguration Default studyConfiguration
+     * @return          Assiciated StudyConfiguration
+     * @throws    VariantQueryException is the study does not exists
+     */
+    public StudyConfiguration getStudyConfiguration(String study, StudyConfiguration defaultStudyConfiguration)
+            throws VariantQueryException {
+        StudyConfiguration studyConfiguration;
+        if (StringUtils.isEmpty(study)) {
+            studyConfiguration = defaultStudyConfiguration;
+            if (studyConfiguration == null) {
+                throw VariantQueryException.studyNotFound(study, getStudyConfigurationManager().getStudyNames(null));
+            }
+        } else if (StringUtils.isNumeric(study)) {
+            int studyInt = Integer.parseInt(study);
+            if (defaultStudyConfiguration != null && studyInt == defaultStudyConfiguration.getStudyId()) {
+                studyConfiguration = defaultStudyConfiguration;
+            } else {
+                studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(studyInt, null).first();
+            }
+            if (studyConfiguration == null) {
+                throw VariantQueryException.studyNotFound(studyInt, getStudyConfigurationManager().getStudyNames(null));
+            }
+        } else {
+            if (defaultStudyConfiguration != null && defaultStudyConfiguration.getStudyName().equals(study)) {
+                studyConfiguration = defaultStudyConfiguration;
+            } else {
+                studyConfiguration = getStudyConfigurationManager().getStudyConfiguration(study, null).first();
+            }
+            if (studyConfiguration == null) {
+                throw VariantQueryException.studyNotFound(study, getStudyConfigurationManager().getStudyNames(null));
+            }
+        }
+        return studyConfiguration;
+    }
+
     public int getSampleId(Object sampleObj, StudyConfiguration defaultStudyConfiguration) {
         int sampleId;
         if (sampleObj instanceof Number) {
@@ -135,6 +181,33 @@ public class VariantDBAdaptorUtils {
     }
 
     /**
+     * Finds the cohortId from a cohort reference.
+     *
+     * @param cohort    Cohort reference (name or id)
+     * @param studyConfiguration  Default study configuration
+     * @return  Cohort id
+     * @throws VariantQueryException if the cohort does not exist
+     */
+    public int getCohortId(String cohort, StudyConfiguration studyConfiguration) throws VariantQueryException {
+        int cohortId;
+        if (StringUtils.isNumeric(cohort)) {
+            cohortId = Integer.parseInt(cohort);
+            if (!studyConfiguration.getCohortIds().containsValue(cohortId)) {
+                throw VariantQueryException.cohortNotFound(cohortId, studyConfiguration.getStudyId(),
+                        studyConfiguration.getCohortIds().keySet());
+            }
+        } else {
+            Integer cohortIdNullable = studyConfiguration.getCohortIds().get(cohort);
+            if (cohortIdNullable == null) {
+                throw VariantQueryException.cohortNotFound(cohort, studyConfiguration.getStudyId(),
+                        studyConfiguration.getCohortIds().keySet());
+            }
+            cohortId = cohortIdNullable;
+        }
+        return cohortId;
+    }
+
+    /**
      * Checks that the filter value list contains only one type of operations.
      *
      * @param value List of values to check
@@ -155,6 +228,25 @@ public class VariantDBAdaptorUtils {
         }
     }
 
+    /**
+     * Splits the string with the specified operation.
+     *
+     * @param value     Value to split
+     * @param operation Operation that defines the split delimiter
+     * @return          List of values, without the delimiter
+     */
+    public static List<String> splitValue(String value, QueryOperation operation) {
+        List<String> list;
+        if (operation == null) {
+            list = Collections.singletonList(value);
+        } else if (operation == QueryOperation.AND) {
+            list = Arrays.asList(value.split(QueryOperation.AND.separator()));
+        } else {
+            list = Arrays.asList(value.split(QueryOperation.OR.separator()));
+        }
+        return list;
+    }
+
     public static String[] splitOperator(String value) {
         Matcher matcher = OPERATION_PATTERN.matcher(value);
         String key;
@@ -170,25 +262,6 @@ public class VariantDBAdaptorUtils {
         }
 
         return new String[]{key.trim(), operator.trim(), filter.trim()};
-    }
-
-    /**
-     * Splits the string with the specified operation.
-     *
-     * @param value     Value to split
-     * @param operation Operation indicating the splitter element
-     * @return          List of splitted values
-     */
-    public static List<String> splitValue(String value, QueryOperation operation) {
-        List<String> list;
-        if (operation == null) {
-            list = Collections.singletonList(value);
-        } else if (operation == QueryOperation.AND) {
-            list = Arrays.asList(value.split(AND));
-        } else {
-            list = Arrays.asList(value.split(OR));
-        }
-        return list;
     }
 
 }

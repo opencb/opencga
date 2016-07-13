@@ -1,13 +1,14 @@
 package org.opencb.opencga.catalog.managers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -18,10 +19,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
-import org.opencb.opencga.catalog.models.AclEntry;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Tool;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.FileAcl;
 import org.opencb.opencga.catalog.models.acls.JobAcl;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
@@ -33,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -58,6 +57,127 @@ public class JobManager extends AbstractManager implements IJobManager {
     @Override
     public Long getStudyId(long jobId) throws CatalogException {
         return jobDBAdaptor.getStudyIdByJobId(jobId);
+    }
+
+    @Override
+    public Long getJobId(String userId, String jobStr) throws CatalogException {
+        if (StringUtils.isNumeric(jobStr)) {
+            return Long.parseLong(jobStr);
+        }
+
+        // Resolve the studyIds and filter the jobName
+        ObjectMap parsedSampleStr = parseFeatureId(userId, jobStr);
+        List<Long> studyIds = getStudyIds(parsedSampleStr);
+        String jobName = parsedSampleStr.getString("featureName");
+
+        Query query = new Query(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogJobDBAdaptor.QueryParams.NAME.key(), jobName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.jobs.id");
+        QueryResult<Job> queryResult = jobDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one job id found based on " + jobName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Override
+    public QueryResult<JobAcl> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long jobId = getJobId(userId, jobStr);
+        authorizationManager.checkJobPermission(jobId, userId, JobAcl.JobPermissions.SHARE);
+        Long studyId = getStudyId(jobId);
+
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getName());
+
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getName()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<JobAcl> jobAclQueryResult = jobDBAdaptor.getJobAcl(jobId, memberList);
+
+        if (members.size() == 0) {
+            return jobAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        // We loop over the results and recreate one sampleAcl per member
+        Map<String, JobAcl> jobAclHashMap = new HashMap<>();
+        for (JobAcl jobAcl : jobAclQueryResult.getResult()) {
+            if (memberList.contains(jobAcl.getMember())) {
+                if (jobAcl.getMember().startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(jobAcl.getMember())) {
+                        jobAclHashMap.put(jobAcl.getMember(), new JobAcl(jobAcl.getMember(), jobAcl.getPermissions()));
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(jobAcl.getMember())) {
+                            for (String tmpUserId : groupUsers.get(jobAcl.getMember())) {
+                                if (userIds.contains(tmpUserId)) {
+                                    jobAclHashMap.put(tmpUserId, new JobAcl(tmpUserId, jobAcl.getPermissions()));
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Add the user
+                    jobAclHashMap.put(jobAcl.getMember(), new JobAcl(jobAcl.getMember(), jobAcl.getPermissions()));
+                }
+            }
+
+        }
+
+        // We recreate the output that is in jobAclHashMap but in the same order the members were queried.
+        List<JobAcl> jobAclList = new ArrayList<>(jobAclHashMap.size());
+        for (String member : members) {
+            if (jobAclHashMap.containsKey(member)) {
+                jobAclList.add(jobAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        jobAclQueryResult.setId(jobStr);
+        jobAclQueryResult.setNumResults(jobAclList.size());
+        jobAclQueryResult.setNumTotalResults(jobAclList.size());
+        jobAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        jobAclQueryResult.setResult(jobAclList);
+
+        return jobAclQueryResult;
     }
 
     @Override
@@ -130,10 +250,11 @@ public class JobManager extends AbstractManager implements IJobManager {
                 "projects.studies.files.path"));
         File outDir = fileDBAdaptor.getFile(outDirId, fileQueryOptions).first();
 
-        if (!outDir.getType().equals(File.Type.FOLDER)) {
-            throw new CatalogException("Bad outDir type. Required type : " + File.Type.FOLDER);
+        if (!outDir.getType().equals(File.Type.DIRECTORY)) {
+            throw new CatalogException("Bad outDir type. Required type : " + File.Type.DIRECTORY);
         }
 
+        // FIXME: Pass the toolId
         Job job = new Job(name, userId, toolName, description, commandLine, outDir.getId(), tmpOutDirUri, inputFiles);
         job.setOutput(outputFiles);
         job.setStatus(status);
@@ -150,7 +271,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         QueryResult<Job> queryResult = jobDBAdaptor.createJob(studyId, job, options);
-        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.job, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.job, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 
@@ -184,7 +307,13 @@ public class JobManager extends AbstractManager implements IJobManager {
             query.put(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
         }
         //query.putAll(options);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId;
+        if (sessionId.length() == 40) {
+            catalogDBAdaptorFactory.getCatalogMetaDBAdaptor().checkValidAdminSession(sessionId);
+            userId = "admin";
+        } else {
+            userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        }
 
         if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
             throw CatalogAuthorizationException.deny(userId, "view", "jobs", studyId, null);
@@ -348,7 +477,9 @@ public class JobManager extends AbstractManager implements IJobManager {
         Tool tool = new Tool(-1, alias, name, description, manifest, result, path, acl);
 
         QueryResult<Tool> queryResult = jobDBAdaptor.createTool(userId, tool);
-        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.tool, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.tool, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

@@ -31,7 +31,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -62,10 +62,11 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
     public void basicIndex() throws Exception {
         clearDB(DB_NAME);
         StudyConfiguration studyConfiguration = newStudyConfiguration();
-        StorageETLResult etlResult = runDefaultETL(variantStorageManager, studyConfiguration);
+        StorageETLResult etlResult = runDefaultETL(inputUri, variantStorageManager, studyConfiguration,
+                new ObjectMap(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json"));
         assertTrue("Incorrect transform file extension " + etlResult.getTransformResult() + ". Expected 'variants.json.gz'",
                 Paths.get(etlResult.getTransformResult()).toFile().getName().endsWith("variants.json.gz"));
-        VariantSource source = VariantStorageManager.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
+        VariantSource source = VariantReaderUtils.readVariantSource(Paths.get(etlResult.getTransformResult().getPath()), null);
 
         assertTrue(studyConfiguration.getIndexedFiles().contains(6));
         checkTransformedVariants(etlResult.getTransformResult(), studyConfiguration);
@@ -468,6 +469,7 @@ public abstract class VariantStorageManagerTest extends VariantStorageManagerTes
                 values.set(0, values.get(0).replace("0/0", "0|0"));
                 while (values.get(2).length() < 5) values.set(2, values.get(2) + "0");   //Set lost zeros
             });
+            variant.resetLength();
             assertEquals("\n" + variant.toJson() + "\n" + loadedVariant.toJson(), variant.toJson(), loadedVariant.toJson());
 
         }

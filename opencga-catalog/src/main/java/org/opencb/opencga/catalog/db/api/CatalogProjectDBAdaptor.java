@@ -76,10 +76,10 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         ORGANIZATION("organization", TEXT_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER, ""),
         USER_ID("userId", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
@@ -91,7 +91,7 @@ public interface CatalogProjectDBAdaptor extends CatalogDBAdaptor<Project> {
         STUDY_ALIAS("study.alias", TEXT_ARRAY, ""),
         STUDY_CREATOR_ID("study.creatorId", TEXT_ARRAY, ""),
         STUDY_STATUS("study.status", TEXT_ARRAY, ""),
-        STUDY_LAST_ACTIVITY("study.lastActivity", TEXT_ARRAY, ""),
+        STUDY_LAST_MODIFIED("study.lastModified", TEXT_ARRAY, ""),
 
         // TOCHECK: Pedro. Check parameter user_others_id.
         ACL_USER_ID("acl.userId", TEXT_ARRAY, ""),

@@ -6,17 +6,18 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
@@ -67,7 +68,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
     @Override
     public URI load(URI inputUri) throws IOException, StorageManagerException {
         Path input = Paths.get(inputUri.getPath());
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+        int studyId = getStudyId();
 
         ArchiveHelper.setChunkSize(
                 conf, conf.getInt(
@@ -109,7 +110,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         } else {
             fileId = options.getInt(Options.FILE_ID.key());
         }
-        int studyId = options.getInt(VariantStorageManager.Options.STUDY_ID.key());
+        int studyId = getStudyId();
 
         VariantSource source = VariantReaderUtils.readVariantSource(sourcePath, null);
         source.setFileId(fileId.toString());

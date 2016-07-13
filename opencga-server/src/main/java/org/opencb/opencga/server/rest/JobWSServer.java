@@ -16,21 +16,14 @@
 
 package org.opencb.opencga.server.rest;
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiModelProperty;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.*;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,8 +33,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
-import java.nio.file.Paths;
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 ///opencga/rest/v1/jobs/create?analysisId=23&tool=samtools
 @Path("/{version}/jobs")
@@ -50,28 +44,17 @@ import java.util.*;
 public class JobWSServer extends OpenCGAWSServer {
 
 
-    public JobWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                       @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public JobWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
-//    @GET
-//    @Path("/search")
-//    @Produces("application/json")
-//    @ApiOperation(value = "Search jobs")
-//
-//    public Response search(
-//            @ApiParam(value = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-//    ) {
-//        catalogManager.search
-//    }
 
     public static class InputJob {
         public InputJob() {
         }
 
-        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status, long outDirId,
-                        List<Long> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
+        public InputJob(String name, String toolName, String description, long startTime, long endTime, String commandLine, Status status,
+                        String outDirId, List<Long> input, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes) {
             this.name = name;
             this.toolName = toolName;
             this.description = description;
@@ -86,9 +69,9 @@ public class JobWSServer extends OpenCGAWSServer {
         }
 
         enum Status{READY, ERROR}
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String name;
-        @ApiModelProperty(required = true) 
+        @ApiModelProperty(required = true)
         public String toolName;
         public String description;
         public String execution;
@@ -100,7 +83,7 @@ public class JobWSServer extends OpenCGAWSServer {
         public Status status = Status.READY;
         public String statusMessage;
         @ApiModelProperty(required = true)
-        public long outDirId;
+        public String outDirId;
         public List<Long> input;
         public List<Long> output;
         public Map<String, Object> attributes;
@@ -115,11 +98,11 @@ public class JobWSServer extends OpenCGAWSServer {
     @Consumes(MediaType.APPLICATION_JSON)
     @ApiOperation(value = "Register an executed job with POST method", position = 1,
             notes = "Registers a job that has been previously run outside catalog into catalog. <br>"
-                    + "Required values: [name, toolName, commandLine]")
+                    + "Required values: [name, toolName, commandLine, outDirId]", response = Job.class)
     public Response createJobPOST(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                  @ApiParam(value = "studies", required = true) InputJob job) {
+                                  @ApiParam(value = "job", required = true) InputJob job) {
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
+            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
             Job.JobStatus jobStatus;
             if (Job.JobStatus.isValid(job.status.toString())) {
                 jobStatus = new Job.JobStatus(job.status.toString(), job.statusMessage);
@@ -127,8 +110,9 @@ public class JobWSServer extends OpenCGAWSServer {
                 jobStatus = new Job.JobStatus();
                 jobStatus.setMessage(job.statusMessage);
             }
+            long outDir = catalogManager.getFileId(job.outDirId, sessionId);
             QueryResult<Job> result = catalogManager.createJob(studyId, job.name, job.toolName, job.description, job.execution, job.params,
-                    job.commandLine, null, job.outDirId, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
+                    job.commandLine, null, outDir, job.input, job.output, job.attributes, job.resourceManagerAttributes, jobStatus,
                     job.startTime, job.endTime, queryOptions, sessionId);
             return createOkResponse(result);
         } catch (Exception e) {
@@ -139,138 +123,113 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/create")
-    @ApiOperation(value = "Create job", position = 1)
-    public Response createJob(
-//            @ApiParam(defaultValue = "analysisId", required = true)    @DefaultValue("-1") @QueryParam("analysisId") int analysisId,
-            @ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
-            @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
-            @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
-            @ApiParam(value = "execution", required = false) @DefaultValue("") @QueryParam("execution") String execution,
-            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description
-    ) {
-        QueryResult<Job> jobResult;
+    @ApiOperation(value = "Create job [PENDING]", position = 1, response = Job.class)
+    public Response createJob(@ApiParam(value = "name", required = true) @DefaultValue("") @QueryParam("name") String name,
+                              @ApiParam(value = "studyId", required = true) @DefaultValue("-1") @QueryParam("studyId") String studyIdStr,
+                              @ApiParam(value = "toolId", required = true) @DefaultValue("") @QueryParam("toolId") String toolIdStr,
+                              @ApiParam(value = "execution") @DefaultValue("") @QueryParam("execution") String execution,
+                              @ApiParam(value = "description") @DefaultValue("") @QueryParam("description") String description) {
+//        QueryResult<Job> jobResult;
         try {
-            long studyId = catalogManager.getStudyId(studyIdStr);
-            AnalysisJobExecutor analysisJobExecutor;
-            String toolName;
-            long toolId = catalogManager.getToolId(toolIdStr);
-            if (toolId < 0) {
-                analysisJobExecutor = new AnalysisJobExecutor(toolIdStr, execution);    //LEGACY MODE, AVOID USING
-                toolName = toolIdStr;
-            } else {
-                Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
-                analysisJobExecutor = new AnalysisJobExecutor(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                toolName = tool.getName();
-            }
-
-            List<Long> inputFiles = new LinkedList<>();
-            Map<String, List<String>> localParams = new HashMap<>(params);
-
-            Execution ex = analysisJobExecutor.getExecution();
-            // Set input param
-            for (InputParam inputParam : ex.getInputParams()) {
-                if (params.containsKey(inputParam.getName())) {
-
-                    List<String> filePaths = new LinkedList<>();
-                    for (String files : params.get(inputParam.getName())) {
-                        for (String fileId : files.split(",")) {
-                            if (fileId.startsWith("example_")) { // is a example
-                                fileId = fileId.replace("example_", "");
-                                filePaths.add(analysisJobExecutor.getExamplePath(fileId));
-                            } else {
-                                File file = catalogManager.getFile(catalogManager.getFileId(fileId), sessionId).getResult().get(0);
-                                filePaths.add(catalogManager.getFileUri(file).getPath());
-                                inputFiles.add(file.getId());
-                            }
-                        }
-                    }
-                    localParams.put(inputParam.getName(), filePaths);
-                }
-            }
-
-            // Creating job name. Random string to avoid collisions.
-//            String jobName = name.isEmpty()? "J_" + String.format(StringUtils.randomString(15)) : name;
-
-            // Get temporal outdir  TODO: Create job folder outside the user workspace.
-//            java.nio.file.Path temporalOutdirPath = Paths.get("jobs", jobName);
-////            int studyId = catalogManager.getStudyIdByAnalysisId(studyId);
-//            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
-
-            // Set outdir
-            String outputParam = analysisJobExecutor.getExecution().getOutputParam();
-            if (params.get(outputParam).isEmpty()) {
-                return createErrorResponse("", "Missing output param '" + outputParam + "'");
-            }
-
-            long outDirId;
-//            System.out.println("outputParam = " + outputParam);
-            if(params.get(outputParam).get(0).equalsIgnoreCase("analysis")){
-                QueryOptions query = new QueryOptions();
-                query.put("name", params.get(outputParam).get(0));
-                QueryResult<File> result = catalogManager.searchFile(studyId, new Query(query), queryOptions, sessionId);
-                outDirId = result.getResult().get(0).getId();
-            }
-            else
-                outDirId = catalogManager.getFileId(params.get(outputParam).get(0));
-            System.out.println("entrooo4");
-            File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
-
-
-            //create job folder with timestamp to store job result files
-            boolean parents = true;
-            java.nio.file.Path jobOutDirPath = Paths.get(outDir.getPath(), TimeUtils.getTime());
-            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, queryOptions, sessionId);
-            File jobOutDir = queryResult.getResult().get(0);
-
-
-            //create input files from text - inputParamsFromTxt
-            if (ex.getInputParamsFromTxt() != null) {
-                for (InputParam inputParam : ex.getInputParamsFromTxt()) {
-                    java.nio.file.Path relativeFilePath = Paths.get(jobOutDir.getPath(), inputParam.getName());
-//                    List<String> paramInputName = params.get(inputParam.getName());
-                    List<String> queryParam = params.get(inputParam.getName());
-                    if (queryParam != null && queryParam.size() > 0) {
-
-                        String value = queryParam.get(0).replace(",",System.getProperty("line.separator"));
-                        QueryResult<File> createdFileResult = catalogManager.createFile(studyId, File.Format.PLAIN , File.Bioformat.NONE,
-                                relativeFilePath.toString(), value.getBytes(),  "", true, sessionId);
-                        File createdFile = createdFileResult.getResult().get(0);
-
-                        queryParam.set(0, catalogManager.getFileUri(createdFile).getPath());
-                        //the "-text" suffix param will be removed to replace the input parameter, so -text param content will be mandatory over the non -text parameter.
-                        localParams.put(inputParam.getName().replace("-text", ""), queryParam);
-                    }
-                }
-            }
-
-
-            // Create temporal Outdir
-//            String randomString = StringUtils.randomString(10);
-//            URI temporalOutDirUri = catalogManager.createJobOutDir(studyId, randomString, sessionId);
-//            localParams.put(outputParam, Arrays.asList(temporalOutDirUri.getPath()));
+//            long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
+//            ToolManager toolManager;
+//            JobFactory jobFactory = new JobFactory(catalogManager);
+//            String toolName;
+//            long toolId = catalogManager.getToolId(toolIdStr);
+//            if (toolId < 0) {
+//                toolManager = new ToolManager(toolIdStr, execution);    //LEGACY MODE, AVOID USING
+//                toolName = toolIdStr;
+//            } else {
+//                Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
+//                toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
+//                toolName = tool.getName();
+//            }
 //
-//            // Create commandLine
-//            String commandLine = analysisJobExecuter.createCommandLine(localParams);
-//            System.out.println(commandLine);
+//            List<Long> inputFiles = new LinkedList<>();
+//            Map<String, List<String>> localParams = new HashMap<>(params);
 //
-//            // Create job in CatalogManager
-//            Map<String, Object> resourceManagerAttributes = new HashMap<>();
-//            resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
+//            Execution ex = toolManager.getExecution();
+//            // Set input param
+//            for (InputParam inputParam : ex.getInputParams()) {
+//                if (params.containsKey(inputParam.getName())) {
 //
-//            jobResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
-//                    outDir.getId(), inputFiles, resourceManagerAttributes, sessionId);
-//            Job job = jobResult.getResult().get(0);
+//                    List<String> filePaths = new LinkedList<>();
+//                    for (String files : params.get(inputParam.getName())) {
+//                        for (String fileId : files.split(",")) {
+//                            if (fileId.startsWith("example_")) { // is a example
+//                                fileId = fileId.replace("example_", "");
+//                                filePaths.add(toolManager.getExamplePath(fileId));
+//                            } else {
+//                                File file = catalogManager.getFile(catalogManager.getFileId(fileId, sessionId), sessionId).getResult().get(0);
+//                                filePaths.add(catalogManager.getFileUri(file).getPath());
+//                                inputFiles.add(file.getId());
+//                            }
+//                        }
+//                    }
+//                    localParams.put(inputParam.getName(), filePaths);
+//                }
+//            }
+//
+//            // Creating job name. Random string to avoid collisions.
+////            String jobName = name.isEmpty()? "J_" + String.format(StringUtils.randomString(15)) : name;
+//
+//            // Get temporal outdir  TODO: Create job folder outside the user workspace.
+////            java.nio.file.Path temporalOutdirPath = Paths.get("jobs", jobName);
+//////            int studyId = catalogManager.getStudyIdByAnalysisId(studyId);
+////            File temporalOutDir = catalogManager.createFolder(studyId, temporalOutdirPath, true, sessionId).getResult().get(0);
+//
+//            // Set outdir
+//            String outputParam = toolManager.getExecution().getOutputParam();
+//            if (params.get(outputParam).isEmpty()) {
+//                return createErrorResponse("", "Missing output param '" + outputParam + "'");
+//            }
+//
+//            long outDirId;
+////            System.out.println("outputParam = " + outputParam);
+//            if(params.get(outputParam).get(0).equalsIgnoreCase("analysis")){
+//                QueryOptions query = new QueryOptions();
+//                query.put("name", params.get(outputParam).get(0));
+//                QueryResult<File> result = catalogManager.searchFile(studyId, new Query(query), queryOptions, sessionId);
+//                outDirId = result.getResult().get(0).getId();
+//            }
+//            else
+//                outDirId = catalogManager.getFileId(params.get(outputParam).get(0), sessionId);
+//            File outDir = catalogManager.getFile(outDirId, sessionId).getResult().get(0);
+//
+//
+//            //create job folder with timestamp to store job result files
+//            boolean parents = true;
+//            java.nio.file.Path jobOutDirPath = Paths.get(outDir.getPath(), TimeUtils.getTime());
+//            QueryResult<File> queryResult = catalogManager.createFolder(studyId, jobOutDirPath, parents, queryOptions, sessionId);
+//            File jobOutDir = queryResult.getResult().get(0);
+//
+//
+//            //create input files from text - inputParamsFromTxt
+//            if (ex.getInputParamsFromTxt() != null) {
+//                for (InputParam inputParam : ex.getInputParamsFromTxt()) {
+//                    java.nio.file.Path relativeFilePath = Paths.get(jobOutDir.getPath(), inputParam.getName());
+////                    List<String> paramInputName = params.get(inputParam.getName());
+//                    List<String> queryParam = params.get(inputParam.getName());
+//                    if (queryParam != null && queryParam.size() > 0) {
+//
+//                        String value = queryParam.get(0).replace(",",System.getProperty("line.separator"));
+//                        QueryResult<File> createdFileResult = catalogManager.createFile(studyId, File.Format.PLAIN , File.Bioformat.NONE,
+//                                relativeFilePath.toString(), value.getBytes(),  "", true, sessionId);
+//                        File createdFile = createdFileResult.getResult().get(0);
+//
+//                        queryParam.set(0, catalogManager.getFileUri(createdFile).getPath());
+//                        //the "-text" suffix param will be removed to replace the input parameter, so -text param content will be mandatory over the non -text parameter.
+//                        localParams.put(inputParam.getName().replace("-text", ""), queryParam);
+//                    }
+//                }
+//            }
+//
+//
+//            QueryResult<Job> jobQueryResult = jobFactory.createJob(toolManager, localParams, studyId, name,
+//                    description, jobOutDir, inputFiles, sessionId);
 
-            QueryResult<Job> jobQueryResult = analysisJobExecutor.createJob(localParams, catalogManager, studyId, name, description,
-                    jobOutDir, inputFiles, sessionId);
-
-            // Execute job
-//            analysisJobExecuter.execute(jobName, job.getId(), temporalOutDirUri.getPath(), commandLine);
-//            AnalysisJobExecutor.execute(jobQueryResult.getResult().get(0));
-            //Job will be executed by the Daemon. status: PREPARED
-
-            return createOkResponse(jobQueryResult);
-
+//            return createOkResponse(jobQueryResult);
+            return createOkResponse("TO BE IMPLEMENTED");
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -278,11 +237,61 @@ public class JobWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{jobId}/info")
-    @ApiOperation(value = "Get job information", position = 2)
+    @ApiOperation(value = "Get job information", position = 2, response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+    })
     public Response info(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId) {
         try {
             return createOkResponse(catalogManager.getJob(jobId, queryOptions, sessionId));
         } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    // FIXME: Implement and change parameters
+    @GET
+    @Path("/search")
+    @ApiOperation(value = "Filter jobs [PENDING]", position = 12, response = Job[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "skip", value = "Number of results to skip in the queries", dataType = "integer", paramType = "query"),
+            @ApiImplicitParam(name = "count", value = "Total number of results", dataType = "boolean", paramType = "query")
+    })
+    public Response search(@ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                           @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                           @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                           @ApiParam(value = "tool name", required = false) @DefaultValue("") @QueryParam("toolName") String tool,
+                           @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") String status,
+                           @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                           @ApiParam(value = "date", required = false) @DefaultValue("") @QueryParam("date") String date,
+                           @ApiParam(value = "Comma separated list of input file ids", required = false) @DefaultValue("") @QueryParam("inputFiles") String inputFiles,
+                           @ApiParam(value = "Comma separated list of output file ids", required = false) @DefaultValue("") @QueryParam("outputFiles") String outputFiles) {
+        try {
+            long studyIdNum = catalogManager.getStudyId(studyId, sessionId);
+            // TODO this must be changed: only one queryOptions need to be passed
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            if (query.containsKey(CatalogJobDBAdaptor.QueryParams.NAME.key())
+                    && (query.get(CatalogJobDBAdaptor.QueryParams.NAME.key()) == null
+                    || query.getString(CatalogJobDBAdaptor.QueryParams.NAME.key()).isEmpty())) {
+                query.remove(CatalogJobDBAdaptor.QueryParams.NAME.key());
+                logger.debug("Name attribute empty, it's been removed");
+            }
+
+            if (!qOptions.containsKey(QueryOptions.LIMIT)) {
+                qOptions.put(QueryOptions.LIMIT, 1000);
+                logger.debug("Adding a limit of 1000");
+            }
+            logger.debug("query = " + query.toJson());
+            QueryResult<Job> result = catalogManager.getAllJobs(studyIdNum, query, qOptions, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
@@ -302,19 +311,139 @@ public class JobWSServer extends OpenCGAWSServer {
     @Path("/{jobId}/delete")
     @ApiOperation(value = "Delete job", position = 4)
     public Response delete(@ApiParam(value = "jobId", required = true) @PathParam("jobId") long jobId,
-                           @ApiParam(value = "deleteFiles", required = true) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
+                           @ApiParam(value = "deleteFiles", required = false) @DefaultValue("true") @QueryParam("deleteFiles") boolean deleteFiles) {
         try {
             List<QueryResult> results = new LinkedList<>();
             if (deleteFiles) {
                 QueryResult<Job> jobQueryResult = catalogManager.getJob(jobId, null, sessionId);
                 for (Long fileId : jobQueryResult.getResult().get(0).getOutput()) {
-                    QueryResult queryResult = catalogManager.deleteFile(fileId, sessionId);
+                    QueryResult queryResult = catalogManager.delete(Long.toString(fileId), queryOptions, sessionId);
                     results.add(queryResult);
                 }
             }
             results.add(catalogManager.deleteJob(jobId, sessionId));
             return createOkResponse(results);
         } catch (CatalogException | IOException e) {
+            return createErrorResponse(e);
+        }
+    }
+//
+//    @GET
+//    @Path("/{jobIds}/share")
+//    @ApiOperation(value = "Share jobs with other members", position = 5)
+//    public Response share(@PathParam(value = "jobIds") String jobIds,
+//                          @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                          @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
+//                          @ApiParam(value = "Boolean indicating whether to allow the change of of permissions in case any member already had any", required = true) @DefaultValue("false") @QueryParam("override") boolean override) {
+//        try {
+//            return createOkResponse(catalogManager.shareJob(jobIds, members, Arrays.asList(permissions.split(",")), override, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//
+//    @GET
+//    @Path("/{jobIds}/unshare")
+//    @ApiOperation(value = "Remove the permissions for the list of members", position = 6)
+//    public Response unshare(@PathParam(value = "jobIds") String jobIds,
+//                            @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members,
+//                            @ApiParam(value = "Comma separated list of job permissions", required = false) @DefaultValue("") @QueryParam("permissions") String permissions) {
+//        try {
+//            return createOkResponse(catalogManager.unshareJob(jobIds, members, permissions, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+
+    @GET
+    @Path("/groupBy")
+    @ApiOperation(value = "Group jobs by several fields", position = 10)
+    public Response groupBy(@ApiParam(value = "Comma separated list of fields by which to group by.", required = true) @DefaultValue("") @QueryParam("by") String by,
+                            @ApiParam(value = "id", required = false) @DefaultValue("") @QueryParam("id") String id,
+                            @ApiParam(value = "studyId", required = true) @DefaultValue("") @QueryParam("studyId") String studyId,
+                            @ApiParam(value = "name", required = false) @DefaultValue("") @QueryParam("name") String name,
+                            @ApiParam(value = "path", required = false) @DefaultValue("") @QueryParam("path") String path,
+                            @ApiParam(value = "status", required = false) @DefaultValue("") @QueryParam("status") File.FileStatus status,
+                            @ApiParam(value = "ownerId", required = false) @DefaultValue("") @QueryParam("ownerId") String ownerId,
+                            @ApiParam(value = "creationDate", required = false) @DefaultValue("") @QueryParam("creationDate") String creationDate,
+//                            @ApiParam(value = "modificationDate", required = false) @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+                            @ApiParam(value = "description", required = false) @DefaultValue("") @QueryParam("description") String description,
+                            @ApiParam(value = "attributes", required = false) @DefaultValue("") @QueryParam("attributes") String attributes) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions();
+            parseQueryParams(params, CatalogJobDBAdaptor.QueryParams::getParam, query, qOptions);
+
+            logger.debug("query = " + query.toJson());
+            logger.debug("queryOptions = " + qOptions.toJson());
+            QueryResult result = catalogManager.jobGroupBy(query, qOptions, by, sessionId);
+            return createOkResponse(result);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls")
+    @ApiOperation(value = "Returns the acls of the job [PENDING]", position = 18)
+    public Response getAcls(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+
+    @GET
+    @Path("/{jobId}/acls/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
+    public Response createRole(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+                               @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls/{memberId}/info")
+    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
+    public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                           @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
+    public Response updateAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{jobId}/acls/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
+    public Response deleteAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+                              @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
+        try {
+            return createOkResponse(null);
+        } catch (Exception e) {
             return createErrorResponse(e);
         }
     }

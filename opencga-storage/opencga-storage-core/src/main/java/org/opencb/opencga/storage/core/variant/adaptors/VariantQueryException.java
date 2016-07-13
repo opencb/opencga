@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -45,6 +46,16 @@ public class VariantQueryException extends IllegalArgumentException {
     public static VariantQueryException studyNotFound(int studyId, List<String> availableStudies) {
         return new VariantQueryException("Study { id: " + studyId + " } not found."
                 + (availableStudies == null || availableStudies.isEmpty() ? "" : " Available studies: " + availableStudies));
+    }
+
+    public static VariantQueryException cohortNotFound(int cohortId, int studyId, Collection<String> availableCohorts) {
+        return new VariantQueryException("Cohort { id: " + cohortId + " } not found in study { id: " + studyId + " }."
+                + (availableCohorts == null || availableCohorts.isEmpty() ? "" : " Available cohorts: " + availableCohorts));
+    }
+
+    public static VariantQueryException cohortNotFound(String cohortId, int studyId, Collection<String> availableCohorts) {
+        return new VariantQueryException("Cohort { name: \"" + cohortId + "\" } not found in study { id: " + studyId + " }."
+                + (availableCohorts == null || availableCohorts.isEmpty() ? "" : " Available cohorts: " + availableCohorts));
     }
 
     public static VariantQueryException missingStudyForSample(String sample, List<String> availableStudies) {

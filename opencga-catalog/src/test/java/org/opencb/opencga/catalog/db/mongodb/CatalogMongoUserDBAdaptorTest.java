@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.Status;
 import org.opencb.opencga.catalog.models.User;
@@ -47,7 +47,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void createUserTest() throws CatalogException {
 
-        User user = new User("NewUser", "", "", "", "", User.Role.USER, new User.UserStatus());
+        User user = new User("NewUser", "", "", "", "", new User.UserStatus());
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user, null);
         assertNotSame(0, createUser.getResult().size());
 
@@ -57,17 +57,17 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void deleteUserTest() throws CatalogException {
-        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", User.Role.USER, new User.UserStatus());
+        User deletable1 = new User("deletable1", "deletable 1", "d1@ebi", "1234", "", new User.UserStatus());
         QueryResult<User> createUser = catalogUserDBAdaptor.insertUser(deletable1, null);
         assertFalse(createUser.getResult().isEmpty());
         assertNotNull(createUser.first());
 
-        assertEquals(Status.READY, createUser.first().getStatus().getStatus());
+        assertEquals(Status.READY, createUser.first().getStatus().getName());
 
         QueryResult<User> deleteUser = catalogUserDBAdaptor.delete(deletable1.getId(), new QueryOptions());
         assertFalse(deleteUser.getResult().isEmpty());
         assertNotNull(deleteUser.first());
-        assertEquals(Status.DELETED, deleteUser.first().getStatus().getStatus());
+        assertEquals(Status.TRASHED, deleteUser.first().getStatus().getName());
 
 
         /*
@@ -88,7 +88,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
         user = catalogUserDBAdaptor.getUser(user3.getId(), new QueryOptions("exclude", Arrays.asList("projects")), null);
         assertNull(user.first().getProjects());
 
-        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastActivity());
+        user = catalogUserDBAdaptor.getUser(user3.getId(), null, user.first().getLastModified());
         assertTrue(user.getResult().isEmpty());
 
         thrown.expect(CatalogDBException.class);
@@ -98,7 +98,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void loginTest() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -109,7 +109,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void loginTest2() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -120,7 +120,7 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     @Test
     public void logoutTest() throws CatalogDBException, IOException {
         String userId = user1.getId();
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -136,11 +136,11 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
     public void getUserIdBySessionId() throws CatalogDBException {
         String userId = user1.getId();
 
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1")); //Having multiple conections
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1"));
-        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1"));
+        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20)); //Having multiple conections
+        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20));
+        catalogUserDBAdaptor.login(userId, "1234", new Session("127.0.0.1", 20));
 
-        Session sessionJCOLL = new Session("127.0.0.1");
+        Session sessionJCOLL = new Session("127.0.0.1", 20);
         QueryResult<ObjectMap> login = catalogUserDBAdaptor.login(userId, "1234", sessionJCOLL);
         assertEquals(userId, login.first().getString("userId"));
 
@@ -183,37 +183,37 @@ public class CatalogMongoUserDBAdaptorTest extends CatalogMongoDBAdaptorTest {
 
     @Test
     public void addAndGetQueryFilterTest() throws CatalogDBException {
-        Filter filter = new Filter("myFilter",
+        QueryFilter queryFilter = new QueryFilter("myFilter",
                 new Query("key1", "value1").append("key2", "value2").append("key3", "value3"),
                 new QueryOptions("key1", "value1").append("key2", "value2").append("key3", "value3")
         );
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
-        Filter filterResult = catalogUserDBAdaptor.getQueryFilter(user4.getId(), filter.getId()).first();
-        assertEquals(filter.getId(), filterResult.getId());
-        assertEquals(filter.getQuery().size(), filterResult.getQuery().size());
-        assertEquals(filter.getQueryOptions().size(), filterResult.getQueryOptions().size());
-        filter.setId("newId");
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
+        QueryFilter queryFilterResult = catalogUserDBAdaptor.getQueryFilter(user4.getId(), queryFilter.getId()).first();
+        assertEquals(queryFilter.getId(), queryFilterResult.getId());
+        assertEquals(queryFilter.getQuery().size(), queryFilterResult.getQuery().size());
+        assertEquals(queryFilter.getQueryOptions().size(), queryFilterResult.getQueryOptions().size());
+        queryFilter.setId("newId");
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("There already exists a filter with name");
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
     }
 
     @Test
     public void deleteQueryFilterTest() throws CatalogDBException {
-        Filter filter = new Filter("myFilter",
+        QueryFilter queryFilter = new QueryFilter("myFilter",
                 new Query("key1", "value1").append("key2", "value2").append("key3", "value3"),
                 new QueryOptions("key1", "value1").append("key2", "value2").append("key3", "value3")
         );
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
-        filter.setId("newId");
-        catalogUserDBAdaptor.addQueryFilter(user4.getId(), filter);
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
+        queryFilter.setId("newId");
+        catalogUserDBAdaptor.addQueryFilter(user4.getId(), queryFilter);
 
-        catalogUserDBAdaptor.getQueryFilter(user4.getId(), filter.getId());
-        catalogUserDBAdaptor.deleteQueryFilter(user4.getId(), filter.getId());
+        catalogUserDBAdaptor.getQueryFilter(user4.getId(), queryFilter.getId());
+        catalogUserDBAdaptor.deleteQueryFilter(user4.getId(), queryFilter.getId());
         thrown.expect(CatalogDBException.class);
         thrown.expectMessage("could not be found in the database");
-        catalogUserDBAdaptor.getQueryFilter(user4.getId(), filter.getId());
+        catalogUserDBAdaptor.getQueryFilter(user4.getId(), queryFilter.getId());
     }
 
 }

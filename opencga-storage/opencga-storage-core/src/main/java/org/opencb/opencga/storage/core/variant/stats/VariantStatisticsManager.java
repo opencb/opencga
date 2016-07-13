@@ -27,11 +27,11 @@ import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.stats.VariantSourceStats;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
-import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.commons.run.ParallelTaskRunner;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
@@ -46,6 +46,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
@@ -58,6 +59,8 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManager.Opti
  * Created by jmmut on 12/02/15.
  */
 public class VariantStatisticsManager {
+
+    public static final String OUTPUT_FILE_NAME = "output.file.name";
 
     private String VARIANT_STATS_SUFFIX = ".variants.stats.json.gz";
     private String SOURCE_STATS_SUFFIX = ".source.stats.json.gz";
@@ -164,9 +167,14 @@ public class VariantStatisticsManager {
 
 
         // reader, tasks and writer
-        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
         if (options.containsKey(Options.FILE_ID.key())) {
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(Options.FILE_ID.key()));
+        }
+        if (options.containsKey(VariantDBAdaptor.VariantQueryParams.REGION.key())) {
+            Object region = options.get(VariantDBAdaptor.VariantQueryParams.REGION.key());
+            readerQuery.put(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         }
         if (updateStats) {
             //Get all variants that not contain any of the required cohorts
@@ -175,7 +183,9 @@ public class VariantStatisticsManager {
                             .joining(";")));
         }
         logger.info("ReaderQuery: " + readerQuery.toJson());
-        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, null);
+        QueryOptions readerOptions = new QueryOptions(QueryOptions.SORT, true);
+        logger.info("ReaderQueryOptions: " + readerOptions.toJson());
+        VariantDBReader reader = new VariantDBReader(studyConfiguration, variantDBAdaptor, readerQuery, readerOptions);
         List<ParallelTaskRunner.Task<Variant, String>> tasks = new ArrayList<>(numTasks);
         for (int i = 0; i < numTasks; i++) {
             tasks.add(new VariantStatsWrapperTask(overwrite, cohorts, studyConfiguration, null/*FILE_ID*/,
@@ -183,18 +193,18 @@ public class VariantStatisticsManager {
         }
         Path variantStatsPath = Paths.get(output.getPath() + VARIANT_STATS_SUFFIX);
         logger.info("will write stats to {}", variantStatsPath);
-        StringDataWriter writer = new StringDataWriter(variantStatsPath);
+        StringDataWriter writer = new StringDataWriter(variantStatsPath, true);
 
         // runner
+        ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
+        ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
         try {
-            ParallelTaskRunner.Config config = new ParallelTaskRunner.Config(numTasks, batchSize, numTasks * 2, false);
-            ParallelTaskRunner runner = new ParallelTaskRunner<>(reader, tasks, writer, config);
 
             logger.info("starting stats creation for cohorts {}", cohorts.keySet());
             long start = System.currentTimeMillis();
             runner.run();
             logger.info("finishing stats creation, time: {}ms", System.currentTimeMillis() - start);
-        } catch (Exception e) {
+        } catch (ExecutionException e) {
             throw new StorageManagerException("Unable to calculate statistics.", e);
         }
         // source stats
@@ -221,7 +231,7 @@ public class VariantStatisticsManager {
         private Properties tagmap;
         private VariantStatisticsCalculator variantStatisticsCalculator;
 
-        public VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
+        VariantStatsWrapperTask(boolean overwrite, Map<String, Set<String>> cohorts,
                                        StudyConfiguration studyConfiguration, String fileId,
                                        VariantSourceStats variantSourceStats, Properties tagmap) {
             this.overwrite = overwrite;
@@ -250,7 +260,6 @@ public class VariantStatisticsManager {
             for (VariantStatsWrapper variantStatsWrapper : variantStatsWrappers) {
                 try {
                     strings.add(variantsWriter.writeValueAsString(variantStatsWrapper));
-                    strings.add("\n");
                     if (variantStatsWrapper.getCohortStats().get(StudyEntry.DEFAULT_COHORT) == null) {
                         defaultCohortAbsent = true;
                     }
@@ -267,7 +276,7 @@ public class VariantStatisticsManager {
                     variantSourceStats.updateSampleStats(variants, null);  // TODO test
                 }
             }
-            logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
+            logger.debug("another batch of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
             if (variants.size() != 0) {
                 logger.info("stats created up to position {}:{}", variants.get(variants.size() - 1).getChromosome(),
                         variants.get(variants.size() - 1).getStart());
@@ -275,6 +284,13 @@ public class VariantStatisticsManager {
                 logger.info("task with empty batch");
             }
             return strings;
+        }
+
+        @Override
+        public void post() {
+            if (variantStatisticsCalculator.getSkippedFiles() > 0) {
+                logger.warn("Non calculated variant stats: " + variantStatisticsCalculator.getSkippedFiles());
+            }
         }
     }
 
@@ -301,6 +317,8 @@ public class VariantStatisticsManager {
 
     public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
             throws IOException {
+
+        variantDBAdaptor.preUpdateStats(studyConfiguration);
 
         /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());

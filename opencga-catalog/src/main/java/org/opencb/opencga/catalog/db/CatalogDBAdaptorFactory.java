@@ -86,4 +86,6 @@ public interface CatalogDBAdaptorFactory {
     CatalogCohortDBAdaptor getCatalogCohortDBAdaptor();
 
     CatalogDatasetDBAdaptor getCatalogDatasetDBAdaptor();
+
+    CatalogPanelDBAdaptor getCatalogPanelDBAdaptor();
 }

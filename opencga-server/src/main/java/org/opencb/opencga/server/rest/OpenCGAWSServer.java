@@ -22,7 +22,8 @@ import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.common.base.Splitter;
-import com.wordnik.swagger.annotations.ApiParam;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.apache.avro.generic.GenericRecord;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Level;
@@ -34,9 +35,10 @@ import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.alignment.json.AlignmentDifferenceJsonMixin;
@@ -51,17 +53,18 @@ import org.slf4j.LoggerFactory;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
-import javax.ws.rs.Path;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.*;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 
+@ApplicationPath("/")
 @Path("/{version}")
 @Produces(MediaType.APPLICATION_JSON)
 public class OpenCGAWSServer {
@@ -71,24 +74,24 @@ public class OpenCGAWSServer {
     @ApiParam(name = "version", value = "OpenCGA major version", allowableValues = "v1", defaultValue = "v1")
     protected String version;
 
-    @DefaultValue("")
-    @QueryParam("exclude")
-    @ApiParam(name = "excluded fields", value = "Fields excluded in response. Whole JSON path e.g.: transcripts.id")
+//    @DefaultValue("")
+//    @QueryParam("exclude")
+//    @ApiParam(name = "exclude", value = "Fields excluded in response. Whole JSON path.")
     protected String exclude;
 
-    @DefaultValue("")
-    @QueryParam("include")
-    @ApiParam(name = "included fields", value = "Only fields included in response. Whole JSON path e.g.: transcripts.id")
+//    @DefaultValue("")
+//    @QueryParam("include")
+//    @ApiParam(name = "include", value = "Only fields included in response. Whole JSON path.")
     protected String include;
 
-    @DefaultValue("-1")
-    @QueryParam("limit")
-    @ApiParam(name = "limit results", value = "Maximum number of documents to be returned.")
-    protected long limit;
+//    @DefaultValue("-1")
+//    @QueryParam("limit")
+//    @ApiParam(name = "limit", value = "Maximum number of documents to be returned.")
+    protected int limit;
 
-    @DefaultValue("0")
-    @QueryParam("skip")
-    @ApiParam(name = "skip results", value = "Number of documents to be skipped when querying for data.")
+//    @DefaultValue("0")
+//    @QueryParam("skip")
+//    @ApiParam(name = "skip", value = "Number of documents to be skipped when querying for data.")
     protected long skip;
 
     @DefaultValue("")
@@ -116,10 +119,6 @@ public class OpenCGAWSServer {
 //    @QueryParam("metadata")
 //    protected boolean metadata;
 
-//    @DefaultValue("json")
-//    @QueryParam("of")
-//    protected String outputFormat;
-//    private @Context ServletContext context;
 
     protected static AtomicBoolean initialized;
 
@@ -128,6 +127,9 @@ public class OpenCGAWSServer {
 
     protected static StorageConfiguration storageConfiguration;
     protected static StorageManagerFactory storageManagerFactory;
+
+    private static final int DEFAULT_LIMIT = 2000;
+    private static final int MAX_LIMIT = 5000;
 
     static {
         initialized = new AtomicBoolean(false);
@@ -148,26 +150,31 @@ public class OpenCGAWSServer {
         org.apache.log4j.Logger.getLogger("org.mongodb.driver.connection").setLevel(Level.WARN);
     }
 
-    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                           @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-//        this.startTime = System.currentTimeMillis();
+
+    public OpenCGAWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        this(uriInfo.getPathParameters().getFirst("version"), uriInfo, httpServletRequest);
+    }
+
+    public OpenCGAWSServer(@PathParam("version") String version, @Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest)
+            throws IOException, VersionException {
         this.version = version;
         this.uriInfo = uriInfo;
         this.httpServletRequest = httpServletRequest;
 
         this.params = uriInfo.getQueryParameters();
 
-        startTime = System.currentTimeMillis();
-
-        query = new Query();
-        queryOptions = new QueryOptions();
-
-
+        // This is only executed the first time to initialize configuration and some variables
         if (initialized.compareAndSet(false, true)) {
             init();
         }
 
+        query = new Query();
+        queryOptions = new QueryOptions();
+
         parseParams();
+
+        // take the time for calculating the whole duration of the call
+        startTime = System.currentTimeMillis();
     }
 
     private void init() {
@@ -199,6 +206,10 @@ public class OpenCGAWSServer {
         if (configDirPath != null && Files.exists(configDirPath) && Files.isDirectory(configDirPath)) {
             logger.info("|  * Configuration folder: '{}'", configDirPath.toString());
             initOpenCGAObjects(configDirPath);
+
+            // Required for reading the analysis.properties file.
+            // TODO: Remove when analysis.properties is totally migrated to configuration.yml
+            Config.setOpenCGAHome(configDirPath.getParent().toString());
 
             // TODO use configuration.yml for getting the server.log, for now is hardcoded
             logger.info("|  * Server logfile: " + configDirPath.getParent().resolve("logs").resolve("server.log"));
@@ -255,7 +266,6 @@ public class OpenCGAWSServer {
     }
 
 
-
     /**
      * Builds the query and the queryOptions based on the query parameters.
      *
@@ -281,41 +291,41 @@ public class OpenCGAWSServer {
         }
     }
 
-    public void parseParams() throws VersionException {
+    private void parseParams() throws VersionException {
+        // If by any reason 'version' is null we try to read it from the URI path, if not present an Exeception is thrown
         if (version == null) {
-            throw new VersionException("Version not valid: '" + version + "'");
+            if (uriInfo.getPathParameters().containsKey("version")) {
+                logger.warn("Setting 'version' from UriInfo object");
+                this.version = uriInfo.getPathParameters().getFirst("version");
+            } else {
+                throw new VersionException("Version not valid: '" + version + "'");
+            }
         }
 
-        /**
-         * Check version parameter, must be: v1, v2, ... If 'latest' then is
-         * converted to appropriate version
-         */
+         // Check version parameter, must be: v1, v2, ... If 'latest' then is converted to appropriate version.
         if (version.equalsIgnoreCase("latest")) {
+            logger.info("Version 'latest' detected, setting 'version' parameter to 'v1'");
             version = "v1";
-            logger.info("Version 'latest' detected, setting version parameter to '{}'", version);
         }
-        // TODO Valid OpenCGA versions need to be added configuration files
-//        if (!cellBaseConfiguration.getVersion().equalsIgnoreCase(this.version)) {
-//            logger.error("Version '{}' does not match configuration '{}'", this.version, cellBaseConfiguration.getVersion());
-//            throw new VersionException("Version not valid: '" + version + "'");
-//        }
+
 
         MultivaluedMap<String, String> multivaluedMap = uriInfo.getQueryParameters();
         queryOptions.put("metadata", (multivaluedMap.get("metadata") != null) ? multivaluedMap.get("metadata").get(0).equals("true") : true);
-        String limit = multivaluedMap.getFirst("limit");
-        if (limit != null) {
-            this.limit = Integer.parseInt(limit);
-            queryOptions.put("limit", this.limit);
-        }
 
-        String skip = multivaluedMap.getFirst("skip");
+        String limitStr = multivaluedMap.getFirst(QueryOptions.LIMIT);
+        if (StringUtils.isNotEmpty(limitStr)) {
+            limit = Integer.parseInt(limitStr);
+        }
+        queryOptions.put(QueryOptions.LIMIT, (limit > 0) ? Math.min(limit, MAX_LIMIT) : DEFAULT_LIMIT);
+
+        String skip = multivaluedMap.getFirst(QueryOptions.SKIP);
         if (skip != null) {
             this.skip = Integer.parseInt(skip);
-            queryOptions.put("skip", this.skip);
+            queryOptions.put(QueryOptions.SKIP, this.skip);
         }
 
-        parseIncludeExclude(multivaluedMap, "exclude", exclude);
-        parseIncludeExclude(multivaluedMap, "include", include);
+        parseIncludeExclude(multivaluedMap, QueryOptions.EXCLUDE, exclude);
+        parseIncludeExclude(multivaluedMap, QueryOptions.INCLUDE, include);
 
         // Now we add all the others QueryParams in the URL such as limit, of, sid, ...
         // 'sid' query param is excluded from QueryOptions object since is parsed in 'sessionId' attribute
@@ -348,50 +358,11 @@ public class OpenCGAWSServer {
         }
     }
 
-//    protected QueryOptions getQueryOptions() {
-//        if(queryOptions == null) {
-//            this.queryOptions = new QueryOptions();
-//            this.queryOptions = new QueryOptions(uriInfo.getQueryParameters(), true);
-//            if(!exclude.isEmpty()) {
-//                queryOptions.put("exclude", Arrays.asList(exclude.split(",")));
-//            }
-//            if(!include.isEmpty()) {
-//                queryOptions.put("include", Arrays.asList(include.split(",")));
-//            }
-//            queryOptions.put("metadata", metadata);
-//        }
-//        return queryOptions;
-//    }
 
-//    protected QueryOptions getAllQueryOptions() {
-//        return getAllQueryOptions(null);
-//    }
-
-//    protected QueryOptions getAllQueryOptions(Collection<String> acceptedQueryOptions) {
-//        return getAllQueryOptions(new HashSet<String>(acceptedQueryOptions));
-//    }
-//
-//    protected QueryOptions getAllQueryOptions(Set<String> acceptedQueryOptions) {
-//        QueryOptions queryOptions = this.getQueryOptions();
-//        for (Map.Entry<String, List<String>> entry : params.entrySet()) {
-//            if (acceptedQueryOptions == null || acceptedQueryOptions.contains(entry.getKey())) {
-//                if (!entry.getValue().isEmpty()) {
-//                    Iterator<String> iterator = entry.getValue().iterator();
-//                    StringBuilder sb = new StringBuilder(iterator.next());
-//                    while (iterator.hasNext()) {
-//                        sb.append(",").append(iterator.next());
-//                    }
-//                    queryOptions.add(entry.getKey(), sb.toString());
-//                } else {
-//                    queryOptions.add(entry.getKey(), null);
-//                }
-//            }
-//        }
-//        return queryOptions;
-//    }
-
+    @Deprecated
     @GET
     @Path("/help")
+    @ApiOperation(value = "Help", position = 1)
     public Response help() {
         return createOkResponse("No help available");
     }
@@ -405,7 +376,7 @@ public class OpenCGAWSServer {
         queryResponse.setTime(new Long(System.currentTimeMillis() - startTime).intValue());
         queryResponse.setApiVersion(version);
         queryResponse.setQueryOptions(queryOptions);
-        queryResponse.setError(e.toString());
+        queryResponse.setError(e.getMessage());
 
         QueryResult<ObjectMap> result = new QueryResult();
         result.setWarningMsg("Future errors will ONLY be shown in the QueryResponse body");
@@ -478,10 +449,4 @@ public class OpenCGAWSServer {
                 .build();
     }
 
-//    @GET
-//    @Path("/testIndices")
-//    public Response testIndices() {
-//        catalogManager.testIndices();
-//        return Response.ok("mira el log").build();
-//    }
 }

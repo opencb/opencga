@@ -3,13 +3,15 @@ package org.opencb.opencga.analysis.files;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.BioformatDetector;
+import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +84,7 @@ public class FileScanner {
 //        File root = catalogManager.getAllFiles(studyId, new QueryOptions("path", ""), sessionId).first();
         Query query = new Query();
         query.put(CatalogFileDBAdaptor.FileFilterOption.uri.toString(), "~.*"); //Where URI exists
-        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.FOLDER);
+        query.put(CatalogFileDBAdaptor.FileFilterOption.type.toString(), File.Type.DIRECTORY);
         List<File> files = catalogManager.searchFile(studyId, query, sessionId).getResult();
 
         List<File> scan = new LinkedList<>();
@@ -170,7 +172,7 @@ public class FileScanner {
         if (!directoryToScan.getPath().endsWith("/")) {
             directoryToScan = URI.create(directoryToScan.toString() + "/");
         }
-        if (!directory.getType().equals(File.Type.FOLDER)) {
+        if (!directory.getType().equals(File.Type.DIRECTORY)) {
             throw new CatalogException("Expected folder where place the found files.");
         }
         long studyId = catalogManager.getStudyIdByFileId(directory.getId());
@@ -195,7 +197,8 @@ public class FileScanner {
                 switch (policy) {
                     case DELETE:
                         logger.info("Deleting file { id:" + existingFile.getId() + ", path:\"" + existingFile.getPath() + "\" }");
-                        catalogManager.deleteFile(existingFile.getId(), sessionId);
+                        // Delete completely the file/folder !
+                        catalogManager.delete(Long.toString(existingFile.getId()), new QueryOptions(), sessionId);
                         break;
                     case REPLACE:
                         file = existingFile;
@@ -227,7 +230,7 @@ public class FileScanner {
                 }
                 logger.debug("Created new file entry for " + uri + " { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } ");
             } else {
-                if (file.getStatus().getStatus().equals(File.FileStatus.MISSING)) {
+                if (file.getStatus().getName().equals(File.FileStatus.MISSING)) {
                     logger.info("File { id:" + file.getId() + ", path:\"" + file.getPath() + "\" } recover tracking from file " + uri);
                     logger.debug("Set status to " + File.FileStatus.READY);
                     returnFile = true;      //Return file because was missing

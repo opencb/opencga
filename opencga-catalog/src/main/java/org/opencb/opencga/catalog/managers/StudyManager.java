@@ -7,8 +7,8 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.*;
@@ -19,6 +19,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IStudyManager;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
 import org.opencb.opencga.catalog.models.acls.StudyAcl;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
@@ -27,8 +28,10 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
@@ -60,6 +63,63 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         return studyDBAdaptor.getProjectIdByStudyId(studyId);
     }
 
+    @Override
+    public Long getStudyId(String userId, String studyStr) throws CatalogException {
+        if (StringUtils.isNumeric(studyStr)) {
+            return Long.parseLong(studyStr);
+        }
+
+        String ownerId = userId;
+        String aliasProject = null;
+        String aliasStudy;
+
+        String[] split = studyStr.split("@");
+        if (split.length == 2) {
+            // user@project:study
+            ownerId = split[0];
+            studyStr = split[1];
+        }
+
+        split = studyStr.split(":", 2);
+        if (split.length == 2) {
+            aliasProject = split[0];
+            aliasStudy = split[1];
+        } else {
+            aliasStudy = studyStr;
+        }
+
+        List<Long> projectIds = new ArrayList<>();
+        if (aliasProject != null) {
+            long projectId = projectDBAdaptor.getProjectId(ownerId, aliasProject);
+            if (projectId == -1) {
+                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
+            }
+            projectIds.add(projectId);
+        } else {
+            QueryResult<Project> allProjects = projectDBAdaptor.getAllProjects(ownerId,
+                    new QueryOptions(QueryOptions.INCLUDE, "projects.id"));
+            if (allProjects.getNumResults() > 0) {
+                projectIds.addAll(allProjects.getResult().stream().map(Project::getId).collect(Collectors.toList()));
+            } else {
+                throw new CatalogException("Error: Could not retrieve any project for the user " + ownerId);
+            }
+        }
+
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), projectIds)
+                .append(CatalogStudyDBAdaptor.QueryParams.ALIAS.key(), aliasStudy);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.id");
+
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, qOptions);
+        if (studyQueryResult.getNumResults() == 0) {
+            return -1L;
+        } else if (studyQueryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: Found more than one study id based on " + studyStr);
+        } else {
+            return studyQueryResult.first().getId();
+        }
+    }
+
+    @Deprecated
     @Override
     public Long getStudyId(String studyId) throws CatalogException {
         if (StringUtils.isNumeric(studyId)) {
@@ -152,15 +212,17 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         LinkedList<Experiment> experiments = new LinkedList<>();
         LinkedList<Job> jobs = new LinkedList<>();
 
-        File rootFile = new File(".", File.Type.FOLDER, null, null, "", userId, "study root folder",
+        File rootFile = new File(".", File.Type.DIRECTORY, null, null, "", userId, "study root folder",
                 new File.FileStatus(File.FileStatus.READY), 0);
         rootFile.setUri(uri);
         files.add(rootFile);
 
-        Study study = new Study(-1, name, alias, type, userId, creationDate, description, status, TimeUtils.getTime(),
-                0, cipher, new LinkedList<>(), AuthorizationManager.getDefaultAcls(new HashSet<>(Arrays.asList(userId))),
-                experiments, files, jobs, new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), null, datastores,
-                stats, attributes);
+        // We set all the permissions for the owner of the study.
+        // StudyAcl studyAcl = new StudyAcl(userId, AuthorizationManager.getAdminAcls());
+
+        Study study = new Study(-1, name, alias, type, creationDate, description, status, TimeUtils.getTime(),
+                0, cipher, new LinkedList<>(), new LinkedList<>(), experiments, files, jobs, new LinkedList<>(), new LinkedList<>(),
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, datastores, attributes, stats);
 
         /* CreateStudy */
         QueryResult<Study> result = studyDBAdaptor.createStudy(projectId, study, options);
@@ -178,15 +240,19 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         study = studyDBAdaptor.update(study.getId(), new ObjectMap("uri", uri)).first();
-        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
+//        auditManager.recordCreation(AuditRecord.Resource.study, study.getId(), userId, study, null, null);
+        auditManager.recordAction(AuditRecord.Resource.study, AuditRecord.Action.create, AuditRecord.Magnitude.low, study.getId(), userId,
+                null, study, null, null);
         long rootFileId = fileDBAdaptor.getFileId(study.getId(), "");    //Set studyUri to the root folder too
         rootFile = fileDBAdaptor.update(rootFileId, new ObjectMap("uri", uri)).first();
-        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
-
-        userDBAdaptor.updateUserLastActivity(userId);
+//        auditManager.recordCreation(AuditRecord.Resource.file, rootFile.getId(), userId, rootFile, null, null);
+        auditManager.recordAction(AuditRecord.Resource.file, AuditRecord.Action.create, AuditRecord.Magnitude.low, rootFile.getId(), userId,
+                null, rootFile, null, null);
+        userDBAdaptor.updateUserLastModified(userId);
         return result;
     }
 
+    @Deprecated
     @Override
     public QueryResult<Study> share(long studyId, AclEntry acl) throws CatalogException {
         throw new UnsupportedOperationException();
@@ -198,6 +264,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        studyDBAdaptor.checkStudyId(studyId);
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_STUDY);
 
         QueryResult<Study> studyResult = studyDBAdaptor.getStudy(studyId, options);
@@ -211,15 +278,15 @@ public class StudyManager extends AbstractManager implements IStudyManager {
     @Override
     public QueryResult<Study> readAll(Query query, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
         query = ParamUtils.defaultObject(query, Query::new);
+        QueryOptions qOptions = options != null ? new QueryOptions(options) : new QueryOptions();
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        if (!options.containsKey("include") || options.get("include") == null || options.getAsStringList("include").isEmpty()) {
-            options.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
+        if (!qOptions.containsKey("include") || qOptions.get("include") == null || qOptions.getAsStringList("include").isEmpty()) {
+            qOptions.addToListOption("exclude", "projects.studies.attributes.studyConfiguration");
         }
 
-        QueryResult<Study> allStudies = studyDBAdaptor.get(query, options);
+        QueryResult<Study> allStudies = studyDBAdaptor.get(query, qOptions);
         List<Study> studies = allStudies.getResult();
 
         authorizationManager.filterStudies(userId, studies);
@@ -253,7 +320,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         }
 
         String ownerId = studyDBAdaptor.getStudyOwnerId(studyId);
-        userDBAdaptor.updateUserLastActivity(ownerId);
+        userDBAdaptor.updateUserLastModified(ownerId);
         QueryResult<Study> result = studyDBAdaptor.update(studyId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, parameters, null, null);
         return result;
@@ -270,9 +337,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
 
         // Both users must bu updated
-        userDBAdaptor.updateUserLastActivity(userId);
-//        userDBAdaptor.updateUserLastActivity(studyOwnerId);
-        //TODO get all shared users to updateUserLastActivity
+        userDBAdaptor.updateUserLastModified(userId);
+//        userDBAdaptor.updateUserLastModified(studyOwnerId);
+        //TODO get all shared users to updateUserLastModified
 
         //QueryResult queryResult = studyDBAdaptor.renameStudy(studyId, newStudyAlias);
         auditManager.recordUpdate(AuditRecord.Resource.study, studyId, userId, new ObjectMap("alias", newStudyAlias), null, null);
@@ -375,7 +442,6 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 .setExperiments(studyInfo.getExperiments())
                 .setGroups(studyInfo.getGroups())
                 .setName(studyInfo.getName())
-                .setRoles(studyInfo.getRoles())
                 .setStats(studyInfo.getStats())
                 .setStatus(studyInfo.getStatus())
                 .setType(studyInfo.getType())
@@ -385,36 +451,36 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         Long nFiles = fileDBAdaptor.count(
                 new Query(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
                         .append(CatalogFileDBAdaptor.QueryParams.TYPE.key(), File.Type.FILE)
-                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogFileDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setFiles(nFiles);
 
         Long nSamples = sampleDBAdaptor.count(
                 new Query(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogSampleDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setSamples(nSamples);
 
         Long nJobs = jobDBAdaptor.count(
                 new Query(CatalogJobDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setJobs(nJobs);
 
         Long nCohorts = cohortDBAdaptor.count(
                 new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setCohorts(nCohorts);
 
         Long nIndividuals = individualDBAdaptor.count(
                 new Query(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key(), studyId)
-                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                                + File.FileStatus.REMOVED))
+                        .append(CatalogIndividualDBAdaptor.QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                                + File.FileStatus.DELETED))
                 .first();
         studySummary.setIndividuals(nIndividuals);
 
@@ -422,7 +488,367 @@ public class StudyManager extends AbstractManager implements IStudyManager {
                 Collections.singletonList(studySummary));
     }
 
+    @Deprecated
+    @Override
+    public QueryResult<StudyAcl> getStudyAcls(String studyStr, List<String> members, String sessionId) throws CatalogException {
+        long startTime = System.currentTimeMillis();
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
 
+        // Split and obtain the set of members (users + groups), users and groups
+        Set<String> memberSet = new HashSet<>();
+        Set<String> userIds = new HashSet<>();
+        Set<String> groupIds = new HashSet<>();
+        for (String member: members) {
+            memberSet.add(member);
+            if (!member.startsWith("@")) {
+                userIds.add(member);
+            } else {
+                groupIds.add(member);
+            }
+        }
+
+
+        // Obtain the groups the user might belong to in order to be able to get the permissions properly
+        // (the permissions might be given to the group instead of the user)
+        // Map of group -> users
+        Map<String, List<String>> groupUsers = new HashMap<>();
+
+        if (userIds.size() > 0) {
+            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
+            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
+            // We add the groups where the users might belong to to the memberSet
+            if (groups.getNumResults() > 0) {
+                for (Group group : groups.getResult()) {
+                    for (String tmpUserId : group.getUserIds()) {
+                        if (userIds.contains(tmpUserId)) {
+                            memberSet.add(group.getName());
+
+                            if (!groupUsers.containsKey(group.getName())) {
+                                groupUsers.put(group.getName(), new ArrayList<>());
+                            }
+                            groupUsers.get(group.getName()).add(tmpUserId);
+                        }
+                    }
+                }
+            }
+        }
+        List<String> memberList = memberSet.stream().collect(Collectors.toList());
+        QueryResult<StudyAcl> studyAclQueryResult = studyDBAdaptor.getAcl(studyId, memberList);
+
+        if (members.size() == 0) {
+            return studyAclQueryResult;
+        }
+
+        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
+        // instead of the group.
+        Map<String, StudyAcl> studyAclHashMap = new HashMap<>();
+        for (StudyAcl studyAcl : studyAclQueryResult.getResult()) {
+            String tmpMember = studyAcl.getMember();
+            if (memberList.contains(tmpMember)) {
+                if (tmpMember.startsWith("@")) {
+                    // Check if the user was demanding the group directly or a user belonging to the group
+                    if (groupIds.contains(tmpMember)) {
+                        studyAclHashMap.put(tmpMember, studyAcl);
+                    } else {
+                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
+                        if (groupUsers.containsKey(tmpMember)) {
+                            for (String tmpUserId : groupUsers.get(tmpMember)) {
+                                if (userIds.contains(tmpUserId)) {
+                                    studyAclHashMap.put(tmpUserId, new StudyAcl(tmpUserId, studyAcl.getPermissions()));
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    // Add the user
+                    studyAclHashMap.put(tmpMember, studyAcl);
+                }
+            }
+
+        }
+
+        // We recreate the output that is in studyAclHashMap but in the same order the members were queried.
+        List<StudyAcl> studyAclList = new ArrayList<>(studyAclHashMap.size());
+        for (String member : members) {
+            if (studyAclHashMap.containsKey(member)) {
+                studyAclList.add(studyAclHashMap.get(member));
+            }
+        }
+
+        // Update queryResult info
+        studyAclQueryResult.setId(studyStr);
+        studyAclQueryResult.setNumResults(studyAclList.size());
+        studyAclQueryResult.setNumTotalResults(studyAclList.size());
+        studyAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
+        studyAclQueryResult.setResult(studyAclList);
+
+        return studyAclQueryResult;
+    }
+
+    @Override
+    public QueryResult<Group> createGroup(String studyStr, String groupId, String users, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        // Create the list of users
+        List<String> userList;
+        if (users != null && !users.isEmpty()) {
+            userList = Arrays.asList(users.split(","));
+        } else {
+            userList = Collections.emptyList();
+        }
+
+        // Check group exists
+        if (existsGroup(studyId, groupId)) {
+            throw new CatalogException("The group " + groupId + " already exists.");
+        }
+
+        // Check the list of users is ok
+        for (String user : userList) {
+            userDBAdaptor.checkUserExists(user);
+        }
+
+        // Check that none of the users belong to other group
+        StringBuilder errorMessage = new StringBuilder("Cannot create group. These users already belong to other group: ");
+        boolean errorFlag = false;
+        for (String user : userList) {
+            if (memberBelongsToGroup(studyId, user)) {
+                errorMessage.append(user).append(",");
+                errorFlag = true;
+            }
+        }
+
+        if (errorFlag) {
+            throw new CatalogException(errorMessage.toString());
+        }
+
+        // Create the group
+        return studyDBAdaptor.createGroup(studyId, groupId, userList);
+    }
+
+    private boolean existsGroup(long studyId, String groupId) throws CatalogDBException {
+        Query query = new Query()
+                .append(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(CatalogStudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        return studyDBAdaptor.count(query).first() > 0;
+    }
+
+    private boolean memberBelongsToGroup(long studyId, String member) throws CatalogDBException {
+        Query query = new Query()
+                .append(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), member);
+        return studyDBAdaptor.count(query).first() > 0;
+    }
+
+    @Override
+    public QueryResult<Group> getAllGroups(String studyStr, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        Query query = new Query(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId);
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogStudyDBAdaptor.QueryParams.GROUPS.key());
+
+        QueryResult<Study> studyQueryResult = studyDBAdaptor.get(query, queryOptions);
+        List<Group> groupList;
+        if (studyQueryResult != null && studyQueryResult.getNumResults() == 1) {
+            groupList = studyQueryResult.first().getGroups();
+        } else {
+            groupList = Collections.emptyList();
+        }
+
+        return new QueryResult<>("Get all groups", studyQueryResult.getDbTime(), groupList.size(), groupList.size(),
+                studyQueryResult.getWarningMsg(), studyQueryResult.getErrorMsg(), groupList);
+    }
+
+    @Override
+    public QueryResult<Group> getGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+    }
+
+    @Override
+    public QueryResult<Group> updateGroup(String studyStr, String groupId, @Nullable String addUsers, @Nullable String removeUsers,
+                                          @Nullable String setUsers, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        // Check the group exists
+        Query query = new Query()
+                .append(CatalogStudyDBAdaptor.QueryParams.ID.key(), studyId)
+                .append(CatalogStudyDBAdaptor.QueryParams.GROUP_NAME.key(), groupId);
+        if (studyDBAdaptor.count(query).first() == 0) {
+            throw new CatalogException("The group " + groupId + " does not exist.");
+        }
+
+        List<String> userList;
+        if (setUsers != null) {
+            userList = Arrays.asList(setUsers.split(","));
+            studyDBAdaptor.setUsersToGroup(studyId, groupId, userList);
+        } else {
+            if (addUsers != null) {
+                userList = Arrays.asList(addUsers.split(","));
+                studyDBAdaptor.addUsersToGroup(studyId, groupId, userList);
+            }
+
+            if (removeUsers != null) {
+                userList = Arrays.asList(removeUsers.split(","));
+                studyDBAdaptor.removeUsersFromGroup(studyId, groupId, userList);
+            }
+        }
+
+        return studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+    }
+
+    @Override
+    public QueryResult<Group> deleteGroup(String studyStr, String groupId, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(userId, studyStr);
+        studyDBAdaptor.checkStudyId(studyId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.SHARE_STUDY);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.UPDATE_STUDY);
+
+        // Fix the groupId
+        if (!groupId.startsWith("@")) {
+            groupId = "@" + groupId;
+        }
+
+        QueryResult<Group> group = studyDBAdaptor.getGroup(studyId, groupId, Collections.emptyList());
+        group.setId("Delete group");
+
+        studyDBAdaptor.deleteGroup(studyId, groupId);
+
+        // Remove the permissions the group might have had
+        if (authorizationManager.memberHasPermissionsInStudy(studyId, groupId)) {
+            authorizationManager.removeStudyAcl(userId, studyId, groupId);
+        }
+
+        return group;
+    }
+
+    @Override
+    public Long getDiseasePanelId(String userId, String panelStr) throws CatalogException {
+        if (StringUtils.isNumeric(panelStr)) {
+            return Long.parseLong(panelStr);
+        }
+
+        // Resolve the studyIds and filter the panelName
+        ObjectMap parsedPanelStr = parseFeatureId(userId, panelStr);
+        List<Long> studyIds = getStudyIds(parsedPanelStr);
+        String panelName = parsedPanelStr.getString("featureName");
+
+        Query query = new Query(CatalogPanelDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
+                .append(CatalogPanelDBAdaptor.QueryParams.NAME.key(), panelName);
+        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.panels.id");
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.get(query, qOptions);
+        if (queryResult.getNumResults() > 1) {
+            throw new CatalogException("Error: More than one panel id found based on " + panelName);
+        } else if (queryResult.getNumResults() == 0) {
+            return -1L;
+        } else {
+            return queryResult.first().getId();
+        }
+    }
+
+    @Override
+    public QueryResult<DiseasePanel> createDiseasePanel(String studyStr, String name, String disease, String description,
+                                                        String genes, String regions, String variants,
+                                                        QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(name, "name");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = getStudyId(studyStr);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_PANELS);
+        ParamUtils.checkParameter(disease, "disease");
+        description = ParamUtils.defaultString(description, "");
+        List<String> geneList = Collections.emptyList();
+        List<String> regionList = Collections.emptyList();
+        List<String> variantList = Collections.emptyList();
+        if (genes != null) {
+            geneList = Arrays.asList(genes.split(","));
+        }
+        if (regions != null) {
+            regionList = Arrays.asList(regions.split(","));
+        }
+        if (variants != null) {
+            variantList = Arrays.asList(variants.split(","));
+        }
+
+        if (geneList.size() == 0 && regionList.size() == 0 && variantList.size() == 0) {
+            throw new CatalogException("Cannot create a new disease panel with no genes, regions and variants. At least, one of them should"
+                    + " be provided.");
+        }
+
+        DiseasePanel diseasePanel = new DiseasePanel(-1, name, disease, description, geneList, regionList, variantList,
+                new DiseasePanel.PanelStatus());
+
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.createPanel(studyId, diseasePanel, options);
+//        auditManager.recordCreation(AuditRecord.Resource.panel, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.panel, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
+        return queryResult;
+
+    }
+
+    @Override
+    public QueryResult<DiseasePanel> getDiseasePanel(String panelStr, QueryOptions options, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long panelId = getDiseasePanelId(userId, panelStr);
+        authorizationManager.checkDiseasePanelPermission(panelId, userId, DiseasePanelAcl.DiseasePanelPermissions.VIEW);
+        QueryResult<DiseasePanel> queryResult = panelDBAdaptor.getPanel(panelId, options);
+        return queryResult;
+    }
+
+    @Override
+    public QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException {
+        ParamUtils.checkObj(parameters, "Parameters");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        Long diseasePanelId = getDiseasePanelId(userId, panelStr);
+        authorizationManager.checkDiseasePanelPermission(diseasePanelId, userId, DiseasePanelAcl.DiseasePanelPermissions.UPDATE);
+
+        for (String s : parameters.keySet()) {
+            if (!s.matches("name|disease")) {
+                throw new CatalogDBException("Parameter '" + s + "' can't be changed");
+            }
+        }
+
+        QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.panel, diseasePanelId, userId, parameters, null, null);
+        return result;
+    }
 
     /*
      * Variables Methods
@@ -455,7 +881,7 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         attributes = ParamUtils.defaultObject(attributes, new HashMap<String, Object>());
 
         for (Variable variable : variables) {
-            ParamUtils.checkParameter(variable.getId(), "variable ID");
+            ParamUtils.checkParameter(variable.getName(), "variable ID");
             ParamUtils.checkObj(variable.getType(), "variable Type");
             variable.setAllowedValues(ParamUtils.defaultObject(variable.getAllowedValues(), Collections.<String>emptyList()));
             variable.setAttributes(ParamUtils.defaultObject(variable.getAttributes(), Collections.<String, Object>emptyMap()));
@@ -469,7 +895,9 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         CatalogAnnotationsValidator.checkVariableSet(variableSet);
 
         QueryResult<VariableSet> queryResult = studyDBAdaptor.createVariableSet(studyId, variableSet);
-        auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+//      auditManager.recordCreation(AuditRecord.Resource.variableSet, queryResult.first().getId(), userId, queryResult.first(), null, null);
+        auditManager.recordAction(AuditRecord.Resource.variableSet, AuditRecord.Action.create, AuditRecord.Magnitude.low,
+                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
         return queryResult;
     }
 

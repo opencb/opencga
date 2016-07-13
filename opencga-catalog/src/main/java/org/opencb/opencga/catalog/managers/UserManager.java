@@ -6,17 +6,18 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.audit.AuditManager;
 import org.opencb.opencga.catalog.audit.AuditRecord;
-import org.opencb.opencga.catalog.authentication.AuthenticationManager;
-import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.authorization.AuthorizationManager;
+import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
+import org.opencb.opencga.catalog.auth.authentication.CatalogAuthenticationManager;
+import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
+import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IUserManager;
-import org.opencb.opencga.catalog.models.Filter;
+import org.opencb.opencga.catalog.models.QueryFilter;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -24,7 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import java.util.regex.Pattern;
@@ -70,6 +71,13 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     @Override
     public String getUserId(String sessionId) {
+        // TODO: Review the commented code
+//        if (sessionId.length() == 40) {
+//            return "admin";
+//        }
+        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
+            return "anonymous";
+        }
         return userDBAdaptor.getUserIdBySessionId(sessionId);
     }
 
@@ -81,7 +89,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         ParamUtils.checkParameter(oldPassword, "oldPassword");
         ParamUtils.checkParameter(newPassword, "newPassword");
 //        checkSessionId(userId, sessionId);  //Only the user can change his own password
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         authenticationManager.changePassword(userId, oldPassword, newPassword);
     }
 
@@ -117,7 +125,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         organization = organization != null ? organization : "";
         checkUserExists(id);
 
-        User user = new User(id, name, email, "", organization, User.Role.USER, new User.UserStatus());
+        User user = new User(id, name, email, "", organization, new User.UserStatus());
 
         if (diskQuota != null && diskQuota > 0L) {
             user.setDiskQuota(diskQuota);
@@ -155,7 +163,9 @@ public class UserManager extends AbstractManager implements IUserManager {
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insertUser(user, options);
-            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
+//            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
+            auditManager.recordAction(AuditRecord.Resource.user, AuditRecord.Action.create, AuditRecord.Magnitude.low, user.getId(), userId,
+                    null, queryResult.first(), null, null);
             authenticationManager.newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
@@ -173,22 +183,31 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<User> read(String userId, String lastActivity, QueryOptions options, String sessionId)
+    public QueryResult<User> read(String userId, String lastModified, QueryOptions options, String sessionId)
             throws CatalogException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(sessionId, "sessionId");
         checkSessionId(userId, sessionId);
         options = ParamUtils.defaultObject(options, QueryOptions::new);
 
-        if (!options.containsKey("include") && !options.containsKey("exclude")) {
-            options.put("exclude", Arrays.asList("password", "sessions"));
+        if (!options.containsKey(QueryOptions.INCLUDE) || options.get(QueryOptions.INCLUDE) == null) {
+            List<String> excludeList;
+            if (options.containsKey(QueryOptions.EXCLUDE)) {
+                List<String> asStringList = options.getAsStringList(QueryOptions.EXCLUDE, ",");
+                excludeList = new ArrayList<>(asStringList.size() + 3);
+                excludeList.addAll(asStringList);
+            } else {
+                excludeList = new ArrayList<>(3);
+            }
+            excludeList.add(CatalogUserDBAdaptor.QueryParams.SESSIONS.key());
+            excludeList.add(CatalogUserDBAdaptor.QueryParams.PASSWORD.key());
+            if (!excludeList.contains(CatalogUserDBAdaptor.QueryParams.PROJECTS.key())) {
+                excludeList.add("projects.studies.variableSets");
+            }
+            options.put(QueryOptions.EXCLUDE, excludeList);
         }
-//        if(options.containsKey("exclude")) {
-//            options.getListAs("exclude", String.class).add("sessions");
-//        }
-        //FIXME: Should other users get access to other user information? (If so, then filter projects)
-        //FIXME: Should setPassword(null)??
-        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastActivity);
+
+        QueryResult<User> user = userDBAdaptor.getUser(userId, options, lastModified);
         return user;
     }
 
@@ -232,7 +251,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         if (parameters.containsKey("email")) {
             checkEmail(parameters.getString("email"));
         }
-        userDBAdaptor.updateUserLastActivity(userId);
+        userDBAdaptor.updateUserLastModified(userId);
         QueryResult<User> queryResult = userDBAdaptor.update(userId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
         return queryResult;
@@ -283,8 +302,8 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult resetPassword(String userId, String email) throws CatalogException {
-        return authenticationManager.resetPassword(userId, email);
+    public QueryResult resetPassword(String userId) throws CatalogException {
+        return authenticationManager.resetPassword(userId);
     }
 
     @Deprecated
@@ -292,7 +311,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     public QueryResult<ObjectMap> loginAsAnonymous(String sessionIp)
             throws CatalogException, IOException {
         ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
+        Session session = new Session(sessionIp, 20);
 
         String userId = "anonymous_" + session.getId();
 
@@ -309,18 +328,20 @@ public class UserManager extends AbstractManager implements IUserManager {
 
     }
 
+    @Deprecated
     @Override
-    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp)
-            throws CatalogException, IOException {
+    public QueryResult<ObjectMap> login(String userId, String password, String sessionIp) throws CatalogException, IOException {
         ParamUtils.checkParameter(userId, "userId");
         ParamUtils.checkParameter(password, "password");
         ParamUtils.checkParameter(sessionIp, "sessionIp");
-        Session session = new Session(sessionIp);
 
+        authenticationManager.authenticate(userId, password, true);
+
+        Session session = new Session(sessionIp, 20);
 
         // FIXME This should code above
         return userDBAdaptor.login(userId, (password.length() != 40)
-                ? CatalogAuthenticationManager.cipherPassword(password)
+                ? CatalogAuthenticationManager.cypherPassword(password)
                 : password, session);
     }
 
@@ -355,10 +376,10 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public void addQueryFilter(String sessionId, Filter filter) throws CatalogException {
+    public void addQueryFilter(String sessionId, QueryFilter queryFilter) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
-        userDBAdaptor.addQueryFilter(userId, filter);
+        userDBAdaptor.addQueryFilter(userId, queryFilter);
     }
 
     @Override
@@ -369,7 +390,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public QueryResult<Filter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
+    public QueryResult<QueryFilter> getQueryFilter(String sessionId, String filterId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = getUserId(sessionId);
         return userDBAdaptor.getQueryFilter(userId, filterId);
@@ -383,9 +404,9 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     private void checkUserExists(String userId) throws CatalogException {
-        if (userId.equals("admin")) {
+        if (userId.toLowerCase().equals("admin")) {
             throw new CatalogException("Permission denied: It is not allowed the creation of another admin user.");
-        } else if (userId.equals("anonymous") || userId.equals("*")) {
+        } else if (userId.toLowerCase().equals("anonymous") || userId.toLowerCase().equals("daemon") || userId.equals("*")) {
             throw new CatalogException("Permission denied: Cannot create users with special treatments in catalog.");
         }
 

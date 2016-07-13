@@ -17,11 +17,17 @@
 package org.opencb.opencga.catalog.config;
 
 import org.junit.Test;
+import org.opencb.opencga.catalog.models.Role;
+import org.opencb.opencga.catalog.models.acls.StudyAcl;
 
-import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
 
 /**
  * Created by imedina on 16/03/16.
@@ -47,6 +53,15 @@ public class CatalogConfigurationTest {
 
         DatabaseCredentials databaseCredentials = new DatabaseCredentials(Arrays.asList("localhost"), "opencga_catalog", "admin", "");
         catalogConfiguration.setDatabase(databaseCredentials);
+
+        Audit audit = new Audit(20000000, 100000000000L, "", Collections.emptyList());
+        catalogConfiguration.setAudit(audit);
+
+        StudyAcl studyAcl = new StudyAcl("admin", EnumSet.of(
+                StudyAcl.StudyPermissions.VIEW_FILE_HEADERS, StudyAcl.StudyPermissions.VIEW_FILE_CONTENTS,
+                StudyAcl.StudyPermissions.VIEW_FILES, StudyAcl.StudyPermissions.UPDATE_FILES,
+                StudyAcl.StudyPermissions.VIEW_JOBS, StudyAcl.StudyPermissions.UPDATE_JOBS));
+        catalogConfiguration.setAcls(Arrays.asList(studyAcl));
 
 //        CellBaseConfiguration cellBaseConfiguration = new CellBaseConfiguration(Arrays.asList("localhost"), "v3", new DatabaseCredentials(Arrays.asList("localhost"), "user", "password"));
 //        QueryServerConfiguration queryServerConfiguration = new QueryServerConfiguration(61976, Arrays.asList("localhost"));

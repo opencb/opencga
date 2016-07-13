@@ -35,7 +35,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
+public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogAclDBAdaptor<StudyAcl> {
 
     /*
      * Study methods
@@ -68,7 +68,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     QueryResult<Study> getStudy(long studyId, QueryOptions options) throws CatalogDBException;
 
-    void updateStudyLastActivity(long studyId) throws CatalogDBException;
+    void updateStudyLastModified(long studyId) throws CatalogDBException;
 
 //    @Deprecated
 //    QueryResult<Study> modifyStudy(long studyId, ObjectMap params) throws CatalogDBException;
@@ -87,17 +87,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     String getStudyOwnerId(long studyId) throws CatalogDBException;
 
-    /**
-     * Obtains the studyAcl given the following parameters. If only the studyId is given, a list containing all the studyAcls will be
-     * returned.
-     *
-     * @param studyId Study id.
-     * @param roleId Role id to look for studyAcls.
-     * @param members List of members to look for permissions. Can only be existing users or groups.
-     * @return A queryResult object containing a list of studyAcls that satisfies the query.
-     * @throws CatalogDBException when the studyId does not exist, or the roleId or the members introduced do not exist in the database.
-     */
-    QueryResult<StudyAcl> getStudyAcl(long studyId, @Nullable String roleId, List<String> members) throws CatalogDBException;
+    QueryResult<Group> createGroup(long studyId, String groupId, List<String> userIds) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Group> getGroup(long studyId, String userId, String groupId, QueryOptions options) throws CatalogDBException;
@@ -114,6 +104,17 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
     QueryResult<Group> getGroup(long studyId, @Nullable String groupId, List<String> userIds) throws CatalogDBException;
 
     /**
+     * Adds the members to the groupId getting rid of the former users.
+     *
+     * @param studyId study id.
+     * @param groupId group id.
+     * @param members new list of users that will compose the group.
+     * @return The group after being updated.
+     * @throws CatalogDBException when any of the members do not exist.
+     */
+    QueryResult<Group> setUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+
+    /**
      * Adds the list of members to the groupId. If the groupId did not already existed, it creates it.
      *
      * @param studyId studyId
@@ -122,7 +123,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @return The group that has been updated/created.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
-    QueryResult<Group> addMembersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    QueryResult<Group> addUsersToGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the list of members from the group.
@@ -132,19 +133,29 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param members List of members that are going to be removed from the group.
      * @throws CatalogDBException when any of the studyId, groupId or members do not exist.
      */
-    void removeMembersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
+    void removeUsersFromGroup(long studyId, String groupId, List<String> members) throws CatalogDBException;
 
     /**
-     * Adds the permissions defined in the roleId to the list of members.
+     * Delete a group.
      *
      * @param studyId study id.
-     * @param roleId Role that will be applied to the members.
-     * @param members List of members (users and/or groups).
-     * @return A queryResult with the studyAcl after the update.
-     * @throws CatalogDBException when any of the studyId, roleId or members do not exist or if there is a user inside a group defined in
-     * members that already have a permission created.
+     * @param groupId Group id to be deleted.
+     * @throws CatalogDBException if the groupId could not be removed.
      */
-    QueryResult<StudyAcl> setStudyAcl(long studyId, String roleId, List<String> members) throws CatalogDBException;
+    void deleteGroup(long studyId, String groupId) throws CatalogDBException;
+
+    /**
+     * Adds the studyAcl given to the study.
+     *
+     * @param studyId study id.
+     * @param studyAcl Study acl to insert.
+     * @param override Boolean parameter indicating whether to set the Acl when the members already had other Acl set. In that case, the old
+     *                 Acl will be removed and the new one will be set. Otherwise, an exception will be raised.
+     * @return A queryResult with the studyAcl after the update.
+     * @throws CatalogDBException when the user already has permissions if override is false.
+     */
+    @Deprecated
+    QueryResult<StudyAcl> setStudyAcl(long studyId, StudyAcl studyAcl, boolean override) throws CatalogDBException;
 
     /**
      * Remove the permissions for the members.
@@ -153,9 +164,10 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
      * @param members List of members whose permissions will be removed.
      * @throws CatalogDBException when any of the studyId or the members do not exist.
      */
+    @Deprecated
     void unsetStudyAcl(long studyId, List<String> members) throws CatalogDBException;
 
-//    QueryResult<StudyAcl> getStudyAcl(long studyId, String userId, String groupId) throws CatalogDBException;
+//    QueryResult<StudyAcl> getStudyAcls(long studyId, String userId, String groupId) throws CatalogDBException;
 
     @Deprecated
     QueryResult<Role> getRole(long studyId, String userId, String groupId, String roleId, QueryOptions options) throws CatalogDBException;
@@ -215,32 +227,32 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
+
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),
         NAME("name", TEXT_ARRAY, ""),
         ALIAS("alias", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT, ""),
-        OWNER_ID("ownerId", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT, ""),
         CIPHER("cipher", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        LAST_ACTIVITY("lastActivity", TEXT_ARRAY, ""),
+        LAST_MODIFIED("lastModified", TEXT_ARRAY, ""),
         DISK_USAGE("diskUsage", INTEGER_ARRAY, ""),
         URI("uri", TEXT_ARRAY, ""),
         ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_ROLE("acls.role", TEXT, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
+        ACLS_MEMBER("acls.member", TEXT_ARRAY, ""),
         ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
         PROJECT_ID("projectId", INTEGER_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]",
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
         STATS("stats", TEXT, ""),
+        TYPE("type", TEXT, ""),
 
         GROUPS("groups", TEXT_ARRAY, ""),
-        GROUP_ID("groups.id", TEXT_ARRAY, ""),
+        GROUP_NAME("groups.name", TEXT_ARRAY, ""),
         GROUP_USER_IDS("groups.userIds", TEXT_ARRAY, ""),
 
         ROLES("roles", TEXT_ARRAY, ""),
@@ -346,7 +358,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         UNIQUE("unique", BOOLEAN, ""),
         DESCRIPTION("description", TEXT, ""),
         VARIABLE("variables", TEXT_ARRAY, ""),
-        VARIABLE_ID("variables.id", TEXT, ""),
+        VARIABLE_NAME("variables.name", TEXT, ""),
         ATTRIBUTES("attributes", TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         NATTRIBUTES("nattributes", DECIMAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         BATTRIBUTES("battributes", BOOLEAN, "Format: <key><operation><true|false> where <operation> is [==|!=]"),
@@ -405,7 +417,7 @@ public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study> {
         creatorId(Type.TEXT, ""),
         creationDate(Type.TEXT, ""),
         status(Type.TEXT, ""),
-        lastActivity(Type.TEXT, ""),
+        lastModified(Type.TEXT, ""),
         stats(Type.TEXT, ""),
         attributes(Type.TEXT, ""),
         nattributes("attributes", Type.NUMERICAL, ""),

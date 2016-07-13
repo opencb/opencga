@@ -16,8 +16,9 @@ import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
-import org.opencb.opencga.storage.core.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
@@ -25,8 +26,6 @@ import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
-import org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation;
-import org.opencb.opencga.storage.hadoop.variant.metadata.HBaseVariantStudyConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,7 +49,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     private VariantTableHelper variantTablehelper;
 
     protected HBaseStudyConfigurationManager scm;
-    protected HBaseVariantStudyConfiguration studyConfiguration;
+    protected StudyConfiguration studyConfiguration;
 
     public AbstractVariantTableDriver() { /* nothing */ }
 
@@ -146,8 +145,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
 
         long lock = scm.lockStudy(getHelper().getStudyId());
-        StudyConfiguration s = loadStudyConfiguration();
-        studyConfiguration = scm.toHBaseStudyConfiguration(s);
+        studyConfiguration = loadStudyConfiguration();
 
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
         BatchFileOperation batchFileOperation;
@@ -192,7 +190,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         try {
             HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
             long lock = scm.lockStudy(getHelper().getStudyId());
-            studyConfiguration = scm.toHBaseStudyConfiguration(scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
+            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
             BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
             batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.ERROR);
             scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
@@ -206,7 +204,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         try {
             HBaseStudyConfigurationManager scm = getStudyConfigurationManager();
             long lock = scm.lockStudy(getHelper().getStudyId());
-            studyConfiguration = scm.toHBaseStudyConfiguration(scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
+            studyConfiguration = scm.getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
             BatchFileOperation batchFileOperation = studyConfiguration.getBatches().get(studyConfiguration.getBatches().size() - 1);
             batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.READY);
             scm.updateStudyConfiguration(studyConfiguration, new QueryOptions());
@@ -219,7 +217,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     /**
      * Give the name of the action that the job is doing.
      *
-     * Used to create the jobName and as {@link org.opencb.opencga.storage.hadoop.variant.metadata.BatchFileOperation#operationName}
+     * Used to create the jobName and as {@link BatchFileOperation#operationName}
      *
      * e.g. : "Delete", "Load", "Annotate", ...
      *

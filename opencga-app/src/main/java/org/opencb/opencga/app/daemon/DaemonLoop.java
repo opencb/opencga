@@ -26,16 +26,16 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisJobExecutor;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
-import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.core.SgeManager;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -43,7 +43,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Properties;
@@ -131,23 +130,23 @@ public class DaemonLoop implements Runnable {
                     } catch (Exception e) {
                         logger.warn(e.getMessage());
                     }
-                    String jobStatusEnum = job.getStatus().getStatus();
+                    String jobStatusEnum = job.getStatus().getName();
 //                    String type = job.getResourceManagerAttributes().get(Job.TYPE).toString();
-//                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
-                    logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus().getStatus() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
+//                    System.out.println("job : {id: " + job.getId() + ", status: '" + job.getName() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
+                    logger.info("job : {id: " + job.getId() + ", status: '" + job.getStatus().getName() + "', name: '" + job.getName() + "'}, sgeStatus : " + status);
 
                     //Track SGEManager
                     if (status != null) {
                         switch (status) {
                             case SgeManager.FINISHED:
-                                if (!Job.JobStatus.DONE.equals(job.getStatus().getStatus())) {
+                                if (!Job.JobStatus.DONE.equals(job.getStatus().getName())) {
                                     catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.DONE), sessionId);
                                     jobStatusEnum = Job.JobStatus.DONE;
                                 }
                                 break;
                             case SgeManager.ERROR:
                             case SgeManager.EXECUTION_ERROR:
-                                if (!Job.JobStatus.DONE.equals(job.getStatus().getStatus())) {
+                                if (!Job.JobStatus.DONE.equals(job.getStatus().getName())) {
                                     ObjectMap parameters = new ObjectMap();
                                     parameters.put("status", Job.JobStatus.DONE);
                                     String error = Job.ERRNO_FINISH_ERROR;
@@ -159,13 +158,13 @@ public class DaemonLoop implements Runnable {
                                 }
                                 break;
                             case SgeManager.QUEUED:
-                                if (!Job.JobStatus.QUEUED.equals(job.getStatus().getStatus())) {
+                                if (!Job.JobStatus.QUEUED.equals(job.getStatus().getName())) {
                                     catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.QUEUED), sessionId);
                                     jobStatusEnum = Job.JobStatus.QUEUED;
                                 }
                                 break;
                             case SgeManager.RUNNING:
-                                if (!Job.JobStatus.RUNNING.equals(job.getStatus().getStatus())) {
+                                if (!Job.JobStatus.RUNNING.equals(job.getStatus().getName())) {
                                     catalogManager.modifyJob(job.getId(), new ObjectMap("status", Job.JobStatus.RUNNING), sessionId);
                                     jobStatusEnum = Job.JobStatus.RUNNING;
                                 }
@@ -190,7 +189,7 @@ public class DaemonLoop implements Runnable {
                             break;
                         case Job.JobStatus.PREPARED:
                             try {
-                                AnalysisJobExecutor.execute(catalogManager, job, sessionId);
+                                ExecutorManager.execute(catalogManager, job, sessionId);
                             } catch (AnalysisExecutionException e) {
                                 ObjectMap params = new ObjectMap("status", Job.JobStatus.ERROR);
                                 String error = Job.ERRNO_NO_QUEUE;
@@ -220,7 +219,7 @@ public class DaemonLoop implements Runnable {
                 long currentTimeMillis = System.currentTimeMillis();
                 for (File file : files.getResult()) {
                     try {       //TODO: skip if the file is a non-empty folder
-                        long deleteDate = new ObjectMap(file.getAttributes()).getLong(File.DELETE_DATE, 0);
+                        long deleteDate = new ObjectMap(file.getAttributes()).getLong("deleteDate", 0);
                         if (currentTimeMillis - deleteDate > Long.valueOf(properties.getProperty(DELETE_DELAY, "30")) * 1000) { //Seconds to millis
                             QueryResult<Study> studyQueryResult = catalogManager.getStudy(catalogManager.getStudyIdByFileId(file.getId()), sessionId);
                             Study study = studyQueryResult.getResult().get(0);
