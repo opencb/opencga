@@ -118,15 +118,16 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
+
             annotMap.put("PASS", row.getPassCount().toString());
             annotMap.put("CALL", row.getCallCount().toString());
 
             double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
             double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
             double opr = passrate * callrate;
-            annotation.getAdditionalAttributes().put(studyId + "_PR", passrate);
-            annotation.getAdditionalAttributes().put(studyId + "_CR", callrate);
-            annotation.getAdditionalAttributes().put(studyId + "_OPR", opr); // OVERALL
+            annotation.getAdditionalAttributes().put("PR", passrate);
+            annotation.getAdditionalAttributes().put("CR", callrate);
+            annotation.getAdditionalAttributes().put("OPR", opr); // OVERALL
                                                                              // pass
                                                                              // rate
 

@@ -111,8 +111,15 @@ public class VariantVcfExporter {
 
         final VCFHeader header = getVcfHeader(studyConfiguration, queryOptions);
         header.addMetaDataLine(new VCFFormatHeaderLine("GT", 1, VCFHeaderLineType.String, "Genotype"));
+        header.addMetaDataLine(new VCFFormatHeaderLine("PF", VCFHeaderLineCount.A, VCFHeaderLineType.Integer,
+                "variant was PASS filter in original sample gvcf"));
         header.addMetaDataLine(new VCFFilterHeaderLine("PASS", "Valid variant"));
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
+
+        int studyId = studyConfiguration.getStudyId();
+        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_PR",1,VCFHeaderLineType.Float,"Pass rate"));
+        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_CR",1,VCFHeaderLineType.Float,"Call rate"));
+        header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_OPR",1,VCFHeaderLineType.Float,"Overall Pass rate"));
 
         // check if variant annotations are exported in the INFO column
         List<String> annotations = null;
@@ -152,11 +159,12 @@ public class VariantVcfExporter {
         while (iterator.hasNext()) {
             Variant variant = iterator.next();
             try {
-                VariantContext variantContext = convertVariantToVariantContext(variant, annotations);
+                VariantContext variantContext = convertVariantToVariantContext(variant, studyConfiguration, annotations);
                 if (variantContext != null) {
                     writer.add(variantContext);
                 }
             } catch (Exception e) {
+                System.err.println("Problem with Variant!!!");
                 e.printStackTrace(System.err);
                 failedVariants++;
             }
@@ -225,58 +233,29 @@ public class VariantVcfExporter {
      * * If some normalization has been applied, the source entries may have an attribute ORI like: "POS:REF:ALT_0(,ALT_N)*:ALT_IDX"
      *
      * @param variant A variant object to be converted
-     * @param annotations Variant annotation
-     * @return The variant in HTSJDK format
+     * @param studyConfiguration
+     *@param annotations Variant annotation  @return The variant in HTSJDK format
      */
-    public VariantContext convertVariantToVariantContext(Variant variant, List<String> annotations) { //, StudyConfiguration
-        // studyConfiguration) {
-
+    public VariantContext convertVariantToVariantContext(Variant variant, StudyConfiguration studyConfiguration,
+                                                         List<String> annotations) { //, StudyConfiguration
+        int studyId = studyConfiguration.getStudyId();
         VariantContextBuilder variantContextBuilder = new VariantContextBuilder();
-
         int start = variant.getStart();
         int end = variant.getEnd();
         String reference = variant.getReference();
         String alternate = variant.getAlternate();
+
+        VariantType type = variant.getType();
+        if (type == VariantType.INDEL) {
+            reference = "N" + reference;
+            alternate = "N" + alternate;
+            start -= 1; // adjust start
+        }
+
         String filter = "PASS";
-        String indelSequence;
-
-//        if (reference.isEmpty()) {
-//            try {
-//                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
-//                        CellBaseClient.Category.genomic,
-//                        CellBaseClient.SubCategory.region,
-//                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
-//                        new QueryOptions());
-//                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
-//                reference = indelSequence;
-//                alternate = indelSequence + alternate;
-//                end = start + reference.length() - 1;
-////                if ((end - start) != reference.length()) {
-////                    end = start + reference.length() - 1;
-////                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        if (alternate.isEmpty()) {
-//            try {
-//                start -= reference.length();
-//                QueryResponse<QueryResult<GenomeSequenceFeature>> resultQueryResponse = cellbaseClient.getSequence(
-//                        CellBaseClient.Category.genomic,
-//                        CellBaseClient.SubCategory.region,
-//                        Arrays.asList(Region.parseRegion(variant.getChromosome() + ":" + start + "-" + start)),
-//                        new QueryOptions());
-//                indelSequence = resultQueryResponse.getResponse().get(0).getResult().get(0).getSequence();
-//                reference = indelSequence + reference;
-//                alternate = indelSequence;
-//                if ((end - start) != reference.length()) {
-//                    end = start + reference.length() - 1;
-//                }
-//            } catch (IOException e) {
-//                e.printStackTrace();
-//            }
-//        }
-
+        String prk = studyId + "_PR";
+        String crk = studyId + "_CR";
+        String oprk = studyId + "_OPR";
 
         List<String> allelesArray = Arrays.asList(reference, alternate);  // TODO jmmut: multiallelic
         ArrayList<Genotype> genotypes = new ArrayList<>();
@@ -319,7 +298,18 @@ public class VariantVcfExporter {
                             alleles.add(Allele.create(".", false)); // genotype of a secondary alternate, or an actual missing
                         }
                     }
-                    genotypes.add(new GenotypeBuilder().name(sampleName).alleles(alleles).phased(genotype.isPhased()).make());
+                    String genotypeFilter = sampleData.get("FT");
+                    if (StringUtils.isBlank(genotypeFilter)) {
+                        genotypeFilter = ".";
+                    } else if(StringUtils.equals("PASS",genotypeFilter)) {
+                        genotypeFilter = "1";
+                    } else {
+                        genotypeFilter = "0";
+                    }
+                    genotypes.add(new GenotypeBuilder().name(sampleName).alleles(alleles)
+                            .phased(genotype.isPhased())
+                            .attribute("PF",genotypeFilter)
+                            .make());
                 }
             }
         }
@@ -335,7 +325,7 @@ public class VariantVcfExporter {
                 .filter(filter)
                 .genotypes(genotypes); // TODO jmmut: join attributes from different source entries? what to do on a collision?
 
-        if (variant.getType().equals(VariantType.NO_VARIATION) && alternate.isEmpty()) {
+        if (type.equals(VariantType.NO_VARIATION) && alternate.isEmpty()) {
             variantContextBuilder.alleles(reference);
         } else {
             variantContextBuilder.alleles(originalAlleles);
@@ -345,6 +335,9 @@ public class VariantVcfExporter {
             Map<String, Object> infoAnnotations = getAnnotations(variant, annotations);
             variantContextBuilder.attributes(infoAnnotations);
         }
+        variantContextBuilder.attribute(prk, variant.getAnnotation().getAdditionalAttributes().get("PR"));
+        variantContextBuilder.attribute(crk, variant.getAnnotation().getAdditionalAttributes().get("CR"));
+        variantContextBuilder.attribute(oprk, variant.getAnnotation().getAdditionalAttributes().get("OPR"));
 
 
         if (StringUtils.isNotEmpty(variant.getId()) && !variant.toString().equals(variant.getId())) {
