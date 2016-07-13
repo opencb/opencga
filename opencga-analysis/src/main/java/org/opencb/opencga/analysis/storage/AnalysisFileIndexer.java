@@ -27,7 +27,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -276,7 +276,7 @@ public class AnalysisFileIndexer {
                 sampleList = FileMetadataReader.get(catalogManager).getFileSamples(study, originalFile,
                         catalogManager.getFileUri(originalFile), fileModifyParams,
                         options.getBoolean(FileMetadataReader.CREATE_MISSING_SAMPLES, true), simulate, options, sessionId);
-            } catch (CatalogException | StorageManagerException e) {
+            } catch (CatalogException e) {
                 throw new AnalysisExecutionException(e);
             }
         } else {

@@ -220,14 +220,14 @@ public class JobCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
     public class AclsCommandOptions {
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
         public String id;
     }
 
-    @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
     public class AclsCreateCommandOptions {
 
         @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
@@ -245,7 +245,7 @@ public class JobCommandOptions {
         public String templateId;
     }
 
-    @Parameters(commandNames = {"acls-member-delete"},
+    @Parameters(commandNames = {"acl-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
     public class AclsMemberDeleteCommandOptions {
 
@@ -256,7 +256,7 @@ public class JobCommandOptions {
         public String memberId;
     }
 
-    @Parameters(commandNames = {"acls-member-info"},
+    @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
     public class AclsMemberInfoCommandOptions {
 
@@ -267,7 +267,7 @@ public class JobCommandOptions {
         public String memberId;
     }
 
-    @Parameters(commandNames = {"acls-member-update"},
+    @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
     public class AclsMemberUpdateCommandOptions{
 

@@ -368,20 +368,41 @@ public class FileCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"upload"}, commandDescription = "Attach a physical file to a catalog entry file.")
-    public class UploadCommandOptions extends BaseFileCommand {
+    @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
+    public class UploadCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"-s", "--study-id"}, description = "Study where the file will be associated to", required = true, arity = 1)
+        public String studyId;
 
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"--replace"}, description = "Replace the existing attached file. ALERT: The existing file will be removed",
+        @Parameter(names = {"--fileFormat"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true, arity = 1)
+        public String fileFormat;
+
+        @Parameter(names = {"--bioFormat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = true, arity = 1)
+        public String bioFormat;
+
+        @Parameter(names = {"--catalogPath"}, description = "Path within catalog where the file will be located (Default: root folder)", required = false, arity = 1)
+        public String catalogPath;
+
+        @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
+        public String description;
+
+        @Parameter(names = {"--fileName"}, description = "Name of the file by which it will be stored in catalog", required = false, arity = 1)
+        public String fileName;
+
+        @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
+        public boolean parents;
+
+        @Parameter(names = {"--replace"}, description = "[PENDING] Replace the existing attached file. ALERT: The existing file will be removed",
                 required = false, arity = 0)
         public boolean replace;
 
-        @Parameter(names = {"-m", "--move"}, description = "Move file instead of copy", required = false, arity = 0)
-        public boolean move;
-
-        @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
+        @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum;
 
     }

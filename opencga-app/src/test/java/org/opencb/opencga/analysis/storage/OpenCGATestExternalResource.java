@@ -9,7 +9,7 @@ import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.app.cli.analysis.AnalysisMain;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
@@ -89,7 +89,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
         InputStream inputStream;
         catalogManagerExternalResource.getCatalogConfiguration().serialize(
-                new FileOutputStream(conf.resolve("catalog-configuration-test.yml").toFile()));
+                new FileOutputStream(conf.resolve("catalog-configuration.yml").toFile()));
         inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
         Files.copy(inputStream, conf.resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);

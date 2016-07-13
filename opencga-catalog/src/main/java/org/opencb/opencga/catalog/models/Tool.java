@@ -16,6 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
+import org.opencb.opencga.catalog.models.acls.ToolAclEntry;
+
 import java.util.LinkedList;
 import java.util.List;
 
@@ -31,7 +33,7 @@ public class Tool {
     private Object manifest;
     private Object result;
     private String path;
-    private List<AclEntry> acls;
+    private List<ToolAclEntry> acl;
 
     public Tool() {
         this("", "", "", null, null, "");
@@ -41,7 +43,8 @@ public class Tool {
         this(-1, alias, name, description, manifest, result, path, new LinkedList());
     }
 
-    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acls) {
+    public Tool(long id, String alias, String name, String description, Object manifest, Object result, String path,
+                List<ToolAclEntry> acl) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -49,7 +52,7 @@ public class Tool {
         this.manifest = manifest;
         this.result = result;
         this.path = path;
-        this.acls = acls;
+        this.acl = acl;
     }
 
     @Override
@@ -62,7 +65,7 @@ public class Tool {
         sb.append(", manifest=").append(manifest);
         sb.append(", result=").append(result);
         sb.append(", path='").append(path).append('\'');
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append('}');
         return sb.toString();
     }
@@ -130,12 +133,12 @@ public class Tool {
         return this;
     }
 
-    public List<AclEntry> getAcls() {
-        return acls;
+    public List<ToolAclEntry> getAcl() {
+        return acl;
     }
 
-    public Tool setAcls(List<AclEntry> acls) {
-        this.acls = acls;
+    public Tool setAcl(List<ToolAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

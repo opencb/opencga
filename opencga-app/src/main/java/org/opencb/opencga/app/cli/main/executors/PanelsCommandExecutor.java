@@ -25,7 +25,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogPanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAcl;
+import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
 import org.opencb.opencga.client.rest.PanelClient;
 
 import java.io.IOException;
@@ -55,13 +55,13 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 info();
                 break;
-            case "acls":
+            case "acl":
                 acls();
                 break;
-            case "acls-create":
+            case "acl-create":
                 aclsCreate();
                 break;
-            case "acls-member-delete":
+            case "acl-member-delete":
                 aclMemberDelete();
                 break;
             case "acl-member-info":
@@ -114,13 +114,13 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         }
         openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
     }
-    /********************************************  Administration ACLS commands  ***********************************************/
+    /********************************************  Administration ACL commands  ***********************************************/
 
     private void acls() throws CatalogException,IOException {
 
         logger.debug("Acls");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<DiseasePanelAcl> acls = openCGAClient.getPanelClient().getAcls(panelsCommandOptions.aclsCommandOptions.id);
+        QueryResponse<DiseasePanelAclEntry> acls = openCGAClient.getPanelClient().getAcls(panelsCommandOptions.aclsCommandOptions.id);
 
         System.out.println(acls.toString());
 
@@ -135,7 +135,7 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogStudyDBAdaptor.QueryParams.TEMPLATE_ID.key(), studiesCommandOptions.aclsCreateCommandOptions.templateId);
         }*/
 
-        QueryResponse<DiseasePanelAcl> acl =
+        QueryResponse<DiseasePanelAclEntry> acl =
                 openCGAClient.getPanelClient().createAcl(panelsCommandOptions.aclsCreateCommandOptions.id,
                         panelsCommandOptions.aclsCreateCommandOptions.permissions, panelsCommandOptions.aclsCreateCommandOptions.members,
                         queryOptions);
@@ -154,7 +154,7 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Creating acl");
 
-        QueryResponse<DiseasePanelAcl> acls = openCGAClient.getPanelClient().getAcl(panelsCommandOptions.aclsMemberInfoCommandOptions.id,
+        QueryResponse<DiseasePanelAclEntry> acls = openCGAClient.getPanelClient().getAcl(panelsCommandOptions.aclsMemberInfoCommandOptions.id,
                 panelsCommandOptions.aclsMemberInfoCommandOptions.memberId);
         System.out.println(acls.toString());
     }
@@ -174,7 +174,7 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(PanelClient.AclParams.SET_PERMISSIONS.key(), panelsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
         }
 
-        QueryResponse<DiseasePanelAcl> acl = openCGAClient.getPanelClient().updateAcl(panelsCommandOptions.aclsMemberUpdateCommandOptions.id,
+        QueryResponse<DiseasePanelAclEntry> acl = openCGAClient.getPanelClient().updateAcl(panelsCommandOptions.aclsMemberUpdateCommandOptions.id,
                 panelsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
         System.out.println(acl.toString());
     }

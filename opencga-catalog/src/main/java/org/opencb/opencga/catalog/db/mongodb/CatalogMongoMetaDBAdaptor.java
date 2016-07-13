@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Metadata;
 import org.opencb.opencga.catalog.models.Session;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
@@ -191,12 +191,12 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
         adminDocument.put("sessions", new ArrayList<>());
         metadataObject.put("admin", adminDocument);
 
-        List<StudyAcl> acls = catalogConfiguration.getAcls();
+        List<StudyAclEntry> acls = catalogConfiguration.getAcl();
         List<Document> aclList = new ArrayList<>(acls.size());
-        for (StudyAcl acl : acls) {
+        for (StudyAclEntry acl : acls) {
             aclList.add(getMongoDBDocument(acl, "StudyAcl"));
         }
-        metadataObject.put("acls", aclList);
+        metadataObject.put("acl", aclList);
 
         metaCollection.insert(metadataObject, null);
     }
@@ -251,19 +251,19 @@ public class CatalogMongoMetaDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<StudyAcl> getDaemonAcl(List<String> members) throws CatalogDBException {
+    public QueryResult<StudyAclEntry> getDaemonAcl(List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, "METADATA"));
-        Bson unwind = Aggregates.unwind("$" + CatalogCohortDBAdaptor.QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(CatalogCohortDBAdaptor.QueryParams.ACLS_MEMBER.key(), members));
+        Bson unwind = Aggregates.unwind("$" + CatalogCohortDBAdaptor.QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(CatalogCohortDBAdaptor.QueryParams.ACL_MEMBER.key(), members));
         Bson project = Aggregates.project(Projections.include(CatalogCohortDBAdaptor.QueryParams.ID.key(),
-                CatalogCohortDBAdaptor.QueryParams.ACLS.key()));
+                CatalogCohortDBAdaptor.QueryParams.ACL.key()));
 
         QueryResult<Document> aggregate = metaCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
-        StudyAcl result = null;
+        StudyAclEntry result = null;
         if (aggregate.getNumResults() == 1) {
-            result = parseObject(((Document) aggregate.getResult().get(0).get("acls")), StudyAcl.class);
+            result = parseObject(((Document) aggregate.getResult().get(0).get("acl")), StudyAclEntry.class);
         }
         return endQuery("get daemon Acl", startTime, Arrays.asList(result));
     }

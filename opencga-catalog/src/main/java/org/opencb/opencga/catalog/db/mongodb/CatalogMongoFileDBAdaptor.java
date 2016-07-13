@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -167,27 +167,27 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<FileAcl> getFileAcl(long fileId, List<String> members) throws CatalogDBException {
+    public QueryResult<FileAclEntry> getFileAcl(long fileId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkFileId(fileId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, fileId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<FileAcl> fileAcl = null;
+        List<FileAclEntry> fileAcl = null;
         QueryResult<Document> aggregate = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         File file = fileConverter.convertToDataModelType(aggregate.first());
 
         if (file != null) {
-            fileAcl = file.getAcls();
+            fileAcl = file.getAcl();
         }
 
         return endQuery("get file Acl", startTime, fileAcl);
     }
 
     @Override
-    public QueryResult<FileAcl> setFileAcl(long fileId, FileAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<FileAclEntry> setFileAcl(long fileId, FileAclEntry acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         long studyId = getStudyIdByFileId(fileId);
 
@@ -199,14 +199,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<FileAcl> fileAcl = getFileAcl(fileId, group.getUserIds());
+            QueryResult<FileAclEntry> fileAcl = getFileAcl(fileId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in file. At least one user in " + group.getName()
                         + " has already defined permissions for file " + fileId);
             }
         } else {
             // Check if the members of the new acl already have some permissions set
-            QueryResult<FileAcl> fileAcls = getFileAcl(fileId, acl.getMember());
+            QueryResult<FileAclEntry> fileAcls = getFileAcl(fileId, acl.getMember());
 
             if (fileAcls.getNumResults() > 0 && override) {
                 unsetFileAcl(fileId, Arrays.asList(member), Collections.emptyList());
@@ -218,7 +218,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, fileId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "FileAcl")));
         QueryResult<UpdateResult> updateResult = fileCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -235,12 +235,12 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, fileId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Document query = new Document(PRIVATE_ID, fileId).append(QueryParams.ACL_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls", new Document("member", member)));
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
             } else {
-                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
             }
             QueryResult<UpdateResult> updateResult = fileCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -251,7 +251,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
 //        // Remove possible fileAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(QueryParams.ID.key(), fileId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        fileCollection.update(queryBson, update, null);
@@ -264,21 +264,21 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             fileCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 
 //        // Remove possible FileAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-//                .append(CatalogSampleDBAdaptor.QueryParams.ACLS_MEMBER.key(),
+//                .append(CatalogSampleDBAdaptor.QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        fileCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     @Override
-    public QueryResult<Map<String, Map<String, FileAcl>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
+    public QueryResult<Map<String, Map<String, FileAclEntry>>> getFilesAcl(long studyId, List<String> filePaths, List<String> userIds)
             throws CatalogDBException {
 
         long startTime = startQuery();
@@ -291,29 +291,29 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 //        QueryResult<DBObject> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         Bson match = Aggregates.match(Filters.and(Filters.eq(PRIVATE_STUDY_ID, studyId), Filters.in(QueryParams.PATH.key(), filePaths)));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), userIds));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), userIds));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.PATH.key(), QueryParams.ACL.key()));
         QueryResult<Document> result = fileCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
 
         List<File> files = parseFiles(result);
-        Map<String, Map<String, FileAcl>> pathAclMap = new HashMap<>();
+        Map<String, Map<String, FileAclEntry>> pathAclMap = new HashMap<>();
         for (File file : files) {
-//            AclEntry acl = file.getAcls().get(0);
-            for (FileAcl acl : file.getAcls()) {
+//            AclEntry acl = file.getAcl().get(0);
+            for (FileAclEntry acl : file.getAcl()) {
                 if (pathAclMap.containsKey(file.getPath())) {
-                    Map<String, FileAcl> userAclMap = pathAclMap.get(file.getPath());
+                    Map<String, FileAclEntry> userAclMap = pathAclMap.get(file.getPath());
                     if (!userAclMap.containsKey(acl.getMember())) {
                         userAclMap.put(acl.getMember(), acl);
                     }
                 } else {
-                    HashMap<String, FileAcl> userAclMap = new HashMap<>();
+                    HashMap<String, FileAclEntry> userAclMap = new HashMap<>();
                     userAclMap.put(acl.getMember(), acl);
                     pathAclMap.put(file.getPath(), userAclMap);
                 }
             }
         }
-//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcls().get(0)));
+//        Map<String, Acl> pathAclMap = files.stream().collect(Collectors.toMap(File::getPath, file -> file.getAcl().get(0)));
         logger.debug("getFilesAcl for {} paths and {} users, dbTime: {} ", filePaths.size(), userIds.size(), result.getDbTime());
         return endQuery("getFilesAcl", startTime, Collections.singletonList(pathAclMap));
     }
@@ -1007,22 +1007,22 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<FileAcl> createAcl(long id, FileAcl acl) throws CatalogDBException {
+    public QueryResult<FileAclEntry> createAcl(long id, FileAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(id, acl, fileCollection, "FileAcl");
         return endQuery("create file Acl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public QueryResult<FileAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<FileAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<FileAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection);
+        List<FileAclEntry> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection, logger);
         File file = fileConverter.convertToDataModelType(aggregate.first());
 
         if (file != null) {
-            acl = file.getAcls();
+            acl = file.getAcl();
         }
 
         return endQuery("get file Acl", startTime, acl);
@@ -1034,14 +1034,14 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     }
 
     @Override
-    public QueryResult<FileAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<FileAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(id, member, permissions, fileCollection);
         return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<FileAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<FileAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(id, member, permissions, fileCollection);
         return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));

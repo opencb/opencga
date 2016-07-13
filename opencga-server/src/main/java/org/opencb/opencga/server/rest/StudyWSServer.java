@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -603,8 +603,8 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/acls")
-    @ApiOperation(value = "Return the acls of the study", position = 18)
+    @Path("/{studyId}/acl")
+    @ApiOperation(value = "Return the acl of the study", position = 18)
     public Response getAcls(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr) {
         try {
             return createOkResponse(catalogManager.getAllStudyAcls(studyIdStr, sessionId));
@@ -615,7 +615,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{studyId}/acls/create")
+    @Path("/{studyId}/acl/create")
     @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19)
     public Response createRole(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @QueryParam("members") String members,
@@ -629,7 +629,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/acls/{memberId}/info")
+    @Path("/{studyId}/acl/{memberId}/info")
     @ApiOperation(value = "Return the set of permissions granted for the user or group", position = 20)
     public Response getAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
@@ -641,7 +641,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/acls/{memberId}/update")
+    @Path("/{studyId}/acl/{memberId}/update")
     @ApiOperation(value = "Update the set of permissions granted for the user or group", position = 21)
     public Response updateAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
@@ -656,7 +656,7 @@ public class StudyWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{studyId}/acls/{memberId}/delete")
+    @Path("/{studyId}/acl/{memberId}/delete")
     @ApiOperation(value = "Delete all the permissions granted for the user or group", position = 22)
     public Response deleteAcl(@ApiParam(value = "studyId", required = true) @PathParam("studyId") String studyIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {

@@ -272,150 +272,177 @@ public class CohortWSServer extends OpenCGAWSServer {
             return createErrorResponse(e);
         }
     }
-    @Deprecated
-    @POST
-    @Path("/{cohortId}/annotate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate cohort [DEPRECATED]", position = 6)
-    public Response annotateSamplePOST(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
-                                       @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
-                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
-                                       Map<String, Object> annotations) {
-        try {
-            QueryResult<AnnotationSet> queryResult;
-            if (delete && update) {
-                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
-            } else if (delete) {
-                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
-            } else if (update) {
-                queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
-            } else {
-                queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations, Collections.emptyMap(),
-                        sessionId);
-            }
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-    @Deprecated
+//    @Deprecated
+//    @POST
+//    @Path("/{cohortId}/annotate")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "annotate cohort [DEPRECATED]", position = 6)
+//    public Response annotateSamplePOST(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
+//                                       @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
+//                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
+//                                       @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+//                                       @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete,
+//                                       Map<String, Object> annotations) {
+//        try {
+//            QueryResult<AnnotationSet> queryResult;
+//            if (delete && update) {
+//                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
+//            } else if (update) {
+//                queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
+//            } else {
+//                queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations, Collections.emptyMap(),
+//                        sessionId);
+//            }
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+//    @Deprecated
+//    @GET
+//    @Path("/{cohortId}/annotate")
+//    @Consumes(MediaType.APPLICATION_JSON)
+//    @ApiOperation(value = "Annotate cohort[DEPRECATED]", position = 6)
+//    public Response annotateSampleGET(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
+//                                      @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
+//                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
+//                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
+//                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
+//        try {
+//            QueryResult<AnnotationSet> queryResult;
+//
+//            if (delete && update) {
+//                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
+//            } else if (delete) {
+//                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
+//            } else {
+//                if (update) {
+//                    long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
+//                    for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
+//                        if (annotationSet.getName().equals(annotateSetName)) {
+//                            variableSetId = annotationSet.getVariableSetId();
+//                        }
+//                    }
+//                }
+//                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
+//                if(variableSetResult.getResult().isEmpty()) {
+//                    return createErrorResponse("cohort - annotate", "VariableSet not found.");
+//                }
+//                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
+//                        .filter(variable -> params.containsKey(variable.getName()))
+//                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
+//
+//                if (update) {
+//                    queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
+//                } else {
+//                    queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations,
+//                            Collections.emptyMap(), sessionId);
+//                }
+//            }
+//
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
+
     @GET
-    @Path("/{cohortId}/annotate")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Annotate cohort[DEPRECATED]", position = 6)
-    public Response annotateSampleGET(@ApiParam(value = "CohortID", required = true) @PathParam("cohortId") String cohortId,
-                                      @ApiParam(value = "Annotation set name. Must be unique for the cohort", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                      @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "Update an already existing AnnotationSet") @ QueryParam("update") @DefaultValue("false") boolean update,
-                                      @ApiParam(value = "Delete an AnnotationSet") @ QueryParam("delete") @DefaultValue("false") boolean delete) {
-        try {
-            QueryResult<AnnotationSet> queryResult;
-
-            if (delete && update) {
-                return createErrorResponse("Annotate cohort", "Unable to update and delete annotations at the same time");
-            } else if (delete) {
-                queryResult = catalogManager.deleteCohortAnnotation(cohortId, annotateSetName, sessionId);
-            } else {
-                if (update) {
-                    long cohortLongId = catalogManager.getCohortId(cohortId, sessionId);
-                    for (AnnotationSet annotationSet : catalogManager.getCohort(cohortLongId, null, sessionId).first().getAnnotationSets()) {
-                        if (annotationSet.getName().equals(annotateSetName)) {
-                            variableSetId = annotationSet.getVariableSetId();
-                        }
-                    }
-                }
-                QueryResult<VariableSet> variableSetResult = catalogManager.getVariableSet(variableSetId, null, sessionId);
-                if(variableSetResult.getResult().isEmpty()) {
-                    return createErrorResponse("cohort - annotate", "VariableSet not found.");
-                }
-                Map<String, Object> annotations = variableSetResult.getResult().get(0).getVariables().stream()
-                        .filter(variable -> params.containsKey(variable.getName()))
-                        .collect(Collectors.toMap(Variable::getName, variable -> params.getFirst(variable.getName())));
-
-                if (update) {
-                    queryResult = catalogManager.updateCohortAnnotation(cohortId, annotateSetName, annotations, sessionId);
-                } else {
-                    queryResult = catalogManager.annotateCohort(cohortId, annotateSetName, variableSetId, annotations,
-                            Collections.emptyMap(), sessionId);
-                }
-            }
-
-            return createOkResponse(queryResult);
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
-
-    @GET
-    @Path("/{cohortId}/annotationSets/{annotationSetName}/search")
-    @ApiOperation(value = "Search annotation sets [PENDING]", position = 11)
+    @Path("/{cohortId}/annotationSets/search")
+    @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                            @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                           @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.searchCohortAnnotationSets(cohortStr, variableSetId, annotation, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/{cohortId}/annotationSets/info")
-    @ApiOperation(value = "Returns the annotation sets of the sample [PENDING]", position = 12)
+    @ApiOperation(value = "Return all the annotation sets of the cohort [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
-                                         @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.getAllCohortAnnotationSets(cohortStr, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST
     @Path("/{cohortId}/annotationSets/create")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "annotate sample [PENDING]", position = 13)
+    @ApiOperation(value = "Create an annotation set for the cohort [NOT TESTED]", position = 13)
     public Response annotateSamplePOST(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
+                                       @ApiParam(value = "VariableSetId of the new annotation", required = true) @QueryParam("variableSetId") long variableSetId,
                                        @ApiParam(value = "Annotation set name. Must be unique for the sample", required = true) @QueryParam("annotateSetName") String annotateSetName,
-                                       @ApiParam(value = "VariableSetId of the new annotation", required = false) @QueryParam("variableSetId") long variableSetId,
                                        Map<String, Object> annotations) {
         try {
-//            QueryResult<AnnotationSet> queryResult;
-//            queryResult = catalogManager.annotateSample(sampleId, annotateSetName, variableSetId,
-//                    annotations, Collections.emptyMap(), sessionId);
-//            return createOkResponse(queryResult);
-            return createOkResponse(null);
-        } catch (Exception e) {
+            QueryResult<AnnotationSet> queryResult = catalogManager.createCohortAnnotationSet(cohortStr, variableSetId,
+                    annotateSetName, annotations, Collections.emptyMap(), sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
     @Path("/{cohortId}/annotationSets/{annotationSetName}/delete")
-    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [PENDING]", position = 14)
+    @ApiOperation(value = "Delete the annotation set or the annotations within the annotation set [NOT TESTED]", position = 14)
     public Response deleteAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation) {
-        return createErrorResponse("Search", "not implemented");
+                                        @ApiParam(value = "[NOT IMPLEMENTED] Comma separated list of annotation names to be deleted", required = false) @QueryParam("annotations") String annotations) {
+        try {
+            QueryResult<AnnotationSet> queryResult;
+            if (annotations != null) {
+                queryResult = catalogManager.deleteCohortAnnotations(cohortStr, annotationSetName, annotations, sessionId);
+            } else {
+                queryResult = catalogManager.deleteCohortAnnotationSet(cohortStr, annotationSetName, sessionId);
+            }
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @POST
     @Path("/{cohortId}/annotationSets/{annotationSetName}/update")
     @Consumes(MediaType.APPLICATION_JSON)
-    @ApiOperation(value = "Update the annotations [PENDING]", position = 15)
-    public Response updateAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") long cohortId,
+    @ApiOperation(value = "Update the annotations [NOT TESTED]", position = 15)
+    public Response updateAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
+//                                        @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
+//                                        @ApiParam(value = "reset", required = false) @QueryParam("reset") String reset,
                                         Map<String, Object> annotations) {
-        return createErrorResponse("Search", "not implemented");
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.updateCohortAnnotationSet(cohortIdStr, annotationSetName,
+                    annotations, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 
     @GET
     @Path("/{cohortId}/annotationSets/{annotationSetName}/info")
-    @ApiOperation(value = "Returns the annotation set [PENDING]", position = 16)
+    @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
-                                      @ApiParam(value = "as-map", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
-        return createErrorResponse("Search", "not implemented");
+                                      @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+        try {
+            QueryResult<AnnotationSet> queryResult = catalogManager.getCohortAnnotationSet(cohortStr, annotationSetName, sessionId);
+            return createOkResponse(queryResult);
+        } catch (CatalogException e) {
+            return createErrorResponse(e);
+        }
     }
 //
 //    @GET
@@ -473,11 +500,11 @@ public class CohortWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{cohortId}/acls")
-    @ApiOperation(value = "Returns the acls of the cohort [PENDING]", position = 18)
-    public Response getAcls(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String studyIdStr) {
+    @Path("/{cohortIds}/acl")
+    @ApiOperation(value = "Return the acl of the cohort", position = 18)
+    public Response getAcls(@ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohortIds") String cohortIdsStr) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getAllCohortAcls(cohortIdsStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -485,54 +512,52 @@ public class CohortWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{cohortId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
-    public Response createRole(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+    @Path("/{cohortIds}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    public Response createRole(@ApiParam(value = "Comma separated list of cohort ids", required = true) @PathParam("cohortIds") String cohortIdsStr,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.createCohortAcls(cohortIdsStr, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{cohortId}/acls/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
-    public Response getAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String studyIdStr,
+    @Path("/{cohortId}/acl/{memberId}/info")
+    @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
+    public Response getAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getCohortAcl(cohortIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{cohortId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
+    @Path("/{cohortId}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
         try {
-           // return createOkResponse(catalogManager.updateAcl(cohortId, member, Arrays.asList(addpermissions.split(",")),  sessionId));
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateCohortAcl(cohortIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{cohortId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
+    @Path("/{cohortId}/acl/{memberId}/delete")
+    @ApiOperation(value = "Delete all the permissions granted for the member", position = 22)
     public Response deleteAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.removeIndividualAcl(cohortIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

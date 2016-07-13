@@ -101,7 +101,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
 //        query.put("projects.alias", new BasicDBObject("$ne", project.getAlias()));
         Bson query = Filters.and(Filters.eq("id", userId), Filters.ne("projects.alias", project.getAlias()));
 
-        Document projectDocument = getMongoDBDocument(project, "Project");
+        Document projectDocument = projectConverter.convertToStorageType(project);
 //        DBObject update = new BasicDBObject("$push", new BasicDBObject("projects", projectDBObject));
         Bson update = Updates.push("projects", projectDocument);
 
@@ -333,7 +333,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
     public AclEntry getFullProjectAcl(int projectId, String userId) throws CatalogDBException {
         QueryResult<Project> project = getProject(projectId, null);
         if (project.getNumResults() != 0) {
-            List<AclEntry> acl = project.getResult().get(0).getAcls();
+            List<AclEntry> acl = project.getResult().get(0).getAcl();
             for (AclEntry acl1 : acl) {
                 if (userId.equals(acl1.getUserId())) {
                     return acl1;
@@ -426,28 +426,6 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         return endQuery("Set project acl", startTime, pushResult);
     }
 
-    //Join fields from other collections
-    private void joinFields(User user, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (user.getProjects() != null) {
-            for (Project project : user.getProjects()) {
-                joinFields(project, options);
-            }
-        }
-    }
-
-    private void joinFields(Project project, QueryOptions options) throws CatalogDBException {
-        if (options == null) {
-            return;
-        }
-        if (options.getBoolean("includeStudies")) {
-            project.setStudies(dbAdaptorFactory.getCatalogStudyDBAdaptor().getAllStudiesInProject(project.getId(), options).getResult());
-        }
-    }
-
-
     @Override
     public QueryResult<Long> count(Query query) throws CatalogDBException {
         Bson bson = parseQuery(query);
@@ -490,7 +468,7 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
         QueryResult<Project> projectQueryResult = userCollection.aggregate(aggregates, projectConverter, options);
 
         if (options == null || !options.containsKey(QueryOptions.EXCLUDE)
-                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("studies")) {
+                || !options.getAsStringList(QueryOptions.EXCLUDE).contains("projects.studies")) {
             for (Project project : projectQueryResult.getResult()) {
                 Query studyQuery = new Query(CatalogStudyDBAdaptor.QueryParams.PROJECT_ID.key(), project.getId());
                 try {

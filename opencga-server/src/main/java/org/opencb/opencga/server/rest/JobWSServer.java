@@ -384,11 +384,11 @@ public class JobWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{jobId}/acls")
-    @ApiOperation(value = "Returns the acls of the job [PENDING]", position = 18)
-    public Response getAcls(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr) {
+    @Path("/{jobIds}/acl")
+    @ApiOperation(value = "Return the acl of the job", position = 18)
+    public Response getAcls(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getAllJobAcls(jobIdsStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -396,53 +396,52 @@ public class JobWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{jobId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of members [PENDING]", position = 19)
-    public Response createRole(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
-                               @ApiParam(value = "Template of permissions to be used (admin, analyst or locked)", required = false) @DefaultValue("") @QueryParam("templateId") String roleId,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+    @Path("/{jobIds}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of members", position = 19)
+    public Response createRole(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.createJobAcls(jobIdsStr, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{jobId}/acls/{memberId}/info")
-    @ApiOperation(value = "Returns the set of permissions granted for the member [PENDING]", position = 20)
-    public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+    @Path("/{jobId}/acl/{memberId}/info")
+    @ApiOperation(value = "Return the set of permissions granted for the member", position = 20)
+    public Response getAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                            @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getJobAcl(jobIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{jobId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the set of permissions granted for the member [PENDING]", position = 21)
-    public Response updateAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+    @Path("/{jobId}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
+    public Response updateAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String jobIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
                               @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
                               @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateJobAcl(jobIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{jobId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the member [PENDING]", position = 22)
-    public Response deleteAcl(@ApiParam(value = "jobId", required = true) @PathParam("jobId") String studyIdStr,
+    @Path("/{jobIds}/acl/{memberId}/delete")
+    @ApiOperation(value = "Remove all the permissions granted for the member", position = 22)
+    public Response deleteAcl(@ApiParam(value = "Comma separated list of job ids", required = true) @PathParam("jobIds") String jobIdsStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.removeJobAcl(jobIdsStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

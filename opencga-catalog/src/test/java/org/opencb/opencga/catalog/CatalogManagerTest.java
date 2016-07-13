@@ -464,7 +464,7 @@ public class CatalogManagerTest extends GenericTest {
                 .GROUP_USER_IDS.key(), "user2"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));
 
-        catalogManager.addUsersToGroup(study_4, "admins", "user3", sessionIdUser);
+        catalogManager.createGroup(Long.toString(study_4), "admins", "user3", sessionIdUser);
         assertEquals(new HashSet<>(Arrays.asList("study_4")), catalogManager.getAllStudies(new Query(CatalogStudyDBAdaptor.QueryParams
                 .GROUP_USER_IDS.key(), "user3"), null, sessionIdUser).getResult().stream().map(Study::getAlias)
                 .collect(Collectors.toSet()));

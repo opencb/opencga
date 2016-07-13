@@ -39,7 +39,7 @@ emailServer:
   from: ""
   ssl: false
 
-acls:                 # Do not touch the acl configuration. If this is not properly set, the daemons might not work.
+acl:                 # Do not touch the acl configuration. If this is not properly set, the daemons might not work.
 - member: "admin"
   permissions:
   - "VIEW_FILE_HEADERS"

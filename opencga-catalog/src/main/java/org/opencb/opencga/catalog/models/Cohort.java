@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.CohortAcl;
+import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.Map;
  *         <p>
  *         Set of samples grouped according to criteria
  */
-public class Cohort {
+public class Cohort implements Annotable {
 
     private long id;
     private String name;
@@ -38,7 +38,7 @@ public class Cohort {
     private String description;
 
     private List<Long> samples;
-    private List<CohortAcl> acls;
+    private List<CohortAclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
@@ -62,7 +62,7 @@ public class Cohort {
         this.status = cohortStatus;
         this.description = description;
         this.samples = samples;
-        this.acls = Collections.emptyList();
+        this.acl = Collections.emptyList();
         this.annotationSets = Collections.emptyList();
         this.stats = stats;
         this.attributes = attributes;
@@ -111,7 +111,7 @@ public class Cohort {
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -182,19 +182,21 @@ public class Cohort {
         return this;
     }
 
-    public List<CohortAcl> getAcls() {
-        return acls;
+    public List<CohortAclEntry> getAcl() {
+        return acl;
     }
 
-    public Cohort setAcls(List<CohortAcl> acls) {
-        this.acls = acls;
+    public Cohort setAcl(List<CohortAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 
+    @Override
     public List<AnnotationSet> getAnnotationSets() {
         return annotationSets;
     }
 
+    @Override
     public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
         this.annotationSets = annotationSets;
         return this;

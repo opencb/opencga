@@ -110,7 +110,7 @@ public class VariableSetWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{variableSetId}/update")
-    @ApiOperation(value = "Update some user variableSet using GET method [PENDING]", position = 3)
+    @ApiOperation(value = "Update some variableSet attributes using GET method [PENDING]", position = 3)
     public Response update(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") String variableSetId,
                            @ApiParam(value = "name", required = true) @QueryParam("name") String name,
                            @ApiParam(value = "description", required = false) @QueryParam("description") String description) throws IOException {

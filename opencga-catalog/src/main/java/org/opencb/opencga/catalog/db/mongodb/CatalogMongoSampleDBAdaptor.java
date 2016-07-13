@@ -30,10 +30,11 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.*;
+import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -42,14 +43,13 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.lang.Math.toIntExact;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
 import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by hpccoll1 on 14/08/15.
  */
-public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implements CatalogSampleDBAdaptor {
+public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor implements CatalogSampleDBAdaptor {
 
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
@@ -59,6 +59,16 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.sampleConverter = new SampleConverter();
+    }
+
+    @Override
+    protected GenericConverter<? extends Annotable, Document> getConverter() {
+        return sampleConverter;
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
+        return sampleCollection;
     }
 
     /*
@@ -86,7 +96,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         sample.setId(sampleId);
         sample.setAnnotationSets(Collections.<AnnotationSet>emptyList());
         //TODO: Add annotationSets
-        Document sampleObject = getMongoDBDocument(sample, "sample");
+        Document sampleObject = sampleConverter.convertToStorageType(sample);
         sampleObject.put(PRIVATE_STUDY_ID, studyId);
         sampleObject.put(PRIVATE_ID, sampleId);
         sampleCollection.insert(sampleObject, null);
@@ -188,20 +198,20 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     @Deprecated
-    public QueryResult<SampleAcl> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> getSampleAcl(long sampleId, String userId) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), userId));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), userId));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<SampleAcl> sampleAcl = null;
+        List<SampleAclEntry> sampleAcl = null;
         QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
         if (sampleList.size() > 0) {
-            sampleAcl = sampleList.get(0).getAcls();
+            sampleAcl = sampleList.get(0).getAcl();
         }
 
         return endQuery("getSampleAcl", startTime, sampleAcl);
@@ -209,20 +219,20 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
     @Override
     @Deprecated
-    public QueryResult<SampleAcl> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> getSampleAcl(long sampleId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkSampleId(sampleId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, sampleId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_MEMBER.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<SampleAcl> sampleAcl = null;
+        List<SampleAclEntry> sampleAcl = null;
         QueryResult<Document> aggregate = sampleCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         List<Sample> sampleList = parseSamples(aggregate);
 
         if (sampleList.size() > 0) {
-            sampleAcl = sampleList.get(0).getAcls();
+            sampleAcl = sampleList.get(0).getAcl();
         }
 
         return endQuery("getSampleAcl", startTime, sampleAcl);
@@ -275,7 +285,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> setSampleAcl(long sampleId, SampleAcl acl, boolean override) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> setSampleAcl(long sampleId, SampleAclEntry acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
         long studyId = getStudyIdBySampleId(sampleId);
 
@@ -287,14 +297,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<SampleAcl> fileAcl = getSampleAcl(sampleId, group.getUserIds());
+            QueryResult<SampleAclEntry> fileAcl = getSampleAcl(sampleId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in sample. At least one user in " + group.getName()
                         + " has already defined permissions for sample " + sampleId);
             }
         } else {
             // Check if the members of the new acl already have some permissions set
-            QueryResult<SampleAcl> sampleAcls = getSampleAcl(sampleId, acl.getMember());
+            QueryResult<SampleAclEntry> sampleAcls = getSampleAcl(sampleId, acl.getMember());
 
             if (sampleAcls.getNumResults() > 0 && override) {
                 unsetSampleAcl(sampleId, Arrays.asList(member), Collections.emptyList());
@@ -306,7 +316,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, sampleId);
-        Document update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "SampleAcl")));
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "SampleAcl")));
         QueryResult<UpdateResult> updateResult = sampleCollection.update(queryDocument, update, null);
 
         if (updateResult.first().getModifiedCount() == 0) {
@@ -348,12 +358,12 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, sampleId).append(QueryParams.ACLS_MEMBER.key(), member);
+            Document query = new Document(PRIVATE_ID, sampleId).append(QueryParams.ACL_MEMBER.key(), member);
             Bson update;
             if (permissions.size() == 0) {
-                update = new Document("$pull", new Document("acls", new Document("member", member)));
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
             } else {
-                update = new Document("$pull", new Document("acls.$.permissions", new Document("$in", permissions)));
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
             }
             QueryResult<UpdateResult> updateResult = sampleCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
@@ -364,7 +374,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove possible SampleAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(QueryParams.ID.key(), sampleId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        sampleCollection.update(queryBson, update, null);
@@ -377,14 +387,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACLS_MEMBER.key(), member);
-            Bson update = new Document("$pull", new Document("acls", new Document("member", member)));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             sampleCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
 //
 //        // Remove possible SampleAcls that might have permissions defined but no users
 //        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-//                .append(QueryParams.ACLS_MEMBER.key(),
+//                .append(QueryParams.ACL_MEMBER.key(),
 //                        new Document("$exists", true).append("$eq", Collections.emptyList()));
 //        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
 //        sampleCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
@@ -481,6 +491,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
      */
 
     @Override
+    @Deprecated
     public QueryResult<AnnotationSet> annotateSample(long sampleId, AnnotationSet annotationSet, boolean overwrite) throws
             CatalogDBException {
         long startTime = startQuery();
@@ -537,6 +548,7 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
+    @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException {
 
         long startTime = startQuery();
@@ -566,152 +578,6 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         }
 
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
-    }
-
-    /**
-     * The method will add the new variable to each annotation using the default value.
-     * @param variableSetId id of the variableSet.
-     * @param variable new variable that will be pushed to the annotations.
-     */
-    @Override
-    public QueryResult<Long> addVariableToAnnotations(long variableSetId, Variable variable) throws CatalogDBException {
-        long startTime = startQuery();
-
-        Annotation annotation = new Annotation(variable.getName(), variable.getDefaultValue());
-        // Obtain the annotation ids of the annotations that are using the variableSet variableSetId
-        List<Bson> aggregation = new ArrayList<>(4);
-        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
-        aggregation.add(Aggregates.unwind("$annotationSets"));
-        aggregation.add(Aggregates.project(Projections.include("annotationSets.name", "annotationSets.variableSetId")));
-        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
-        QueryResult<Document> aggregationResult = sampleCollection.aggregate(aggregation, null);
-
-        Set<String> annotationIds = new HashSet<>(aggregationResult.getNumResults());
-        for (Document document : aggregationResult.getResult()) {
-            annotationIds.add((String) ((Document) document.get("annotationSets")).get("name"));
-        }
-
-        Bson bsonQuery;
-        Bson update = Updates.push("annotationSets.$." + AnnotationSetParams.ANNOTATIONS.key(),
-                getMongoDBDocument(annotation, "annotation"));
-        long modifiedCount = 0;
-        for (String annotationId : annotationIds) {
-            bsonQuery = Filters.elemMatch("annotationSets", Filters.and(
-                    Filters.eq("variableSetId", variableSetId),
-                    Filters.eq("name", annotationId)
-            ));
-
-            modifiedCount += sampleCollection.update(bsonQuery, update, new QueryOptions(MongoDBCollection.MULTI, true)).first()
-                    .getModifiedCount();
-        }
-
-        return endQuery("Add new variable to annotations", startTime, Collections.singletonList(modifiedCount));
-    }
-
-    @Override
-    public QueryResult<Long> renameAnnotationField(long variableSetId, String oldName, String newName) throws CatalogDBException {
-        long renamedAnnotations = 0;
-
-        // 1. we obtain the variable
-        List<Sample> sampleAnnotations = getAnnotation(variableSetId, oldName);
-
-        if (sampleAnnotations.size() > 0) {
-            // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
-            for (Sample sample : sampleAnnotations) {
-                for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
-                    Bson bsonQuery = Filters.and(
-                            Filters.eq(QueryParams.ID.key(), sample.getId()),
-                            Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.name", oldName)
-                    );
-
-                    // 1. We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", oldName));
-                    QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
-                    if (queryResult.first().getModifiedCount() != 1) {
-                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
-                                + annotationSet.getName() + "} - An unexpected error happened when extracting the annotation " + oldName
-                                + ". Please, report this error to the OpenCGA developers.");
-                    }
-
-                    // 2. We change the id and push it again
-                    Iterator<Annotation> iterator = annotationSet.getAnnotations().iterator();
-                    Annotation annotation = iterator.next();
-                    annotation.setName(newName);
-                    bsonQuery = Filters.and(
-                            Filters.eq(QueryParams.ID.key(), sample.getId()),
-                            Filters.eq("annotationSets.name", annotationSet.getName())
-                    );
-                    update = Updates.push("annotationSets.$.annotations", getMongoDBDocument(annotation, "Annotation"));
-                    queryResult = sampleCollection.update(bsonQuery, update, null);
-
-                    if (queryResult.first().getModifiedCount() != 1) {
-                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
-                                + annotationSet.getName() + "} - A critical error happened when trying to rename the annotation " + oldName
-                                + ". Please, report this error to the OpenCGA developers.");
-                    }
-                    renamedAnnotations += 1;
-                }
-            }
-        }
-
-        return new QueryResult<>("Rename annotation field", -1, toIntExact(renamedAnnotations), renamedAnnotations, "", "",
-                Collections.singletonList(renamedAnnotations));
-    }
-
-    @Override
-    public QueryResult<Long> removeAnnotationField(long variableSetId, String fieldId) throws CatalogDBException {
-        long renamedAnnotations = 0;
-
-        // 1. we obtain the variable
-        List<Sample> sampleAnnotations = getAnnotation(variableSetId, fieldId);
-
-        if (sampleAnnotations.size() > 0) {
-            // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
-            for (Sample sample : sampleAnnotations) {
-                for (AnnotationSet annotationSet : sample.getAnnotationSets()) {
-                    Bson bsonQuery = Filters.and(
-                            Filters.eq(QueryParams.ID.key(), sample.getId()),
-                            Filters.eq("annotationSets.name", annotationSet.getName()),
-                            Filters.eq("annotationSets.annotations.name", fieldId)
-                    );
-
-                    // We extract the annotation.
-                    Bson update = Updates.pull("annotationSets.$.annotations", Filters.eq("name", fieldId));
-                    QueryResult<UpdateResult> queryResult = sampleCollection.update(bsonQuery, update, null);
-                    if (queryResult.first().getModifiedCount() != 1) {
-                        throw new CatalogDBException("VariableSet {id: " + variableSetId + "} - AnnotationSet {name: "
-                                + annotationSet.getName() + "} - An unexpected error happened when extracting the annotation " + fieldId
-                                + ". Please, report this error to the OpenCGA developers.");
-                    }
-
-                    renamedAnnotations += 1;
-                }
-            }
-        }
-
-        return new QueryResult<>("Remove annotation field", -1, toIntExact(renamedAnnotations), renamedAnnotations, "", "",
-                Collections.singletonList(renamedAnnotations));
-    }
-
-    /**
-     * The method will return the list of samples containing the annotation.
-     * @param variableSetId Id of the variableSet.
-     * @param annotationFieldId Name of the field of the annotation from all the annotationSets.
-     * @return list of samples containing an array of annotationSets, containing just the annotation that matches with annotationFieldId.
-     */
-    private List<Sample> getAnnotation(long variableSetId, String annotationFieldId) {
-        // Fixme: Change the hard coded annotationSets names per their corresponding QueryParam objects.
-        List<Bson> aggregation = new ArrayList<>();
-        aggregation.add(Aggregates.match(Filters.elemMatch("annotationSets", Filters.eq("variableSetId", variableSetId))));
-        aggregation.add(Aggregates.project(Projections.include("annotationSets", "id")));
-        aggregation.add(Aggregates.unwind("$annotationSets"));
-        aggregation.add(Aggregates.match(Filters.eq("annotationSets.variableSetId", variableSetId)));
-        aggregation.add(Aggregates.unwind("$annotationSets.annotations"));
-        aggregation.add(Aggregates.match(
-                Filters.eq("annotationSets.annotations.name", annotationFieldId)));
-
-        return sampleCollection.aggregate(aggregation, sampleConverter, new QueryOptions()).getResult();
     }
 
     @Deprecated
@@ -1003,6 +869,10 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
         // We declare variableMap here just in case we have different annotation queries
         Map<String, Variable> variableMap = null;
 
+        if (query.containsKey(QueryParams.ANNOTATION.key())) {
+            fixAnnotationQuery(query);
+        }
+
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam =  QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -1095,22 +965,22 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> createAcl(long id, SampleAcl acl) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> createAcl(long id, SampleAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.createAcl(id, acl, sampleCollection, "SampleAcl");
         return endQuery("create sample Acl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public QueryResult<SampleAcl> getAcl(long id, List<String> members) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
 
-        List<SampleAcl> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection);
+        List<SampleAclEntry> acl = null;
+        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection, logger);
         Sample sample = sampleConverter.convertToDataModelType(aggregate.first());
 
         if (sample != null) {
-            acl = sample.getAcls();
+            acl = sample.getAcl();
         }
 
         return endQuery("get sample Acl", startTime, acl);
@@ -1122,14 +992,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoDBAdaptor implement
     }
 
     @Override
-    public QueryResult<SampleAcl> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.setAclsToMember(id, member, permissions, sampleCollection);
         return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
     }
 
     @Override
-    public QueryResult<SampleAcl> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+    public QueryResult<SampleAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
         CatalogMongoDBUtils.addAclsToMember(id, member, permissions, sampleCollection);
         return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));

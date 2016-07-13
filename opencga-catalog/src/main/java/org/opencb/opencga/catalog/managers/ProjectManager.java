@@ -19,7 +19,7 @@ import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IProjectManager;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 
 import java.util.List;
@@ -140,7 +140,7 @@ public class ProjectManager extends AbstractManager implements IProjectManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        authorizationManager.checkProjectPermission(projectId, userId, StudyAcl.StudyPermissions.VIEW_STUDY);
+        authorizationManager.checkProjectPermission(projectId, userId, StudyAclEntry.StudyPermissions.VIEW_STUDY);
         QueryResult<Project> projectResult = projectDBAdaptor.getProject(projectId, options);
         if (!projectResult.getResult().isEmpty()) {
             authorizationManager.filterStudies(userId, projectResult.getResult().get(0).getStudies());

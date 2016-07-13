@@ -287,7 +287,7 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         if (update.getResult().get(0).getModifiedCount() == 0) {  //0 query matches.
             throw new CatalogDBException("Bad user or email");
         }
-        return endQuery("Reset Password", startTime, update);
+        return endQuery("Reset Password", startTime, Arrays.asList("Password successfully changed"));
     }
 
     @Override

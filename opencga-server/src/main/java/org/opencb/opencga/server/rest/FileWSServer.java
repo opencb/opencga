@@ -22,7 +22,7 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -190,7 +190,7 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/upload")
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     @ApiOperation(httpMethod = "POST", position = 4, value = "Resource to upload a file by chunks", response = File.class)
-    public Response chunkUpload(@FormDataParam("chunk_content") byte[] chunkBytes,
+    public Response upload(@FormDataParam("chunk_content") byte[] chunkBytes,
                                 @FormDataParam("chunk_content") FormDataContentDisposition contentDisposition,
                                 @FormDataParam("file") InputStream fileInputStream,
                                 @FormDataParam("file") FormDataContentDisposition fileMetaData,
@@ -202,13 +202,13 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @DefaultValue("") @FormDataParam("chunk_hash") String chunkHash,
                                 @DefaultValue("false") @FormDataParam("resume_upload") String resume_upload,
 
-                                @ApiParam(value = "filename", required = false) @DefaultValue("") @FormDataParam("filename") String filename,
+                                @ApiParam(value = "filename", required = false) @FormDataParam("filename") String filename,
                                 @ApiParam(value = "fileFormat", required = true) @DefaultValue("") @FormDataParam("fileFormat") String fileFormat,
                                 @ApiParam(value = "bioFormat", required = true) @DefaultValue("") @FormDataParam("bioFormat") String bioFormat,
 //                                @ApiParam(value = "userId", required = true) @DefaultValue("") @FormDataParam("userId") String userId,
 //                                @ApiParam(defaultValue = "projectId", required = true) @DefaultValue("") @FormDataParam("projectId") String projectId,
                                 @ApiParam(value = "studyId", required = true) @FormDataParam("studyId") String studyIdStr,
-                                @ApiParam(value = "relativeFilePath", required = true) @DefaultValue("") @FormDataParam("relativeFilePath") String relativeFilePath,
+                                @ApiParam(value = "Path within catalog where the file will be located (default: root folder)", required = false) @DefaultValue(".") @FormDataParam("relativeFilePath") String relativeFilePath,
                                 @ApiParam(value = "description", required = false) @DefaultValue("") @FormDataParam("description") String description,
                                 @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("true") @FormDataParam("parents") boolean parents) {
 
@@ -216,6 +216,10 @@ public class FileWSServer extends OpenCGAWSServer {
 
         if (relativeFilePath.endsWith("/")) {
             relativeFilePath = relativeFilePath.substring(0, relativeFilePath.length() - 1);
+        }
+
+        if (relativeFilePath.startsWith("/")) {
+            return createErrorResponse(new CatalogException("The path cannot be absolute"));
         }
 
         java.nio.file.Path filePath = null;
@@ -321,7 +325,11 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createErrorResponse("Upload file", e.getMessage());
             }
 
-            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + fileMetaData.getFileName()).resolve(fileMetaData.getFileName());
+            if (filename == null) {
+                filename = fileMetaData.getFileName();
+            }
+
+            java.nio.file.Path tempFilePath = studyPath.resolve("tmp_" + filename).resolve(filename);
             logger.info("tempFilePath: {}", tempFilePath.toString());
             logger.info("tempParent: {}", tempFilePath.getParent().toString());
 
@@ -350,10 +358,23 @@ public class FileWSServer extends OpenCGAWSServer {
 
             // Register the file in catalog
             try {
-                // Create parents directory if necessary
-                catalogManager.createFolder(studyId, Paths.get(relativeFilePath), parents, null, sessionId);
+                String destinationPath;
+                // Check if the relativeFilePath is not the root folder
+                if (relativeFilePath.length() > 1 && !relativeFilePath.equals("./")) {
+                    try {
+                        // Create parents directory if necessary
+                        catalogManager.createFolder(studyId, Paths.get(relativeFilePath), parents, null, sessionId);
+                    } catch (CatalogException e) {
+                        logger.debug("The folder {} already exists", relativeFilePath);
+                    }
+                    destinationPath = Paths.get(relativeFilePath).resolve(filename).toString();
+                } else {
+                    destinationPath = filename;
+                }
 
-                String destinationPath = Paths.get(relativeFilePath).resolve(fileMetaData.getFileName()).toString();
+                logger.debug("Relative path: {}", relativeFilePath);
+                logger.debug("Destination path: {}", destinationPath);
+                logger.debug("File name {}", filename);
 
                 // Register the file and move it to the proper directory
                 QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
@@ -369,9 +390,6 @@ public class FileWSServer extends OpenCGAWSServer {
                 return createOkResponse(queryResult);
 
             } catch (CatalogException e) {
-                e.printStackTrace();
-                return createErrorResponse("Upload file", e.getMessage());
-            } catch (StorageManagerException e) {
                 e.printStackTrace();
                 return createErrorResponse("Upload file", e.getMessage());
             } catch (IOException e) {
@@ -1159,11 +1177,11 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     @GET
-    @Path("/{fileId}/acls")
-    @ApiOperation(value = "Return the acls defined for the file or folder [PENDING]", position = 18, response = QueryResponse.class)
-    public Response getAcls(@ApiParam(value = "File id", required = true) @PathParam("fileId") String studyIdStr) {
+    @Path("/{fileIds}/acl")
+    @ApiOperation(value = "Return the acl defined for the file or folder", position = 18, response = QueryResponse.class)
+    public Response getAcls(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getAllFileAcls(fileIdStr, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
@@ -1171,35 +1189,35 @@ public class FileWSServer extends OpenCGAWSServer {
 
 
     @GET
-    @Path("/{fileId}/acls/create")
-    @ApiOperation(value = "Define a set of permissions for a list of users or groups [PENDING]", position = 19,
+    @Path("/{fileIds}/acl/create")
+    @ApiOperation(value = "Define a set of permissions for a list of users or groups", position = 19,
             response = QueryResponse.class)
-    public Response createRole(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
-                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = true) @DefaultValue("") @QueryParam("permissions") String permissions,
+    public Response createRole(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdStr,
+                               @ApiParam(value = "Comma separated list of permissions that will be granted to the member list", required = false) @DefaultValue("") @QueryParam("permissions") String permissions,
                                @ApiParam(value = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("members") String members) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.createFileAcls(fileIdStr, members, permissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/info")
-    @ApiOperation(value = "Return the permissions granted for the user or group [PENDING]", position = 20, response = QueryResponse.class)
-    public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String studyIdStr,
+    @Path("/{fileId}/acl/{memberId}/info")
+    @ApiOperation(value = "Return the permissions granted for the user or group", position = 20, response = QueryResponse.class)
+    public Response getAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                            @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.getFileAcl(fileIdStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/update")
-    @ApiOperation(value = "Update the permissions granted for the user or group [PENDING]", position = 21, response = QueryResponse.class)
-    public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
+    @Path("/{fileId}/acl/{memberId}/update")
+    @ApiOperation(value = "Update the permissions granted for the user or group", position = 21, response = QueryResponse.class)
+    public Response updateAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String fileIdStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId,
                               @ApiParam(value = "Comma separated list of permissions to add", required = false)
                               @QueryParam("addPermissions") String addPermissions,
@@ -1208,20 +1226,20 @@ public class FileWSServer extends OpenCGAWSServer {
                               @ApiParam(value = "Comma separated list of permissions to set", required = false)
                               @QueryParam("setPermissions") String setPermissions) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.updateFileAcl(fileIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }
     }
 
     @GET
-    @Path("/{fileId}/acls/{memberId}/delete")
-    @ApiOperation(value = "Delete all the permissions granted for the user or group [PENDING]", position = 22,
+    @Path("/{fileIds}/acl/{memberId}/delete")
+    @ApiOperation(value = "Remove all the permissions granted for the user or group", position = 22,
             response = QueryResponse.class)
-    public Response deleteAcl(@ApiParam(value = "File id", required = true) @PathParam("fileId") String cohortIdStr,
+    public Response deleteAcl(@ApiParam(value = "Comma separated list of file ids", required = true) @PathParam("fileIds") String fileIdsStr,
                               @ApiParam(value = "User or group id", required = true) @PathParam("memberId") String memberId) {
         try {
-            return createOkResponse(null);
+            return createOkResponse(catalogManager.removeFileAcl(fileIdsStr, memberId, sessionId));
         } catch (Exception e) {
             return createErrorResponse(e);
         }

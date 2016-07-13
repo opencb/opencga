@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ import static java.lang.Math.toIntExact;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Individual {
+public class Individual implements Annotable {
 
     private long id;
     private String name;
@@ -43,7 +43,7 @@ public class Individual {
     private Status status;
     private List<OntologyTerm> ontologyTerms;
 
-    private List<IndividualAcl> acls;
+    private List<IndividualAclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -68,21 +68,21 @@ public class Individual {
         this.species = species;
         this.population = population;
         this.annotationSets = annotationSets;
-        this.acls = new ArrayList<>();
+        this.acl = new ArrayList<>();
         this.status = new Status();
         this.attributes = attributes;
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
-                      Population population, Status status, List<IndividualAcl> acls, List<AnnotationSet> annotationSets,
+                      Population population, Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets,
                       Map<String, Object> attributes) {
         this(id, name, fatherId, motherId, family, gender, race, species, population, TimeUtils.getTime(), status, Collections.emptyList(),
-                acls, annotationSets, attributes);
+                acl, annotationSets, attributes);
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
                       Population population, String creationDate, Status status, List<OntologyTerm> ontologyTerms,
-                      List<IndividualAcl>  acls, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+                      List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
@@ -95,7 +95,7 @@ public class Individual {
         this.creationDate = creationDate;
         this.status = status;
         this.ontologyTerms = ontologyTerms;
-        this.acls = acls;
+        this.acl = acl;
         this.annotationSets = annotationSets;
         this.attributes = attributes;
     }
@@ -326,7 +326,7 @@ public class Individual {
         sb.append(", creationDate='").append(creationDate).append('\'');
         sb.append(", status=").append(status);
         sb.append(", ontologyTerms=").append(ontologyTerms);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", attributes=").append(attributes);
         sb.append('}');
@@ -441,12 +441,12 @@ public class Individual {
         return this;
     }
 
-    public List<IndividualAcl> getAcls() {
-        return acls;
+    public List<IndividualAclEntry> getAcl() {
+        return acl;
     }
 
-    public Individual setAcls(List<IndividualAcl> acls) {
-        this.acls = acls;
+    public Individual setAcl(List<IndividualAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

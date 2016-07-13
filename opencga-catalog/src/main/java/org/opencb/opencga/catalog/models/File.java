@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -69,7 +69,7 @@ public class File {
      */
     private long jobId;
 
-    private List<FileAcl> acls;
+    private List<FileAclEntry> acl;
     private FileIndex index;
 
     private Map<String, Object> stats;
@@ -95,7 +95,7 @@ public class File {
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
                 String creationDate, String description, FileStatus status, long diskUsage, long experimentId, List<Long> sampleIds,
-                long jobId, List<FileAcl> acls, Map<String, Object> stats, Map<String, Object> attributes) {
+                long jobId, List<FileAclEntry> acl, Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -112,7 +112,7 @@ public class File {
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
         this.jobId = jobId;
-        this.acls = acls;
+        this.acl = acl;
         this.index = null;
         this.stats = stats;
         this.attributes = attributes;
@@ -120,7 +120,7 @@ public class File {
 
     public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId,
                 String creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage,
-                long experimentId, List<Long> sampleIds, long jobId, List<FileAcl> acls, FileIndex index, Map<String, Object> stats,
+                long experimentId, List<Long> sampleIds, long jobId, List<FileAclEntry> acl, FileIndex index, Map<String, Object> stats,
                 Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
@@ -139,7 +139,7 @@ public class File {
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
         this.jobId = jobId;
-        this.acls = acls;
+        this.acl = acl;
         this.index = index;
         this.stats = stats;
         this.attributes = attributes;
@@ -280,7 +280,7 @@ public class File {
         sb.append(", experimentId=").append(experimentId);
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", jobId=").append(jobId);
-        sb.append(", acls=").append(acls);
+        sb.append(", acl=").append(acl);
         sb.append(", index=").append(index);
         sb.append(", stats=").append(stats);
         sb.append(", attributes=").append(attributes);
@@ -441,12 +441,12 @@ public class File {
         return this;
     }
 
-    public List<FileAcl> getAcls() {
-        return acls;
+    public List<FileAclEntry> getAcl() {
+        return acl;
     }
 
-    public File setAcls(List<FileAcl> acls) {
-        this.acls = acls;
+    public File setAcl(List<FileAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 

@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -30,7 +30,7 @@ import java.net.URI;
 /**
  * Created by swaathi on 10/05/16.
  */
-public class FileClient extends AbstractParentClient<File, FileAcl> {
+public class FileClient extends AbstractParentClient<File, FileAclEntry> {
 
     private static final String FILES_URL = "files";
 
@@ -39,7 +39,7 @@ public class FileClient extends AbstractParentClient<File, FileAcl> {
 
         this.category = FILES_URL;
         this.clazz = File.class;
-        this.aclClass = FileAcl.class;
+        this.aclClass = FileAclEntry.class;
     }
 
     public QueryResponse<File> createFolder(String studyId, String path, ObjectMap params) throws CatalogException, IOException {
@@ -98,6 +98,11 @@ public class FileClient extends AbstractParentClient<File, FileAcl> {
 
     public QueryResponse<File> refresh(String fileId, QueryOptions options) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "refresh", options, GET, File.class);
+    }
+
+    public QueryResponse<File> upload(String studyId, String filePath, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "file", filePath);
+        return execute(FILES_URL, "upload", params, POST, File.class);
     }
 
     /**

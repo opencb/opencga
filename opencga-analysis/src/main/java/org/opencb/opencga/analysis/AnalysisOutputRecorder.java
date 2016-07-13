@@ -22,8 +22,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
-import org.opencb.opencga.analysis.files.FileScanner;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
+import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -218,7 +218,7 @@ public class AnalysisOutputRecorder {
                     break;
             }
         } else {
-            index = new FileIndex(job.getUserId(), job.getDate(), new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), job.getId(),
+            index = new FileIndex(job.getUserId(), job.getCreationDate(), new FileIndex.IndexStatus(FileIndex.IndexStatus.READY), job.getId(),
                     new HashMap<>());
             logger.warn("Expected INDEX object on the indexed file " +
                     "{ id:" + indexedFile.getId() + ", path:\"" + indexedFile.getPath() + "\"}");

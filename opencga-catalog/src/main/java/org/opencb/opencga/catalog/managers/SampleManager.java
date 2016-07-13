@@ -11,7 +11,6 @@ import org.opencb.opencga.catalog.auth.authentication.AuthenticationManager;
 import org.opencb.opencga.catalog.auth.authorization.AuthorizationManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
-import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
@@ -19,15 +18,16 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.ISampleManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.CohortAcl;
-import org.opencb.opencga.catalog.models.acls.SampleAcl;
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.utils.AnnotationManager;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -99,6 +99,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    @Deprecated
     public QueryResult<AnnotationSet> annotate(long sampleId, String annotationSetName, long variableSetId, Map<String, Object> annotations,
                                                Map<String, Object> attributes, boolean checkAnnotationSet,
                                                String sessionId) throws CatalogException {
@@ -108,7 +109,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.CREATE_ANNOTATIONS);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
@@ -141,7 +142,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.UPDATE_ANNOTATIONS);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS);
 
         // Get sample
         QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.samples.annotationSets"));
@@ -176,18 +177,19 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getDate(), null);
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
         return queryResult;
     }
 
     @Override
+    @Deprecated
     public QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId, String sessionId) throws CatalogException {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.DELETE_ANNOTATIONS);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
 
         QueryResult<AnnotationSet> queryResult = sampleDBAdaptor.deleteAnnotation(sampleId, annotationId);
         auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets", queryResult.first()),
@@ -226,7 +228,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         attributes = ParamUtils.defaultObject(attributes, Collections.<String, Object>emptyMap());
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_SAMPLES);
 
         Sample sample = new Sample(-1, name, source, -1, description, Collections.emptyList(), Collections.emptyList(), attributes);
 
@@ -243,7 +245,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.VIEW);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW);
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.getSample(sampleId, options);
         authorizationManager.filterSamples(userId, getStudyId(sampleId), sampleQueryResult.getResult());
         sampleQueryResult.setNumResults(sampleQueryResult.getResult().size());
@@ -271,11 +273,11 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
-    public QueryResult<SampleAcl> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException {
+    public QueryResult<SampleAclEntry> getSampleAcls(String sampleStr, List<String> members, String sessionId) throws CatalogException {
         long startTime = System.currentTimeMillis();
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         Long sampleId = getSampleId(userId, sampleStr);
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.SHARE);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.SHARE);
         Long studyId = getStudyId(sampleId);
 
         // Split and obtain the set of members (users + groups), users and groups
@@ -317,7 +319,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
             }
         }
         List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<SampleAcl> sampleAclQueryResult = sampleDBAdaptor.getSampleAcl(sampleId, memberList);
+        QueryResult<SampleAclEntry> sampleAclQueryResult = sampleDBAdaptor.getSampleAcl(sampleId, memberList);
 
         if (members.size() == 0) {
             return sampleAclQueryResult;
@@ -326,32 +328,32 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
         // instead of the group.
         // We loop over the results and recreate one sampleAcl per member
-        Map<String, SampleAcl> sampleAclHashMap = new HashMap<>();
-        for (SampleAcl sampleAcl : sampleAclQueryResult.getResult()) {
+        Map<String, SampleAclEntry> sampleAclHashMap = new HashMap<>();
+        for (SampleAclEntry sampleAcl : sampleAclQueryResult.getResult()) {
             if (memberList.contains(sampleAcl.getMember())) {
                 if (sampleAcl.getMember().startsWith("@")) {
                     // Check if the user was demanding the group directly or a user belonging to the group
                     if (groupIds.contains(sampleAcl.getMember())) {
-                        sampleAclHashMap.put(sampleAcl.getMember(), new SampleAcl(sampleAcl.getMember(), sampleAcl.getPermissions()));
+                        sampleAclHashMap.put(sampleAcl.getMember(), new SampleAclEntry(sampleAcl.getMember(), sampleAcl.getPermissions()));
                     } else {
                         // Obtain the user(s) belonging to that group whose permissions wanted the userId
                         if (groupUsers.containsKey(sampleAcl.getMember())) {
                             for (String tmpUserId : groupUsers.get(sampleAcl.getMember())) {
                                 if (userIds.contains(tmpUserId)) {
-                                    sampleAclHashMap.put(tmpUserId, new SampleAcl(tmpUserId, sampleAcl.getPermissions()));
+                                    sampleAclHashMap.put(tmpUserId, new SampleAclEntry(tmpUserId, sampleAcl.getPermissions()));
                                 }
                             }
                         }
                     }
                 } else {
                     // Add the user
-                    sampleAclHashMap.put(sampleAcl.getMember(), new SampleAcl(sampleAcl.getMember(), sampleAcl.getPermissions()));
+                    sampleAclHashMap.put(sampleAcl.getMember(), new SampleAclEntry(sampleAcl.getMember(), sampleAcl.getPermissions()));
                 }
             }
         }
 
         // We recreate the output that is in sampleAclHashMap but in the same order the members were queried.
-        List<SampleAcl> sampleAclList = new ArrayList<>(sampleAclHashMap.size());
+        List<SampleAclEntry> sampleAclList = new ArrayList<>(sampleAclHashMap.size());
         for (String member : members) {
             if (sampleAclHashMap.containsKey(member)) {
                 sampleAclList.add(sampleAclHashMap.get(member));
@@ -387,7 +389,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.UPDATE);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE);
 
         options.putAll(parameters);
         QueryResult<Sample> queryResult = sampleDBAdaptor.modifySample(sampleId, options);
@@ -401,7 +403,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(sampleId, "sampleId");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
 
-        authorizationManager.checkSamplePermission(sampleId, userId, SampleAcl.SamplePermissions.DELETE);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE);
 
         QueryResult<Sample> queryResult = sampleDBAdaptor.delete(sampleId, new QueryOptions());
         auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, queryResult.first(), null, null);
@@ -417,7 +419,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -440,7 +442,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -464,7 +466,7 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         ParamUtils.checkObj(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_SAMPLES);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_SAMPLES);
 
         // TODO: In next release, we will have to check the count parameter from the queryOptions object.
         boolean count = true;
@@ -478,357 +480,148 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
     }
 
-    /*
-     * Cohort methods
-     * ***************************
-     */
-    @Override
-    public long getStudyIdByCohortId(long cohortId) throws CatalogException {
-        return cohortDBAdaptor.getStudyIdByCohortId(cohortId);
-    }
+
 
     @Override
-    public Long getCohortId(String userId, String cohortStr) throws CatalogException {
-        if (StringUtils.isNumeric(cohortStr)) {
-            return Long.parseLong(cohortStr);
-        }
-
-        // Resolve the studyIds and filter the cohortName
-        ObjectMap parsedSampleStr = parseFeatureId(userId, cohortStr);
-        List<Long> studyIds = getStudyIds(parsedSampleStr);
-        String cohortName = parsedSampleStr.getString("featureName");
-
-        Query query = new Query(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyIds)
-                .append(CatalogCohortDBAdaptor.QueryParams.NAME.key(), cohortName);
-        QueryOptions qOptions = new QueryOptions(QueryOptions.INCLUDE, "projects.studies.cohorts.id");
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(query, qOptions);
-        if (queryResult.getNumResults() > 1) {
-            throw new CatalogException("Error: More than one cohort id found based on " + cohortName);
-        } else if (queryResult.getNumResults() == 0) {
-            return -1L;
-        } else {
-            return queryResult.first().getId();
-        }
-    }
-
-    @Override
-    public QueryResult<Cohort> readCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(sessionId, "sessionId");
-        //options = ParamUtils.defaultObject(options, QueryOptions::new);
-
-        long studyId = cohortDBAdaptor.getStudyIdByCohortId(cohortId);
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.VIEW);
-
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.getCohort(cohortId, options);
-        authorizationManager.filterCohorts(userId, studyId, queryResult.getResult());
-
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult<Cohort> readAllCohort(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException {
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        query = ParamUtils.defaultObject(query, Query::new);
-
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        if (!authorizationManager.memberHasPermissionsInStudy(studyId, userId)) {
-            throw CatalogAuthorizationException.deny(userId, "view", "cohorts", studyId, null);
-        }
-
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.get(new Query(query)
-                .append(CatalogCohortDBAdaptor.QueryParams.STUDY_ID.key(), studyId), options);
-        authorizationManager.filterCohorts(userId, studyId, queryResult.getResult());
-        queryResult.setNumResults(queryResult.getResult().size());
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult<Cohort> createCohort(long studyId, String name, Study.Type type, String description, List<Long> sampleIds,
-                                            Map<String, Object> attributes, String sessionId) throws CatalogException {
-        ParamUtils.checkParameter(name, "name");
-        ParamUtils.checkObj(sampleIds, "Samples list");
-        type = ParamUtils.defaultObject(type, Study.Type.COLLECTION);
-        description = ParamUtils.defaultString(description, "");
-        attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
-
-        if (!sampleIds.isEmpty() && readAll(studyId, new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), sampleIds), null, sessionId)
-                .getResult().size() != sampleIds.size()) {
-            throw new CatalogException("Error: Some sampleId does not exist in the study " + studyId);
-        }
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.CREATE_COHORTS);
-        Cohort cohort = new Cohort(name, type, TimeUtils.getTime(), description, sampleIds, attributes);
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.createCohort(studyId, cohort, null);
-//        auditManager.recordCreation(AuditRecord.Resource.cohort, queryResult.first().getId(), userId, queryResult.first(), null, new
-//                ObjectMap());
-        auditManager.recordAction(AuditRecord.Resource.cohort, AuditRecord.Action.create, AuditRecord.Magnitude.low,
-                queryResult.first().getId(), userId, null, queryResult.first(), null, null);
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult<Cohort> updateCohort(long cohortId, ObjectMap params, QueryOptions options, String sessionId)
-            throws CatalogException {
-        ParamUtils.checkObj(params, "Update parameters");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.UPDATE);
-
-        Cohort cohort = readCohort(cohortId, new QueryOptions(QueryOptions.INCLUDE, "projects.studies.cohorts."
-                + CatalogCohortDBAdaptor.QueryParams.STATUS_NAME.key()), sessionId).first();
-        if (params.containsKey(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key())
-                || params.containsKey(CatalogCohortDBAdaptor.QueryParams.NAME.key())/* || params.containsKey("type")*/) {
-            switch (cohort.getStatus().getName()) {
-                case Cohort.CohortStatus.CALCULATING:
-                    throw new CatalogException("Unable to modify a cohort while it's in status \"" + Cohort.CohortStatus.CALCULATING
-                            + "\"");
-                case Cohort.CohortStatus.READY:
-                    params.putIfAbsent("status.name", Cohort.CohortStatus.INVALID);
-                    break;
-                case Cohort.CohortStatus.NONE:
-                case Cohort.CohortStatus.INVALID:
-                    break;
-                default:
-                    break;
-            }
-        }
-
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.modifyCohort(cohortId, params, options);
-        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, params, null, null);
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult<Cohort> deleteCohort(long cohortId, QueryOptions options, String sessionId) throws CatalogException {
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.DELETE);
-
-        QueryResult<Cohort> queryResult = cohortDBAdaptor.deleteCohort(cohortId, options);
-        auditManager.recordDeletion(AuditRecord.Resource.cohort, cohortId, userId, queryResult.first(), null, null);
-        return queryResult;
-    }
-
-    @Override
-    public QueryResult<AnnotationSet> annotateCohort(String cohortStr, String annotationSetName, long variableSetId,
-                                                     Map<String, Object> annotations, Map<String, Object> attributes,
-                                                     boolean checkAnnotationSet, String sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> createAnnotationSet(String id, long variableSetId, String annotationSetName,
+                                                          Map<String, Object> annotations, Map<String, Object> attributes,
+                                                          String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(annotations, "annotations");
         attributes = ParamUtils.defaultObject(attributes, HashMap<String, Object>::new);
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long cohortId = getCohortId(userId, cohortStr);
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.CREATE_ANNOTATIONS);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.CREATE_ANNOTATIONS);
 
         VariableSet variableSet = studyDBAdaptor.getVariableSet(variableSetId, null).first();
 
-        AnnotationSet annotationSet = new AnnotationSet(annotationSetName, variableSetId, new HashSet<>(), TimeUtils.getTime(), attributes);
+        QueryResult<AnnotationSet> annotationSet = AnnotationManager.createAnnotationSet(sampleId, variableSet, annotationSetName,
+                annotations, attributes, sampleDBAdaptor);
 
-        for (Map.Entry<String, Object> entry : annotations.entrySet()) {
-            annotationSet.getAnnotations().add(new Annotation(entry.getKey(), entry.getValue()));
-        }
-        QueryResult<Cohort> cohortQueryResult = cohortDBAdaptor.getCohort(cohortId,
-                new QueryOptions("include", Collections.singletonList("projects.studies.cohorts.annotationSets")));
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId,
+                new ObjectMap("annotationSets", annotationSet.first()), "annotate", null);
 
-        List<AnnotationSet> annotationSets = cohortQueryResult.first().getAnnotationSets();
-        if (checkAnnotationSet) {
-            CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-        }
-
-        QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.annotateCohort(cohortId, annotationSet, false);
-        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets", queryResult.first()),
-                "annotate", null);
-        return queryResult;
+        return annotationSet;
     }
 
     @Override
-    public QueryResult<AnnotationSet> updateCohortAnnotation(String cohortStr, String annotationSetName, Map<String, Object> newAnnotations,
-                                                             String sessionId) throws CatalogException {
+    public QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(id, "id");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+
+        return sampleDBAdaptor.getAnnotationSet(sampleId, null);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkAlias(annotationSetName, "annotationSetName");
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
+
+        return sampleDBAdaptor.getAnnotationSet(sampleId, annotationSetName);
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> updateAnnotationSet(String id, String annotationSetName, Map<String, Object> newAnnotations,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(annotationSetName, "annotationSetName");
         ParamUtils.checkObj(newAnnotations, "newAnnotations");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long cohortId = getCohortId(userId, cohortStr);
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.UPDATE_ANNOTATIONS);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.UPDATE_ANNOTATIONS);
 
-        // Get sample
-        QueryOptions queryOptions = new QueryOptions("include", Collections.singletonList("projects.studies.cohorts.annotationSets"));
-        Cohort cohort = cohortDBAdaptor.getCohort(cohortId, queryOptions).first();
+        // Update the annotation
+        QueryResult<AnnotationSet> queryResult =
+                AnnotationManager.updateAnnotationSet(sampleId, annotationSetName, newAnnotations, sampleDBAdaptor, studyDBAdaptor);
 
-        List<AnnotationSet> annotationSets = cohort.getAnnotationSets();
-
-        // Get annotation set
-        AnnotationSet annotationSet = null;
-        for (AnnotationSet annotationSetAux : cohort.getAnnotationSets()) {
-            if (annotationSetAux.getName().equals(annotationSetName)) {
-                annotationSet = annotationSetAux;
-                cohort.getAnnotationSets().remove(annotationSet);
-                break;
-            }
+        if (queryResult == null || queryResult.getNumResults() == 0) {
+            throw new CatalogException("There was an error with the update");
         }
 
-        if (annotationSet == null) {
-            throw CatalogDBException.idNotFound("AnnotationSet", annotationSetName);
-        }
+        AnnotationSet annotationSet = queryResult.first();
 
-        // Get variable set
-        VariableSet variableSet = studyDBAdaptor.getVariableSet(annotationSet.getVariableSetId(), null).first();
-
-        // Update and validate annotations
-        CatalogAnnotationsValidator.mergeNewAnnotations(annotationSet, newAnnotations);
-        CatalogAnnotationsValidator.checkAnnotationSet(variableSet, annotationSet, annotationSets);
-
-        // Commit changes
-        QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.annotateCohort(cohortId, annotationSet, true);
-
+        // Audit the changes
         AnnotationSet annotationSetUpdate = new AnnotationSet(annotationSet.getName(), annotationSet.getVariableSetId(),
                 newAnnotations.entrySet().stream()
                         .map(entry -> new Annotation(entry.getKey(), entry.getValue()))
-                        .collect(Collectors.toSet()), annotationSet.getDate(), null);
-        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets",
+                        .collect(Collectors.toSet()), annotationSet.getCreationDate(), null);
+        auditManager.recordUpdate(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
                 Collections.singletonList(annotationSetUpdate)), "update annotation", null);
+
         return queryResult;
     }
 
     @Override
-    public QueryResult<AnnotationSet> deleteCohortAnnotation(String cohortStr, String annotationId, String sessionId)
-            throws CatalogException {
+    public QueryResult<AnnotationSet> deleteAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
+        ParamUtils.checkParameter(annotationSetName, "annotationSetName");
+
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        long cohortId = getCohortId(userId, cohortStr);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.DELETE_ANNOTATIONS);
 
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.DELETE_ANNOTATIONS);
+        QueryResult<AnnotationSet> annotationSet = sampleDBAdaptor.getAnnotationSet(sampleId, annotationSetName);
+        if (annotationSet == null || annotationSet.getNumResults() == 0) {
+            throw new CatalogException("Could not delete annotation set. The annotation set with name " + annotationSetName + " could not "
+                    + "be found in the database.");
+        }
 
-        QueryResult<AnnotationSet> queryResult = cohortDBAdaptor.deleteAnnotation(cohortId, annotationId);
-        auditManager.recordUpdate(AuditRecord.Resource.cohort, cohortId, userId, new ObjectMap("annotationSets", queryResult.first()),
-                "deleteAnnotation", null);
-        return queryResult;
+        sampleDBAdaptor.deleteAnnotationSet(sampleId, annotationSetName);
+
+        auditManager.recordDeletion(AuditRecord.Resource.sample, sampleId, userId, new ObjectMap("annotationSets",
+                Collections.singletonList(annotationSet.first())), "delete annotation", null);
+
+        return annotationSet;
     }
 
     @Override
-    public QueryResult<CohortAcl> getCohortAcls(String cohortStr, List<String> members, String sessionId) throws CatalogException {
-        long startTime = System.currentTimeMillis();
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        Long cohortId = getCohortId(userId, cohortStr);
-        authorizationManager.checkCohortPermission(cohortId, userId, CohortAcl.CohortPermissions.SHARE);
-        Long studyId = getStudyIdByCohortId(cohortId);
-
-        // Split and obtain the set of members (users + groups), users and groups
-        Set<String> memberSet = new HashSet<>();
-        Set<String> userIds = new HashSet<>();
-        Set<String> groupIds = new HashSet<>();
-
-        for (String member: members) {
-            memberSet.add(member);
-            if (!member.startsWith("@")) {
-                userIds.add(member);
-            } else {
-                groupIds.add(member);
-            }
-        }
-
-
-        // Obtain the groups the user might belong to in order to be able to get the permissions properly
-        // (the permissions might be given to the group instead of the user)
-        // Map of group -> users
-        Map<String, List<String>> groupUsers = new HashMap<>();
-
-        if (userIds.size() > 0) {
-            List<String> tmpUserIds = userIds.stream().collect(Collectors.toList());
-            QueryResult<Group> groups = studyDBAdaptor.getGroup(studyId, null, tmpUserIds);
-            // We add the groups where the users might belong to to the memberSet
-            if (groups.getNumResults() > 0) {
-                for (Group group : groups.getResult()) {
-                    for (String tmpUserId : group.getUserIds()) {
-                        if (userIds.contains(tmpUserId)) {
-                            memberSet.add(group.getName());
-
-                            if (!groupUsers.containsKey(group.getName())) {
-                                groupUsers.put(group.getName(), new ArrayList<>());
-                            }
-                            groupUsers.get(group.getName()).add(tmpUserId);
-                        }
-                    }
-                }
-            }
-        }
-        List<String> memberList = memberSet.stream().collect(Collectors.toList());
-        QueryResult<CohortAcl> cohortAclQueryResult = cohortDBAdaptor.getCohortAcl(cohortId, memberList);
-
-        if (members.size() == 0) {
-            return cohortAclQueryResult;
-        }
-
-        // For the cases where the permissions were given at group level, we obtain the user and return it as if they were given to the user
-        // instead of the group.
-        // We loop over the results and recreate one sampleAcl per member
-        Map<String, CohortAcl> cohortAclHashMap = new HashMap<>();
-        for (CohortAcl cohortAcl : cohortAclQueryResult.getResult()) {
-            if (memberList.contains(cohortAcl.getMember())) {
-                if (cohortAcl.getMember().startsWith("@")) {
-                    // Check if the user was demanding the group directly or a user belonging to the group
-                    if (groupIds.contains(cohortAcl.getMember())) {
-                        cohortAclHashMap.put(cohortAcl.getMember(), new CohortAcl(cohortAcl.getMember(), cohortAcl.getPermissions()));
-                    } else {
-                        // Obtain the user(s) belonging to that group whose permissions wanted the userId
-                        if (groupUsers.containsKey(cohortAcl.getMember())) {
-                            for (String tmpUserId : groupUsers.get(cohortAcl.getMember())) {
-                                if (userIds.contains(tmpUserId)) {
-                                    cohortAclHashMap.put(tmpUserId, new CohortAcl(tmpUserId, cohortAcl.getPermissions()));
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    // Add the user
-                    cohortAclHashMap.put(cohortAcl.getMember(), new CohortAcl(cohortAcl.getMember(), cohortAcl.getPermissions()));
-                }
-            }
-        }
-
-        // We recreate the output that is in cohortAclHashMap but in the same order the members were queried.
-        List<CohortAcl> cohortAclList = new ArrayList<>(cohortAclHashMap.size());
-        for (String member : members) {
-            if (cohortAclHashMap.containsKey(member)) {
-                cohortAclList.add(cohortAclHashMap.get(member));
-            }
-        }
-
-        // Update queryResult info
-        cohortAclQueryResult.setId(cohortStr);
-        cohortAclQueryResult.setNumResults(cohortAclList.size());
-        cohortAclQueryResult.setNumTotalResults(cohortAclList.size());
-        cohortAclQueryResult.setDbTime((int) (System.currentTimeMillis() - startTime));
-        cohortAclQueryResult.setResult(cohortAclList);
-
-        return cohortAclQueryResult;
-    }
-
-    @Override
-    public QueryResult cohortGroupBy(long studyId, Query query, List<String> fields, QueryOptions options, String sessionId)
-            throws CatalogException {
-        query = ParamUtils.defaultObject(query, Query::new);
-        options = ParamUtils.defaultObject(options, QueryOptions::new);
-        ParamUtils.checkObj(fields, "fields");
-        ParamUtils.checkObj(studyId, "studyId");
-        ParamUtils.checkObj(sessionId, "sessionId");
+    public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
+                                                          String sessionId) throws CatalogException {
+        ParamUtils.checkParameter(id, "id");
+        ParamUtils.checkParameter(sessionId, "sessionId");
 
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
-        authorizationManager.checkStudyPermission(studyId, userId, StudyAcl.StudyPermissions.VIEW_COHORTS);
+        long sampleId = getSampleId(userId, id);
+        authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
 
-        // TODO: In next release, we will have to check the count parameter from the queryOptions object.
-        boolean count = true;
-//        query.append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
-        QueryResult queryResult = null;
-        if (count) {
-            // We do not need to check for permissions when we show the count of files
-            queryResult = cohortDBAdaptor.groupBy(query, fields, options);
+        Query query = new Query(CatalogSampleDBAdaptor.QueryParams.ID.key(), id);
+
+        if (variableSetId > 0) {
+            query.append(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), variableSetId);
+        }
+        if (annotation != null) {
+            query.append(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), annotation);
         }
 
-        return ParamUtils.defaultObject(queryResult, QueryResult::new);
-    }
+        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SETS.key());
+        QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
 
+        logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
+
+        List<AnnotationSet> annotationSets;
+
+        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
+            logger.debug("No samples found");
+            annotationSets = Collections.emptyList();
+        } else {
+            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
+                    sampleQueryResult.first().getAnnotationSets().size());
+            annotationSets = sampleQueryResult.first().getAnnotationSets();
+        }
+
+        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
+                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
+    }
 }

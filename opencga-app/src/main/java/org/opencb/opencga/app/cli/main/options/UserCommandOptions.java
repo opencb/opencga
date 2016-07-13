@@ -49,23 +49,33 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
     public class CreateCommandOptions extends BaseUserCommand {
 
-      /*  @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
+        @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
+        public String userName;
 
-        @Parameter(names = {"-u", "--user-id"}, description = "User id", arity = 1)
-        public String user;*/
+        @Parameter(names = {"--user-password"}, description = "User password", required = true,  password = true, arity = 0)
+        public String userPassword;
 
-        @Parameter(names = {"-n", "--name"}, description = "User name", required = true, arity = 1)
-        public String name;
+        @Parameter(names = {"--user-email"}, description = "User email", required = true, arity = 1)
+        public String userEmail;
 
-        @Parameter(names = {"-e", "--email"}, description = "Email", required = true, arity = 1)
-        public String email;
+        @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
+        public String userOrganization;
 
-        @Parameter(names = {"-o", "--organization"}, description = "Organization", required = true, arity = 1)
-        public String organization;
+        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
+        public Long userDiskQuota;
 
-        @Parameter(names = {"-p", "--password"}, description = "Password", required = true, arity = 1, password = true)
-        public String password;
+        @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
+        public String projectName;
+
+        @Parameter(names = {"--project-alias"}, description = "Project alias: Default: default", required = false, arity = 1)
+        public String projectAlias;
+
+        @Parameter(names = {"--project-description"}, description = "Project description.", required = false, arity = 1)
+        public String projectDescription;
+
+        @Parameter(names = {"--project-organization"}, description = "Project organization", required = false, arity = 1)
+        public String projectOrganization;
+
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")

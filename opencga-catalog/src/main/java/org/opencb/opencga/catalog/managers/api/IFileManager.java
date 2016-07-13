@@ -9,8 +9,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.DatasetAcl;
-import org.opencb.opencga.catalog.models.acls.FileAcl;
+import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -116,9 +116,10 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the file id is not valid or the members given do not exist.
      */
-    QueryResult<FileAcl> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<FileAcl>> getFileAcls(List<String> fileIds, List<String> members, String sessionId) throws CatalogException {
-        List<QueryResult<FileAcl>> result = new ArrayList<>(fileIds.size());
+    QueryResult<FileAclEntry> getFileAcls(String fileStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<FileAclEntry>> getFileAcls(List<String> fileIds, List<String> members, String sessionId)
+            throws CatalogException {
+        List<QueryResult<FileAclEntry>> result = new ArrayList<>(fileIds.size());
         for (String fileStr : fileIds) {
             result.add(getFileAcls(fileStr, members, sessionId));
         }
@@ -239,10 +240,10 @@ public interface IFileManager extends ResourceManager<Long, File> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the dataset id is not valid or the members given do not exist.
      */
-    QueryResult<DatasetAcl> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<DatasetAcl>> getDatasetAcls(List<String> datasetIds, List<String> members, String sessionId)
+    QueryResult<DatasetAclEntry> getDatasetAcls(String datasetStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<DatasetAclEntry>> getDatasetAcls(List<String> datasetIds, List<String> members, String sessionId)
             throws CatalogException {
-        List<QueryResult<DatasetAcl>> result = new ArrayList<>(datasetIds.size());
+        List<QueryResult<DatasetAclEntry>> result = new ArrayList<>(datasetIds.size());
         for (String datasetId : datasetIds) {
             result.add(getDatasetAcls(datasetId, members, sessionId));
         }

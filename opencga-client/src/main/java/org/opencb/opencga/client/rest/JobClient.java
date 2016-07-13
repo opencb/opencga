@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.JobAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;
@@ -29,7 +29,7 @@ import java.io.IOException;
 /**
  * Created by imedina on 24/05/16.
  */
-public class JobClient extends AbstractParentClient<Job, JobAcl> {
+public class JobClient extends AbstractParentClient<Job, JobAclEntry> {
 
     private static final String JOBS_URL = "jobs";
 
@@ -38,7 +38,7 @@ public class JobClient extends AbstractParentClient<Job, JobAcl> {
 
         this.category = JOBS_URL;
         this.clazz = Job.class;
-        this.aclClass = JobAcl.class;
+        this.aclClass = JobAclEntry.class;
     }
 
     public QueryResponse<Job> create(String studyId, String jobName, String toolId, ObjectMap params) throws CatalogException, IOException {

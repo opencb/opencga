@@ -40,9 +40,9 @@ public class ProjectClient extends AbstractParentClient<Project, Project> {
         this.clazz = Project.class;
     }
 
-    public QueryResponse<Project> create(String projectName, String projectAlias, String projectOrganization, ObjectMap params)
+    public QueryResponse<Project> create(String projectName, String projectAlias, ObjectMap params)
             throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "name", projectName, "alias", projectAlias, "organization", projectOrganization);
+        params = addParamsToObjectMap(params, "name", projectName, "alias", projectAlias);
         return execute(PROJECTS_URL, "create", params, GET, Project.class);
     }
 

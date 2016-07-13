@@ -88,6 +88,9 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"create"}, commandDescription = "Create new study")
     public class CreateCommandOptions {
 
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String projectId;
 
@@ -102,10 +105,6 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"-d", "--description"}, description = "Organization", required = false, arity = 1)
         public String description;
-
-        @Parameter(names = {"--status"}, description = "Status.",
-                required = false, arity = 1)
-        public String status;
     }
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
@@ -476,14 +475,14 @@ public class StudyCommandOptions {
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
-    @Parameters(commandNames = {"acls"}, commandDescription = "Return the acls of the study [PENDING]")
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
     public class AclsCommandOptions {
 
         @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
     }
 
-    @Parameters(commandNames = {"acls-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
     public class AclsCreateCommandOptions {
 
         @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
@@ -501,7 +500,7 @@ public class StudyCommandOptions {
         public String templateId;
     }
 
-    @Parameters(commandNames = {"acls-member-delete"},
+    @Parameters(commandNames = {"acl-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
     public class AclsMemberDeleteCommandOptions {
 
@@ -512,7 +511,7 @@ public class StudyCommandOptions {
         public String memberId;
     }
 
-    @Parameters(commandNames = {"acls-member-info"},
+    @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
     public class AclsMemberInfoCommandOptions {
 
@@ -523,7 +522,7 @@ public class StudyCommandOptions {
         public String memberId;
     }
 
-    @Parameters(commandNames = {"acls-member-update"},
+    @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
     public class AclsMemberUpdateCommandOptions{
 

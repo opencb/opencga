@@ -127,8 +127,8 @@ public class CatalogSampleAnnotationsLoader {
         for (Map.Entry<String, Sample> entry : sampleMap.entrySet()) {
             Map<String, Object> annotations = getAnnotation(ped.getIndividuals().get(entry.getKey()), sampleMap, variableSet, ped
                     .getFields());
-            catalogManager.annotateSample(entry.getValue().getId(), "Pedigree annotation", variableSetId, annotations, Collections
-                    .<String, Object>emptyMap(), false, sessionId);
+            catalogManager.createSampleAnnotationSet(Long.toString(entry.getValue().getId()), variableSetId, "pedigreeAnnotation",
+                    annotations, Collections.emptyMap(), sessionId);
         }
         logger.debug("Annotated {} samples in {}ms", ped.getIndividuals().size(), System.currentTimeMillis() - auxTime);
 
@@ -194,7 +194,10 @@ public class CatalogSampleAnnotationsLoader {
                     }
                     break;
                 default:
-                    annotations.put(variable.getName(), individual.getFields()[fields.get(variable.getName())]);
+                    Integer idx = fields.get(variable.getName());
+                    if (idx != null) {
+                        annotations.put(variable.getName(), individual.getFields()[idx]);
+                    }
                     break;
             }
         }
