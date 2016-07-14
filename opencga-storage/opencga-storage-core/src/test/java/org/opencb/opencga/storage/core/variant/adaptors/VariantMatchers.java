@@ -1,10 +1,15 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
-import org.hamcrest.*;
+import org.hamcrest.Description;
+import org.hamcrest.FeatureMatcher;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.hamcrest.core.Every;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
+import org.opencb.biodata.models.variant.avro.PopulationFrequency;
 import org.opencb.biodata.models.variant.avro.SequenceOntologyTerm;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.stats.VariantStats;
@@ -14,7 +19,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.is;
 
 /**
  * Created on 05/07/16
@@ -38,7 +44,7 @@ public class VariantMatchers {
 
     public static <T> Matcher<QueryResult<T>> everyResult(List<T> allValues, Matcher<T> subMatcher) {
         long count = count(allValues, subMatcher);
-        return allOf(numResults(is((int) count)), everyResult(subMatcher));
+        return allOf(everyResult(subMatcher), numResults(is((int) count)));
     }
 
     public static <T> Matcher<QueryResult<T>> everyResult(Matcher<T> subMatcher) {
@@ -58,6 +64,24 @@ public class VariantMatchers {
             @Override
             protected Integer featureValueOf(QueryResult<?> actual) {
                 return actual.getNumResults();
+            }
+        };
+    }
+
+    public static Matcher<Variant> overlaps(Region region) {
+        return overlaps(region, true);
+    }
+
+    public static Matcher<Variant> overlaps(final Region region, final boolean inclusive) {
+        return new TypeSafeDiagnosingMatcher<Variant>() {
+            @Override
+            protected boolean matchesSafely(Variant item, Description mismatchDescription) {
+                return item.overlapWith(region.getChromosome(), region.getStart(), region.getEnd(), inclusive);
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("overlaps with " + region + (inclusive? "inclusively" : "non inclusively"));
             }
         };
     }
@@ -90,6 +114,40 @@ public class VariantMatchers {
                         .flatMap(Collection::stream)
                         .map(SequenceOntologyTerm::getAccession)
                         .collect(Collectors.toSet());
+            }
+        };
+    }
+
+    public static Matcher<VariantAnnotation> hasPopAltFreq(String study, String population, Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantAnnotation, Float>(subMatcher, "with Population alternate allele Frequency (" + study + ", " + population + ")", "PopulationAltFreq") {
+            @Override
+            protected Float featureValueOf(VariantAnnotation actual) {
+                if (actual.getPopulationFrequencies() != null) {
+                    for (PopulationFrequency populationFrequency : actual.getPopulationFrequencies()) {
+                        if (populationFrequency.getStudy().equalsIgnoreCase(study)
+                                && populationFrequency.getPopulation().equalsIgnoreCase(population)) {
+                            return populationFrequency.getAltAlleleFreq();
+                        }
+                    }
+                }
+                return 0F;
+            }
+        };
+    }
+
+    public static Matcher<VariantAnnotation> hasPopRefFreq(String study, String population, Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantAnnotation, Float>(subMatcher, "with Population reference allele Frequency (" + study + ", " + population + ")", "PopulationRefFreq") {
+            @Override
+            protected Float featureValueOf(VariantAnnotation actual) {
+                if (actual.getPopulationFrequencies() != null) {
+                    for (PopulationFrequency populationFrequency : actual.getPopulationFrequencies()) {
+                        if (populationFrequency.getStudy().equalsIgnoreCase(study)
+                                && populationFrequency.getPopulation().equalsIgnoreCase(population)) {
+                            return populationFrequency.getAltAlleleFreq();
+                        }
+                    }
+                }
+                return 0F;
             }
         };
     }
@@ -149,6 +207,25 @@ public class VariantMatchers {
         };
     }
 
+    public static <T extends Number> Matcher<T> gte(T n) {
+        return new TypeSafeDiagnosingMatcher<T>() {
+            @Override
+            protected boolean matchesSafely(T item, Description mismatchDescription) {
+                if (item.doubleValue() >= n.doubleValue()) {
+                    return true;
+                } else {
+                    mismatchDescription.appendText("is " + item);
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText(">= " + n);
+            }
+        };
+    }
+
     public static <T extends Number> Matcher<T> lt(T n) {
         return new TypeSafeDiagnosingMatcher<T>() {
             @Override
@@ -164,6 +241,25 @@ public class VariantMatchers {
             @Override
             public void describeTo(Description description) {
                 description.appendText("< " + n);
+            }
+        };
+    }
+
+    public static <T extends Number> Matcher<T> lte(T n) {
+        return new TypeSafeDiagnosingMatcher<T>() {
+            @Override
+            protected boolean matchesSafely(T item, Description mismatchDescription) {
+                if (item.doubleValue() <= n.doubleValue()) {
+                    return true;
+                } else {
+                    mismatchDescription.appendText(" is " + item);
+                    return false;
+                }
+            }
+
+            @Override
+            public void describeTo(Description description) {
+                description.appendText("<= " + n);
             }
         };
     }

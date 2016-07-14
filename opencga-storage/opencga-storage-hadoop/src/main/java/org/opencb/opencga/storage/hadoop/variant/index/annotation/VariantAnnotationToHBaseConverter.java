@@ -44,7 +44,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         }
 
         Set<String> genes = new HashSet<>();
-        Set<String> transcript = new HashSet<>();
+        Set<String> transcripts = new HashSet<>();
         Set<String> flags = new HashSet<>();
         Set<Integer> so = new HashSet<>();
         Set<String> biotype = new HashSet<>();
@@ -56,11 +56,15 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         Set<String> geneTraitId = new HashSet<>();
         Set<String> drugs = new HashSet<>();
         Set<String> proteinKeywords = new HashSet<>();
+        // Contains all the xrefs, and the id, the geneNames and transcripts
+        Set<String> xrefs = new HashSet<>();
+
+        addNotNull(xrefs, variantAnnotation.getId());
 
         for (ConsequenceType consequenceType : variantAnnotation.getConsequenceTypes()) {
             addNotNull(genes, consequenceType.getGeneName());
             addNotNull(genes, consequenceType.getEnsemblGeneId());
-            addNotNull(transcript, consequenceType.getEnsemblTranscriptId());
+            addNotNull(transcripts, consequenceType.getEnsemblTranscriptId());
             addNotNull(biotype, consequenceType.getBiotype());
             addAllNotNull(flags, consequenceType.getTranscriptAnnotationFlags());
             for (SequenceOntologyTerm sequenceOntologyTerm : consequenceType.getSequenceOntologyTerms()) {
@@ -85,6 +89,14 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
             }
         }
 
+        xrefs.addAll(genes);
+        xrefs.addAll(transcripts);
+        if (variantAnnotation.getXrefs() != null) {
+            for (Xref xref : variantAnnotation.getXrefs()) {
+                addNotNull(xrefs, xref.getId());
+            }
+        }
+
         if (variantAnnotation.getGeneTraitAssociation() != null) {
             for (GeneTraitAssociation geneTrait : variantAnnotation.getGeneTraitAssociation()) {
                 addNotNull(geneTraitName, geneTrait.getName());
@@ -99,7 +111,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         }
 
         addVarcharArray(put, GENES.bytes(), genes);
-        addVarcharArray(put, TRANSCRIPTS.bytes(), transcript);
+        addVarcharArray(put, TRANSCRIPTS.bytes(), transcripts);
         addVarcharArray(put, BIOTYPE.bytes(), biotype);
         addIntegerArray(put, SO.bytes(), so);
         addArray(put, POLYPHEN.bytes(), polyphen, (PArrayDataType) POLYPHEN.getPDataType());
@@ -111,6 +123,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         addVarcharArray(put, PROTEIN_KEYWORDS.bytes(), proteinKeywords);
         addVarcharArray(put, GENE_TRAITS_NAME.bytes(), geneTraitName);
         addVarcharArray(put, DRUG.bytes(), drugs);
+        addVarcharArray(put, XREFS.bytes(), xrefs);
 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {

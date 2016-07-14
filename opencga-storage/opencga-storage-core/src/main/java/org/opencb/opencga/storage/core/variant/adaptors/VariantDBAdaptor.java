@@ -150,6 +150,11 @@ public interface VariantDBAdaptor extends Iterable<Variant>, AutoCloseable {
         public Type type() {
             return type;
         }
+
+        @Override
+        public String toString() {
+            return key() + " [" + type() + "] : " + description();
+        }
     }
 
     /**

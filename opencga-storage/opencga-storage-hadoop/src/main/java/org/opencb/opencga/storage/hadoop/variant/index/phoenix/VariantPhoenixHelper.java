@@ -94,6 +94,7 @@ public class VariantPhoenixHelper {
         GENE_TRAITS_ID("GT_ID", PVarcharArray.INSTANCE),
         PROTEIN_KEYWORDS("PROT_KW", PVarcharArray.INSTANCE),
         DRUG("DRUG", PVarcharArray.INSTANCE),
+        XREFS("XREFS", PVarcharArray.INSTANCE),
 
         //Protein substitution scores
         POLYPHEN("POLYPHEN", PFloatArray.INSTANCE),

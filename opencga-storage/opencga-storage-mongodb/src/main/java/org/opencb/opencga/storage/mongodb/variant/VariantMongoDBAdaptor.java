@@ -28,6 +28,8 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -185,7 +187,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult delete(Query query, QueryOptions options) {
-        Bson mongoQuery = parseQuery(query, new Document());
+        Bson mongoQuery = parseQuery(query);
         logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
         QueryResult queryResult = variantsCollection.remove(mongoQuery, options);
 
@@ -210,7 +212,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
-        Document query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()), new Document());
+        Document query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()));
 
         // { $pull : { files : {  sid : <studyId> } } }
         Document update = new Document(
@@ -241,10 +243,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
 //        parseQueryOptions(options, qb);
-        Document mongoQuery = parseQuery(query, new Document());
+        Document mongoQuery = parseQuery(query);
 //        DBObject projection = parseProjectionQueryOptions(options);
         Document projection = createProjection(query, options);
-        logger.debug("Query to be executed: '{}'", mongoQuery.toString());
+        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
+//        logger.info("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
 
         int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT, 3_000);

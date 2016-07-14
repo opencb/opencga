@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams;
 
 import java.util.Collection;
@@ -13,12 +14,26 @@ import java.util.List;
  */
 public class VariantQueryException extends IllegalArgumentException {
 
+    private Query query = null;
+
     public VariantQueryException(String message) {
         super(message);
     }
 
     public VariantQueryException(String message, Throwable cause) {
         super(message, cause);
+    }
+
+    public Query getQuery() {
+        return query;
+    }
+
+    public VariantQueryException setQuery(Query query) {
+        if (this.query != null) {
+            throw new UnsupportedOperationException();
+        }
+        this.query = query;
+        return this;
     }
 
     public static VariantQueryException malformedParam(VariantQueryParams queryParam, String value) {

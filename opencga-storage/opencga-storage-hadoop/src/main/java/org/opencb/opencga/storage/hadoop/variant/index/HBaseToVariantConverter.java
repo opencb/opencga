@@ -262,6 +262,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
+        if (StringUtils.isNotEmpty(annotation.getId())) {
+            variant.setId(annotation.getId());
+        } else {
+            variant.setId(variant.toString());
+        }
         if (variant.getStudiesMap().isEmpty()) {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
