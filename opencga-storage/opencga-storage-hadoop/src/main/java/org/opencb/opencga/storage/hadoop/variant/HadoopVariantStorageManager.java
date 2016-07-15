@@ -57,6 +57,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
     public static final String HADOOP_LOAD_DIRECT = "hadoop.load.direct";
 
+    public static final String EXTERNAL_MR_EXECUTOR = "opencga.external.mr.executor";
+
 
     protected Configuration conf = null;
     protected MRExecutor mrExecutor;
@@ -388,7 +390,23 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     }
 
     public MRExecutor getMRExecutor(ObjectMap options) {
-        if (mrExecutor == null) {
+        if (options.containsKey(EXTERNAL_MR_EXECUTOR)) {
+            Class<? extends MRExecutor> aClass;
+            if (options.get(EXTERNAL_MR_EXECUTOR) instanceof Class) {
+                aClass = options.get(EXTERNAL_MR_EXECUTOR, Class.class).asSubclass(MRExecutor.class);
+            } else {
+                try {
+                    aClass = Class.forName(options.getString(EXTERNAL_MR_EXECUTOR)).asSubclass(MRExecutor.class);
+                } catch (ClassNotFoundException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            try {
+                return aClass.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+        } else if (mrExecutor == null) {
             return new ExternalMRExecutor(options);
         } else {
             return mrExecutor;

@@ -31,7 +31,7 @@ import static org.opencb.opencga.analysis.storage.variant.VariantStorageTest.che
 /**
  * Created by hpccoll1 on 13/07/15.
  */
-public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest{
+public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest {
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();
@@ -172,7 +172,7 @@ public class AnalysisFileIndexerTest extends AbstractAnalysisFileIndexerTest{
 
         //Run load index job
         job = runStorageJob(catalogManager, job, logger, sessionId);
-        assertEquals(job.getStatus().getName(), Status.READY);
+        assertEquals(Status.READY, job.getStatus().getName());
         assertEquals(FileIndex.IndexStatus.READY, catalogManager.getFile(indexedFileId, sessionId).first().getIndex().getStatus().getName());
 
         Cohort defaultCohort = getDefaultCohort(catalogManager.getStudyIdByFileId(indexedFileId));

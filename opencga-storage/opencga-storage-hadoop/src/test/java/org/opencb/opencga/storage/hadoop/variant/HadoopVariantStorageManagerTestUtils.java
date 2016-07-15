@@ -58,7 +58,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
     class HadoopExternalResource extends ExternalResource implements HadoopVariantStorageManagerTestUtils {
 
         @Override
-        protected void before() throws Throwable {
+        public void before() throws Throwable {
             if (utility.get() == null) {
                 utility.set(new HBaseTestingUtility());
                 utility.get().startMiniCluster(1);
@@ -74,7 +74,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         }
 
         @Override
-        protected void after() {
+        public void after() {
             try {
                 try {
                     if (utility.get() != null) {
@@ -86,6 +86,10 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
             } catch (Exception e) {
                 Assert.fail(e.getMessage());
             }
+        }
+
+        public Configuration getConf() {
+            return configuration.get();
         }
 
         private void checkHBaseMiniCluster() throws IOException {
@@ -126,14 +130,31 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
         HadoopVariantStorageManager manager = new HadoopVariantStorageManager();
 
-        InputStream is = HadoopVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-        StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+        //Make a copy of the configuration
+        Configuration conf = new Configuration(false);
+        StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
+
+        manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
+        manager.mrExecutor = new TestMRExecutor(HadoopVariantStorageManagerTestUtils.configuration.get());
+        manager.conf = conf;
+        return manager;
+    }
+
+    static StorageConfiguration getStorageConfiguration(Configuration conf) throws IOException {
+        StorageConfiguration storageConfiguration;
+        try (InputStream is = HadoopVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml")) {
+            storageConfiguration = StorageConfiguration.load(is);
+        }
+        return updateStorageConfiguration(storageConfiguration, conf);
+    }
+
+    static StorageConfiguration updateStorageConfiguration(StorageConfiguration storageConfiguration, Configuration conf) throws IOException {
         storageConfiguration.setDefaultStorageEngineId(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
         StorageEtlConfiguration variantConfiguration = storageConfiguration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID).getVariant();
         ObjectMap options = variantConfiguration.getOptions();
 
-        //Make a copy of the configuration
-        Configuration conf = new Configuration(false);
+        options.put(HadoopVariantStorageManager.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
+        TestMRExecutor.staticConfiguration = conf;
         HadoopVariantStorageManagerTestUtils.configuration.get().forEach(e -> conf.set(e.getKey(), e.getValue()));
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
@@ -153,11 +174,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         options.put(HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY, intermediateDirectory);
 
         variantConfiguration.getDatabase().setHosts(Collections.singletonList("hbase://" + HadoopVariantStorageManagerTestUtils.configuration.get().get(HConstants.ZOOKEEPER_QUORUM)));
-
-        manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        manager.mrExecutor = new TestMRExecutor(HadoopVariantStorageManagerTestUtils.configuration.get());
-        manager.conf = conf;
-        return manager;
+        return storageConfiguration;
     }
 
     @Override
@@ -172,7 +189,12 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
     class TestMRExecutor implements MRExecutor {
 
+        private static Configuration staticConfiguration;
         private final Configuration configuration;
+
+        public TestMRExecutor() {
+            this.configuration = new Configuration(staticConfiguration);
+        }
 
         public TestMRExecutor(Configuration configuration) {
             this.configuration = configuration;
@@ -240,54 +262,5 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
     }
 
 
-    static void printHBaseVariantsTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
-        System.out.println("Query from HBase : " + VariantStorageManagerTestUtils.DB_NAME);
-        HBaseManager hm = new HBaseManager(configuration.get());
-        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
-        PrintStream os = new PrintStream(new FileOutputStream(getTmpRootDir().resolve("variant_table_hbase.txt").toFile()));
-        int numVariants = hm.act(VariantStorageManagerTestUtils.DB_NAME, table -> {
-            int num = 0;
-            ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
-            for (Result result : resultScanner) {
-                if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
-                    continue;
-                }
-                Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
-                os.println("Variant = " + variant);
-                for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
-                    String key = Bytes.toString(entry.getKey());
-                    if (key.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)) {
-                        os.println("\t" + key + " = " + entry.getValue().length + " , " + Arrays.toString(entry.getValue()));
-                    } else if (entry.getValue().length == 4) {
-                        os.println("\t" + key + " = "
-                                + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
-                                + PUnsignedInt.INSTANCE.toObject(entry.getValue()) + " , "
-                                + PFloat.INSTANCE.toObject(entry.getValue()) + " , ");
-                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
-                        os.println("\t" + key + " = " + entry.getValue().length + " " + PFloatArray.INSTANCE.toObject(entry.getValue()));
-                    } else {
-                        try {
-                            VariantPhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
-                            os.println("\t" + key + " = "
-                                    + entry.getValue().length + " , "
-                                    + column.getPDataType().toObject(entry.getValue()));
-                        } catch (IllegalArgumentException | NullPointerException e) {
-                            os.println("\t" + key + " ~ "
-                                    + entry.getValue().length + " , "
-                                    + Bytes.toString(entry.getValue()));
-                        }
-                    }
-
-                }
-                os.println("--------------------");
-                if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {
-                    num++;
-                }
-            }
-            os.close();
-            resultScanner.close();
-            return num;
-        });
-    }
 
 }

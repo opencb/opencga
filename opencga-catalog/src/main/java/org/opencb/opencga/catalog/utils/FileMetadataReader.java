@@ -10,6 +10,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.exceptions.CatalogIOException;
@@ -25,7 +26,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.function.Function;
@@ -447,12 +447,12 @@ public class FileMetadataReader {
 
             File variantsFile = fileQueryResult.first();
             URI fileUri = catalogManager.getFileUri(variantsFile);
-            try (InputStream is = Files.newInputStream(Paths.get(fileUri.getPath()))) {
+            try (InputStream is = FileUtils.newInputStream(Paths.get(fileUri.getPath()))) {
                 VariantSource variantSource = new ObjectMapper().readValue(is, VariantSource.class);
                 VariantGlobalStats stats = variantSource.getStats();
                 catalogManager.modifyFile(inputFile.getId(), new ObjectMap("stats", new ObjectMap(VARIANT_STATS, stats)), sessionId);
             } catch (IOException e) {
-                throw new CatalogException(e);
+                throw new CatalogException("Error reading file \"" + fileUri + "\"", e);
             }
         }
     }
