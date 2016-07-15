@@ -1,10 +1,7 @@
 package org.opencb.opencga.storage.hadoop.variant.index.phoenix;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PArrayDataType;
-import org.apache.phoenix.schema.types.PDataType;
-import org.apache.phoenix.schema.types.PIntegerArray;
-import org.apache.phoenix.schema.types.PVarcharArray;
+import org.apache.phoenix.schema.types.*;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 
 import java.util.Collection;
@@ -38,12 +35,21 @@ public abstract class AbstractPhoenixConverter {
         addArray(put, column, collection, PIntegerArray.INSTANCE);
     }
 
+    protected void addFloatArray(Put put, byte[] column, Collection<Float> collection) {
+        addArray(put, column, collection, PFloatArray.INSTANCE);
+    }
+
     protected void addArray(Put put, byte[] column, Collection collection, PArrayDataType arrayType) {
         if (collection.size() == 0) {
             return;
         }
         byte[] arrayBytes = VariantPhoenixHelper.toBytes(collection, arrayType);
         put.addColumn(getGenomeHelper().getColumnFamily(), column, arrayBytes);
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void add(Put put, VariantPhoenixHelper.Column column, Object value) {
+        add(put, column.bytes(), value, column.getPDataType());
     }
 
     protected <T> void add(Put put, byte[] column, T value, PDataType<T> dataType) {

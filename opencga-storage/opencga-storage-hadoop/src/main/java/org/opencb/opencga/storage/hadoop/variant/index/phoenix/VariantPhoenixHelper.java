@@ -16,6 +16,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION;
@@ -114,6 +116,8 @@ public class VariantPhoenixHelper {
         private PDataType pDataType;
         private final String sqlTypeName;
 
+        private static Map<String, Column> columns = null;
+
         VariantColumn(String columnName, PDataType pDataType) {
             this.columnName = columnName;
             this.pDataType = pDataType;
@@ -144,6 +148,17 @@ public class VariantPhoenixHelper {
         @Override
         public String toString() {
             return columnName;
+        }
+
+        public static Column getColumn(String columnName) {
+            if (columns == null) {
+                Map<String, Column> map = new HashMap<>();
+                for (VariantColumn column : VariantColumn.values()) {
+                    map.put(column.column(), column);
+                }
+                columns = map;
+            }
+            return columns.get(columnName);
         }
     }
 
@@ -246,11 +261,11 @@ public class VariantPhoenixHelper {
     }
 
     public static Column getPopulationFrequencyColumn(String study, String population) {
-        return Column.build(POPULATION_FREQUENCY_PREFIX + study.toUpperCase() + ":" + population.toUpperCase(), PFloat.INSTANCE);
+        return Column.build(POPULATION_FREQUENCY_PREFIX + study.toUpperCase() + ":" + population.toUpperCase(), PFloatArray.INSTANCE);
     }
 
     public static Column getPopulationFrequencyColumn(String studyPopulation) {
-        return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopulation.toUpperCase(), PFloat.INSTANCE);
+        return Column.build(POPULATION_FREQUENCY_PREFIX + studyPopulation.toUpperCase(), PFloatArray.INSTANCE);
     }
 
     public static Column getConservationScoreColumn(String source)

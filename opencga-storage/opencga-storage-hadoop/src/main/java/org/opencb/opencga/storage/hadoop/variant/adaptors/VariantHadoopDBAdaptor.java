@@ -219,10 +219,23 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         List<Variant> variants = new LinkedList<>();
         VariantDBIterator iterator = iterator(query, options);
         iterator.forEachRemaining(variants::add);
-        long numTotalResults = -1;
-        if (options != null && !options.getBoolean("skipCount")) {
-            numTotalResults = count(query).first();
+        long numTotalResults;
+
+        if (options == null) {
+            numTotalResults = variants.size();
+        } else {
+            if (options.getInt(QueryOptions.LIMIT, -1) > 0) {
+                if (options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+                    numTotalResults = -1;
+                } else {
+                    numTotalResults = count(query).first();
+                }
+            } else {
+                // There are no limit. Do not count.
+                numTotalResults = variants.size();
+            }
         }
+
         return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults, "", "", variants);
     }
 

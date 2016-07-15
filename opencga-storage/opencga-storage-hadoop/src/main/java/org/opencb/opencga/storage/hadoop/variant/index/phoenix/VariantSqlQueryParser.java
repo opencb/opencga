@@ -529,20 +529,19 @@ public class VariantSqlQueryParser {
                 }, null, null,
                 keyOpValue -> {
                     String op = keyOpValue[1];
-                    String invOp = inverseOperator(op);
                     double value = Double.parseDouble(keyOpValue[2]);
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
                     if (op.startsWith("<")) {
                         // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
-                        return " OR \"" + column.column() + "\" " + invOp + " " + (1 - value)
+                        return " OR \"" + column.column() + "\"[2] " + op + " " + value
                                 + " OR \"" + column.column() + "\" IS NULL";
                     } else if (op.startsWith(">")) {
-                        return " AND \"" + column.column() + "\" " + invOp + " " + (1 - value);
+                        return " AND \"" + column.column() + "\"[2] " + op + " " + value;
                     } else {
                         throw VariantQueryException.malformedParam(ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, Arrays.toString(keyOpValue),
                                 "Unable to use operator " + op + " with this query.");
                     }
-                }, filters);
+                }, filters, 1);
 
         addQueryFilter(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY,
                 (keyOpValue, s) -> {
@@ -556,23 +555,21 @@ public class VariantSqlQueryParser {
                         return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
                     }
                     return "";
-                }, filters);
+                }, filters, 2);
 
         addQueryFilter(query, ANNOT_POPULATION_REFERENCE_FREQUENCY,
                 (keyOpValue, s) -> {
                     Column column = getPopulationFrequencyColumn(keyOpValue[0]);
                     dynamicColumns.add(column);
                     return column;
-                },
-                VariantSqlQueryParser::inverseOperator, // Inverse operator
-                s -> 1 - Double.parseDouble(s),         // Inverse frequency value
+                }, null, null,
                 keyOpValue -> {
                     // If asking "less than", add "OR FIELD IS NULL" to read NULL values as 0, so accept the filter
                     if (keyOpValue[1].startsWith("<")) {
                         return " OR \"" + getPopulationFrequencyColumn(keyOpValue[0]).column() + "\" IS NULL";
                     }
                     return "";
-                }, filters);
+                }, filters, 1);
 
         addQueryFilter(query, ANNOT_TRANSCRIPTION_FLAGS, VariantColumn.TRANSCRIPTION_FLAGS, filters);
 
@@ -676,6 +673,26 @@ public class VariantSqlQueryParser {
                                 BiFunction<String[], String, Column> columnParser,
                                 Function<String, String> operatorParser,
                                 Function<String, Object> valueParser, Function<String[], String> extraFilters, List<String> filters) {
+        addQueryFilter(query, param, columnParser, operatorParser, valueParser, extraFilters, filters, -1);
+    }
+
+    /**
+     * Transforms a Key-Value from a query into a valid SQL filter.
+     *
+     * @param query             Query with the values
+     * @param param             Param to read from the query
+     * @param columnParser      Column parser. Given the [key, op, value] and the original value, returns a {@link Column}
+     * @param operatorParser    Operator parser. Given the [key, op, value], returns a valid SQL operator
+     * @param valueParser       Value parser. Given the [key, op, value], transforms the value to make the query.
+     * @param extraFilters      Provides extra filters to be concatenated to the filter.
+     * @param filters           List of filters to be modified.
+     * @param arrayIdx          Array accessor index in base-1.
+     */
+    private void addQueryFilter(Query query, VariantQueryParams param,
+                                BiFunction<String[], String, Column> columnParser,
+                                Function<String, String> operatorParser,
+                                Function<String, Object> valueParser,
+                                Function<String[], String> extraFilters, List<String> filters, int arrayIdx) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
             QueryOperation operation = checkOperator(query.getString(param.key()));
@@ -684,9 +701,12 @@ public class VariantSqlQueryParser {
             }
 
             for (String rawValue : query.getAsStringList(param.key(), operation.separator())) {
-                Object parsedValue;
                 String[] keyOpValue = splitOperator(rawValue);
                 Column column = columnParser.apply(keyOpValue, rawValue);
+                if (!column.getPDataType().isArrayType() && arrayIdx >= 0) {
+                    throw new VariantQueryException("Unable to use array indexes with non array columns. "
+                            + column + " " + column.sqlType());
+                }
 
                 final String negated;
                 if (rawValue.startsWith("!")) {
@@ -706,7 +726,7 @@ public class VariantSqlQueryParser {
                     extra = extraFilters.apply(keyOpValue);
                 }
 
-                subFilters.add(buildFilter(column, op, keyOpValue[2], rawValue, valueParser, negated, extra));
+                subFilters.add(buildFilter(column, op, keyOpValue[2], rawValue, valueParser, negated, extra, arrayIdx));
             }
             filters.add(appendFilters(subFilters, operation.toString()));
 //            filters.add(subFilters.stream().collect(Collectors.joining(" ) " + operation.name() + " ( ", " ( ", " ) ")));
@@ -714,29 +734,41 @@ public class VariantSqlQueryParser {
     }
 
     private String buildFilter(Column column, String op, String value) {
-        return buildFilter(column, op, value, value, null, "", "");
+        return buildFilter(column, op, value, value, null, "", "", 0);
     }
 
     private String buildFilter(Column column, String op, String value, boolean negated) {
-        return buildFilter(column, op, value, value, null, negated ? "!" : "", "");
+        return buildFilter(column, op, value, value, null, negated ? "NOT " : "", "", 0);
     }
 
+
     private String buildFilter(Column column, String op, String value, String rawValue,
-                               Function<String, Object> valueParser, String negated, String extra) {
+                               Function<String, Object> valueParser, String negated, String extra, int idx) {
         Object parsedValue;
         StringBuilder sb = new StringBuilder();
+
+        String arrayPosition = "";
 
         if (StringUtils.isNotEmpty(extra)) {
             sb.append("( ");
         }
-        switch (column.sqlType()) {
+        String sqlType = column.sqlType();
+        if (idx > 0) {
+            sqlType = sqlType.replace(" ARRAY", "");
+            arrayPosition = "[" + idx + "]";
+        }
+        switch (sqlType) {
             case "VARCHAR":
                 parsedValue = valueParser == null ? rawValue : valueParser.apply(rawValue);
                 checkStringValue((String) parsedValue);
                 sb.append(negated)
-                        .append("\"").append(column).append("\" ")
-                        .append(parseOperator(op))
-                        .append(" '").append(parsedValue).append("'");
+                        .append('"').append(column).append('"').append(arrayPosition).append(' ');
+                if (((String) parsedValue).isEmpty()) {
+                    sb.append("IS NULL");
+                } else {
+                    sb.append(parseOperator(op))
+                            .append(" '").append(parsedValue).append('\'');
+                }
                 break;
             case "VARCHAR ARRAY":
                 parsedValue = valueParser == null ? rawValue : valueParser.apply(rawValue);
@@ -750,7 +782,7 @@ public class VariantSqlQueryParser {
                 parsedValue = valueParser == null ? Integer.parseInt(value) : valueParser.apply(value);
                 String operator = flipOperator(parseNumericOperator(op));
                 sb.append(negated)
-                        .append(parsedValue).append(" ")
+                        .append(parsedValue).append(' ')
                         .append(operator)
                         .append(" ANY(\"").append(column).append("\")");
                 break;
@@ -758,16 +790,16 @@ public class VariantSqlQueryParser {
             case "UNSIGNED_INT":
                 parsedValue = valueParser == null ? Integer.parseInt(value) : valueParser.apply(value);
                 sb.append(negated)
-                        .append("\"").append(column).append("\" ")
+                        .append('"').append(column).append('"').append(arrayPosition).append(' ')
                         .append(parseNumericOperator(op))
-                        .append(" ").append(parsedValue);
+                        .append(' ').append(parsedValue);
                 break;
             case "FLOAT ARRAY":
             case "DOUBLE ARRAY":
                 parsedValue = valueParser == null ? Double.parseDouble(value) : valueParser.apply(value);
                 String flipOperator = flipOperator(parseNumericOperator(op));
                 sb.append(negated)
-                        .append(parsedValue).append(" ")
+                        .append(parsedValue).append(' ')
                         .append(flipOperator)
                         .append(" ANY(\"").append(column).append("\")");
                 break;
@@ -775,16 +807,16 @@ public class VariantSqlQueryParser {
             case "DOUBLE":
                 parsedValue = valueParser == null ? Double.parseDouble(value) : valueParser.apply(value);
                 sb.append(negated)
-                        .append("\"").append(column).append("\" ")
+                        .append('"').append(column).append('"').append(arrayPosition).append(' ')
                         .append(parseNumericOperator(op))
-                        .append(" ").append(parsedValue);
+                        .append(' ').append(parsedValue);
                 break;
             default:
                 throw new VariantQueryException("Unsupported column type " + column.getPDataType().getSqlTypeName()
                         + " for column " + column);
         }
         if (StringUtils.isNotEmpty(extra)) {
-            sb.append(" ").append(extra).append(" )");
+            sb.append(' ').append(extra).append(" )");
         }
         return sb.toString();
     }

@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.annotation;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PArrayDataType;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.tools.variant.converter.Converter;
@@ -11,6 +10,7 @@ import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHel
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -40,7 +40,7 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         Put put = new Put(bytesRowKey);
 
         if (addFullAnnotation) {
-            put.addColumn(genomeHelper.getColumnFamily(), FULL_ANNOTATION.bytes(), Bytes.toBytes(variantAnnotation.toString()));
+            add(put, FULL_ANNOTATION, variantAnnotation.toString());
         }
 
         Set<String> genes = new HashSet<>();
@@ -128,21 +128,23 @@ public class VariantAnnotationToHBaseConverter extends AbstractPhoenixConverter 
         if (variantAnnotation.getConservation() != null) {
             for (Score score : variantAnnotation.getConservation()) {
                 VariantPhoenixHelper.Column column = VariantPhoenixHelper.getConservationScoreColumn(score.getSource());
-                put.addColumn(genomeHelper.getColumnFamily(), column.bytes(), column.getPDataType().toBytes(score.getScore()));
+                add(put, column, score.getScore());
             }
         }
 
         if (variantAnnotation.getPopulationFrequencies() != null) {
             for (PopulationFrequency pf : variantAnnotation.getPopulationFrequencies()) {
                 VariantPhoenixHelper.Column column = VariantPhoenixHelper.getPopulationFrequencyColumn(pf.getStudy(), pf.getPopulation());
-                put.addColumn(genomeHelper.getColumnFamily(), column.bytes(),
-                        column.getPDataType().toBytes(pf.getAltAlleleFreq()));
+                addArray(put, column.bytes(), Arrays.asList(pf.getRefAlleleFreq(), pf.getAltAlleleFreq()),
+                        ((PArrayDataType) column.getPDataType()));
             }
         }
 
-        for (Score score : variantAnnotation.getFunctionalScore()) {
-            VariantPhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
-            put.addColumn(genomeHelper.getColumnFamily(), column.bytes(), column.getPDataType().toBytes(score.getScore()));
+        if (variantAnnotation.getFunctionalScore() != null) {
+            for (Score score : variantAnnotation.getFunctionalScore()) {
+                VariantPhoenixHelper.Column column = VariantPhoenixHelper.getFunctionalScoreColumn(score.getSource());
+                add(put, column, score.getScore());
+            }
         }
 
         return put;

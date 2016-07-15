@@ -11,7 +11,9 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.apache.phoenix.schema.types.PFloat;
+import org.apache.phoenix.schema.types.PFloatArray;
 import org.apache.phoenix.schema.types.PInteger;
+import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -30,14 +32,18 @@ import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getTmpRootDir;
 
 /**
  * Created on 15/10/15
@@ -238,6 +244,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         System.out.println("Query from HBase : " + VariantStorageManagerTestUtils.DB_NAME);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        PrintStream os = new PrintStream(new FileOutputStream(getTmpRootDir().resolve("variant_table_hbase.txt").toFile()));
         int numVariants = hm.act(VariantStorageManagerTestUtils.DB_NAME, table -> {
             int num = 0;
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
@@ -246,28 +253,38 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                     continue;
                 }
                 Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
-                System.out.println("Variant = " + variant);
+                os.println("Variant = " + variant);
                 for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
                     String key = Bytes.toString(entry.getKey());
                     if (key.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)) {
-                        System.out.println("\t" + key + " = " + entry.getValue().length + " " + Arrays.toString(entry.getValue()));
+                        os.println("\t" + key + " = " + entry.getValue().length + " , " + Arrays.toString(entry.getValue()));
+                    } else if (entry.getValue().length == 4) {
+                        os.println("\t" + key + " = "
+                                + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
+                                + PUnsignedInt.INSTANCE.toObject(entry.getValue()) + " , "
+                                + PFloat.INSTANCE.toObject(entry.getValue()) + " , ");
+                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
+                        os.println("\t" + key + " = " + entry.getValue().length + " " + PFloatArray.INSTANCE.toObject(entry.getValue()));
                     } else {
-                        if (entry.getValue().length == 4) {
-                            System.out.println("\t" + key + " = "
-                                    + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
-                                    + PFloat.INSTANCE.toObject(entry.getValue()));
-                        } else {
-                            System.out.println("\t" + key + " = "
+                        try {
+                            VariantPhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
+                            os.println("\t" + key + " = "
+                                    + entry.getValue().length + " , "
+                                    + column.getPDataType().toObject(entry.getValue()));
+                        } catch (IllegalArgumentException | NullPointerException e) {
+                            os.println("\t" + key + " ~ "
                                     + entry.getValue().length + " , "
                                     + Bytes.toString(entry.getValue()));
                         }
                     }
+
                 }
-                System.out.println("--------------------");
+                os.println("--------------------");
                 if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {
                     num++;
                 }
             }
+            os.close();
             resultScanner.close();
             return num;
         });

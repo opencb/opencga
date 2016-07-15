@@ -143,7 +143,7 @@ public class VariantMatchers {
                     for (PopulationFrequency populationFrequency : actual.getPopulationFrequencies()) {
                         if (populationFrequency.getStudy().equalsIgnoreCase(study)
                                 && populationFrequency.getPopulation().equalsIgnoreCase(population)) {
-                            return populationFrequency.getAltAlleleFreq();
+                            return populationFrequency.getRefAlleleFreq();
                         }
                     }
                 }

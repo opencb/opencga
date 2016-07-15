@@ -160,9 +160,6 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 .append(ANNOT_POPULATION_REFERENCE_FREQUENCY.key(), "1000GENOMES_phase_3:AFR<=0.05001");
         queryResult = dbAdaptor.get(query, options);
         assertThat(queryResult, everyResult(allVariants, hasAnnotation(hasPopRefFreq("1000GENOMES_phase_3", "AFR", lte(0.05001)))));
-        filterPopulation(map -> (!map.containsKey("1000GENOMES_phase_3:AFR") || map.get("1000GENOMES_phase_3:AFR").getRefAlleleFreq() <= 0.05001));
-        filterPopulation(map -> (map.getOrDefault("1000GENOMES_phase_3:AFR", defaultPopulation).getRefAlleleFreq() <= 0.05001));
-
     }
 
     @Test
@@ -249,11 +246,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     public long filterPopulation(Predicate<Map<String, PopulationFrequency>> predicate) {
-        return filterPopulation(queryResult, v -> true, predicate.negate());
-    }
-
-    public long filterPopulation(Predicate<Map<String, PopulationFrequency>> negate, Predicate<Variant> filterVariants) {
-        return filterPopulation(queryResult, filterVariants, negate);
+        return filterPopulation(queryResult, v -> true, predicate);
     }
 
     public long filterPopulation(QueryResult<Variant> queryResult, Predicate<Variant> filterVariants, Predicate<Map<String, PopulationFrequency>> predicate) {
@@ -331,8 +324,19 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         List<Variant> result = dbAdaptor.get(new Query(ID.key(), variants), new QueryOptions()).getResult();
 
         assertTrue(variants.size() > 0);
-        assertEquals(variants.stream().map(Object::toString).sorted().collect(Collectors.toList()),
-                result.stream().map(Object::toString).sorted().collect(Collectors.toList()));
+        List<String> expectedList = variants.stream().map(Object::toString).sorted().collect(Collectors.toList());
+        List<String> actualList = result.stream().map(Object::toString).sorted().collect(Collectors.toList());
+        for (String expected : expectedList) {
+            if (!actualList.contains(expected)) {
+                System.out.println("missing expected = " + expected);
+            }
+        }
+        for (String actual : actualList) {
+            if (!expectedList.contains(actual)) {
+                System.out.println("extra actual = " + actual);
+            }
+        }
+        assertEquals(expectedList, actualList);
     }
 
     @Test

@@ -31,7 +31,6 @@ import java.util.Objects;
 @Ignore
 public abstract class VariantStorageManagerTestUtils extends GenericTest implements VariantStorageTest {
 
-
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
     public static final String VCF_CORRUPTED_FILE_NAME = "variant-test-file-corrupted.vcf";
@@ -91,7 +90,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         return resourcePath.toUri();
     }
 
-    protected static Path getTmpRootDir() throws IOException {
+    public static Path getTmpRootDir() throws IOException {
 //        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
 
         if (rootDir == null) {
