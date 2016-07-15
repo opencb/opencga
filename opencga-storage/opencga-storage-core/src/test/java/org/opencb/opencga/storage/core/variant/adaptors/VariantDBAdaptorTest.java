@@ -127,14 +127,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
                 vsm.loadStats(dbAdaptor, stats, studyConfiguration, options);
             }
 
-
+            assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
         }
         allVariants = dbAdaptor.get(new Query(), new QueryOptions());
         options = new QueryOptions();
-        dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
-
-        assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
-
     }
 
     @After

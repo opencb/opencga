@@ -19,8 +19,8 @@ package org.opencb.opencga.storage.core.config;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 
@@ -30,7 +30,7 @@ import java.util.Collections;
 public class StorageConfigurationTest {
 
     @Test
-    public void testDefault() {
+    public void testDefault() throws Exception {
         StorageConfiguration storageConfiguration = new StorageConfiguration();
 
 //        Map<String, String> options = new HashMap<>();
@@ -67,10 +67,12 @@ public class StorageConfigurationTest {
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration1);
         storageConfiguration.getStorageEngines().add(storageEngineConfiguration2);
 
-        try {
-            storageConfiguration.serialize(new FileOutputStream("/tmp/storage-configuration-test.yml"));
-        } catch (IOException e) {
-            e.printStackTrace();
+        File file = Paths.get("/tmp/storage-configuration-test.yml").toFile();
+        try (FileOutputStream os = new FileOutputStream(file)) {
+            storageConfiguration.serialize(os);
+        }
+        try (FileInputStream is = new FileInputStream(file)) {
+            StorageConfiguration.load(is, "yml");
         }
     }
 

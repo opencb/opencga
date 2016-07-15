@@ -38,7 +38,10 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
         this.resultSet = resultSet;
         this.genomeHelper = genomeHelper;
         this.scm = scm;
-        converter = new HBaseToVariantConverter(this.genomeHelper, this.scm).setReturnedSamples(returnedSamples);
+        converter = new HBaseToVariantConverter(this.genomeHelper, this.scm)
+                .setReturnedSamples(returnedSamples)
+                .setMutableSamplesPosition(false)
+                .setStudyNameAsStudyId(true);
         hasNext = fetch(resultSet::next);
     }
 

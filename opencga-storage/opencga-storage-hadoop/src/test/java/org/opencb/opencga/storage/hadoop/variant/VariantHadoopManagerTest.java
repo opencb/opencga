@@ -108,13 +108,10 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
         long partialCount1 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:1-15030")).first();
         long partialCount2 = dbAdaptor.count(new Query(VariantDBAdaptor.VariantQueryParams.REGION.key(), "1:15030-60000")).first();
 
-        List<VariantType> variantTypes = Arrays.asList(VariantTableMapper.TARGET_VARIANT_TYPE);
-        long count = source.getStats().getVariantTypeCounts().entrySet()
-                .stream()
-                .filter(e -> variantTypes.contains(VariantType.valueOf(e.getKey())))
-                .map(Map.Entry::getValue)
-                .reduce((i, i2) -> i + i2).orElse(0).longValue();
 
+        long count = Arrays.stream(VariantTableMapper.TARGET_VARIANT_TYPE)
+                .map(type -> source.getStats().getVariantTypeCount(type))
+                .reduce((a, b) -> a + b).orElse(0).longValue();
         assertEquals(count, totalCount);
         assertEquals(totalCount, partialCount1 + partialCount2);
     }
@@ -194,7 +191,10 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
             return num;
         });
         System.out.println("End query from HBase : " + DB_NAME);
-        assertEquals(source.getStats().getVariantTypeCount(VariantType.SNP) + source.getStats().getVariantTypeCount(VariantType.SNV), numVariants);
+        long count = Arrays.stream(VariantTableMapper.TARGET_VARIANT_TYPE)
+                .map(type -> source.getStats().getVariantTypeCount(type))
+                .reduce((a, b) -> a + b).orElse(0).longValue();
+        assertEquals(count, numVariants);
     }
 
     @Test

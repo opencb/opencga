@@ -30,10 +30,10 @@ import static org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPho
  */
 public class VariantPhoenixHelper {
 
-    public static final String STATS_PREFIX = "ST_";
+    public static final String STATS_PREFIX = "S_";
     public static final byte[] STATS_PREFIX_BYTES = Bytes.toBytes(STATS_PREFIX);
-    public static final String POPULATION_FREQUENCY_PREFIX = "PF_";
-    public static final String FUNCTIONAL_SCORE_PREFIX = "FS_";
+    public static final String POPULATION_FREQUENCY_PREFIX = "A_PF_";
+    public static final String FUNCTIONAL_SCORE_PREFIX = "A_FS_";
     public static final String PROTOBUF_SUFIX = "_PB";
     public static final byte[] PROTOBUF_SUFIX_BYTES = Bytes.toBytes(PROTOBUF_SUFIX);
     protected static Logger logger = LoggerFactory.getLogger(VariantPhoenixHelper.class);
@@ -87,29 +87,29 @@ public class VariantPhoenixHelper {
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
 
-        SO("SO", PIntegerArray.INSTANCE),
-        GENES("GENES", PVarcharArray.INSTANCE),
-        BIOTYPE("BIOTYPE", PVarcharArray.INSTANCE),
-        TRANSCRIPTS("TRANSCRIPTS", PVarcharArray.INSTANCE),
-        TRANSCRIPTION_FLAGS("FLAGS", PVarcharArray.INSTANCE),
-        GENE_TRAITS_NAME("GT_NAME", PVarcharArray.INSTANCE),
-        GENE_TRAITS_ID("GT_ID", PVarcharArray.INSTANCE),
-        PROTEIN_KEYWORDS("PROT_KW", PVarcharArray.INSTANCE),
-        DRUG("DRUG", PVarcharArray.INSTANCE),
-        XREFS("XREFS", PVarcharArray.INSTANCE),
+        SO("A_SO", PIntegerArray.INSTANCE),
+        GENES("A_GENES", PVarcharArray.INSTANCE),
+        BIOTYPE("A_BIOTYPE", PVarcharArray.INSTANCE),
+        TRANSCRIPTS("A_TRANSCRIPTS", PVarcharArray.INSTANCE),
+        TRANSCRIPTION_FLAGS("A_FLAGS", PVarcharArray.INSTANCE),
+        GENE_TRAITS_NAME("A_GT_NAME", PVarcharArray.INSTANCE),
+        GENE_TRAITS_ID("A_GT_ID", PVarcharArray.INSTANCE),
+        PROTEIN_KEYWORDS("A_PROT_KW", PVarcharArray.INSTANCE),
+        DRUG("A_DRUG", PVarcharArray.INSTANCE),
+        XREFS("A_XREFS", PVarcharArray.INSTANCE),
 
         //Protein substitution scores
-        POLYPHEN("POLYPHEN", PFloatArray.INSTANCE),
-        POLYPHEN_DESC("POLYPHEN_DESC", PVarcharArray.INSTANCE),
-        SIFT("SIFT", PFloatArray.INSTANCE),
-        SIFT_DESC("SIFT_DESC", PVarcharArray.INSTANCE),
+        POLYPHEN("A_POLYPHEN", PFloatArray.INSTANCE),
+        POLYPHEN_DESC("A_POLYPHEN_DESC", PVarcharArray.INSTANCE),
+        SIFT("A_SIFT", PFloatArray.INSTANCE),
+        SIFT_DESC("A_SIFT_DESC", PVarcharArray.INSTANCE),
 
         //Conservation Scores
-        PHASTCONS("PHASTCONS", PFloat.INSTANCE),
-        PHYLOP("PHYLOP", PFloat.INSTANCE),
-        GERP("GERP", PFloat.INSTANCE),
+        PHASTCONS("A_PHASTCONS", PFloat.INSTANCE),
+        PHYLOP("A_PHYLOP", PFloat.INSTANCE),
+        GERP("A_GERP", PFloat.INSTANCE),
 
-        FULL_ANNOTATION("FULL_ANNOTATION", PVarchar.INSTANCE);
+        FULL_ANNOTATION("A_FULL", PVarchar.INSTANCE);
 
         private final String columnName;
         private final byte[] columnNameBytes;

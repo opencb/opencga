@@ -50,6 +50,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private List<String> returnedSamples = Collections.emptyList();
 
     private static boolean failOnWrongVariants = false; //FIXME
+    private boolean studyNameAsStudyId = false;
+    private boolean mutableSamplesPosition = true;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -65,6 +67,16 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     public HBaseToVariantConverter setReturnedSamples(List<String> returnedSamples) {
         this.returnedSamples = returnedSamples;
+        return this;
+    }
+
+    public HBaseToVariantConverter setStudyNameAsStudyId(boolean studyNameAsStudyId) {
+        this.studyNameAsStudyId = studyNameAsStudyId;
+        return this;
+    }
+
+    public HBaseToVariantConverter setMutableSamplesPosition(boolean mutableSamplesPosition) {
+        this.mutableSamplesPosition = mutableSamplesPosition;
         return this;
     }
 
@@ -117,7 +129,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
 //            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
-
+            if (mutableSamplesPosition) {
+                returnedSamplesPosition = new LinkedHashMap<>(returnedSamplesPosition);
+            }
 //            Do not throw any exception. It may happen that the study is not loaded yet or no samples are required!
 //            if (returnedSamplesPosition.isEmpty()) {
 //                throw new IllegalStateException("No samples found for study!!!");
@@ -240,8 +254,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
 
-//            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
-            StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
+            StudyEntry studyEntry;
+            if (studyNameAsStudyId) {
+                studyEntry = new StudyEntry(studyConfiguration.getStudyName());
+            } else {
+                studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
+            }
             studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
             studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));

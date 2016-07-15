@@ -34,6 +34,7 @@ import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStu
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.util.*;
@@ -306,7 +307,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             System.out.println(variant.toJson());
             variant.setAnnotation(a);
         }
-        String studyName = Integer.toString(studyConfiguration.getStudyId());
+        String studyName = studyConfiguration.getStudyName();
 
         // TODO: Add more asserts
         /*                      s1  s2
@@ -473,7 +474,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
     }
 
-    public void checkLoadedVariants(Set<String> expectedVariants, VariantHadoopDBAdaptor dbAdaptor, HashSet<String> platinumSkipVariants) {
+    public void checkLoadedVariants(Set<String> expectedVariants, VariantHadoopDBAdaptor dbAdaptor, HashSet<String> platinumSkipVariants)
+            throws IOException {
         long count = dbAdaptor.count(null).first();
         expectedVariants.removeAll(platinumSkipVariants);
         System.out.println("count = " + count);
@@ -491,7 +493,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
                     System.out.println("Missing variant: " + expectedVariant);
                 }
             }
-
+            VariantHbaseTestUtils.printVariantsFromVariantsTable(dbAdaptor);
         }
         assertEquals(expectedVariants.size(), count);
         count = 0;

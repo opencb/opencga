@@ -188,15 +188,19 @@ public class ArchiveDriver extends Configured implements Tool {
                 .append(outputTable).append(' ')
                 .append(studyId).append(' ')
                 .append(fileId);
+        addOtherParams(other, stringBuilder);
+        return stringBuilder.toString();
+    }
+
+    public static void addOtherParams(Map<String, Object> other, StringBuilder stringBuilder) {
         for (Map.Entry<String, Object> entry : other.entrySet()) {
             Object value = entry.getValue();
             if (value != null && (value instanceof Number
                     || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" "))) {
+                    || value instanceof String && !((String) value).contains(" ") && !((String) value).isEmpty())) {
                 stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
             }
         }
-        return stringBuilder.toString();
     }
 
     public static void main(String[] args) throws Exception {
@@ -218,7 +222,7 @@ public class ArchiveDriver extends Configured implements Tool {
             System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <server> <output-table> <study-id> <file-id>"
                     + " [<key> <value>]*\n",
                     ArchiveDriver.class.getSimpleName());
-            System.err.println("Found " + Arrays.toString(toolArgs));
+            System.err.println("Found argc:" + toolArgs.length + ", argv: " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
             return -1;
         }

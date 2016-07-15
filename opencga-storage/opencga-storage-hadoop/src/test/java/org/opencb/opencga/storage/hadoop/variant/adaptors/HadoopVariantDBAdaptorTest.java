@@ -8,6 +8,7 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorTest;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.VariantHbaseTestUtils;
 
 
 /**
@@ -19,8 +20,13 @@ public class HadoopVariantDBAdaptorTest extends VariantDBAdaptorTest implements 
 
 
     @Before
-    public void setUp() throws Exception {
-//        HadoopVariantStorageManagerTestUtils.printHBaseVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+    @Override
+    public void before() throws Exception {
+        boolean fileIndexed = VariantDBAdaptorTest.fileIndexed;
+        super.before();
+        if (!fileIndexed) {
+            VariantHbaseTestUtils.printVariantsFromVariantsTable((VariantHadoopDBAdaptor) dbAdaptor);
+        }
     }
 
 

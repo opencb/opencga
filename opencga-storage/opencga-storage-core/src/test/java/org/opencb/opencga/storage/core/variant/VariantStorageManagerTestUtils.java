@@ -7,6 +7,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -100,7 +101,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     private static void newRootDir() throws IOException {
-        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + System.currentTimeMillis() + "_" + RandomStringUtils.randomAlphanumeric(5));
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
         Files.createDirectories(rootDir);
     }
 

@@ -4,18 +4,35 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
 import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.ResultScanner;
+import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.phoenix.schema.IllegalDataException;
+import org.apache.phoenix.schema.types.*;
+import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
+import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Map;
+
+import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getTmpRootDir;
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils.configuration;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -40,6 +57,71 @@ public class VariantHbaseTestUtils {
             return 0;
         });
         return dbAdaptor;
+    }
+
+    public static void printVariantsFromVariantsTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
+        System.out.println("Query from HBase : " + VariantStorageManagerTestUtils.DB_NAME);
+        HBaseManager hm = new HBaseManager(configuration.get());
+        GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
+        Path outputFile = getTmpRootDir().resolve("variant_table_hbase_" + TimeUtils.getTimeMillis() + ".txt");
+        System.out.println("Variant table file = " + outputFile);
+        PrintStream os = new PrintStream(new FileOutputStream(outputFile.toFile()));
+        int numVariants = hm.act(VariantStorageManagerTestUtils.DB_NAME, table -> {
+            int num = 0;
+            ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
+            for (Result result : resultScanner) {
+                if (Bytes.toString(result.getRow()).startsWith(genomeHelper.getMetaRowKeyString())) {
+                    continue;
+                }
+                Variant variant = genomeHelper.extractVariantFromVariantRowKey(result.getRow());
+                os.println("Variant = " + variant);
+                for (Map.Entry<byte[], byte[]> entry : result.getFamilyMap(genomeHelper.getColumnFamily()).entrySet()) {
+                    String key = Bytes.toString(entry.getKey());
+                    VariantPhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
+                    if (column != null) {
+                        os.println("\t" + key + " = ("
+                                + entry.getValue().length + "), "
+                                + column.getPDataType().toObject(entry.getValue()));
+                    } else if (key.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)
+                            || key.endsWith("_" + VariantTableStudyRow.FILTER_OTHER)
+                            || key.endsWith("_" + VariantTableStudyRow.COMPLEX)) {
+                        os.println("\t" + key + " = (" + entry.getValue().length + "), " + Arrays.toString(entry.getValue()));
+                    } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
+                        os.println("\t" + key + " = (" + entry.getValue().length + "), " + PFloatArray.INSTANCE.toObject(entry.getValue()));
+                    } else if (key.endsWith("_" + VariantTableStudyRow.HET_REF)
+                            || key.endsWith("_" + VariantTableStudyRow.HOM_VAR)
+                            || key.endsWith("_" + VariantTableStudyRow.NOCALL)
+                            || key.endsWith("_" + VariantTableStudyRow.OTHER)) {
+                        os.println("\t" + key + " = " +  PUnsignedIntArray.INSTANCE.toObject(entry.getValue()));
+                    } else if (key.endsWith("_" + VariantTableStudyRow.HOM_REF)
+                            || key.endsWith("_" + VariantTableStudyRow.CALL_CNT)
+                            || key.endsWith("_" + VariantTableStudyRow.PASS_CNT)) {
+                        os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
+                    } else if (entry.getValue().length == 4) {
+                        Object o = null;
+                        try {
+                            o = PUnsignedInt.INSTANCE.toObject(entry.getValue());
+                        } catch (IllegalDataException ignore) {}
+                        os.println("\t" + key + " = "
+                                + PInteger.INSTANCE.toObject(entry.getValue()) + " , "
+                                + o + " , "
+                                + PFloat.INSTANCE.toObject(entry.getValue()) + " , ");
+                    } else {
+                        os.println("\t" + key + " ~ ("
+                                + entry.getValue().length + "), "
+                                + Bytes.toString(entry.getValue()));
+                    }
+
+                }
+                os.println("--------------------");
+                if (!variant.getChromosome().equals(genomeHelper.getMetaRowKeyString())) {
+                    num++;
+                }
+            }
+            os.close();
+            resultScanner.close();
+            return num;
+        });
     }
 
     public static void removeFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri, int fileId,
