@@ -152,6 +152,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         header.addMetaDataLine(new VCFFilterHeaderLine(".", "No FILTER info"));
 
         int studyId = studyConfiguration.getStudyId();
+        //TODO: Need to prefix with the studyID ? Exporter is single study
         header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_PR", 1, VCFHeaderLineType.Float, "Pass rate"));
         header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_CR", 1, VCFHeaderLineType.Float, "Call rate"));
         header.addMetaDataLine(new VCFInfoHeaderLine(studyId + "_OPR", 1, VCFHeaderLineType.Float, "Overall Pass rate"));
@@ -365,6 +366,10 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                 filter = ".";   // write PASS iff all sources agree that the filter is "PASS" or assumed if not present, otherwise write "."
             }
 
+            attributes.put(prk, studyEntry.getAttributes().get("PR"));
+            attributes.put(crk, studyEntry.getAttributes().get("CR"));
+            attributes.put(oprk, studyEntry.getAttributes().get("OPR"));
+
             for (String sampleName : studyEntry.getOrderedSamplesName()) {
                 Map<String, String> sampleData = studyEntry.getSampleData(sampleName);
                 String gt = sampleData.get("GT");
@@ -423,9 +428,6 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         if (annotations != null) {
             addAnnotations(variant, annotations, attributes);
         }
-        variantContextBuilder.attribute(prk, variant.getAnnotation().getAdditionalAttributes().get("PR"));
-        variantContextBuilder.attribute(crk, variant.getAnnotation().getAdditionalAttributes().get("CR"));
-        variantContextBuilder.attribute(oprk, variant.getAnnotation().getAdditionalAttributes().get("OPR"));
 
         variantContextBuilder.attributes(attributes);
 

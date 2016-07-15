@@ -6,10 +6,7 @@ import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.Converter;
@@ -66,6 +63,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         this.statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
     }
 
+    public HBaseToVariantConverter setReturnedSamples(List<String> returnedSamples) {
+        this.returnedSamples = returnedSamples;
+        return this;
+    }
+
     @Override
     public Variant convert(Result result) {
         VariantAnnotation annotation = annotationConverter.convert(result);
@@ -101,14 +103,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         if (annotation == null) {
             annotation = new VariantAnnotation();
         }
-        if (annotation.getAdditionalAttributes() == null) {
-            annotation.setAdditionalAttributes(new HashMap<String, Object>());
-        }
         if (rows.isEmpty()) {
             throw new IllegalStateException("No Row columns supplied for row " + variant);
         }
         for (VariantTableStudyRow row : rows) {
-            Map<String, String> annotMap = new HashMap<String, String>();
+            Map<String, String> attributesMap = new HashMap<String, String>();
             Integer studyId = row.getStudyId();
             QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
@@ -116,7 +115,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             StudyConfiguration studyConfiguration = queryResult.first();
 
-            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
+//            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
+            LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
 
 //            Do not throw any exception. It may happen that the study is not loaded yet or no samples are required!
 //            if (returnedSamplesPosition.isEmpty()) {
@@ -127,17 +127,16 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
 
-            annotMap.put("PASS", row.getPassCount().toString());
-            annotMap.put("CALL", row.getCallCount().toString());
+            attributesMap.put("PASS", row.getPassCount().toString());
+            attributesMap.put("CALL", row.getCallCount().toString());
 
             double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
             double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
             double opr = passrate * callrate;
-            annotation.getAdditionalAttributes().put("PR", passrate);
-            annotation.getAdditionalAttributes().put("CR", callrate);
-            annotation.getAdditionalAttributes().put("OPR", opr); // OVERALL
-                                                                             // pass
-                                                                             // rate
+            attributesMap.put("PR", String.valueOf(passrate));
+            attributesMap.put("CR", String.valueOf(callrate));
+            attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
+
 
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
@@ -243,10 +242,10 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
 //            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
             StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
-            studyEntry.setSamplesPosition(returnedSamplesPosition);
+            studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
             studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));
-            studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
+            studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", attributesMap)));
             studyEntry.setSecondaryAlternates(secAltArr);
 
             Map<Integer, VariantStats> convertedStatsMap = stats.get(studyConfiguration.getStudyId());

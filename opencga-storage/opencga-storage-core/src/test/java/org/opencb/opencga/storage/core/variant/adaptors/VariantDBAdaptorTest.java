@@ -779,10 +779,13 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     private long countScore(String source, QueryResult<Variant> variantQueryResult, Predicate<Double> doublePredicate, Function<VariantAnnotation, List<Score>> mapper) {
         long c = 0;
         for (Variant variant : variantQueryResult.getResult()) {
-            for (Score score : mapper.apply(variant.getAnnotation())) {
-                if (score.getSource().equalsIgnoreCase(source)) {
-                    if (doublePredicate.test(score.getScore())) {
-                        c++;
+            List<Score> list = mapper.apply(variant.getAnnotation());
+            if (list != null) {
+                for (Score score : list) {
+                    if (score.getSource().equalsIgnoreCase(source)) {
+                        if (doublePredicate.test(score.getScore())) {
+                            c++;
+                        }
                     }
                 }
             }
@@ -910,12 +913,12 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_returned_samples() {
-        QueryOptions options = new QueryOptions("limit", 0); //no limit;
+        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 0); //no limit;
 
         Query query = new Query()
                 .append(STUDIES.key(), studyConfiguration.getStudyId());
-        queryResult = dbAdaptor.get(query, options);
-        List<Variant> variants = queryResult.getResult();
+//        queryResult = dbAdaptor.get(query, options);
+        List<Variant> variants = allVariants.getResult();
 
         checkSamplesData("NA19600", variants, query, options);
         checkSamplesData("NA19660", variants, query, options);

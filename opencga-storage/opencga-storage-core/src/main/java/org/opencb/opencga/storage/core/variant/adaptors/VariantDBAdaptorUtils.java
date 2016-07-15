@@ -1,6 +1,7 @@
 package org.opencb.opencga.storage.core.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
@@ -8,6 +9,7 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Created on 29/01/16 .
@@ -178,6 +180,13 @@ public class VariantDBAdaptorUtils {
             }
         }
         return sampleId;
+    }
+
+    public List<String> getReturnedSamples(Query query) {
+        return query.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key())
+                .stream()
+                .map(s -> s.contains(":") ? s.split(":")[1] : s)
+                .collect(Collectors.toList());
     }
 
     /**

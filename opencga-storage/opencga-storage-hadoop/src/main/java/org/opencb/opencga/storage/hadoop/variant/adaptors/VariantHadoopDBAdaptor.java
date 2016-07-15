@@ -369,7 +369,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             try {
                 Statement statement = phoenixCon.createStatement();
                 ResultSet resultSet = statement.executeQuery(sql);
-                return new VariantHBaseResultSetIterator(resultSet, this.genomeHelper, getStudyConfigurationManager(), options);
+                List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query);
+                return new VariantHBaseResultSetIterator(resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }

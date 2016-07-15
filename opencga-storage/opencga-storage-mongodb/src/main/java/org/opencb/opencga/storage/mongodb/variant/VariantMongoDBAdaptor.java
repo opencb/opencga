@@ -1787,10 +1787,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedSamples(Collections.singletonList("none"));
         } else if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             //Remove the studyName, if any
-            samplesConverter.setReturnedSamples(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                    .stream()
-                    .map(s -> s.contains(":") ? s.split(":")[1] : s)
-                    .collect(Collectors.toList()));
+            samplesConverter.setReturnedSamples(utils.getReturnedSamples(query));
         }
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;

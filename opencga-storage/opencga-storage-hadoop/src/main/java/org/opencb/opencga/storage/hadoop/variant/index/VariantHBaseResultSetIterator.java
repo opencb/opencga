@@ -10,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Created on 16/12/15.
@@ -28,10 +30,15 @@ public class VariantHBaseResultSetIterator extends VariantDBIterator {
 
     public VariantHBaseResultSetIterator(ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
                                          QueryOptions options) throws SQLException {
+        this(resultSet, genomeHelper, scm, options, Collections.emptyList());
+    }
+
+    public VariantHBaseResultSetIterator(ResultSet resultSet, GenomeHelper genomeHelper, StudyConfigurationManager scm,
+                                         QueryOptions options, List<String> returnedSamples) throws SQLException {
         this.resultSet = resultSet;
         this.genomeHelper = genomeHelper;
         this.scm = scm;
-        converter = new HBaseToVariantConverter(this.genomeHelper, this.scm);
+        converter = new HBaseToVariantConverter(this.genomeHelper, this.scm).setReturnedSamples(returnedSamples);
         hasNext = fetch(resultSet::next);
     }
 
