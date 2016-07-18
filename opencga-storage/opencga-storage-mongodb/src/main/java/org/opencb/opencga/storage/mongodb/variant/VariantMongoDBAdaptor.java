@@ -2530,7 +2530,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+    public VariantSourceMongoDBAdaptor getVariantSourceDBAdaptor() {
         return variantSourceMongoDBAdaptor;
     }
 

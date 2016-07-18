@@ -12,7 +12,6 @@ import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.ConsequenceType;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
 import org.opencb.biodata.models.variant.stats.VariantGlobalStats;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
@@ -21,6 +20,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -32,6 +32,7 @@ import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 
@@ -170,7 +171,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     }
 
     @Test
-    public void checkVariantTable() throws java.io.IOException {
+    public void checkVariantTable() throws IOException {
         System.out.println("Query from HBase : " + DB_NAME);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
@@ -198,7 +199,7 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     }
 
     @Test
-    public void checkArchiveTable() throws java.io.IOException {
+    public void checkArchiveTable() throws IOException, StorageManagerException {
         String tableName = HadoopVariantStorageManager.getTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());

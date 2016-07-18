@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
@@ -89,7 +90,7 @@ public class ArchiveDriver extends Configured implements Tool {
         // StudyID and FileID may not be correct. Use the given through the CLI and overwrite the values from meta.
         meta.getVariantSource().setStudyId(Integer.toString(studyId));
         meta.getVariantSource().setFileId(Integer.toString(fileId));
-        storeMetaData(meta, tableName, conf);
+        storeMetaData(meta, conf);
 
         /* JOB setup */
         final Job job = Job.getInstance(conf, "opencga: Load file [" + fileId + "] to ArchiveTable '" + tableName + "'");
@@ -127,8 +128,8 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf)) {
-            manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
+        try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
+            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         }
         return succeed ? 0 : 1;
     }
@@ -145,8 +146,8 @@ public class ArchiveDriver extends Configured implements Tool {
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), compression);
     }
 
-    private void storeMetaData(VcfMeta meta, String tableName, Configuration conf) throws IOException {
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf)) {
+    private void storeMetaData(VcfMeta meta, Configuration conf) throws IOException {
+        try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
             manager.updateVcfMetaData(meta);
         }
     }

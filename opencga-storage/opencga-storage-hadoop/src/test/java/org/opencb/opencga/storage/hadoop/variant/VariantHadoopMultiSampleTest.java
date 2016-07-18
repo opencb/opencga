@@ -27,7 +27,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -243,19 +243,18 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             System.out.println("variant = " + variant);
         }
 
-
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         studyConfiguration.getHeaders().clear();
         System.out.println("StudyConfiguration = " + studyConfiguration);
 
-        ArchiveFileMetadataManager fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), null);
-        Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles();
+        HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
+        Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles(studyConfiguration.getStudyId());
         System.out.println("loadedFiles = " + loadedFiles);
         for (int fileId = 0; fileId <= 16; fileId++) {
             assertTrue(loadedFiles.contains(fileId));
         }
         for (Integer loadedFile : loadedFiles) {
-            VcfMeta vcfMeta = fileMetadataManager.getVcfMeta(loadedFile, null).first();
+            VcfMeta vcfMeta = fileMetadataManager.getVcfMeta(studyConfiguration.getStudyId(), loadedFile, null);
             assertNotNull(vcfMeta);
         }
 

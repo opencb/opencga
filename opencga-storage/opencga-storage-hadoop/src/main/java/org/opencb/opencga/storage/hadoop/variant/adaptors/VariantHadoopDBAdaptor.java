@@ -12,24 +12,22 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
-import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
@@ -66,6 +64,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final GenomeHelper genomeHelper;
     private final java.sql.Connection phoenixCon;
     private final VariantSqlQueryParser queryParser;
+    private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
 
     public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageEngineConfiguration configuration,
                                   Configuration conf) throws IOException {
@@ -80,6 +79,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.variantTable = credentials.getTable();
         this.studyConfigurationManager.set(
                 new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, configuration.getVariant().getOptions()));
+        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.getConnection(), conf);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this));
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
@@ -117,35 +117,23 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return configuration;
     }
 
-    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws IOException {
-        VcfMeta vcfMeta = getVcfMeta(HadoopVariantStorageManager.getTableName(studyId), fileId, null).first();
+    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws StorageManagerException, IOException {
+        VcfMeta vcfMeta = getVcfMeta(studyId, fileId, null);
         if (vcfMeta == null) {
-            throw new IOException("File '" + fileId + "' not found in study '" + studyId + "'");
+            throw new StorageManagerException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
         return new ArchiveHelper(genomeHelper, vcfMeta);
 
     }
 
-    public QueryResult<VcfMeta> getVcfMeta(String tableName, int fileId, ObjectMap options) throws IOException {
-        try (ArchiveFileMetadataManager manager = getArchiveFileMetadataManager(tableName, options)) {
-            return manager.getVcfMeta(fileId, options);
-        }
-    }
-
-    /**
-     * @param tableName Use {@link HadoopVariantStorageManager#getTableName(int)} to get the table
-     * @param options   Extra options
-     * @return A valid ArchiveFileMetadataManager object
-     * @throws IOException If any IO problem occurs
-     */
-    public ArchiveFileMetadataManager getArchiveFileMetadataManager(String tableName, ObjectMap options)
-            throws IOException {
-        return new ArchiveFileMetadataManager(this.getConnection(), tableName, configuration);
+    public VcfMeta getVcfMeta(int studyId, int fileId, QueryOptions options) throws IOException {
+        HadoopVariantSourceDBAdaptor manager = getVariantSourceDBAdaptor();
+        return manager.getVcfMeta(studyId, fileId, options);
     }
 
     @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
-        return new HadoopVariantSourceDBAdaptor(this.getConnection(), configuration);
+    public HadoopVariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceDBAdaptor;
     }
 
     @Override
@@ -328,8 +316,8 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             ArchiveHelper archiveHelper;
             try {
                 archiveHelper = getArchiveHelper(studyId, fileId);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            } catch (IOException | StorageManagerException e) {
+                throw new RuntimeException(e);
             }
 
             Scan scan = new Scan();

@@ -36,7 +36,7 @@ import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.exceptions.StorageHadoopException;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbaseTransformTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -302,13 +302,11 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             boolean missingFilesDetected = false;
 
 
-            String tableName = getTableName(studyId);
 
+            HadoopVariantSourceDBAdaptor fileMetadataManager = dbAdaptor.getVariantSourceDBAdaptor();
             Set<Integer> files = null;
-            ArchiveFileMetadataManager fileMetadataManager;
             try {
-                fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(tableName, options);
-                files = fileMetadataManager.getLoadedFiles();
+                files = fileMetadataManager.getLoadedFiles(studyId);
             } catch (IOException e) {
                 throw new StorageHadoopException("Unable to read loaded files", e);
             }
@@ -322,14 +320,13 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             List<Integer> pendingFiles = new LinkedList<>();
             logger.info("Found registered indexed files: {}", studyConfiguration.getIndexedFiles());
             for (Integer loadedFileId : files) {
-                VcfMeta meta = null;
+                VariantSource source;
                 try {
-                    meta = fileMetadataManager.getVcfMeta(loadedFileId, options).first();
+                    source = fileMetadataManager.getVariantSource(studyId, loadedFileId, null);
                 } catch (IOException e) {
                     throw new StorageHadoopException("Unable to read file VcfMeta for file : " + loadedFileId, e);
                 }
 
-                VariantSource source = meta.getVariantSource();
                 Integer fileId1 = Integer.parseInt(source.getFileId());
                 logger.info("Found source for file id {} with registered id {} ", loadedFileId, fileId1);
                 if (!studyConfiguration.getFileIds().inverse().containsKey(fileId1)) {
@@ -357,7 +354,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
                 if (!pendingFiles.contains(fileId)) {
-                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table " + tableName);
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table " + getTableName(studyId));
                 }
             } else {
                 //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
