@@ -79,15 +79,14 @@ public class VariantHbaseTestUtils {
                     String key = Bytes.toString(entry.getKey());
                     VariantPhoenixHelper.Column column = VariantPhoenixHelper.VariantColumn.getColumn(key);
                     if (column != null) {
-                        os.println("\t" + key + " = ("
-                                + entry.getValue().length + "), "
+                        os.println("\t" + key + " = " + length(entry.getValue()) + ", "
                                 + column.getPDataType().toObject(entry.getValue()));
-                    } else if (key.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)
+                    } else if (key.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)
                             || key.endsWith("_" + VariantTableStudyRow.FILTER_OTHER)
                             || key.endsWith("_" + VariantTableStudyRow.COMPLEX)) {
-                        os.println("\t" + key + " = (" + entry.getValue().length + "), " + Arrays.toString(entry.getValue()));
+                        os.println("\t" + key + " = " + length(entry.getValue()) + ", " + Arrays.toString(entry.getValue()));
                     } else if (key.startsWith(VariantPhoenixHelper.POPULATION_FREQUENCY_PREFIX)) {
-                        os.println("\t" + key + " = (" + entry.getValue().length + "), " + PFloatArray.INSTANCE.toObject(entry.getValue()));
+                        os.println("\t" + key + " = " + length(entry.getValue()) + ", " + PFloatArray.INSTANCE.toObject(entry.getValue()));
                     } else if (key.endsWith("_" + VariantTableStudyRow.HET_REF)
                             || key.endsWith("_" + VariantTableStudyRow.HOM_VAR)
                             || key.endsWith("_" + VariantTableStudyRow.NOCALL)
@@ -97,6 +96,9 @@ public class VariantHbaseTestUtils {
                             || key.endsWith("_" + VariantTableStudyRow.CALL_CNT)
                             || key.endsWith("_" + VariantTableStudyRow.PASS_CNT)) {
                         os.println("\t" + key + " = " + PUnsignedInt.INSTANCE.toObject(entry.getValue()));
+                    } else if (key.endsWith(VariantPhoenixHelper.MAF_SUFIX)
+                            || key.endsWith(VariantPhoenixHelper.MGF_SUFIX)) {
+                        os.println("\t" + key + " = " + PFloat.INSTANCE.toObject(entry.getValue()));
                     } else if (entry.getValue().length == 4) {
                         Object o = null;
                         try {
@@ -107,8 +109,7 @@ public class VariantHbaseTestUtils {
                                 + o + " , "
                                 + PFloat.INSTANCE.toObject(entry.getValue()) + " , ");
                     } else {
-                        os.println("\t" + key + " ~ ("
-                                + entry.getValue().length + "), "
+                        os.println("\t" + key + " ~ " + length(entry.getValue()) + ", "
                                 + Bytes.toString(entry.getValue()));
                     }
 
@@ -122,6 +123,10 @@ public class VariantHbaseTestUtils {
             resultScanner.close();
             return num;
         });
+    }
+
+    private static String length(byte[] array) {
+        return "(" + array.length + " B)";
     }
 
     public static void removeFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri, int fileId,

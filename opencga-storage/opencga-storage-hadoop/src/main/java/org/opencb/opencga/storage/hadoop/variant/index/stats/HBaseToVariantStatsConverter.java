@@ -58,11 +58,11 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
             byte[] columnBytes = entry.getKey();
             byte[] value = entry.getValue();
             if (value != null && startsWith(columnBytes, VariantPhoenixHelper.STATS_PREFIX_BYTES)
-                    && endsWith(columnBytes, VariantPhoenixHelper.PROTOBUF_SUFIX_BYTES)) {
+                    && endsWith(columnBytes, VariantPhoenixHelper.STATS_PROTOBUF_SUFIX_BYTES)) {
                 String columnName = Bytes.toString(columnBytes);
                 String[] split = columnName.split("_");
-                Integer studyId = Integer.valueOf(split[1]);
-                Integer cohortId = Integer.valueOf(split[2]);
+                Integer studyId = getStudyId(split);
+                Integer cohortId = getCohortId(split);
 
                 Map<Integer, VariantStats> statsMap = studyCohortStatsMap.get(studyId);
                 if (statsMap == null) {
@@ -86,10 +86,10 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
                 String columnName = metaData.getColumnName(i);
                 byte[] value = resultSet.getBytes(i);
                 if (value != null && columnName.startsWith(VariantPhoenixHelper.STATS_PREFIX)
-                        && columnName.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)) {
+                        && columnName.endsWith(VariantPhoenixHelper.STATS_PROTOBUF_SUFIX)) {
                     String[] split = columnName.split("_");
-                    Integer studyId = Integer.valueOf(split[1]);
-                    Integer cohortId = Integer.valueOf(split[2]);
+                    Integer studyId = getStudyId(split);
+                    Integer cohortId = getCohortId(split);
 
                     Map<Integer, VariantStats> statsMap = studyCohortStatsMap.get(studyId);
                     if (statsMap == null) {
@@ -97,17 +97,20 @@ public class HBaseToVariantStatsConverter extends AbstractPhoenixConverter {
                         studyCohortStatsMap.put(studyId, statsMap);
                     }
                     statsMap.put(cohortId, convert(value));
-                } else {
-                    if (columnName.startsWith(VariantPhoenixHelper.STATS_PREFIX)
-                            && columnName.endsWith(VariantPhoenixHelper.PROTOBUF_SUFIX)) {
-                        System.out.println("Not a stats column: " + columnName + " value=" + (value == null ? "null" : "" + value.length));
-                    }
                 }
             }
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
         return studyCohortStatsMap;
+    }
+
+    public Integer getStudyId(String[] split) {
+        return Integer.valueOf(split[0]);
+    }
+
+    public Integer getCohortId(String[] split) {
+        return Integer.valueOf(split[1]);
     }
 
     protected VariantStats convert(byte[] data) {

@@ -595,8 +595,20 @@ public class VariantSqlQueryParser {
     }
 
     protected void addStatsFilters(Query query, StudyConfiguration defaultStudyConfiguration, List<String> filters) {
-        addQueryFilter(query, STATS_MAF, (keyOpValue, v) -> {
+        addQueryFilter(query, STATS_MAF, getStatsColumnParser(defaultStudyConfiguration, VariantPhoenixHelper::getMafColumn),
+                null, filters);
 
+        addQueryFilter(query, STATS_MGF, getStatsColumnParser(defaultStudyConfiguration, VariantPhoenixHelper::getMgfColumn),
+                null, filters);
+
+        unsupportedFilter(query, MISSING_ALLELES);
+
+        unsupportedFilter(query, MISSING_GENOTYPES);
+    }
+
+    private BiFunction<String[], String, Column> getStatsColumnParser(StudyConfiguration defaultStudyConfiguration,
+                                                                      BiFunction<Integer, Integer, Column> columnBuilder) {
+        return (keyOpValue, v) -> {
             String key = keyOpValue[0];
             int indexOf = key.lastIndexOf(":");
 
@@ -612,14 +624,8 @@ public class VariantSqlQueryParser {
             }
             int cohortId = utils.getCohortId(cohort, sc);
 
-            return VariantPhoenixHelper.getMafColumn(sc.getStudyId(), cohortId);
-        }, null, filters);
-
-        unsupportedFilter(query, STATS_MGF);
-
-        unsupportedFilter(query, MISSING_ALLELES);
-
-        unsupportedFilter(query, MISSING_GENOTYPES);
+            return columnBuilder.apply(sc.getStudyId(), cohortId);
+        };
     }
 
     /**

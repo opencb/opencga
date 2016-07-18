@@ -1158,6 +1158,17 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
+    public void testGetAllVariants_mgf() throws Exception {
+        queryResult = dbAdaptor.get(new Query(STATS_MGF.key(), "1000g:ALL>0.2"), null);
+        System.out.println(queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("1000g", withStats("ALL", withMgf(gt(0.2))))));
+
+        queryResult = dbAdaptor.get(new Query(STATS_MGF.key(), "1000g:ALL<0.2"), null);
+        System.out.println(queryResult.getNumResults());
+        assertThat(queryResult, everyResult(allVariants, withStudy("1000g", withStats("ALL", withMgf(lt(0.2))))));
+    }
+
+    @Test
     public void testGetAllVariants_cohorts() throws Exception {
 
         queryResult = dbAdaptor.get(new Query(COHORTS.key(), "1000g:cohort2"), null);

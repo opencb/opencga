@@ -188,6 +188,15 @@ public class VariantMatchers {
         };
     }
 
+    public static Matcher<VariantStats> withMgf(Matcher<? super Float> subMatcher) {
+        return new FeatureMatcher<VariantStats, Float>(subMatcher, "with mgf", "MGF") {
+            @Override
+            protected Float featureValueOf(VariantStats actual) {
+                return actual.getMgf();
+            }
+        };
+    }
+
     public static <T extends Number> Matcher<T> gt(T n) {
         return new TypeSafeDiagnosingMatcher<T>() {
             @Override

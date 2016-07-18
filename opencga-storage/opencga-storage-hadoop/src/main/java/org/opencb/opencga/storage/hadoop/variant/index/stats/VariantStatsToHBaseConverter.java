@@ -1,7 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant.index.stats;
 
 import org.apache.hadoop.hbase.client.Put;
-import org.apache.phoenix.schema.types.PFloat;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.Converter;
@@ -49,10 +48,12 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
         for (Map.Entry<String, VariantStats> entry : variantStatsWrapper.getCohortStats().entrySet()) {
             Integer cohortId = studyConfiguration.getCohortIds().get(entry.getKey());
             Column mafColumn = VariantPhoenixHelper.getMafColumn(studyId, cohortId);
+            Column mgfColumn = VariantPhoenixHelper.getMgfColumn(studyId, cohortId);
             Column statsColumn = VariantPhoenixHelper.getStatsColumn(studyId, cohortId);
 
             VariantStats stats = entry.getValue();
-            add(put, mafColumn.bytes(), stats.getMaf(), PFloat.INSTANCE);
+            add(put, mafColumn, stats.getMaf());
+            add(put, mgfColumn, stats.getMgf());
 
             VariantProto.VariantStats.Builder builder = VariantProto.VariantStats.newBuilder()
                     .setAltAlleleFreq(stats.getAltAlleleFreq())
@@ -84,7 +85,7 @@ public class VariantStatsToHBaseConverter extends AbstractPhoenixConverter imple
                 builder.putAllGenotypesFreq(map);
             }
 
-            add(put, statsColumn.bytes(), builder.build().toByteArray(), statsColumn.getPDataType());
+            add(put, statsColumn, builder.build().toByteArray());
         }
         return put;
     }
