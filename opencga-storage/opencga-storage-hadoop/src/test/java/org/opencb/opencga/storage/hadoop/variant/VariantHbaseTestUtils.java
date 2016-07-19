@@ -43,7 +43,7 @@ public class VariantHbaseTestUtils {
     public static VariantHadoopDBAdaptor printVariantsFromArchiveTable(VariantHadoopDBAdaptor dbAdaptor,
             StudyConfiguration studyConfiguration) throws Exception {
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
-        helper.getHBaseManager().act(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), table -> {
+        helper.getHBaseManager().act(HadoopVariantStorageManager.getArchiveTableName(studyConfiguration.getStudyId(), dbAdaptor.getConfiguration()), table -> {
             for (Result result : table.getScanner(helper.getColumnFamily())) {
                 try {
                     byte[] value = result.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
@@ -60,13 +60,14 @@ public class VariantHbaseTestUtils {
     }
 
     public static void printVariantsFromVariantsTable(VariantHadoopDBAdaptor dbAdaptor) throws IOException {
-        System.out.println("Query from HBase : " + VariantStorageManagerTestUtils.DB_NAME);
+        String tableName = HadoopVariantStorageManager.getVariantTableName(VariantStorageManagerTestUtils.DB_NAME, dbAdaptor.getConfiguration());
+        System.out.println("Query from HBase : " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();
         Path outputFile = getTmpRootDir().resolve("variant_table_hbase_" + TimeUtils.getTimeMillis() + ".txt");
         System.out.println("Variant table file = " + outputFile);
         PrintStream os = new PrintStream(new FileOutputStream(outputFile.toFile()));
-        int numVariants = hm.act(VariantStorageManagerTestUtils.DB_NAME, table -> {
+        int numVariants = hm.act(tableName, table -> {
             int num = 0;
             ResultScanner resultScanner = table.getScanner(genomeHelper.getColumnFamily());
             for (Result result : resultScanner) {

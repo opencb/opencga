@@ -20,7 +20,6 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
@@ -57,9 +56,9 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     @Before
     public void before() throws Exception {
         if (etlResult == null) {
-            clearDB(DB_NAME);
-            clearDB(HadoopVariantStorageManager.getTableName(STUDY_ID));
             HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+            clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+            clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
 
             URI inputUri = VariantStorageManagerTestUtils.getResourceUri("sample1.genome.vcf");
 //            URI inputUri = VariantStorageManagerTestUtils.getResourceUri("variant-test-file.vcf.gz");
@@ -199,8 +198,8 @@ public class VariantHadoopManagerTest extends VariantStorageManagerTestUtils imp
     }
 
     @Test
-    public void checkArchiveTable() throws IOException, StorageManagerException {
-        String tableName = HadoopVariantStorageManager.getTableName(STUDY_ID);
+    public void checkArchiveTable() throws Exception {
+        String tableName = getVariantStorageManager().getArchiveTableName(STUDY_ID);
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
         GenomeHelper genomeHelper = dbAdaptor.getGenomeHelper();

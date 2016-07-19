@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
@@ -47,6 +48,10 @@ public class HadoopVariantStorageETL extends AbstractHadoopVariantStorageETL {
         String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
         if (jar == null) {
             throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+
+        if (!Paths.get(jar).isAbsolute()) {
+            jar = System.getProperty("app.home", "") + jar;
         }
 
 

@@ -78,7 +78,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     public Iterator<VariantSource> iterator(int studyId, List<Integer> fileIds, QueryOptions options) throws IOException {
-        String tableName = HadoopVariantStorageManager.getTableName(studyId);
+        String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
         long start = System.currentTimeMillis();
         Get get = new Get(genomeHelper.getMetaRowKey());
         if (fileIds == null || fileIds.isEmpty()) {
@@ -147,7 +147,8 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
 
     public void update(VariantSource variantSource) throws IOException {
         Objects.requireNonNull(variantSource);
-        String tableName = HadoopVariantStorageManager.getTableName(Integer.parseInt(variantSource.getStudyId()));
+        String tableName = HadoopVariantStorageManager.getArchiveTableName(Integer.parseInt(variantSource.getStudyId()),
+                genomeHelper.getConf());
         if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
@@ -165,7 +166,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     public void updateLoadedFilesSummary(int studyId, List<Integer> newLoadedFiles) throws IOException {
-        String tableName = HadoopVariantStorageManager.getTableName(studyId);
+        String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
         if (ArchiveDriver.createArchiveTableIfNeeded(genomeHelper, tableName, getHBaseManager().getConnection())) {
             logger.info("Create table '{}' in hbase!", tableName);
         }
@@ -192,7 +193,7 @@ public class HadoopVariantSourceDBAdaptor implements VariantSourceDBAdaptor {
     }
 
     public Set<Integer> getLoadedFiles(int studyId) throws IOException {
-        String tableName = HadoopVariantStorageManager.getTableName(studyId);
+        String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
         if (!getHBaseManager().tableExists(tableName)) {
             return new HashSet<>();
         } else {

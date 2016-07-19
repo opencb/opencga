@@ -35,11 +35,11 @@ public class VariantTableMapperTest extends VariantStorageManagerTestUtils imple
 
     @Before
     public void setUp() throws Exception {
-        clearDB(DB_NAME);
-        clearDB(HadoopVariantStorageManager.getTableName(STUDY_ID));
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+        clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
-        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
         dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         
     }

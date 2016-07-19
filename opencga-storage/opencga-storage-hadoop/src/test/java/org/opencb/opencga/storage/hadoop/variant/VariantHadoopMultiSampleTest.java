@@ -58,8 +58,9 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
     @Before
     public void setUp() throws Exception {
-        clearDB(DB_NAME);
-        clearDB(HadoopVariantStorageManager.getTableName(STUDY_ID));
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        clearDB(variantStorageManager.getVariantTableName(DB_NAME));
+        clearDB(variantStorageManager.getArchiveTableName(STUDY_ID));
         //Force HBaseConverter to fail if something goes wrong
         HBaseToVariantConverter.setFailOnWrongVariants(true);
     }
@@ -370,10 +371,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
     }
 
     public VariantHadoopDBAdaptor printVariantsFromArchiveTable(StudyConfiguration studyConfiguration, PrintStream out) throws Exception {
-        VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
+        HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
         GenomeHelper helper = dbAdaptor.getGenomeHelper();
-        helper.getHBaseManager().act(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), table -> {
+        helper.getHBaseManager().act(variantStorageManager.getArchiveTableName(studyConfiguration.getStudyId()), table -> {
             for (Result result : table.getScanner(helper.getColumnFamily())) {
                 try {
                     byte[] value = result.getValue(helper.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
@@ -537,7 +539,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
         StudyConfiguration studyConfiguration = scm.getStudyConfiguration(STUDY_ID, new QueryOptions()).first();
 
-        String tableName = HadoopVariantStorageManager.getTableName(STUDY_ID);
+        String tableName = HadoopVariantStorageManager.getArchiveTableName(STUDY_ID, dbAdaptor.getConfiguration());
         System.out.println("Query from archive HBase " + tableName);
         HBaseManager hm = new HBaseManager(configuration.get());
 

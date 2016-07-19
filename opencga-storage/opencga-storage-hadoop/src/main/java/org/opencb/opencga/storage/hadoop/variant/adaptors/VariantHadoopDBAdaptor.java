@@ -324,7 +324,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
             addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = HadoopVariantStorageManager.getTableName(studyId);
+            String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
 
             logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
             logger.debug("Table name = " + tableName);

@@ -119,6 +119,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
         getDBAdaptor().deleteStudy(studyName, new QueryOptions(options));
     }
 
+    @Override
     public VariantMongoDBAdaptor getDBAdaptor() throws StorageManagerException {
         return getDBAdaptor(null);
     }

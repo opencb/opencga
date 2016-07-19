@@ -110,7 +110,9 @@ public class HBaseManager extends Configured implements AutoCloseable {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             func.accept(table);
-        }    }
+        }
+    }
+
     /**
      * Performs an action over a table.
      *

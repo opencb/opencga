@@ -64,7 +64,6 @@ import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageMana
  * Created by mh719 on 13/05/2016.
  */
 public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL {
-    public static final String ARCHIVE_TABLE_PREFIX = "opencga_study_";
     protected final VariantHadoopDBAdaptor dbAdaptor;
     protected final Configuration conf;
     protected final HBaseCredentials archiveTableCredentials;
@@ -354,7 +353,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             if (!loadArch) {
                 //If skip archive loading, input fileId must be already in archiveTable, so "pending to be loaded"
                 if (!pendingFiles.contains(fileId)) {
-                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table " + getTableName(studyId));
+                    throw new StorageManagerException("File " + fileId + " is not loaded in archive table "
+                            + getArchiveTableName(studyId, options));
                 }
             } else {
                 //If don't skip archive, input fileId must not be pending, because must not be in the archive table.
