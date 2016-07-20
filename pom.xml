@@ -44,10 +44,10 @@
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
-        <hadoop.version>2.6.3</hadoop.version>
-        <hbase.version>1.0.1</hbase.version>
+        <hadoop.version>2.7.1</hadoop.version>
+        <hbase.version>1.1.2</hbase.version>
         <!--<hbase.version>1.0.0</hbase.version>&lt;!&ndash; -cdh5.7.0 &ndash;&gt;-->
-        <phoenix.version>4.5.2-HBase-1.0</phoenix.version>
+        <phoenix.version>4.4.0-HBase-1.1</phoenix.version>
         <avro.version>1.7.7</avro.version>
         <google.protobuf>3.0.0-beta-1</google.protobuf> <!--DO NOT UPGRADE! HBase may not work with a higher version-->
         <google.grpc>0.13.2</google.grpc>

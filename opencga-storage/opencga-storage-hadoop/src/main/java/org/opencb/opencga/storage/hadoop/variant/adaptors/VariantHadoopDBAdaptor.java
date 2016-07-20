@@ -3,7 +3,7 @@ package org.opencb.opencga.storage.hadoop.variant.adaptors;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HConstants;
+//import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
@@ -111,10 +111,10 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         configuration = HBaseConfiguration.create(configuration);
 
         // HBase configuration
-        configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+//        configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
 //        configuration.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
 //        configuration.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, String.format("/%s", credentials.getZookeeperPath()));
+//        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, String.format("/%s", credentials.getZookeeperPath()));
         return configuration;
     }
 
