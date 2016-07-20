@@ -11,12 +11,12 @@ import org.apache.hadoop.hbase.io.compress.Compression.Algorithm;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.DatabaseCredentials;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageETL;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -352,10 +352,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             URI uri = new URI(target);
             String server = uri.getHost();
             Integer port = uri.getPort() > 0 ? uri.getPort() : 60000;
-            //        String tablename = uri.getPath();
-            //        tablename = tablename.startsWith("/") ? tablename.substring(1) : tablename; // Remove leading /
-            //        String master = String.join(":", server, port.toString());
+            String zookeeperPath = uri.getPath();
+            zookeeperPath = zookeeperPath.startsWith("/") ? zookeeperPath.substring(1) : zookeeperPath; // Remove /
             HBaseCredentials credentials = new HBaseCredentials(server, table, user, pass, port);
+            if (!StringUtils.isBlank(zookeeperPath)) {
+                credentials = new HBaseCredentials(server, table, user, pass, port, zookeeperPath);
+            }
             return credentials;
         } catch (URISyntaxException e) {
             throw new IllegalStateException(e);

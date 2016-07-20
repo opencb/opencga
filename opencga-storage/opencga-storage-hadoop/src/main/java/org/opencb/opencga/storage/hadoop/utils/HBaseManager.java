@@ -286,6 +286,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
     public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
             throws IOException {
         TableName tName = TableName.valueOf(tableName);
+        LOGGER.info("CreateIfNeeded with connection {}", con);
         return act(con, tableName, (table, admin) -> {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);

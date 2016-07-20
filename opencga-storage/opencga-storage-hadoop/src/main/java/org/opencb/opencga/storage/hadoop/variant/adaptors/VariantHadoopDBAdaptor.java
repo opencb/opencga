@@ -83,11 +83,12 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this));
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
-        try {
-            phoenixCon = phoenixHelper.newJdbcConnection(conf);
-        } catch (SQLException | ClassNotFoundException e) {
-            throw new IOException(e);
-        }
+        phoenixCon = null; // TODO Issue with new cluster
+//        try {
+//            phoenixCon = phoenixHelper.newJdbcConnection(conf);
+//        } catch (SQLException | ClassNotFoundException e) {
+//            throw new IOException(e);
+//        }
     }
 
     public java.sql.Connection getJdbcConnection() {
@@ -113,7 +114,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
 //        configuration.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
 //        configuration.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-//        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, String.format("/%s", credentials.getZookeeperPath()));
         return configuration;
     }
 
@@ -250,7 +251,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
         logger.info(sql);
         try {
-            Statement statement = phoenixCon.createStatement();
+            Statement statement = getJdbcConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
             resultSet.next();
             long count = resultSet.getLong(1);
@@ -355,7 +356,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
             logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
-                Statement statement = phoenixCon.createStatement();
+                Statement statement = getJdbcConnection().createStatement();
                 ResultSet resultSet = statement.executeQuery(sql);
                 List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query);
                 return new VariantHBaseResultSetIterator(resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
@@ -416,7 +417,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     public void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {
         try {
-            phoenixHelper.updateStatsFields(phoenixCon, variantTable, studyConfiguration);
+            phoenixHelper.updateStatsFields(getJdbcConnection(), variantTable, studyConfiguration);
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -461,7 +462,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     public void preUpdateAnnotations() throws IOException {
         try {
-            phoenixHelper.updateAnnotationFields(phoenixCon, variantTable);
+            phoenixHelper.updateAnnotationFields(getJdbcConnection(), variantTable);
         } catch (SQLException e) {
             throw new IOException(e);
         }
