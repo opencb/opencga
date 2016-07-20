@@ -134,7 +134,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
 
         MemoryUsageMonitor monitor = new MemoryUsageMonitor();
         monitor.setDelay(5000);
-        monitor.start();
+//        monitor.start();
         try {
             for (URI inputFile : inputFiles) {
                 StorageETLResult storageETLResult = new StorageETLResult(inputFile);
@@ -207,7 +207,7 @@ public class MongoDBVariantStorageManager extends VariantStorageManager {
             }
 
         } finally {
-            monitor.interrupt();
+//            monitor.interrupt();
             for (StorageETL storageETL : storageETLMap.values()) {
                 storageETL.close();
             }
