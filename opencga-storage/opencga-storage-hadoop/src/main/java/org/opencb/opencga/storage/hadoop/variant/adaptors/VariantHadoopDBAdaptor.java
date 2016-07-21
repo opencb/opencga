@@ -79,7 +79,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.variantTable = credentials.getTable();
         this.studyConfigurationManager.set(
                 new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, configuration.getVariant().getOptions()));
-        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.getConnection(), conf);
+        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.genomeHelper);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this));
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
