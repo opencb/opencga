@@ -34,6 +34,7 @@ import java.io.IOException;
  * Created by imedina on 03/06/16.
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
+    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private ProjectCommandOptions projectsCommandOptions;
 
@@ -150,8 +151,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void help() throws CatalogException, IOException {
-
-        logger.debug("Helping");
 
         System.out.println("PENDING");
 

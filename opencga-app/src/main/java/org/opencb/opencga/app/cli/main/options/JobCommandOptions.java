@@ -17,8 +17,6 @@ public class JobCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public VisitCommandOptions visitCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
-    public ShareCommandOptions shareCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
     public AclsCommandOptions aclsCommandOptions;
@@ -41,8 +39,6 @@ public class JobCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.visitCommandOptions = new VisitCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
-        this.shareCommandOptions = new ShareCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
 
         this.aclsCommandOptions = new AclsCommandOptions();
@@ -136,49 +132,6 @@ public class JobCommandOptions {
         public boolean deleteFiles = true;
     }
 
-
-    @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions {
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--job-ids"}, description = "Jobs ids", required = true, arity = 1)
-        public String jobsids;
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
-        public String permission;
-
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        public boolean override;
-    }
-
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
-    public class UnshareCommandOptions {
-
-        @ParametersDelegate
-        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--job-ids"}, description = "Jobs ids", required = true, arity = 1)
-        public String jobsids;
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions",
-                required = false, arity = 1)
-        public String permission;
-    }
-
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy job")
     public class GroupByCommandOptions {
 
@@ -220,18 +173,12 @@ public class JobCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
-    public class AclsCommandOptions {
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
-        public String id;
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the job [PENDING]")
+    public class AclsCommandOptions extends BaseJobCommand {
     }
 
     @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions {
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
-        public String id;
+    public class AclsCreateCommandOptions extends BaseJobCommand {
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
@@ -247,10 +194,7 @@ public class JobCommandOptions {
 
     @Parameters(commandNames = {"acl-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions {
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberDeleteCommandOptions extends BaseJobCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -258,10 +202,7 @@ public class JobCommandOptions {
 
     @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions {
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberInfoCommandOptions extends BaseJobCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -269,10 +210,7 @@ public class JobCommandOptions {
 
     @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions{
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberUpdateCommandOptions extends BaseJobCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;

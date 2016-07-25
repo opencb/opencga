@@ -79,18 +79,12 @@ public class PanelCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BasePanelsCommand {
     }
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
-    public class AclsCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the panel [PENDING]")
+    public class AclsCommandOptions extends BasePanelsCommand {
     }
 
     @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsCreateCommandOptions extends BasePanelsCommand {
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
@@ -106,10 +100,7 @@ public class PanelCommandOptions {
 
     @Parameters(commandNames = {"acl-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberDeleteCommandOptions extends BasePanelsCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -117,10 +108,7 @@ public class PanelCommandOptions {
 
     @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberInfoCommandOptions extends BasePanelsCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -128,10 +116,7 @@ public class PanelCommandOptions {
 
     @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions{
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberUpdateCommandOptions extends BasePanelsCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -146,43 +131,4 @@ public class PanelCommandOptions {
         @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
         public String setPermissions;
     }
-   /* @Parameters(commandNames = {"share"}, commandDescription = "Share cohort")
-    public class ShareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
-        public String ids;
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
-        public String permission;
-
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        public boolean override;
-    }
-
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare cohort")
-    public class UnshareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--panels-ids"}, description = "Panels ids", required = true, arity = 1)
-        public String ids;
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of panel permissions", required = false, arity = 1)
-        public String permission;
-    }*/
-
-
 }

@@ -29,8 +29,6 @@ public class FileCommandOptions {
     public AlignmentCommandOptions alignmentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     //final VariantsCommand variantsCommand;
-    public ShareCommandOptions shareCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
@@ -55,8 +53,6 @@ public class FileCommandOptions {
         this.indexCommandOptions = new IndexCommandOptions();
         this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
-        this.shareCommandOptions = new ShareCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.relinkCommandOptions = new RelinkCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -225,7 +221,7 @@ public class FileCommandOptions {
     public class AlignmentCommandOptions extends BaseFileCommand {
     }
 
-
+    @Deprecated
     @Parameters(commandNames = {"fetch"}, commandDescription = "File fetch")
     public class FetchCommandOptions extends BaseFileCommand {
 
@@ -254,40 +250,6 @@ public class FileCommandOptions {
         public String interval;
     }
 
-
-    @Parameters(commandNames = {"share"}, commandDescription = "Share file with other user")
-    public class ShareCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
-        public String permission;
-    }
-
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare file with other user")
-    public class UnshareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--file-ids"}, description = "File Ids", required = true)
-        public String fileIds;
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
-        public String permission;
-
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        public boolean override;
-    }
-
-
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     class UpdateCommandOptions extends BaseFileCommand {
     }
@@ -306,13 +268,7 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
-    public class DeleteCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
-        public String file;
+    public class DeleteCommandOptions extends BaseFileCommand {
 
         @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
                 + " (only applicable for linked files/folders)", required = false, arity = 0)
@@ -331,14 +287,7 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
-    public class UnlinkCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
-        public String file;
-
+    public class UnlinkCommandOptions extends BaseFileCommand {
     }
 
 

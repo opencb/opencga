@@ -39,7 +39,6 @@ public class StudyCommandOptions {
     public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
@@ -153,11 +152,11 @@ public class StudyCommandOptions {
         @Parameter(names = {"--battributes"}, description = "Boolean attributes.", required = false, arity = 0)
         public boolean battributes;
 
-        @Parameter(names = {"--groups"}, description = "Groups.", required = false, arity = 1)
-        public String groups;
-
-        @Parameter(names = {"--groups-users"}, description = "Groups users.", required = false, arity = 1)
-        public String groupsUsers;
+//        @Parameter(names = {"--groups"}, description = "Groups.", required = false, arity = 1)
+//        public String groups;
+//
+//        @Parameter(names = {"--groups-users"}, description = "Groups users.", required = false, arity = 1)
+//        public String groupsUsers;
     }
 
     @Parameters(commandNames = {"scan-files"},
@@ -186,11 +185,8 @@ public class StudyCommandOptions {
     public class StatusCommandOptions extends BaseStudyCommand {
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Study modify")
-    public class UpdateCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    @Parameters(commandNames = {"update"}, commandDescription = "Update the attributes of a study")
+    public class UpdateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
@@ -209,19 +205,14 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
-    public class DeleteCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class DeleteCommandOptions extends BaseStudyCommand {
     }
 
     @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
-    public class SummaryCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class SummaryCommandOptions extends BaseStudyCommand {
     }
 
+    // TODO: Check alignments command line
     @Parameters(commandNames = {"alignments"}, commandDescription = "Study alignments information")
     public class AlignmentsCommandOptions extends BaseStudyCommand {
 
@@ -462,10 +453,7 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies [PENDING]")
-    public class GroupsCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class GroupsCommandOptions extends BaseStudyCommand {
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
@@ -476,17 +464,11 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
-    public class AclsCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class AclsCommandOptions extends BaseStudyCommand {
     }
 
     @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class AclsCreateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
@@ -502,10 +484,7 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acl-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class AclsMemberDeleteCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -513,10 +492,7 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class AclsMemberInfoCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -524,10 +500,7 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions{
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class AclsMemberUpdateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -547,10 +520,7 @@ public class StudyCommandOptions {
 //    public String id;
 
     @Parameters(commandNames = {"groups-create"}, commandDescription = "Create a group [PENDING")
-    public class GroupsCreateCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class GroupsCreateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
@@ -561,10 +531,7 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group [PENDING]")
-    public class GroupsDeleteCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class GroupsDeleteCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
@@ -575,20 +542,14 @@ public class StudyCommandOptions {
     }
 
     @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group [PENDING]")
-    public class GroupsInfoCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class GroupsInfoCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
     }
 
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group [PENDING]")
-    public class GroupsUpdateCommandOptions {
-
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
-        public String id;
+    public class GroupsUpdateCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;

@@ -86,12 +86,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "fetch":
                 fetch();
                 break;
-            case "share":
-                share();
-                break;
-            case "unshare":
-                unshare();
-                break;
             case "update":
                 update();
                 break;
@@ -253,7 +247,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
                 .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
 
-        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
+        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.id, objectMap);
 
         if (!delete.getError().isEmpty()) {
             logger.error(delete.getError());
@@ -291,7 +285,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private void unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
 
-        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.file, new ObjectMap());
+        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
 
         if (!unlink.getError().isEmpty()) {
             logger.error(unlink.getError());

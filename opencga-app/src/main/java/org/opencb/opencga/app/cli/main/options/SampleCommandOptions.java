@@ -212,10 +212,7 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
-    public class DeleteCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class DeleteCommandOptions extends BaseSampleCommand {
     }
 
     @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Annotate sample")
@@ -270,18 +267,12 @@ public class SampleCommandOptions {
         public boolean asMap = true;
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
-    public class AclsCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the sample [PENDING]")
+    public class AclsCommandOptions extends BaseSampleCommand {
     }
 
     @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsCreateCommandOptions extends BaseSampleCommand {
 
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
@@ -297,10 +288,7 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"acl-member-delete"},
             commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberDeleteCommandOptions extends BaseSampleCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -308,10 +296,7 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"acl-member-info"},
             commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberInfoCommandOptions extends BaseSampleCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;
@@ -319,10 +304,7 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"acl-member-update"},
             commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions{
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
+    public class AclsMemberUpdateCommandOptions extends BaseSampleCommand {
 
         @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
         public String memberId;

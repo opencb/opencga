@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantStudy;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -45,6 +46,7 @@ import java.io.IOException;
  * Created by imedina on 03/06/16.
  */
 public class StudiesCommandExecutor extends OpencgaCommandExecutor {
+    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private StudyCommandOptions studiesCommandOptions;
 
@@ -146,9 +148,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String name = studiesCommandOptions.createCommandOptions.name;
         String projectId = studiesCommandOptions.createCommandOptions.projectId;
         String description = studiesCommandOptions.createCommandOptions.description;
+        String type = studiesCommandOptions.createCommandOptions.type;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(),description);
+        if (description != null) {
+            o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+        }
+        if (type != null) {
+            try {
+                o.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+            } catch (IllegalArgumentException e) {
+                logger.error("{} not recognized as a proper study type", type);
+                return;
+            }
+        }
+
         openCGAClient.getStudyClient().create(projectId, name, alias, o);
         System.out.println("Done.");
     }
@@ -233,8 +247,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String attributes = studiesCommandOptions.searchCommandOptions.attributes;
         String nattributes = studiesCommandOptions.searchCommandOptions.nattributes;
         boolean battributes = studiesCommandOptions.searchCommandOptions.battributes;
-        String groups = studiesCommandOptions.searchCommandOptions.groups;
-        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
+//        String groups = studiesCommandOptions.searchCommandOptions.groups;
+//        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
 
 
         if (StringUtils.isNotEmpty(id)) {
@@ -254,7 +268,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         if (StringUtils.isNotEmpty(type)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), type);
+            try {
+                query.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+            } catch (IllegalArgumentException e) {
+                logger.error("{} not recognized as a proper study type", type);
+                return;
+            }
         }
 
         if (StringUtils.isNotEmpty(creationDate)) {
@@ -277,13 +296,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             query.put(CatalogStudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
         }
 
-        if (StringUtils.isNotEmpty(groups)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.GROUPS.key(), groups);
-        }
-
-        if (StringUtils.isNotEmpty(groupsUsers)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), groupsUsers);
-        }
+//        if (StringUtils.isNotEmpty(groups)) {
+//            query.put(CatalogStudyDBAdaptor.QueryParams.GROUPS.key(), groups);
+//        }
+//
+//        if (StringUtils.isNotEmpty(groupsUsers)) {
+//            query.put(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), groupsUsers);
+//        }
 
         QueryResponse<Study> studies = openCGAClient.getStudyClient().search(query, null);
         System.out.println("Studies: " + studies);
@@ -362,7 +381,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
 
-        QueryResponse<Job> jobs = openCGAClient.getStudyClient().getJobs(studiesCommandOptions.filesCommandOptions.id, queryOptions);
+        QueryResponse<Job> jobs = openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.id, queryOptions);
         jobs.first().getResult().stream().forEach(file -> System.out.println(jobs.toString()));
     }
 

@@ -78,7 +78,7 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
-    public class UpdateCommandOptions  {
+    public class UpdateCommandOptions extends OpencgaCommonCommandOptions {
 
         @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
         public String id;
@@ -100,10 +100,7 @@ public class ProjectCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
-    public class DeleteCommandOptions {
-
-        @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
-        public String id;
+    public class DeleteCommandOptions extends BaseProjectCommand {
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help in project")
