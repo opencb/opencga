@@ -479,7 +479,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                     throw new IllegalArgumentException("Wrong namespace : '" + tableName + "'."
                             + " Namespace mismatches with the read from configuration:" + namespace);
                 } else {
-                    tableName = tableName.substring(0, tableName.indexOf(':'));
+                    tableName = tableName.substring(tableName.indexOf(':')+1); // Remove '<namespace>:'
                 }
             }
             sb.append(namespace).append(":");
