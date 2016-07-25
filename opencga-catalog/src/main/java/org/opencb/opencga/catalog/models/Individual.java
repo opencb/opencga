@@ -54,7 +54,7 @@ public class Individual extends Annotable {
     public enum Gender {
         MALE, FEMALE, UNKNOWN
     }
-    
+
     public enum LifeStatus {
         ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN
     }
