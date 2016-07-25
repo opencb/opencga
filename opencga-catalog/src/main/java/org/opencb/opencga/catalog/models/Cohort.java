@@ -28,7 +28,7 @@ import java.util.Map;
  *         <p>
  *         Set of samples grouped according to criteria
  */
-public class Cohort implements Annotable {
+public class Cohort extends Annotable {
 
     private long id;
     private String name;
@@ -41,7 +41,7 @@ public class Cohort implements Annotable {
     private Family family;
 
     private List<CohortAclEntry> acl;
-    private List<AnnotationSet> annotationSets;
+//    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
     private Map<String, Object> attributes;
@@ -258,16 +258,16 @@ public class Cohort implements Annotable {
         return this;
     }
 
-    @Override
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    @Override
-    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
-    }
+//    @Override
+//    public List<AnnotationSet> getAnnotationSets() {
+//        return annotationSets;
+//    }
+//
+//    @Override
+//    public Cohort setAnnotationSets(List<AnnotationSet> annotationSets) {
+//        this.annotationSets = annotationSets;
+//        return this;
+//    }
 
     public Map<String, Object> getStats() {
         return stats;

@@ -5,10 +5,17 @@ import java.util.List;
 /**
  * Created by pfurio on 07/07/16.
  */
-public interface Annotable {
+public abstract class Annotable {
 
-    List<AnnotationSet> getAnnotationSets();
+    protected List<AnnotationSet> annotationSets;
 
-    Annotable setAnnotationSets(List<AnnotationSet> annotationSets);
 
+    public List<AnnotationSet> getAnnotationSets() {
+        return annotationSets;
+    }
+
+    public Annotable setAnnotationSets(List<AnnotationSet> annotationSets) {
+        this.annotationSets = annotationSets;
+        return this;
+    }
 }

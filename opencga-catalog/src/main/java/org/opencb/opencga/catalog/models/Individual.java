@@ -25,10 +25,11 @@ import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.toIntExact;
+
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Individual implements Annotable {
+public class Individual extends Annotable {
 
     private long id;
     private String name;
@@ -47,7 +48,7 @@ public class Individual implements Annotable {
     private List<OntologyTerm> ontologyTerms;
 
     private List<IndividualAclEntry> acl;
-    private List<AnnotationSet> annotationSets;
+//    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
 
@@ -489,14 +490,14 @@ public class Individual implements Annotable {
         return this;
     }
 
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
-    }
+//    public List<AnnotationSet> getAnnotationSets() {
+//        return annotationSets;
+//    }
+//
+//    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+//        this.annotationSets = annotationSets;
+//        return this;
+//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;
