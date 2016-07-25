@@ -10,7 +10,7 @@ import javax.annotation.Nullable;
 /**
  * Created by pfurio on 06/07/16.
  */
-public interface CatalogAnnotationSetDBAdaptor {
+public interface CatalogAnnotationSetDBAdaptor<T, U> extends CatalogAclDBAdaptor<T, U> {
 
     /**
      * Insert an annotation set object in the database to annotate the entity with id "id".
