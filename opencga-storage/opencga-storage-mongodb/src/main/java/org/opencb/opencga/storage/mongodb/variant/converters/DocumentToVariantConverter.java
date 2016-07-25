@@ -58,9 +58,20 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //    public static final String GENE_FIELD = "gene";
 
     public static final Map<String, String> FIELDS_MAP;
+    public static final Set<String> REQUIRED_FIELDS_MAP;
+    public static final String EXCLUDE_STUDIES_SAMPLES_DATA_FIELD = "studies.samplesData";
+    public static final String EXCLUDE_STUDIES_FILES_FIELD = "studies.files";
 
     static {
         FIELDS_MAP = new HashMap<>();
+        REQUIRED_FIELDS_MAP = new HashSet<>();
+        REQUIRED_FIELDS_MAP.add(CHROMOSOME_FIELD);
+        REQUIRED_FIELDS_MAP.add(START_FIELD);
+        REQUIRED_FIELDS_MAP.add(END_FIELD);
+        REQUIRED_FIELDS_MAP.add(REFERENCE_FIELD);
+        REQUIRED_FIELDS_MAP.add(ALTERNATE_FIELD);
+        REQUIRED_FIELDS_MAP.add(TYPE_FIELD);
+
         FIELDS_MAP.put("chromosome", CHROMOSOME_FIELD);
         FIELDS_MAP.put("start", START_FIELD);
         FIELDS_MAP.put("end", END_FIELD);
@@ -74,10 +85,13 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        FIELDS_MAP.put("hgvs.name", HGVS_FIELD + "." + HGVS_NAME_FIELD);
         FIELDS_MAP.put("sourceEntries", STUDIES_FIELD);
         FIELDS_MAP.put("studies", STUDIES_FIELD);
+        FIELDS_MAP.put(EXCLUDE_STUDIES_SAMPLES_DATA_FIELD, null);
+        FIELDS_MAP.put(EXCLUDE_STUDIES_FILES_FIELD, null);
         FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
         FIELDS_MAP.put("sourceEntries.cohortStats", STATS_FIELD);
         FIELDS_MAP.put("studies.stats", STATS_FIELD);
         FIELDS_MAP.put("stats", STATS_FIELD);
+        FIELDS_MAP.put("annotation", ANNOTATION_FIELD);
     }
 
     private DocumentToStudyVariantEntryConverter variantStudyEntryConverter;
@@ -307,10 +321,14 @@ public class DocumentToVariantConverter implements ComplexTypeConverter<Variant,
 //        return builder.toString();
     }
 
-
     public static String toShortFieldName(String longFieldName) {
+        if (FIELDS_MAP.containsKey(longFieldName)) {
+            return FIELDS_MAP.get(longFieldName);
+        }
+//        int idx = longFieldName.indexOf(".");
         if (longFieldName.contains(".")) {
             String[] split = longFieldName.split("\\.");
+//            return FIELDS_MAP.get(longFieldName.substring(idx));
             return FIELDS_MAP.get(split[0]);
         }
         return FIELDS_MAP.get(longFieldName);

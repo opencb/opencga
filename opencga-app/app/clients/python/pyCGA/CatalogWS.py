@@ -308,7 +308,7 @@ class Variables(WS):
             data = json.load(fd)
             fd.close()
 
-        return self.general_method(ws_category1="variables", action="create", data=data, studyId=studyId, name=name,
+        return self.general_method(ws_category1="variableSet", action="create", data=data, studyId=studyId, name=name,
                                    **options)
 
     def delete(self, variable_set_id, **options):
@@ -319,7 +319,7 @@ class Variables(WS):
         :param variable_set_id: Variable Set Id
         """
 
-        return self.general_method(ws_category1="variables", action="delete", item_id1=variable_set_id, **options)
+        return self.general_method(ws_category1="variableSet", action="delete", item_id1=variable_set_id, **options)
 
     def search(self, studyId, **options):
         """
@@ -329,7 +329,7 @@ class Variables(WS):
         :param variable_set_id: Variable Set Id
         """
 
-        return self.general_method(ws_category1="variables", action="search", studyId=studyId, **options)
+        return self.general_method(ws_category1="variableSet", action="search", studyId=studyId, **options)
 
 
 class Samples(WS):
