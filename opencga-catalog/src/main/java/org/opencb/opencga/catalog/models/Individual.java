@@ -36,7 +36,7 @@ public class Individual extends Annotable {
     private long motherId;
     private String family;
     private Gender gender;
-    private String sexualKaryotype;
+    private SexualKaryotype sexualKaryotype;
     private String race;
     private Species species;
     private Population population;
@@ -54,13 +54,17 @@ public class Individual extends Annotable {
     public enum Gender {
         MALE, FEMALE, UNKNOWN
     }
-
+    
     public enum LifeStatus {
-        DEAD, ALIVE, UNKNOWN
+        ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN
     }
 
     public enum AffectationStatus {
         AFFECTED, UNAFFECTED, UNKNOWN
+    }
+
+    public enum SexualKaryotype {
+        UNKNOWN, XX, XY, XO, XXY, XXX, XXYY, XXXY, XXXX, XYY, OTHER
     }
 
     public Individual() {
@@ -75,19 +79,19 @@ public class Individual extends Annotable {
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
                       Population population, Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets,
                       Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, gender, "", race, species, population, TimeUtils.getTime(), status, LifeStatus.UNKNOWN,
-                AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
+        this(id, name, fatherId, motherId, family, gender, SexualKaryotype.UNKNOWN, race, species, population, TimeUtils.getTime(), status,
+                LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
 
         if (gender.equals(Gender.MALE)) {
-            this.sexualKaryotype = "XY";
+            this.sexualKaryotype = SexualKaryotype.XY;
         } else if (gender.equals(Gender.FEMALE)) {
-            this.sexualKaryotype = "XX";
+            this.sexualKaryotype = SexualKaryotype.XX;
         } else {
-            this.sexualKaryotype = "";
+            this.sexualKaryotype = SexualKaryotype.UNKNOWN;
         }
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String sexualKaryotype,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, SexualKaryotype sexualKaryotype,
                       String race, Species species, Population population, String creationDate, Status status, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<IndividualAclEntry> acl,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
@@ -398,11 +402,11 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public String getSexualKaryotype() {
+    public SexualKaryotype getSexualKaryotype() {
         return sexualKaryotype;
     }
 
-    public Individual setSexualKaryotype(String sexualKaryotype) {
+    public Individual setSexualKaryotype(SexualKaryotype sexualKaryotype) {
         this.sexualKaryotype = sexualKaryotype;
         return this;
     }
