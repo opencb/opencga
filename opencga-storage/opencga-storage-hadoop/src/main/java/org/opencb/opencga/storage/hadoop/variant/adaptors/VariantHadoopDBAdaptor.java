@@ -1,9 +1,9 @@
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.adaptors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
-import org.apache.hadoop.hbase.HConstants;
+//import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.filter.*;
@@ -12,27 +12,29 @@ import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.cellbase.client.rest.CellBaseClient;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHadoopArchiveDBIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseResultSetIterator;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantHBaseScanIterator;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.VariantAnnotationToHBaseConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantSqlQueryParser;
+import org.opencb.opencga.storage.hadoop.variant.index.stats.VariantStatsToHBaseConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +64,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final GenomeHelper genomeHelper;
     private final java.sql.Connection phoenixCon;
     private final VariantSqlQueryParser queryParser;
+    private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
 
     public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageEngineConfiguration configuration,
                                   Configuration conf) throws IOException {
@@ -76,14 +79,16 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.variantTable = credentials.getTable();
         this.studyConfigurationManager.set(
                 new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, configuration.getVariant().getOptions()));
+        this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.genomeHelper);
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this));
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
-        try {
-            phoenixCon = phoenixHelper.newJdbcConnection(conf);
-        } catch (SQLException | ClassNotFoundException e) {
-            throw new IOException(e);
-        }
+        phoenixCon = null; // TODO Issue with new cluster
+//        try {
+//            phoenixCon = phoenixHelper.newJdbcConnection(conf);
+//        } catch (SQLException | ClassNotFoundException e) {
+//            throw new IOException(e);
+//        }
     }
 
     public java.sql.Connection getJdbcConnection() {
@@ -106,37 +111,30 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         configuration = HBaseConfiguration.create(configuration);
 
         // HBase configuration
-        configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+//        configuration.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
 //        configuration.set("hbase.master", credentials.getHost() + ":" + credentials.getHbasePort());
 //        configuration.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
-//        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/hbase");
+//        configuration.set(HConstants.ZOOKEEPER_ZNODE_PARENT, String.format("/%s", credentials.getZookeeperPath()));
         return configuration;
     }
 
-    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws IOException {
-        VcfMeta vcfMeta = getVcfMeta(HadoopVariantStorageManager.getTableName(studyId), fileId, null).first();
+    public ArchiveHelper getArchiveHelper(int studyId, int fileId) throws StorageManagerException, IOException {
+        VcfMeta vcfMeta = getVcfMeta(studyId, fileId, null);
         if (vcfMeta == null) {
-            throw new IOException("File '" + fileId + "' not found in study '" + studyId + "'");
+            throw new StorageManagerException("File '" + fileId + "' not found in study '" + studyId + "'");
         }
         return new ArchiveHelper(genomeHelper, vcfMeta);
 
     }
 
-    public QueryResult<VcfMeta> getVcfMeta(String tableName, int fileId, ObjectMap options) throws IOException {
-        try (ArchiveFileMetadataManager manager = getArchiveFileMetadataManager(tableName, options)) {
-            return manager.getVcfMeta(fileId, options);
-        }
+    public VcfMeta getVcfMeta(int studyId, int fileId, QueryOptions options) throws IOException {
+        HadoopVariantSourceDBAdaptor manager = getVariantSourceDBAdaptor();
+        return manager.getVcfMeta(studyId, fileId, options);
     }
 
-    /**
-     * @param tableName Use {@link HadoopVariantStorageManager#getTableName(int)} to get the table
-     * @param options   Extra options
-     * @return A valid ArchiveFileMetadataManager object
-     * @throws IOException If any IO problem occurs
-     */
-    public ArchiveFileMetadataManager getArchiveFileMetadataManager(String tableName, ObjectMap options)
-            throws IOException {
-        return new ArchiveFileMetadataManager(this.getConnection(), tableName, configuration);
+    @Override
+    public HadoopVariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+        return variantSourceDBAdaptor;
     }
 
     @Override
@@ -152,6 +150,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public CellBaseClient getCellBaseClient() {
         throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public VariantDBAdaptorUtils getDBAdaptorUtils() {
+        return queryParser.getUtils();
     }
 
     @Override
@@ -205,10 +208,23 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         List<Variant> variants = new LinkedList<>();
         VariantDBIterator iterator = iterator(query, options);
         iterator.forEachRemaining(variants::add);
-        long numTotalResults = -1;
-        if (options != null && !options.getBoolean("skipCount")) {
-            numTotalResults = count(query).first();
+        long numTotalResults;
+
+        if (options == null) {
+            numTotalResults = variants.size();
+        } else {
+            if (options.getInt(QueryOptions.LIMIT, -1) > 0) {
+                if (options.getBoolean(QueryOptions.SKIP_COUNT, true)) {
+                    numTotalResults = -1;
+                } else {
+                    numTotalResults = count(query).first();
+                }
+            } else {
+                // There are no limit. Do not count.
+                numTotalResults = variants.size();
+            }
         }
+
         return new QueryResult<>("getVariants", ((int) iterator.getTimeFetching()), variants.size(), numTotalResults, "", "", variants);
     }
 
@@ -235,7 +251,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         String sql = queryParser.parse(query, new QueryOptions(VariantSqlQueryParser.COUNT, true));
         logger.info(sql);
         try {
-            Statement statement = phoenixCon.createStatement();
+            Statement statement = getJdbcConnection().createStatement();
             ResultSet resultSet = statement.executeQuery(sql);
             resultSet.next();
             long count = resultSet.getLong(1);
@@ -301,15 +317,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
             ArchiveHelper archiveHelper;
             try {
                 archiveHelper = getArchiveHelper(studyId, fileId);
-            } catch (IOException e) {
-                throw new UncheckedIOException(e);
+            } catch (IOException | StorageManagerException e) {
+                throw new RuntimeException(e);
             }
 
             Scan scan = new Scan();
             scan.addColumn(archiveHelper.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(fileId)));
             addArchiveRegionFilter(scan, region, archiveHelper);
             scan.setMaxResultSize(options.getInt("limit"));
-            String tableName = HadoopVariantStorageManager.getTableName(studyId);
+            String tableName = HadoopVariantStorageManager.getArchiveTableName(studyId, genomeHelper.getConf());
 
             logger.debug("Creating {} iterator", VariantHadoopArchiveDBIterator.class);
             logger.debug("Table name = " + tableName);
@@ -327,7 +343,6 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
                 throw new RuntimeException(e);
             }
         } else {
-            logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
             logger.debug("Table name = " + variantTable);
             String sql = queryParser.parse(query, options);
             logger.info(sql);
@@ -338,14 +353,18 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 //            } catch (SQLException e) {
 //                throw new RuntimeException(e);
 //            }
+
+            logger.debug("Creating {} iterator", VariantHBaseResultSetIterator.class);
             try {
-                Statement statement = phoenixCon.createStatement();
+                Statement statement = getJdbcConnection().createStatement();
                 ResultSet resultSet = statement.executeQuery(sql);
-                return new VariantHBaseResultSetIterator(resultSet, this.genomeHelper, getStudyConfigurationManager(), options);
+                List<String> returnedSamples = getDBAdaptorUtils().getReturnedSamples(query);
+                return new VariantHBaseResultSetIterator(resultSet, genomeHelper, getStudyConfigurationManager(), options, returnedSamples);
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
 
+//            logger.debug("Creating {} iterator", VariantHBaseScanIterator.class);
 //            Scan scan = parseQuery(query, options);
 //            try {
 //                Table table = hbaseCon.getTable(TableName.valueOf(variantTable));
@@ -391,33 +410,44 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         throw new UnsupportedOperationException();
     }
 
-    @Override
-    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-        throw new UnsupportedOperationException();
+    /**
+     * Ensure that all the annotation fields exist are defined.
+     */
+    public void preUpdateStats(StudyConfiguration studyConfiguration) throws IOException {
+        try {
+            phoenixHelper.updateStatsFields(getJdbcConnection(), variantTable, studyConfiguration);
+        } catch (SQLException e) {
+            throw new IOException(e);
+        }
     }
 
     @Override
     public QueryResult addStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+        return updateStats(variantStatsWrappers, studyName, queryOptions);
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, String studyName, QueryOptions queryOptions) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+        return updateStats(variantStatsWrappers,
+                getStudyConfigurationManager().getStudyConfiguration(studyName, queryOptions).first(), queryOptions);
     }
 
     @Override
     public QueryResult updateStats(List<VariantStatsWrapper> variantStatsWrappers, StudyConfiguration studyConfiguration,
                                    QueryOptions options) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException();
+
+        VariantStatsToHBaseConverter converter = new VariantStatsToHBaseConverter(genomeHelper, studyConfiguration);
+        List<Put> puts = converter.apply(variantStatsWrappers);
+
+        long start = System.currentTimeMillis();
+        try (Table table = getConnection().getTable(TableName.valueOf(variantTable))) {
+            table.put(puts);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return new QueryResult<>("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 
     @Override
@@ -432,7 +462,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
      */
     public void preUpdateAnnotations() throws IOException {
         try {
-            phoenixHelper.updateAnnotationFields(phoenixCon, variantTable);
+            phoenixHelper.updateAnnotationFields(getJdbcConnection(), variantTable);
         } catch (SQLException e) {
             throw new IOException(e);
         }
@@ -468,7 +498,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         return new QueryResult("Update annotations", (int) (System.currentTimeMillis() - start), 0, 0, "", "", Collections.emptyList());
     }
 
-    protected Connection getConnection() {
+    public Connection getConnection() {
         return this.genomeHelper.getHBaseManager().getConnection();
     }
 

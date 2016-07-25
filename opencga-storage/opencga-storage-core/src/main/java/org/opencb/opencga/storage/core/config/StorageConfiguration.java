@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.slf4j.Logger;
@@ -31,6 +32,7 @@ import java.util.List;
 /**
  * Created by imedina on 30/04/15.
  */
+@JsonIgnoreProperties("storageEngine")
 public class StorageConfiguration {
 
     private String defaultStorageEngineId;

@@ -13,13 +13,12 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -99,10 +98,11 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         Map<Integer, VcfMeta> vcfMetaMap = new HashMap<Integer, VcfMeta>();
         String tableName = Bytes.toString(getHelper().getIntputTable());
         getLog().debug("Load VcfMETA from {}", tableName);
-        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(tableName, conf)) {
-            QueryResult<VcfMeta> allVcfMetas = metadataManager.getAllVcfMetas(new ObjectMap());
-            for (VcfMeta vcfMeta : allVcfMetas.getResult()) {
-                vcfMetaMap.put(Integer.parseInt(vcfMeta.getVariantSource().getFileId()), vcfMeta);
+        try (HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(conf)) {
+            Iterator<VariantSource> iterator = metadataManager.iterator(studyConfiguration.getStudyId(), null);
+            while (iterator.hasNext()) {
+                VariantSource variantSource = iterator.next();
+                vcfMetaMap.put(Integer.parseInt(variantSource.getFileId()), new VcfMeta(variantSource));
             }
         }
         getLog().info("Loaded {} VcfMETA data!!!", vcfMetaMap.size());

@@ -28,6 +28,8 @@ import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.lang3.time.StopWatch;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.bson.json.JsonMode;
+import org.bson.json.JsonWriterSettings;
 import org.opencb.biodata.models.core.Gene;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.StudyEntry;
@@ -185,7 +187,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public QueryResult delete(Query query, QueryOptions options) {
-        Bson mongoQuery = parseQuery(query, new Document());
+        Bson mongoQuery = parseQuery(query);
         logger.debug("Delete to be executed: '{}'", mongoQuery.toString());
         QueryResult queryResult = variantsCollection.remove(mongoQuery, options);
 
@@ -210,7 +212,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
         StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyName, options).first();
-        Document query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()), new Document());
+        Document query = parseQuery(new Query(VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId()));
 
         // { $pull : { files : {  sid : <studyId> } } }
         Document update = new Document(
@@ -241,10 +243,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
 
 //        parseQueryOptions(options, qb);
-        Document mongoQuery = parseQuery(query, new Document());
+        Document mongoQuery = parseQuery(query);
 //        DBObject projection = parseProjectionQueryOptions(options);
         Document projection = createProjection(query, options);
-        logger.debug("Query to be executed: '{}'", mongoQuery.toString());
+        logger.debug("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, false)));
+//        logger.info("Query to be executed: '{}'", mongoQuery.toJson(new JsonWriterSettings(JsonMode.SHELL, true)));
         options.putIfAbsent(QueryOptions.SKIP_COUNT, true);
 
         int defaultTimeout = configuration.getInt(DEFAULT_TIMEOUT, 3_000);
@@ -644,39 +647,6 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         QueryResult queryResult = groupBy(query, fields.get(0), options);
         queryResult.setWarningMsg(warningMsg);
         return queryResult;
-    }
-
-    @Override
-    public List<Integer> getReturnedStudies(Query query, QueryOptions options) {
-        List<Integer> studyIds = utils.getStudyIds(query.getAsList(VariantQueryParams.RETURNED_STUDIES.key()), options);
-        if (studyIds.isEmpty()) {
-            studyIds = utils.getStudyIds(getStudyConfigurationManager().getStudyNames(options), options);
-        }
-        return studyIds;
-    }
-
-    @Override
-    public Map<Integer, List<Integer>> getReturnedSamples(Query query, QueryOptions options) {
-
-        List<Integer> studyIds = getReturnedStudies(query, options);
-
-        List<String> returnedSamples = query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                .stream().map(s -> s.contains(":") ? s.split(":")[1] : s).collect(Collectors.toList());
-        LinkedHashSet<String> returnedSamplesSet = new LinkedHashSet<>(returnedSamples);
-
-        Map<Integer, List<Integer>> samples = new HashMap<>(studyIds.size());
-        for (Integer studyId : studyIds) {
-            StudyConfiguration sc = getStudyConfigurationManager().getStudyConfiguration(studyId, options).first();
-            if (sc == null) {
-                continue;
-            }
-            LinkedHashMap<String, Integer> returnedSamplesPosition = StudyConfiguration.getReturnedSamplesPosition(sc, returnedSamplesSet);
-            List<Integer> sampleNames = Arrays.asList(new Integer[returnedSamplesPosition.size()]);
-            returnedSamplesPosition.forEach((sample, position) -> sampleNames.set(position, sc.getSampleIds().get(sample)));
-            samples.put(studyId, sampleNames);
-        }
-
-        return samples;
     }
 
     @Override
@@ -1354,35 +1324,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                                 } else {
                                     String study;
                                     String cohort;
-                                    Integer studyId;
                                     Integer cohortId;
                                     if (defaultStudyConfiguration != null && indexOf < 0) {
                                         cohort = s;
-                                        cohortId = getInteger(cohort);
-                                        if (cohortId == null) {
-                                            cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
-                                        }
+                                        cohortId = utils.getCohortId(cohort, defaultStudyConfiguration);
                                     } else {
                                         study = s.substring(0, indexOf);
                                         cohort = s.substring(indexOf + 1);
-                                        studyId = getInteger(study);
-                                        cohortId = getInteger(cohort);
-
-                                        if (studyId == null) {
-                                            StudyConfiguration studyConfiguration =
-                                                    studyConfigurationManager.getStudyConfiguration(study, null).first();
-                                            studyId = studyConfiguration.getStudyId();
-                                            if (cohortId == null) {
-                                                cohortId = studyConfiguration.getCohortIds().get(cohort);
-                                            }
-                                        } else if (cohortId == null) {
-                                            StudyConfiguration studyConfiguration =
-                                                    studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                                            cohortId = studyConfiguration.getCohortIds().get(cohort);
-                                        }
-                                    }
-                                    if (cohortId == null) {
-                                        throw new VariantQueryException("Unknown cohort \"" + s + "\"");
+                                        StudyConfiguration studyConfiguration =
+                                                utils.getStudyConfiguration(study, defaultStudyConfiguration);
+                                        cohortId = utils.getCohortId(cohort, studyConfiguration);
                                     }
                                     return cohortId;
                                 }
@@ -1836,10 +1787,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedSamples(Collections.singletonList("none"));
         } else if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             //Remove the studyName, if any
-            samplesConverter.setReturnedSamples(query.getAsStringList(VariantQueryParams.RETURNED_SAMPLES.key())
-                    .stream()
-                    .map(s -> s.contains(":") ? s.split(":")[1] : s)
-                    .collect(Collectors.toList()));
+            samplesConverter.setReturnedSamples(utils.getReturnedSamples(query));
         }
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;
@@ -2251,27 +2199,16 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 String cohort = cohortOpValue[0];
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
-                studyId = getInteger(study);
-                cohortId = getInteger(cohort);
-                if (studyId == null) {
-                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(study, null).first();
-                    studyId = studyConfiguration.getStudyId();
-                    if (cohortId == null) {
-                        cohortId = studyConfiguration.getCohortIds().get(cohort);
-                    }
-                } else if (cohortId == null) {
-                    StudyConfiguration studyConfiguration = studyConfigurationManager.getStudyConfiguration(studyId, null).first();
-                    cohortId = studyConfiguration.getCohortIds().get(cohort);
-                }
+
+                StudyConfiguration studyConfiguration = utils.getStudyConfiguration(study, defaultStudyConfiguration);
+                cohortId = utils.getCohortId(cohort, studyConfiguration);
+                studyId = studyConfiguration.getStudyId();
             } else {
 //                String study = defaultStudyConfiguration.getStudyName();
                 studyId = defaultStudyConfiguration.getStudyId();
                 String[] cohortOpValue = VariantDBAdaptorUtils.splitOperator(filter);
                 String cohort = cohortOpValue[0];
-                cohortId = getInteger(cohort);
-                if (cohortId == null) {
-                    cohortId = defaultStudyConfiguration.getCohortIds().get(cohort);
-                }
+                cohortId = utils.getCohortId(cohort, defaultStudyConfiguration);
                 operator = cohortOpValue[1];
                 valueStr = cohortOpValue[2];
             }
@@ -2593,7 +2530,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     }
 
     @Override
-    public VariantSourceDBAdaptor getVariantSourceDBAdaptor() {
+    public VariantSourceMongoDBAdaptor getVariantSourceDBAdaptor() {
         return variantSourceMongoDBAdaptor;
     }
 
@@ -2605,6 +2542,11 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
     @Override
     public CellBaseClient getCellBaseClient() {
         return cellBaseClient;
+    }
+
+    @Override
+    public VariantDBAdaptorUtils getDBAdaptorUtils() {
+        return utils;
     }
 
     private ClientConfiguration toClientConfiguration(CellBaseConfiguration configuration) {

@@ -156,6 +156,10 @@ public abstract class StorageManager<DBADAPTOR> {
         return inputFileUri;
     }
 
+    public DBADAPTOR getDBAdaptor() throws StorageManagerException {
+        return getDBAdaptor("");
+    }
+
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;
 
     // TODO: Pending implementation

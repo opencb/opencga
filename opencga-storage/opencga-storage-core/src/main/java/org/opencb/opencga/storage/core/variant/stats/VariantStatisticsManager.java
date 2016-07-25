@@ -168,7 +168,8 @@ public class VariantStatisticsManager {
 
 
         // reader, tasks and writer
-        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId());
+        Query readerQuery = new Query(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), studyConfiguration.getStudyId())
+                .append(VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key(), studyConfiguration.getStudyId());
         if (options.containsKey(Options.FILE_ID.key())) {
             readerQuery.append(VariantDBAdaptor.VariantQueryParams.FILES.key(), options.get(Options.FILE_ID.key()));
         }
@@ -276,7 +277,7 @@ public class VariantStatisticsManager {
                     variantSourceStats.updateSampleStats(variants, null);  // TODO test
                 }
             }
-            logger.debug("another batch  of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
+            logger.debug("another batch of {} elements calculated. time: {}ms", strings.size(), System.currentTimeMillis() - start);
             if (variants.size() != 0) {
                 logger.info("stats created up to position {}:{}", variants.get(variants.size() - 1).getChromosome(),
                         variants.get(variants.size() - 1).getStart());
@@ -284,6 +285,13 @@ public class VariantStatisticsManager {
                 logger.info("task with empty batch");
             }
             return strings;
+        }
+
+        @Override
+        public void post() {
+            if (variantStatisticsCalculator.getSkippedFiles() > 0) {
+                logger.warn("Non calculated variant stats: " + variantStatisticsCalculator.getSkippedFiles());
+            }
         }
     }
 
@@ -310,6 +318,8 @@ public class VariantStatisticsManager {
 
     public void loadVariantStats(VariantDBAdaptor variantDBAdaptor, URI uri, StudyConfiguration studyConfiguration, QueryOptions options)
             throws IOException, StorageManagerException {
+
+        variantDBAdaptor.preUpdateStats(studyConfiguration);
 
         /* Open input streams */
         Path variantInput = Paths.get(uri.getPath());

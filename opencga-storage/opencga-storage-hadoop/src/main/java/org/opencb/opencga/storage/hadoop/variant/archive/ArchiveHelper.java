@@ -3,13 +3,7 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.Cell;
 import org.apache.hadoop.hbase.client.Put;
@@ -19,12 +13,17 @@ import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfRecord;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice.Builder;
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk.
@@ -42,15 +41,15 @@ public class ArchiveHelper extends GenomeHelper {
     public ArchiveHelper(Configuration conf) throws IOException {
         this(conf, null);
         int fileId = conf.getInt(ArchiveDriver.CONFIG_ARCHIVE_FILE_ID, 0);
-        String archiveTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME);
-        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(archiveTable, conf)) {
-            VcfMeta meta = metadataManager.getVcfMeta(fileId, new ObjectMap()).first();
+        int studyId = conf.getInt(GenomeHelper.CONFIG_STUDY_ID, 0);
+        try (HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(conf)) {
+            VcfMeta meta = metadataManager.getVcfMeta(getStudyId(), fileId, null);
             this.meta.set(meta);
         }
         column = Bytes.toBytes(getColumnName(meta.get().getVariantSource()));
     }
 
-    public ArchiveHelper(GenomeHelper helper, VcfMeta meta) throws IOException {
+    public ArchiveHelper(GenomeHelper helper, VcfMeta meta) {
         super(helper);
         this.meta.set(meta);
         column = Bytes.toBytes(getColumnName(meta.getVariantSource()));

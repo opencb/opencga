@@ -1,4 +1,4 @@
-package org.opencb.opencga.storage.hadoop.variant;
+package org.opencb.opencga.storage.hadoop.variant.executors;
 
 /**
  * Created on 18/01/16 .

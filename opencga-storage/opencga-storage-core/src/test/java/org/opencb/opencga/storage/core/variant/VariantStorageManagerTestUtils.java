@@ -7,6 +7,7 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -30,7 +31,6 @@ import java.util.Objects;
  */
 @Ignore
 public abstract class VariantStorageManagerTestUtils extends GenericTest implements VariantStorageTest {
-
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
@@ -91,7 +91,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         return resourcePath.toUri();
     }
 
-    protected static Path getTmpRootDir() throws IOException {
+    public static Path getTmpRootDir() throws IOException {
 //        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
 
         if (rootDir == null) {
@@ -101,7 +101,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     private static void newRootDir() throws IOException {
-        rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+ RandomStringUtils.randomAlphanumeric(10));
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
         Files.createDirectories(rootDir);
     }
 
@@ -182,7 +182,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         newParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), FILE_ID);
-        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
         newParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");

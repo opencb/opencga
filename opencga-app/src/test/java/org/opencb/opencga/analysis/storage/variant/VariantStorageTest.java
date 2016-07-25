@@ -45,6 +45,8 @@ import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestU
  */
 public class VariantStorageTest {
 
+    private static final String STORAGE_ENGINE = "mongodb";
+//    private static final String STORAGE_ENGINE = "hadoop";
     @Rule
     public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
 
@@ -77,7 +79,7 @@ public class VariantStorageTest {
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null, null, null, null,
-                Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null, null, null, sessionId).first().getId();
+                Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(STORAGE_ENGINE, dbName)), null, null, null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
         File file1 = create("1000g_batches/1-500.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
         File file2 = create("1000g_batches/501-1000.filtered.10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz");
