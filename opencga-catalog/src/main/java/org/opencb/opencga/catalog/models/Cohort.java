@@ -52,24 +52,9 @@ public class Cohort extends Annotable {
 
     public Cohort(String name, Study.Type type, String creationDate, String description, List<Long> samples,
                   Map<String, Object> attributes) throws CatalogException {
-        this(-1, name, type, creationDate, new CohortStatus(), description, samples, Collections.emptyMap(), attributes);
+        this(-1, name, type, creationDate, new CohortStatus(), description, samples, null, Collections.emptyList(), Collections.emptyList(),
+                Collections.emptyMap(), attributes);
     }
-
-    public Cohort(int id, String name, Study.Type type, String creationDate, CohortStatus cohortStatus, String description,
-                  List<Long> samples, Map<String, Object> stats, Map<String, Object> attributes) throws CatalogException {
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.creationDate = creationDate;
-        this.status = cohortStatus;
-        this.description = description;
-        this.samples = samples;
-        this.acl = Collections.emptyList();
-        this.annotationSets = Collections.emptyList();
-        this.stats = stats;
-        this.attributes = attributes;
-    }
-
     public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
                   List<Long> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
                   Map<String, Object> stats, Map<String, Object> attributes) {
