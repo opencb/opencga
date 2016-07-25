@@ -140,6 +140,8 @@ public class HBaseStudyConfigurationManager extends StudyConfigurationManager {
         updateStudiesSummary(studyConfiguration.getStudyName(), studyConfiguration.getStudyId(), options);
         byte[] columnQualifier = Bytes.toBytes(studyConfiguration.getStudyName());
 
+        studyConfiguration.getHeaders().clear(); // REMOVE: stored in Archive table
+
         try {
             getHBaseManager().act(tableName, table -> {
                 byte[] bytes = objectMapper.writeValueAsBytes(studyConfiguration);
