@@ -38,6 +38,8 @@ public class Cohort implements Annotable {
     private String description;
 
     private List<Long> samples;
+    private Family family;
+
     private List<CohortAclEntry> acl;
     private List<AnnotationSet> annotationSets;
 
@@ -64,6 +66,23 @@ public class Cohort implements Annotable {
         this.samples = samples;
         this.acl = Collections.emptyList();
         this.annotationSets = Collections.emptyList();
+        this.stats = stats;
+        this.attributes = attributes;
+    }
+
+    public Cohort(long id, String name, Study.Type type, String creationDate, CohortStatus status, String description,
+                  List<Long> samples, Family family, List<CohortAclEntry> acl, List<AnnotationSet> annotationSets,
+                  Map<String, Object> stats, Map<String, Object> attributes) {
+        this.id = id;
+        this.name = name;
+        this.type = type;
+        this.creationDate = creationDate;
+        this.status = status;
+        this.description = description;
+        this.samples = samples;
+        this.family = family;
+        this.acl = acl;
+        this.annotationSets = annotationSets;
         this.stats = stats;
         this.attributes = attributes;
     }
@@ -101,6 +120,44 @@ public class Cohort implements Annotable {
         }
     }
 
+    public class Family {
+
+        private String id;
+        private List<Long> probands;
+
+        public Family(String id, List<Long> probands) {
+            this.id = id;
+            this.probands = probands;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("Family{");
+            sb.append("id='").append(id).append('\'');
+            sb.append(", probands=").append(probands);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public Family setId(String id) {
+            this.id = id;
+            return this;
+        }
+
+        public List<Long> getProbands() {
+            return probands;
+        }
+
+        public Family setProbands(List<Long> probands) {
+            this.probands = probands;
+            return this;
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Cohort{");
@@ -111,6 +168,7 @@ public class Cohort implements Annotable {
         sb.append(", status=").append(status);
         sb.append(", description='").append(description).append('\'');
         sb.append(", samples=").append(samples);
+        sb.append(", family=").append(family);
         sb.append(", acl=").append(acl);
         sb.append(", annotationSets=").append(annotationSets);
         sb.append(", stats=").append(stats);
@@ -179,6 +237,15 @@ public class Cohort implements Annotable {
 
     public Cohort setSamples(List<Long> samples) {
         this.samples = samples;
+        return this;
+    }
+
+    public Family getFamily() {
+        return family;
+    }
+
+    public Cohort setFamily(Family family) {
+        this.family = family;
         return this;
     }
 
