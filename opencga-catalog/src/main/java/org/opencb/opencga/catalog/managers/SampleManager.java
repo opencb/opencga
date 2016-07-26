@@ -508,25 +508,45 @@ public class SampleManager extends AbstractManager implements ISampleManager {
 
     @Override
     public QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException {
+        long sampleId = commonGetAllAnnotationSets(id, sessionId);
+        return sampleDBAdaptor.getAnnotationSet(sampleId, null);
+    }
+
+    @Override
+    public QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, String sessionId) throws CatalogException {
+        long sampleId = commonGetAllAnnotationSets(id, sessionId);
+        return sampleDBAdaptor.getAnnotationSetAsMap(sampleId, null);
+    }
+
+    private long commonGetAllAnnotationSets(String id, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         long sampleId = getSampleId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
-
-        return sampleDBAdaptor.getAnnotationSet(sampleId, null);
+        return sampleId;
     }
 
     @Override
     public QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
+        long sampleId = commonGetAnnotationSet(id, annotationSetName, sessionId);
+        return sampleDBAdaptor.getAnnotationSet(sampleId, annotationSetName);
+    }
+
+    @Override
+    public QueryResult<ObjectMap> getAnnotationSetAsMap(String id, String annotationSetName, String sessionId) throws CatalogException {
+        long sampleId = commonGetAnnotationSet(id, annotationSetName, sessionId);
+        return sampleDBAdaptor.getAnnotationSetAsMap(sampleId, annotationSetName);
+    }
+
+    private long commonGetAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkAlias(annotationSetName, "annotationSetName");
         String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
         long sampleId = getSampleId(userId, id);
         authorizationManager.checkSamplePermission(sampleId, userId, SampleAclEntry.SamplePermissions.VIEW_ANNOTATIONS);
-
-        return sampleDBAdaptor.getAnnotationSet(sampleId, annotationSetName);
+        return sampleId;
     }
 
     @Override
@@ -587,8 +607,45 @@ public class SampleManager extends AbstractManager implements ISampleManager {
     }
 
     @Override
+    public QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, long variableSetId, @Nullable String annotation, String sessionId)
+            throws CatalogException {
+        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, variableSetId, annotation, sessionId);
+        List<ObjectMap> annotationSets;
+
+        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
+            logger.debug("No samples found");
+            annotationSets = Collections.emptyList();
+        } else {
+            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
+                    sampleQueryResult.first().getAnnotationSets().size());
+            annotationSets = sampleQueryResult.first().getAnnotationSetAsMap();
+        }
+
+        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
+                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
+    }
+
+    @Override
     public QueryResult<AnnotationSet> searchAnnotationSet(String id, long variableSetId, @Nullable String annotation,
                                                           String sessionId) throws CatalogException {
+        QueryResult<Sample> sampleQueryResult = commonSearchAnnotationSet(id, variableSetId, annotation, sessionId);
+        List<AnnotationSet> annotationSets;
+
+        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
+            logger.debug("No samples found");
+            annotationSets = Collections.emptyList();
+        } else {
+            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
+                    sampleQueryResult.first().getAnnotationSets().size());
+            annotationSets = sampleQueryResult.first().getAnnotationSets();
+        }
+
+        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
+                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
+    }
+
+    private QueryResult<Sample> commonSearchAnnotationSet(String id, long variableSetId, @Nullable String annotation, String sessionId)
+            throws CatalogException {
         ParamUtils.checkParameter(id, "id");
         ParamUtils.checkParameter(sessionId, "sessionId");
 
@@ -609,19 +666,6 @@ public class SampleManager extends AbstractManager implements ISampleManager {
         QueryResult<Sample> sampleQueryResult = sampleDBAdaptor.get(query, queryOptions);
 
         logger.debug("Query: {}, \t QueryOptions: {}", query.safeToString(), queryOptions.safeToString());
-
-        List<AnnotationSet> annotationSets;
-
-        if (sampleQueryResult == null || sampleQueryResult.getNumResults() == 0) {
-            logger.debug("No samples found");
-            annotationSets = Collections.emptyList();
-        } else {
-            logger.debug("Found {} sample with {} annotationSets", sampleQueryResult.getNumResults(),
-                    sampleQueryResult.first().getAnnotationSets().size());
-            annotationSets = sampleQueryResult.first().getAnnotationSets();
-        }
-
-        return new QueryResult<>("Search annotation sets", sampleQueryResult.getDbTime(), annotationSets.size(), annotationSets.size(),
-                sampleQueryResult.getWarningMsg(), sampleQueryResult.getErrorMsg(), annotationSets);
+        return sampleQueryResult;
     }
 }

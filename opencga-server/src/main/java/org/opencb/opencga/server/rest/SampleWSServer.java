@@ -331,12 +331,15 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotationSets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                           @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
-                                           @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "variableSetId") @QueryParam("variableSetId") long variableSetId,
+                                           @ApiParam(value = "annotation") @QueryParam("annotation") String annotation,
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.searchSampleAnnotationSets(sampleStr, variableSetId, annotation, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getSampleManager().searchAnnotationSetAsMap(sampleStr, variableSetId, annotation, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getSampleManager().searchAnnotationSet(sampleStr, variableSetId, annotation, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -346,10 +349,13 @@ public class SampleWSServer extends OpenCGAWSServer {
     @Path("/{sampleId}/annotationSets/info")
     @ApiOperation(value = "Return the annotation sets of the sample [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
-                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.getAllSampleAnnotationSets(sampleStr, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getSampleManager().getAllAnnotationSetsAsMap(sampleStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getSampleManager().getAllAnnotationSets(sampleStr, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -413,10 +419,13 @@ public class SampleWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "sampleId", required = true) @PathParam("sampleId") String sampleStr,
                                         @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                        @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                        @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.getSampleAnnotationSet(sampleStr, annotationSetName, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getSampleManager().getAnnotationSetAsMap(sampleStr, annotationSetName, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getSampleManager().getAnnotationSet(sampleStr, annotationSetName, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }

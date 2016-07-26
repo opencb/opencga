@@ -352,13 +352,15 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/annotationSets/search")
     @ApiOperation(value = "Search annotation sets [NOT TESTED]", position = 11)
     public Response searchAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
-                                           @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.searchCohortAnnotationSets(cohortStr, variableSetId, annotation, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getCohortManager().searchAnnotationSetAsMap(cohortStr, variableSetId, annotation, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getCohortManager().searchAnnotationSet(cohortStr, variableSetId, annotation, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -368,10 +370,13 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/annotationSets/info")
     @ApiOperation(value = "Return all the annotation sets of the cohort [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
-                                         @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.getAllCohortAnnotationSets(cohortStr, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getCohortManager().getAllAnnotationSetsAsMap(cohortStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getCohortManager().getAllAnnotationSets(cohortStr, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -436,10 +441,13 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.getCohortAnnotationSet(cohortStr, annotationSetName, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getCohortManager().getAnnotationSetAsMap(cohortStr, annotationSetName, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getCohortManager().getAnnotationSet(cohortStr, annotationSetName, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -541,9 +549,9 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
         try {
             return createOkResponse(catalogManager.updateCohortAcl(cohortIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {
