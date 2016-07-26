@@ -82,9 +82,13 @@ public class Individual extends Annotable {
         this(id, name, fatherId, motherId, family, gender, SexualKaryotype.UNKNOWN, race, species, population, TimeUtils.getTime(), status,
                 LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
 
-        if (gender.equals(Gender.MALE)) {
+        if (gender == null) {
+            this.gender = Gender.UNKNOWN;
+        }
+
+        if (this.gender.equals(Gender.MALE)) {
             this.sexualKaryotype = SexualKaryotype.XY;
-        } else if (gender.equals(Gender.FEMALE)) {
+        } else if (this.gender.equals(Gender.FEMALE)) {
             this.sexualKaryotype = SexualKaryotype.XX;
         } else {
             this.sexualKaryotype = SexualKaryotype.UNKNOWN;

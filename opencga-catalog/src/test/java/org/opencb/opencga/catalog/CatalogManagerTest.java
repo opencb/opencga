@@ -1882,15 +1882,15 @@ public class CatalogManagerTest extends GenericTest {
         catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
     }
 
-    @Test
-    public void testQuerySampleAnnotationFail2() throws CatalogException {
-        Query query = new Query();
-        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), "nestedObject.stringList:lo,lu,LL");
-
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("Wrong annotation query");
-        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
-    }
+//    @Test
+//    public void testQuerySampleAnnotationFail2() throws CatalogException {
+//        Query query = new Query();
+//        query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), "nestedObject.stringList:lo,lu,LL");
+//
+//        thrown.expect(CatalogDBException.class);
+//        thrown.expectMessage("Wrong annotation query");
+//        catalogManager.getAllSamples(studyId, query, null, sessionIdUser).getResult();
+//    }
 
     @Test
     public void testQuerySamples() throws CatalogException {
