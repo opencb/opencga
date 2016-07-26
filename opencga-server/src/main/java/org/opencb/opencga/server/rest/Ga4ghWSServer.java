@@ -43,10 +43,10 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
         String method = "ga4gh/variants/search";
         try {
 
-            if (request.getVariantSetIds() == null || request.getVariantSetIds().isEmpty()) {
+            if (request.getVariantSetId() == null || request.getVariantSetId().isEmpty()) {
                 return createErrorResponse(method, "Required referenceName or referenceId");
             }
-            queryOptions.append(STUDIES.key(), request.getVariantSetIds());
+            queryOptions.append(STUDIES.key(), request.getVariantSetId());
             String studyIdStr = queryOptions.getAsStringList(STUDIES.key()).get(0);
             long studyId = catalogManager.getStudyId(studyIdStr);
 
@@ -54,7 +54,11 @@ public class Ga4ghWSServer extends OpenCGAWSServer {
             if (request.getCallSetIds() != null) {
                 queryOptions.append(RETURNED_SAMPLES.key(), request.getCallSetIds());
             }
-            CharSequence chr = request.getReferenceName() != null ? request.getReferenceName() : request.getReferenceId();
+
+            CharSequence chr = null;
+            if (request.getReferenceName() != null) {
+                chr = request.getReferenceName();
+            }
             if (chr == null) {
                 return createErrorResponse(method, "Required referenceName or referenceId");
             }
