@@ -5,6 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
 import java.util.List;
@@ -14,9 +15,6 @@ import java.util.List;
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
 public class FileCommandOptions {
-
-    public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
 
     public CopyCommandOptions copyCommandOptions;
     public CreateFolderCommandOptions createFolderCommandOptions;
@@ -37,6 +35,17 @@ public class FileCommandOptions {
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
+
+    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+
+    public JCommander jCommander;
+    public OpencgaCommonCommandOptions commonCommandOptions;
+
+    private AclCommandOptions aclCommandOptions;
 
     public FileCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
@@ -61,6 +70,13 @@ public class FileCommandOptions {
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+
+        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
+        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
     public class BaseFileCommand {

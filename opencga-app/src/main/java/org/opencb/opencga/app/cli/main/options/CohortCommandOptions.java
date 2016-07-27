@@ -5,7 +5,7 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
-import org.opencb.opencga.catalog.models.Cohort;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.Study;
 
 /**
@@ -23,11 +23,11 @@ public class CohortCommandOptions {
     public StatsCommandOptions statsCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
-    public AclsCommandOptions aclsCommandOptions;
-    public AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
     public AnnotationSetsAllInfoCommandOptions annotationSetsAllInfoCommandOptions;
     public AnnotationSetsSearchCommandOptions annotationSetsSearchCommandOptions;
@@ -36,6 +36,8 @@ public class CohortCommandOptions {
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
+
+    private AclCommandOptions aclCommandOptions;
 
     public CohortCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
@@ -56,11 +58,12 @@ public class CohortCommandOptions {
         this.annotationSetsInfoCommandOptions = new AnnotationSetsInfoCommandOptions();
         this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
 
-        this.aclsCommandOptions = new AclsCommandOptions();
-        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
+        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
+        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
     public class BaseCohortsCommand {
@@ -274,56 +277,4 @@ public class CohortCommandOptions {
         public boolean asMap = true;
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the cohort [PENDING]")
-    public class AclsCommandOptions extends BaseCohortsCommand {
-    }
-
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions extends BaseCohortsCommand {
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
-        public String permissions;
-
-        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
-                required = false, arity = 1)
-        public String templateId;
-    }
-
-    @Parameters(commandNames = {"acl-member-delete"},
-            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions extends BaseCohortsCommand {
-
-        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Parameters(commandNames = {"acl-member-info"},
-            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions extends BaseCohortsCommand {
-
-        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Parameters(commandNames = {"acl-member-update"},
-            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions extends BaseCohortsCommand {
-
-        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-        public String memberId;
-
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
-        public String addPermissions;
-
-        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
-                required = false, arity = 1)
-        public String removePermissions;
-
-        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
-        public String setPermissions;
-    }
 }

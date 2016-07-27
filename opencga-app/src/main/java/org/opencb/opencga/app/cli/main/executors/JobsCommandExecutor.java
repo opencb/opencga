@@ -241,11 +241,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Creating acl");
 
         QueryOptions queryOptions = new QueryOptions();
-
-        if (StringUtils.isNotEmpty(jobsCommandOptions.aclsCreateCommandOptions.templateId)) {
-            queryOptions.put("templateId", jobsCommandOptions.aclsCreateCommandOptions.templateId);
-        }
-
+        
         QueryResponse<JobAclEntry> acl =
                 openCGAClient.getJobClient().createAcl(jobsCommandOptions.aclsCreateCommandOptions.id,
                         jobsCommandOptions.aclsCreateCommandOptions.permissions, jobsCommandOptions.aclsCreateCommandOptions.members,

@@ -32,11 +32,10 @@ public class SampleCommandOptions {
     public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
-    AclCommandOptions aclCommandOptions;
+    private AclCommandOptions aclCommandOptions;
 
     public SampleCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
@@ -56,11 +55,6 @@ public class SampleCommandOptions {
         this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
 
         aclCommandOptions = new AclCommandOptions(commonCommandOptions);
-//        this.aclsCommandOptions = new AclsCommandOptions();
-//        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-//        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
-//        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
-//        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
         this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
         this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
@@ -276,58 +270,4 @@ public class SampleCommandOptions {
         public boolean asMap = true;
     }
 
-
-
-//    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the sample [PENDING]")
-//    public class AclsCommandOptions extends BaseSampleCommand {
-//    }
-//
-//    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-//    public class AclsCreateCommandOptions extends BaseSampleCommand {
-//
-//        @Parameter(names = {"--members"},
-//                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-//        public String members;
-//
-//        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
-//        public String permissions;
-//
-//        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
-//                required = false, arity = 1)
-//        public String templateId;
-//    }
-//
-//    @Parameters(commandNames = {"acl-member-delete"},
-//            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-//    public class AclsMemberDeleteCommandOptions extends BaseSampleCommand {
-//
-//        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-//        public String memberId;
-//    }
-//
-//    @Parameters(commandNames = {"acl-member-info"},
-//            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-//    public class AclsMemberInfoCommandOptions extends BaseSampleCommand {
-//
-//        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-//        public String memberId;
-//    }
-//
-//    @Parameters(commandNames = {"acl-member-update"},
-//            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-//    public class AclsMemberUpdateCommandOptions extends BaseSampleCommand {
-//
-//        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-//        public String memberId;
-//
-//        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
-//        public String addPermissions;
-//
-//        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
-//                required = false, arity = 1)
-//        public String removePermissions;
-//
-//        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
-//        public String setPermissions;
-//    }
 }

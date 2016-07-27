@@ -138,7 +138,12 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
-        // TODO: "content", "groupBy", "acls", "variants"
+        fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
+        fileSubCommands.addCommand("acl-create", fileCommandOptions.aclsCreateCommandOptions);
+        fileSubCommands.addCommand("acl-member-delete", fileCommandOptions.aclsMemberDeleteCommandOptions);
+        fileSubCommands.addCommand("acl-member-info", fileCommandOptions.aclsMemberInfoCommandOptions);
+        fileSubCommands.addCommand("acl-member-update", fileCommandOptions.aclsMemberUpdateCommandOptions);
+        // TODO: "content", "groupBy", "variants"
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);

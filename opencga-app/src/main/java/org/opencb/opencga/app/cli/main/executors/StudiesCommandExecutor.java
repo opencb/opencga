@@ -695,11 +695,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put("templateId", studiesCommandOptions.aclsCreateCommandOptions.templateId);
         }
 
-        QueryResponse<StudyAclEntry> acl =
-                openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.id,
-                        studiesCommandOptions.aclsCreateCommandOptions.permissions, studiesCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
+//        QueryResponse<StudyAclEntry> acl =
+//                openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.commonAclsCreateOptions.id,
+//                        studiesCommandOptions.aclsCreateCommandOptions.commonAclsCreateOptions.permissions,
+//                        studiesCommandOptions.aclsCreateCommandOptions.commonAclsCreateOptions.members,
+//                        queryOptions);
+//        System.out.println(acl.toString());
     }
 
     private void aclMemberDelete() throws CatalogException,IOException {
