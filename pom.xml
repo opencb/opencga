@@ -421,13 +421,6 @@
                 <!--<artifactId>hadoop-core</artifactId>-->
                 <!--<version>${hadoop.version}</version>-->
             <!--</dependency>-->
-            <!--<dependency>-->
-                <!--<groupId>org.apache.hbase</groupId>-->
-                <!--<artifactId>hbase-testing-util</artifactId>-->
-                <!--<version>${hbase.version}</version>-->
-                <!--<scope>test</scope>-->
-                <!--<optional>true</optional>-->
-            <!--</dependency>-->
             <dependency>
                 <groupId>org.apache.phoenix</groupId>
                 <artifactId>phoenix-spark</artifactId>
@@ -556,8 +549,9 @@
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>hbase://who1:60000</OPENCGA.STORAGE.HADOOP.VARIANT.DB.HOSTS>
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
-                <OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>hdfs://who1</OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>
                 <OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE>
+                <OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>hdfs://who1</OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>
+                <OPENCGA.STORAGE.HADOOP.ZOOKEEPER.ZNODE.PARENT>/hbase</OPENCGA.STORAGE.HADOOP.ZOOKEEPER.ZNODE.PARENT>
 
                 <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
