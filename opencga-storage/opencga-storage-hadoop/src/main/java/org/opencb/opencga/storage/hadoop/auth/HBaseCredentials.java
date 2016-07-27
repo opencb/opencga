@@ -99,7 +99,7 @@ public class HBaseCredentials implements OpenCGACredentials {
     }
 
     public URI getHostUri() {
-        String zooPath = StringUtils.equals(DEFAULT_ZOOKEEPER_PATH, getZookeeperPath()) ? null : getZookeeperPath();
+        String zooPath = StringUtils.equals(DEFAULT_ZOOKEEPER_PATH, getZookeeperPath()) ? null : "/" + getZookeeperPath();
         try {
             return new URI("hbase", null, getHost(), getHbasePort(), zooPath, null, null);
         } catch (URISyntaxException e) {
