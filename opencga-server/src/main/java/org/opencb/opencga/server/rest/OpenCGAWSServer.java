@@ -186,7 +186,7 @@ public class OpenCGAWSServer {
         // We must load the configuration files and init catalogManager, storageManagerFactory and Logger only the first time.
         // We first read 'config-dir' parameter passed
         ServletContext context = httpServletRequest.getServletContext();
-        String configDirString = context.getInitParameter("config-dir");
+        String configDirString = context.getInitParameter("OPENCGA_HOME");
         if (StringUtils.isEmpty(configDirString)) {
             // If not exists then we try the environment variable OPENCGA_HOME
             if (StringUtils.isNotEmpty(System.getenv("OPENCGA_HOME"))) {
