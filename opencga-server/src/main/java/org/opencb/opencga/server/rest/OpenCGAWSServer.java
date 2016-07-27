@@ -188,16 +188,14 @@ public class OpenCGAWSServer {
         ServletContext context = httpServletRequest.getServletContext();
         String configDirString = context.getInitParameter("config-dir");
         if (StringUtils.isEmpty(configDirString)) {
-            // If not exists then we try the environment variable OPENCGA_HOME
-            if (StringUtils.isNotEmpty(System.getenv("OPENCGA_HOME"))) {
+            // If not environment variable then we check web.xml parameter
+            if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
+                configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
+            } else if (StringUtils.isNotEmpty(System.getenv("OPENCGA_HOME"))) {
+                // If not exists then we try the environment variable OPENCGA_HOME
                 configDirString = System.getenv("OPENCGA_HOME") + "/conf";
             } else {
-                // If not environment variable then we check web.xml parameter
-                if (StringUtils.isNotEmpty(context.getInitParameter("OPENCGA_HOME"))) {
-                    configDirString = context.getInitParameter("OPENCGA_HOME") + "/conf";
-                } else {
-                    logger.error("No valid configuration directory provided!");
-                }
+                logger.error("No valid configuration directory provided!");
             }
         }
 

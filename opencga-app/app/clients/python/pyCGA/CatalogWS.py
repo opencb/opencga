@@ -415,22 +415,20 @@ class Samples(WS):
         variable = Variables()
         variableSetId = str(variable.search(studyId=studyId, name=variableSetName)[0]["id"])
 
-
         if update:
             for annt_set in self.info(str(sample_id))[0]["annotationSets"]:
                 if annt_set["variableSetId"] == int(variableSetId):
                     annotationSetName = annt_set["name"]
 
-                    return self.general_method(ws_category1="samples", action="annotate",
-                                               item_id1=str(sample_id), annotateSetName=annotationSetName,
-                                               variableSetId=variableSetId, update="true", data=data
-                                               )
-
+                    return self.general_method(ws_category1="samples", action="update",
+                                               item_id1=str(sample_id), ws_category2="annotationSets",
+                                               item_id2=annotationSetName, data=data)
 
         annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
-        return self.general_method(ws_category1="samples", action="annotate", item_id1=sample_id,
-                                   variableSetId=variableSetId, annotateSetName=annotateSetName, data=data, **options)
+        return self.general_method(ws_category1="samples", action="create", item_id1=str(sample_id),
+                                   ws_category2="annotationSets", variableSetId=variableSetId,
+                                   annotateSetName=annotateSetName, data=data, **options)
 
     def info(self, sampleId, **options):
         """
@@ -547,17 +545,15 @@ class Individuals(WS):
                 if annt_set["variableSetId"] == int(variableSetId):
                     annotationSetName = annt_set["name"]
 
-                    return self.general_method(ws_category1="individuals", action="annotate",
-                                               item_id1=str(individual_id), annotateSetName=annotationSetName,
-                                               variableSetId=variableSetId, update="true", data=data
-                                               )
+                    return self.general_method(ws_category1="individuals", action="update",
+                                               item_id1=str(individual_id), ws_category2="annotationSets",
+                                               item_id2=annotationSetName, data=data)
 
         annotationSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
-        return self.general_method(ws_category1="individuals", action="annotate",
-                                   item_id1=str(individual_id), annotateSetName=annotationSetName,
-                                   variableSetId=variableSetId, update="false", data=data
-                                   )
+        return self.general_method(ws_category1="individuals", action="create", item_id1=str(individual_id),
+                                   ws_category2="annotationSets", variableSetId=variableSetId,
+                                   annotateSetName=annotationSetName, data=data)
 
     def search_by_annotation(self, studyId, variableSetName, *queries, **options):
         """
