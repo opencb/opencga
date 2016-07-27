@@ -21,13 +21,15 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
@@ -43,10 +45,12 @@ import java.nio.file.Paths;
 public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     private FileCommandOptions filesCommandOptions;
+    private AclCommandExecutor<File, FileAclEntry> aclCommandExecutor;
 
     public FilesCommandExecutor(FileCommandOptions filesCommandOptions) {
         super(filesCommandOptions.commonCommandOptions);
         this.filesCommandOptions = filesCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -86,12 +90,6 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "fetch":
                 fetch();
                 break;
-            case "share":
-                share();
-                break;
-            case "unshare":
-                unshare();
-                break;
             case "update":
                 update();
                 break;
@@ -115,6 +113,21 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "group-by":
                 groupBy();
+                break;
+            case "acl":
+                aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
+                break;
+            case "acl-create":
+                aclCommandExecutor.aclsCreate(filesCommandOptions.aclsCreateCommandOptions, openCGAClient.getFileClient());
+                break;
+            case "acl-member-delete":
+                aclCommandExecutor.aclMemberDelete(filesCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getFileClient());
+                break;
+            case "acl-member-info":
+                aclCommandExecutor.aclMemberInfo(filesCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getFileClient());
+                break;
+            case "acl-member-update":
+                aclCommandExecutor.aclMemberUpdate(filesCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getFileClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -253,7 +266,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
                 .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
                 .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
 
-        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.file, objectMap);
+        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.id, objectMap);
 
         if (!delete.getError().isEmpty()) {
             logger.error(delete.getError());
@@ -291,7 +304,7 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private void unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
 
-        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.file, new ObjectMap());
+        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
 
         if (!unlink.getError().isEmpty()) {
             logger.error(unlink.getError());

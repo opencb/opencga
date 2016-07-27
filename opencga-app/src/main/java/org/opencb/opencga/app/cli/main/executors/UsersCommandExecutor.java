@@ -35,6 +35,7 @@ import java.util.Collections;
  * Created by imedina on 02/03/15.
  */
 public class UsersCommandExecutor extends OpencgaCommandExecutor {
+    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private UserCommandOptions usersCommandOptions;
 
@@ -68,8 +69,8 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
             case "info":
                 info();
                 break;
-            case "list":
-                list();
+            case "projects":
+                projects();
                 break;
             case "login":
                 login();
@@ -143,7 +144,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         System.out.println("user = " + user);
     }
 
-    private void list() throws CatalogException, IOException {
+    private void projects() throws CatalogException, IOException {
         logger.debug("List all projects and studies of user");
         QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(null);
         System.out.println("projects = " + projects);
@@ -184,7 +185,9 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 
     private void logout() throws IOException {
         logger.debug("Logout");
-        logoutSession();
+        openCGAClient.logout();
+        logoutSessionFile();
+//        logoutSession();
     }
 
 }

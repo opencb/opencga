@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
@@ -226,9 +227,12 @@ public class CatalogStudyConfigurationFactory {
         }
     }
 
-    public void updateStudyConfigurationFromCatalog(long studyId, StudyConfigurationManager studyConfigurationManager, String sessionId) throws CatalogException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
-        studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+    public void updateStudyConfigurationFromCatalog(long studyId, StudyConfigurationManager studyConfigurationManager, String sessionId)
+            throws CatalogException, StorageManagerException {
+        try (StudyConfigurationManager.LockCloseable lock = studyConfigurationManager.closableLockStudy((int) studyId)) {
+            StudyConfiguration studyConfiguration = getStudyConfiguration(studyId, studyConfigurationManager, new QueryOptions(), sessionId);
+            studyConfigurationManager.updateStudyConfiguration(studyConfiguration, new QueryOptions());
+        }
     }
 
     public void updateCatalogFromStudyConfiguration(StudyConfiguration studyConfiguration, QueryOptions options, String sessionId) throws CatalogException {

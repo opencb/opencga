@@ -8,6 +8,7 @@ import com.mongodb.client.result.UpdateResult;
 import org.apache.commons.collections.map.LinkedMap;
 import org.bson.Document;
 import org.bson.conversions.Bson;
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -126,6 +127,30 @@ abstract class CatalogMongoAnnotationDBAdaptor extends CatalogMongoDBAdaptor {
     public QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException {
         long startTime = startQuery();
 
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, annotationSetName);
+
+        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Annotable annotable : aggregate.getResult()) {
+            annotationSets.add(annotable.getAnnotationSets().get(0));
+        }
+
+        return endQuery("Get annotation set", startTime, annotationSets);
+    }
+
+    public QueryResult<ObjectMap> getAnnotationSetAsMap(long id, @Nullable String annotationSetName) throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<? extends Annotable> aggregate = commonGetAnnotationSet(id, annotationSetName);
+
+        List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
+        for (Annotable annotable : aggregate.getResult()) {
+            annotationSets.add(annotable.getAnnotationSetAsMap().get(0));
+        }
+
+        return endQuery("Get annotation set", startTime, annotationSets);
+    }
+
+    private QueryResult<? extends Annotable> commonGetAnnotationSet(long id, @Nullable String annotationSetName) {
         List<Bson> aggregation = new ArrayList<>();
         aggregation.add(Aggregates.match(Filters.eq(PRIVATE_ID, id)));
         aggregation.add(Aggregates.project(Projections.include(AnnotationSetParams.ID.key(), AnnotationSetParams.ANNOTATION_SETS.key())));
@@ -145,15 +170,10 @@ abstract class CatalogMongoAnnotationDBAdaptor extends CatalogMongoDBAdaptor {
             logger.debug("Get annotation: {}", bson.toBsonDocument(Document.class, com.mongodb.MongoClient.getDefaultCodecRegistry()));
         }
 
-        QueryResult<? extends Annotable> aggregate = getCollection().aggregate(aggregation, getConverter(), null);
-
-        List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
-        for (Annotable annotable : aggregate.getResult()) {
-            annotationSets.add(annotable.getAnnotationSets().get(0));
-        }
-
-        return endQuery("Get annotation set", startTime, annotationSets);
+        return getCollection().aggregate(aggregation, getConverter(), null);
     }
+
+
 
     public QueryResult<AnnotationSet> updateAnnotationSet(long id, AnnotationSet annotationSet) throws CatalogDBException {
         long startTime = startQuery();

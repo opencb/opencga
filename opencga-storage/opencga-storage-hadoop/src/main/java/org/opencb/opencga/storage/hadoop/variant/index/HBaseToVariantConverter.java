@@ -1,17 +1,14 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import com.google.common.collect.BiMap;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
 import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
-import org.opencb.biodata.models.variant.avro.FileEntry;
-import org.opencb.biodata.models.variant.avro.VariantAnnotation;
-import org.opencb.biodata.models.variant.avro.VariantType;
+import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.protobuf.VariantProto;
+import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.biodata.tools.variant.converter.Converter;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -23,6 +20,7 @@ import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.index.annotation.HBaseToVariantAnnotationConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
+import org.opencb.opencga.storage.hadoop.variant.index.stats.HBaseToVariantStatsConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.SampleList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +40,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     private final StudyConfigurationManager scm;
     private final HBaseToVariantAnnotationConverter annotationConverter;
+    private final HBaseToVariantStatsConverter statsConverter;
     private final GenomeHelper genomeHelper;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
@@ -51,6 +50,8 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private List<String> returnedSamples = Collections.emptyList();
 
     private static boolean failOnWrongVariants = false; //FIXME
+    private boolean studyNameAsStudyId = false;
+    private boolean mutableSamplesPosition = true;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -61,12 +62,30 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         this.genomeHelper = genomeHelper;
         this.scm = scm;
         this.annotationConverter = new HBaseToVariantAnnotationConverter(genomeHelper);
+        this.statsConverter = new HBaseToVariantStatsConverter(genomeHelper);
+    }
+
+    public HBaseToVariantConverter setReturnedSamples(List<String> returnedSamples) {
+        this.returnedSamples = returnedSamples;
+        return this;
+    }
+
+    public HBaseToVariantConverter setStudyNameAsStudyId(boolean studyNameAsStudyId) {
+        this.studyNameAsStudyId = studyNameAsStudyId;
+        return this;
+    }
+
+    public HBaseToVariantConverter setMutableSamplesPosition(boolean mutableSamplesPosition) {
+        this.mutableSamplesPosition = mutableSamplesPosition;
+        return this;
     }
 
     @Override
     public Variant convert(Result result) {
+        VariantAnnotation annotation = annotationConverter.convert(result);
+        Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(result);
         return convert(genomeHelper.extractVariantFromVariantRowKey(result.getRow()), VariantTableStudyRow.parse(result, genomeHelper),
-                annotationConverter.convert(result));
+                stats, annotation);
     }
 
     public Variant convert(ResultSet resultSet) throws SQLException {
@@ -76,7 +95,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
         );
         try {
-            return convert(variant, VariantTableStudyRow.parse(variant, resultSet, genomeHelper), annotationConverter.convert(resultSet));
+            Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
+            VariantAnnotation annotation = annotationConverter.convert(resultSet);
+            return convert(variant, VariantTableStudyRow.parse(variant, resultSet, genomeHelper), stats, annotation);
         } catch (RuntimeException e) {
             logger.error("Fail to parse variant: " + variant);
             throw e;
@@ -85,22 +106,20 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     public Variant convert(VariantTableStudyRow row) {
         return convert(new Variant(row.getChromosome(), row.getPos(), row.getRef(), row.getAlt()),
-                Collections.singletonList(row), null);
+                Collections.singletonList(row), Collections.emptyMap(), null);
 
     }
 
-    protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, VariantAnnotation annotation) {
+    protected Variant convert(Variant variant, List<VariantTableStudyRow> rows, Map<Integer, Map<Integer, VariantStats>> stats,
+                              VariantAnnotation annotation) {
         if (annotation == null) {
             annotation = new VariantAnnotation();
-        }
-        if (annotation.getAdditionalAttributes() == null) {
-            annotation.setAdditionalAttributes(new HashMap<String, Object>());
         }
         if (rows.isEmpty()) {
             throw new IllegalStateException("No Row columns supplied for row " + variant);
         }
         for (VariantTableStudyRow row : rows) {
-            Map<String, String> annotMap = new HashMap<String, String>();
+            Map<String, String> attributesMap = new HashMap<String, String>();
             Integer studyId = row.getStudyId();
             QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
@@ -108,8 +127,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             StudyConfiguration studyConfiguration = queryResult.first();
 
-            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
-
+//            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
+            LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
+            if (mutableSamplesPosition) {
+                returnedSamplesPosition = new LinkedHashMap<>(returnedSamplesPosition);
+            }
 //            Do not throw any exception. It may happen that the study is not loaded yet or no samples are required!
 //            if (returnedSamplesPosition.isEmpty()) {
 //                throw new IllegalStateException("No samples found for study!!!");
@@ -118,17 +140,17 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             Integer nSamples = returnedSamplesPosition.size();
             @SuppressWarnings ("unchecked")
             List<String>[] samplesDataArray = new List[nSamples];
-            annotMap.put("PASS", row.getPassCount().toString());
-            annotMap.put("CALL", row.getCallCount().toString());
+
+            attributesMap.put("PASS", row.getPassCount().toString());
+            attributesMap.put("CALL", row.getCallCount().toString());
 
             double passrate = row.getPassCount().doubleValue() / nSamples.doubleValue();
             double callrate = row.getCallCount().doubleValue() / nSamples.doubleValue();
             double opr = passrate * callrate;
-            annotation.getAdditionalAttributes().put(studyId + "_PR", passrate);
-            annotation.getAdditionalAttributes().put(studyId + "_CR", callrate);
-            annotation.getAdditionalAttributes().put(studyId + "_OPR", opr); // OVERALL
-                                                                             // pass
-                                                                             // rate
+            attributesMap.put("PR", String.valueOf(passrate));
+            attributesMap.put("CR", String.valueOf(callrate));
+            attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
+
 
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
@@ -232,16 +254,36 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
 
-            StudyEntry studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
-//            StudyEntry studyEntry = new StudyEntry(studyConfiguration.getStudyName());
-            studyEntry.setSamplesPosition(returnedSamplesPosition);
+            StudyEntry studyEntry;
+            if (studyNameAsStudyId) {
+                studyEntry = new StudyEntry(studyConfiguration.getStudyName());
+            } else {
+                studyEntry = new StudyEntry(Integer.toString(studyConfiguration.getStudyId()));
+            }
+            studyEntry.setSortedSamplesPosition(returnedSamplesPosition);
             studyEntry.setSamplesData(samplesData);
             studyEntry.setFormat(Arrays.asList(VariantMerger.GT_KEY, VariantMerger.GENOTYPE_FILTER_KEY));
-            studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", annotMap)));
+            studyEntry.setFiles(Collections.singletonList(new FileEntry("", "", attributesMap)));
             studyEntry.setSecondaryAlternates(secAltArr);
+
+            Map<Integer, VariantStats> convertedStatsMap = stats.get(studyConfiguration.getStudyId());
+            if (convertedStatsMap != null) {
+                Map<String, VariantStats> statsMap = new HashMap<>(convertedStatsMap.size());
+                for (Entry<Integer, VariantStats> entry : convertedStatsMap.entrySet()) {
+                    String cohortName = studyConfiguration.getCohortIds().inverse().get(entry.getKey());
+                    statsMap.put(cohortName, entry.getValue());
+                }
+                studyEntry.setStats(statsMap);
+            }
+
             variant.addStudyEntry(studyEntry);
         }
         variant.setAnnotation(annotation);
+        if (StringUtils.isNotEmpty(annotation.getId())) {
+            variant.setId(annotation.getId());
+        } else {
+            variant.setId(variant.toString());
+        }
         if (variant.getStudiesMap().isEmpty()) {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }

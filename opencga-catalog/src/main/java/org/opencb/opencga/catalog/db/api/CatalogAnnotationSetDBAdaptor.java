@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.db.api;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -10,7 +11,7 @@ import javax.annotation.Nullable;
 /**
  * Created by pfurio on 06/07/16.
  */
-public interface CatalogAnnotationSetDBAdaptor {
+public interface CatalogAnnotationSetDBAdaptor<T, U> extends CatalogAclDBAdaptor<T, U> {
 
     /**
      * Insert an annotation set object in the database to annotate the entity with id "id".
@@ -31,6 +32,17 @@ public interface CatalogAnnotationSetDBAdaptor {
      * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
      */
     QueryResult<AnnotationSet> getAnnotationSet(long id, @Nullable String annotationSetName) throws CatalogDBException;
+
+    /**
+     * Obtains all the annotation sets from id or just the one matching with the annotationSetName if provided.
+     *
+     * @param id id of the entity where the annotations are stored.
+     * @param annotationSetName annotation set name of the annotation to be returned when provided.
+     * @return a queryResult containing either all the annotation sets or just the one corresponding to the annotation set name if provided
+     * as key:value pairs.
+     * @throws CatalogDBException when the annotation set could not be retrieved due to a database error.
+     */
+    QueryResult<ObjectMap> getAnnotationSetAsMap(long id, @Nullable String annotationSetName) throws CatalogDBException;
 
     /**
      * Updates the annotationSet with the new annotationSet provided.

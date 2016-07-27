@@ -1891,4 +1891,35 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.updateDatasetAcl(userId, datasetId, member, addPermissions, removePermissions, setPermissions);
     }
 
+    public IUserManager getUserManager() {
+        return userManager;
+    }
+
+    public IProjectManager getProjectManager() {
+        return projectManager;
+    }
+
+    public IStudyManager getStudyManager() {
+        return studyManager;
+    }
+
+    public IFileManager getFileManager() {
+        return fileManager;
+    }
+
+    public IJobManager getJobManager() {
+        return jobManager;
+    }
+
+    public IIndividualManager getIndividualManager() {
+        return individualManager;
+    }
+
+    public ISampleManager getSampleManager() {
+        return sampleManager;
+    }
+
+    public ICohortManager getCohortManager() {
+        return cohortManager;
+    }
 }

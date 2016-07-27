@@ -321,14 +321,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                 .append(outputTable).append(' ').append(studyId).append(' ');
 
         stringBuilder.append(fileIds.stream().map(Object::toString).collect(Collectors.joining(",")));
-        for (Map.Entry<String, Object> entry : other.entrySet()) {
-            Object value = entry.getValue();
-            if (value != null && (value instanceof Number
-                    || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" "))) {
-                stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
-            }
-        }
+        ArchiveDriver.addOtherParams(other, stringBuilder);
         return stringBuilder.toString();
     }
 

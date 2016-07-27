@@ -19,7 +19,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 04/05/16.
  */
-public interface CatalogDatasetDBAdaptor extends CatalogDBAdaptor<Dataset>, CatalogAclDBAdaptor<DatasetAclEntry> {
+public interface CatalogDatasetDBAdaptor extends CatalogAclDBAdaptor<Dataset, DatasetAclEntry> {
 
     enum QueryParams implements QueryParam {
 

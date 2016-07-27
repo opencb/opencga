@@ -28,6 +28,7 @@ import org.opencb.biodata.models.variant.avro.VariantFileMetadata;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantToVcfSliceMapper;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceCombiner;
 import org.opencb.opencga.storage.hadoop.variant.archive.mr.VcfSliceReducer;
@@ -89,7 +90,7 @@ public class ArchiveDriver extends Configured implements Tool {
         // StudyID and FileID may not be correct. Use the given through the CLI and overwrite the values from meta.
         meta.getVariantSource().setStudyId(Integer.toString(studyId));
         meta.getVariantSource().setFileId(Integer.toString(fileId));
-        storeMetaData(meta, tableName, conf);
+        storeMetaData(meta, conf);
 
         /* JOB setup */
         final Job job = Job.getInstance(conf, "opencga: Load file [" + fileId + "] to ArchiveTable '" + tableName + "'");
@@ -127,8 +128,8 @@ public class ArchiveDriver extends Configured implements Tool {
         boolean succeed = job.waitForCompletion(true);
         Runtime.getRuntime().removeShutdownHook(hook);
 
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf)) {
-            manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
+        try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
+            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         }
         return succeed ? 0 : 1;
     }
@@ -145,8 +146,8 @@ public class ArchiveDriver extends Configured implements Tool {
         return HBaseManager.createTableIfNeeded(con, tableName, genomeHelper.getColumnFamily(), compression);
     }
 
-    private void storeMetaData(VcfMeta meta, String tableName, Configuration conf) throws IOException {
-        try (ArchiveFileMetadataManager manager = new ArchiveFileMetadataManager(tableName, conf)) {
+    private void storeMetaData(VcfMeta meta, Configuration conf) throws IOException {
+        try (HadoopVariantSourceDBAdaptor manager = new HadoopVariantSourceDBAdaptor(conf)) {
             manager.updateVcfMetaData(meta);
         }
     }
@@ -188,15 +189,19 @@ public class ArchiveDriver extends Configured implements Tool {
                 .append(outputTable).append(' ')
                 .append(studyId).append(' ')
                 .append(fileId);
+        addOtherParams(other, stringBuilder);
+        return stringBuilder.toString();
+    }
+
+    public static void addOtherParams(Map<String, Object> other, StringBuilder stringBuilder) {
         for (Map.Entry<String, Object> entry : other.entrySet()) {
             Object value = entry.getValue();
             if (value != null && (value instanceof Number
                     || value instanceof Boolean
-                    || value instanceof String && !((String) value).contains(" "))) {
+                    || value instanceof String && !((String) value).contains(" ") && !((String) value).isEmpty())) {
                 stringBuilder.append(' ').append(entry.getKey()).append(' ').append(value);
             }
         }
-        return stringBuilder.toString();
     }
 
     public static void main(String[] args) throws Exception {
@@ -218,7 +223,7 @@ public class ArchiveDriver extends Configured implements Tool {
             System.err.printf("Usage: %s [generic options] <avro> <avro-meta> <server> <output-table> <study-id> <file-id>"
                     + " [<key> <value>]*\n",
                     ArchiveDriver.class.getSimpleName());
-            System.err.println("Found " + Arrays.toString(toolArgs));
+            System.err.println("Found argc:" + toolArgs.length + ", argv: " + Arrays.toString(toolArgs));
             ToolRunner.printGenericCommandUsage(System.err);
             return -1;
         }

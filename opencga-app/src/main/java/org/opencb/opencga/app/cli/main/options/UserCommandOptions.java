@@ -14,7 +14,7 @@ public class UserCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
-    public ListCommandOptions listCommandOptions;
+    public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
     public JCommander jCommander;
@@ -27,7 +27,7 @@ public class UserCommandOptions {
 
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
-        this.listCommandOptions = new ListCommandOptions();
+        this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
     }
@@ -83,23 +83,23 @@ public class UserCommandOptions {
 
         @Parameter(names = {"--last-activity"}, description = "If matches with the user's last activity, return " +
                 "an empty QueryResult", arity = 1, required = false)
-        public String password;
+        public String lastActivity;
     }
 
 
-    @Parameters(commandNames = {"list"}, commandDescription = "List all projects and studies from a selected user")
-    public class ListCommandOptions {
+    @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies from a selected user")
+    public class ProjectsCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
-
-        @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-        public int level = Integer.MAX_VALUE;
-
-        @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-        public boolean recursive = false;
-
-        @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-        public boolean uries = false;
+//
+//        @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
+//        public int level = Integer.MAX_VALUE;
+//
+//        @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
+//        public boolean recursive = false;
+//
+//        @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
+//        public boolean uris = false;
 
     }
 
@@ -111,10 +111,6 @@ public class UserCommandOptions {
 
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false, password = true)
         public String password;
-
-        @Deprecated
-        @Parameter(names = {"--hidden-password"}, description = "Password", arity = 1, required = false, password = true)
-        public String hiddenPassword;
 
         @Parameter(names = {"-S","--session-id"}, description = "SessionId", arity = 1, required = false, hidden = true)
         public String sessionId;

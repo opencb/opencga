@@ -12,10 +12,12 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
+import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
@@ -131,7 +133,7 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
             }
             hbaseWriter.post();
         } catch (IOException e) {
-            throw new IllegalStateException("Problems reading " + input, e);
+            throw new StorageManagerException("Problems reading " + input, e);
         } finally {
             hbaseWriter.close();
         }
@@ -139,11 +141,12 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         logger.info("Read {} slices", counter);
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
 
-        try (ArchiveFileMetadataManager manager = dbAdaptor.getArchiveFileMetadataManager(table, options)) {
-            manager.updateVcfMetaData(source);
-            manager.updateLoadedFilesSummary(Collections.singletonList(fileId));
+        HadoopVariantSourceDBAdaptor manager = dbAdaptor.getVariantSourceDBAdaptor();
+        try {
+            manager.updateVariantSource(source);
+            manager.updateLoadedFilesSummary(studyId, Collections.singletonList(fileId));
         } catch (IOException e) {
-            throw new RuntimeException("Not able to store Variant Source for file!!!", e);
+            throw new StorageManagerException("Not able to store Variant Source for file!!!", e);
         }
     }
 

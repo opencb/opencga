@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Sample implements Annotable {
+public class Sample extends Annotable {
 
     private long id;
     private String name;
@@ -36,7 +36,7 @@ public class Sample implements Annotable {
     private List<OntologyTerm> ontologyTerms;
 
     private List<SampleAclEntry> acl;
-    private List<AnnotationSet> annotationSets;
+//    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
 
@@ -178,14 +178,14 @@ public class Sample implements Annotable {
         return this;
     }
 
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
-    }
+//    public List<AnnotationSet> getAnnotationSets() {
+//        return annotationSets;
+//    }
+//
+//    public Sample setAnnotationSets(List<AnnotationSet> annotationSets) {
+//        this.annotationSets = annotationSets;
+//        return this;
+//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;

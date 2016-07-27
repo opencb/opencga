@@ -226,12 +226,16 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     public void removeMemberFromGroup() throws CatalogException {
         // Remove one of the users
         catalogManager.updateGroup(Long.toString(s1), groupAdmin, null, studyAdminUser1, null, ownerSessionId);
-//        catalogManager.removeUsersFromGroup(s1, groupAdmin, studyAdminUser1, ownerSessionId);
         assertFalse(getGroupMap().get(groupAdmin).getUserIds().contains(studyAdminUser1));
+
         // Remove the last user in the admin group
         catalogManager.updateGroup(Long.toString(s1), groupAdmin, null, studyAdminUser2, null, ownerSessionId);
-//        catalogManager.removeUsersFromGroup(s1, groupAdmin, studyAdminUser2, ownerSessionId);
-        assertFalse(getGroupMap().containsKey(groupAdmin));
+        assertFalse(getGroupMap().get(groupAdmin).getUserIds().contains(studyAdminUser2));
+
+        // Cannot remove group with defined ACLs
+        thrown.expect(CatalogDBException.class);
+        thrown.expectMessage("ACL defined");
+        catalogManager.deleteGroup(Long.toString(s1), groupAdmin, ownerSessionId);
     }
 
     @Test
@@ -366,8 +370,8 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void removeNonExistingUserFromRole() throws CatalogException {
         String userNotRegistered = "userNotRegistered";
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("does not exist");
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("did not have any ACLs defined");
 //        catalogManager.unshareStudy(s1, userNotRegistered, ownerSessionId);
         catalogManager.removeStudyAcl(Long.toString(s1), userNotRegistered, ownerSessionId);
     }
@@ -375,10 +379,9 @@ public class CatalogAuthorizationManagerTest extends GenericTest {
     @Test
     public void removeNonExistingGroupFromRole() throws CatalogException {
         String groupNotRegistered = "@groupNotRegistered";
-        thrown.expect(CatalogDBException.class);
-        thrown.expectMessage("does not exist");
+        thrown.expect(CatalogException.class);
+        thrown.expectMessage("did not have any ACLs defined");
 //        catalogManager.unshareStudy(s1, groupNotRegistered, ownerSessionId);
-        catalogManager.removeStudyAcl(Long.toString(s1), groupNotRegistered, ownerSessionId);
         catalogManager.removeStudyAcl(Long.toString(s1), groupNotRegistered, ownerSessionId);
     }
 

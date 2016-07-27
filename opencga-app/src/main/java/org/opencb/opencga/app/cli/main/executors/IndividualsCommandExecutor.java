@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,10 +39,12 @@ import java.io.IOException;
 public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
     private IndividualCommandOptions individualsCommandOptions;
+    private AclCommandExecutor<Individual, IndividualAclEntry> aclCommandExecutor;
 
     public IndividualsCommandExecutor(IndividualCommandOptions individualsCommandOptions) {
         super(individualsCommandOptions.commonCommandOptions);
         this.individualsCommandOptions = individualsCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -70,32 +73,35 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 groupBy();
                 break;
-            case "annotation-sets-all-info":
-                annotationSetsAllInfo();
-                break;
-            case "annotation-sets-search":
-                annotationSetsSearch();
-                break;
-            case "annotation-sets-delete":
-                annotationSetsDelete();
-                break;
-            case "annotation-sets-info":
-                annotationSetsInfo();
-                break;
+//            case "annotation-sets-all-info":
+//                annotationSetsAllInfo();
+//                break;
+//            case "annotation-sets-search":
+//                annotationSetsSearch();
+//                break;
+//            case "annotation-sets-delete":
+//                annotationSetsDelete();
+//                break;
+//            case "annotation-sets-info":
+//                annotationSetsInfo();
+//                break;
             case "acl":
-                acls();
+                aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-create":
-                aclsCreate();
+                aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-member-delete":
-                aclMemberDelete();
+                aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "acl-member-info":
-                aclMemberInfo();
+                aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "acl-member-update":
-                aclMemberUpdate();
+                aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -297,137 +303,77 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
 
     /********************************************  Annotation commands  ***********************************************/
-
-    private void annotationSetsAllInfo() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets information");
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-
-        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
-                .annotationSetsAllInfo(individualsCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
-
-        System.out.println(individual.toString());
-    }
-
-    private void annotationSetsInfo() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets information");
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.put("asMap", individualsCommandOptions.annotationSetsInfoCommandOptions.asMap);
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
-        }
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                    individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
-        }
-
-        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
-                .annotationSetsInfo(individualsCommandOptions.annotationSetsInfoCommandOptions.id,
-                        individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
-                        individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
-
-        System.out.println(individual.toString());
-    }
-
-    private void annotationSetsSearch() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets");
-        ObjectMap objectMap = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotation);
-        }
-
-        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-
-        QueryResponse<Individual> samples = openCGAClient.getIndividualClient()
-                .annotationSetsSearch(individualsCommandOptions.annotationSetsSearchCommandOptions.id,
-                        individualsCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
-                        individualsCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
-
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
-    }
-
-    private void annotationSetsDelete() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets");
-        ObjectMap objectMap = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                    individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation);
-        }
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
-                .annotationSetsDelete(individualsCommandOptions.annotationSetsDeleteCommandOptions.id,
-                        individualsCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
-                        individualsCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
-
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
-
-    }
-
-    /********************************************  Administration ACL commands  ***********************************************/
-
-    private void acls() throws CatalogException,IOException {
-
-        logger.debug("Acls");
-        QueryResponse<IndividualAclEntry> acls = openCGAClient.getIndividualClient().getAcls(individualsCommandOptions.aclsCommandOptions.id);
-
-        System.out.println(acls.toString());
-
-    }
-    private void aclsCreate() throws CatalogException,IOException{
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-
-        QueryResponse<IndividualAclEntry> acl =
-                openCGAClient.getIndividualClient().createAcl(individualsCommandOptions.aclsCreateCommandOptions.id,
-                        individualsCommandOptions.aclsCreateCommandOptions.permissions, individualsCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberDelete() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Object> acl = openCGAClient.getCohortClient().deleteAcl(individualsCommandOptions.aclsMemberDeleteCommandOptions.id,
-                individualsCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberInfo() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryResponse<IndividualAclEntry> acls = openCGAClient.getIndividualClient().getAcl(individualsCommandOptions.aclsMemberInfoCommandOptions.id,
-                individualsCommandOptions.aclsMemberInfoCommandOptions.memberId);
-        System.out.println(acls.toString());
-    }
-
-    private void aclMemberUpdate() throws CatalogException,IOException {
-
-        logger.debug("Updating acl");
-
-        ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(individualsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
-            objectMap.put(IndividualClient.AclParams.ADD_PERMISSIONS.key(), individualsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
-            objectMap.put(IndividualClient.AclParams.REMOVE_PERMISSIONS.key(), individualsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
-            objectMap.put(IndividualClient.AclParams.SET_PERMISSIONS.key(), individualsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-        }
-
-        QueryResponse<IndividualAclEntry> acl = openCGAClient.getIndividualClient().updateAcl(individualsCommandOptions.aclsMemberUpdateCommandOptions.id,
-                individualsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
-        System.out.println(acl.toString());
-    }
+//
+//    private void annotationSetsAllInfo() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets information");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
+//
+//        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
+//                .annotationSetsAllInfo(individualsCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
+//
+//        System.out.println(individual.toString());
+//    }
+//
+//    private void annotationSetsInfo() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets information");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        objectMap.put("asMap", individualsCommandOptions.annotationSetsInfoCommandOptions.asMap);
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+//                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
+//        }
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+//                    individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
+//        }
+//
+//        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
+//                .annotationSetsInfo(individualsCommandOptions.annotationSetsInfoCommandOptions.id,
+//                        individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
+//                        individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
+//
+//        System.out.println(individual.toString());
+//    }
+//
+//    private void annotationSetsSearch() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+//                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotation);
+//        }
+//
+//        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
+//
+//        QueryResponse<Individual> samples = openCGAClient.getIndividualClient()
+//                .annotationSetsSearch(individualsCommandOptions.annotationSetsSearchCommandOptions.id,
+//                        individualsCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
+//                        individualsCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
+//
+//        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+//    }
+//
+//    private void annotationSetsDelete() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+//                    individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation);
+//        }
+//        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
+//                .annotationSetsDelete(individualsCommandOptions.annotationSetsDeleteCommandOptions.id,
+//                        individualsCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
+//                        individualsCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
+//
+//        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
+//
+//    }
 
 }

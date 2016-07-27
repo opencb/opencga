@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -81,7 +82,8 @@ public class HBaseManager extends Configured implements AutoCloseable {
             while (null == con) {
                 try {
                     con = ConnectionFactory.createConnection(this.getConf());
-                    LOGGER.info("Opened Hadoop DB connection {}", con);
+                    StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+                    LOGGER.info("Opened Hadoop DB connection {} called from {}", con, Arrays.toString(stackTrace));
                 } catch (IOException e) {
                     throw new IllegalStateException("Problems opening connection to DB", e);
                 }
@@ -110,7 +112,9 @@ public class HBaseManager extends Configured implements AutoCloseable {
         TableName tname = TableName.valueOf(tableName);
         try (Table table = con.getTable(tname)) {
             func.accept(table);
-        }    }
+        }
+    }
+
     /**
      * Performs an action over a table.
      *
@@ -284,6 +288,7 @@ public class HBaseManager extends Configured implements AutoCloseable {
     public static boolean createTableIfNeeded(Connection con, String tableName, byte[] columnFamily, Compression.Algorithm compressionType)
             throws IOException {
         TableName tName = TableName.valueOf(tableName);
+        LOGGER.info("CreateIfNeeded with connection {}", con);
         return act(con, tableName, (table, admin) -> {
             if (!admin.tableExists(tName)) {
                 HTableDescriptor descr = new HTableDescriptor(tName);

@@ -19,16 +19,16 @@ package org.opencb.opencga.catalog.models;
 import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import static java.lang.Math.toIntExact;
+
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Individual implements Annotable {
+public class Individual extends Annotable {
 
     private long id;
     private String name;
@@ -36,15 +36,18 @@ public class Individual implements Annotable {
     private long motherId;
     private String family;
     private Gender gender;
+    private SexualKaryotype sexualKaryotype;
     private String race;
     private Species species;
     private Population population;
     private String creationDate;
     private Status status;
+    private LifeStatus lifeStatus;
+    private AffectationStatus affectationStatus;
     private List<OntologyTerm> ontologyTerms;
 
     private List<IndividualAclEntry> acl;
-    private List<AnnotationSet> annotationSets;
+//    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
 
@@ -52,48 +55,64 @@ public class Individual implements Annotable {
         MALE, FEMALE, UNKNOWN
     }
 
+    public enum LifeStatus {
+        ALIVE, ABORTED, DECEASED, UNBORN, STILLBORN, MISCARRIAGE, UNKNOWN
+    }
+
+    public enum AffectationStatus {
+        AFFECTED, UNAFFECTED, UNKNOWN
+    }
+
+    public enum SexualKaryotype {
+        UNKNOWN, XX, XY, XO, XXY, XXX, XXYY, XXXY, XXXX, XYY, OTHER
+    }
 
     public Individual() {
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
                       Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.fatherId = fatherId;
-        this.motherId = motherId;
-        this.family = family;
-        this.gender = gender;
-        this.race = race;
-        this.species = species;
-        this.population = population;
-        this.annotationSets = annotationSets;
-        this.acl = new ArrayList<>();
-        this.status = new Status();
-        this.attributes = attributes;
+        this(id, name, fatherId, motherId, family, gender, race, species, population, new Status(), Collections.emptyList(), annotationSets,
+                attributes);
     }
 
     public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
                       Population population, Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets,
                       Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, gender, race, species, population, TimeUtils.getTime(), status, Collections.emptyList(),
-                acl, annotationSets, attributes);
+        this(id, name, fatherId, motherId, family, gender, SexualKaryotype.UNKNOWN, race, species, population, TimeUtils.getTime(), status,
+                LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
+
+        if (gender == null) {
+            this.gender = Gender.UNKNOWN;
+        }
+
+        if (this.gender.equals(Gender.MALE)) {
+            this.sexualKaryotype = SexualKaryotype.XY;
+        } else if (this.gender.equals(Gender.FEMALE)) {
+            this.sexualKaryotype = SexualKaryotype.XX;
+        } else {
+            this.sexualKaryotype = SexualKaryotype.UNKNOWN;
+        }
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
-                      Population population, String creationDate, Status status, List<OntologyTerm> ontologyTerms,
-                      List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
+    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, SexualKaryotype sexualKaryotype,
+                      String race, Species species, Population population, String creationDate, Status status, LifeStatus lifeStatus,
+                      AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<IndividualAclEntry> acl,
+                      List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.fatherId = fatherId;
         this.motherId = motherId;
         this.family = family;
         this.gender = gender;
+        this.sexualKaryotype = sexualKaryotype;
         this.race = race;
         this.species = species;
         this.population = population;
         this.creationDate = creationDate;
         this.status = status;
+        this.lifeStatus = lifeStatus;
+        this.affectationStatus = affectationStatus;
         this.ontologyTerms = ontologyTerms;
         this.acl = acl;
         this.annotationSets = annotationSets;
@@ -387,6 +406,15 @@ public class Individual implements Annotable {
         return this;
     }
 
+    public SexualKaryotype getSexualKaryotype() {
+        return sexualKaryotype;
+    }
+
+    public Individual setSexualKaryotype(SexualKaryotype sexualKaryotype) {
+        this.sexualKaryotype = sexualKaryotype;
+        return this;
+    }
+
     public String getRace() {
         return race;
     }
@@ -432,6 +460,25 @@ public class Individual implements Annotable {
         return this;
     }
 
+
+    public LifeStatus getLifeStatus() {
+        return lifeStatus;
+    }
+
+    public Individual setLifeStatus(LifeStatus lifeStatus) {
+        this.lifeStatus = lifeStatus;
+        return this;
+    }
+
+    public AffectationStatus getAffectationStatus() {
+        return affectationStatus;
+    }
+
+    public Individual setAffectationStatus(AffectationStatus affectationStatus) {
+        this.affectationStatus = affectationStatus;
+        return this;
+    }
+
     public List<OntologyTerm> getOntologyTerms() {
         return ontologyTerms;
     }
@@ -450,14 +497,14 @@ public class Individual implements Annotable {
         return this;
     }
 
-    public List<AnnotationSet> getAnnotationSets() {
-        return annotationSets;
-    }
-
-    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
-        this.annotationSets = annotationSets;
-        return this;
-    }
+//    public List<AnnotationSet> getAnnotationSets() {
+//        return annotationSets;
+//    }
+//
+//    public Individual setAnnotationSets(List<AnnotationSet> annotationSets) {
+//        this.annotationSets = annotationSets;
+//        return this;
+//    }
 
     public Map<String, Object> getAttributes() {
         return attributes;

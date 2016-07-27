@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Created by pfurio on 04/07/16.
  */
-public interface CatalogAclDBAdaptor<I> {
+public interface CatalogAclDBAdaptor<T, U> extends CatalogDBAdaptor<T> {
 
     /**
      * Creates a new Acl.
@@ -18,7 +18,7 @@ public interface CatalogAclDBAdaptor<I> {
      * @return the new created Acl.
      * @throws CatalogDBException if there is any internal error.
      */
-    QueryResult<I> createAcl(long id, I acl) throws CatalogDBException;
+    QueryResult<U> createAcl(long id, U acl) throws CatalogDBException;
 
     /**
      * Obtains the acl given the following parameters. If only the id is given, a list containing all the acls will be returned.
@@ -28,7 +28,7 @@ public interface CatalogAclDBAdaptor<I> {
      * @return A queryResult object containing a list of acls that satisfies the query.
      * @throws CatalogDBException when the id does not exist or the members introduced do not exist in the database.
      */
-    QueryResult<I> getAcl(long id, List<String> members) throws CatalogDBException;
+    QueryResult<U> getAcl(long id, List<String> members) throws CatalogDBException;
 
     /**
      * Removes the Acl of the member.
@@ -48,7 +48,7 @@ public interface CatalogAclDBAdaptor<I> {
      * @return a Acl with the new set of permissions.
      * @throws CatalogDBException when there is an internal error.
      */
-    QueryResult<I> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException;
+    QueryResult<U> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException;
 
     /**
      * Adds new permissions to the former list of permissions the member had.
@@ -59,7 +59,7 @@ public interface CatalogAclDBAdaptor<I> {
      * @return a Acl after the permissions update.
      * @throws CatalogDBException when there is an internal error.
      */
-    QueryResult<I> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException;
+    QueryResult<U> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException;
 
     /**
      * Remove the permissions passed from the ACLs the member had.

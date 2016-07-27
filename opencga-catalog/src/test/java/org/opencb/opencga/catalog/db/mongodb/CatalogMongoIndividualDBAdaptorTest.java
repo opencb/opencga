@@ -41,8 +41,8 @@ public class CatalogMongoIndividualDBAdaptorTest extends CatalogMongoDBAdaptorTe
     public void testCreateIndividualFatherNotFound() throws Exception {
         long studyId = user3.getProjects().get(0).getStudies().get(0).getId();
         thrown.expect(CatalogDBException.class);
-        catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 10, -1, "", null, "", null, null, Collections
-                .emptyList(), null), null);
+        catalogIndividualDBAdaptor.createIndividual(studyId, new Individual(0, "in1", 10, -1, "", null, "", null, null,
+                Collections.emptyList(), Collections.emptyMap()), null);
     }
 
     @Test

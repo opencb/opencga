@@ -54,8 +54,6 @@ public class OpencgaCliOptionsParser {
     private PanelCommandOptions panelCommandOptions;
     private ToolCommandOptions toolCommandOptions;
 
-
-
 //    public final CommandShareResource commandShareResource;
 
     public OpencgaCliOptionsParser() {
@@ -76,9 +74,10 @@ public class OpencgaCliOptionsParser {
         JCommander userSubCommands = jCommander.getCommands().get("users");
         userSubCommands.addCommand("create", usersCommandOptions.createCommandOptions);
         userSubCommands.addCommand("info", usersCommandOptions.infoCommandOptions);
-        userSubCommands.addCommand("list", usersCommandOptions.listCommandOptions);
+        userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         userSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
+        // TODO: "password" -> Allow to change and reset the password
 
         projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("projects", projectCommandOptions);
@@ -129,9 +128,7 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("list", fileCommandOptions.listCommandOptions);
         fileSubCommands.addCommand("index", fileCommandOptions.indexCommandOptions);
         fileSubCommands.addCommand("alignment", fileCommandOptions.alignmentCommandOptions);
-        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
-        fileSubCommands.addCommand("share", fileCommandOptions.shareCommandOptions);
-        fileSubCommands.addCommand("unshare", fileCommandOptions.unshareCommandOptions);
+//        fileSubCommands.addCommand("fetch", fileCommandOptions.fetchCommandOptions);
         fileSubCommands.addCommand("update", fileCommandOptions.updateCommandOptions);
         fileSubCommands.addCommand("upload", fileCommandOptions.uploadCommandOptions);
         fileSubCommands.addCommand("link", fileCommandOptions.linkCommandOptions);
@@ -139,7 +136,12 @@ public class OpencgaCliOptionsParser {
         fileSubCommands.addCommand("relink", fileCommandOptions.relinkCommandOptions);
         fileSubCommands.addCommand("delete", fileCommandOptions.deleteCommandOptions);
         fileSubCommands.addCommand("refresh", fileCommandOptions.refreshCommandOptions);
-
+        fileSubCommands.addCommand("acl", fileCommandOptions.aclsCommandOptions);
+        fileSubCommands.addCommand("acl-create", fileCommandOptions.aclsCreateCommandOptions);
+        fileSubCommands.addCommand("acl-member-delete", fileCommandOptions.aclsMemberDeleteCommandOptions);
+        fileSubCommands.addCommand("acl-member-info", fileCommandOptions.aclsMemberInfoCommandOptions);
+        fileSubCommands.addCommand("acl-member-update", fileCommandOptions.aclsMemberUpdateCommandOptions);
+        // TODO: "content", "groupBy", "variants"
 
         jobCommandOptions = new JobCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("jobs", jobCommandOptions);
@@ -149,10 +151,8 @@ public class OpencgaCliOptionsParser {
         jobSubCommands.addCommand("search", jobCommandOptions.searchCommandOptions);
         jobSubCommands.addCommand("visit", jobCommandOptions.visitCommandOptions);
         jobSubCommands.addCommand("delete", jobCommandOptions.deleteCommandOptions);
-        jobSubCommands.addCommand("share", jobCommandOptions.shareCommandOptions);
-        jobSubCommands.addCommand("unshare", jobCommandOptions.unshareCommandOptions);
         jobSubCommands.addCommand("group-by", jobCommandOptions.groupByCommandOptions);
-
+        // TODO: "acls", 
        // jobSubCommands.addCommand("finished", jobCommandOptions.doneJobCommandOptions);
        // jobSubCommands.addCommand("status", jobCommandOptions.statusCommandOptions);
        // jobSubCommands.addCommand("run", jobCommandOptions.runJobCommandOptions);
@@ -167,10 +167,12 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
         individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
-        individualSubCommands.addCommand("annotation-sets-all-info", individualCommandOptions.annotationSetsAllInfoCommandOptions);
-        individualSubCommands.addCommand("annotation-sets-search", individualCommandOptions.annotationSetsSearchCommandOptions);
-        individualSubCommands.addCommand("annotation-sets-delete", individualCommandOptions.annotationSetsDeleteCommandOptions);
-        individualSubCommands.addCommand("annotation-sets-info", individualCommandOptions.annotationSetsInfoCommandOptions);
+        individualSubCommands.addCommand("annotation-sets-create", individualCommandOptions.annotationCreateCommandOptions);
+        individualSubCommands.addCommand("annotation-sets-all-info", individualCommandOptions.annotationAllInfoCommandOptions);
+        individualSubCommands.addCommand("annotation-sets-info", individualCommandOptions.annotationInfoCommandOptions);
+        individualSubCommands.addCommand("annotation-sets-search", individualCommandOptions.annotationSearchCommandOptions);
+        individualSubCommands.addCommand("annotation-sets-update", individualCommandOptions.annotationUpdateCommandOptions);
+        individualSubCommands.addCommand("annotation-sets-delete", individualCommandOptions.annotationDeleteCommandOptions);
         individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
         individualSubCommands.addCommand("acl-create", individualCommandOptions.aclsCreateCommandOptions);
         individualSubCommands.addCommand("acl-member-delete", individualCommandOptions.aclsMemberDeleteCommandOptions);
@@ -187,10 +189,12 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
-        sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationSetsAllInfoCommandOptions);
-        sampleSubCommands.addCommand("annotation-sets-search", sampleCommandOptions.annotationSetsSearchCommandOptions);
-        sampleSubCommands.addCommand("annotation-sets-delete", sampleCommandOptions.annotationSetsDeleteCommandOptions);
-        sampleSubCommands.addCommand("annotation-sets-info", sampleCommandOptions.annotationSetsInfoCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-create", sampleCommandOptions.annotationCreateCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationAllInfoCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-info", sampleCommandOptions.annotationInfoCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-search", sampleCommandOptions.annotationSearchCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-update", sampleCommandOptions.annotationUpdateCommandOptions);
+        sampleSubCommands.addCommand("annotation-sets-delete", sampleCommandOptions.annotationDeleteCommandOptions);
         sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
         sampleSubCommands.addCommand("acl-create", sampleCommandOptions.aclsCreateCommandOptions);
         sampleSubCommands.addCommand("acl-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);
@@ -218,15 +222,18 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
-        cohortSubCommands.addCommand("annotation-sets-all-info", cohortCommandOptions.annotationSetsAllInfoCommandOptions);
-        cohortSubCommands.addCommand("annotation-sets-search", cohortCommandOptions.annotationSetsSearchCommandOptions);
-        cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationSetsDeleteCommandOptions);
-        cohortSubCommands.addCommand("annotation-sets-info", cohortCommandOptions.annotationSetsInfoCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets-create", cohortCommandOptions.annotationCreateCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets-all-info", cohortCommandOptions.annotationAllInfoCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets-info", cohortCommandOptions.annotationInfoCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets-search", cohortCommandOptions.annotationSearchCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
+        cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
         cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
         cohortSubCommands.addCommand("acl-create", cohortCommandOptions.aclsCreateCommandOptions);
         cohortSubCommands.addCommand("acl-member-delete", cohortCommandOptions.aclsMemberDeleteCommandOptions);
         cohortSubCommands.addCommand("acl-member-info", cohortCommandOptions.aclsMemberInfoCommandOptions);
         cohortSubCommands.addCommand("acl-member-update", cohortCommandOptions.aclsMemberUpdateCommandOptions);
+        // TODO: "groupby",
 
         toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("tools", toolCommandOptions);

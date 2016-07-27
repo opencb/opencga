@@ -25,6 +25,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.StudyCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
@@ -45,20 +46,23 @@ import java.io.IOException;
  * Created by imedina on 03/06/16.
  */
 public class StudiesCommandExecutor extends OpencgaCommandExecutor {
+    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private StudyCommandOptions studiesCommandOptions;
+    private AclCommandExecutor<Study, StudyAclEntry> aclCommandExecutor;
 
     public StudiesCommandExecutor(StudyCommandOptions studiesCommandOptions) {
         super(studiesCommandOptions.commonCommandOptions);
         this.studiesCommandOptions = studiesCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing studies command line");
 
         String subCommandString = getParsedSubCommand(studiesCommandOptions.jCommander);
+        logger.debug("Executing studies command line: {}", subCommandString);
         switch (subCommandString) {
             case "create":
                 create();
@@ -100,19 +104,19 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 variants();
                 break;
             case "acl":
-                acls();
+                aclCommandExecutor.acls(studiesCommandOptions.aclsCommandOptions, openCGAClient.getStudyClient());
                 break;
             case "acl-create":
-                aclsCreate();
+                aclCommandExecutor.aclsCreateTemplate(studiesCommandOptions.aclsCreateCommandOptions, openCGAClient.getStudyClient());
                 break;
             case "acl-member-delete":
-                aclMemberDelete();
+                aclCommandExecutor.aclMemberDelete(studiesCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getStudyClient());
                 break;
             case "acl-member-info":
-                aclMemberInfo();
+                aclCommandExecutor.aclMemberInfo(studiesCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getStudyClient());
                 break;
             case "acl-member-update":
-                aclMemberUpdate();
+                aclCommandExecutor.aclMemberUpdate(studiesCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getStudyClient());
                 break;
             case "groups":
                 groups();
@@ -146,9 +150,21 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String name = studiesCommandOptions.createCommandOptions.name;
         String projectId = studiesCommandOptions.createCommandOptions.projectId;
         String description = studiesCommandOptions.createCommandOptions.description;
+        String type = studiesCommandOptions.createCommandOptions.type;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(),description);
+        if (description != null) {
+            o.append(CatalogStudyDBAdaptor.QueryParams.DESCRIPTION.key(), description);
+        }
+        if (type != null) {
+            try {
+                o.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+            } catch (IllegalArgumentException e) {
+                logger.error("{} not recognized as a proper study type", type);
+                return;
+            }
+        }
+
         openCGAClient.getStudyClient().create(projectId, name, alias, o);
         System.out.println("Done.");
     }
@@ -233,8 +249,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         String attributes = studiesCommandOptions.searchCommandOptions.attributes;
         String nattributes = studiesCommandOptions.searchCommandOptions.nattributes;
         boolean battributes = studiesCommandOptions.searchCommandOptions.battributes;
-        String groups = studiesCommandOptions.searchCommandOptions.groups;
-        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
+//        String groups = studiesCommandOptions.searchCommandOptions.groups;
+//        String groupsUsers = studiesCommandOptions.searchCommandOptions.groupsUsers;
 
 
         if (StringUtils.isNotEmpty(id)) {
@@ -254,7 +270,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         }
 
         if (StringUtils.isNotEmpty(type)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), type);
+            try {
+                query.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
+            } catch (IllegalArgumentException e) {
+                logger.error("{} not recognized as a proper study type", type);
+                return;
+            }
         }
 
         if (StringUtils.isNotEmpty(creationDate)) {
@@ -277,13 +298,13 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             query.put(CatalogStudyDBAdaptor.QueryParams.BATTRIBUTES.key(), battributes);
         }
 
-        if (StringUtils.isNotEmpty(groups)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.GROUPS.key(), groups);
-        }
-
-        if (StringUtils.isNotEmpty(groupsUsers)) {
-            query.put(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), groupsUsers);
-        }
+//        if (StringUtils.isNotEmpty(groups)) {
+//            query.put(CatalogStudyDBAdaptor.QueryParams.GROUPS.key(), groups);
+//        }
+//
+//        if (StringUtils.isNotEmpty(groupsUsers)) {
+//            query.put(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), groupsUsers);
+//        }
 
         QueryResponse<Study> studies = openCGAClient.getStudyClient().search(query, null);
         System.out.println("Studies: " + studies);
@@ -362,7 +383,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
 
-        QueryResponse<Job> jobs = openCGAClient.getStudyClient().getJobs(studiesCommandOptions.filesCommandOptions.id, queryOptions);
+        QueryResponse<Job> jobs = openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.id, queryOptions);
         jobs.first().getResult().stream().forEach(file -> System.out.println(jobs.toString()));
     }
 
@@ -651,76 +672,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         QueryResponse<Variant> samples =
                 openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
         System.out.println(samples.toString());
-    }
-
-
-
-    /********************************************  Administration ACL commands  ***********************************************/
-
-    private void acls() throws CatalogException,IOException {
-
-        logger.debug("Acls");
-        QueryResponse<StudyAclEntry> acls = openCGAClient.getStudyClient().getAcls(studiesCommandOptions.aclsCommandOptions.id);
-
-        System.out.println(acls.toString());
-
-    }
-
-    private void aclsCreate() throws CatalogException,IOException{
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-
-        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsCreateCommandOptions.templateId)) {
-            queryOptions.put("templateId", studiesCommandOptions.aclsCreateCommandOptions.templateId);
-        }
-
-        QueryResponse<StudyAclEntry> acl =
-                openCGAClient.getStudyClient().createAcl(studiesCommandOptions.aclsCreateCommandOptions.id,
-                        studiesCommandOptions.aclsCreateCommandOptions.permissions, studiesCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
-    }
-
-    private void aclMemberDelete() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Object> acl = openCGAClient.getStudyClient().deleteAcl(studiesCommandOptions.aclsMemberDeleteCommandOptions.id,
-                        studiesCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
-        System.out.println(acl.toString());
-    }
-
-    private void aclMemberInfo() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryResponse<StudyAclEntry> acls = openCGAClient.getStudyClient().getAcl(studiesCommandOptions.aclsMemberInfoCommandOptions.id,
-                studiesCommandOptions.aclsMemberInfoCommandOptions.memberId);
-        System.out.println(acls.toString());
-    }
-
-    private void aclMemberUpdate() throws CatalogException,IOException {
-
-        logger.debug("Updating acl");
-
-        ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
-            objectMap.put(StudyClient.AclParams.ADD_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
-            objectMap.put(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
-            objectMap.put(StudyClient.AclParams.SET_PERMISSIONS.key(), studiesCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-        }
-
-        QueryResponse<StudyAclEntry> acl = openCGAClient.getStudyClient().updateAcl(studiesCommandOptions.aclsMemberUpdateCommandOptions.id,
-                studiesCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
-
-        System.out.println(acl.toString());
     }
 
     /************************************************* Groups commands *********************************************************/

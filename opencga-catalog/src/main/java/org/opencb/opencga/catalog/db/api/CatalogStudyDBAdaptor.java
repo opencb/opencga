@@ -35,7 +35,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogStudyDBAdaptor extends CatalogDBAdaptor<Study>, CatalogAclDBAdaptor<StudyAclEntry> {
+public interface CatalogStudyDBAdaptor extends CatalogAclDBAdaptor<Study, StudyAclEntry> {
 
     /*
      * Study methods

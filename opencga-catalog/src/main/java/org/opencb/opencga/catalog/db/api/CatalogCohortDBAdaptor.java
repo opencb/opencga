@@ -16,8 +16,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by pfurio on 3/22/16.
  */
-public interface CatalogCohortDBAdaptor extends CatalogDBAdaptor<Cohort>, CatalogAclDBAdaptor<CohortAclEntry>,
-        CatalogAnnotationSetDBAdaptor {
+public interface CatalogCohortDBAdaptor extends CatalogAnnotationSetDBAdaptor<Cohort, CohortAclEntry> {
 
     enum QueryParams implements QueryParam {
         ID("id", DECIMAL, ""),

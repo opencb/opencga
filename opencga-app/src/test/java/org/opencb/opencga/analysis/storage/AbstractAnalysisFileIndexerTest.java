@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.storage;
 
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -15,6 +16,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,14 +52,16 @@ public abstract class AbstractAnalysisFileIndexerTest {
     protected CatalogFileUtils catalogFileUtils;
 
     protected final String dbName = DB_NAME;
+    protected static final String STORAGE_ENGINE_MONGODB = "mongodb";
+    protected static final String STORAGE_ENGINE_HADOOP = "hadoop";
+    protected static final String STORAGE_ENGINE = STORAGE_ENGINE_MONGODB;
     private Logger logger = LoggerFactory.getLogger(AbstractAnalysisFileIndexerTest.class);
 
-
     @Rule
-    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource();
+    public OpenCGATestExternalResource opencga = new OpenCGATestExternalResource(getStorageEngine().equals(STORAGE_ENGINE_HADOOP));
 
     @Before
-    public void setUpAbstract() throws CatalogException, IOException {
+    public final void setUpAbstract() throws CatalogException, IOException {
         Path openCGA = opencga.getOpencgaHome();
 
         catalogManager = opencga.getCatalogManager();
@@ -72,17 +76,21 @@ public abstract class AbstractAnalysisFileIndexerTest {
         sessionId = catalogManager.login(userId, "user", "localhost").first().getString("sessionId");
         projectId = catalogManager.createProject("p1", "p1", "Project 1", "ACME", null, sessionId).first().getId();
         studyId = catalogManager.createStudy(projectId, "s1", "s1", Study.Type.CASE_CONTROL, null, "Study 1", null,
-                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null,
+                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
         outputId = catalogManager.createFolder(studyId, Paths.get("data", "index"), false, null, sessionId).first().getId();
 
         studyId2 = catalogManager.createStudy(projectId, "s2", "s2", Study.Type.CASE_CONTROL, null, "Study 2", null,
-                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore("mongodb", dbName)), null,
+                null, null, null, Collections.singletonMap(File.Bioformat.VARIANT, new DataStore(getStorageEngine(), dbName)), null,
                 Collections.singletonMap(VariantStorageManager.Options.AGGREGATED_TYPE.key(), getAggregation()),
                 null, sessionId).first().getId();
         outputId2 = catalogManager.createFolder(studyId2, Paths.get("data", "index"), false, null, sessionId).first().getId();
 
+    }
+
+    protected String getStorageEngine() {
+        return STORAGE_ENGINE_MONGODB;
     }
 
     protected abstract VariantSource.Aggregation getAggregation();
