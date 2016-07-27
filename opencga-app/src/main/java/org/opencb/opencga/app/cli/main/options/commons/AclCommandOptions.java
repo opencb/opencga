@@ -26,7 +26,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
  */
 public class AclCommandOptions {
 
-    public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
+    private OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonCommandOptions;
 
     private AclsCommandOptions aclsCommandOptions;
     private AclsCreateCommandOptions aclsCreateCommandOptions;

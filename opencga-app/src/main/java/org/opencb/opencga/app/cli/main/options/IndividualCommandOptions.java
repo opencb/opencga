@@ -6,13 +6,13 @@ import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 
 /**
  * Created by sgallego on 6/14/16.
  */
 @Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
 public class IndividualCommandOptions {
-
 
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
@@ -27,15 +27,18 @@ public class IndividualCommandOptions {
     public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
     public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-    public AnnotationSetsAllInfoCommandOptions annotationSetsAllInfoCommandOptions;
-    public AnnotationSetsSearchCommandOptions annotationSetsSearchCommandOptions;
-    public AnnotationSetsInfoCommandOptions annotationSetsInfoCommandOptions;
-    public AnnotationSetsDeleteCommandOptions annotationSetsDeleteCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
 
     private AclCommandOptions aclCommandOptions;
+    private AnnotationCommandOptions annotationCommandOptions;
 
     public IndividualCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
@@ -49,12 +52,15 @@ public class IndividualCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
 
-        this.annotationSetsAllInfoCommandOptions = new AnnotationSetsAllInfoCommandOptions();
-        this.annotationSetsSearchCommandOptions = new AnnotationSetsSearchCommandOptions();
-        this.annotationSetsInfoCommandOptions = new AnnotationSetsInfoCommandOptions();
-        this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
+        this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
+        this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
+        this.annotationAllInfoCommandOptions = this.annotationCommandOptions.getAllInfoCommandOptions();
+        this.annotationSearchCommandOptions = this.annotationCommandOptions.getSearchCommandOptions();
+        this.annotationDeleteCommandOptions = this.annotationCommandOptions.getDeleteCommandOptions();
+        this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
+        this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
 
-        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        this.aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
         this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
         this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
@@ -256,57 +262,5 @@ public class IndividualCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
         public String annotation;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsAllInfoCommandOptions extends BaseIndividualsCommand {
-
-        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
-        public boolean asMap = true;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsSearchCommandOptions extends BaseIndividualsCommand {
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
-                required = true, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
-        public String annotation;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsDeleteCommandOptions extends BaseIndividualsCommand {
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
-                required = true, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
-        public String annotation;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsInfoCommandOptions extends BaseIndividualsCommand {
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
-                required = true, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
-        public String annotation;
-
-        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
-        public boolean asMap = true;
     }
 }

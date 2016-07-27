@@ -73,18 +73,18 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 groupBy();
                 break;
-            case "annotation-sets-all-info":
-                annotationSetsAllInfo();
-                break;
-            case "annotation-sets-search":
-                annotationSetsSearch();
-                break;
-            case "annotation-sets-delete":
-                annotationSetsDelete();
-                break;
-            case "annotation-sets-info":
-                annotationSetsInfo();
-                break;
+//            case "annotation-sets-all-info":
+//                annotationSetsAllInfo();
+//                break;
+//            case "annotation-sets-search":
+//                annotationSetsSearch();
+//                break;
+//            case "annotation-sets-delete":
+//                annotationSetsDelete();
+//                break;
+//            case "annotation-sets-info":
+//                annotationSetsInfo();
+//                break;
             case "acl":
                 aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
@@ -303,77 +303,77 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
 
     /********************************************  Annotation commands  ***********************************************/
-
-    private void annotationSetsAllInfo() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets information");
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-
-        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
-                .annotationSetsAllInfo(individualsCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
-
-        System.out.println(individual.toString());
-    }
-
-    private void annotationSetsInfo() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets information");
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.put("asMap", individualsCommandOptions.annotationSetsInfoCommandOptions.asMap);
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
-        }
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                    individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
-        }
-
-        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
-                .annotationSetsInfo(individualsCommandOptions.annotationSetsInfoCommandOptions.id,
-                        individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
-                        individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
-
-        System.out.println(individual.toString());
-    }
-
-    private void annotationSetsSearch() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets");
-        ObjectMap objectMap = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotation);
-        }
-
-        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-
-        QueryResponse<Individual> samples = openCGAClient.getIndividualClient()
-                .annotationSetsSearch(individualsCommandOptions.annotationSetsSearchCommandOptions.id,
-                        individualsCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
-                        individualsCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
-
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
-    }
-
-    private void annotationSetsDelete() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets");
-        ObjectMap objectMap = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
-                    individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation);
-        }
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
-                .annotationSetsDelete(individualsCommandOptions.annotationSetsDeleteCommandOptions.id,
-                        individualsCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
-                        individualsCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
-
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
-
-    }
+//
+//    private void annotationSetsAllInfo() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets information");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
+//
+//        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
+//                .annotationSetsAllInfo(individualsCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
+//
+//        System.out.println(individual.toString());
+//    }
+//
+//    private void annotationSetsInfo() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets information");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        objectMap.put("asMap", individualsCommandOptions.annotationSetsInfoCommandOptions.asMap);
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
+//                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
+//        }
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
+//                    individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
+//        }
+//
+//        QueryResponse<Individual> individual = openCGAClient.getIndividualClient()
+//                .annotationSetsInfo(individualsCommandOptions.annotationSetsInfoCommandOptions.id,
+//                        individualsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
+//                        individualsCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
+//
+//        System.out.println(individual.toString());
+//    }
+//
+//    private void annotationSetsSearch() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+//                    individualsCommandOptions.annotationSetsInfoCommandOptions.annotation);
+//        }
+//
+//        objectMap.put("as-map", individualsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
+//
+//        QueryResponse<Individual> samples = openCGAClient.getIndividualClient()
+//                .annotationSetsSearch(individualsCommandOptions.annotationSetsSearchCommandOptions.id,
+//                        individualsCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
+//                        individualsCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
+//
+//        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+//    }
+//
+//    private void annotationSetsDelete() throws CatalogException, IOException {
+//        logger.debug("Searching annotationSets");
+//        ObjectMap objectMap = new ObjectMap();
+//
+//        if (StringUtils.isNotEmpty(individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
+//            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ANNOTATION.key(),
+//                    individualsCommandOptions.annotationSetsDeleteCommandOptions.annotation);
+//        }
+//        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
+//                .annotationSetsDelete(individualsCommandOptions.annotationSetsDeleteCommandOptions.id,
+//                        individualsCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
+//                        individualsCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
+//
+//        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
+//
+//    }
 
 }
