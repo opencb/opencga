@@ -83,12 +83,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this));
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
-        phoenixCon = null; // TODO Issue with new cluster
-//        try {
-//            phoenixCon = phoenixHelper.newJdbcConnection(conf);
-//        } catch (SQLException | ClassNotFoundException e) {
-//            throw new IOException(e);
-//        }
+        try {
+            phoenixCon = phoenixHelper.newJdbcConnection(conf);
+        } catch (SQLException | ClassNotFoundException e) {
+            throw new IOException(e);
+        }
     }
 
     public java.sql.Connection getJdbcConnection() {
