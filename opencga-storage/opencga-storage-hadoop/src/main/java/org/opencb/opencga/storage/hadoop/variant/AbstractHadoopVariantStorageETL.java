@@ -400,7 +400,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostAndPort(),
+        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostUri().toString(),
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();

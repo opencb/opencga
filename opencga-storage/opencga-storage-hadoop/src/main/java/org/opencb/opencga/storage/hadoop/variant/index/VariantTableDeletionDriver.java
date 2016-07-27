@@ -59,13 +59,11 @@ public class VariantTableDeletionDriver extends AbstractVariantTableDriver {
             conf = new Configuration();
         }
         VariantTableDeletionDriver driver = new VariantTableDeletionDriver();
-        String[] toolArgs = configure(args, conf);
+        driver.setConf(conf);
+        String[] toolArgs = configure(args, driver);
         if (null == toolArgs) {
             return -1;
         }
-
-        //set the configuration back, so that Tool can configure itself
-        driver.setConf(conf);
 
         /* Alternative to using tool runner */
 //      int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);

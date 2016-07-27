@@ -230,7 +230,7 @@ public class ArchiveDriver extends Configured implements Tool {
 
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF, toolArgs[0]);
         conf.set(CONFIG_ARCHIVE_INPUT_FILE_VCF_META, toolArgs[1]);
-        HBaseManager.addHBaseSettings(conf, toolArgs[2]);
+        conf = HBaseManager.addHBaseSettings(conf, toolArgs[2]);
         conf.set(CONFIG_ARCHIVE_TABLE_NAME, toolArgs[3]);
         conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[4]);
         conf.set(CONFIG_ARCHIVE_FILE_ID, toolArgs[5]);

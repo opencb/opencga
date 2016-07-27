@@ -286,7 +286,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         }
 
         Class execClass = VariantTableDeletionDriver.class;
-        String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.getHostAndPort(), archiveTable,
+        String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.getHostUri().toString(), archiveTable,
                 variantsTable.getTable(), studyId, Collections.singletonList(fileId), options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();
 

@@ -337,8 +337,9 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                         genomeHelper.getConf().get(CONFIG_VARIANT_TABLE_COMPRESSION, Compression.Algorithm.SNAPPY.getName())));
     }
 
-    public static String[] configure(String[] args, Configuration conf) throws Exception {
+    public static String[] configure(String[] args, Configured configured) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
+        Configuration conf = configured.getConf();
         if (conf == null) {
             throw new NullPointerException("Provided Configuration is null!!!");
         }
@@ -357,7 +358,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
             return null;
         }
 
-        HBaseManager.addHBaseSettings(conf, toolArgs[0]);
+        conf = HBaseManager.addHBaseSettings(conf, toolArgs[0]);
         conf.set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, toolArgs[1]);
         conf.set(CONFIG_VARIANT_TABLE_NAME, toolArgs[2]);
         conf.set(GenomeHelper.CONFIG_STUDY_ID, toolArgs[3]);
@@ -365,6 +366,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         for (int i = fixedSizeArgs; i < toolArgs.length; i = i + 2) {
             conf.set(toolArgs[i], toolArgs[i + 1]);
         }
+        configured.setConf(conf);
         return toolArgs;
     }
 }
