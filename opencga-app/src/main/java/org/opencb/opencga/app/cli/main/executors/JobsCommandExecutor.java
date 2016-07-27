@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -38,10 +39,12 @@ import java.io.IOException;
 public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
     private JobCommandOptions jobsCommandOptions;
+    private AclCommandExecutor<Job, JobAclEntry> aclCommandExecutor;
 
     public JobsCommandExecutor(JobCommandOptions jobsCommandOptions) {
         super(jobsCommandOptions.commonCommandOptions);
         this.jobsCommandOptions = jobsCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -71,19 +74,19 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
                 groupBy();
                 break;
             case "acl":
-                acls();
+                aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
                 break;
             case "acl-create":
-                aclsCreate();
+                aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient());
                 break;
             case "acl-member-delete":
-                aclMemberDelete();
+                aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getJobClient());
                 break;
             case "acl-member-info":
-                aclMemberInfo();
+                aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getJobClient());
                 break;
             case "acl-member-update":
-                aclMemberUpdate();
+                aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getJobClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -224,68 +227,4 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         jobs.first().getResult().stream().forEach(job -> System.out.println(job.toString()));
     }
 
-
-    /********************************************  Administration ACL commands  ***********************************************/
-
-    private void acls() throws CatalogException,IOException {
-
-        logger.debug("Acls");
-        QueryResponse<JobAclEntry> acls = openCGAClient.getJobClient().getAcls(jobsCommandOptions.aclsCommandOptions.id);
-
-        System.out.println(acls.toString());
-
-    }
-
-    private void aclsCreate() throws CatalogException,IOException{
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        
-        QueryResponse<JobAclEntry> acl =
-                openCGAClient.getJobClient().createAcl(jobsCommandOptions.aclsCreateCommandOptions.id,
-                        jobsCommandOptions.aclsCreateCommandOptions.permissions, jobsCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
-    }
-
-    private void aclMemberDelete() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Object> acl = openCGAClient.getStudyClient().deleteAcl(jobsCommandOptions.aclsMemberDeleteCommandOptions.id,
-                jobsCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
-        System.out.println(acl.toString());
-    }
-
-    private void aclMemberInfo() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryResponse<JobAclEntry> acls = openCGAClient.getJobClient().getAcl(jobsCommandOptions.aclsMemberInfoCommandOptions.id,
-                jobsCommandOptions.aclsMemberInfoCommandOptions.memberId);
-        System.out.println(acls.toString());
-    }
-
-    private void aclMemberUpdate() throws CatalogException,IOException {
-
-        logger.debug("Updating acl");
-
-        ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(jobsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
-            objectMap.put(JobClient.AclParams.ADD_PERMISSIONS.key(), jobsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
-            objectMap.put(JobClient.AclParams.REMOVE_PERMISSIONS.key(), jobsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        }
-        if (StringUtils.isNotEmpty(jobsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
-            objectMap.put(JobClient.AclParams.SET_PERMISSIONS.key(), jobsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-        }
-
-        QueryResponse<JobAclEntry> acl = openCGAClient.getJobClient().updateAcl(jobsCommandOptions.aclsMemberUpdateCommandOptions.id,
-                jobsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
-
-        System.out.println(acl.toString());
-    }
 }

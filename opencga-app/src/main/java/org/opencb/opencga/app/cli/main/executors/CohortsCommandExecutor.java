@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
@@ -41,10 +42,12 @@ import java.io.IOException;
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private CohortCommandOptions cohortsCommandOptions;
+    private AclCommandExecutor<Cohort, CohortAclEntry> aclCommandExecutor;
 
     public CohortsCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
         super(cohortsCommandOptions.commonCommandOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -91,19 +94,19 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 annotationSetsInfo();
                 break;
             case "acl":
-                acls();
+                aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-create":
-                aclsCreate();
+                aclCommandExecutor.aclsCreate(cohortsCommandOptions.aclsCreateCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-member-delete":
-                aclMemberDelete();
+                aclCommandExecutor.aclMemberDelete(cohortsCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-member-info":
-                aclMemberInfo();
+                aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-member-update":
-                aclMemberUpdate();
+                aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getCohortClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -321,66 +324,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
         cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
 
-    }
-
-    /********************************************  Administration ACL commands  ***********************************************/
-
-    private void acls() throws CatalogException,IOException {
-
-        logger.debug("Acls");
-        QueryResponse<CohortAclEntry> acls = openCGAClient.getCohortClient().getAcls(cohortsCommandOptions.aclsCommandOptions.id);
-
-        System.out.println(acls.toString());
-
-    }
-    private void aclsCreate() throws CatalogException,IOException{
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-
-        QueryResponse<CohortAclEntry> acl =
-                openCGAClient.getCohortClient().createAcl(cohortsCommandOptions.aclsCreateCommandOptions.id,
-                        cohortsCommandOptions.aclsCreateCommandOptions.permissions, cohortsCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberDelete() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Object> acl = openCGAClient.getCohortClient().deleteAcl(cohortsCommandOptions.aclsMemberDeleteCommandOptions.id,
-                cohortsCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberInfo() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryResponse<CohortAclEntry> acls = openCGAClient.getCohortClient().getAcl(cohortsCommandOptions.aclsMemberInfoCommandOptions.id,
-                cohortsCommandOptions.aclsMemberInfoCommandOptions.memberId);
-        System.out.println(acls.toString());
-    }
-
-    private void aclMemberUpdate() throws CatalogException,IOException {
-
-        logger.debug("Updating acl");
-
-        ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
-            objectMap.put(CohortClient.AclParams.ADD_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
-            objectMap.put(CohortClient.AclParams.REMOVE_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
-            objectMap.put(CohortClient.AclParams.SET_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-        }
-
-        QueryResponse<CohortAclEntry> acl = openCGAClient.getCohortClient().updateAcl(cohortsCommandOptions.aclsMemberUpdateCommandOptions.id,
-                cohortsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
-        System.out.println(acl.toString());
     }
 
 }
