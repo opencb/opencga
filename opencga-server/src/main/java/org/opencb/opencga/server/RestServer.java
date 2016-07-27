@@ -92,7 +92,7 @@ public class RestServer extends AbstractStorageServer {
 
         ServletContextHandler context = new ServletContextHandler(server, null, ServletContextHandler.SESSIONS);
         context.addServlet(sh, "/opencga/webservices/rest/*");
-        context.setInitParameter("OPENCGA_HOME", configDir.toFile().toString());
+        context.setInitParameter("config-dir", configDir.toFile().toString());
 
         server.start();
         logger.info("REST server started, listening on {}", port);
