@@ -374,11 +374,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.commonOptions.exclude);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.commonOptions.skip);
         }
 
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
@@ -447,11 +447,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
         QueryResponse<Sample> samples =
@@ -661,11 +661,11 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
 

@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 
@@ -45,15 +46,18 @@ public class PanelCommandOptions {
 
     class BasePanelsCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--panel-id"}, description = "Panel id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Panel id", required = true, arity = 1)
         public String id;
     }
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create a cohort")
     public class CreateCommandOptions {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
@@ -80,6 +84,9 @@ public class PanelCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BasePanelsCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
 }

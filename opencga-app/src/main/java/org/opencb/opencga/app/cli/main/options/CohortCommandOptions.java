@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
@@ -18,7 +19,6 @@ public class CohortCommandOptions {
     public CreateCommandOptions createCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SamplesCommandOptions samplesCommandOptions;
-    public AnnotateCommandOptions annotateCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
     public StatsCommandOptions statsCommandOptions;
@@ -51,7 +51,6 @@ public class CohortCommandOptions {
         this.createCommandOptions = new CreateCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.samplesCommandOptions = new SamplesCommandOptions();
-        this.annotateCommandOptions = new AnnotateCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.statsCommandOptions = new StatsCommandOptions();
@@ -75,10 +74,10 @@ public class CohortCommandOptions {
 
     public class BaseCohortsCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-i", "--cohorts-id"}, description = "Cohorts id", required = true, arity = 1)
+        @Parameter(names = {"-i", "--id"}, description = "Cohort id", required = true, arity = 1)
         public String id;
     }
 
@@ -115,16 +114,17 @@ public class CohortCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BaseCohortsCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"samples"}, commandDescription = "List samples belonging to a cohort")
     public class SamplesCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
@@ -149,29 +149,13 @@ public class CohortCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate cohort")
-    public class AnnotateCommandOptions extends BaseCohortsCommand {
-
-        @Parameter(names = {"--annotate-set-name"}, description = "Annotation set name. Must be unique for the cohort",
-                required = true, arity = 1)
-        public String annotateSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet, default: false",
-                required = false, arity = 0)
-        public boolean update;
-
-        @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet, default:false",
-                required = false, arity = 0)
-        public boolean delete;
-    }
-
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseCohortsCommand {
 
-        @Parameter(names = {"--name"}, description = "Cohort set name.",
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--name"}, description = "New cohort name.",
                 required = false, arity = 1)
         public String name;
 
@@ -189,6 +173,8 @@ public class CohortCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete cohort")
     public class DeleteCommandOptions extends BaseCohortsCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")

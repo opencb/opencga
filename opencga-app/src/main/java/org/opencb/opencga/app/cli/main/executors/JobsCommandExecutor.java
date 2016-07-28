@@ -132,8 +132,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         String output = jobsCommandOptions.searchCommandOptions.outputFiles;
         String include = jobsCommandOptions.searchCommandOptions.commonOptions.include;
         String exclude = jobsCommandOptions.searchCommandOptions.commonOptions.exclude;
-        String limit = jobsCommandOptions.searchCommandOptions.limit;
-        String skip = jobsCommandOptions.searchCommandOptions.skip;
+        String limit = jobsCommandOptions.searchCommandOptions.commonOptions.limit;
+        String skip = jobsCommandOptions.searchCommandOptions.commonOptions.skip;
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 

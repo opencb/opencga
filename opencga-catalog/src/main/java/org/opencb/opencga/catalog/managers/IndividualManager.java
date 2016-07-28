@@ -58,22 +58,22 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
     public QueryResult<Individual> create(ObjectMap objectMap, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkObj(objectMap, "objectMap");
         return create(
-                objectMap.getInt("studyId"),
-                objectMap.getString("name"),
-                objectMap.getString("family"),
-                objectMap.getInt("fatherId"),
-                objectMap.getInt("motherId"),
-                objectMap.get("gender", Individual.Gender.class),
+                objectMap.getInt(CatalogIndividualDBAdaptor.QueryParams.STUDY_ID.key()),
+                objectMap.getString(CatalogIndividualDBAdaptor.QueryParams.NAME.key()),
+                objectMap.getString(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key()),
+                objectMap.getInt(CatalogIndividualDBAdaptor.QueryParams.FATHER_ID.key()),
+                objectMap.getInt(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key()),
+                objectMap.get(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), Individual.Sex.class),
                 options, sessionId);
     }
 
     @Override
     public QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId,
-                                          Individual.Gender gender, QueryOptions options, String sessionId)
+                                          Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
 
         options = ParamUtils.defaultObject(options, QueryOptions::new);
-        gender = ParamUtils.defaultObject(gender, Individual.Gender.UNKNOWN);
+        sex = ParamUtils.defaultObject(sex, Individual.Sex.UNKNOWN);
         ParamUtils.checkAlias(name, "name");
         family = ParamUtils.defaultObject(family, "");
 
@@ -81,7 +81,7 @@ public class IndividualManager extends AbstractManager implements IIndividualMan
         authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_INDIVIDUALS);
 
         QueryResult<Individual> queryResult = individualDBAdaptor.createIndividual(studyId, new Individual(0, name, fatherId, motherId,
-                family, gender, null, null, null, Collections.emptyList(), null), options);
+                family, sex, null, null, null, Collections.emptyList(), null), options);
 //      auditManager.recordCreation(AuditRecord.Resource.individual, queryResult.first().getId(), userId, queryResult.first(), null, null);
         auditManager.recordAction(AuditRecord.Resource.individual, AuditRecord.Action.create, AuditRecord.Magnitude.low,
                 queryResult.first().getId(), userId, null, queryResult.first(), null, null);

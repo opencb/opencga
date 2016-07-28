@@ -167,17 +167,17 @@ public class OpencgaCliOptionsParser {
         individualSubCommands.addCommand("update", individualCommandOptions.updateCommandOptions);
         individualSubCommands.addCommand("delete", individualCommandOptions.deleteCommandOptions);
         individualSubCommands.addCommand("group-by", individualCommandOptions.groupByCommandOptions);
+        individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
+        individualSubCommands.addCommand("acl-create", individualCommandOptions.aclsCreateCommandOptions);
+        individualSubCommands.addCommand("acl-member-delete", individualCommandOptions.aclsMemberDeleteCommandOptions);
+        individualSubCommands.addCommand("acl-member-info", individualCommandOptions.aclsMemberInfoCommandOptions);
+        individualSubCommands.addCommand("acl-member-update", individualCommandOptions.aclsMemberUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-create", individualCommandOptions.annotationCreateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-all-info", individualCommandOptions.annotationAllInfoCommandOptions);
         individualSubCommands.addCommand("annotation-sets-info", individualCommandOptions.annotationInfoCommandOptions);
         individualSubCommands.addCommand("annotation-sets-search", individualCommandOptions.annotationSearchCommandOptions);
         individualSubCommands.addCommand("annotation-sets-update", individualCommandOptions.annotationUpdateCommandOptions);
         individualSubCommands.addCommand("annotation-sets-delete", individualCommandOptions.annotationDeleteCommandOptions);
-        individualSubCommands.addCommand("acl", individualCommandOptions.aclsCommandOptions);
-        individualSubCommands.addCommand("acl-create", individualCommandOptions.aclsCreateCommandOptions);
-        individualSubCommands.addCommand("acl-member-delete", individualCommandOptions.aclsMemberDeleteCommandOptions);
-        individualSubCommands.addCommand("acl-member-info", individualCommandOptions.aclsMemberInfoCommandOptions);
-        individualSubCommands.addCommand("acl-member-update", individualCommandOptions.aclsMemberUpdateCommandOptions);
 
         sampleCommandOptions = new SampleCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("samples", sampleCommandOptions);
@@ -189,17 +189,17 @@ public class OpencgaCliOptionsParser {
         sampleSubCommands.addCommand("update", sampleCommandOptions.updateCommandOptions);
         sampleSubCommands.addCommand("delete", sampleCommandOptions.deleteCommandOptions);
         sampleSubCommands.addCommand("group-by", sampleCommandOptions.groupByCommandOptions);
+        sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
+        sampleSubCommands.addCommand("acl-create", sampleCommandOptions.aclsCreateCommandOptions);
+        sampleSubCommands.addCommand("acl-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);
+        sampleSubCommands.addCommand("acl-member-info", sampleCommandOptions.aclsMemberInfoCommandOptions);
+        sampleSubCommands.addCommand("acl-member-update", sampleCommandOptions.aclsMemberUpdateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-create", sampleCommandOptions.annotationCreateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-all-info", sampleCommandOptions.annotationAllInfoCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-info", sampleCommandOptions.annotationInfoCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-search", sampleCommandOptions.annotationSearchCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-update", sampleCommandOptions.annotationUpdateCommandOptions);
         sampleSubCommands.addCommand("annotation-sets-delete", sampleCommandOptions.annotationDeleteCommandOptions);
-        sampleSubCommands.addCommand("acl", sampleCommandOptions.aclsCommandOptions);
-        sampleSubCommands.addCommand("acl-create", sampleCommandOptions.aclsCreateCommandOptions);
-        sampleSubCommands.addCommand("acl-member-delete", sampleCommandOptions.aclsMemberDeleteCommandOptions);
-        sampleSubCommands.addCommand("acl-member-info", sampleCommandOptions.aclsMemberInfoCommandOptions);
-        sampleSubCommands.addCommand("acl-member-update", sampleCommandOptions.aclsMemberUpdateCommandOptions);
 
         variableCommandOptions = new VariableCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("variables", variableCommandOptions);
@@ -218,21 +218,20 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);
         cohortSubCommands.addCommand("info", cohortCommandOptions.infoCommandOptions);
         cohortSubCommands.addCommand("samples", cohortCommandOptions.samplesCommandOptions);
-        cohortSubCommands.addCommand("annotate", cohortCommandOptions.annotateCommandOptions);
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
+        cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
+        cohortSubCommands.addCommand("acl-create", cohortCommandOptions.aclsCreateCommandOptions);
+        cohortSubCommands.addCommand("acl-member-delete", cohortCommandOptions.aclsMemberDeleteCommandOptions);
+        cohortSubCommands.addCommand("acl-member-info", cohortCommandOptions.aclsMemberInfoCommandOptions);
+        cohortSubCommands.addCommand("acl-member-update", cohortCommandOptions.aclsMemberUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-create", cohortCommandOptions.annotationCreateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-all-info", cohortCommandOptions.annotationAllInfoCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-info", cohortCommandOptions.annotationInfoCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-search", cohortCommandOptions.annotationSearchCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-update", cohortCommandOptions.annotationUpdateCommandOptions);
         cohortSubCommands.addCommand("annotation-sets-delete", cohortCommandOptions.annotationDeleteCommandOptions);
-        cohortSubCommands.addCommand("acl", cohortCommandOptions.aclsCommandOptions);
-        cohortSubCommands.addCommand("acl-create", cohortCommandOptions.aclsCreateCommandOptions);
-        cohortSubCommands.addCommand("acl-member-delete", cohortCommandOptions.aclsMemberDeleteCommandOptions);
-        cohortSubCommands.addCommand("acl-member-info", cohortCommandOptions.aclsMemberInfoCommandOptions);
-        cohortSubCommands.addCommand("acl-member-update", cohortCommandOptions.aclsMemberUpdateCommandOptions);
         // TODO: "groupby",
 
         toolCommandOptions = new ToolCommandOptions(this.commonCommandOptions, jCommander);
@@ -379,32 +378,49 @@ public class OpencgaCliOptionsParser {
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
-    //    class CommonOptions {
     public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> dynamic = new HashMap<String, String>();
-
-        @Parameter(names = {"--include"}, description = "", required = false, arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "", required = false, arity = 1)
-        public String exclude;
+        Map<String, String> dynamic = new HashMap<>();
 
         @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
         public boolean metadata = false;
 
-        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}", required = false, arity = 1)
+        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, "
+                + "PLAIN_JSON}", required = false, arity = 1)
         OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
 
+    }
+
+    public static class OpencgaIncludeExcludeCommonCommandOptions extends OpencgaCommonCommandOptions {
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
         QueryOptions getQueryOptions() {
-            QueryOptions queryOptions = new QueryOptions(dynamic, false);
-            if (include != null && !include.isEmpty()) {
-                queryOptions.add("include", include);
-            }
-            if (exclude != null && !exclude.isEmpty()) {
-                queryOptions.add("exclude", exclude);
-            }
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotNull("include", include);
+            queryOptions.putIfNotNull("exclude", exclude);
+            return queryOptions;
+        }
+
+    }
+
+    public static class OpencgaQueryOptionsCommonCommandOptions extends OpencgaIncludeExcludeCommonCommandOptions {
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
+        @Override
+        QueryOptions getQueryOptions() {
+            QueryOptions queryOptions = super.getQueryOptions();
+            queryOptions.putIfNotNull("skip", skip);
+            queryOptions.putIfNotNull("limit", limit);
             return queryOptions;
         }
     }

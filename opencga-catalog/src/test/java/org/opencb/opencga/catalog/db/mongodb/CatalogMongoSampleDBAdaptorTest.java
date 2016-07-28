@@ -326,7 +326,6 @@ public class CatalogMongoSampleDBAdaptorTest {
 
 //        thrown.expect(CatalogDBException.class);
         dbAdaptorFactory.getCatalogSampleDBAdaptor().delete(createResult.first().getId(), new QueryOptions());
-        System.out.println("HOLA");
     }
 
     @Test

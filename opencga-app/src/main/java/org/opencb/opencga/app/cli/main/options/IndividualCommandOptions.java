@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
@@ -70,10 +71,10 @@ public class IndividualCommandOptions {
 
     public class BaseIndividualsCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--individual-id"}, description = "Individual id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Individual id", required = true, arity = 1)
         public String id;
     }
 
@@ -99,26 +100,30 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--gender"}, description = "Gender", required = false)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
     }
 
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
     public class InfoCommandOptions extends BaseIndividualsCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
+        @Parameter(names = {"--ids"}, description = "Comma separated list of individual ids", arity = 1)
+        public String id;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
         public String studyId;
-
-        @Parameter(names = {"--individual-id"}, description = "Id", required = false, arity = 1)
-        public String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
@@ -132,11 +137,11 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--family"}, description = "family", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--gender"}, description = "gender", required = false, arity = 1)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false, arity = 1)
+        public String sex;
 
-        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-        public String race;
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
 
         @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
         public String species;
@@ -153,39 +158,15 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--annotation"}, description = "annotation", required = false, arity = 1)
         public String annotation;
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
-
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
     }
 
-   /* @Parameters(commandNames = {"annotate"}, commandDescription = "Annotate an individual")
-    public class AnnotateCommandOptions extends BaseIndividualsCommand {
-
-        @Parameter(names = {"--annotateSetName"}, description = "Annotation set name. Must be unique",
-                required = true, arity = 1)
-        public String annotateSetName;
-
-        @Parameter(names = {"--variable-set-id"}, description = "variableSetId", required = false, arity = 1)
-        public Integer id;
-
-        @Parameter(names = {"--update"}, description = "Update an already existing AnnotationSet", required = false,
-                arity = 0)
-        public boolean update;
-
-        @Parameter(names = {"--delete"}, description = "Delete an AnnotationSet", required = false, arity = 0)
-        public boolean delete;
-    }*/
-
     @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
     public class UpdateCommandOptions extends BaseIndividualsCommand {
 
-//            @Parameter(names = {"-id", "--individual-id"}, description = "Id", required = false, arity = 1)
-//            String id;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
@@ -199,21 +180,24 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--gender"}, description = "Gender", required = false)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
 
-        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-        public String race;
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
 
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
     public class DeleteCommandOptions extends BaseIndividualsCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
     public class GroupByCommandOptions {
+
         @ParametersDelegate
         OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
@@ -225,8 +209,7 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.",
                 required = false, arity = 1)
         public String id;
 
@@ -242,11 +225,11 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--gender"}, description = "Gender", required = false)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
 
-        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-        public String race;
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
 
         @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
         public String species;

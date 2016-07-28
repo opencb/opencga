@@ -24,6 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
@@ -43,11 +44,13 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private CohortCommandOptions cohortsCommandOptions;
     private AclCommandExecutor<Cohort, CohortAclEntry> aclCommandExecutor;
+    private AnnotationCommandExecutor<Cohort, CohortAclEntry> annotationCommandExecutor;
 
     public CohortsCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
         super(cohortsCommandOptions.commonCommandOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
         this.aclCommandExecutor = new AclCommandExecutor<>();
+        this.annotationCommandExecutor = new AnnotationCommandExecutor<>();
     }
 
 
@@ -81,18 +84,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 groupBy();
                 break;
-//            case "annotation-sets-all-info":
-//                annotationSetsAllInfo();
-//                break;
-//            case "annotation-sets-search":
-//                annotationSetsSearch();
-//                break;
-//            case "annotation-sets-delete":
-//                annotationSetsDelete();
-//                break;
-//            case "annotation-sets-info":
-//                annotationSetsInfo();
-//                break;
             case "acl":
                 aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
                 break;
@@ -107,6 +98,30 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 break;
             case "acl-member-update":
                 aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-create":
+                annotationCommandExecutor.createAnnotationSet(cohortsCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-all-info":
+                annotationCommandExecutor.getAllAnnotationSets(cohortsCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-search":
+                annotationCommandExecutor.searchAnnotationSets(cohortsCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-delete":
+                annotationCommandExecutor.deleteAnnotationSet(cohortsCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-info":
+                annotationCommandExecutor.getAnnotationSet(cohortsCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-update":
+                annotationCommandExecutor.updateAnnotationSet(cohortsCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -152,11 +167,11 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
 
@@ -251,79 +266,5 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
                 cohortsCommandOptions.groupByCommandOptions.by,objectMap);
         cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
     }
-
-    /********************************************  Annotation commands  ***********************************************/
-
-//    private void annotationSetsAllInfo() throws CatalogException, IOException {
-//        logger.debug("Searching annotationSets information");
-//        ObjectMap objectMap = new ObjectMap();
-//
-//        objectMap.put("as-map", cohortsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-//
-//        QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
-//                .annotationSetsAllInfo(cohortsCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
-//
-//        System.out.println(cohort.toString());
-//    }
-//
-//    private void annotationSetsInfo() throws CatalogException, IOException {
-//        logger.debug("Searching annotationSets information");
-//        ObjectMap objectMap = new ObjectMap();
-//
-//        objectMap.put("asMap", cohortsCommandOptions.annotationSetsInfoCommandOptions.asMap);
-//
-//        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
-//            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-//                    cohortsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
-//        }
-//
-//        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
-//            objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-//                    cohortsCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
-//        }
-//
-//        QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
-//                .annotationSetsInfo(cohortsCommandOptions.annotationSetsInfoCommandOptions.id,
-//                cohortsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
-//                cohortsCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
-//
-//        System.out.println(cohort.toString());
-//    }
-//
-//    private void annotationSetsSearch() throws CatalogException, IOException {
-//        logger.debug("Searching annotationSets");
-//        ObjectMap objectMap = new ObjectMap();
-//
-//        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
-//            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
-//                    cohortsCommandOptions.annotationSetsInfoCommandOptions.annotation);
-//        }
-//
-//        objectMap.put("as-map", cohortsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-//
-//        QueryResponse<Cohort> cohorts = openCGAClient.getCohortClient()
-//                .annotationSetsSearch(cohortsCommandOptions.annotationSetsSearchCommandOptions.id,
-//                        cohortsCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
-//                        cohortsCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
-//
-//        cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
-//    }
-//
-//    private void annotationSetsDelete() throws CatalogException, IOException {
-//        logger.debug("Searching annotationSets");
-//        ObjectMap objectMap = new ObjectMap();
-//
-//        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
-//            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
-//                    cohortsCommandOptions.annotationSetsDeleteCommandOptions.annotation);
-//        }
-//        QueryResponse<Cohort> cohorts = openCGAClient.getCohortClient()
-//                .annotationSetsDelete(cohortsCommandOptions.annotationSetsDeleteCommandOptions.id,
-//                        cohortsCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
-//                        cohortsCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
-//
-//        cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
-//
-//    }
 
 }

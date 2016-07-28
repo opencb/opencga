@@ -27,6 +27,7 @@ import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -38,6 +39,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 
 /**
  * Created by imedina on 03/06/16.
@@ -278,17 +280,28 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private void link() throws CatalogException, IOException, URISyntaxException {
         logger.debug("Linking the file or folder into catalog.");
 
-        String studyStr = filesCommandOptions.linkCommandOptions.studyId;
         URI uri = UriUtils.createUri(filesCommandOptions.linkCommandOptions.input);
-        String path = filesCommandOptions.linkCommandOptions.path;
-        ObjectMap objectMap = new ObjectMap()
-                .append(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.linkCommandOptions.description)
-                .append("parents", filesCommandOptions.linkCommandOptions.parents)
-                .append("sessionId", sessionId);
-
         logger.debug("uri: {}", uri.toString());
 
-        QueryResponse<File> link = openCGAClient.getFileClient().link(studyStr, uri.toString(), path, objectMap);
+        ObjectMap objectMap = new ObjectMap()
+                .append(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.linkCommandOptions.description)
+                .append("parents", filesCommandOptions.linkCommandOptions.parents);
+
+        CatalogManager catalogManager = null;
+        try {
+            catalogManager = new CatalogManager(catalogConfiguration);
+        } catch (CatalogException e) {
+            logger.error("Catalog manager could not be initialized. Is the configuration OK?");
+        }
+        if (!catalogManager.existsCatalogDB()) {
+            logger.error("The database could not be found. Are you running this from the server?");
+            return;
+        }
+        QueryResult<File> linkQueryResult = catalogManager.link(uri, filesCommandOptions.linkCommandOptions.path,
+                filesCommandOptions.linkCommandOptions.studyId, objectMap, sessionId);
+
+        QueryResponse<File> link = new QueryResponse<>(new QueryOptions(), Arrays.asList(linkQueryResult));
+
         if (!link.getError().isEmpty()) {
             logger.error(link.getError());
         } else {
@@ -304,7 +317,20 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private void unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
 
-        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
+        CatalogManager catalogManager = null;
+        try {
+            catalogManager = new CatalogManager(catalogConfiguration);
+        } catch (CatalogException e) {
+            logger.error("Catalog manager could not be initialized. Is the configuration OK?");
+        }
+        if (!catalogManager.existsCatalogDB()) {
+            logger.error("The database could not be found. Are you running this from the server?");
+            return;
+        }
+        QueryResult<File> unlinkQueryResult = catalogManager.unlink(filesCommandOptions.unlinkCommandOptions.id, new QueryOptions(),
+                sessionId);
+
+        QueryResponse<File> unlink = new QueryResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
 
         if (!unlink.getError().isEmpty()) {
             logger.error(unlink.getError());

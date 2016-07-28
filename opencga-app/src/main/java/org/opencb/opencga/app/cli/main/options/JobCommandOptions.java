@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 
@@ -53,10 +54,10 @@ public class JobCommandOptions {
 
     public class BaseJobCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Job id", required = true, arity = 1)
         public String id;
     }
 
@@ -84,6 +85,9 @@ public class JobCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get job information")
     public class InfoCommandOptions extends BaseJobCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
 
@@ -91,13 +95,14 @@ public class JobCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
+        @Parameter(names = {"--ids"}, description = "Comma separated list of job ids", arity = 1)
+        public String id;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
-
-        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
-        public String jobId;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
         public String name;
@@ -117,19 +122,19 @@ public class JobCommandOptions {
         @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids.", required = false, arity = 1)
         public String outputFiles;
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
     }
 
     @Parameters(commandNames = {"visit"}, commandDescription = "Increment job visits")
     public class VisitCommandOptions extends BaseJobCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete job")
     public class DeleteCommandOptions extends BaseJobCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--delete-files"}, description = "Delete files, default:true", required = false, arity = 0)
         public boolean deleteFiles = true;
@@ -149,7 +154,7 @@ public class JobCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.",
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.",
                 required = false, arity = 1)
         public String id;
 

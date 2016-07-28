@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 
@@ -81,10 +82,10 @@ public class StudyCommandOptions {
 
     public abstract class BaseStudyCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
     }
 
@@ -112,21 +113,19 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get study information")
     public class InfoCommandOptions extends BaseStudyCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search studies")
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--id"}, description = "Id.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of study ids", arity = 1)
         public String id;
 
         @Parameter(names = {"--project-id"}, description = "Project Id.", required = false, arity = 1)
@@ -165,11 +164,18 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"scan-files"},
             commandDescription = "Scans the study folder to find untracked or missing files")
-    public class ScanFilesCommandOptions extends BaseStudyCommand {  }
+    public class ScanFilesCommandOptions extends BaseStudyCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+    }
 
 
     @Parameters(commandNames = {"files"}, commandDescription = "Fetch files from a study")
     public class FilesCommandOptions extends BaseStudyCommand {
+
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
         @Parameter(names = {"-t", "--file-type"}, description = "Filter type of files, eg. file,directory", required = false, arity = 1)
         public String type = "FILE";
@@ -187,10 +193,15 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"status"}, commandDescription = "Scans the study folder to find untracked or missing files")
     public class StatusCommandOptions extends BaseStudyCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update the attributes of a study")
     public class UpdateCommandOptions extends BaseStudyCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-n", "--name"}, description = "Study name", required = true, arity = 1)
         public String name;
@@ -210,15 +221,23 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a study [PENDING]")
     public class DeleteCommandOptions extends BaseStudyCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"summary"}, commandDescription = "Summary with the general stats of a study")
     public class SummaryCommandOptions extends BaseStudyCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     // TODO: Check alignments command line
     @Parameters(commandNames = {"alignments"}, commandDescription = "Study alignments information")
     public class AlignmentsCommandOptions extends BaseStudyCommand {
+
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
         @Parameter(names = {"--sample-id"}, description = "Sample id.", required = true, arity = 1)
         public String sampleId;
@@ -248,6 +267,10 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"jobs"}, commandDescription = "Study jobs information")
     public class JobsCommandOptions extends BaseStudyCommand {
 
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
         @Parameter(names = {"--name"}, description = "Job name", required = false, arity = 1)
         public String name;
 
@@ -269,12 +292,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--output-files"}, description = "Comma separated list of output file ids", required = false, arity = 1)
         public String outputFiles;
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
-
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
 
@@ -282,6 +299,10 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"samples"}, commandDescription = "Study samples information")
     public class SamplesCommandOptions extends BaseStudyCommand {
+
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
         @Parameter(names = {"--name"}, description = "Job name", required = false, arity = 1)
         public String name;
@@ -292,12 +313,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--description"}, description = "Sample description", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
-
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
     }
@@ -305,7 +320,11 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"variants"}, commandDescription = "Study samples information")
     public class VariantsCommandOptions extends BaseStudyCommand {
 
-        @Parameter(names = {"--ids"}, description = "List of variant ids", required = false, arity = 1)
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
+        @Parameter(names = {"--variant-ids"}, description = "List of variant ids", required = false, arity = 1)
         public String ids;
 
         @Parameter(names = {"--region"}, description = "List of regions: {chr}:{start}-{end}", required = false, arity = 1)
@@ -449,20 +468,16 @@ public class StudyCommandOptions {
         @Parameter(names = {"--merge"}, description = "Merge results", required = false, arity = 1)
         public String merge;
 
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
     }
 
     @Parameters(commandNames = {"groups"}, commandDescription = "Return the groups present in the studies [PENDING]")
     public class GroupsCommandOptions extends BaseStudyCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help [PENDING]")
     public class HelpCommandOptions {
-
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
@@ -481,6 +496,9 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-delete"}, commandDescription = "Delete group [PENDING]")
     public class GroupsDeleteCommandOptions extends BaseStudyCommand {
 
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
 
@@ -492,12 +510,18 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group [PENDING]")
     public class GroupsInfoCommandOptions extends BaseStudyCommand {
 
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
     }
 
     @Parameters(commandNames = {"groups-update"}, commandDescription = "Updates the members of the group [PENDING]")
     public class GroupsUpdateCommandOptions extends BaseStudyCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;

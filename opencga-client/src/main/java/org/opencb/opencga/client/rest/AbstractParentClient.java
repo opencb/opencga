@@ -109,36 +109,7 @@ public abstract class AbstractParentClient<T, A> {
         return execute(category, id, "delete", params, GET, clazz);
     }
 
-
-   /* /**
-     * Shares the document with the list of members.
-     *
-     * @param ids Comma separated list of ids.
-     * @param members Comma separated list of members (groups and/or users).
-     * @param permissions Comma separated list of permissions.
-     * @param params Non mandatory parameters.
-     * @return a QueryResponse containing all the permissions set.
-     * @throws IOException in case of any error.
-     */
-   /* public QueryResponse<A> share(String ids, String members, List<String> permissions, ObjectMap params) throws IOException {
-        params = addParamsToObjectMap(params, "permissions", permissions, "members", members);
-        return execute(category, ids, "share", params, aclClass);
-    }
-
-    public QueryResponse<Object> unshare(String ids, String members, ObjectMap params) throws CatalogException, IOException {
-        params = addParamsToObjectMap(params, "members", members);
-        return execute(category, ids, "unshare", params, Object.class);
-    }*/
-
-//    public QueryResponse<StudyAcl> getAcl(String studyId) throws IOException {
-//        return execute(STUDY_URL, studyId, "acls", new ObjectMap(), GET, StudyAcl.class);
-//    }
-//
-//    public QueryResponse<StudyAcl> createAcl(String studyId, String members, String permissions, ObjectMap objectMap) throws IOException {
-//        ObjectMap params = new ObjectMap(objectMap);
-//        params = addParamsToObjectMap(params, "members", members, "permissions", permissions);
-//        return execute(STUDY_URL, studyId, "acls", null, "create", params, GET, StudyAcl.class);
-//    }
+    // Acl methods
 
     public QueryResponse<A> getAcls(String id) throws IOException {
         return execute(category, id, "acl", new ObjectMap(), GET, aclClass);
@@ -174,6 +145,14 @@ public abstract class AbstractParentClient<T, A> {
 
     protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
                                            Map<String, Object> params, String method, Class<T> clazz) throws IOException {
+
+        // Remove null or empty params
+        for (Map.Entry<String, Object> param : params.entrySet()) {
+            Object value = param.getValue();
+            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+                params.remove(param.getKey());
+            }
+        }
 
         System.out.println("configuration = " + configuration);
         // Build the basic URL
