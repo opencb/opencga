@@ -100,8 +100,8 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
         public String motherId;
 
-        @Parameter(names = {"--gender"}, description = "Gender", required = false)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
     }
 
 
@@ -137,11 +137,11 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--family"}, description = "family", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--gender"}, description = "gender", required = false, arity = 1)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false, arity = 1)
+        public String sex;
 
-        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-        public String race;
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
 
         @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
         public String species;
@@ -180,11 +180,11 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--gender"}, description = "Gender", required = false)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
 
-        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-        public String race;
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
 
     }
 
@@ -225,11 +225,11 @@ public class IndividualCommandOptions {
         @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
         public String family;
 
-        @Parameter(names = {"--gender"}, description = "Gender", required = false)
-        public String gender;
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
 
-        @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
-        public String race;
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
 
         @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
         public String species;

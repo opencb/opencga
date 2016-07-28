@@ -67,7 +67,7 @@ public class IndividualWSServerTest {
         QueryResponse<Individual> response = WSServerTestUtils.parseResult(json, Individual.class);
 
         Individual individual = response.getResponse().get(0).first();
-        assertEquals(Individual.Gender.FEMALE, individual.getGender());
+        assertEquals(Individual.Sex.FEMALE, individual.getSex());
         assertEquals("The Family Name", individual.getFamily());
         assertEquals("new_individual1", individual.getName());
         assertTrue(individual.getId() > 0);
@@ -84,7 +84,7 @@ public class IndividualWSServerTest {
 
         Individual individual = response.getResponse().get(0).first();
         assertEquals("f1", individual.getFamily());
-        assertEquals(null, individual.getGender());
+        assertEquals(null, individual.getSex());
         assertTrue(individual.getId() > 0);
     }
 
@@ -103,7 +103,7 @@ public class IndividualWSServerTest {
         assertEquals(2, result.size());
         for (Individual individual : result) {
             assertEquals("f1", individual.getFamily());
-            assertEquals(null, individual.getGender());
+            assertEquals(null, individual.getSex());
             assertTrue(individual.getId() > 0);
         }
     }

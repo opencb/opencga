@@ -30,7 +30,6 @@ import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
-import org.opencb.opencga.client.rest.IndividualClient;
 
 import java.io.IOException;
 
@@ -138,8 +137,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.createCommandOptions.motherId)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.createCommandOptions.motherId);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.createCommandOptions.gender)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(), individualsCommandOptions.createCommandOptions.gender);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.createCommandOptions.sex)) {
+            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.createCommandOptions.sex);
         }
 
         QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
@@ -186,11 +185,11 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.family)) {
             query.put(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.searchCommandOptions.family);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.gender)) {
-            query.put(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(), individualsCommandOptions.searchCommandOptions.gender);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.sex)) {
+            query.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.searchCommandOptions.sex);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.race)) {
-            query.put(CatalogIndividualDBAdaptor.QueryParams.RACE.key(), individualsCommandOptions.searchCommandOptions.race);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.ethnicity)) {
+            query.put(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.searchCommandOptions.ethnicity);
         }
         if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.species)) {
             query.put(CatalogIndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.searchCommandOptions.species);
@@ -245,11 +244,11 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.motherId)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.MOTHER_ID.key(), individualsCommandOptions.updateCommandOptions.motherId);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.gender)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(), individualsCommandOptions.updateCommandOptions.gender);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.sex)) {
+            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.updateCommandOptions.sex);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.race)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.RACE.key(), individualsCommandOptions.updateCommandOptions.race);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.updateCommandOptions.ethnicity)) {
+            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
         }
 
         QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
@@ -285,11 +284,11 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.family)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.FAMILY.key(), individualsCommandOptions.groupByCommandOptions.family);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.gender)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.GENDER.key(), individualsCommandOptions.groupByCommandOptions.gender);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.sex)) {
+            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.groupByCommandOptions.sex);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.race)) {
-            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.RACE.key(), individualsCommandOptions.groupByCommandOptions.race);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.ethnicity)) {
+            objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.groupByCommandOptions.ethnicity);
         }
         if (StringUtils.isNotEmpty(individualsCommandOptions.groupByCommandOptions.species)) {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SPECIES.key(), individualsCommandOptions.groupByCommandOptions.species);

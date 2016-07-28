@@ -35,9 +35,9 @@ public class Individual extends Annotable {
     private long fatherId;
     private long motherId;
     private String family;
-    private Gender gender;
-    private SexualKaryotype sexualKaryotype;
-    private String race;
+    private Sex sex;
+    private KaryotypicSex karyotypicSex;
+    private String ethnicity;
     private Species species;
     private Population population;
     private String creationDate;
@@ -51,8 +51,8 @@ public class Individual extends Annotable {
 
     private Map<String, Object> attributes;
 
-    public enum Gender {
-        MALE, FEMALE, UNKNOWN
+    public enum Sex {
+        MALE, FEMALE, UNKNOWN, UNDETERMINED
     }
 
     public enum LifeStatus {
@@ -63,40 +63,40 @@ public class Individual extends Annotable {
         AFFECTED, UNAFFECTED, UNKNOWN
     }
 
-    public enum SexualKaryotype {
+    public enum KaryotypicSex {
         UNKNOWN, XX, XY, XO, XXY, XXX, XXYY, XXXY, XXXX, XYY, OTHER
     }
 
     public Individual() {
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
                       Population population, List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, gender, race, species, population, new Status(), Collections.emptyList(), annotationSets,
-                attributes);
+        this(id, name, fatherId, motherId, family, sex, ethnicity, species, population, new Status(), Collections.emptyList(),
+                annotationSets, attributes);
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, String race, Species species,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, String ethnicity, Species species,
                       Population population, Status status, List<IndividualAclEntry> acl, List<AnnotationSet> annotationSets,
                       Map<String, Object> attributes) {
-        this(id, name, fatherId, motherId, family, gender, SexualKaryotype.UNKNOWN, race, species, population, TimeUtils.getTime(), status,
+        this(id, name, fatherId, motherId, family, sex, KaryotypicSex.UNKNOWN, ethnicity, species, population, TimeUtils.getTime(), status,
                 LifeStatus.UNKNOWN, AffectationStatus.UNKNOWN, Collections.emptyList(), acl, annotationSets, attributes);
 
-        if (gender == null) {
-            this.gender = Gender.UNKNOWN;
+        if (sex == null) {
+            this.sex = Sex.UNKNOWN;
         }
 
-        if (this.gender.equals(Gender.MALE)) {
-            this.sexualKaryotype = SexualKaryotype.XY;
-        } else if (this.gender.equals(Gender.FEMALE)) {
-            this.sexualKaryotype = SexualKaryotype.XX;
+        if (this.sex.equals(Sex.MALE)) {
+            this.karyotypicSex = KaryotypicSex.XY;
+        } else if (this.sex.equals(Sex.FEMALE)) {
+            this.karyotypicSex = KaryotypicSex.XX;
         } else {
-            this.sexualKaryotype = SexualKaryotype.UNKNOWN;
+            this.karyotypicSex = KaryotypicSex.UNKNOWN;
         }
     }
 
-    public Individual(long id, String name, long fatherId, long motherId, String family, Gender gender, SexualKaryotype sexualKaryotype,
-                      String race, Species species, Population population, String creationDate, Status status, LifeStatus lifeStatus,
+    public Individual(long id, String name, long fatherId, long motherId, String family, Sex sex, KaryotypicSex karyotypicSex,
+                      String ethnicity, Species species, Population population, String creationDate, Status status, LifeStatus lifeStatus,
                       AffectationStatus affectationStatus, List<OntologyTerm> ontologyTerms, List<IndividualAclEntry> acl,
                       List<AnnotationSet> annotationSets, Map<String, Object> attributes) {
         this.id = id;
@@ -104,9 +104,9 @@ public class Individual extends Annotable {
         this.fatherId = fatherId;
         this.motherId = motherId;
         this.family = family;
-        this.gender = gender;
-        this.sexualKaryotype = sexualKaryotype;
-        this.race = race;
+        this.sex = sex;
+        this.karyotypicSex = karyotypicSex;
+        this.ethnicity = ethnicity;
         this.species = species;
         this.population = population;
         this.creationDate = creationDate;
@@ -145,10 +145,10 @@ public class Individual extends Annotable {
         if (family != null ? !family.equals(that.family) : that.family != null) {
             return false;
         }
-        if (gender != that.gender) {
+        if (sex != that.sex) {
             return false;
         }
-        if (race != null ? !race.equals(that.race) : that.race != null) {
+        if (ethnicity != null ? !ethnicity.equals(that.ethnicity) : that.ethnicity != null) {
             return false;
         }
         if (species != null ? !species.equals(that.species) : that.species != null) {
@@ -171,8 +171,8 @@ public class Individual extends Annotable {
         result = 31 * result + fatherId;
         result = 31 * result + motherId;
         result = 31 * result + (family != null ? family.hashCode() : 0);
-        result = 31 * result + (gender != null ? gender.hashCode() : 0);
-        result = 31 * result + (race != null ? race.hashCode() : 0);
+        result = 31 * result + (sex != null ? sex.hashCode() : 0);
+        result = 31 * result + (ethnicity != null ? ethnicity.hashCode() : 0);
         result = 31 * result + (species != null ? species.hashCode() : 0);
         result = 31 * result + (population != null ? population.hashCode() : 0);
         result = 31 * result + (attributes != null ? attributes.hashCode() : 0);
@@ -338,8 +338,8 @@ public class Individual extends Annotable {
         sb.append(", fatherId=").append(fatherId);
         sb.append(", motherId=").append(motherId);
         sb.append(", family='").append(family).append('\'');
-        sb.append(", gender=").append(gender);
-        sb.append(", race='").append(race).append('\'');
+        sb.append(", sex=").append(sex);
+        sb.append(", ethnicity='").append(ethnicity).append('\'');
         sb.append(", species=").append(species);
         sb.append(", population=").append(population);
         sb.append(", creationDate='").append(creationDate).append('\'');
@@ -397,30 +397,30 @@ public class Individual extends Annotable {
         return this;
     }
 
-    public Gender getGender() {
-        return gender;
+    public Sex getSex() {
+        return sex;
     }
 
-    public Individual setGender(Gender gender) {
-        this.gender = gender;
+    public Individual setSex(Sex sex) {
+        this.sex = sex;
         return this;
     }
 
-    public SexualKaryotype getSexualKaryotype() {
-        return sexualKaryotype;
+    public KaryotypicSex getKaryotypicSex() {
+        return karyotypicSex;
     }
 
-    public Individual setSexualKaryotype(SexualKaryotype sexualKaryotype) {
-        this.sexualKaryotype = sexualKaryotype;
+    public Individual setKaryotypicSex(KaryotypicSex karyotypicSex) {
+        this.karyotypicSex = karyotypicSex;
         return this;
     }
 
-    public String getRace() {
-        return race;
+    public String getEthnicity() {
+        return ethnicity;
     }
 
-    public Individual setRace(String race) {
-        this.race = race;
+    public Individual setEthnicity(String ethnicity) {
+        this.ethnicity = ethnicity;
         return this;
     }
 

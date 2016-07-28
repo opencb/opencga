@@ -1250,9 +1250,9 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
-                                                    Individual.Gender gender, QueryOptions options, String sessionId)
+                                                    Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
-        return individualManager.create(studyId, name, family, fatherId, motherId, gender, options, sessionId);
+        return individualManager.create(studyId, name, family, fatherId, motherId, sex, options, sessionId);
     }
 
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options, String sessionId)

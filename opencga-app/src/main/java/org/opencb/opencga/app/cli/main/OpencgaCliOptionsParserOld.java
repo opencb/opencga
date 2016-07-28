@@ -1053,7 +1053,7 @@ public class OpencgaCliOptionsParserOld {
             @Parameter(names = {"--motherId"}, description = "MotherId", required = false, arity = 1)
             Integer motherId;
 
-            @Parameter(names = {"--gender"}, description = "Gender", required = false)
+            @Parameter(names = {"--sex"}, description = "Gender", required = false)
             String gender;
         }
 
@@ -1098,10 +1098,10 @@ public class OpencgaCliOptionsParserOld {
             @Parameter(names = {"--family"}, description = "family", required = false, arity = 1)
             String family;
 
-            @Parameter(names = {"--gender"}, description = "gender", required = false, arity = 1)
+            @Parameter(names = {"--sex"}, description = "sex", required = false, arity = 1)
             String gender;
 
-            @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
+            @Parameter(names = {"--ethnicity"}, description = "race", required = false, arity = 1)
             String race;
 
             @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
@@ -1155,10 +1155,10 @@ public class OpencgaCliOptionsParserOld {
             @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
             String family;
 
-            @Parameter(names = {"--gender"}, description = "Gender", required = false)
+            @Parameter(names = {"--sex"}, description = "Gender", required = false)
             String gender;
 
-            @Parameter(names = {"--race"}, description = "race", required = false, arity = 1)
+            @Parameter(names = {"--ethnicity"}, description = "race", required = false, arity = 1)
             String race;
 
         }
