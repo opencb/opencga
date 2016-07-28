@@ -62,10 +62,10 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "relink", params, GET, File.class);
     }
 
-//    public QueryResponse<File> unlink(String fileId, ObjectMap params) throws CatalogException, IOException {
-//        params = addParamsToObjectMap(params, "fileId", fileId);
-//        return execute(FILES_URL, "unlink", params, GET, File.class);
-//    }
+    public QueryResponse<File> unlink(String fileId, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "fileId", fileId);
+        return execute(FILES_URL, "unlink", params, GET, File.class);
+    }
 
     public QueryResponse<File> content(String fileId, ObjectMap params) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "content", params, GET, File.class);

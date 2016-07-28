@@ -1012,17 +1012,17 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-//    @GET
-//    @Path("/unlink")
-//    @ApiOperation(value = "Unlink an external file from catalog.", position = 20, response = QueryResponse.class)
-//    public Response link(@ApiParam(value = "File id", required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
-//        try {
-//            QueryResult<File> queryResult = catalogManager.unlink(fileIdStr, queryOptions, sessionId);
-//            return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
-//        } catch (Exception e) {
-//            return createErrorResponse(e);
-//        }
-//    }
+    @GET
+    @Path("/unlink")
+    @ApiOperation(value = "Unlink an external file from catalog.", position = 20, response = QueryResponse.class)
+    public Response link(@ApiParam(value = "File id", required = true) @QueryParam("fileId") String fileIdStr) throws CatalogException {
+        try {
+            QueryResult<File> queryResult = catalogManager.unlink(fileIdStr, queryOptions, sessionId);
+            return createOkResponse(new QueryResult<>("unlink", 0, 1, 1, null, null, queryResult.getResult()));
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
 
     @Deprecated
     @GET

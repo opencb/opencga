@@ -317,20 +317,23 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
     private void unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
 
-        CatalogManager catalogManager = null;
-        try {
-            catalogManager = new CatalogManager(catalogConfiguration);
-        } catch (CatalogException e) {
-            logger.error("Catalog manager could not be initialized. Is the configuration OK?");
-        }
-        if (!catalogManager.existsCatalogDB()) {
-            logger.error("The database could not be found. Are you running this from the server?");
-            return;
-        }
-        QueryResult<File> unlinkQueryResult = catalogManager.unlink(filesCommandOptions.unlinkCommandOptions.id, new QueryOptions(),
-                sessionId);
+        // LOCAL EXECUTION
+//        CatalogManager catalogManager = null;
+//        try {
+//            catalogManager = new CatalogManager(catalogConfiguration);
+//        } catch (CatalogException e) {
+//            logger.error("Catalog manager could not be initialized. Is the configuration OK?");
+//        }
+//        if (!catalogManager.existsCatalogDB()) {
+//            logger.error("The database could not be found. Are you running this from the server?");
+//            return;
+//        }
+//        QueryResult<File> unlinkQueryResult = catalogManager.unlink(filesCommandOptions.unlinkCommandOptions.id, new QueryOptions(),
+//                sessionId);
+//
+//        QueryResponse<File> unlink = new QueryResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
 
-        QueryResponse<File> unlink = new QueryResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
+        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
 
         if (!unlink.getError().isEmpty()) {
             logger.error(unlink.getError());
