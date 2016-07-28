@@ -23,38 +23,57 @@ import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
  * Creates StorageManagers by reflexion.
  * The StorageManager's className is read from <opencga-home>/conf/storage.properties
  */
-public class StorageManagerFactory {
+public final class StorageManagerFactory {
 
     private static StorageManagerFactory storageManagerFactory;
+    private static StorageConfiguration storageConfigurationDefault;
     private StorageConfiguration storageConfiguration;
 
     private Map<String, AlignmentStorageManager> alignmentStorageManagerMap = new HashMap<>();
     private Map<String, VariantStorageManager> variantStorageManagerMap = new HashMap<>();
     protected static Logger logger = LoggerFactory.getLogger(StorageConfiguration.class);
 
-    public StorageManagerFactory(StorageConfiguration storageConfiguration) {
+    private StorageManagerFactory(StorageConfiguration storageConfiguration) {
         this.storageConfiguration = storageConfiguration;
     }
 
+    public static void configure(StorageConfiguration configuration) {
+        storageConfigurationDefault = configuration;
+    }
+
     public static StorageManagerFactory get() {
+//        if (storageConfigurationDefault == null) {
+//            try {
+//                storageConfigurationDefault = StorageConfiguration.load();
+//            } catch (IOException e) {
+//                logger.error("Unable to get StorageManagerFactory");
+//                throw new UncheckedIOException(e);
+//            }
+//        }
+        return get(null);
+    }
+
+    public static StorageManagerFactory get(StorageConfiguration storageConfiguration) {
         if (storageManagerFactory == null) {
-            try {
-                storageManagerFactory = new StorageManagerFactory(StorageConfiguration.load());
-                return storageManagerFactory;
-            } catch (IOException e) {
-                e.printStackTrace();
-                logger.error("Unable to get StorageManagerFactory");
+            if (storageConfiguration != null) {
+                configure(storageConfiguration);
+            } else {
+                storageConfiguration = storageConfigurationDefault;
             }
+            Objects.requireNonNull(storageConfiguration, "Storage configuration needed");
+            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
+            return storageManagerFactory;
+
         }
         return storageManagerFactory;
     }

@@ -63,7 +63,7 @@ public class GenericGrpcService {
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageManagerFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
-            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
+            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         }
 
         if (authorizedHosts == null) {

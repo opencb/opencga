@@ -97,7 +97,7 @@ public class VariantCommandExecutor extends CommandExecutor {
 
         this.storageConfiguration = configuration.getStorageEngine(storageEngine);
 
-        StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
+        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
             this.variantStorageManager = storageManagerFactory.getVariantStorageManager();
         } else {
