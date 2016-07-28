@@ -84,7 +84,7 @@ public class StudyCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study identifier", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Study identifier", required = true, arity = 1)
         public String id;
     }
 

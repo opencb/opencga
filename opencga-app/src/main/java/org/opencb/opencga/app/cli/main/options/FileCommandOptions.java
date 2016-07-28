@@ -84,7 +84,7 @@ public class FileCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file-id"}, description = "File id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
         public String id;
     }
 

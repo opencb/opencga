@@ -74,7 +74,7 @@ public class SampleCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
         public String id;
     }
 

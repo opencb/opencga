@@ -56,7 +56,7 @@ public class JobCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--job-id"}, description = "Job id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Job id", required = true, arity = 1)
         public String id;
     }
 

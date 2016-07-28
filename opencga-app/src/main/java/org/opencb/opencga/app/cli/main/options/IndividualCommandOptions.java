@@ -73,7 +73,7 @@ public class IndividualCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--individual-id"}, description = "Individual id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Individual id", required = true, arity = 1)
         public String id;
     }
 

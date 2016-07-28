@@ -48,7 +48,7 @@ public class PanelCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--panel-id"}, description = "Panel id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Panel id", required = true, arity = 1)
         public String id;
     }
 
