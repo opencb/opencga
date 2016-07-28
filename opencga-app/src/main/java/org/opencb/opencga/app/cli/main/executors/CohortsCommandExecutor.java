@@ -167,11 +167,11 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
 

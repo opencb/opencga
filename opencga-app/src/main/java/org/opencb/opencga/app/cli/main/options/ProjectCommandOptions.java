@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 
 /**
@@ -37,8 +38,8 @@ public class ProjectCommandOptions {
 
     public class BaseProjectCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Project identifier", required = true, arity = 1)
         public String id;
@@ -65,23 +66,23 @@ public class ProjectCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
     public class InfoCommandOptions extends BaseProjectCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")
     public class StudiesCommandOptions extends BaseProjectCommand {
-
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
-    public class UpdateCommandOptions extends OpencgaCommonCommandOptions {
+    public class UpdateCommandOptions extends BaseProjectCommand {
 
-        @Parameter(names = {"--project-id"}, description = "Project identifier", required = true, arity = 1)
-        public String id;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
@@ -101,10 +102,14 @@ public class ProjectCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
     public class DeleteCommandOptions extends BaseProjectCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help in project")
     public class HelpCommandOptions {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
 }

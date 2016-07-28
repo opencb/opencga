@@ -4,6 +4,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
@@ -71,8 +72,8 @@ public class SampleCommandOptions {
 
     public class BaseSampleCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
         public String id;
@@ -100,6 +101,9 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
     public class LoadCommandOptions {
 
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
@@ -112,18 +116,22 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
     public class InfoCommandOptions extends BaseSampleCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
@@ -143,12 +151,6 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 1)
         public String annotation;
-
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
 
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
@@ -171,6 +173,9 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseSampleCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--name"}, description = "Cohort set name.", required = false, arity = 1)
         public String name;
@@ -199,7 +204,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
@@ -223,5 +228,7 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
     public class DeleteCommandOptions extends BaseSampleCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 }

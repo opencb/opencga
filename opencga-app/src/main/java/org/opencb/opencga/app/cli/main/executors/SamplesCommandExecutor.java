@@ -211,11 +211,11 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.limit);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.skip);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.commonOptions.skip);
         }
 
         queryOptions.put("count", samplesCommandOptions.searchCommandOptions.count);

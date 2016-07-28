@@ -212,12 +212,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     individualsCommandOptions.searchCommandOptions.annotationSetName);
         }
 
-        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.skip);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.commonOptions.skip);
         }
 
-        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.limit);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.commonOptions.limit);
         }
 
         QueryResponse<Individual> individuals = openCGAClient.getIndividualClient().search(query, queryOptions);

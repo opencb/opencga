@@ -218,7 +218,6 @@ public class OpencgaCliOptionsParser {
         cohortSubCommands.addCommand("create", cohortCommandOptions.createCommandOptions);
         cohortSubCommands.addCommand("info", cohortCommandOptions.infoCommandOptions);
         cohortSubCommands.addCommand("samples", cohortCommandOptions.samplesCommandOptions);
-        cohortSubCommands.addCommand("annotate", cohortCommandOptions.annotateCommandOptions);
         cohortSubCommands.addCommand("update", cohortCommandOptions.updateCommandOptions);
         cohortSubCommands.addCommand("delete", cohortCommandOptions.deleteCommandOptions);
         cohortSubCommands.addCommand("stats", cohortCommandOptions.statsCommandOptions);
@@ -379,32 +378,49 @@ public class OpencgaCliOptionsParser {
 
     enum OutputFormat {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}
 
-    //    class CommonOptions {
     public static class OpencgaCommonCommandOptions extends GeneralCliOptions.CommonCommandOptions {
 
         @DynamicParameter(names = "-D", description = "Dynamic parameters go here", hidden = true)
-        Map<String, String> dynamic = new HashMap<String, String>();
-
-        @Parameter(names = {"--include"}, description = "", required = false, arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "", required = false, arity = 1)
-        public String exclude;
+        Map<String, String> dynamic = new HashMap<>();
 
         @Parameter(names = {"--metadata"}, description = "Include metadata information", required = false, arity = 1)
         public boolean metadata = false;
 
-        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, PLAIN_JSON}", required = false, arity = 1)
+        @Parameter(names = {"--output-format"}, description = "Output format. one of {IDS, ID_CSV, NAME_ID_MAP, ID_LIST, RAW, PRETTY_JSON, "
+                + "PLAIN_JSON}", required = false, arity = 1)
         OutputFormat outputFormat = OutputFormat.PRETTY_JSON;
 
+    }
+
+    public static class OpencgaIncludeExcludeCommonCommandOptions extends OpencgaCommonCommandOptions {
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
         QueryOptions getQueryOptions() {
-            QueryOptions queryOptions = new QueryOptions(dynamic, false);
-            if (include != null && !include.isEmpty()) {
-                queryOptions.add("include", include);
-            }
-            if (exclude != null && !exclude.isEmpty()) {
-                queryOptions.add("exclude", exclude);
-            }
+            QueryOptions queryOptions = new QueryOptions();
+            queryOptions.putIfNotNull("include", include);
+            queryOptions.putIfNotNull("exclude", exclude);
+            return queryOptions;
+        }
+
+    }
+
+    public static class OpencgaQueryOptionsCommonCommandOptions extends OpencgaIncludeExcludeCommonCommandOptions {
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
+        @Override
+        QueryOptions getQueryOptions() {
+            QueryOptions queryOptions = super.getQueryOptions();
+            queryOptions.putIfNotNull("skip", skip);
+            queryOptions.putIfNotNull("limit", limit);
             return queryOptions;
         }
     }

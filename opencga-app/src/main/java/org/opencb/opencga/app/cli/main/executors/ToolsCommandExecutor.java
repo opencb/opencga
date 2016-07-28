@@ -113,11 +113,11 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.limit);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.skip);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", toolsCommandOptions.searchCommandOptions.count);
         QueryResponse<Tool> tools = openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);
