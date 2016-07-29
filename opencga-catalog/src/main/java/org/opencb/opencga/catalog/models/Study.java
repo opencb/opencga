@@ -17,7 +17,8 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -26,7 +27,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Study {
+public class Study extends AbstractAcl<StudyAclEntry> {
 
     private long id;
     private String name;
@@ -41,7 +42,7 @@ public class Study {
     private String cipher;
 
     private List<Group> groups;
-    private List<StudyAclEntry> acl;
+//    private List<StudyAclEntry> acl;
 
     private List<Experiment> experiments;
 
@@ -251,10 +252,6 @@ public class Study {
     public Study setGroups(List<Group> groups) {
         this.groups = groups;
         return this;
-    }
-
-    public List<StudyAclEntry> getAcl() {
-        return acl;
     }
 
     public Study setAcl(List<StudyAclEntry> acl) {

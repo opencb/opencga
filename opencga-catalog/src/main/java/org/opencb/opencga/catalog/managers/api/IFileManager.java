@@ -9,8 +9,8 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
-import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.io.DataInputStream;
 import java.io.IOException;

@@ -19,7 +19,7 @@ package org.opencb.opencga.catalog.db.mongodb;
 import org.junit.Test;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
-import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.util.Arrays;
 

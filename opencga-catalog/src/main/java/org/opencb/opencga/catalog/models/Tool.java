@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.ToolAclEntry;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +25,7 @@ import java.util.List;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Tool {
+public class Tool extends AbstractAcl<ToolAclEntry> {
 
     private long id;
     private String alias;
@@ -33,7 +34,7 @@ public class Tool {
     private Object manifest;
     private Object result;
     private String path;
-    private List<ToolAclEntry> acl;
+//    private List<ToolAclEntry> acl;
 
     public Tool() {
         this("", "", "", null, null, "");
@@ -131,10 +132,6 @@ public class Tool {
     public Tool setPath(String path) {
         this.path = path;
         return this;
-    }
-
-    public List<ToolAclEntry> getAcl() {
-        return acl;
     }
 
     public Tool setAcl(List<ToolAclEntry> acl) {

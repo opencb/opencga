@@ -67,8 +67,9 @@ public interface CatalogAclDBAdaptor<T, U> extends CatalogDBAdaptor<T> {
      * @param id  id.
      * @param member member.
      * @param permissions List of permissions that will be taken out from the list of permissions of the member.
+     * @return an Acl after the removal of permissions.
      * @throws CatalogDBException when there is an internal error.
      */
-    void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException;
+    QueryResult<U> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException;
 
 }

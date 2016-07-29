@@ -29,7 +29,7 @@ import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
 import java.io.IOException;
 

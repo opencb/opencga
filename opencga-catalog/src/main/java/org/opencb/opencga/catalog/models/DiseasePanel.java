@@ -1,6 +1,7 @@
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 
 import java.util.Collections;
 import java.util.List;
@@ -8,7 +9,7 @@ import java.util.List;
 /**
  * Created by pfurio on 01/06/16.
  */
-public class DiseasePanel {
+public class DiseasePanel extends AbstractAcl<DiseasePanelAclEntry> {
 
     private long id;
     private String name;
@@ -20,7 +21,7 @@ public class DiseasePanel {
     private List<String> variants;
 
     private PanelStatus status;
-    private List<DiseasePanelAclEntry> acl;
+//    private List<DiseasePanelAclEntry> acl;
 
 
     public DiseasePanel() {
@@ -170,10 +171,6 @@ public class DiseasePanel {
     public DiseasePanel setStatus(PanelStatus status) {
         this.status = status;
         return this;
-    }
-
-    public List<DiseasePanelAclEntry> getAcl() {
-        return acl;
     }
 
     public DiseasePanel setAcl(List<DiseasePanelAclEntry> acl) {

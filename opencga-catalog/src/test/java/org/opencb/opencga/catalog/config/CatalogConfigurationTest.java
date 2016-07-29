@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.config;
 
 import org.junit.Test;
-import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 
 import java.io.FileOutputStream;
 import java.io.IOException;

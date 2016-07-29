@@ -11,8 +11,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.acls.FileAclEntry;
-import org.opencb.opencga.core.common.TimeUtils;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.io.IOException;
 import java.util.*;

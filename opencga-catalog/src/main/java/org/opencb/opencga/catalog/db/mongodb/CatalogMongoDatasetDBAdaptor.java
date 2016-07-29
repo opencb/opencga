@@ -19,7 +19,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +36,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
 
     private final MongoDBCollection datasetCollection;
     private DatasetConverter datasetConverter;
+    private CatalogMongoAclDBAdaptor<DatasetAclEntry> aclDBAdaptor;
 
     /***
      * CatalogMongoDatasetDBAdaptor constructor.
@@ -48,6 +49,7 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.datasetCollection = datasetCollection;
         this.datasetConverter = new DatasetConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(datasetCollection, datasetConverter, logger);
     }
 
     /**
@@ -503,46 +505,53 @@ public class CatalogMongoDatasetDBAdaptor extends CatalogMongoDBAdaptor implemen
     @Override
     public QueryResult<DatasetAclEntry> createAcl(long id, DatasetAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(id, acl, datasetCollection, "DatasetAcl");
-        return endQuery("create dataset Acl", startTime, Arrays.asList(acl));
+//        CatalogMongoDBUtils.createAcl(id, acl, datasetCollection, "DatasetAcl");
+        return endQuery("create dataset Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
     @Override
     public QueryResult<DatasetAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<DatasetAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, datasetCollection, logger);
+//        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
+//
+//        if (dataset != null) {
+//            acl = dataset.getAcl();
+//        }
 
-        List<DatasetAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, datasetCollection, logger);
-        Dataset dataset = datasetConverter.convertToDataModelType(aggregate.first());
-
-        if (dataset != null) {
-            acl = dataset.getAcl();
-        }
-
-        return endQuery("get dataset Acl", startTime, acl);
+        return endQuery("get dataset Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAcl(id, member, datasetCollection);
+//        CatalogMongoDBUtils.removeAcl(id, member, datasetCollection);
+        aclDBAdaptor.removeAcl(id, member);
     }
 
     @Override
     public QueryResult<DatasetAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, datasetCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, datasetCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
     }
 
     @Override
     public QueryResult<DatasetAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, datasetCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, datasetCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, datasetCollection);
+    public QueryResult<DatasetAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, datasetCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
     }
 }
