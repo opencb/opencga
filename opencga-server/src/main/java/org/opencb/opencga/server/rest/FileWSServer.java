@@ -22,6 +22,8 @@ import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
@@ -31,10 +33,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.FileManager;
-import org.opencb.opencga.catalog.models.DataStore;
-import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.FileIndex;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
@@ -613,6 +611,38 @@ public class FileWSServer extends OpenCGAWSServer {
             queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
             QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
             return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{folderId}/tree-view")
+    @ApiOperation(value = "Obtain a tree view of the files and folders within a folder", position = 15, response = FileTree[].class)
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
+            @ApiImplicitParam(name = "limit", value = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", dataType = "integer", paramType = "query"),
+    })
+    public Response treeView(@ApiParam(value = "Folder id or path") @PathParam("folderId") String folderId,
+                             @ApiParam(value = "Maximum depth to get files from") @DefaultValue("5") @QueryParam("maxDepth") int maxDepth) {
+//                             @ApiParam(value = "Available types (FILE, DIRECTORY)") @DefaultValue("") @QueryParam("type") String type,
+//                             @ApiParam(value = "Comma separated Bioformat values. For existing Bioformats see files/help") @DefaultValue("") @QueryParam("bioformat") String bioformat,
+//                             @ApiParam(value = "Comma separated Format values. For existing Formats see files/help") @DefaultValue("") @QueryParam("format") String formats,
+//                             @ApiParam(value = "Creation date (Format: yyyyMMddHHmmss)") @DefaultValue("") @QueryParam("creationDate") String creationDate,
+//                             @ApiParam(value = "Modification date (Format: yyyyMMddHHmmss)") @DefaultValue("") @QueryParam("modificationDate") String modificationDate,
+//                             @ApiParam(value = "Description") @DefaultValue("") @QueryParam("description") String description,
+//                             @ApiParam(value = "Disk usage") @DefaultValue("") @QueryParam("diskUsage") Long diskUsage,
+//                             @ApiParam(value = "Comma separated list of sample ids") @DefaultValue("") @QueryParam("sampleIds") String sampleIds,
+//                             @ApiParam(value = "Job id that created the file(s) or folder(s)") @DefaultValue("") @QueryParam("jobId") String jobId,
+//                             @ApiParam(value = "Text attributes (Format: sex=male,age>20 ...)") @DefaultValue("") @QueryParam("attributes") String attributes,
+//                             @ApiParam(value = "Numerical attributes (Format: sex=male,age>20 ...)") @DefaultValue("") @QueryParam("nattributes") String nattributes) {
+        try {
+            Query query = new Query();
+            QueryOptions qOptions = new QueryOptions(this.queryOptions);
+            parseQueryParams(params, CatalogFileDBAdaptor.QueryParams::getParam, query, qOptions);
+            QueryResult result = catalogManager.getFileManager().getFileTree(folderId, query, qOptions, maxDepth, sessionId);
+            return createOkResponse(result);
         } catch (Exception e) {
             return createErrorResponse(e);
         }

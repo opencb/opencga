@@ -744,6 +744,13 @@ public class CatalogManagerTest extends GenericTest {
     }
 
     @Test
+    public void testGetTreeView() throws CatalogException {
+        QueryResult<FileTree> fileTree = catalogManager.getFileManager().getFileTree("user@1000G:phase1:", new Query(), new QueryOptions(),
+                5, sessionIdUser);
+        assertEquals(8, fileTree.getNumResults());
+    }
+
+    @Test
     public void renameFileTest() throws CatalogException, IOException {
         long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
         catalogManager.createFile(studyId, File.Format.PLAIN, File.Bioformat.NONE, "data/file.txt",
