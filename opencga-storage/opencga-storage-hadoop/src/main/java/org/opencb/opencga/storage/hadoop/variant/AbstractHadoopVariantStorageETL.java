@@ -11,7 +11,6 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.opencb.biodata.formats.io.FileFormatException;
-import org.opencb.biodata.formats.variant.io.VariantReader;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
@@ -56,6 +55,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
 import java.util.zip.GZIPInputStream;
 
 import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
@@ -112,37 +112,20 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
     @Override
     protected Pair<Long, Long> processProto(Path input, String fileName, Path output, VariantSource source, Path
             outputVariantsFile, Path outputMetaFile, boolean includeSrc, String parser, boolean
-            generateReferenceBlocks, int batchSize, String extension, String compression) throws StorageManagerException {
+            generateReferenceBlocks, int batchSize, String extension, String compression, BiConsumer<String,
+            RuntimeException> malformatedHandler) throws StorageManagerException {
 
         //Writer
-        DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<VcfSliceProtos.VcfSlice>(outputVariantsFile, compression);
+        DataWriter<VcfSliceProtos.VcfSlice> dataWriter = new ProtoFileWriter<>(outputVariantsFile, compression);
 
-//        final Pair<VCFHeader, VCFHeaderVersion> header;
-        final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in
         // Normalizer
         VariantNormalizer normalizer = new VariantNormalizer();
         normalizer.setGenerateReferenceBlocks(generateReferenceBlocks);
 
-        // Converter
-        VariantContextToVariantConverter converter = new VariantContextToVariantConverter(
-                source.getStudyId(), source.getFileId(), source.getSamples());
-
         // Stats calculator
         VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-        // final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
-
-//        if (parser.equalsIgnoreCase("htsjdk")) {
-//            logger.info("Using HTSJDK to read variants.");
-//            header = readHtsHeader(input);
-//        } else {
-//            throw new NotImplementedException("Please request to read other than vcf file format");
-//        }
-
-//        DataReader<Variant> dataReader = new VcfVariantReader(
-//                new StringDataReader(input), header.getKey(), header.getValue(), converter, statsCalculator,
-//                normalizer);
-        VariantReader dataReader = null;
+        VariantVcfHtsjdkReader dataReader = null;
         try {
             InputStream inputStream = new FileInputStream(input.toFile());
             if (input.toString().endsWith("gz")) {
@@ -150,6 +133,9 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             }
 
             dataReader = new VariantVcfHtsjdkReader(inputStream, source, normalizer);
+            if (null != malformatedHandler) {
+                dataReader.registerMalformatedVcfHandler(malformatedHandler);
+            }
         } catch (IOException e) {
             throw new StorageManagerException("Unable to read from " + input, e);
         }
@@ -218,7 +204,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         ObjectWriter variantSourceObjectWriter = jsonObjectMapper.writerFor(VariantSource.class);
         try {
             String sourceJsonString = variantSourceObjectWriter.writeValueAsString(source);
-            StringDataWriter.write(finalOutputMetaFile, Collections.singletonList(sourceJsonString));
+            StringDataWriter.write(outputMetaFile, Collections.singletonList(sourceJsonString));
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
@@ -400,7 +386,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
-        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostAndPort(),
+        String args = VariantTableDriver.buildCommandLineArgs(variantsTableCredentials.getHostUri().toString(),
                 archiveTableCredentials.getTable(),
                 variantsTableCredentials.getTable(), studyId, pendingFiles, options);
         String executable = hadoopRoute + " jar " + jar + ' ' + execClass.getName();

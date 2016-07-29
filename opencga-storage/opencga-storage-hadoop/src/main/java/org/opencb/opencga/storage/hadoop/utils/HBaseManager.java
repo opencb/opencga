@@ -9,10 +9,12 @@ import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Table;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -309,12 +311,18 @@ public class HBaseManager extends Configured implements AutoCloseable {
         });
     }
 
-    public static void addHBaseSettings(Configuration conf, String hostPortString) throws URISyntaxException {
-        String[] hostPort = hostPortString.split(":");
-        String server = hostPort[0];
-        String port = hostPort.length > 0 ? hostPort[1] : "60000";
-        String master = String.join(":", server, port);
-//        conf.set(HBASE_MASTER, master);
-        conf.set(HConstants.ZOOKEEPER_QUORUM, master);
+    public static Configuration addHBaseSettings(Configuration conf, String hostUri) throws URISyntaxException {
+        URI uri = new URI(hostUri);
+        HBaseCredentials credentials = HBaseCredentials.fromURI(uri, null, null, null);
+        return addHBaseSettings(conf, credentials);
+    }
+
+    public static Configuration addHBaseSettings(Configuration conf, HBaseCredentials credentials) {
+        conf = HBaseConfiguration.create(conf);
+        conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+        conf.set("hbase.master", credentials.getHostAndPort());
+        conf.set("hbase.zookeeper.property.clientPort", String.valueOf(credentials.getHbaseZookeeperClientPort()));
+        conf.set(HConstants.ZOOKEEPER_ZNODE_PARENT, "/" + credentials.getZookeeperPath());
+        return conf;
     }
 }

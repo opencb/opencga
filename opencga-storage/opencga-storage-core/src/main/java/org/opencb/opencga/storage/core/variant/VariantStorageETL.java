@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
 import java.util.function.Supplier;
 import java.util.zip.GZIPInputStream;
 
@@ -225,6 +226,7 @@ public abstract class VariantStorageETL implements StorageETL {
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
+        BiConsumer<String, RuntimeException> malformatHandler = null; // TODO Create handler
 
         Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
         Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
@@ -379,7 +381,7 @@ public abstract class VariantStorageETL implements StorageETL {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
             Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
-                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression);
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformatHandler);
             start = times.getKey();
             end = times.getValue();
         } else {
@@ -408,7 +410,8 @@ public abstract class VariantStorageETL implements StorageETL {
     protected Pair<Long, Long> processProto(
             Path input, String fileName, Path output, VariantSource source, Path outputVariantsFile,
             Path outputMetaFile, boolean includeSrc, String parser, boolean generateReferenceBlocks,
-            int batchSize, String extension, String compression) throws StorageManagerException {
+            int batchSize, String extension, String compression, BiConsumer<String, RuntimeException> malformatedHandler)
+            throws StorageManagerException {
         throw new NotImplementedException("Please request feature");
     }
 
