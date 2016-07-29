@@ -510,7 +510,7 @@ public class CatalogManager implements AutoCloseable {
         return userManager.read(userId, lastModified, options, sessionId);
     }
 
-    public String getUserIdBySessionId(String sessionId) {
+    public String getUserIdBySessionId(String sessionId) throws CatalogException {
         return userManager.getUserId(sessionId);
     }
 

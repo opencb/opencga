@@ -20,6 +20,15 @@ public interface AuthenticationManager {
     boolean authenticate(String userId, String password, boolean throwException) throws CatalogException;
 
     /**
+     * Obtains the userId corresponding to the token.
+     *
+     * @param token token that have been assigned to a user.
+     * @return the user id corresponding to the token given.
+     * @throws CatalogException when the token does not correspond to any user or the token has expired.
+     */
+    String getUserId(String token) throws CatalogException;
+
+    /**
      * Change users password. Could throw "UnsupportedOperationException" depending if the implementation supports password changes.
      *
      * @param userId      UserId
