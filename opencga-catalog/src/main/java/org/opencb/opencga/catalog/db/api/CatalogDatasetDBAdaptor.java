@@ -7,7 +7,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Dataset;
-import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -133,12 +133,25 @@ public interface CatalogDatasetDBAdaptor extends CatalogAclDBAdaptor<Dataset, Da
         return getDatasetAcl(datasetId, Arrays.asList(member));
     }
 
+    @Deprecated
     QueryResult<DatasetAclEntry> getDatasetAcl(long datasetId, List<String> members) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<DatasetAclEntry> setDatasetAcl(long datasetId, DatasetAclEntry acl, boolean override) throws CatalogDBException;
 
+    @Deprecated
     void unsetDatasetAcl(long datasetId, List<String> members, List<String> permissions) throws CatalogDBException;
 
+    @Deprecated
     void unsetDatasetAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

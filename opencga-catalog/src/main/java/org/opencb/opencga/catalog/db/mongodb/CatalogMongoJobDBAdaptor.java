@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.mongodb.converters.JobConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.JobAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -38,12 +38,14 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
 
     private final MongoDBCollection jobCollection;
     private JobConverter jobConverter;
+    private CatalogMongoAclDBAdaptor<JobAclEntry> aclDBAdaptor;
 
     public CatalogMongoJobDBAdaptor(MongoDBCollection jobCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoJobDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.jobCollection = jobCollection;
         this.jobConverter = new JobConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(jobCollection, jobConverter, logger);
     }
 
 
@@ -848,46 +850,53 @@ public class CatalogMongoJobDBAdaptor extends CatalogMongoDBAdaptor implements C
     @Override
     public QueryResult<JobAclEntry> createAcl(long id, JobAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(id, acl, jobCollection, "JobAcl");
-        return endQuery("create job Acl", startTime, Arrays.asList(acl));
+//        CatalogMongoDBUtils.createAcl(id, acl, jobCollection, "JobAcl");
+        return endQuery("create job Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
     @Override
     public QueryResult<JobAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<JobAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection, logger);
+//        Job job = jobConverter.convertToDataModelType(aggregate.first());
+//
+//        if (job != null) {
+//            acl = job.getAcl();
+//        }
 
-        List<JobAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, jobCollection, logger);
-        Job job = jobConverter.convertToDataModelType(aggregate.first());
-
-        if (job != null) {
-            acl = job.getAcl();
-        }
-
-        return endQuery("get job Acl", startTime, acl);
+        return endQuery("get job Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAcl(id, member, jobCollection);
+//        CatalogMongoDBUtils.removeAcl(id, member, jobCollection);
+        aclDBAdaptor.removeAcl(id, member);
     }
 
     @Override
     public QueryResult<JobAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, jobCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, jobCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
     }
 
     @Override
     public QueryResult<JobAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, jobCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, jobCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, jobCollection);
+    public QueryResult<JobAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, jobCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
     }
 }

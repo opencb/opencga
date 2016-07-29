@@ -33,7 +33,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.StudyConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.VariableSetConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +55,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     private final MongoDBCollection studyCollection;
     private StudyConverter studyConverter;
     private VariableSetConverter variableSetConverter;
+    private CatalogMongoAclDBAdaptor<StudyAclEntry> aclDBAdaptor;
 
     public CatalogMongoStudyDBAdaptor(MongoDBCollection studyCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoStudyDBAdaptor.class));
@@ -62,6 +63,7 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         this.studyCollection = studyCollection;
         this.studyConverter = new StudyConverter();
         this.variableSetConverter = new VariableSetConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(studyCollection, studyConverter, logger);
     }
 
     /*
@@ -238,16 +240,16 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<StudyAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<StudyAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, studyCollection, logger);
+//        Study study = studyConverter.convertToDataModelType(aggregate.first());
+//
+//        if (study != null) {
+//            acl = study.getAcl();
+//        }
 
-        List<StudyAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, studyCollection, logger);
-        Study study = studyConverter.convertToDataModelType(aggregate.first());
-
-        if (study != null) {
-            acl = study.getAcl();
-        }
-
-        return endQuery("get study Acl", startTime, acl);
+        return endQuery("get study Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
@@ -533,13 +535,6 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
-    public QueryResult<StudyAclEntry> createAcl(long studyId, StudyAclEntry studyAcl) throws CatalogDBException {
-        long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(studyId, studyAcl, studyCollection, "StudyAcl");
-        return endQuery("create Acl", startTime, Arrays.asList(studyAcl));
-    }
-
-    @Override
     @Deprecated
     public QueryResult<StudyAclEntry> setStudyAcl(long studyId, StudyAclEntry studyAcl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
@@ -585,14 +580,21 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     }
 
     @Override
+    public QueryResult<StudyAclEntry> createAcl(long studyId, StudyAclEntry studyAcl) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.createAcl(studyId, studyAcl, studyCollection, "StudyAcl");
+        return endQuery("create study Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(studyId, studyAcl)));
+    }
+
+    @Override
     public void removeAcl(long studyId, String member) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogJobDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogDatasetDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAcl(studyId, member);
-        dbAdaptorFactory.getCatalogPanelDBAdaptor().removeAcl(studyId, member);
+        dbAdaptorFactory.getCatalogSampleDBAdaptor().removeAclsFromStudy(studyId, member);
+        dbAdaptorFactory.getCatalogFileDBAdaptor().removeAclsFromStudy(studyId, member);
+        dbAdaptorFactory.getCatalogJobDBAdaptor().removeAclsFromStudy(studyId, member);
+        dbAdaptorFactory.getCatalogDatasetDBAdaptor().removeAclsFromStudy(studyId, member);
+        dbAdaptorFactory.getCatalogIndividualDBAdaptor().removeAclsFromStudy(studyId, member);
+        dbAdaptorFactory.getCatalogCohortDBAdaptor().removeAclsFromStudy(studyId, member);
+        dbAdaptorFactory.getCatalogPanelDBAdaptor().removeAclsFromStudy(studyId, member);
 
         CatalogMongoDBUtils.removeAcl(studyId, member, studyCollection);
     }
@@ -600,20 +602,24 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<StudyAclEntry> setAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(studyId, member, permissions, studyCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(studyId, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(studyId, member, permissions, studyCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(studyId, member, permissions)));
     }
 
     @Override
     public QueryResult<StudyAclEntry> addAclsToMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(studyId, member, permissions, studyCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(studyId, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(studyId, member, permissions, studyCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(studyId, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long studyId, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(studyId, member, permissions, studyCollection);
+    public QueryResult<StudyAclEntry> removeAclsFromMember(long studyId, String member, List<String> permissions)
+            throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(studyId, member, permissions, studyCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime,
+                Arrays.asList(aclDBAdaptor.removeAclsFromMember(studyId, member, permissions)));
     }
 
     @Deprecated

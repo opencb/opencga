@@ -11,7 +11,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.*;
+import org.opencb.opencga.catalog.models.acls.permissions.*;
 
 import javax.annotation.Nullable;
 import java.util.*;
@@ -469,7 +469,7 @@ public class CatalogAuthorizationManager implements AuthorizationManager {
         List<String> userIds = (groupId == null)
                 ? Arrays.asList(userId, OTHER_USERS_ID)
                 : Arrays.asList(userId, groupId, OTHER_USERS_ID);
-        List<CohortAclEntry> cohortAcls = cohortDBAdaptor.getCohortAcl(cohortId, userIds).getResult();
+        List<CohortAclEntry> cohortAcls = cohortDBAdaptor.getAcl(cohortId, userIds).getResult();
 
         Map<String, CohortAclEntry> userAclMap = new HashMap<>();
         for (CohortAclEntry cohortAcl : cohortAcls) {

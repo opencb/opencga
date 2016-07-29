@@ -62,6 +62,34 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
     }
 
     @Override
+    public String getUserId(String token) throws CatalogException {
+        if (token == null) {
+            return "anonymous";
+        }
+
+        // Check admin
+        if (token.length() == 40) {
+            // TODO: Replace the dbAdaptor method to return the whole session structure to check if it has expired.
+            if (metaDBAdaptor.checkValidAdminSession(token)) {
+                return "admin";
+            }
+            throw new CatalogException("The session id does not correspond to any user.");
+        }
+
+        // Check user
+        if (token.length() == 20) {
+            // TODO: Replace the dbAdaptor method to return the whole session structure to check if it has expired.
+            String userId = userDBAdaptor.getUserIdBySessionId(token);
+            if (userId.isEmpty()) {
+                throw new CatalogException("The session id does not correspond to any user.");
+            }
+            return userId;
+        }
+
+        throw new CatalogException("The session id introduced is not correct.");
+    }
+
+    @Override
     public void changePassword(String userId, String oldPassword, String newPassword) throws CatalogException {
         String oldCryptPass = (oldPassword.length() != 40) ? cypherPassword(oldPassword) : oldPassword;
         String newCryptPass = (newPassword.length() != 40) ? cypherPassword(newPassword) : newPassword;

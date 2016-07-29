@@ -26,7 +26,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import java.util.List;
 import java.util.Map;
@@ -112,6 +112,16 @@ public interface CatalogSampleDBAdaptor extends CatalogAnnotationSetDBAdaptor<Sa
 
     @Deprecated
     QueryResult<AnnotationSet> deleteAnnotation(long sampleId, String annotationId) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
+
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

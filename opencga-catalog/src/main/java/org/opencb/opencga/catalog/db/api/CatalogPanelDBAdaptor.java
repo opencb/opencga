@@ -6,7 +6,7 @@ import org.opencb.commons.datastore.core.QueryParam;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -112,5 +112,14 @@ public interface CatalogPanelDBAdaptor extends CatalogAclDBAdaptor<DiseasePanel,
     void unsetPanelAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
     long getStudyIdByPanelId(long panelId) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }
