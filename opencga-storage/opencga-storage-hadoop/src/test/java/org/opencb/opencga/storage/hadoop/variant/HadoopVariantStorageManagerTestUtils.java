@@ -3,47 +3,34 @@ package org.opencb.opencga.storage.hadoop.variant;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.CommonConfigurationKeysPublic;
 import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.hbase.HBaseTestingUtility;
-import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.*;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.hbase.mapreduce.TableOutputFormat;
 import org.apache.hadoop.hbase.util.Bytes;
-import org.apache.phoenix.schema.types.PFloat;
-import org.apache.phoenix.schema.types.PFloatArray;
-import org.apache.phoenix.schema.types.PInteger;
-import org.apache.phoenix.schema.types.PUnsignedInt;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
-import org.opencb.biodata.models.variant.Variant;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEtlConfiguration;
-import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.VariantStorageTest;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDeletionDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableDriver;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
-import org.opencb.opencga.storage.hadoop.variant.index.phoenix.VariantPhoenixHelper;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
-import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getTmpRootDir;
 
 /**
  * Created on 15/10/15
@@ -132,10 +119,11 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
         //Make a copy of the configuration
         Configuration conf = new Configuration(false);
+        HBaseConfiguration.merge(conf, HadoopVariantStorageManagerTestUtils.configuration.get());
         StorageConfiguration storageConfiguration = getStorageConfiguration(conf);
 
         manager.setConfiguration(storageConfiguration, HadoopVariantStorageManager.STORAGE_ENGINE_ID);
-        manager.mrExecutor = new TestMRExecutor(HadoopVariantStorageManagerTestUtils.configuration.get());
+        manager.mrExecutor = new TestMRExecutor(conf);
         manager.conf = conf;
         return manager;
     }
@@ -154,8 +142,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         ObjectMap options = variantConfiguration.getOptions();
 
         options.put(HadoopVariantStorageManager.EXTERNAL_MR_EXECUTOR, TestMRExecutor.class);
-        TestMRExecutor.staticConfiguration = conf;
-        HadoopVariantStorageManagerTestUtils.configuration.get().forEach(e -> conf.set(e.getKey(), e.getValue()));
+        TestMRExecutor.setStaticConfiguration(conf);
 
         options.put(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, false);
         EnumSet<Compression.Algorithm> supportedAlgorithms = EnumSet.of(Compression.Algorithm.NONE, HBaseTestingUtility.getSupportedCompressionAlgorithms());
@@ -200,46 +187,25 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
             this.configuration = configuration;
         }
 
-        public static class VariantTableMapperFail extends VariantTableMapper {
-
-            public static final String SLICE_TO_FAIL = "slice.to.fail";
-            private String sliceToFail = "";
-            private AtomicBoolean hadFail = new AtomicBoolean();
-
-            @Override
-            protected void setup(Context context) throws IOException, InterruptedException {
-                super.setup(context);
-
-                hadFail.set(false);
-                sliceToFail = context.getConfiguration().get(SLICE_TO_FAIL, sliceToFail);
-
-            }
-
-            @Override
-            protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-                if (ctx.getSliceKey().equals(sliceToFail)) {
-                    if (!hadFail.getAndSet(true)) {
-                        System.out.println("DO FAIL!!");
-                        ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
-                        throw new RuntimeException();
-                    }
-                }
-                super.doMap(ctx);
-            }
+        public static void setStaticConfiguration(Configuration staticConfiguration) {
+            TestMRExecutor.staticConfiguration = staticConfiguration;
         }
 
         @Override
         public int run(String executable, String args) {
             try {
+                // Copy configuration
+                Configuration conf = new Configuration(false);
+                HBaseConfiguration.merge(conf, configuration);
                 if (executable.endsWith(ArchiveDriver.class.getName())) {
-                    System.out.println("Executing ArchiveDriver");
-                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration));
+                    System.out.println("Executing ArchiveDriver : " + executable + " " + args);
+                    int r = ArchiveDriver.privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution ArchiveDriver");
 
                     return r;
                 } else if (executable.endsWith(VariantTableDriver.class.getName())) {
-                    System.out.println("Executing VariantTableDriver");
-                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration), new VariantTableDriver(){
+                    System.out.println("Executing VariantTableDriver : " + executable + " " + args);
+                    int r = VariantTableDriver.privateMain(Commandline.translateCommandline(args), conf, new VariantTableDriver(){
                         @Override
                         protected Class<? extends TableMapper> getMapperClass() {
                             return VariantTableMapperFail.class;
@@ -248,8 +214,8 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
                     System.out.println("Finish execution VariantTableDriver");
                     return r;
                 } else if (executable.endsWith(VariantTableDeletionDriver.class.getName())) {
-                    System.out.println("Executing VariantTableDeletionDriver");
-                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), new Configuration(configuration));
+                    System.out.println("Executing VariantTableDeletionDriver : " + executable + " " + args);
+                    int r = VariantTableDeletionDriver.privateMain(Commandline.translateCommandline(args), conf);
                     System.out.println("Finish execution VariantTableDeletionDriver");
                     return r;
                 }
@@ -262,5 +228,32 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
     }
 
 
+    class VariantTableMapperFail extends VariantTableMapper {
+
+        public static final String SLICE_TO_FAIL = "slice.to.fail";
+        private String sliceToFail = "";
+        private AtomicBoolean hadFail = new AtomicBoolean();
+
+        @Override
+        protected void setup(Context context) throws IOException, InterruptedException {
+            super.setup(context);
+
+            hadFail.set(false);
+            sliceToFail = context.getConfiguration().get(SLICE_TO_FAIL, sliceToFail);
+
+        }
+
+        @Override
+        protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
+            if (ctx.getSliceKey().equals(sliceToFail)) {
+                if (!hadFail.getAndSet(true)) {
+                    System.out.println("DO FAIL!!");
+                    ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);
+                    throw new RuntimeException();
+                }
+            }
+            super.doMap(ctx);
+        }
+    }
 
 }

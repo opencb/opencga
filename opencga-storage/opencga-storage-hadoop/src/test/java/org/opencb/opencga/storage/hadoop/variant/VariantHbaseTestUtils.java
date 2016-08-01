@@ -3,6 +3,12 @@
  */
 package org.opencb.opencga.storage.hadoop.variant;
 
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HConstants;
+import org.apache.hadoop.hbase.NamespaceDescriptor;
+import org.apache.hadoop.hbase.TableName;
+import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.client.Result;
 import org.apache.hadoop.hbase.client.ResultScanner;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -128,6 +134,23 @@ public class VariantHbaseTestUtils {
 
     private static String length(byte[] array) {
         return "(" + array.length + " B)";
+    }
+
+    public static void printTables(Configuration conf) throws IOException {
+        System.out.println("Print tables!");
+        System.out.println("conf.get(HConstants.ZOOKEEPER_QUORUM) = " + conf.get(HConstants.ZOOKEEPER_QUORUM));
+        try (Connection con = ConnectionFactory.createConnection(conf)) {
+            HBaseManager.act(con, "all", (table, admin) -> {
+                for (NamespaceDescriptor ns : admin.listNamespaceDescriptors()) {
+                    System.out.println(ns.getName());
+                    for (TableName tableName : admin.listTableNamesByNamespace(ns.getName())) {
+                        System.out.println("      " + tableName);
+                    }
+                    System.out.println("---");
+                }
+                return null;
+            });
+        }
     }
 
     public static void removeFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri, int fileId,

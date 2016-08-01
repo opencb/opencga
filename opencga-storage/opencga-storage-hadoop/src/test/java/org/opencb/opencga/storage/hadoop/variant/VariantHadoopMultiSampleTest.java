@@ -273,7 +273,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         VariantHadoopDBAdaptor dbAdaptor = getVariantStorageManager().getDBAdaptor(DB_NAME);
         try {
             VariantSource source1 = loadFile("s1.genome.vcf", studyConfiguration,
-                    Collections.singletonMap(TestMRExecutor.VariantTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
+                    Collections.singletonMap(VariantTableMapperFail.SLICE_TO_FAIL, "1_000000000011"));
             fail();
         } catch (StorageETLException e) {
             HBaseStudyConfigurationManager scm = (HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager();
@@ -284,7 +284,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         Integer fileId = studyConfiguration.getFileIds().get("s1.genome.vcf");
         System.out.println("fileId = " + fileId);
         VariantSource source1 = loadFile("s1.genome.vcf.variants.proto.gz", -1, studyConfiguration,
-                Collections.singletonMap(TestMRExecutor.VariantTableMapperFail.SLICE_TO_FAIL, "_"), false, false, true);
+                Collections.singletonMap(VariantTableMapperFail.SLICE_TO_FAIL, "_"), false, false, true);
         checkArchiveTableTimeStamp(dbAdaptor);
         VariantSource source2 = loadFile("s2.genome.vcf", studyConfiguration, Collections.emptyMap());
         checkArchiveTableTimeStamp(dbAdaptor);
