@@ -34,6 +34,7 @@ import java.io.IOException;
  * Created by imedina on 03/06/16.
  */
 public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
+    // TODO: Add include/exclude/skip/... (queryOptions) to the client calls !!!!
 
     private ProjectCommandOptions projectsCommandOptions;
 
@@ -137,12 +138,12 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.commonOptions.limit);
         }
 
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.commonOptions.skip);
         }
         QueryResponse<Study> study = openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
         System.out.println("Study: " + study);
@@ -150,8 +151,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     private void help() throws CatalogException, IOException {
-
-        logger.debug("Helping");
 
         System.out.println("PENDING");
 

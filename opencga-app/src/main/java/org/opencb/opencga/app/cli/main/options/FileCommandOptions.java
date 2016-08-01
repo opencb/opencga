@@ -4,7 +4,9 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
 import org.opencb.opencga.catalog.models.File;
 
 import java.util.List;
@@ -14,9 +16,6 @@ import java.util.List;
  */
 @Parameters(commandNames = {"files"}, commandDescription = "Files commands")
 public class FileCommandOptions {
-
-    public JCommander jCommander;
-    public OpencgaCommonCommandOptions commonCommandOptions;
 
     public CopyCommandOptions copyCommandOptions;
     public CreateFolderCommandOptions createFolderCommandOptions;
@@ -29,8 +28,6 @@ public class FileCommandOptions {
     public AlignmentCommandOptions alignmentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     //final VariantsCommand variantsCommand;
-    public ShareCommandOptions shareCommandOptions;
-    public UnshareCommandOptions unshareCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
     public UploadCommandOptions uploadCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
@@ -39,6 +36,17 @@ public class FileCommandOptions {
     public UnlinkCommandOptions unlinkCommandOptions;
     public RefreshCommandOptions refreshCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
+
+    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
+
+    public JCommander jCommander;
+    public OpencgaCommonCommandOptions commonCommandOptions;
+
+    private AclCommandOptions aclCommandOptions;
 
     public FileCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
 
@@ -55,8 +63,6 @@ public class FileCommandOptions {
         this.indexCommandOptions = new IndexCommandOptions();
         this.alignmentCommandOptions = new AlignmentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
-        this.shareCommandOptions = new ShareCommandOptions();
-        this.unshareCommandOptions = new UnshareCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.relinkCommandOptions = new RelinkCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
@@ -65,18 +71,25 @@ public class FileCommandOptions {
         this.linkCommandOptions = new LinkCommandOptions();
         this.uploadCommandOptions = new UploadCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
+
+        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
+        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
     public class BaseFileCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--file-id"}, description = "File id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
         public String id;
     }
 
-
+    @Deprecated
     @Parameters(commandNames = {"copy"}, commandDescription = "Copy a file or folder")
     public class CopyCommandOptions {
 
@@ -113,7 +126,7 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
-    public class CreateFolderCommandOptions {
+    public class CreateFolderCommandOptions extends BaseFileCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
@@ -131,16 +144,24 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
     public class InfoCommandOptions extends BaseFileCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
 
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")
     class DownloadCommandOptions extends BaseFileCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
 
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
     public class GrepCommandOptions extends BaseFileCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
         public String pattern;
@@ -156,7 +177,11 @@ public class FileCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
+        @Parameter(names = {"--id"}, description = "Comma separated list of ids", arity = 1)
+        public String id;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
@@ -184,6 +209,10 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions extends BaseFileCommand {
 
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
         @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
         public int level = 1;
 
@@ -197,6 +226,9 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
     public class IndexCommandOptions extends BaseFileCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
     //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
     //    public List<String> dashDashParameters;
@@ -223,9 +255,12 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
     public class AlignmentCommandOptions extends BaseFileCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
     }
 
-
+    @Deprecated
     @Parameters(commandNames = {"fetch"}, commandDescription = "File fetch")
     public class FetchCommandOptions extends BaseFileCommand {
 
@@ -254,48 +289,19 @@ public class FileCommandOptions {
         public String interval;
     }
 
-
-    @Parameters(commandNames = {"share"}, commandDescription = "Share file with other user")
-    public class ShareCommandOptions extends BaseFileCommand {
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
-        public String permission;
-    }
-
-    @Parameters(commandNames = {"unshare"}, commandDescription = "Unshare file with other user")
-    public class UnshareCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--file-ids"}, description = "File Ids", required = true)
-        public String fileIds;
-
-        @Parameter(names = {"--members"}, description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'",
-                required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permission"}, description = "Comma separated list of cohort permissions", required = false, arity = 1)
-        public String permission;
-
-        @Parameter(names = {"--override"}, description = "Boolean indicating whether to allow the change" +
-                " of permissions in case any member already had any, default:false", required = false, arity = 0)
-        public boolean override;
-    }
-
-
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     class UpdateCommandOptions extends BaseFileCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
 
     @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external" +
             " file")
     class RelinkCommandOptions extends BaseFileCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
         public String inputFile;
@@ -306,13 +312,10 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
-    public class DeleteCommandOptions {
+    public class DeleteCommandOptions extends BaseFileCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
-        public String file;
 
         @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
                 + " (only applicable for linked files/folders)", required = false, arity = 0)
@@ -327,18 +330,15 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
     public class RefreshCommandOptions extends BaseFileCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 
 
     @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
-    public class UnlinkCommandOptions {
-
+    public class UnlinkCommandOptions extends BaseFileCommand {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"-f", "--file-id"}, description = "File or folder", required = true, arity = 1)
-        public String file;
-
     }
 
 

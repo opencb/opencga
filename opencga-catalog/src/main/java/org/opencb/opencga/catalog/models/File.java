@@ -20,10 +20,7 @@ import org.opencb.opencga.catalog.models.acls.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -64,10 +61,12 @@ public class File {
     private long experimentId;
     private List<Long> sampleIds;
 
+
     /**
      * This field values -1 when file has been uploaded.
      */
     private long jobId;
+    private List<RelatedFile> relatedFiles;
 
     private List<FileAclEntry> acl;
     private FileIndex index;
@@ -79,49 +78,17 @@ public class File {
     public File() {
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String description, FileStatus status, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, TimeUtils.getTime(), description, status, diskUsage,
-                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<>(),
-                new HashMap<>());
+    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId, String description,
+                FileStatus status, long diskUsage) {
+        this(-1, name, type, format, bioformat, null, path, ownerId, TimeUtils.getTime(), TimeUtils.getTime(), description, status, false,
+                diskUsage, -1, Collections.emptyList(), -1, Collections.emptyList(), Collections.emptyList(), null, Collections.emptyMap(),
+                Collections.emptyMap());
     }
 
-    public File(String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatus status, long diskUsage) {
-        this(-1, name, type, format, bioformat, path, ownerId, creationDate, description, status, diskUsage,
-                -1, new LinkedList<>(), -1, new LinkedList<>(), new HashMap<>(),
-                new HashMap<>());
-    }
-
-    public File(long id, String name, Type type, Format format, Bioformat bioformat, String path, String ownerId,
-                String creationDate, String description, FileStatus status, long diskUsage, long experimentId, List<Long> sampleIds,
-                long jobId, List<FileAclEntry> acl, Map<String, Object> stats, Map<String, Object> attributes) {
-        this.id = id;
-        this.name = name;
-        this.type = type;
-        this.format = format;
-        this.bioformat = bioformat;
-        this.uri = null;
-        this.path = path;
-        this.ownerId = ownerId;
-        this.creationDate = creationDate;
-        this.modificationDate = creationDate;
-        this.description = description;
-        this.status = status;
-        this.diskUsage = diskUsage;
-        this.experimentId = experimentId;
-        this.sampleIds = sampleIds;
-        this.jobId = jobId;
-        this.acl = acl;
-        this.index = null;
-        this.stats = stats;
-        this.attributes = attributes;
-    }
-
-    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId,
-                String creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage,
-                long experimentId, List<Long> sampleIds, long jobId, List<FileAclEntry> acl, FileIndex index, Map<String, Object> stats,
-                Map<String, Object> attributes) {
+    public File(long id, String name, Type type, Format format, Bioformat bioformat, URI uri, String path, String ownerId, String
+            creationDate, String modificationDate, String description, FileStatus status, boolean external, long diskUsage, long
+            experimentId, List<Long> sampleIds, long jobId, List<RelatedFile> relatedFiles, List<FileAclEntry> acl, FileIndex index,
+                Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.type = type;
@@ -139,12 +106,12 @@ public class File {
         this.experimentId = experimentId;
         this.sampleIds = sampleIds;
         this.jobId = jobId;
+        this.relatedFiles = relatedFiles;
         this.acl = acl;
         this.index = index;
         this.stats = stats;
         this.attributes = attributes;
     }
-
 
     public static class FileStatus extends Status {
 
@@ -260,6 +227,50 @@ public class File {
         NONE
     }
 
+    public static class RelatedFile {
+
+        private long fileId;
+        private Relation relation;
+
+        public enum Relation {
+            PRODUCED_FROM,
+            PART_OF_PAIR,
+            PEDIGREE
+        }
+
+        public RelatedFile(long fileId, Relation relation) {
+            this.fileId = fileId;
+            this.relation = relation;
+        }
+
+        @Override
+        public String toString() {
+            final StringBuilder sb = new StringBuilder("RelatedFile{");
+            sb.append("fileId=").append(fileId);
+            sb.append(", relation=").append(relation);
+            sb.append('}');
+            return sb.toString();
+        }
+
+        public long getFileId() {
+            return fileId;
+        }
+
+        public RelatedFile setFileId(long fileId) {
+            this.fileId = fileId;
+            return this;
+        }
+
+        public Relation getRelation() {
+            return relation;
+        }
+
+        public RelatedFile setRelation(Relation relation) {
+            this.relation = relation;
+            return this;
+        }
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("File{");
@@ -280,6 +291,7 @@ public class File {
         sb.append(", experimentId=").append(experimentId);
         sb.append(", sampleIds=").append(sampleIds);
         sb.append(", jobId=").append(jobId);
+        sb.append(", relatedFiles=").append(relatedFiles);
         sb.append(", acl=").append(acl);
         sb.append(", index=").append(index);
         sb.append(", stats=").append(stats);
@@ -438,6 +450,15 @@ public class File {
 
     public File setJobId(long jobId) {
         this.jobId = jobId;
+        return this;
+    }
+
+    public List<RelatedFile> getRelatedFiles() {
+        return relatedFiles;
+    }
+
+    public File setRelatedFiles(List<RelatedFile> relatedFiles) {
+        this.relatedFiles = relatedFiles;
         return this;
     }
 

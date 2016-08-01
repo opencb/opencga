@@ -36,8 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>, CatalogAclDBAdaptor<IndividualAclEntry>,
-        CatalogAnnotationSetDBAdaptor {
+public interface CatalogIndividualDBAdaptor extends CatalogAnnotationSetDBAdaptor<Individual, IndividualAclEntry> {
 
     default boolean individualExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -92,8 +91,8 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         FATHER_ID("fatherId", DECIMAL, ""),
         MOTHER_ID("motherId", DECIMAL, ""),
         FAMILY("family", TEXT, ""),
-        GENDER("gender", TEXT, ""),
-        RACE("race", TEXT, ""),
+        SEX("sex", TEXT, ""),
+        ETHNICITY("ethnicity", TEXT, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

@@ -1,5 +1,6 @@
 package org.opencb.opencga.catalog.managers.api;
 
+import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
@@ -41,6 +42,16 @@ public interface IAnnotationSetManager {
     QueryResult<AnnotationSet> getAllAnnotationSets(String id, String sessionId) throws CatalogException;
 
     /**
+     * Retrieve all the annotation sets corresponding to entity.
+     *
+     * @param id id of the entity storing the annotation.
+     * @param sessionId session id of the user asking for the annotation.
+     * @return a queryResult containing all the annotation sets for that entity as key:value pairs.
+     * @throws CatalogException when the session id is not valid or the user does not have proper permissions to see the annotations.
+     */
+    QueryResult<ObjectMap> getAllAnnotationSetsAsMap(String id, String sessionId) throws CatalogException;
+
+    /**
      * Retrieve the annotation set of the corresponding entity.
      *
      * @param id id of the entity storing the annotation.
@@ -51,6 +62,19 @@ public interface IAnnotationSetManager {
      * annotationSetName is not valid.
      */
     QueryResult<AnnotationSet> getAnnotationSet(String id, String annotationSetName, String sessionId) throws CatalogException;
+
+    /**
+     * Retrieve the annotation set of the corresponding entity.
+     *
+     * @param id id of the entity storing the annotation.
+     * @param annotationSetName annotation set name of the annotation that will be returned.
+     * @param sessionId session id of the user asking for the annotation.
+     * @return a queryResult containing the annotation set for that entity as key:value pairs.
+     * @throws CatalogException when the session id is not valid, the user does not have proper permissions to see the annotations or the
+     * annotationSetName is not valid.
+     */
+    QueryResult<ObjectMap> getAnnotationSetAsMap(String id, String annotationSetName, String sessionId) throws CatalogException;
+
 
     /**
      * Update the values of the annotation set.
@@ -93,6 +117,19 @@ public interface IAnnotationSetManager {
             throws CatalogException {
         throw new CatalogException("Operation still not implemented");
     }
+
+    /**
+     * Searches for annotation sets matching the parameters.
+     *
+     * @param id id of the entity storing the annotation.
+     * @param variableSetId variable set id.
+     * @param annotation comma separated list of annotations by which to look for the annotationSets.
+     * @param sessionId session id of the user asking for the annotationSets
+     * @return a queryResult object containing the list of annotation sets that matches the query as key:value pairs.
+     * @throws CatalogException when the session id is not valid, the user does not have permissions to look for annotationSets.
+     */
+    QueryResult<ObjectMap> searchAnnotationSetAsMap(String id, long variableSetId, @Nullable String annotation, String sessionId)
+            throws CatalogException;
 
     /**
      * Searches for annotation sets matching the parameters.

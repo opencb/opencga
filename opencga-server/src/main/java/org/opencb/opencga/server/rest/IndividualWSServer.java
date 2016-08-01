@@ -48,10 +48,10 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                  @ApiParam(value = "family", required = false) @QueryParam("family") String family,
                                  @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                  @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
-                                 @ApiParam(value = "gender", required = false) @QueryParam("gender") @DefaultValue("UNKNOWN") Individual.Gender gender) {
+                                 @ApiParam(value = "sex", required = false) @QueryParam("sex") @DefaultValue("UNKNOWN") Individual.Sex sex) {
         try {
             long studyId = catalogManager.getStudyId(studyIdStr, sessionId);
-            QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, gender, queryOptions, sessionId);
+            QueryResult<Individual> queryResult = catalogManager.createIndividual(studyId, name, family, fatherId, motherId, sex, queryOptions, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);
@@ -65,7 +65,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),
     })
-    public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids", required = true) @PathParam("individualId") String individualStr) {
+    public Response infoIndividual(@ApiParam(value = "Comma separated list of individual names or ids", required = true)
+                                       @PathParam("individualIds") String individualStr) {
         try {
             List<QueryResult<Individual>> queryResults = new LinkedList<>();
             List<Long> individualIds = catalogManager.getIndividualIds(individualStr, sessionId);
@@ -94,8 +95,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                       @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                                       @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
                                       @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                      @ApiParam(value = "gender", required = false) @QueryParam("gender") String gender,
-                                      @ApiParam(value = "race", required = false) @QueryParam("race") String race,
+                                      @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                                      @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                                       @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                                       @ApiParam(value = "population", required = false) @QueryParam("population") String population,
                                       @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
@@ -194,10 +195,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                            @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.searchIndividualAnnotationSets(individualStr, variableSetId, annotation, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getIndividualManager().searchAnnotationSetAsMap(individualStr, variableSetId, annotation, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getIndividualManager().searchAnnotationSet(individualStr, variableSetId, annotation, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -209,8 +213,11 @@ public class IndividualWSServer extends OpenCGAWSServer {
     public Response infoAnnotationSetGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                          @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.getAllIndividualAnnotationSets(individualStr, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getIndividualManager().getAllAnnotationSetsAsMap(individualStr, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getIndividualManager().getAllAnnotationSets(individualStr, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -275,10 +282,13 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "[PENDING] Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
         try {
-            QueryResult<AnnotationSet> queryResult = catalogManager.getIndividualAnnotationSet(individualStr, annotationSetName, sessionId);
-            return createOkResponse(queryResult);
+            if (asMap) {
+                return createOkResponse(catalogManager.getIndividualManager().getAnnotationSetAsMap(individualStr, annotationSetName, sessionId));
+            } else {
+                return createOkResponse(catalogManager.getIndividualManager().getAnnotationSet(individualStr, annotationSetName, sessionId));
+            }
         } catch (CatalogException e) {
             return createErrorResponse(e);
         }
@@ -292,8 +302,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                                      @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") long fatherId,
                                      @ApiParam(value = "motherId", required = false) @QueryParam("motherId") long motherId,
                                      @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                                     @ApiParam(value = "gender", required = false) @QueryParam("gender") String gender,
-                                     @ApiParam(value = "race", required = false) @QueryParam("race") String race
+                                     @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                                     @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity
                                       ) {
         try {
             long individualId = catalogManager.getIndividualId(individualStr, sessionId);
@@ -309,9 +319,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
         public int fatherId;
         public int motherId;
         public String family;
-        public Individual.Gender gender;
+        public Individual.Sex sex;
 
-        public String race;
+        public String ethnicity;
         public Individual.Species species;
         public Individual.Population population;
     }
@@ -381,8 +391,8 @@ public class IndividualWSServer extends OpenCGAWSServer {
                             @ApiParam(value = "fatherId", required = false) @QueryParam("fatherId") String fatherId,
                             @ApiParam(value = "motherId", required = false) @QueryParam("motherId") String motherId,
                             @ApiParam(value = "family", required = false) @QueryParam("family") String family,
-                            @ApiParam(value = "gender", required = false) @QueryParam("gender") String gender,
-                            @ApiParam(value = "race", required = false) @QueryParam("race") String race,
+                            @ApiParam(value = "sex", required = false) @QueryParam("sex") String sex,
+                            @ApiParam(value = "ethnicity", required = false) @QueryParam("ethnicity") String ethnicity,
                             @ApiParam(value = "species", required = false) @QueryParam("species") String species,
                             @ApiParam(value = "population", required = false) @QueryParam("population") String population,
                             @ApiParam(value = "variableSetId", required = false) @QueryParam("variableSetId") long variableSetId,
@@ -444,9 +454,9 @@ public class IndividualWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Update the set of permissions granted for the member", position = 21)
     public Response updateAcl(@ApiParam(value = "individualId", required = true) @PathParam("individualId") String individualIdStr,
                               @ApiParam(value = "Member id", required = true) @PathParam("memberId") String memberId,
-                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @PathParam("addPermissions") String addPermissions,
-                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @PathParam("removePermissions") String removePermissions,
-                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @PathParam("setPermissions") String setPermissions) {
+                              @ApiParam(value = "Comma separated list of permissions to add", required = false) @QueryParam("addPermissions") String addPermissions,
+                              @ApiParam(value = "Comma separated list of permissions to remove", required = false) @QueryParam("removePermissions") String removePermissions,
+                              @ApiParam(value = "Comma separated list of permissions to set", required = false) @QueryParam("setPermissions") String setPermissions) {
         try {
             return createOkResponse(catalogManager.updateIndividualAcl(individualIdStr, memberId, addPermissions, removePermissions, setPermissions, sessionId));
         } catch (Exception e) {

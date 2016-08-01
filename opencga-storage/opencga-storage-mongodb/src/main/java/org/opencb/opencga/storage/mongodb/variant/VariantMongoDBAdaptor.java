@@ -1419,7 +1419,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             }
         }
 
-        for (String field : DocumentToVariantConverter.REQUIRED_FIELDS_MAP) {
+        for (String field : DocumentToVariantConverter.REQUIRED_FIELDS_SET) {
             projection.put(field, 1);
         }
 
@@ -1783,7 +1783,9 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         if (query.containsKey(VariantQueryParams.UNKNOWN_GENOTYPE.key())) {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
-        if (options.getAsStringList(QueryOptions.EXCLUDE).contains(DocumentToVariantConverter.EXCLUDE_STUDIES_SAMPLES_DATA_FIELD)) {
+
+        if (!Collections.disjoint(options.getAsStringList(QueryOptions.EXCLUDE),
+                DocumentToVariantConverter.EXCLUDE_STUDIES_SAMPLES_DATA_FIELD)) {
             samplesConverter.setReturnedSamples(Collections.singletonList("none"));
         } else if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
             //Remove the studyName, if any
@@ -1791,7 +1793,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;
-        if (options.getAsStringList(QueryOptions.EXCLUDE).contains(DocumentToVariantConverter.EXCLUDE_STUDIES_FILES_FIELD)) {
+        if (!Collections.disjoint(options.getAsStringList(QueryOptions.EXCLUDE),
+                DocumentToVariantConverter.EXCLUDE_STUDIES_FILES_FIELD)) {
             returnedFiles = Collections.emptyList();
         } else if (query.containsKey(VariantQueryParams.RETURNED_FILES.key())) {
             returnedFiles = query.getAsIntegerList(VariantQueryParams.RETURNED_FILES.key());

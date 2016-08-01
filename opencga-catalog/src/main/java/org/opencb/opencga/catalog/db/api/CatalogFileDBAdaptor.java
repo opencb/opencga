@@ -33,7 +33,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogFileDBAdaptor extends CatalogDBAdaptor<File>, CatalogAclDBAdaptor<FileAclEntry> {
+public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclEntry> {
 
     enum QueryParams implements QueryParam {
         DELETE_DATE("deleteDate", TEXT_ARRAY, ""),

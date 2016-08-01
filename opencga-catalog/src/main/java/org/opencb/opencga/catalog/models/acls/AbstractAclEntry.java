@@ -38,4 +38,13 @@ public abstract class AbstractAclEntry<E extends Enum<E>> {
         this.permissions = permissions;
         return this;
     }
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("AclEntry{");
+        sb.append("member='").append(member).append('\'');
+        sb.append(", permissions=").append(permissions);
+        sb.append('}');
+        return sb.toString();
+    }
 }

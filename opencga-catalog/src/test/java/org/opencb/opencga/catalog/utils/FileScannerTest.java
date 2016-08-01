@@ -111,7 +111,7 @@ public class FileScannerTest {
         file = catalogManager.getFile(file.getId(), sessionIdUser).first();
         assertEquals(File.FileStatus.TRASHED, file.getStatus().getName());
 
-        Files.delete(Paths.get(catalogManager.getFileUri(file)));
+//        Files.delete(Paths.get(catalogManager.getFileUri(file)));
         List<File> files = new FileScanner(catalogManager).checkStudyFiles(study, false, sessionIdUser);
 
         file = getFile(file.getId());

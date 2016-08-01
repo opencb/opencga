@@ -1238,22 +1238,28 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertThat(variant.getStudies(), is(Collections.emptyList()));
         }
 
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies.stats"));
-        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
-        for (Variant variant : queryResult.getResult()) {
-            assertThat(variant.getStudies().get(0).getStats(), not(is(Collections.emptyList())));
+        for (String exclude : Arrays.asList("studies.stats", "stats")) {
+            queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+            for (Variant variant : queryResult.getResult()) {
+                assertThat(variant.getStudies().get(0).getStats(), not(is(Collections.emptyList())));
+            }
         }
 
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies.files"));
-        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
-        for (Variant variant : queryResult.getResult()) {
-            assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+        for (String exclude : Arrays.asList("studies.files", "files")) {
+            queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+            for (Variant variant : queryResult.getResult()) {
+                assertThat(variant.getStudies().get(0).getFiles(), is(Collections.emptyList()));
+            }
         }
 
-        queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies.samplesData"));
-        assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
-        for (Variant variant : queryResult.getResult()) {
-            assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
+        for (String exclude : Arrays.asList("studies.samplesData", "samplesData", "samples")) {
+            queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
+            assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
+            for (Variant variant : queryResult.getResult()) {
+                assertThat(variant.getStudies().get(0).getSamplesData(), is(Collections.emptyList()));
+            }
         }
 
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));

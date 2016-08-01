@@ -4,7 +4,10 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
+import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 
 /**
  * Created by sgallego on 6/14/16.
@@ -20,20 +23,24 @@ public class SampleCommandOptions {
     public DeleteCommandOptions deleteCommandOptions;
     public GroupByCommandOptions groupByCommandOptions;
 
-    public AnnotationSetsAllInfoCommandOptions annotationSetsAllInfoCommandOptions;
-    public AnnotationSetsSearchCommandOptions annotationSetsSearchCommandOptions;
-    public AnnotationSetsInfoCommandOptions annotationSetsInfoCommandOptions;
-    public AnnotationSetsDeleteCommandOptions annotationSetsDeleteCommandOptions;
+    public AclCommandOptions.AclsCommandOptions aclsCommandOptions;
+    public AclCommandOptions.AclsCreateCommandOptions aclsCreateCommandOptions;
+    public AclCommandOptions.AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
+    public AclCommandOptions.AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
+    public AclCommandOptions.AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
 
-    public AclsCommandOptions aclsCommandOptions;
-    public AclsCreateCommandOptions aclsCreateCommandOptions;
-    public AclsMemberDeleteCommandOptions aclsMemberDeleteCommandOptions;
-    public AclsMemberInfoCommandOptions aclsMemberInfoCommandOptions;
-    public AclsMemberUpdateCommandOptions aclsMemberUpdateCommandOptions;
-
+    public AnnotationCommandOptions.AnnotationSetsCreateCommandOptions annotationCreateCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions annotationAllInfoCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsSearchCommandOptions annotationSearchCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions annotationDeleteCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsInfoCommandOptions annotationInfoCommandOptions;
+    public AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions annotationUpdateCommandOptions;
 
     public JCommander jCommander;
     public OpencgaCommonCommandOptions commonCommandOptions;
+
+    private AclCommandOptions aclCommandOptions;
+    private AnnotationCommandOptions annotationCommandOptions;
 
     public SampleCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
         this.commonCommandOptions = commonCommandOptions;
@@ -47,24 +54,28 @@ public class SampleCommandOptions {
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.groupByCommandOptions = new GroupByCommandOptions();
 
-        this.annotationSetsAllInfoCommandOptions = new AnnotationSetsAllInfoCommandOptions();
-        this.annotationSetsSearchCommandOptions = new AnnotationSetsSearchCommandOptions();
-        this.annotationSetsInfoCommandOptions = new AnnotationSetsInfoCommandOptions();
-        this.annotationSetsDeleteCommandOptions = new AnnotationSetsDeleteCommandOptions();
+        this.annotationCommandOptions = new AnnotationCommandOptions(commonCommandOptions);
+        this.annotationCreateCommandOptions = this.annotationCommandOptions.getCreateCommandOptions();
+        this.annotationAllInfoCommandOptions = this.annotationCommandOptions.getAllInfoCommandOptions();
+        this.annotationSearchCommandOptions = this.annotationCommandOptions.getSearchCommandOptions();
+        this.annotationDeleteCommandOptions = this.annotationCommandOptions.getDeleteCommandOptions();
+        this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
+        this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
 
-        this.aclsCommandOptions = new AclsCommandOptions();
-        this.aclsCreateCommandOptions = new AclsCreateCommandOptions();
-        this.aclsMemberDeleteCommandOptions = new AclsMemberDeleteCommandOptions();
-        this.aclsMemberInfoCommandOptions = new AclsMemberInfoCommandOptions();
-        this.aclsMemberUpdateCommandOptions = new AclsMemberUpdateCommandOptions();
+        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
+        this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
+        this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
+        this.aclsMemberInfoCommandOptions = aclCommandOptions.getAclsMemberInfoCommandOptions();
+        this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
     public class BaseSampleCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+//        @ParametersDelegate
+//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
         public String id;
     }
 
@@ -90,6 +101,9 @@ public class SampleCommandOptions {
     @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
     public class LoadCommandOptions {
 
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
@@ -102,18 +116,22 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
     public class InfoCommandOptions extends BaseSampleCommand {
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
+                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
@@ -133,12 +151,6 @@ public class SampleCommandOptions {
 
         @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 1)
         public String annotation;
-
-        @Parameter(names = {"--limit"}, description = "Max number of results", required = false, arity = 1)
-        public String limit;
-
-        @Parameter(names = {"--skip"}, description = "Offset.", required = false, arity = 1)
-        public String skip;
 
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
@@ -161,6 +173,9 @@ public class SampleCommandOptions {
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
     public class UpdateCommandOptions extends BaseSampleCommand {
+
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--name"}, description = "Cohort set name.", required = false, arity = 1)
         public String name;
@@ -189,7 +204,7 @@ public class SampleCommandOptions {
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--id"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
@@ -212,129 +227,8 @@ public class SampleCommandOptions {
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
-    public class DeleteCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsAllInfoCommandOptions extends BaseSampleCommand {
-
-        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
-        public boolean asMap = true;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsSearchCommandOptions extends BaseSampleCommand {
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
-                required = true, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
-        public String annotation;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsDeleteCommandOptions extends BaseSampleCommand {
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
-                required = true, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
-        public String annotation;
-    }
-
-    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Annotate sample")
-    public class AnnotationSetsInfoCommandOptions extends BaseSampleCommand {
-
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.",
-                required = true, arity = 1)
-        public String annotationSetName;
-
-        @Parameter(names = {"--variableSetId"}, description = "VariableSetIdt", required = true, arity = 1)
-        public String variableSetId;
-
-        @Parameter(names = {"--annotation"}, description = "Annotation.",  required = false, arity = 1)
-        public String annotation;
-
-        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
-        public boolean asMap = true;
-    }
-
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the study [PENDING]")
-    public class AclsCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
-    }
-
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
-    public class AclsCreateCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
-
-        @Parameter(names = {"--members"},
-                description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
-        public String members;
-
-        @Parameter(names = {"--permissions"}, description = "Comma separated list of cohort permissions", required = true, arity = 1)
-        public String permissions;
-
-        @Parameter(names = {"--template-id"}, description = "Template of permissions to be used (admin, analyst or locked)",
-                required = false, arity = 1)
-        public String templateId;
-    }
-
-    @Parameters(commandNames = {"acl-member-delete"},
-            commandDescription = "Delete all the permissions granted for the user or group [PENDING]")
-    public class AclsMemberDeleteCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
-
-        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Parameters(commandNames = {"acl-member-info"},
-            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberInfoCommandOptions {
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
-
-        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-        public String memberId;
-    }
-
-    @Parameters(commandNames = {"acl-member-update"},
-            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
-    public class AclsMemberUpdateCommandOptions{
-
-        @Parameter(names = {"--sample-id"}, description = "Sample id", required = true, arity = 1)
-        public String id;
-
-        @Parameter(names = {"--member-id"}, description = "Member id", required = true, arity = 1)
-        public String memberId;
-
-        @Parameter(names = {"--add-permissions"}, description = "Comma separated list of permissions to add", required = false, arity = 1)
-        public String addPermissions;
-
-        @Parameter(names = {"--remove-permissions"}, description = "Comma separated list of permissions to remove",
-                required = false, arity = 1)
-        public String removePermissions;
-
-        @Parameter(names = {"--set-permissions"}, description = "Comma separated list of permissions to set", required = false, arity = 1)
-        public String setPermissions;
+    public class DeleteCommandOptions extends BaseSampleCommand {
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
     }
 }

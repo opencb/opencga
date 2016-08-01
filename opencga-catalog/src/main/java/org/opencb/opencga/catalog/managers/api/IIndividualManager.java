@@ -50,7 +50,7 @@ public interface IIndividualManager extends ResourceManager<Long, Individual>, I
     @Deprecated
     Long getIndividualId(String individualId) throws CatalogException;
 
-    QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Gender gender,
+    QueryResult<Individual> create(long studyId, String name, String family, long fatherId, long motherId, Individual.Sex sex,
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<Individual> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;

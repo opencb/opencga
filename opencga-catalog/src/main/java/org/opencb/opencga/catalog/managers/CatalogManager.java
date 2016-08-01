@@ -1250,9 +1250,9 @@ public class CatalogManager implements AutoCloseable {
     }
 
     public QueryResult<Individual> createIndividual(long studyId, String name, String family, long fatherId, long motherId,
-                                                    Individual.Gender gender, QueryOptions options, String sessionId)
+                                                    Individual.Sex sex, QueryOptions options, String sessionId)
             throws CatalogException {
-        return individualManager.create(studyId, name, family, fatherId, motherId, gender, options, sessionId);
+        return individualManager.create(studyId, name, family, fatherId, motherId, sex, options, sessionId);
     }
 
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options, String sessionId)
@@ -1891,4 +1891,35 @@ public class CatalogManager implements AutoCloseable {
         return authorizationManager.updateDatasetAcl(userId, datasetId, member, addPermissions, removePermissions, setPermissions);
     }
 
+    public IUserManager getUserManager() {
+        return userManager;
+    }
+
+    public IProjectManager getProjectManager() {
+        return projectManager;
+    }
+
+    public IStudyManager getStudyManager() {
+        return studyManager;
+    }
+
+    public IFileManager getFileManager() {
+        return fileManager;
+    }
+
+    public IJobManager getJobManager() {
+        return jobManager;
+    }
+
+    public IIndividualManager getIndividualManager() {
+        return individualManager;
+    }
+
+    public ISampleManager getSampleManager() {
+        return sampleManager;
+    }
+
+    public ICohortManager getCohortManager() {
+        return cohortManager;
+    }
 }

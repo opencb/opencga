@@ -22,9 +22,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogPanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
 import org.opencb.opencga.client.rest.PanelClient;
 
@@ -36,10 +38,12 @@ import java.io.IOException;
 public class PanelsCommandExecutor extends OpencgaCommandExecutor {
 
     private PanelCommandOptions panelsCommandOptions;
+    private AclCommandExecutor<DiseasePanel, DiseasePanelAclEntry> aclCommandExecutor;
 
     public PanelsCommandExecutor(PanelCommandOptions panelsCommandOptions) {
         super(panelsCommandOptions.commonCommandOptions);
         this.panelsCommandOptions = panelsCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
     }
 
 
@@ -56,19 +60,19 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
                 info();
                 break;
             case "acl":
-                acls();
+                aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
                 break;
             case "acl-create":
-                aclsCreate();
+                aclCommandExecutor.aclsCreate(panelsCommandOptions.aclsCreateCommandOptions, openCGAClient.getPanelClient());
                 break;
             case "acl-member-delete":
-                aclMemberDelete();
+                aclCommandExecutor.aclMemberDelete(panelsCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getPanelClient());
                 break;
             case "acl-member-info":
-                aclMemberInfo();
+                aclCommandExecutor.aclMemberInfo(panelsCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getPanelClient());
                 break;
             case "acl-member-update":
-                aclMemberUpdate();
+                aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getPanelClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -113,69 +117,5 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             o.append(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.commonOptions.exclude);
         }
         openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
-    }
-    /********************************************  Administration ACL commands  ***********************************************/
-
-    private void acls() throws CatalogException,IOException {
-
-        logger.debug("Acls");
-        ObjectMap objectMap = new ObjectMap();
-        QueryResponse<DiseasePanelAclEntry> acls = openCGAClient.getPanelClient().getAcls(panelsCommandOptions.aclsCommandOptions.id);
-
-        System.out.println(acls.toString());
-
-    }
-    private void aclsCreate() throws CatalogException,IOException{
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-
-        /*if (StringUtils.isNotEmpty(studiesCommandOptions.aclsCreateCommandOptions.templateId)) {
-            queryOptions.put(CatalogStudyDBAdaptor.QueryParams.TEMPLATE_ID.key(), studiesCommandOptions.aclsCreateCommandOptions.templateId);
-        }*/
-
-        QueryResponse<DiseasePanelAclEntry> acl =
-                openCGAClient.getPanelClient().createAcl(panelsCommandOptions.aclsCreateCommandOptions.id,
-                        panelsCommandOptions.aclsCreateCommandOptions.permissions, panelsCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberDelete() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Object> acl = openCGAClient.getPanelClient().deleteAcl(panelsCommandOptions.aclsMemberDeleteCommandOptions.id,
-                panelsCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberInfo() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryResponse<DiseasePanelAclEntry> acls = openCGAClient.getPanelClient().getAcl(panelsCommandOptions.aclsMemberInfoCommandOptions.id,
-                panelsCommandOptions.aclsMemberInfoCommandOptions.memberId);
-        System.out.println(acls.toString());
-    }
-
-    private void aclMemberUpdate() throws CatalogException,IOException {
-
-        logger.debug("Updating acl");
-
-        ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(panelsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
-            objectMap.put(PanelClient.AclParams.ADD_PERMISSIONS.key(), panelsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
-            objectMap.put(PanelClient.AclParams.REMOVE_PERMISSIONS.key(), panelsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
-            objectMap.put(PanelClient.AclParams.SET_PERMISSIONS.key(), panelsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-        }
-
-        QueryResponse<DiseasePanelAclEntry> acl = openCGAClient.getPanelClient().updateAcl(panelsCommandOptions.aclsMemberUpdateCommandOptions.id,
-                panelsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
-        System.out.println(acl.toString());
     }
 }

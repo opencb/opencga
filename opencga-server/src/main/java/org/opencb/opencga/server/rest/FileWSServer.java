@@ -991,59 +991,26 @@ public class FileWSServer extends OpenCGAWSServer {
 //        }
 //    }
 
-    @GET
-    @Path("/link")
-    @ApiOperation(value = "Link an external file into catalog.", position = 19, response = QueryResponse.class)
-    public Response link(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
-                         @ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
-                         @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
-                         @ApiParam(value = "Description", required = false) @QueryParam("description") String description,
-                         @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("false") @QueryParam("parents") boolean parents,
-                         @ApiParam(value = "[TO HIDE] Size of the folder/file", required = false) @QueryParam("size") long size,
-                         @ApiParam(value = "[TO HIDE] Checksum of something", required = false) @QueryParam("checksum") String checksum) {
-        try {
-            URI uri = UriUtils.createUri(uriStr);
-            ObjectMap objectMap = new ObjectMap()
-                    .append("parents", parents)
-                    .append("description", description);
-            return createOkResponse(catalogManager.link(uri, path, studyIdStr, objectMap, sessionId));
-            // FIXME:
+//    @GET
+//    @Path("/link")
+//    @ApiOperation(value = "Link an external file into catalog.", position = 19, response = QueryResponse.class)
+//    public Response link(@ApiParam(value = "Uri of the file", required = true) @QueryParam("uri") String uriStr,
+//                         @ApiParam(value = "Study id", required = true) @QueryParam("studyId") String studyIdStr,
+//                         @ApiParam(value = "Path where the external file will be allocated in catalog", required = true) @QueryParam("path") String path,
+//                         @ApiParam(value = "Description", required = false) @QueryParam("description") String description,
+//                         @ApiParam(value = "Create the parent directories if they do not exist", required = false) @DefaultValue("false") @QueryParam("parents") boolean parents,
+//                         @ApiParam(value = "[TO HIDE] Size of the folder/file", required = false) @QueryParam("size") long size,
+//                         @ApiParam(value = "[TO HIDE] Checksum of something", required = false) @QueryParam("checksum") String checksum) {
+//        try {
 //            URI uri = UriUtils.createUri(uriStr);
-//            File file;
-//            CatalogFileUtils catalogFileUtils = new CatalogFileUtils(catalogManager);
-//            long studyId = catalogManager.getStudyId(studyIdStr);
-//            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(uri);
-//            if (!ioManager.exists(uri)) {
-//                throw new CatalogIOException("File " + uri + " does not exist");
-//            }
-//            if (ioManager.isDirectory(uri)) {
-//                uri = UriUtils.createDirectoryUri(uriStr);
-//                file = catalogFileUtils.linkFolder(studyId, path, parents, description, calculateChecksum, uri, false, false, sessionId);
-//                new FileScanner(catalogManager).scan(file, null, FileScanner.FileScannerPolicy.REPLACE, calculateChecksum, false, sessionId);
-//            } else {
-//                final String filePath;
-//                if (path.endsWith("/")) {
-//                    filePath = path + Paths.get(uri.getPath()).getFileName().toString();
-//                } else {
-//                    long folders = catalogManager.getAllFiles(studyId, new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), path + "/"),
-//                            new QueryOptions(), sessionId).getNumResults();
-//                    if (folders != 0) {
-//                        filePath = path + "/" + Paths.get(uri.getPath()).getFileName().toString();
-//                    } else {
-//                        filePath = path;
-//                    }
-//                }
-//                file = catalogManager.createFile(studyId, null, null,
-//                        filePath, description, parents, -1, sessionId).first();
-//                file = catalogFileUtils.link(file, calculateChecksum, uri, false, false, sessionId);
-//                file = FileMetadataReader.get(catalogManager).setMetadataInformation(file, null, new QueryOptions(queryOptions), sessionId,
-//                        false);
-//            }
-//            return createOkResponse(new QueryResult<>("link", 0, 1, 1, null, null, Collections.singletonList(file)));
-        } catch (Exception e) {
-            return createErrorResponse(e);
-        }
-    }
+//            ObjectMap objectMap = new ObjectMap()
+//                    .append("parents", parents)
+//                    .append("description", description);
+//            return createOkResponse(catalogManager.link(uri, path, studyIdStr, objectMap, sessionId));
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
+//    }
 
     @GET
     @Path("/unlink")

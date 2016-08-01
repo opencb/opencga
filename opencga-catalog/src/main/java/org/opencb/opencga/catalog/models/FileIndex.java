@@ -24,12 +24,12 @@ import java.util.Map;
 public class FileIndex {
 
     private String userId;
-    // The date can be seen in the status object
-    @Deprecated
     private String creationDate;
     private IndexStatus status;
+
     @Deprecated
     private long jobId;
+
     private LocalFileIndex localFileIndex;
 
     private Map<String, Object> attributes;

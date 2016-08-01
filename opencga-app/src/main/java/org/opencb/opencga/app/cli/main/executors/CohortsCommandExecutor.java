@@ -23,6 +23,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
+import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
@@ -41,10 +43,14 @@ import java.io.IOException;
 public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private CohortCommandOptions cohortsCommandOptions;
+    private AclCommandExecutor<Cohort, CohortAclEntry> aclCommandExecutor;
+    private AnnotationCommandExecutor<Cohort, CohortAclEntry> annotationCommandExecutor;
 
     public CohortsCommandExecutor(CohortCommandOptions cohortsCommandOptions) {
         super(cohortsCommandOptions.commonCommandOptions);
         this.cohortsCommandOptions = cohortsCommandOptions;
+        this.aclCommandExecutor = new AclCommandExecutor<>();
+        this.annotationCommandExecutor = new AnnotationCommandExecutor<>();
     }
 
 
@@ -78,32 +84,44 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
             case "group-by":
                 groupBy();
                 break;
-            case "annotation-sets-all-info":
-                annotationSetsAllInfo();
-                break;
-            case "annotation-sets-search":
-                annotationSetsSearch();
-                break;
-            case "annotation-sets-delete":
-                annotationSetsDelete();
-                break;
-            case "annotation-sets-info":
-                annotationSetsInfo();
-                break;
             case "acl":
-                acls();
+                aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-create":
-                aclsCreate();
+                aclCommandExecutor.aclsCreate(cohortsCommandOptions.aclsCreateCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-member-delete":
-                aclMemberDelete();
+                aclCommandExecutor.aclMemberDelete(cohortsCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-member-info":
-                aclMemberInfo();
+                aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-member-update":
-                aclMemberUpdate();
+                aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-create":
+                annotationCommandExecutor.createAnnotationSet(cohortsCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-all-info":
+                annotationCommandExecutor.getAllAnnotationSets(cohortsCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-search":
+                annotationCommandExecutor.searchAnnotationSets(cohortsCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-delete":
+                annotationCommandExecutor.deleteAnnotationSet(cohortsCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-info":
+                annotationCommandExecutor.getAnnotationSet(cohortsCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getCohortClient());
+                break;
+            case "annotation-sets-update":
+                annotationCommandExecutor.updateAnnotationSet(cohortsCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -149,11 +167,11 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
             queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.commonOptions.limit);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
 
@@ -247,140 +265,6 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         QueryResponse<Cohort> cohorts = openCGAClient.getCohortClient().groupBy(cohortsCommandOptions.groupByCommandOptions.studyId,
                 cohortsCommandOptions.groupByCommandOptions.by,objectMap);
         cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
-    }
-
-    /********************************************  Annotation commands  ***********************************************/
-
-    private void annotationSetsAllInfo() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets information");
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.put("as-map", cohortsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-
-        QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
-                .annotationSetsAllInfo(cohortsCommandOptions.annotationSetsAllInfoCommandOptions.id, objectMap);
-
-        System.out.println(cohort.toString());
-    }
-
-    private void annotationSetsInfo() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets information");
-        ObjectMap objectMap = new ObjectMap();
-
-        objectMap.put("asMap", cohortsCommandOptions.annotationSetsInfoCommandOptions.asMap);
-
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION_SET_NAME.key(),
-                    cohortsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName);
-        }
-
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsInfoCommandOptions.variableSetId)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),
-                    cohortsCommandOptions.annotationSetsInfoCommandOptions.variableSetId);
-        }
-
-        QueryResponse<Cohort> cohort = openCGAClient.getCohortClient()
-                .annotationSetsInfo(cohortsCommandOptions.annotationSetsInfoCommandOptions.id,
-                cohortsCommandOptions.annotationSetsInfoCommandOptions.annotationSetName,
-                cohortsCommandOptions.annotationSetsInfoCommandOptions.variableSetId, objectMap);
-
-        System.out.println(cohort.toString());
-    }
-
-    private void annotationSetsSearch() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets");
-        ObjectMap objectMap = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsInfoCommandOptions.annotation)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
-                    cohortsCommandOptions.annotationSetsInfoCommandOptions.annotation);
-        }
-
-        objectMap.put("as-map", cohortsCommandOptions.annotationSetsAllInfoCommandOptions.asMap);
-
-        QueryResponse<Cohort> cohorts = openCGAClient.getCohortClient()
-                .annotationSetsSearch(cohortsCommandOptions.annotationSetsSearchCommandOptions.id,
-                        cohortsCommandOptions.annotationSetsSearchCommandOptions.annotationSetName,
-                        cohortsCommandOptions.annotationSetsSearchCommandOptions.variableSetId, objectMap);
-
-        cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
-    }
-
-    private void annotationSetsDelete() throws CatalogException, IOException {
-        logger.debug("Searching annotationSets");
-        ObjectMap objectMap = new ObjectMap();
-
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.annotationSetsDeleteCommandOptions.annotation)) {
-            objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
-                    cohortsCommandOptions.annotationSetsDeleteCommandOptions.annotation);
-        }
-        QueryResponse<Cohort> cohorts = openCGAClient.getCohortClient()
-                .annotationSetsDelete(cohortsCommandOptions.annotationSetsDeleteCommandOptions.id,
-                        cohortsCommandOptions.annotationSetsDeleteCommandOptions.annotationSetName,
-                        cohortsCommandOptions.annotationSetsDeleteCommandOptions.variableSetId, objectMap);
-
-        cohorts.first().getResult().stream().forEach(cohort -> System.out.println(cohort.toString()));
-
-    }
-
-    /********************************************  Administration ACL commands  ***********************************************/
-
-    private void acls() throws CatalogException,IOException {
-
-        logger.debug("Acls");
-        QueryResponse<CohortAclEntry> acls = openCGAClient.getCohortClient().getAcls(cohortsCommandOptions.aclsCommandOptions.id);
-
-        System.out.println(acls.toString());
-
-    }
-    private void aclsCreate() throws CatalogException,IOException{
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-
-        QueryResponse<CohortAclEntry> acl =
-                openCGAClient.getCohortClient().createAcl(cohortsCommandOptions.aclsCreateCommandOptions.id,
-                        cohortsCommandOptions.aclsCreateCommandOptions.permissions, cohortsCommandOptions.aclsCreateCommandOptions.members,
-                        queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberDelete() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Object> acl = openCGAClient.getCohortClient().deleteAcl(cohortsCommandOptions.aclsMemberDeleteCommandOptions.id,
-                cohortsCommandOptions.aclsMemberDeleteCommandOptions.memberId, queryOptions);
-        System.out.println(acl.toString());
-    }
-    private void aclMemberInfo() throws CatalogException,IOException {
-
-        logger.debug("Creating acl");
-
-        QueryResponse<CohortAclEntry> acls = openCGAClient.getCohortClient().getAcl(cohortsCommandOptions.aclsMemberInfoCommandOptions.id,
-                cohortsCommandOptions.aclsMemberInfoCommandOptions.memberId);
-        System.out.println(acls.toString());
-    }
-
-    private void aclMemberUpdate() throws CatalogException,IOException {
-
-        logger.debug("Updating acl");
-
-        ObjectMap objectMap = new ObjectMap();
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions)) {
-            objectMap.put(CohortClient.AclParams.ADD_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.addPermissions);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions)) {
-            objectMap.put(CohortClient.AclParams.REMOVE_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.removePermissions);
-        }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions)) {
-            objectMap.put(CohortClient.AclParams.SET_PERMISSIONS.key(), cohortsCommandOptions.aclsMemberUpdateCommandOptions.setPermissions);
-        }
-
-        QueryResponse<CohortAclEntry> acl = openCGAClient.getCohortClient().updateAcl(cohortsCommandOptions.aclsMemberUpdateCommandOptions.id,
-                cohortsCommandOptions.aclsMemberUpdateCommandOptions.memberId, objectMap);
-        System.out.println(acl.toString());
     }
 
 }
