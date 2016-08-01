@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.admin;
 
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.server.rest.RestServer;
+import org.opencb.opencga.server.RestServer;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
@@ -60,8 +60,8 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
     private void rest() throws Exception {
         if (serverCommandOptions.restServerCommandOptions.start) {
 //            StorageConfiguration storageConfiguration = configuration;
-//            if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.configFile)) {
-//                Path path = Paths.get(restCommandOptions.restStartCommandOptions.commonOptions.configFile);
+//            if (StringUtils.isNotEmpty(restCommandOptions.restStartCommandOptions.commonOptions.conf)) {
+//                Path path = Paths.get(restCommandOptions.restStartCommandOptions.commonOptions.conf);
 //                if (Files.exists(path)) {
 //                    storageConfiguration = StorageConfiguration.load(Files.newInputStream(path));
 //                }
@@ -72,7 +72,7 @@ public class ServerCommandExecutor extends AdminCommandExecutor {
 //            }
 
             // Server crated and started
-            RestServer server = new RestServer(Paths.get(appHome).resolve("conf"));
+            RestServer server = new RestServer(Paths.get(this.conf));
             server.start();
             server.blockUntilShutdown();
             logger.info("Shutting down OpenCGA Storage REST server");

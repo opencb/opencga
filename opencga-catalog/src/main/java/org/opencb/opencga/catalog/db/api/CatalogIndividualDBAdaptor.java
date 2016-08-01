@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -36,7 +36,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual> {
+public interface CatalogIndividualDBAdaptor extends CatalogAnnotationSetDBAdaptor<Individual, IndividualAclEntry> {
 
     default boolean individualExists(long sampleId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), sampleId)).first() > 0;
@@ -71,15 +71,15 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
 
     QueryResult<Individual> deleteIndividual(long individualId, QueryOptions options) throws CatalogDBException;
 
-    default QueryResult<IndividualAcl> getIndividualAcl(long individualId, String member) throws CatalogDBException {
+    default QueryResult<IndividualAclEntry> getIndividualAcl(long individualId, String member) throws CatalogDBException {
         return getIndividualAcl(individualId, Arrays.asList(member));
     }
 
-    QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+    QueryResult<IndividualAclEntry> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
 
-    QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException;
+    QueryResult<IndividualAclEntry> setIndividualAcl(long individualId, IndividualAclEntry acl, boolean override) throws CatalogDBException;
 
-    void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException;
+    void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetIndividualAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
@@ -91,9 +91,9 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         FATHER_ID("fatherId", DECIMAL, ""),
         MOTHER_ID("motherId", DECIMAL, ""),
         FAMILY("family", TEXT, ""),
-        GENDER("gender", TEXT, ""),
-        RACE("race", TEXT, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        SEX("sex", TEXT, ""),
+        ETHNICITY("ethnicity", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
         SPECIES("species", TEXT, ""),
@@ -103,9 +103,9 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         POPULATION_NAME("population.name", TEXT, ""),
         POPULATION_SUBPOPULATION("population.subpopulation", TEXT, ""),
         POPULATION_DESCRIPTION("population.description", TEXT, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"
@@ -113,7 +113,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         STUDY_ID("studyId", DECIMAL, ""),
         ANNOTATION_SETS("annotationSets", TEXT_ARRAY, ""),
         VARIABLE_SET_ID("variableSetId", DECIMAL, ""),
-        ANNOTATION_SET_ID("annotationSetId", TEXT, ""),
+        ANNOTATION_SET_NAME("annotationSetName", TEXT, ""),
         ANNOTATION("annotation", TEXT, "");
 
         private static Map<String, QueryParams> map;
@@ -172,7 +172,7 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         population(Type.TEXT, ""),
 
         variableSetId(Type.NUMERICAL, ""),
-        annotationSetId(Type.NUMERICAL, ""),
+        annotationSetName(Type.NUMERICAL, ""),
         annotation(Type.TEXT, ""),
 
         attributes("attributes", Type.TEXT, ""),
@@ -211,5 +211,13 @@ public interface CatalogIndividualDBAdaptor extends CatalogDBAdaptor<Individual>
         }
     }
 
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

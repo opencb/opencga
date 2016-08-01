@@ -19,7 +19,11 @@ package org.opencb.opencga.storage.mongodb.variant;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCursor;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.mongodb.MongoDBCollection;
+import org.opencb.commons.datastore.mongodb.MongoPersistentCursor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.mongodb.variant.converters.DocumentToVariantConverter;
 
@@ -45,6 +49,19 @@ public class VariantMongoDBIterator extends VariantDBIterator {
         this.dbCursor = dbCursor.iterator();
     }
 
+    //Package protected
+    static VariantMongoDBIterator persistentIterator(MongoDBCollection collection, Bson query, Bson projection, QueryOptions options,
+                                                     DocumentToVariantConverter converter) {
+        return new VariantMongoDBIterator(new MongoPersistentCursor(collection, query, projection, options), converter);
+    }
+
+    //Package protected
+    VariantMongoDBIterator(MongoCursor<Document> cursor,
+                           DocumentToVariantConverter documentToVariantConverter) {
+        this.documentToVariantConverter = documentToVariantConverter;
+        this.dbCursor = cursor;
+    }
+
     @Override
     public boolean hasNext() {
         return dbCursor.hasNext();
@@ -52,19 +69,8 @@ public class VariantMongoDBIterator extends VariantDBIterator {
 
     @Override
     public Variant next() {
-        long start = System.currentTimeMillis();
-        Document document = dbCursor.next();
-        timeFetching += System.currentTimeMillis() - start;
-        start = System.currentTimeMillis();
-        Variant variant = documentToVariantConverter.convertToDataModelType(document);
-        timeConverting += System.currentTimeMillis() - start;
-
-        return variant;
-    }
-
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException("can't remove from a cursor");
+        Document document = fetch(() -> dbCursor.next());
+        return convert(() -> documentToVariantConverter.convertToDataModelType(document));
     }
 
     @Override

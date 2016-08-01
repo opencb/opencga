@@ -18,7 +18,7 @@ package org.opencb.opencga.server.grpc;
 
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.server.grpc.GenericServiceModel.Request;
@@ -68,7 +68,7 @@ public class GenericGrpcService {
         // Only one StorageManagerFactory is needed, this acts as a simple Singleton pattern which improves the performance significantly
         if (storageManagerFactory == null) {
             privLogger.debug("Creating the StorageManagerFactory object");
-            storageManagerFactory = new StorageManagerFactory(storageConfiguration);
+            storageManagerFactory = StorageManagerFactory.get(storageConfiguration);
         }
 
 //        if (authorizedHosts == null) {

@@ -20,32 +20,41 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
+import org.opencb.opencga.client.rest.commons.AnnotationClient;
 
 import java.io.IOException;
 
 /**
  * Created by imedina on 24/05/16.
  */
-public class IndividualClient extends AbstractParentClient<Individual> {
+public class IndividualClient extends AnnotationClient<Individual, IndividualAclEntry> {
 
     private static final String INDIVIDUALS_URL = "individuals";
 
-    protected IndividualClient(String sessionId, ClientConfiguration configuration) {
-        super(sessionId, configuration);
+    protected IndividualClient(String userId, String sessionId, ClientConfiguration configuration) {
+        super(userId, sessionId, configuration);
 
         this.category = INDIVIDUALS_URL;
         this.clazz = Individual.class;
+        this.aclClass = IndividualAclEntry.class;
     }
 
     public QueryResponse<Individual> create(String studyId, String individualName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "studyId", studyId, "name", individualName);
-        return execute(INDIVIDUALS_URL, "create", params, Individual.class);
+        params = addParamsToObjectMap(params, "studyId", studyId, "name", individualName);
+        return execute(INDIVIDUALS_URL, "create", params, GET, Individual.class);
     }
 
-    public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params) throws CatalogException, IOException {
-        addParamsToObjectMap(params, "annotateSetName", annotateSetName);
-        return execute(INDIVIDUALS_URL, individualId, "annotate", params, Individual.class);
+    public QueryResponse<Individual> annotate(String individualId, String annotateSetName, ObjectMap params)
+            throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "annotateSetName", annotateSetName);
+        return execute(INDIVIDUALS_URL, individualId, "annotate", params, GET, Individual.class);
+    }
+
+    public QueryResponse<Individual> groupBy(String studyId, String by, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "by", by);
+        return execute(INDIVIDUALS_URL, "groupBy", params, GET, Individual.class);
     }
 
 }

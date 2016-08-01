@@ -34,6 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPOutputStream;
 
+import static org.opencb.opencga.app.cli.analysis.VariantQueryCommandUtils.VariantOutputFormat.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 
 /**
@@ -42,6 +43,49 @@ import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.
 public class VariantQueryCommandUtils {
 
     private static Logger logger = LoggerFactory.getLogger("org.opencb.opencga.storage.app.cli.client.VariantQueryCommandUtils");
+
+    public enum VariantOutputFormat {
+        VCF(false),
+        JSON,
+        AVRO,
+        STATS(false),
+        CELLBASE;
+
+        private final boolean multiStudy;
+
+        VariantOutputFormat() {
+            this.multiStudy = true;
+        }
+
+        VariantOutputFormat(boolean multiStudy) {
+            this.multiStudy = multiStudy;
+        }
+
+        public boolean isMultiStudyOutput() {
+            return multiStudy;
+        }
+
+        static boolean isGzip(String value) {
+            return value.endsWith(".gz");
+        }
+
+        static boolean isSnappy(String value) {
+            return value.endsWith(".snappy");
+        }
+
+        static VariantOutputFormat safeValueOf(String value) {
+            int index = value.indexOf(".");
+            if (index >= 0) {
+                value = value.substring(0, index);
+            }
+            try {
+                return VariantOutputFormat.valueOf(value.toUpperCase());
+            } catch (IllegalArgumentException ignore) {
+                return null;
+            }
+        }
+
+    }
 
     public static Query parseQuery(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions, Map<Long, String> studyIds)
             throws Exception {
@@ -93,7 +137,13 @@ public class VariantQueryCommandUtils {
 
         addParam(query, FILES, queryVariantsOptions.file);
         addParam(query, GENOTYPE, queryVariantsOptions.sampleGenotype);
-        addParam(query, RETURNED_SAMPLES, queryVariantsOptions.returnSample);
+        if (queryVariantsOptions.returnSample != null) {
+            if (queryVariantsOptions.returnSample.isEmpty() || queryVariantsOptions.returnSample.equals(".")) {
+                query.put(RETURNED_SAMPLES.key(), Collections.emptyList());
+            } else {
+                query.put(RETURNED_SAMPLES.key(), queryVariantsOptions.returnSample);
+            }
+        }
         addParam(query, UNKNOWN_GENOTYPE, queryVariantsOptions.unknownGenotype);
 
 
@@ -102,36 +152,20 @@ public class VariantQueryCommandUtils {
          */
         addParam(query, ANNOT_CONSEQUENCE_TYPE, queryVariantsOptions.consequenceType);
         addParam(query, ANNOT_BIOTYPE, queryVariantsOptions.biotype);
-        addParam(query, ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
-        addParam(query, POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
-        addParam(query, CONSERVATION, queryVariantsOptions.conservation);
+        addParam(query, ANNOT_POPULATION_ALTERNATE_FREQUENCY, queryVariantsOptions.populationFreqs);
+        addParam(query, ANNOT_POPULATION_MINOR_ALLELE_FREQUENCY, queryVariantsOptions.populationMaf);
+        addParam(query, ANNOT_CONSERVATION, queryVariantsOptions.conservation);
+        addParam(query, ANNOT_TRANSCRIPTION_FLAGS, queryVariantsOptions.flags);
+        addParam(query, ANNOT_GENE_TRAITS_ID, queryVariantsOptions.geneTraitId);
+        addParam(query, ANNOT_GENE_TRAITS_NAME, queryVariantsOptions.geneTraitName);
+        addParam(query, ANNOT_HPO, queryVariantsOptions.hpo);
+        addParam(query, ANNOT_GO, queryVariantsOptions.go);
+        addParam(query, ANNOT_EXPRESSION, queryVariantsOptions.expression);
+        addParam(query, ANNOT_PROTEIN_KEYWORDS, queryVariantsOptions.proteinKeywords);
+        addParam(query, ANNOT_DRUG, queryVariantsOptions.drugs);
 
-        if (queryVariantsOptions.proteinSubstitution != null && !queryVariantsOptions.proteinSubstitution.isEmpty()) {
-            String[] fields = queryVariantsOptions.proteinSubstitution.split(",");
-            for (String field : fields) {
-                String[] arr = field
-                        .replaceAll("==", " ")
-                        .replaceAll(">=", " ")
-                        .replaceAll("<=", " ")
-                        .replaceAll("=", " ")
-                        .replaceAll("<", " ")
-                        .replaceAll(">", " ")
-                        .split(" ");
-
-                if (arr != null && arr.length > 1) {
-                    switch (arr[0]) {
-                        case "sift":
-                            query.put(SIFT.key(), field.replaceAll("sift", ""));
-                            break;
-                        case "polyphen":
-                            query.put(POLYPHEN.key(), field.replaceAll("polyphen", ""));
-                            break;
-                        default:
-                            query.put(PROTEIN_SUBSTITUTION.key(), field.replaceAll(arr[0], ""));
-                            break;
-                    }
-                }
-            }
+        if (StringUtils.isNoneEmpty(queryVariantsOptions.proteinSubstitution)) {
+            query.put(ANNOT_PROTEIN_SUBSTITUTION.key(), queryVariantsOptions.proteinSubstitution);
         }
 
 
@@ -176,20 +210,21 @@ public class VariantQueryCommandUtils {
                 && StringUtils.isEmpty(queryVariantsOptions.rank);
 
 
-        String outputFormat = "vcf";
+        VariantOutputFormat of = VCF;
         if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
-            if (queryVariantsOptions.outputFormat.equals("json") || queryVariantsOptions.outputFormat.equals("json.gz")) {
-                outputFormat = "json";
+            of = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+            if (of == null) {
+                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
             }
         }
 
-        if (returnVariants && outputFormat.equalsIgnoreCase("vcf")) {
+        if (returnVariants && !of.isMultiStudyOutput()) {
             int returnedStudiesSize = query.getAsStringList(RETURNED_STUDIES.key()).size();
             if (returnedStudiesSize == 0 && studies.size() == 1) {
                 query.put(RETURNED_STUDIES.key(), studies.get(0));
             } else if (returnedStudiesSize == 0 && studyIds.size() != 1 //If there are no returned studies, and there are more than one study
                     || returnedStudiesSize > 1) {     // Or is required more than one returned study
-                throw new Exception("Only one study is allowed when returning VCF, please use '--return-study' to select the returned "
+                throw new Exception("Only one study is allowed when returning " + of + ", please use '--return-study' to select the returned "
                         + "study. Available studies: " + studyIds);
             } else {
                 if (returnedStudiesSize == 0) {    //If there were no returned studies, set the study existing one
@@ -205,26 +240,30 @@ public class VariantQueryCommandUtils {
         QueryOptions queryOptions = new QueryOptions(new HashMap<>(queryVariantsOptions.commonOptions.params));
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.include)) {
-            queryOptions.add("include", queryVariantsOptions.include);
+            queryOptions.add(QueryOptions.INCLUDE, queryVariantsOptions.include);
         }
 
         if (StringUtils.isNotEmpty(queryVariantsOptions.exclude)) {
-            queryOptions.add("exclude", queryVariantsOptions.exclude + ",_id");
+            queryOptions.add(QueryOptions.EXCLUDE, queryVariantsOptions.exclude + ",_id");
         }
 //        else {
 //            queryOptions.put("exclude", "_id");
 //        }
 
         if (queryVariantsOptions.skip > 0) {
-            queryOptions.add("skip", queryVariantsOptions.skip);
+            queryOptions.add(QueryOptions.SKIP, queryVariantsOptions.skip);
         }
 
         if (queryVariantsOptions.limit > 0) {
-            queryOptions.add("limit", queryVariantsOptions.limit);
+            queryOptions.add(QueryOptions.LIMIT, queryVariantsOptions.limit);
         }
 
         if (queryVariantsOptions.count) {
             queryOptions.add("count", true);
+        }
+
+        if (queryVariantsOptions.sort) {
+            queryOptions.add(QueryOptions.SORT, true);
         }
 
         return queryOptions;
@@ -235,25 +274,21 @@ public class VariantQueryCommandUtils {
          * Output parameters
          */
         boolean gzip = true;
-        if (queryVariantsOptions.outputFormat != null && !queryVariantsOptions.outputFormat.isEmpty()) {
-            switch (queryVariantsOptions.outputFormat) {
-                case "vcf":
-                    gzip = false;
-                case "vcf.gz":
-                    break;
-                case "json":
-                    gzip = false;
-                case "json.gz":
-                    break;
-                default:
-                    logger.error("Format '{}' not supported", queryVariantsOptions.outputFormat);
-                    throw new ParameterException("Format '" + queryVariantsOptions.outputFormat + "' not supported");
+        VariantOutputFormat outputFormat;
+        if (StringUtils.isNotEmpty(queryVariantsOptions.outputFormat)) {
+            outputFormat = VariantOutputFormat.safeValueOf(queryVariantsOptions.outputFormat);
+            if (outputFormat == null) {
+                throw variantFormatNotSupported(queryVariantsOptions.outputFormat);
+            } else {
+                gzip = VariantOutputFormat.isGzip(queryVariantsOptions.outputFormat);
             }
+        } else {
+            outputFormat = VCF;
         }
 
         // output format has priority over output name
         OutputStream outputStream;
-        if (queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty()) {
+        if (isStandardOutput(queryVariantsOptions)) {
             // Unclosable OutputStream
             outputStream = new VariantVcfExporter.UnclosableOutputStream(System.out);
         } else {
@@ -265,7 +300,7 @@ public class VariantQueryCommandUtils {
         }
 
         // If compressed a GZip output stream is used
-        if (gzip) {
+        if (gzip && outputFormat != AVRO) {
             outputStream = new GZIPOutputStream(outputStream);
         }
 
@@ -274,8 +309,17 @@ public class VariantQueryCommandUtils {
         return outputStream;
     }
 
+    public static boolean isStandardOutput(AnalysisCliOptionsParser.QueryVariantCommandOptions queryVariantsOptions) {
+        return queryVariantsOptions.output == null || queryVariantsOptions.output.isEmpty();
+    }
+
+    public static ParameterException variantFormatNotSupported(String outputFormat) {
+        logger.error("Format '{}' not supported", outputFormat);
+        return new ParameterException("Format '" + outputFormat + "' not supported");
+    }
+
     private static void addParam(Query query, VariantDBAdaptor.VariantQueryParams key, String value) {
-        if (value != null && !value.isEmpty()) {
+        if (StringUtils.isNotEmpty(value)) {
             query.put(key.key(), value);
         }
     }

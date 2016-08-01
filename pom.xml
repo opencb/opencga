@@ -38,21 +38,23 @@
     <properties>
         <opencga.version>0.8-dev</opencga.version>
         <java.version>1.8</java.version>
-        <biodata.version>0.7.0-SNAPSHOT</biodata.version>
-        <datastore.version>0.5.0</datastore.version>
+        <biodata.version>0.8.0-SNAPSHOT</biodata.version>
         <cellbase.version>4.1.0-beta</cellbase.version>
         <java-common-libs.version>3.3.0-SNAPSHOT</java-common-libs.version>
         <hpg-bigdata.version>0.6-SNAPSHOT</hpg-bigdata.version>
         <jackson.version>2.6.6</jackson.version>
         <jersey.version>2.23</jersey.version>
-        <hadoop.version>2.6.3</hadoop.version>
-        <hbase.version>1.0.1</hbase.version>
+        <hadoop.version>2.7.1</hadoop.version>
+        <hbase.version>1.1.2</hbase.version>
+        <!--<hbase.version>1.0.0</hbase.version>&lt;!&ndash; -cdh5.7.0 &ndash;&gt;-->
+        <phoenix.version>4.4.0-HBase-1.1</phoenix.version>
         <avro.version>1.7.7</avro.version>
-        <google.protobuf>3.0.0-beta-2</google.protobuf>
+        <google.protobuf>3.0.0-beta-1</google.protobuf> <!--DO NOT UPGRADE! HBase may not work with a higher version-->
         <google.grpc>0.13.2</google.grpc>
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <opencga.war.name>opencga</opencga.war.name>
     </properties>
 
     <scm>
@@ -130,6 +132,10 @@
     </mailingLists>
 
     <repositories>
+        <repository>
+            <id>cloudera</id>
+            <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
+        </repository>
         <repository>
             <id>ossrh</id>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
@@ -209,7 +215,7 @@
             </dependency>
             <dependency>
                 <groupId>org.opencb.cellbase</groupId>
-                <artifactId>cellbase-core</artifactId>
+                <artifactId>cellbase-client</artifactId>
                 <version>${cellbase.version}</version>
                 <exclusions>
                     <exclusion>
@@ -219,22 +225,6 @@
                     <exclusion>
                         <groupId>org.opencb.biodata</groupId>
                         <artifactId>biodata-formats</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.datastore</groupId>
-                <artifactId>datastore-core</artifactId>
-                <version>${datastore.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.opencb.datastore</groupId>
-                <artifactId>datastore-mongodb</artifactId>
-                <version>${datastore.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.slf4j</groupId>
-                        <artifactId>slf4j-simple</artifactId>
                     </exclusion>
                 </exclusions>
             </dependency>
@@ -264,7 +254,8 @@
             <dependency>
                 <groupId>com.google.guava</groupId>
                 <artifactId>guava</artifactId>
-                <version>18.0</version>
+                <version>15.0</version>
+                <!--DO NOT UPGRADE! HBase requires this guava version-->
             </dependency>
             <dependency>
                 <groupId>org.slf4j</groupId>
@@ -294,6 +285,11 @@
             <dependency>
                 <groupId>com.fasterxml.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-yaml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
             <dependency>
@@ -433,6 +429,21 @@
                 <!--<optional>true</optional>-->
             <!--</dependency>-->
             <dependency>
+                <groupId>org.apache.phoenix</groupId>
+                <artifactId>phoenix-spark</artifactId>
+                <version>${phoenix.version}</version>
+                <exclusions>
+                    <exclusion>
+                        <artifactId>hadoop-mapreduce-client-core</artifactId>
+                        <groupId>org.apache.hadoop</groupId>
+                    </exclusion>
+                    <exclusion>
+                        <artifactId>hbase-server</artifactId>
+                        <groupId>org.apache.hbase</groupId>
+                    </exclusion>
+                </exclusions>
+            </dependency>
+            <dependency>
                 <groupId>org.apache.avro</groupId>
                 <artifactId>avro</artifactId>
                 <version>${avro.version}</version>
@@ -460,12 +471,28 @@
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-core</artifactId>
+                <version>1.9.0</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
+
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-jar-plugin</artifactId>
+                    <version>2.6</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
 
         <plugins>
             <plugin>
@@ -493,11 +520,22 @@
 
     <profiles>
         <profile>
+            <id>prod-war</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <opencga.war.name>opencga</opencga.war.name>
+            </properties>
+        </profile>
+        <profile>
             <id>default-config</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
             <properties>
+                <opencga.war.name>opencga-${opencga.version}</opencga.war.name>
+
                 <OPENCGA.CATALOG.DB.HOSTS>localhost:27017</OPENCGA.CATALOG.DB.HOSTS>
                 <OPENCGA.CATALOG.DB.PORT>27017</OPENCGA.CATALOG.DB.PORT>
                 <OPENCGA.CATALOG.DB.DATABASE>opencga_catalog</OPENCGA.CATALOG.DB.DATABASE>
@@ -519,12 +557,15 @@
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER></OPENCGA.STORAGE.HADOOP.VARIANT.DB.USER>
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>hdfs://who1</OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>
+                <OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE>
 
                 <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD></OPENCGA.STORAGE.ALIGNMENT.DB.PASSWORD>
 
                 <OPENCGA.ANALYSIS.EXECUTION.MANAGER>LOCAL</OPENCGA.ANALYSIS.EXECUTION.MANAGER>
+
+                <OPENCGA.CLIENT.HOST>http://bioinfo.hpc.cam.ac.uk/hgva/</OPENCGA.CLIENT.HOST>
 
                 <OPENCGA.SERVER.REST.PORT>9090</OPENCGA.SERVER.REST.PORT>
                 <OPENCGA.SERVER.GRPC.PORT>9091</OPENCGA.SERVER.GRPC.PORT>

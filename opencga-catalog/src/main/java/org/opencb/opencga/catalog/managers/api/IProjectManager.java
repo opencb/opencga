@@ -8,6 +8,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,6 +27,22 @@ public interface IProjectManager extends ResourceManager<Long, Project> {
      * @throws CatalogDBException CatalogDBException.
      */
     long getProjectId(String userId, String projectStr) throws CatalogDBException;
+
+    /**
+     * Obtains the list of projectIds corresponding to the comma separated list of project strings given in projectStr.
+     *
+     * @param userId User demanding the action.
+     * @param projectStr Comma separated list of project ids.
+     * @return A list of project ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getProjectIds(String userId, String projectStr) throws CatalogException {
+        List<Long> projectIds = new ArrayList<>();
+        for (String projectId : projectStr.split(",")) {
+            projectIds.add(getProjectId(userId, projectId));
+        }
+        return projectIds;
+    }
 
     @Deprecated
     long getProjectId(String projectId) throws CatalogException;

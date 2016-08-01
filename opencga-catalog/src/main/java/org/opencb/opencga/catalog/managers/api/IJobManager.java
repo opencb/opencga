@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -34,6 +34,22 @@ public interface IJobManager extends ResourceManager<Long, Job> {
     Long getJobId(String userId, String jobStr) throws CatalogException;
 
     /**
+     * Obtains the list of job ids corresponding to the comma separated list of job strings given in jobStr.
+     *
+     * @param userId User demanding the action.
+     * @param jobStr Comma separated list of job ids.
+     * @return A list of job ids.
+     * @throws CatalogException CatalogException.
+     */
+    default List<Long> getJobIds(String userId, String jobStr) throws CatalogException {
+        List<Long> jobIds = new ArrayList<>();
+        for (String jobId : jobStr.split(",")) {
+            jobIds.add(getJobId(userId, jobId));
+        }
+        return jobIds;
+    }
+
+    /**
      * Retrieve the job Acls for the given members in the job.
      *
      * @param jobStr Job id of which the acls will be obtained.
@@ -43,9 +59,9 @@ public interface IJobManager extends ResourceManager<Long, Job> {
      * @throws CatalogException when the userId does not have permissions (only the users with an "admin" role will be able to do this),
      * the job id is not valid or the members given do not exist.
      */
-    QueryResult<JobAcl> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
-    default List<QueryResult<JobAcl>> getJobAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
-        List<QueryResult<JobAcl>> result = new ArrayList<>(jobIds.size());
+    QueryResult<JobAclEntry> getJobAcls(String jobStr, List<String> members, String sessionId) throws CatalogException;
+    default List<QueryResult<JobAclEntry>> getJobAcls(List<String> jobIds, List<String> members, String sessionId) throws CatalogException {
+        List<QueryResult<JobAclEntry>> result = new ArrayList<>(jobIds.size());
         for (String jobId : jobIds) {
             result.add(getJobAcls(jobId, members, sessionId));
         }

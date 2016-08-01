@@ -17,7 +17,8 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.StudyAcl;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -26,24 +27,22 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Study {
+public class Study extends AbstractAcl<StudyAclEntry> {
 
     private long id;
     private String name;
     private String alias;
     private Type type;
-//    private String ownerId;
     private String creationDate;
     private String description;
     private Status status;
-    private String lastActivity;
+    private String lastModified;
     private long diskUsage;
+    // TODO: Pending !!!
     private String cipher;
 
     private List<Group> groups;
-    @Deprecated
-    private List<Role> roles;
-    private List<StudyAcl> acls;
+//    private List<StudyAclEntry> acl;
 
     private List<Experiment> experiments;
 
@@ -62,41 +61,10 @@ public class Study {
     private URI uri;
 
     private Map<File.Bioformat, DataStore> dataStores;
-    private Map<String, Object> attributes;
 
     private Map<String, Object> stats;
+    private Map<String, Object> attributes;
 
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("Study{");
-        sb.append("id=").append(id);
-        sb.append(", name='").append(name).append('\'');
-        sb.append(", alias='").append(alias).append('\'');
-        sb.append(", type=").append(type);
-        sb.append(", creationDate='").append(creationDate).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", status=").append(status);
-        sb.append(", lastActivity='").append(lastActivity).append('\'');
-        sb.append(", diskUsage=").append(diskUsage);
-        sb.append(", cipher='").append(cipher).append('\'');
-        sb.append(", groups=").append(groups);
-        sb.append(", acls=").append(acls);
-        sb.append(", experiments=").append(experiments);
-        sb.append(", files=").append(files);
-        sb.append(", jobs=").append(jobs);
-        sb.append(", individuals=").append(individuals);
-        sb.append(", samples=").append(samples);
-        sb.append(", datasets=").append(datasets);
-        sb.append(", cohorts=").append(cohorts);
-        sb.append(", panels=").append(panels);
-        sb.append(", variableSets=").append(variableSets);
-        sb.append(", uri=").append(uri);
-        sb.append(", dataStores=").append(dataStores);
-        sb.append(", attributes=").append(attributes);
-        sb.append(", stats=").append(stats);
-        sb.append('}');
-        return sb.toString();
-    }
 
     public Study() {
     }
@@ -104,58 +72,41 @@ public class Study {
     public Study(String name, String alias, Type type, String description, Status status, URI uri) {
         this(-1, name, alias, type, TimeUtils.getTime(), description, status, null, 0, "",
                 null, new ArrayList<>(), new ArrayList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(),
-                new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(), new HashMap<>());
+                new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), uri, new HashMap<>(), new HashMap<>(),
+                new HashMap<>()
+        );
     }
 
-    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastActivity,
-                 long diskUsage, String cipher, List<Group> groups, List<StudyAcl> acls, List<Experiment> experiments, List<File> files,
-                 List<Job> jobs, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts, List<DiseasePanel> panels,
-                 List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores, Map<String, Object> stats,
-                 Map<String, Object> attributes) {
+    public Study(long id, String name, String alias, Type type, String creationDate, String description, Status status, String lastModified,
+                 long diskUsage, String cipher, List<Group> groups, List<StudyAclEntry> acl, List<Experiment> experiments, List<File> files,
+                 List<Job> jobs, List<Individual> individuals, List<Sample> samples, List<Dataset> datasets, List<Cohort> cohorts,
+                 List<DiseasePanel> panels, List<VariableSet> variableSets, URI uri, Map<File.Bioformat, DataStore> dataStores,
+                 Map<String, Object> stats, Map<String, Object> attributes) {
         this.id = id;
         this.name = name;
         this.alias = alias;
         this.type = type;
-//        this.ownerId = ownerId;
         this.creationDate = creationDate;
         this.description = description;
         this.status = status;
-        this.lastActivity = lastActivity;
+        this.lastModified = lastModified;
         this.diskUsage = diskUsage;
         this.cipher = cipher;
-        this.panels = panels;
-//        this.roles = roles;
-        this.acls = acls;
         this.groups = groups;
+        this.acl = acl;
         this.experiments = experiments;
         this.files = files;
         this.jobs = jobs;
+        this.individuals = individuals;
         this.samples = samples;
         this.datasets = datasets;
         this.cohorts = cohorts;
+        this.panels = panels;
         this.variableSets = variableSets;
         this.uri = uri;
-        this.dataStores = dataStores;
         this.stats = stats;
+        this.dataStores = dataStores;
         this.attributes = attributes;
-    }
-
-    public List<StudyAcl> getAcls() {
-        return acls;
-    }
-
-    public Study setAcls(List<StudyAcl> acls) {
-        this.acls = acls;
-        return this;
-    }
-
-    public List<DiseasePanel> getPanels() {
-        return panels;
-    }
-
-    public Study setPanels(List<DiseasePanel> panels) {
-        this.panels = panels;
-        return this;
     }
 
     public enum Type {
@@ -169,6 +120,39 @@ public class Study {
         FAMILY,
         TRIO,
         COLLECTION
+    }
+
+
+    @Override
+    public String toString() {
+        final StringBuilder sb = new StringBuilder("Study{");
+        sb.append("id=").append(id);
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", alias='").append(alias).append('\'');
+        sb.append(", type=").append(type);
+        sb.append(", creationDate='").append(creationDate).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", status=").append(status);
+        sb.append(", lastModified='").append(lastModified).append('\'');
+        sb.append(", diskUsage=").append(diskUsage);
+        sb.append(", cipher='").append(cipher).append('\'');
+        sb.append(", groups=").append(groups);
+        sb.append(", acl=").append(acl);
+        sb.append(", experiments=").append(experiments);
+        sb.append(", files=").append(files);
+        sb.append(", jobs=").append(jobs);
+        sb.append(", individuals=").append(individuals);
+        sb.append(", samples=").append(samples);
+        sb.append(", datasets=").append(datasets);
+        sb.append(", cohorts=").append(cohorts);
+        sb.append(", panels=").append(panels);
+        sb.append(", variableSets=").append(variableSets);
+        sb.append(", uri=").append(uri);
+        sb.append(", dataStores=").append(dataStores);
+        sb.append(", stats=").append(stats);
+        sb.append(", attributes=").append(attributes);
+        sb.append('}');
+        return sb.toString();
     }
 
     public long getId() {
@@ -234,12 +218,12 @@ public class Study {
         return this;
     }
 
-    public String getLastActivity() {
-        return lastActivity;
+    public String getLastModified() {
+        return lastModified;
     }
 
-    public Study setLastActivity(String lastActivity) {
-        this.lastActivity = lastActivity;
+    public Study setLastModified(String lastModified) {
+        this.lastModified = lastModified;
         return this;
     }
 
@@ -270,12 +254,8 @@ public class Study {
         return this;
     }
 
-    public List<Role> getRoles() {
-        return roles;
-    }
-
-    public Study setRoles(List<Role> roles) {
-        this.roles = roles;
+    public Study setAcl(List<StudyAclEntry> acl) {
+        this.acl = acl;
         return this;
     }
 
@@ -342,6 +322,15 @@ public class Study {
         return this;
     }
 
+    public List<DiseasePanel> getPanels() {
+        return panels;
+    }
+
+    public Study setPanels(List<DiseasePanel> panels) {
+        this.panels = panels;
+        return this;
+    }
+
     public List<VariableSet> getVariableSets() {
         return variableSets;
     }
@@ -369,21 +358,21 @@ public class Study {
         return this;
     }
 
-    public Map<String, Object> getAttributes() {
-        return attributes;
-    }
-
-    public Study setAttributes(Map<String, Object> attributes) {
-        this.attributes = attributes;
-        return this;
-    }
-
     public Map<String, Object> getStats() {
         return stats;
     }
 
     public Study setStats(Map<String, Object> stats) {
         this.stats = stats;
+        return this;
+    }
+
+    public Map<String, Object> getAttributes() {
+        return attributes;
+    }
+
+    public Study setAttributes(Map<String, Object> attributes) {
+        this.attributes = attributes;
         return this;
     }
 

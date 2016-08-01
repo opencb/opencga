@@ -3,23 +3,20 @@
  */
 package org.opencb.opencga.storage.hadoop.variant.archive;
 
-import java.util.*;
-import java.util.Map.Entry;
-import java.util.stream.Collectors;
-
+import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.hadoop.hbase.client.Result;
-import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
-import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos.VcfSlice;
 import org.opencb.biodata.tools.variant.converter.VcfSliceToVariantListConverter;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
+import org.opencb.opencga.storage.hadoop.variant.archive.mr.VariantLocalConflictResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.protobuf.InvalidProtocolBufferException;
+import java.util.*;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -92,38 +89,13 @@ public class ArchiveResultToVariantConverter {
         return converter;
     }
 
-    public static List<Variant> resolveConflicts(List<Variant> variants) {
-        // sorted by position assumed
-        List<Variant> resolved = new ArrayList<>(variants.size());
-        Variant currVariant = null;
-        for (Variant var : variants) {
-            if (currVariant == null) { // init
-                currVariant = var;
-            } else if (currVariant.getEnd() < var.getStart()) { // no overlap
-                resolved.add(currVariant);
-                currVariant = var;
-            } else { // partial or full overlap - keep max end and set to 0/0
-                currVariant.setEnd(Math.max(var.getEnd(), currVariant.getEnd())); // Set max end position
-                changeVariantToNoCall(currVariant);
-            }
-        }
-        resolved.add(currVariant);
-        return resolved;
-    }
-
-    public static void changeVariantToNoCall(Variant var) {
-        String genotype = VariantTableStudyRow.NOCALL;
-        var.setType(VariantType.NO_VARIATION);
-        StudyEntry se = var.getStudies().get(0);
-        int gtpos = se.getFormatPositions().get("GT");
-        List<List<String>> sdLst = se.getSamplesData();
-        List<List<String>> oLst = new ArrayList<>(sdLst.size());
-        for (List<String> sd : sdLst) {
-            List<String> o = new ArrayList<>(sd);
-            o.set(gtpos, genotype);
-            oLst.add(o);
-        }
-        se.setSamplesData(oLst);
+    /**
+     * Resolve Conflict per file.
+     * @param variants sorted list of variants
+     * @return Valid set of variants without conflicts (each position only represented once)
+     */
+    public List<Variant> resolveConflicts(List<Variant> variants) {
+        return new VariantLocalConflictResolver().resolveConflicts(variants);
     }
 
 }

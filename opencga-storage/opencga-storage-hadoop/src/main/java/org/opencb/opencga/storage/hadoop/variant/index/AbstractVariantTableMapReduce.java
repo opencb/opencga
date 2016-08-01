@@ -13,13 +13,12 @@ import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveFileMetadataManager;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveResultToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -99,10 +98,11 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         Map<Integer, VcfMeta> vcfMetaMap = new HashMap<Integer, VcfMeta>();
         String tableName = Bytes.toString(getHelper().getIntputTable());
         getLog().debug("Load VcfMETA from {}", tableName);
-        try (ArchiveFileMetadataManager metadataManager = new ArchiveFileMetadataManager(tableName, conf, null)) {
-            QueryResult<VcfMeta> allVcfMetas = metadataManager.getAllVcfMetas(new ObjectMap());
-            for (VcfMeta vcfMeta : allVcfMetas.getResult()) {
-                vcfMetaMap.put(Integer.parseInt(vcfMeta.getVariantSource().getFileId()), vcfMeta);
+        try (HadoopVariantSourceDBAdaptor metadataManager = new HadoopVariantSourceDBAdaptor(conf)) {
+            Iterator<VariantSource> iterator = metadataManager.iterator(studyConfiguration.getStudyId(), null);
+            while (iterator.hasNext()) {
+                VariantSource variantSource = iterator.next();
+                vcfMetaMap.put(Integer.parseInt(variantSource.getFileId()), new VcfMeta(variantSource));
             }
         }
         getLog().info("Loaded {} VcfMETA data!!!", vcfMetaMap.size());
@@ -225,20 +225,27 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     protected void setup(Context context) throws IOException,
             InterruptedException {
         getLog().debug("Setup configuration");
-        // Setup configuration
-        helper = new VariantTableHelper(context.getConfiguration());
-        this.studyConfiguration = getHelper().loadMeta(); // Variant meta
 
         // Open DB connection
         dbConnection = ConnectionFactory.createConnection(context.getConfiguration());
 
+        // Setup configuration
+        helper = new VariantTableHelper(context.getConfiguration(), dbConnection);
+        this.studyConfiguration = getHelper().loadMeta(); // Variant meta
+
         // Load VCF meta data for columns
         Map<Integer, VcfMeta> vcfMetaMap = loadVcfMetaMap(context.getConfiguration()); // Archive meta
+        vcfMetaMap.forEach((k, v) -> LOG.info(
+                "Loaded Meta Map: File id idx {}; FileId: {} Study {};",
+                k, v.getVariantSource().getFileId(), v.getVariantSource().getStudyId()));
         resultConverter = new ArchiveResultToVariantConverter(vcfMetaMap, helper.getColumnFamily());
         hbaseToVariantConverter = new HBaseToVariantConverter(this.helper);
         variantMerger = new VariantMerger();
 
         timestamp = context.getConfiguration().getLong(AbstractVariantTableDriver.TIMESTAMP, -1);
+        if (timestamp == -1) {
+            throw new IllegalArgumentException("Missing TimeStamp");
+        }
 
         super.setup(context);
     }
@@ -246,9 +253,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     @Override
     protected void cleanup(Context context) throws IOException,
             InterruptedException {
-        for (Entry<String, Long> entry : this.timeSum.entrySet()) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
-        }
         if (null != this.dbConnection) {
             dbConnection.close();
         }
@@ -278,9 +282,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         long nextStartPos = h.getStartPositionFromSlice(sliceReg + 1);
 
         Set<Integer> fileIds = extractFileIds(value);
-        for (Integer fileId : fileIds) {
-            context.getCounter("File", fileId.toString()).increment(1);
-        }
         if (getLog().isDebugEnabled()) {
             getLog().debug("Results contain file IDs : " + StringUtils.join(fileIds, ','));
         }
@@ -303,6 +304,11 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
         doMap(ctx);
         /* *********************************** */
 
+        // Clean up of this slice
+        for (Entry<String, Long> entry : this.timeSum.entrySet()) {
+            context.getCounter(COUNTER_GROUP_NAME, "VCF_TIMER_" + entry.getKey().replace(' ', '_')).increment(entry.getValue());
+        }
+        this.timeSum.clear();
     }
 
     abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;

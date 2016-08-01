@@ -68,7 +68,7 @@ public class AlignmentCommandExecutor extends CommandExecutor {
 
         this.storageConfiguration = configuration.getStorageEngine(storageEngine);
 
-        StorageManagerFactory storageManagerFactory = new StorageManagerFactory(configuration);
+        StorageManagerFactory storageManagerFactory = StorageManagerFactory.get(configuration);
         if (storageEngine == null || storageEngine.isEmpty()) {
             this.alignmentStorageManager = storageManagerFactory.getAlignmentStorageManager();
         } else {

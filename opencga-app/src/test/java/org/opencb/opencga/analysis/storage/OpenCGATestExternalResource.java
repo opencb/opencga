@@ -4,23 +4,25 @@ import org.apache.tools.ant.types.Commandline;
 import org.junit.rules.ExternalResource;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.datastore.mongodb.MongoDataStore;
-import org.opencb.datastore.mongodb.MongoDataStoreManager;
+import org.opencb.commons.datastore.mongodb.MongoDataStore;
+import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.analysis.execution.executors.LocalExecutorManager;
-import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.app.cli.analysis.AnalysisMain;
-import org.opencb.opencga.catalog.CatalogManager;
 import org.opencb.opencga.catalog.CatalogManagerExternalResource;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
+import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.utils.CatalogFileUtils;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.storage.app.StorageMain;
 import org.opencb.opencga.storage.core.StorageManager;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
+import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Map;
 
 import static org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils.getResourceUri;
 
@@ -42,14 +45,29 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
     private CatalogManagerExternalResource catalogManagerExternalResource = new CatalogManagerExternalResource();
     private Path opencgaHome;
+    private boolean storageHadoop;
     Logger logger = LoggerFactory.getLogger(OpenCGATestExternalResource.class);
 
+
+    public HadoopVariantStorageManagerTestUtils.HadoopExternalResource hadoopExternalResource =
+            new HadoopVariantStorageManagerTestUtils.HadoopExternalResource();
+
+    public OpenCGATestExternalResource() {
+        this(false);
+    }
+
+    public OpenCGATestExternalResource(boolean storageHadoop) {
+        this.storageHadoop = storageHadoop;
+    }
 
     @Override
     protected void before() throws Throwable {
         super.before();
 
         catalogManagerExternalResource.before();
+        if (storageHadoop) {
+            hadoopExternalResource.before();
+        }
         opencgaHome = isolateOpenCGA();
         Files.createDirectory(opencgaHome.resolve("storage"));
         VariantStorageManagerTestUtils.setRootDir(opencgaHome.resolve("storage"));
@@ -62,6 +80,9 @@ public class OpenCGATestExternalResource extends ExternalResource {
         super.after();
 
         catalogManagerExternalResource.after();
+        if (storageHadoop) {
+            hadoopExternalResource.after();
+        }
     }
 
     public Path getOpencgaHome() {
@@ -77,19 +98,44 @@ public class OpenCGATestExternalResource extends ExternalResource {
 
 //        Path opencgaHome = Paths.get("/tmp/opencga-analysis-test");
         Path opencgaHome = catalogManagerExternalResource.getOpencgaHome();
+        Path userHome = opencgaHome.resolve("user_home");
+        Path conf = opencgaHome.resolve("conf");
+
         System.setProperty("app.home", opencgaHome.toString());
+        System.setProperty("user.home", userHome.toString());
         Config.setOpenCGAHome(opencgaHome.toString());
 
-        Files.createDirectories(opencgaHome.resolve("conf"));
+        Files.createDirectories(conf);
+        Files.createDirectories(userHome);
 
         InputStream inputStream;
         catalogManagerExternalResource.getCatalogConfiguration().serialize(
-                new FileOutputStream(opencgaHome.resolve("conf").resolve("catalog-configuration.yml").toFile()));
+                new FileOutputStream(conf.resolve("catalog-configuration.yml").toFile()));
+
         inputStream = new ByteArrayInputStream((ExecutorManager.OPENCGA_ANALYSIS_JOB_EXECUTOR + "=LOCAL" + "\n" +
                 AnalysisFileIndexer.OPENCGA_ANALYSIS_STORAGE_DATABASE_PREFIX + "=" + "opencga_test_").getBytes());
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
+        Files.copy(inputStream, conf.resolve("analysis.properties"), StandardCopyOption.REPLACE_EXISTING);
+
         inputStream = StorageManager.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
-        Files.copy(inputStream, opencgaHome.resolve("conf").resolve("storage-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+        StorageConfiguration storageConfiguration = StorageConfiguration.load(inputStream, "yml");
+        if (storageHadoop) {
+            HadoopVariantStorageManagerTestUtils.updateStorageConfiguration(storageConfiguration, hadoopExternalResource.getConf());
+            ObjectMap variantHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getVariant().getOptions();
+            ObjectMap alignmentHadoopOptions = storageConfiguration.getStorageEngine("hadoop").getAlignment().getOptions();
+            for (Map.Entry<String, String> entry : hadoopExternalResource.getConf()) {
+                variantHadoopOptions.put(entry.getKey(), entry.getValue());
+                alignmentHadoopOptions.put(entry.getKey(), entry.getValue());
+            }
+        }
+        try (OutputStream os = new FileOutputStream(conf.resolve("storage-configuration.yml").toFile())) {
+            storageConfiguration.serialize(os);
+        }
+
+        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("client-configuration-test.yml");
+        Files.copy(inputStream, conf.resolve("client-configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
+
+        inputStream = StorageManager.class.getClassLoader().getResourceAsStream("configuration-test.yml");
+        Files.copy(inputStream, conf.resolve("configuration.yml"), StandardCopyOption.REPLACE_EXISTING);
 
         // Example files
         Files.createDirectories(opencgaHome.resolve("examples"));

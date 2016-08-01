@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.execution.executors;
 
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.common.Config;
@@ -73,7 +73,7 @@ public interface ExecutorManager {
     QueryResult<Job> run(Job job) throws Exception;
 
     default String status(Job job) throws Exception {
-        return job.getStatus().getStatus();
+        return job.getStatus().getName();
     }
 
     default QueryResult<Job> stop(Job job) throws Exception { throw new UnsupportedOperationException(); }

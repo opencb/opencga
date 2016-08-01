@@ -19,8 +19,8 @@ package org.opencb.opencga.app.cli.main;
 import com.beust.jcommander.*;
 import com.beust.jcommander.converters.IParameterSplitter;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.datastore.core.ObjectMap;
-import org.opencb.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Study;
@@ -30,6 +30,7 @@ import java.util.*;
 /**
  * Created by jacobo on 29/09/14.
  */
+@Deprecated
 public class OptionsParser {
 
     private final JCommander jcommander;
@@ -783,8 +784,8 @@ public class OptionsParser {
             @Parameter(names = {"--name"}, description = "cohort name", required = false, arity = 1)
             String name;
 
-            @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-            long variableSetId;
+            @Parameter(names = {"--variable-set"}, description = "VariableSetId", required = false, arity = 1)
+            String variableSet;
 
             @Parameter(names = {"--description"}, description = "cohort description", required = false, arity = 1)
             String description;
@@ -796,7 +797,7 @@ public class OptionsParser {
             String variable;
 
             @Parameter(names = {"--type"}, description = "Cohort type", required = false, arity = 1)
-            Cohort.Type type;
+            Study.Type type;
 
             @Parameter(names = {"--from-aggregation-mapping-file"}, description = "If the study is aggregated, basic cohorts without samples may be extracted from the mapping file", required = false, arity = 1)
             String tagmap = null;

@@ -73,6 +73,7 @@ public class AnalysisCliOptionsParser {
         variantSubCommands.addCommand("stats", variantCommandOptions.statsVariantCommandOptions);
         variantSubCommands.addCommand("annotate", variantCommandOptions.annotateVariantCommandOptions);
         variantSubCommands.addCommand("query", variantCommandOptions.queryVariantCommandOptions);
+        variantSubCommands.addCommand("export-frequencies", variantCommandOptions.exportVariantStatsCommandOptions);
         variantSubCommands.addCommand("ibs", variantCommandOptions.ibsVariantCommandOptions);
 
         alignmentCommandOptions = new AlignmentCommandOptions();
@@ -211,6 +212,7 @@ public class AnalysisCliOptionsParser {
         final StatsVariantCommandOptions statsVariantCommandOptions;
         final AnnotateVariantCommandOptions annotateVariantCommandOptions;
         final QueryVariantCommandOptions queryVariantCommandOptions;
+        final ExportVariantStatsCommandOptions exportVariantStatsCommandOptions;
         final IbsVariantCommandOptions ibsVariantCommandOptions;
         final DeleteVariantCommandOptions deleteVariantCommandOptions;
 
@@ -221,6 +223,7 @@ public class AnalysisCliOptionsParser {
             this.statsVariantCommandOptions = new StatsVariantCommandOptions();
             this.annotateVariantCommandOptions = new AnnotateVariantCommandOptions();
             this.queryVariantCommandOptions = new QueryVariantCommandOptions();
+            this.exportVariantStatsCommandOptions = new ExportVariantStatsCommandOptions();
             this.ibsVariantCommandOptions = new IbsVariantCommandOptions();
             this.deleteVariantCommandOptions = new DeleteVariantCommandOptions();
         }
@@ -360,10 +363,10 @@ public class AnalysisCliOptionsParser {
 //        public String fileId;
 
         @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
-        boolean transform = false;
+        public boolean transform = false;
 
         @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
-        boolean load = false;
+        public boolean load = false;
 
 //        @Parameter(names = {"--overwrite"}, description = "Reset the database if exists before installing")
 //        public boolean overwrite;
@@ -428,6 +431,9 @@ public class AnalysisCliOptionsParser {
 
         @Parameter(names = {"--overwrite-stats"}, description = "[PENDING] Overwrite stats in variants already present")
         public boolean overwriteStats = false;
+
+        @Parameter(names = {"--region"}, description = "Region to calculate.")
+        public String region;
 
         @Parameter(names = {"--update-stats"}, description = "Calculate stats just for missing positions. "
                 + "Assumes that existing stats are correct")
@@ -572,16 +578,40 @@ public class AnalysisCliOptionsParser {
                 "phastCons>0.5,phylop<0.1", required = false, arity = 1)
         public String conservation;
 
-        @Parameter(names = {"--ps", "--protein-substitution"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--transcript-flag"}, description = "List of transcript annotation flags. e.g. CCDS, basic, cds_end_NF, mRNA_end_NF, cds_start_NF, mRNA_start_NF, seleno", required = false, arity = 1)
+        public String flags;
+
+        @Parameter(names = {"--gene-trait-id"}, description = "List of gene trait association names. e.g. \"Cardiovascular Diseases\"", required = false, arity = 1)
+        public String geneTraitId;
+
+        @Parameter(names = {"--gene-trait-name"}, description = "List of gene trait association id. e.g. \"umls:C0007222\" , \"OMIM:269600\"", required = false, arity = 1)
+        public String geneTraitName;
+
+        @Parameter(names = {"--hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\" , \"HP:0002812\"", required = false, arity = 1)
+        public String hpo;
+
+        @Parameter(names = {"--go"}, description = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"", required = false, arity = 1)
+        public String go;
+
+        @Parameter(names = {"--expression"}, description = "List of tissues of interest. e.g. \"tongue\"", required = false, arity = 1)
+        public String expression;
+
+        @Parameter(names = {"--protein-keywords"}, description = "List of protein variant annotation keywords", required = false, arity = 1)
+        public String proteinKeywords;
+
+        @Parameter(names = {"--drug"}, description = "List of drug names", required = false, arity = 1)
+        public String drugs;
+
+        @Parameter(names = {"--ps", "--protein-substitution"}, description = "Protein substitution score. [<|>|<=|>=]{number} or [~=|=|]{description} e.g. <=0.9,benign", required = false, arity = 1)
         public String proteinSubstitution;
 
-        @Parameter(names = {"--gwas"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--gwas"}, description = "[PENDING]", required = false, arity = 1)
         public String gwas;
 
-        @Parameter(names = {"--cosmic"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--cosmic"}, description = "[PENDING]", required = false, arity = 1)
         public String cosmic;
 
-        @Parameter(names = {"--clinvar"}, description = "", required = false, arity = 1)
+        @Parameter(names = {"--clinvar"}, description = "[PENDING]", required = false, arity = 1)
         public String clinvar;
 
 
@@ -662,8 +692,28 @@ public class AnalysisCliOptionsParser {
         @Parameter(names = {"--limit"}, description = "Limit the number of returned elements.", required = false, arity = 1)
         public int limit;
 
+        @Parameter(names = {"--sort"}, description = "Sort the output variants.")
+        public boolean sort;
+
         @Parameter(names = {"--count"}, description = "Count results. Do not return elements.", required = false, arity = 0)
         public boolean count;
+
+    }
+
+    @Parameters(commandNames = {"export-frequencies"}, commandDescription = "Export calculated variant stats and frequencies")
+    public class ExportVariantStatsCommandOptions {
+
+        @ParametersDelegate
+        public AnalysisCommonCommandOptions commonOptions = AnalysisCliOptionsParser.this.commonCommandOptions;
+
+        @ParametersDelegate
+        public QueryCommandOptions queryOptions = new QueryCommandOptions();
+
+        @Parameter(names = {"--of", "--output-format"}, description = "Output format: vcf, vcf.gz, tsv, tsv.gz, cellbase, cellbase.gz, json or json.gz", required = false, arity = 1)
+        public String outputFormat = "tsv";
+
+        @Parameter(names = {"-s", "--study"}, description = "A comma separated list of studies to be returned", required = false)
+        public String studies;
 
     }
 

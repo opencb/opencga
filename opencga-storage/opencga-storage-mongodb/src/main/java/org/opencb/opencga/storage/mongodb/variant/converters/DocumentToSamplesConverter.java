@@ -25,7 +25,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.commons.datastore.core.ComplexTypeConverter;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.CompressionUtils;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.mongodb.variant.protobuf.VariantMongoDBProto;
@@ -199,8 +199,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
 //        final BiMap<String, Integer> samplesPosition = StudyConfiguration.getIndexedSamplesPosition(studyConfiguration);
         final LinkedHashMap<String, Integer> samplesPositionToReturn = getReturnedSamplesPosition(studyConfiguration);
 
-        List<String> extraFields = studyConfiguration.getAttributes()
-                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key());
+        // Make a copy of the extraFields. They may be modified
+        List<String> extraFields = new LinkedList<>(studyConfiguration.getAttributes()
+                .getAsStringList(Options.EXTRA_GENOTYPE_FIELDS.key()));
         boolean excludeGenotypes = !object.containsKey(DocumentToStudyVariantEntryConverter.GENOTYPES_FIELD)
                 || studyConfiguration.getAttributes().getBoolean(Options.EXCLUDE_GENOTYPES.key(), Options.EXCLUDE_GENOTYPES.defaultValue());
         boolean compressExtraParams = studyConfiguration.getAttributes()
@@ -273,6 +274,21 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
             Map<Integer, Document> files = fileObjects.stream()
                     .collect(Collectors.toMap(f -> (Integer) f.get(DocumentToStudyVariantEntryConverter.FILEID_FIELD), f -> f));
 
+            Set<String> extraFieldsSet = new HashSet<>();
+            for (Integer fid : studyConfiguration.getIndexedFiles()) {
+                if (files.containsKey(fid)) {
+                    Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
+                    extraFieldsSet.addAll(sampleDatas.keySet());
+                }
+            }
+            Iterator<String> it = extraFields.iterator();
+            while (it.hasNext()) {
+                String extraField = it.next();
+                if (!extraFieldsSet.contains(extraField.toLowerCase())) {
+                    it.remove();
+                }
+            }
+
             for (Integer fid : studyConfiguration.getIndexedFiles()) {
                 if (files.containsKey(fid)) {
                     Document sampleDatas = (Document) files.get(fid).get(DocumentToStudyVariantEntryConverter.SAMPLE_DATA_FIELD);
@@ -284,7 +300,10 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                         extraFieldPosition = 1; //Skip GT
                     }
                     for (String extraField : extraFields) {
-                        byte[] byteArray = sampleDatas == null ? null : sampleDatas.get(extraField.toLowerCase(), Binary.class).getData();
+                        extraField = extraField.toLowerCase();
+                        byte[] byteArray = sampleDatas == null || !sampleDatas.containsKey(extraField)
+                                ? null
+                                : sampleDatas.get(extraField, Binary.class).getData();
 
                         VariantMongoDBProto.OtherFields otherFields = null;
                         if (compressExtraParams && byteArray != null) {
@@ -321,7 +340,10 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                         for (Integer sampleId : studyConfiguration.getSamplesInFiles().get(fid)) {
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
                             Integer samplePosition = samplesPositionToReturn.get(sampleName);
-                            if (samplePosition != null) {
+                            if (samplePosition == null) {
+                                // The sample on this position is not returned. Skip this value.
+                                supplier.get();
+                            } else {
                                 samplesData.get(samplePosition).set(extraFieldPosition, supplier.get());
                             }
                         }
@@ -340,7 +362,9 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                             String sampleName = studyConfiguration.getSampleIds().inverse().get(sampleId);
                             Integer samplePosition = samplesPositionToReturn.get(sampleName);
                             if (samplePosition != null) {
-                                samplesData.get(samplePosition).set(extraFieldPosition, UNKNOWN_FIELD);
+                                if (samplesData.get(samplePosition).get(extraFieldPosition) == null) {
+                                    samplesData.get(samplePosition).set(extraFieldPosition, UNKNOWN_FIELD);
+                                }
                             }
                         }
                         extraFieldPosition++;
@@ -521,17 +545,19 @@ public class DocumentToSamplesConverter /*implements ComplexTypeConverter<Varian
                             break;
                     }
                 }
-            } // else { Don't set that field }
 
-            byte[] byteArray = builder.build().toByteArray();
-            if (compressExtraParams) {
-                try {
-                    byteArray = CompressionUtils.compress(byteArray);
-                } catch (IOException e) {
-                    throw new UncheckedIOException(e);
+                byte[] byteArray = builder.build().toByteArray();
+                if (compressExtraParams) {
+                    if (byteArray.length > 50) {
+                        try {
+                            byteArray = CompressionUtils.compress(byteArray);
+                        } catch (IOException e) {
+                            throw new UncheckedIOException(e);
+                        }
+                    }
                 }
-            }
-            otherFields.append(extraField.toLowerCase(), byteArray);
+                otherFields.append(extraField.toLowerCase(), byteArray);
+            } // else { Don't set this field }
         }
 
         return mongoSamples;

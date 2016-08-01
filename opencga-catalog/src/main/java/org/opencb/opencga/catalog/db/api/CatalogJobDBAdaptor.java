@@ -20,7 +20,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.JobAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -32,7 +32,7 @@ import static org.opencb.commons.datastore.core.QueryParam.Type.*;
 /**
  * @author Jacobo Coll &lt;jacobo167@gmail.com&gt;
  */
-public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
+public interface CatalogJobDBAdaptor extends CatalogAclDBAdaptor<Job, JobAclEntry> {
 
     default boolean jobExists(long jobId) throws CatalogDBException {
         return count(new Query(QueryParams.ID.key(), jobId)).first() > 0;
@@ -51,17 +51,17 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     QueryResult<Job> createJob(long studyId, Job job, QueryOptions options) throws CatalogDBException;
 
 
-    default QueryResult<Long> restore(Query query) throws CatalogDBException {
+    default QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
         //return updateStatus(query, new Job.JobStatus(Job.JobStatus.PREPARED));
         throw new CatalogDBException("Non implemented action.");
     }
 
     default QueryResult<Job> setStatus(long jobId, String status) throws CatalogDBException {
-        return update(jobId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(jobId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     default QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     @Deprecated
@@ -90,19 +90,29 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
     @Deprecated
     QueryResult<Job> modifyJob(long jobId, ObjectMap parameters) throws CatalogDBException;
 
-    default QueryResult<JobAcl> getJobAcl(long jobId, String member) throws CatalogDBException {
+    default QueryResult<JobAclEntry> getJobAcl(long jobId, String member) throws CatalogDBException {
         return getJobAcl(jobId, Arrays.asList(member));
     }
 
-    QueryResult<JobAcl> getJobAcl(long jobId, List<String> members) throws CatalogDBException;
+    QueryResult<JobAclEntry> getJobAcl(long jobId, List<String> members) throws CatalogDBException;
 
-    QueryResult<JobAcl> setJobAcl(long jobId, JobAcl acl) throws CatalogDBException;
+    QueryResult<JobAclEntry> setJobAcl(long jobId, JobAclEntry acl, boolean override) throws CatalogDBException;
 
-    void unsetJobAcl(long jobId, List<String> members) throws CatalogDBException;
+    void unsetJobAcl(long jobId, List<String> members, List<String> permissions) throws CatalogDBException;
 
     void unsetJobAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
     long getStudyIdByJobId(long jobId) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
+
 
     /**
      * Extract the fileIds given from the jobs matching the query. It will try to take them out from the input and output arrays.
@@ -138,7 +148,7 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         NAME("name", TEXT_ARRAY, ""),
         USER_ID("userId", TEXT_ARRAY, ""),
         TOOL_NAME("toolName", TEXT_ARRAY, ""),
-        DATE("date", TEXT_ARRAY, ""),
+        CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         START_TIME("startTime", INTEGER_ARRAY, ""),
         END_TIME("endTime", INTEGER_ARRAY, ""),
@@ -147,19 +157,18 @@ public interface CatalogJobDBAdaptor extends CatalogDBAdaptor<Job> {
         //PARAMS,
         COMMAND_LINE("commandLine", TEXT_ARRAY, ""),
         VISITS("visits", INTEGER_ARRAY, ""),
-        STATUS_STATUS("status.status", TEXT, ""),
+        STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),
-        JOB_STATUS("jobStatus", TEXT, ""),
         DISK_USAGE("diskUsage", DECIMAL, ""),
         OUT_DIR_ID("outDirId", INTEGER_ARRAY, ""),
         TMP_OUT_DIR_URI("tmpOutDirUri", TEXT_ARRAY, ""),
         INPUT("input", INTEGER_ARRAY, ""),
         OUTPUT("output", INTEGER_ARRAY, ""),
         TAGS("tags", TEXT_ARRAY, ""),
-        ACLS("acls", TEXT_ARRAY, ""),
-        ACLS_USERS("acls.users", TEXT_ARRAY, ""),
-        ACLS_PERMISSIONS("acls.permissions", TEXT_ARRAY, ""),
+        ACL("acl", TEXT_ARRAY, ""),
+        ACL_MEMBER("acl.member", TEXT_ARRAY, ""),
+        ACL_PERMISSIONS("acl.permissions", TEXT_ARRAY, ""),
         ATTRIBUTES("attributes", TEXT, ""), // "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         NATTRIBUTES("nattributes", DECIMAL, ""), // "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"
         BATTRIBUTES("battributes", BOOLEAN, ""), // "Format: <key><operation><true|false> where <operation> is [==|!=]"

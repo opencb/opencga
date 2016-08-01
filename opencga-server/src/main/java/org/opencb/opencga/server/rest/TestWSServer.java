@@ -17,13 +17,11 @@
 package org.opencb.opencga.server.rest;
 
 
-import com.wordnik.swagger.annotations.Api;
-import com.wordnik.swagger.annotations.ApiOperation;
-import com.wordnik.swagger.annotations.ApiParam;
-import org.glassfish.jersey.media.multipart.FormDataParam;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import org.opencb.opencga.core.exception.VersionException;
 
-import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
@@ -31,24 +29,34 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.Map;
 
 @Path("/{version}/test")
 @Api(value = "test", position = 12, description = "test web services")
 public class TestWSServer extends OpenCGAWSServer {
 
-    public TestWSServer(@PathParam("version") String version, @Context UriInfo uriInfo,
-                        @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
-        super(version, uriInfo, httpServletRequest);
+    public TestWSServer(@Context UriInfo uriInfo, @Context HttpServletRequest httpServletRequest) throws IOException, VersionException {
+        super(uriInfo, httpServletRequest);
     }
 
 
     @POST
-    @Consumes({MediaType.MULTIPART_FORM_DATA})
+    @Consumes(MediaType.APPLICATION_JSON)
     @Path("/echo")
-    @ApiOperation(value = "echo multipart")
-    public Response formPost(@DefaultValue("") @FormDataParam("message") String message) {
-        System.out.println("Received message " + message);
-        return buildResponse(Response.ok(message));
+    @ApiOperation(value = "echo json")
+    public Response formPost(@ApiParam(value = "json") Map<String, Object> json) {
+//        System.out.println("Received message " + message);
+        for (String s : json.keySet()) {
+            Object o = json.get(s);
+            if (o instanceof Map) {
+                System.out.println("It is a map");
+                for (Object key : ((Map) o).keySet()) {
+                    System.out.println(key + " = " + json.get(key));
+                }
+            }
+            System.out.println(s + " = " + json.get(s));
+        }
+        return buildResponse(Response.ok("Hello, it worked"));
     }
 
 

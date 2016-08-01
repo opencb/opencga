@@ -19,7 +19,7 @@ package org.opencb.opencga.app.cli.admin;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.db.api.CatalogUserDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
@@ -93,6 +93,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.validateAdminPassword();
+
         User user = catalogManager.createUser(usersCommandOptions.createUserCommandOptions.userId,
                 usersCommandOptions.createUserCommandOptions.userName, usersCommandOptions.createUserCommandOptions.userEmail,
                 usersCommandOptions.createUserCommandOptions.userPassword, usersCommandOptions.createUserCommandOptions.userOrganization,
@@ -156,6 +158,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.validateAdminPassword();
+
         User user = catalogManager.deleteUser(usersCommandOptions.deleteUserCommandOptions.userId,
                 new QueryOptions("force", true), null).first();
         System.out.println("The user has been successfully deleted from the database: " + user.toString());
@@ -183,6 +187,8 @@ public class UsersCommandExecutor extends AdminCommandExecutor {
         }
 
         CatalogManager catalogManager = new CatalogManager(catalogConfiguration);
+        catalogManager.validateAdminPassword();
+        
         User user = catalogManager.modifyUser(usersCommandOptions.diskQuotaUserCommandOptions.userId,
                 new ObjectMap(CatalogUserDBAdaptor.QueryParams.DISK_QUOTA.key(),
                         usersCommandOptions.diskQuotaUserCommandOptions.diskQuota *  1073741824), null).first();

@@ -73,9 +73,6 @@ public abstract class StorageManager<DBADAPTOR> {
             testConnection();
         }
 
-        MemoryUsageMonitor monitor = new MemoryUsageMonitor();
-        monitor.start();
-
         for (URI inputFile : inputFiles) {
             //Provide a connected storageETL if load is required.
             StorageETL storageETL = newStorageETL(doLoad);
@@ -104,7 +101,6 @@ public abstract class StorageManager<DBADAPTOR> {
 
             MemoryUsageMonitor.logMemory(logger);
         }
-        monitor.interrupt();
 
         return results;
     }
@@ -127,7 +123,7 @@ public abstract class StorageManager<DBADAPTOR> {
             etlResult.setPostLoadResult(inputFileUri);
         } catch (Exception e) {
             etlResult.setLoadError(e);
-            throw new StorageETLException("Exception executing load.", e, results);
+            throw new StorageETLException("Exception executing load: " + e.getMessage(), e, results);
         } finally {
             etlResult.setLoadTimeMillis(System.currentTimeMillis() - millis);
             etlResult.setLoadStats(storageETL.getLoadStats());
@@ -158,6 +154,10 @@ public abstract class StorageManager<DBADAPTOR> {
             etlResult.setTransformStats(storageETL.getTransformStats());
         }
         return inputFileUri;
+    }
+
+    public DBADAPTOR getDBAdaptor() throws StorageManagerException {
+        return getDBAdaptor("");
     }
 
     public abstract DBADAPTOR getDBAdaptor(String dbName) throws StorageManagerException;

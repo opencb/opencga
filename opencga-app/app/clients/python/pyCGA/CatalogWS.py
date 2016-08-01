@@ -22,7 +22,9 @@ class Users(WS):
         :param userId: user id
         :param pwd: password for the user
         """
-        return self.general_method("users", "login", item_id=userId, password=pwd, **options)
+        data = {"password": pwd}
+
+        return self.general_method("users", "login", item_id1=userId, data=data, **options)
 
     def logout_method(self, userId, **options):
         """
@@ -31,7 +33,7 @@ class Users(WS):
         :param userId: user id
         """
 
-        return self.general_method("users", "logout", item_id=userId, **options)
+        return self.general_method("users", "logout", item_id1=userId, **options)
 
     def change_password(self, userId, password, new_password, **options):
         """
@@ -42,7 +44,7 @@ class Users(WS):
         :param password: Old password
         :param new_password: New password
         """
-        return self.general_method("users", "change-password", item_id=userId, password=password,
+        return self.general_method("users", "change-password", item_id1=userId, password=password,
                                    npassword=new_password, **options)
 
     def reset_password(self, userId, email, **options):
@@ -54,7 +56,7 @@ class Users(WS):
         :param email: User email to receive the new password
         """
 
-        return self.general_method("users", "reset-password", item_id=userId, email=email, **options)
+        return self.general_method("users", "reset-password", item_id1=userId, email=email, **options)
 
     def create_user(self, userId, name, email, organization, password, **options):
         """
@@ -81,7 +83,7 @@ class Users(WS):
         :param userId: user id
         """
 
-        return self.general_method("users", "change-email", item_id=userId, nemail=nemail, **options)
+        return self.general_method("users", "change-email", item_id1=userId, nemail=nemail, **options)
 
     def delete(self, userId, **options):
         """
@@ -90,7 +92,7 @@ class Users(WS):
 
         :param userId: user id
         """
-        return self.general_method("users", "delete", item_id=userId, **options)
+        return self.general_method("users", "delete", item_id1=userId, **options)
 
 
 class Files(WS):
@@ -111,7 +113,7 @@ class Files(WS):
         :param delete: True/False - If True the user could delete the file
         :param unshare: True/False - If True the file will be unshared for this user
         """
-        return self.general_method("files", "share", item_id=fileId, unshare=str(unshare).lower(), userId=userId,
+        return self.general_method("files", "share", item_id1=fileId, unshare=str(unshare).lower(), userId=userId,
                                    read=str(read).lower(), write=str(write).lower(), delete=str(delete).lower(),
                                    **options)
 
@@ -125,7 +127,7 @@ class Files(WS):
         properties.
         """
 
-        return self.general_method("files", "update", item_id=fileId, **options)
+        return self.general_method("files", "update", item_id1=fileId, **options)
 
     def search(self, studyId, **options):
         """
@@ -145,7 +147,7 @@ class Files(WS):
         :param studyId: study to associate file to
         :param folder: "path in the DB"
         """
-        return self.general_method(ws_category="files", method_name="create-folder", studyId=studyId, folder=folder,
+        return self.general_method(ws_category1="files", action="create-folder", studyId=studyId, folder=folder,
                                    **options)
 
     def link(self, studyId, uri, path, description="", parents=False, calculateChecksum=False, createFolder=True,
@@ -165,7 +167,7 @@ class Files(WS):
         if createFolder:
             Files.create_folder(self, studyId, path)
 
-        return self.general_method(ws_category="files", method_name="link", path=path, uri=uri, studyId=studyId,
+        return self.general_method(ws_category1="files", action="link", path=path, uri=uri, studyId=studyId,
                                    description=description, parents=str(parents).lower(),
                                    calculateChecksum=str(calculateChecksum).lower(), **options)
 
@@ -175,7 +177,7 @@ class Files(WS):
 
         :param fileId: file Id
         """
-        return self.general_method(ws_category="files", method_name="info", item_id=fileId, **options)
+        return self.general_method(ws_category1="files", action="info", item_id1=fileId, **options)
 
     def update_file_post(self, fileId, json_file=None, data=None, **options):
         """
@@ -193,7 +195,7 @@ class Files(WS):
             data = json.load(fd)
             fd.close()
 
-        return self.general_method(ws_category="files", method_name="update", item_id=fileId, data=data, **options)
+        return self.general_method(ws_category1="files", action="update", item_id1=fileId, data=data, **options)
 
     def relink(self, fileId, uri, calculateChecksum=False, **options):
         """
@@ -203,7 +205,7 @@ class Files(WS):
         :param uri: new path to file on filesystem
         """
 
-        return self.general_method(ws_category="files", method_name="relink", item_id=fileId, uri=uri,
+        return self.general_method(ws_category1="files", action="relink", item_id1=fileId, uri=uri,
                                    calculateChecksum=str(calculateChecksum).lower(), **options)
 
     def index(self, fileId, outdirId, annotate, **options):
@@ -216,7 +218,7 @@ class Files(WS):
         :param outdirId: Output directory of the indexed
         """
 
-        return self.general_method(ws_category="files", method_name="index", item_id=fileId, outdirId=outdirId,
+        return self.general_method(ws_category1="files", action="index", item_id1=fileId, outdirId=outdirId,
                                    annotate=str(annotate).lower(), **options)
 
     def refresh(self, fileId, **options):
@@ -226,7 +228,7 @@ class Files(WS):
         :param fileId: File If
         """
 
-        return self.general_method(ws_category="files", method_name="refresh", item_id=fileId, **options)
+        return self.general_method(ws_category1="files", action="refresh", item_id1=fileId, **options)
 
     def variants(self, fileId, **options):
         """
@@ -236,7 +238,7 @@ class Files(WS):
         :param fileId: file Id
         """
 
-        return self.general_method(ws_category="files", method_name="variants", item_id=fileId, **options)
+        return self.general_method(ws_category1="files", action="variants", item_id1=fileId, **options)
 
     def alignments(self, fileId, **options):
         """
@@ -246,7 +248,7 @@ class Files(WS):
         :param fileId: file Id
         """
 
-        return self.general_method(ws_category="files", method_name="alignments", item_id=fileId, **options)
+        return self.general_method(ws_category1="files", action="alignments", item_id1=fileId, **options)
 
     def list(self, fileId, **options):
         """
@@ -256,7 +258,7 @@ class Files(WS):
         :param fileId: file Id
         """
 
-        return self.general_method(ws_category="files", method_name="list", item_id=fileId, **options)
+        return self.general_method(ws_category1="files", action="list", item_id1=fileId, **options)
 
 
     def set_header(self, fileId, header, **options):
@@ -268,10 +270,10 @@ class Files(WS):
         :param header: new header
         """
 
-        return self.general_method(ws_category="files", method_name="set_header", item_id=fileId, header=header,
+        return self.general_method(ws_category1="files", action="set_header", item_id1=fileId, header=header,
                                    **options)
 
-    def content_grep(self, fileId, pattern, ignorecase=False, multi=True, **options):
+    def grep(self, fileId, pattern, ignorecase=False, multi=True, **options):
         """
 
         grep the contents of a file
@@ -282,7 +284,7 @@ class Files(WS):
         :param fileId: File id
         """
 
-        return self.general_method(ws_category="files", method_name="content-grep", item_id=fileId, pattern=pattern,
+        return self.general_method(ws_category1="files", action="grep", item_id1=fileId, pattern=pattern,
                                    ignorecase=str(ignorecase).lower(), multi=str(multi).lower(), **options
                                    )
 
@@ -306,7 +308,7 @@ class Variables(WS):
             data = json.load(fd)
             fd.close()
 
-        return self.general_method(ws_category="variables", method_name="create", data=data, studyId=studyId, name=name,
+        return self.general_method(ws_category1="variableSet", action="create", data=data, studyId=studyId, name=name,
                                    **options)
 
     def delete(self, variable_set_id, **options):
@@ -317,7 +319,7 @@ class Variables(WS):
         :param variable_set_id: Variable Set Id
         """
 
-        return self.general_method(ws_category="variables", method_name="delete", item_id=variable_set_id, **options)
+        return self.general_method(ws_category1="variableSet", action="delete", item_id1=variable_set_id, **options)
 
     def search(self, studyId, **options):
         """
@@ -327,7 +329,7 @@ class Variables(WS):
         :param variable_set_id: Variable Set Id
         """
 
-        return self.general_method(ws_category="variables", method_name="search", studyId=studyId, **options)
+        return self.general_method(ws_category1="variableSet", action="search", studyId=studyId, **options)
 
 
 class Samples(WS):
@@ -344,7 +346,7 @@ class Samples(WS):
         :param individualId:
         """
 
-        return self.general_method(ws_category="samples", method_name="create", studyId=studyId, name=name,
+        return self.general_method(ws_category1="samples", action="create", studyId=studyId, name=name,
                                    source=source, description=description, **options)
 
     def update(self, sampleId, **options):
@@ -356,7 +358,7 @@ class Samples(WS):
         :param options: Options will be updated
         """
 
-        return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, **options)
+        return self.general_method(ws_category1="samples", action="update", item_id1=sampleId, **options)
 
     def update_post(self, sampleId, data, **options):
         """
@@ -367,7 +369,7 @@ class Samples(WS):
         :param options: Options will be updated
         """
 
-        return self.general_method(ws_category="samples", method_name="update", item_id=sampleId, data=data, **options)
+        return self.general_method(ws_category1="samples", action="update", item_id1=sampleId, data=data, **options)
 
     def search(self, studyId, **options):
         """
@@ -377,7 +379,7 @@ class Samples(WS):
         :param studyId: study id
         :param options: Kargs where the keys are the name of the file properties used to search.
         """
-        return self.general_method(ws_category="samples", method_name="search", studyId=studyId, **options)
+        return self.general_method(ws_category1="samples", action="search", studyId=studyId, **options)
 
     def search_by_annotation(self, studyId, variableSetName, *queries):
         """
@@ -413,22 +415,20 @@ class Samples(WS):
         variable = Variables()
         variableSetId = str(variable.search(studyId=studyId, name=variableSetName)[0]["id"])
 
-
         if update:
             for annt_set in self.info(str(sample_id))[0]["annotationSets"]:
                 if annt_set["variableSetId"] == int(variableSetId):
-                    annotationSetName = annt_set["id"]
+                    annotationSetName = annt_set["name"]
 
-                    return self.general_method(ws_category="samples", method_name="annotate",
-                                               item_id=str(sample_id), annotateSetName=annotationSetName,
-                                               variableSetId=variableSetId, update="true", data=data
-                                               )
+                    return self.general_method(ws_category1="samples", action="update",
+                                               item_id1=str(sample_id), ws_category2="annotationSets",
+                                               item_id2=annotationSetName, data=data)
 
+        annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_").replace(".","_")
 
-        annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
-
-        return self.general_method(ws_category="samples", method_name="annotate", item_id=sample_id,
-                                   variableSetId=variableSetId, annotateSetName=annotateSetName, data=data, **options)
+        return self.general_method(ws_category1="samples", action="create", item_id1=str(sample_id),
+                                   ws_category2="annotationSets", variableSetId=variableSetId,
+                                   annotateSetName=annotateSetName, data=data, **options)
 
     def info(self, sampleId, **options):
         """
@@ -438,7 +438,7 @@ class Samples(WS):
         :param sampleId: Sample Id
         """
 
-        return self.general_method(ws_category="samples", method_name="info", item_id=sampleId, **options)
+        return self.general_method(ws_category1="samples", action="info", item_id1=sampleId, **options)
 
     def delete(self, sampleId, **options):
         """
@@ -448,7 +448,7 @@ class Samples(WS):
         :param sampleId: Sample Id
         """
 
-        return self.general_method(ws_category="samples", method_name="delete", item_id=sampleId, **options)
+        return self.general_method(ws_category1="samples", action="delete", item_id1=sampleId, **options)
 
     def share(self, userId, fileId, read=True, write=False, delete=False, unshare=False, **options):
 
@@ -463,7 +463,7 @@ class Samples(WS):
         :param delete: True/False - If True the user could delete the file
         :param unshare: True/False - If True the file will be unshared for this user
         """
-        return self.general_method("samples", "share", item_id=fileId, unshare=str(unshare).lower(), userId=userId,
+        return self.general_method("samples", "share", item_id1=fileId, unshare=str(unshare).lower(), userId=userId,
                                    read=str(read).lower(), write=str(write).lower(), delete=str(delete).lower(),
                                    **options)
 
@@ -488,7 +488,7 @@ class Individuals(WS):
         if gender != "MALE" and gender != "FEMALE":
             gender = "UNKNOWN"
 
-        return self.general_method(ws_category="individuals", method_name="create", name=name, family=family, fatherId=fatherId,
+        return self.general_method(ws_category1="individuals", action="create", name=name, family=family, fatherId=fatherId,
                                    motherId=motherId, gender=gender, studyId=studyId, **options)
 
     def search(self, studyId, **options):
@@ -497,7 +497,7 @@ class Individuals(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="individuals", method_name="search", studyId=studyId, **options)
+        return self.general_method(ws_category1="individuals", action="search", studyId=studyId, **options)
 
     def info(self, individualId, **options):
         """
@@ -507,7 +507,7 @@ class Individuals(WS):
         :param individualId:
         """
 
-        return self.general_method(ws_category="individuals", method_name="info", item_id=individualId, **options)
+        return self.general_method(ws_category1="individuals", action="info", item_id1=individualId, **options)
 
     def delete(self, individualId, **options):
         """
@@ -518,7 +518,7 @@ class Individuals(WS):
         :param sid:
         :return:
         """
-        return self.general_method(ws_category="individuals", method_name="delete", item_id=individualId, **options)
+        return self.general_method(ws_category1="individuals", action="delete", item_id1=individualId, **options)
 
     def annotate(self, individual_id, variableSetName, annotationSetName, studyId, json_file=None, data=None,
                  update=True):
@@ -543,19 +543,17 @@ class Individuals(WS):
         if update:
             for annt_set in self.info(str(individual_id))[0]["annotationSets"]:
                 if annt_set["variableSetId"] == int(variableSetId):
-                    annotationSetName = annt_set["id"]
+                    annotationSetName = annt_set["name"]
 
-                    return self.general_method(ws_category="individuals", method_name="annotate",
-                                               item_id=str(individual_id), annotateSetName=annotationSetName,
-                                               variableSetId=variableSetId, update="true", data=data
-                                               )
+                    return self.general_method(ws_category1="individuals", action="update",
+                                               item_id1=str(individual_id), ws_category2="annotationSets",
+                                               item_id2=annotationSetName, data=data)
 
         annotationSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
 
-        return self.general_method(ws_category="individuals", method_name="annotate",
-                                   item_id=str(individual_id), annotateSetName=annotationSetName,
-                                   variableSetId=variableSetId, update="false", data=data
-                                   )
+        return self.general_method(ws_category1="individuals", action="create", item_id1=str(individual_id),
+                                   ws_category2="annotationSets", variableSetId=variableSetId,
+                                   annotateSetName=annotationSetName, data=data)
 
     def search_by_annotation(self, studyId, variableSetName, *queries, **options):
         """
@@ -588,7 +586,7 @@ class Projects(WS):
         :param organization:
         """
 
-        return self.general_method(ws_category="projects", method_name="create", userId=userId,  name=name, alias=alias,
+        return self.general_method(ws_category1="projects", action="create", userId=userId,  name=name, alias=alias,
                                    description=description, organization=organization, **options
                                    )
 
@@ -599,7 +597,7 @@ class Projects(WS):
         :param projectId:
         """
 
-        return self.general_method(ws_category="projects", method_name="info", item_id=projectId, **options)
+        return self.general_method(ws_category1="projects", action="info", item_id1=projectId, **options)
 
     def update(self, projectId, **options):
         """
@@ -614,7 +612,7 @@ class Projects(WS):
         :param sid:
         """
 
-        return self.general_method(ws_category="projects", method_name="update", item_id=projectId, **options)
+        return self.general_method(ws_category1="projects", action="update", item_id1=projectId, **options)
 
     def delete(self, projectId, **options):
         """
@@ -623,7 +621,7 @@ class Projects(WS):
         :param projectId:
         """
 
-        return self.general_method(ws_category="projects", method_name="delete", item_id=projectId, **options)
+        return self.general_method(ws_category1="projects", action="delete", item_id1=projectId, **options)
 
     def studies(self, projectId, **options):
         """
@@ -632,7 +630,7 @@ class Projects(WS):
         :param projectId:
         """
 
-        return self.general_method(ws_category="projects", method_name="studies", item_id=projectId, **options)
+        return self.general_method(ws_category1="projects", action="studies", item_id1=projectId, **options)
 
 class Studies(WS):
     """
@@ -646,7 +644,7 @@ class Studies(WS):
 
         :param options: Kargs where the keys are the name of the file properties used to search.
         """
-        return self.general_method(ws_category="studies", method_name="search", **options)
+        return self.general_method(ws_category1="studies", action="search", **options)
 
     def create(self, projectId, name, alias, **options):
         """
@@ -656,7 +654,7 @@ class Studies(WS):
         :param alias:
         """
 
-        return self.general_method(ws_category="studies", method_name="create", projectId=projectId, name=name,
+        return self.general_method(ws_category1="studies", action="create", projectId=projectId, name=name,
                                    alias=alias, **options)
 
     def info(self, studyId, **options):
@@ -667,7 +665,7 @@ class Studies(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="studies", method_name="info", item_id=studyId, **options)
+        return self.general_method(ws_category1="studies", action="info", item_id1=studyId, **options)
 
     def files(self, studyId, **options):
         """
@@ -677,7 +675,7 @@ class Studies(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="studies", method_name="files", item_id=studyId, **options)
+        return self.general_method(ws_category1="studies", action="files", item_id1=studyId, **options)
 
     def jobs(self, studyId, **options):
         """
@@ -687,7 +685,7 @@ class Studies(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="studies", method_name="jobs", item_id=studyId, **options)
+        return self.general_method(ws_category1="studies", action="jobs", item_id1=studyId, **options)
 
     def samples(self, studyId, **options):
         """
@@ -697,7 +695,7 @@ class Studies(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="studies", method_name="samples", item_id=studyId, **options)
+        return self.general_method(ws_category1="studies", action="samples", item_id1=studyId, **options)
 
     def variants(self, studyId, **filters):
         """
@@ -709,7 +707,7 @@ class Studies(WS):
         :param studyId: StudyID
         """
 
-        return self.general_method(ws_category="studies", method_name="variants", item_id=studyId, **filters)
+        return self.general_method(ws_category1="studies", action="variants", item_id1=studyId, **filters)
 
     def alignments(self, studyId, **filters):
         """
@@ -721,7 +719,7 @@ class Studies(WS):
         :param studyId: StudyID
         """
 
-        return self.general_method(ws_category="studies", method_name="alignments", item_id=studyId, **filters)
+        return self.general_method(ws_category1="studies", action="alignments", item_id1=studyId, **filters)
 
     def status(self, studyId, **options):
         """
@@ -731,7 +729,7 @@ class Studies(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="studies", method_name="status", item_id=studyId, **options)
+        return self.general_method(ws_category1="studies", action="status", item_id1=studyId, **options)
 
     def update(self, projectId, **options):
         """
@@ -741,7 +739,7 @@ class Studies(WS):
         :param options:
         """
 
-        return self.general_method(ws_category="studies", method_name="update", item_id=projectId, **options)
+        return self.general_method(ws_category1="studies", action="update", item_id1=projectId, **options)
 
     def delete(self, studyId, **options):
         """
@@ -750,7 +748,7 @@ class Studies(WS):
         :param studyId:
         """
 
-        return self.general_method(ws_category="studies", method_name="delete", item_id=studyId, **options)
+        return self.general_method(ws_category1="studies", action="delete", item_id1=studyId, **options)
 
 
 
@@ -768,7 +766,7 @@ class Jobs(WS):
         :param toolId:
         """
 
-        return self.general_method(ws_category="jobs", method_name="create", name=name, studyId=studyId,
+        return self.general_method(ws_category1="jobs", action="create", name=name, studyId=studyId,
                                    toolId=toolId, jobId=jobId, **options)
 
     def info(self, jobId, **options):
@@ -777,7 +775,7 @@ class Jobs(WS):
 
         :param jobId:
         """
-        return self.general_method(ws_category="jobs", method_name="info", item_id=jobId, **options)
+        return self.general_method(ws_category1="jobs", action="info", item_id1=jobId, **options)
 
     def visit(self, jobId, **options):
         """
@@ -785,7 +783,7 @@ class Jobs(WS):
 
         :param jobId:
         """
-        return self.general_method(ws_category="jobs", method_name="visit", item_id=jobId, **options)
+        return self.general_method(ws_category1="jobs", action="visit", item_id1=jobId, **options)
 
     def delete(self, jobId, **options):
         """
@@ -794,7 +792,7 @@ class Jobs(WS):
         :param jobId:
         """
 
-        return self.general_method(ws_category="jobs", method_name="delete", item_id=jobId, **options)
+        return self.general_method(ws_category1="jobs", action="delete", item_id1=jobId, **options)
 
     def create_post(self, studyId, json_file=None, data=None, **options):
         """
@@ -811,7 +809,7 @@ class Jobs(WS):
             data = json.load(fd)
             fd.close()
 
-        return self.general_method(ws_category="jobs", method_name="create", studyId=studyId, data=data, **options)
+        return self.general_method(ws_category1="jobs", action="create", studyId=studyId, data=data, **options)
 
 
 # class Cohorts(WS):

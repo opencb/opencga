@@ -18,8 +18,8 @@ package org.opencb.opencga.server.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
 import org.opencb.commons.datastore.core.QueryResponse;
+import org.opencb.opencga.server.RestServer;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;

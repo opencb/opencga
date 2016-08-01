@@ -110,7 +110,7 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         /**
          * Let's init the database with some basic data to perform each of the tests
          */
-        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", User.Role.USER, new User.UserStatus(), "", 100, 1000,
+        user1 = new User("jcoll", "Jacobo Coll", "jcoll@ebi", "1234", "", new User.UserStatus(), "", 100, 1000,
                 Arrays.<Project>asList(new Project("project", "P1", "", new Status(), ""), new Project("project", "P2", "", new Status(),
                         ""), new Project("project", "P3", "", new Status(), "")),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(), Collections.<String, Object>emptyMap(), Collections
@@ -118,61 +118,60 @@ public class CatalogMongoDBAdaptorTest extends GenericTest {
         QueryResult createUser = catalogUserDBAdaptor.insertUser(user1, null);
         assertNotNull(createUser.getResult());
 
-        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", User.Role.USER, new User.UserStatus());
+        user2 = new User("jmmut", "Jose Miguel", "jmmut@ebi", "1111", "ACME", new User.UserStatus());
         createUser = catalogUserDBAdaptor.insertUser(user2, null);
         assertNotNull(createUser.getResult());
 
-        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", User.Role.USER, new User.UserStatus(), "", 1222, 122222,
+        user3 = new User("imedina", "Nacho", "nacho@gmail", "2222", "SPAIN", new User.UserStatus(), "", 1222, 122222,
                 Arrays.asList(new Project(-1, "90 GigaGenomes", "90G", "today", "very long description", "Spain", new Status(), "", 0,
                         Arrays.asList(new Study(-1, "Study name", "ph1", Study.Type.CONTROL_SET, "", "", new Status(), "", 0, "", null,
                                         null, Collections.<Experiment>emptyList(),
                                         Arrays.asList(
-                                                new File("data/", File.Type.FOLDER, File.Format.PLAIN, File.Bioformat.NONE, "data/",
-                                                        null, null, "", new File.FileStatus(File.FileStatus.READY), 1000),
+                                                new File("data/", File.Type.DIRECTORY, File.Format.PLAIN, File.Bioformat.NONE, "data/",
+                                                        null, "", new File.FileStatus(File.FileStatus.READY), 1000),
                                                 new File("file.vcf", File.Type.FILE, File.Format.PLAIN, File.Bioformat.NONE, "data/file" +
-                                                        ".vcf", null, null, "", new File.FileStatus(File.FileStatus.READY), 1000)
-                                        ), Collections.<Job>emptyList(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
-                                        LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, Collections.<String,
-                                        Object>emptyMap(),
-                                        Collections.<String, Object>emptyMap()
+                                                        ".vcf", null, "", new File.FileStatus(File.FileStatus.READY), 1000)
+                                        ), Collections.<Job>emptyList(), new LinkedList<Individual>(), new LinkedList<Sample>(), new LinkedList<Dataset>(), new
+                                        LinkedList<Cohort>(), Collections.emptyList(), new LinkedList<VariableSet>(), null, null, Collections.<String, Object>emptyMap(), Collections.<String,
+                                        Object>emptyMap()
                                 )
-                        ), Collections.<String, Object>emptyMap())
+                        ), Collections.emptyMap(), Collections.<String, Object>emptyMap())
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());
         createUser = catalogUserDBAdaptor.insertUser(user3, null);
         assertNotNull(createUser.getResult());
 
-        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", User.Role.USER, new User.UserStatus(), "", 0, 50000,
+        user4 = new User("pfurio", "Pedro", "pfurio@blabla", "pfuriopass", "Organization", new User.UserStatus(), "", 0, 50000,
                 Arrays.asList(new Project(-1, "lncRNAs", "lncRNAs", "today", "My description", "My org", new Status(), "", 0, Arrays.asList(
                                 new Study(-1, "spongeScan", "sponges", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null,
                                         null, Arrays.asList(
-                                                new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
-                                                        null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
+                                                        "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", null, null, "Description",
+                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100),
                                                 new File("file2.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file2.txt", null, null, "Description2",
+                                                        File.Bioformat.NONE, "data/file2.txt", null, "Description2",
                                                         new File.FileStatus(File.FileStatus.READY), 100),
                                                 new File("alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", null, null, "Tophat alignment file",
+                                                        "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
-                                                ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new
-                                        LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(),
-                                        Collections.emptyMap()),
+                                                ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new
+                                        LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap()
+                                ),
                                 new Study(-1, "MINECO", "mineco", Study.Type.COLLECTION, "", "", new Status(), "", 0, "", null, null, null,
                                         Arrays.asList(
-                                                new File("data/", File.Type.FOLDER, File.Format.UNKNOWN, File.Bioformat.NONE, "data/", null,
+                                                new File("data/", File.Type.DIRECTORY, File.Format.UNKNOWN, File.Bioformat.NONE, "data/",
                                                         null, "Description", new File.FileStatus(File.FileStatus.READY), 10),
                                                 new File("m_file1.txt", File.Type.FILE, File.Format.COMMA_SEPARATED_VALUES,
-                                                        File.Bioformat.NONE, "data/file1.txt", null, null, "Description",
+                                                        File.Bioformat.NONE, "data/file1.txt", null, "Description",
                                                         new File.FileStatus(File.FileStatus.READY), 100),
                                                 new File("m_alignment.bam", File.Type.FILE, File.Format.BAM, File.Bioformat.ALIGNMENT,
-                                                        "data/alignment.bam", null, null, "Tophat alignment file",
+                                                        "data/alignment.bam", null, "Tophat alignment file",
                                                         new File.FileStatus(File.FileStatus.READY), 5000)
-                                        ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap())
-                        ), Collections.emptyMap())
+                                        ), Collections.<Job>emptyList(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), new LinkedList<>(), Collections.emptyList(), new LinkedList<>(), null, null, Collections.emptyMap(), Collections.emptyMap())
+                        ), Collections.emptyMap(), Collections.emptyMap())
                 ),
                 Collections.<Tool>emptyList(), Collections.<Session>emptyList(),
                 Collections.<String, Object>emptyMap(), Collections.<String, Object>emptyMap());

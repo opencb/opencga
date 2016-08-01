@@ -7,8 +7,9 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.test.GenericTest;
 import org.opencb.opencga.core.common.IOUtils;
+import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.StudyConfiguration;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
@@ -30,7 +31,6 @@ import java.util.Objects;
  */
 @Ignore
 public abstract class VariantStorageManagerTestUtils extends GenericTest implements VariantStorageTest {
-
 
     public static final String VCF_TEST_FILE_NAME = "10k.chr22.phase3_shapeit2_mvncall_integrated_v5.20130502.genotypes.vcf.gz";
     public static final String SMALL_VCF_TEST_FILE_NAME = "variant-test-file.vcf.gz";
@@ -55,7 +55,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     @BeforeClass
     public static void _beforeClass() throws Exception {
 //        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, "debug");
-        Path rootDir = getTmpRootDir();
+        newRootDir();
         if (rootDir.toFile().exists()) {
             IOUtils.deleteDirectory(rootDir);
             Files.createDirectories(rootDir);
@@ -91,14 +91,18 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         return resourcePath.toUri();
     }
 
-    protected static Path getTmpRootDir() throws IOException {
+    public static Path getTmpRootDir() throws IOException {
 //        Path rootDir = Paths.get("/tmp", "VariantStorageManagerTest");
 
         if (rootDir == null) {
-            rootDir = Paths.get("target/test-data", "junit-opencga-storage-"+RandomStringUtils.randomAlphanumeric(10));
-            Files.createDirectories(rootDir);
+            newRootDir();
         }
         return rootDir;
+    }
+
+    private static void newRootDir() throws IOException {
+        rootDir = Paths.get("target/test-data", "junit-opencga-storage-" + TimeUtils.getTimeMillis() + "_" + RandomStringUtils.randomAlphabetic(3));
+        Files.createDirectories(rootDir);
     }
 
     public static void setRootDir(Path rootDir) {
@@ -161,34 +165,37 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
-                                          StudyConfiguration studyConfiguration, ObjectMap params)
+                                                 StudyConfiguration studyConfiguration, ObjectMap params)
+            throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
+        return runDefaultETL(inputUri, variantStorageManager, studyConfiguration, params, true, true);
+    }
+
+    public static StorageETLResult runDefaultETL(URI inputUri, VariantStorageManager variantStorageManager,
+                                                 StudyConfiguration studyConfiguration, ObjectMap params, boolean doTransform, boolean doLoad)
             throws URISyntaxException, IOException, FileFormatException, StorageManagerException {
 
         ObjectMap newParams = new ObjectMap(params);
 
         newParams.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
+        newParams.putIfAbsent(VariantStorageManager.Options.AGGREGATED_TYPE.key(), studyConfiguration.getAggregation());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         newParams.putIfAbsent(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         newParams.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         newParams.putIfAbsent(VariantStorageManager.Options.FILE_ID.key(), FILE_ID);
-        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "json");
+        newParams.putIfAbsent(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
         newParams.putIfAbsent(VariantStorageManager.Options.ANNOTATE.key(), true);
         newParams.putIfAbsent(VariantAnnotationManager.SPECIES, "hsapiens");
         newParams.putIfAbsent(VariantAnnotationManager.ASSEMBLY, "GRc37");
         newParams.putIfAbsent(VariantStorageManager.Options.CALCULATE_STATS.key(), true);
 
         StorageETLResult storageETLResult = runETL(variantStorageManager, inputUri, outputUri, newParams, newParams, newParams,
-                newParams, newParams, newParams, newParams, true, true, true);
+                newParams, newParams, newParams, newParams, true, doTransform, doLoad);
 
         try (VariantDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME)) {
             StudyConfiguration newStudyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-            studyConfiguration.setFileIds(newStudyConfiguration.getFileIds());
-            studyConfiguration.setCohortIds(newStudyConfiguration.getCohortIds());
-            studyConfiguration.setCohorts(newStudyConfiguration.getCohorts());
-            studyConfiguration.setSampleIds(newStudyConfiguration.getSampleIds());
-            studyConfiguration.setSamplesInFiles(newStudyConfiguration.getSamplesInFiles());
-            studyConfiguration.setIndexedFiles(newStudyConfiguration.getIndexedFiles());
-            studyConfiguration.setHeaders(newStudyConfiguration.getHeaders());
+            if (newStudyConfiguration != null) {
+                studyConfiguration.copy(newStudyConfiguration);
+            }
         }
 
         return storageETLResult;
@@ -221,6 +228,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
             throws IOException, FileFormatException, StorageManagerException {
 
 
+        params.putIfAbsent(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         variantStorageManager.getConfiguration()
                 .getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions().putAll(params);
         StorageETLResult storageETLResult =

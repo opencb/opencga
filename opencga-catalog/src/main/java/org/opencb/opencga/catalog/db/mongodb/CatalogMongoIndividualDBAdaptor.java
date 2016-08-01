@@ -33,12 +33,12 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBIterator;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
+import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.IndividualConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.IndividualAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -48,20 +48,33 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
+import static org.opencb.opencga.catalog.utils.CatalogMemberValidator.checkMembers;
 
 /**
  * Created by hpccoll1 on 19/06/15.
  */
-public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor implements CatalogIndividualDBAdaptor {
+public class CatalogMongoIndividualDBAdaptor extends CatalogMongoAnnotationDBAdaptor implements CatalogIndividualDBAdaptor {
 
     private final MongoDBCollection individualCollection;
     private IndividualConverter individualConverter;
+    private CatalogMongoAclDBAdaptor<IndividualAclEntry> aclDBAdaptor;
 
     public CatalogMongoIndividualDBAdaptor(MongoDBCollection individualCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoIndividualDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.individualCollection = individualCollection;
         this.individualConverter = new IndividualConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(individualCollection, individualConverter, logger);
+    }
+
+    @Override
+    protected GenericConverter<? extends Annotable, Document> getConverter() {
+        return individualConverter;
+    }
+
+    @Override
+    protected MongoDBCollection getCollection() {
+        return individualCollection;
     }
 
     @Override
@@ -89,7 +102,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
         individual.setId(individualId);
 
-        Document individualDocument = getMongoDBDocument(individual, "Individual");
+        Document individualDocument = individualConverter.convertToStorageType(individual);
         individualDocument.put(PRIVATE_ID, individualId);
         individualDocument.put(PRIVATE_STUDY_ID, studyId);
         QueryResult<WriteResult> insert = individualCollection.insert(individualDocument, null);
@@ -101,7 +114,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> getIndividual(long individualId, QueryOptions options) throws CatalogDBException {
         checkIndividualId(individualId);
-        return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.REMOVED), options);
+        return get(new Query(QueryParams.ID.key(), individualId).append(QueryParams.STATUS_NAME.key(), "!=" + Status.DELETED), options);
 //        long startQuery = startQuery();
 //
 //        QueryResult<Document> result = individualCollection.find(new Document(PRIVATE_ID, individualId), filterOptions(options,
@@ -147,7 +160,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 //                    case STUDY_ID:
 //                        addCompQueryFilter(option, option.name(), PRIVATE_STUDY_ID, query, mongoQueryList);
 //                        break;
-//                    case ANNOTATION_SET_ID:
+//                    case ANNOTATION_SET_NAME:
 //                        addCompQueryFilter(option, option.name(), "id", query, annotationSetFilter);
 //                        break;
 //                    case VARIABLE_SET_ID:
@@ -194,15 +207,15 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startTime = startQuery();
 
         QueryResult<Long> count = individualCollection.count(
-                new Document("annotationSets.id", annotationSet.getId()).append(PRIVATE_ID, individualId));
+                new Document("annotationSets.name", annotationSet.getName()).append(PRIVATE_ID, individualId));
 
         if (overwrite) {
             if (count.first() == 0) {
-                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getName());
             }
         } else {
             if (count.first() > 0) {
-                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+                throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
             }
         }
 
@@ -212,10 +225,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         Bson individualQuery = Filters.eq(PRIVATE_ID, individualId);
         if (overwrite) {
 //            query.put("annotationSets.id", annotationSet.getId());
-            query = Filters.and(individualQuery, Filters.eq("annotationSets.id", annotationSet.getId()));
+            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", annotationSet.getName()));
         } else {
 //            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
-            query = Filters.and(individualQuery, Filters.eq("annotationSets.id", new Document("$ne", annotationSet.getId())));
+            query = Filters.and(individualQuery, Filters.eq("annotationSets.name", new Document("$ne", annotationSet.getName())));
         }
 
         Bson update;
@@ -228,7 +241,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         QueryResult<UpdateResult> queryResult = individualCollection.update(query, update, null);
 
         if (queryResult.first().getModifiedCount() != 1) {
-            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            throw CatalogDBException.alreadyExists("AnnotationSet", "name", annotationSet.getName());
         }
 
         return endQuery("", startTime, Collections.singletonList(annotationSet));
@@ -243,7 +256,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                 getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
         AnnotationSet annotationSet = null;
         for (AnnotationSet as : individual.getAnnotationSets()) {
-            if (as.getId().equals(annotationId)) {
+            if (as.getName().equals(annotationId)) {
                 annotationSet = as;
                 break;
             }
@@ -261,7 +274,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 //        }
 
         Bson eq = Filters.eq(PRIVATE_ID, individualId);
-        Bson pull = Updates.pull("annotationSets", new Document("id", annotationId));
+        Bson pull = Updates.pull("annotationSets", new Document("name", annotationId));
         QueryResult<UpdateResult> update = individualCollection.update(eq, pull, null);
         if (update.first().getModifiedCount() < 1) {
             throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
@@ -288,141 +301,83 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<IndividualAcl> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> getIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
         checkIndividualId(individualId);
         Bson match = Aggregates.match(Filters.eq(PRIVATE_ID, individualId));
-        Bson unwind = Aggregates.unwind("$" + QueryParams.ACLS.key());
-        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACLS_USERS.key(), members));
-        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACLS.key()));
+        Bson unwind = Aggregates.unwind("$" + QueryParams.ACL.key());
+        Bson match2 = Aggregates.match(Filters.in(QueryParams.ACL_MEMBER.key(), members));
+        Bson project = Aggregates.project(Projections.include(QueryParams.ID.key(), QueryParams.ACL.key()));
 
-        List<IndividualAcl> individualAcl = null;
+        List<IndividualAclEntry> individualAcl = null;
         QueryResult<Document> aggregate = individualCollection.aggregate(Arrays.asList(match, unwind, match2, project), null);
         Individual individual = individualConverter.convertToDataModelType(aggregate.first());
 
         if (individual != null) {
-            individualAcl = individual.getAcls();
+            individualAcl = individual.getAcl();
         }
 
         return endQuery("get individual Acl", startTime, individualAcl);
     }
 
     @Override
-    public QueryResult<IndividualAcl> setIndividualAcl(long individualId, IndividualAcl acl) throws CatalogDBException {
+    public QueryResult<IndividualAclEntry> setIndividualAcl(long individualId, IndividualAclEntry acl, boolean override)
+            throws CatalogDBException {
         long startTime = startQuery();
-        checkIndividualId(individualId);
         long studyId = getStudyIdByIndividualId(individualId);
-        // Check that all the members (users) are correct and exist.
-        checkMembers(dbAdaptorFactory, getStudyIdByIndividualId(individualId), acl.getUsers());
 
-        // If there are groups in acl.getUsers(), we will obtain all the users belonging to the groups and will check if any of them
+        String member = acl.getMember();
+
+        // If there is a group in acl.getMember(), we will obtain all the users belonging to the groups and will check if any of them
         // already have permissions on its own.
-        Map<String, List<String>> groups = new HashMap<>();
-        Set<String> users = new HashSet<>();
-        for (String member : acl.getUsers()) {
-            if (member.startsWith("@")) {
-                Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
-                groups.put(group.getId(), group.getUserIds());
-            } else {
-                users.add(member);
-            }
-        }
-        if (groups.size() > 0) {
+        if (member.startsWith("@")) {
+            Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
+
             // Check if any user already have permissions set on their own.
-            for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-                QueryResult<IndividualAcl> individualAcl = getIndividualAcl(individualId, entry.getValue());
-                if (individualAcl.getNumResults() > 0) {
-                    throw new CatalogDBException("Error when adding permissions in individual. At least one user in " + entry.getKey()
-                            + " has already defined permissions for individual " + individualId);
-                }
+            QueryResult<IndividualAclEntry> individualAcl = getIndividualAcl(individualId, group.getUserIds());
+            if (individualAcl.getNumResults() > 0) {
+                throw new CatalogDBException("Error when adding permissions in individual. At least one user in " + group.getName()
+                        + " has already defined permissions for individual " + individualId);
+            }
+        } else {
+            // Check if the members of the new acl already have some permissions set
+            QueryResult<IndividualAclEntry> individualAcls = getIndividualAcl(individualId, acl.getMember());
+
+            if (individualAcls.getNumResults() > 0 && override) {
+                unsetIndividualAcl(individualId, Arrays.asList(member), Collections.emptyList());
+            } else if (individualAcls.getNumResults() > 0 && !override) {
+                throw new CatalogDBException("setIndividualAcl: " + member + " already had an Acl set. If you "
+                        + "still want to set a new Acl and remove the old one, please use the override parameter.");
             }
         }
 
-        // Check if any of the users in the set of users also belongs to any introduced group. In that case, we will remove the user
-        // because the group will be given the permission.
-        for (Map.Entry<String, List<String>> entry : groups.entrySet()) {
-            for (String userId : entry.getValue()) {
-                if (users.contains(userId)) {
-                    users.remove(userId);
-                }
-            }
-        }
-
-        // Create the definitive list of members that will be added in the acl
-        List<String> members = new ArrayList<>(users.size() + groups.size());
-        members.addAll(users.stream().collect(Collectors.toList()));
-        members.addAll(groups.entrySet().stream().map(Map.Entry::getKey).collect(Collectors.toList()));
-        acl.setUsers(members);
-
-        // Check if the members of the new acl already have some permissions set
-        QueryResult<IndividualAcl> individualAcls = getIndividualAcl(individualId, acl.getUsers());
-        if (individualAcls.getNumResults() > 0) {
-            Set<String> usersSet = new HashSet<>(acl.getUsers().size());
-            usersSet.addAll(acl.getUsers().stream().collect(Collectors.toList()));
-
-            List<String> usersToOverride = new ArrayList<>();
-            for (IndividualAcl individualAcl : individualAcls.getResult()) {
-                for (String member : individualAcl.getUsers()) {
-                    if (usersSet.contains(member)) {
-                        // Add the user to the list of users that will be taken out from the Acls.
-                        usersToOverride.add(member);
-                    }
-                }
-            }
-
-            // Now we remove the old permissions set for the users that already existed so the permissions are overriden by the new ones.
-            unsetIndividualAcl(individualId, usersToOverride);
-        }
-
-        // Append the users to the existing acl.
-        List<String> permissions = acl.getPermissions()
-                .stream()
-                .map(IndividualAcl.IndividualPermissions::name)
-                .collect(Collectors.toList());
-
-        // Check if the permissions found on acl already exist on individual id
+        // Push the new acl to the list of acls.
         Document queryDocument = new Document(PRIVATE_ID, individualId);
-        if (permissions.size() > 0) {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", permissions.size()).append("$all", permissions));
-        } else {
-            queryDocument.append(QueryParams.ACLS_PERMISSIONS.key(), new Document("$size", 0));
-        }
-
-        Bson update;
-        if (individualCollection.count(queryDocument).first() > 0) {
-            // Append the users to the existing acl.
-            update = new Document("$addToSet", new Document("acls.$.users", new Document("$each", acl.getUsers())));
-        } else {
-            queryDocument = new Document(PRIVATE_ID, individualId);
-            // Push the new acl to the list of acls.
-            update = new Document("$push", new Document(QueryParams.ACLS.key(), getMongoDBDocument(acl, "FileAcl")));
-
-        }
-
+        Document update = new Document("$push", new Document(QueryParams.ACL.key(), getMongoDBDocument(acl, "IndividualAcl")));
         QueryResult<UpdateResult> updateResult = individualCollection.update(queryDocument, update, null);
+
         if (updateResult.first().getModifiedCount() == 0) {
-            throw new CatalogDBException("setIndividualAcl: An error occurred when trying to share individual " + individualId
-                    + " with other members.");
+            throw new CatalogDBException("setIndividualAcl: An error occurred when trying to share file " + individualId + " with "
+                    + member);
         }
 
-        QueryOptions queryOptions = new QueryOptions(QueryOptions.INCLUDE, QueryParams.ACLS.key());
-        Individual individual = individualConverter.convertToDataModelType(individualCollection.find(queryDocument, queryOptions).first());
-
-        return endQuery("setIndividualAcl", startTime, individual.getAcls());
+        return endQuery("setIndividualAcl", startTime, Arrays.asList(acl));
     }
 
     @Override
-    public void unsetIndividualAcl(long individualId, List<String> members) throws CatalogDBException {
-        checkIndividualId(individualId);
-
+    public void unsetIndividualAcl(long individualId, List<String> members, List<String> permissions) throws CatalogDBException {
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, getStudyIdByIndividualId(individualId), members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_ID, individualId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_ID, individualId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update;
+            if (permissions.size() == 0) {
+                update = new Document("$pull", new Document("acl", new Document("member", member)));
+            } else {
+                update = new Document("$pull", new Document("acl.$.permissions", new Document("$in", permissions)));
+            }
             QueryResult<UpdateResult> updateResult = individualCollection.update(query, update, null);
             if (updateResult.first().getModifiedCount() == 0) {
                 throw new CatalogDBException("unsetIndividualAcl: An error occurred when trying to stop sharing individual " + individualId
@@ -431,33 +386,31 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
 
         // Remove possible IndividualAcls that might have permissions defined but no users
-        Bson queryBson = new Document(QueryParams.ID.key(), individualId)
-                .append(QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        individualCollection.update(queryBson, update, null);
+//        Bson queryBson = new Document(QueryParams.ID.key(), individualId)
+//                .append(QueryParams.ACL_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        individualCollection.update(queryBson, update, null);
     }
 
     @Override
     public void unsetIndividualAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
-        dbAdaptorFactory.getCatalogStudyDBAdaptor().checkStudyId(studyId);
         // Check that all the members (users) are correct and exist.
         checkMembers(dbAdaptorFactory, studyId, members);
 
         // Remove the permissions the members might have had
         for (String member : members) {
-            Document query = new Document(PRIVATE_STUDY_ID, studyId)
-                    .append("acls", new Document("$elemMatch", new Document("users", member)));
-            Bson update = new Document("$pull", new Document("acls.$.users", member));
+            Document query = new Document(PRIVATE_STUDY_ID, studyId).append(QueryParams.ACL_MEMBER.key(), member);
+            Bson update = new Document("$pull", new Document("acl", new Document("member", member)));
             individualCollection.update(query, update, new QueryOptions(MongoDBCollection.MULTI, true));
         }
-
-        // Remove possible IndividualAcls that might have permissions defined but no users
-        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
-                .append(CatalogJobDBAdaptor.QueryParams.ACLS_USERS.key(),
-                        new Document("$exists", true).append("$eq", Collections.emptyList()));
-        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
-        individualCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
+//
+//        // Remove possible IndividualAcls that might have permissions defined but no users
+//        Bson queryBson = new Document(PRIVATE_STUDY_ID, studyId)
+//                .append(CatalogJobDBAdaptor.QueryParams.ACL_MEMBER.key(),
+//                        new Document("$exists", true).append("$eq", Collections.emptyList()));
+//        Bson update = new Document("$pull", new Document("acls", new Document("users", Collections.emptyList())));
+//        individualCollection.update(queryBson, update, new QueryOptions(MongoDBCollection.MULTI, true));
     }
 
     public void checkInUse(long individualId) throws CatalogDBException {
@@ -527,8 +480,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     @Override
     public QueryResult<Individual> get(Query query, QueryOptions options) throws CatalogDBException {
         long startTime = startQuery();
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -544,8 +497,8 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
 
     @Override
     public QueryResult nativeGet(Query query, QueryOptions options) throws CatalogDBException {
-        if (!query.containsKey(QueryParams.STATUS_STATUS.key())) {
-            query.append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";!=" + Status.REMOVED);
+        if (!query.containsKey(QueryParams.STATUS_NAME.key())) {
+            query.append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";!=" + Status.DELETED);
         }
         Bson bson = parseQuery(query);
         QueryOptions qOptions;
@@ -575,12 +528,12 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startTime = startQuery();
         Map<String, Object> individualParameters = new HashMap<>();
 
-        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.RACE.key(), QueryParams.GENDER.key(),
+        String[] acceptedParams = {QueryParams.NAME.key(), QueryParams.FAMILY.key(), QueryParams.ETHNICITY.key(), QueryParams.SEX.key(),
                 QueryParams.SPECIES_TAXONOMY_CODE.key(), QueryParams.SPECIES_SCIENTIFIC_NAME.key(), QueryParams.SPECIES_COMMON_NAME.key(),
                 QueryParams.POPULATION_NAME.key(), QueryParams.POPULATION_SUBPOPULATION.key(), QueryParams.POPULATION_DESCRIPTION.key(), };
         filterStringParams(parameters, individualParameters, acceptedParams);
 
-        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.GENDER.key()), Individual.Gender.class);
+        Map<String, Class<? extends Enum>> acceptedEnums = Collections.singletonMap((QueryParams.SEX.key()), Individual.Sex.class);
         filterEnumParams(parameters, individualParameters, acceptedEnums);
 
         String[] acceptedIntParams = {QueryParams.FATHER_ID.key(), QueryParams.MOTHER_ID.key()};
@@ -589,9 +542,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         String[] acceptedMapParams = {QueryParams.ATTRIBUTES.key()};
         filterMapParams(parameters, individualParameters, acceptedMapParams);
 
-        if (parameters.containsKey(QueryParams.STATUS_STATUS.key())) {
-            individualParameters.put(QueryParams.STATUS_STATUS.key(), parameters.get(QueryParams.STATUS_STATUS.key()));
-            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTimeMillis());
+        if (parameters.containsKey(QueryParams.STATUS_NAME.key())) {
+            individualParameters.put(QueryParams.STATUS_NAME.key(), parameters.get(QueryParams.STATUS_NAME.key()));
+            individualParameters.put(QueryParams.STATUS_DATE.key(), TimeUtils.getTime());
         }
 
         // Obtain all the possible individual Ids that satisfies the query
@@ -643,13 +596,13 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         long startTime = startQuery();
         checkIndividualId(id);
         // Check the file is active
-        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_STATUS.key(), "!=" + File.FileStatus.DELETED + ";!="
-                + File.FileStatus.REMOVED);
+        Query query = new Query(QueryParams.ID.key(), id).append(QueryParams.STATUS_NAME.key(), "!=" + File.FileStatus.TRASHED + ";!="
+                + File.FileStatus.DELETED);
         if (count(query).first() == 0) {
-            query.put(QueryParams.STATUS_STATUS.key(), Status.DELETED + "," + Status.REMOVED);
-            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_STATUS.key());
+            query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED + "," + Status.DELETED);
+            QueryOptions options = new QueryOptions(MongoDBCollection.INCLUDE, QueryParams.STATUS_NAME.key());
             Individual individual = get(query, options).first();
-            throw new CatalogDBException("The individual {" + id + "} was already " + individual.getStatus().getStatus());
+            throw new CatalogDBException("The individual {" + id + "} was already " + individual.getStatus().getName());
         }
 
         // If we don't find the force parameter, we check first if the file could be deleted.
@@ -662,10 +615,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         }
 
         // Change the status of the project to deleted
-        setStatus(id, Status.DELETED);
+        setStatus(id, Status.TRASHED);
 
         query = new Query(QueryParams.ID.key(), id)
-                .append(QueryParams.STATUS_STATUS.key(), Status.DELETED);
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
 
         return endQuery("Delete individual", startTime, get(query, queryOptions));
     }
@@ -678,7 +631,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         Query updateQuery = new Query();
 
         if (!queryOptions.containsKey(FORCE) || !queryOptions.getBoolean(FORCE)) {
-            Query subQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            Query subQuery = new Query(query).append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
             List<Individual> individuals = get(subQuery, null).getResult();
             List<Long> individualIdsToDelete = new ArrayList<>();
 
@@ -703,7 +656,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             }
 
             // Check family by family
-            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            Query queryNoDeletedNoRemoved = new Query(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
             for (Map.Entry<String, List<Individual>> indFamily : familyIndividuals.entrySet()) {
                 Query tmpQuery = new Query(queryNoDeletedNoRemoved).append(QueryParams.FAMILY.key(), indFamily.getKey());
                 List<Individual> individualListDatabase = get(tmpQuery, new QueryOptions()).getResult();
@@ -765,13 +718,13 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
             }
 
             updateQuery.append(QueryParams.ID.key(), individualIdsToDelete)
-                    .append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+                    .append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
 
         } else {
-            updateQuery = new Query(query).append(QueryParams.STATUS_STATUS.key(), "!=" + Status.DELETED + ";" + Status.REMOVED);
+            updateQuery = new Query(query).append(QueryParams.STATUS_NAME.key(), "!=" + Status.TRASHED + ";" + Status.DELETED);
         }
 
-        long count = setStatus(updateQuery, Status.DELETED).first();
+        long count = setStatus(updateQuery, Status.TRASHED).first();
 
         return endQuery("Delete individual", startTime, Collections.singletonList(count));
     }
@@ -787,8 +740,29 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     @Override
-    public QueryResult<Long> restore(Query query) throws CatalogDBException {
-        return null;
+    public QueryResult<Long> restore(Query query, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+        query.put(QueryParams.STATUS_NAME.key(), Status.TRASHED);
+        return endQuery("Restore individuals", startTime, setStatus(query, Status.READY));
+    }
+
+    @Override
+    public QueryResult<Individual> restore(long id, QueryOptions queryOptions) throws CatalogDBException {
+        long startTime = startQuery();
+
+        checkIndividualId(id);
+        // Check if the cohort is active
+        Query query = new Query(QueryParams.ID.key(), id)
+                .append(QueryParams.STATUS_NAME.key(), Status.TRASHED);
+        if (count(query).first() == 0) {
+            throw new CatalogDBException("The individual {" + id + "} is not deleted");
+        }
+
+        // Change the status of the cohort to deleted
+        setStatus(id, File.FileStatus.READY);
+        query = new Query(QueryParams.ID.key(), id);
+
+        return endQuery("Restore individual", startTime, get(query, null));
     }
 
     @Override
@@ -839,6 +813,10 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
         // We declare variableMap here just in case we have different annotation queries
         Map<String, Variable> variableMap = null;
 
+        if (query.containsKey(QueryParams.ANNOTATION.key())) {
+            fixAnnotationQuery(query);
+        }
+
         for (Map.Entry<String, Object> entry : query.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             QueryParams queryParam = QueryParams.getParam(entry.getKey()) != null ? QueryParams.getParam(entry.getKey())
@@ -867,14 +845,14 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                         break;
                     case ANNOTATION:
                         if (variableMap == null) {
-                            int variableSetId = query.getInt(QueryParams.VARIABLE_SET_ID.key());
+                            long variableSetId = query.getLong(QueryParams.VARIABLE_SET_ID.key());
                             variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
-                                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+                                    .getVariables().stream().collect(Collectors.toMap(Variable::getName, Function.identity()));
                         }
                         addAnnotationQueryFilter(entry.getKey(), query, variableMap, annotationList);
                         break;
-                    case ANNOTATION_SET_ID:
-                        addOrQuery("id", queryParam.key(), query, queryParam.type(), annotationList);
+                    case ANNOTATION_SET_NAME:
+                        addOrQuery("name", queryParam.key(), query, queryParam.type(), annotationList);
                         break;
                     default:
                         addAutoOrQuery(queryParam.key(), queryParam.key(), query, queryParam.type(), andBsonList);
@@ -901,11 +879,11 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
     }
 
     QueryResult<Individual> setStatus(long individualId, String status) throws CatalogDBException {
-        return update(individualId, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(individualId, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     QueryResult<Long> setStatus(Query query, String status) throws CatalogDBException {
-        return update(query, new ObjectMap(QueryParams.STATUS_STATUS.key(), status));
+        return update(query, new ObjectMap(QueryParams.STATUS_NAME.key(), status));
     }
 
     /**
@@ -952,4 +930,59 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogMongoDBAdaptor imple
                 .update(query, new ObjectMap(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), -1)).first();
         logger.debug("Individual id {} extracted from {} samples", individualId, count);
     }
+
+    @Override
+    public QueryResult<IndividualAclEntry> createAcl(long id, IndividualAclEntry acl) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.createAcl(id, acl, individualCollection, "IndividualAcl");
+        return endQuery("create individual Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
+    }
+
+    @Override
+    public QueryResult<IndividualAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
+        long startTime = startQuery();
+//
+//        List<IndividualAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, individualCollection, logger);
+//        Individual individual = individualConverter.convertToDataModelType(aggregate.first());
+//
+//        if (individual != null) {
+//            acl = individual.getAcl();
+//        }
+
+        return endQuery("get individual Acl", startTime, aclDBAdaptor.getAcl(id, members));
+    }
+
+    @Override
+    public void removeAcl(long id, String member) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAcl(id, member, individualCollection);
+        aclDBAdaptor.removeAcl(id, member);
+    }
+
+    @Override
+    public QueryResult<IndividualAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, individualCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public QueryResult<IndividualAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
+        long startTime = startQuery();
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, individualCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
+    }
+
+    @Override
+    public QueryResult<IndividualAclEntry> removeAclsFromMember(long id, String member, List<String> permissions)
+            throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, individualCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
+    }
+
 }

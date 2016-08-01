@@ -35,6 +35,16 @@ public interface MongoVariantStorageManagerTestUtils extends VariantStorageTest 
         }
     }
 
+    default MongoDBVariantStorageManager newVariantStorageManager() throws Exception {
+        synchronized (manager) {
+            MongoDBVariantStorageManager storageManager = new MongoDBVariantStorageManager();
+            InputStream is = MongoVariantStorageManagerTestUtils.class.getClassLoader().getResourceAsStream("storage-configuration.yml");
+            StorageConfiguration storageConfiguration = StorageConfiguration.load(is);
+            storageManager.setConfiguration(storageConfiguration, MongoDBVariantStorageManager.STORAGE_ENGINE_ID);
+            return storageManager;
+        }
+    }
+
     default void clearDB(String dbName) throws Exception {
         MongoCredentials credentials = getVariantStorageManager().getMongoCredentials(dbName);
         logger.info("Cleaning MongoDB {}", credentials.getMongoDbName());
@@ -49,5 +59,11 @@ public interface MongoVariantStorageManagerTestUtils extends VariantStorageTest 
         return numRecords
                 - source.getStats().getVariantTypeCount(VariantType.SYMBOLIC)
                 - source.getStats().getVariantTypeCount(VariantType.NO_VARIATION);
+    }
+
+
+    default MongoDataStoreManager getMongoDataStoreManager(String dbName) throws Exception {
+        MongoCredentials credentials = getVariantStorageManager().getMongoCredentials(dbName);
+        return new MongoDataStoreManager(credentials.getDataStoreServerAddresses());
     }
 }
