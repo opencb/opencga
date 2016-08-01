@@ -378,10 +378,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
     public void merge(int studyId, List<Integer> pendingFiles) throws StorageManagerException {
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
+        String jar = getJarWithDependencies();
         options.put(HADOOP_LOAD_VARIANT_PENDING_FILES, pendingFiles);
 
         Class execClass = VariantTableDriver.class;
@@ -403,6 +400,21 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             throw new StorageManagerException("Error loading files " + pendingFiles + " into variant table \""
                     + variantsTableCredentials.getTable() + "\"");
         }
+    }
+
+    public String getJarWithDependencies() throws StorageManagerException {
+        return getJarWithDependencies(options);
+    }
+
+    public static String getJarWithDependencies(ObjectMap options) throws StorageManagerException {
+        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
+        if (jar == null) {
+            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
+        }
+        if (!Paths.get(jar).isAbsolute()) {
+            jar = System.getProperty("app.home", "") + "/" + jar;
+        }
+        return jar;
     }
 
     @Override

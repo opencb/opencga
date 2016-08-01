@@ -24,6 +24,7 @@ import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
+import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.HBaseStudyConfigurationManager;
 import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager;
@@ -106,8 +107,11 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     }
 
     public static Configuration getHbaseConfiguration(Configuration configuration, HBaseCredentials credentials) {
+
+        // HBase configuration
         configuration = HBaseConfiguration.create(configuration);
-//        configuration = HBaseManager.addHBaseSettings(configuration, credentials);
+        configuration = HBaseManager.addHBaseSettings(configuration, credentials);
+
         return configuration;
     }
 

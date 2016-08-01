@@ -319,10 +319,14 @@ public class HBaseManager extends Configured implements AutoCloseable {
 
     public static Configuration addHBaseSettings(Configuration conf, HBaseCredentials credentials) {
         conf = HBaseConfiguration.create(conf);
+
         conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
-        // TODO: Check if 'hbase.master' exists.
+        //ZKConfig.getZKQuorumServersString(conf)
+
+        // TODO: Check if property 'hbase.master' exists and is used.
         conf.set("hbase.master", credentials.getHostAndPort());
-        // Do not add default values
+
+        // Skip default values
         if (!credentials.isDefaultZookeeperClientPort()) {
             conf.set(HConstants.ZOOKEEPER_CLIENT_PORT, String.valueOf(credentials.getHbaseZookeeperClientPort()));
         }

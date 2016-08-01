@@ -54,6 +54,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String HADOOP_LOAD_VARIANT_PENDING_FILES = "opencga.storage.hadoop.load.pending.files";
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
     public static final String OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE = "opencga.storage.hadoop.hbase.namespace";
+    public static final String OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.hbase.archive.table.prefix";
 
     public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
     public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
@@ -280,10 +281,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         String archiveTable = getArchiveTableName(studyId, options);
         HBaseCredentials variantsTable = getDbCredentials();
         String hadoopRoute = options.getString(HADOOP_BIN, "hadoop");
-        String jar = options.getString(OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES, null);
-        if (jar == null) {
-            throw new StorageManagerException("Missing option " + OPENCGA_STORAGE_HADOOP_JAR_WITH_DEPENDENCIES);
-        }
+        String jar = AbstractHadoopVariantStorageETL.getJarWithDependencies(options);
 
         Class execClass = VariantTableDeletionDriver.class;
         String args = VariantTableDeletionDriver.buildCommandLineArgs(variantsTable.getHostUri().toString(), archiveTable,
@@ -425,18 +423,20 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
      * @return Table name
      */
     public String getArchiveTableName(int studyId) {
-        return buildTableName(getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""), ARCHIVE_TABLE_PREFIX, studyId);
+        return buildTableName(getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
+                getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, ARCHIVE_TABLE_PREFIX), studyId);
     }
 
     /**
      * Get the archive table name given a StudyId.
      *
      * @param studyId Numerical study identifier
-     * @param conf Hadoop configuration
+     * @param conf Hadoop configuration with the OpenCGA values.
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, Configuration conf) {
-        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""), ARCHIVE_TABLE_PREFIX, studyId);
+        return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
+                conf.get(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, ARCHIVE_TABLE_PREFIX), studyId);
     }
 
     /**
@@ -447,7 +447,8 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, ObjectMap options) {
-        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""), ARCHIVE_TABLE_PREFIX, studyId);
+        return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
+                options.getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, ARCHIVE_TABLE_PREFIX), studyId);
     }
 
     public String getVariantTableName() {
@@ -484,9 +485,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             }
             sb.append(namespace).append(":");
         }
-        if (StringUtils.isEmpty(prefix)) {
-            sb.append(ARCHIVE_TABLE_PREFIX);
-        } else {
+        if (StringUtils.isNotEmpty(prefix)) {
             if (prefix.endsWith("_")) {
                 sb.append(prefix);
             } else {

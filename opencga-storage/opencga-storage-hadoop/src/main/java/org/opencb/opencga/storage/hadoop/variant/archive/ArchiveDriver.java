@@ -12,6 +12,7 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FSDataInputStream;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
 import org.apache.hadoop.hbase.io.compress.Compression;
@@ -71,6 +72,8 @@ public class ArchiveDriver extends Configured implements Tool {
 
     public int run(String[] args) throws Exception {
         Configuration conf = getConf();
+        HBaseConfiguration.addHbaseResources(conf);
+
         URI inputFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF));
         URI inputMetaFile = URI.create(conf.get(CONFIG_ARCHIVE_INPUT_FILE_VCF_META));
         String tableName = conf.get(CONFIG_ARCHIVE_TABLE_NAME);

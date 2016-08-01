@@ -6,14 +6,12 @@ import org.apache.phoenix.schema.types.*;
 import org.apache.phoenix.util.QueryUtil;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantQueryException;
-import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableStudyRow;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -169,15 +167,8 @@ public class VariantPhoenixHelper {
         this.genomeHelper = genomeHelper;
     }
 
-    public Connection newJdbcConnection(HBaseCredentials credentials) throws SQLException {
-      return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost()); // this one was working before hbase version
-//        return DriverManager.getConnection("jdbc:phoenix:" + credentials.getHost(), credentials.getUser(), credentials.getPass());
-    }
-
     public Connection newJdbcConnection(Configuration conf) throws SQLException, ClassNotFoundException {
-        String connectionUrl = QueryUtil.getConnectionUrl(new Properties(), conf);
-        logger.info("connectionUrl = " + connectionUrl);
-        return DriverManager.getConnection(connectionUrl);
+        return QueryUtil.getConnection(conf);
     }
 
     public void updateAnnotationFields(Connection con, String tableName) throws SQLException {
