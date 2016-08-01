@@ -2,21 +2,19 @@ package org.opencb.opencga.analysis.storage;
 
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.mongodb.MongoDataStore;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
-import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.config.Policies;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
+import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.models.*;
+import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
-import org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManagerTestUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

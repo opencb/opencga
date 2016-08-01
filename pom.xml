@@ -55,6 +55,7 @@
         <junit.version>4.12</junit.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <opencga.war.name>opencga</opencga.war.name>
+        <opencga.env.file>opencga-env.sh</opencga.env.file>
     </properties>
 
     <scm>
@@ -432,7 +433,6 @@
                 <OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD></OPENCGA.STORAGE.HADOOP.VARIANT.DB.PASSWORD>
                 <OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE></OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE>
                 <OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>hdfs://who1</OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS>
-                <OPENCGA.STORAGE.HADOOP.ZOOKEEPER.ZNODE.PARENT>/hbase</OPENCGA.STORAGE.HADOOP.ZOOKEEPER.ZNODE.PARENT>
 
                 <OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>localhost:27017</OPENCGA.STORAGE.ALIGNMENT.DB.HOSTS>
                 <OPENCGA.STORAGE.ALIGNMENT.DB.USER></OPENCGA.STORAGE.ALIGNMENT.DB.USER>
