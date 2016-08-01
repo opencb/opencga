@@ -110,6 +110,26 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
+
+        <!--Uncomment if hadoop dependencies are provided-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hadoop</groupId>-->
+            <!--<artifactId>hadoop-common</artifactId>-->
+            <!--<version>${hadoop.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hadoop</groupId>-->
+            <!--<artifactId>hadoop-client</artifactId>-->
+            <!--<version>${hadoop.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>org.apache.hbase</groupId>-->
+            <!--<artifactId>hbase-server</artifactId>-->
+            <!--<version>${hbase.version}</version>-->
+            <!--<scope>test</scope>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-client</artifactId>
