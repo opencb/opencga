@@ -77,6 +77,13 @@ public class VariantLocalConflictResolverTest {
     }
 
     @Test
+    public void resolveStrangeSet() throws Exception {
+        Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "SiteConflict"),QUAL,"390");
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(b));
+        assertEquals(1,resolved.size());
+    }
+
+    @Test
     public void resolveQUality() throws Exception {
         Variant a = addAttribute(getVariantFilter("1:5731287:C:-", "PASS"),QUAL,"731");
         Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "PASS"),QUAL,"1390");
