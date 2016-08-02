@@ -1,5 +1,6 @@
 package org.opencb.opencga.storage.hadoop.utils;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.*;
@@ -320,7 +321,9 @@ public class HBaseManager extends Configured implements AutoCloseable {
     public static Configuration addHBaseSettings(Configuration conf, HBaseCredentials credentials) {
         conf = HBaseConfiguration.create(conf);
 
-        conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+        if (StringUtils.isNotEmpty(credentials.getHost())) {
+            conf.set(HConstants.ZOOKEEPER_QUORUM, credentials.getHost());
+        }
         //ZKConfig.getZKQuorumServersString(conf)
 
         // TODO: Check if property 'hbase.master' exists and is used.

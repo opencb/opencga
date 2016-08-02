@@ -351,7 +351,6 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             String server = uri.getHost();
             Integer port = uri.getPort() > 0 ? uri.getPort() : 60000;
             String zookeeperPath = uri.getPath();
-            zookeeperPath = zookeeperPath.startsWith("/") ? zookeeperPath.substring(1) : zookeeperPath; // Remove /
             HBaseCredentials credentials = new HBaseCredentials(server, table, user, pass, port);
             if (!StringUtils.isBlank(zookeeperPath)) {
                 credentials = new HBaseCredentials(server, table, user, pass, port, zookeeperPath);
@@ -423,8 +422,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
      * @return Table name
      */
     public String getArchiveTableName(int studyId) {
+        String prefix = getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX);
+        if (StringUtils.isEmpty(prefix)) {
+            prefix = ARCHIVE_TABLE_PREFIX;
+        }
         return buildTableName(getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
-                getOptions().getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, ARCHIVE_TABLE_PREFIX), studyId);
+                prefix, studyId);
     }
 
     /**
@@ -435,8 +438,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, Configuration conf) {
+        String prefix = conf.get(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX);
+        if (StringUtils.isEmpty(prefix)) {
+            prefix = ARCHIVE_TABLE_PREFIX;
+        }
         return buildTableName(conf.get(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
-                conf.get(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, ARCHIVE_TABLE_PREFIX), studyId);
+                prefix, studyId);
     }
 
     /**
@@ -447,8 +454,12 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
      * @return Table name
      */
     public static String getArchiveTableName(int studyId, ObjectMap options) {
+        String prefix = options.getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX);
+        if (StringUtils.isEmpty(prefix)) {
+            prefix = ARCHIVE_TABLE_PREFIX;
+        }
         return buildTableName(options.getString(OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE, ""),
-                options.getString(OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX, ARCHIVE_TABLE_PREFIX), studyId);
+                prefix, studyId);
     }
 
     public String getVariantTableName() {
@@ -486,10 +497,9 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             sb.append(namespace).append(":");
         }
         if (StringUtils.isNotEmpty(prefix)) {
-            if (prefix.endsWith("_")) {
-                sb.append(prefix);
-            } else {
-                sb.append("_").append(prefix);
+            sb.append(prefix);
+            if (!prefix.endsWith("_")) {
+                sb.append("_");
             }
         }
         sb.append(tableName);
