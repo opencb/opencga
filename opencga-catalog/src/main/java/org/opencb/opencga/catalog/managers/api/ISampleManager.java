@@ -9,7 +9,7 @@ import org.opencb.opencga.catalog.models.Annotation;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;

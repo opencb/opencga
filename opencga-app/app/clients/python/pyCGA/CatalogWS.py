@@ -424,7 +424,7 @@ class Samples(WS):
                                                item_id1=str(sample_id), ws_category2="annotationSets",
                                                item_id2=annotationSetName, data=data)
 
-        annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_")
+        annotateSetName = annotationSetName + "_" + str(datetime.datetime.now()).replace(" ", "_").replace(":", "_").replace(".","_")
 
         return self.general_method(ws_category1="samples", action="create", item_id1=str(sample_id),
                                    ws_category2="annotationSets", variableSetId=variableSetId,

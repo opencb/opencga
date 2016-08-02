@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.CohortConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +36,14 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor
 
     private final MongoDBCollection cohortCollection;
     private CohortConverter cohortConverter;
+    private CatalogMongoAclDBAdaptor<CohortAclEntry> aclDBAdaptor;
 
     public CatalogMongoCohortDBAdaptor(MongoDBCollection cohortCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoCohortDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.cohortCollection = cohortCollection;
         this.cohortConverter = new CohortConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(cohortCollection, cohortConverter, logger);
     }
 
     @Override
@@ -170,6 +172,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor
         return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
+    @Deprecated
     @Override
     public QueryResult<CohortAclEntry> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
@@ -192,6 +195,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor
         return endQuery("get cohort Acl", startTime, cohortAcl);
     }
 
+    @Deprecated
     @Override
     public QueryResult<CohortAclEntry> setCohortAcl(long cohortId, CohortAclEntry acl, boolean override) throws CatalogDBException {
         long startTime = startQuery();
@@ -205,7 +209,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor
             Group group = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, member, Collections.emptyList()).first();
 
             // Check if any user already have permissions set on their own.
-            QueryResult<CohortAclEntry> fileAcl = getCohortAcl(cohortId, group.getUserIds());
+            QueryResult<CohortAclEntry> fileAcl = getAcl(cohortId, group.getUserIds());
             if (fileAcl.getNumResults() > 0) {
                 throw new CatalogDBException("Error when adding permissions in cohort. At least one user in " + group.getName()
                         + " has already defined permissions for cohort " + cohortId);
@@ -263,6 +267,7 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor
 //        cohortCollection.update(queryBson, update, null);
     }
 
+    @Deprecated
     @Override
     public void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException {
         // Check that all the members (users) are correct and exist.
@@ -662,46 +667,54 @@ public class CatalogMongoCohortDBAdaptor extends CatalogMongoAnnotationDBAdaptor
     @Override
     public QueryResult<CohortAclEntry> createAcl(long id, CohortAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(id, acl, cohortCollection, "CohortAcl");
-        return endQuery("create cohort Acl", startTime, Arrays.asList(acl));
+//        CatalogMongoDBUtils.createAcl(id, acl, cohortCollection, "CohortAcl");
+        return endQuery("create cohort Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
     @Override
     public QueryResult<CohortAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<CohortAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection, logger);
+//        Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
+//
+//        if (cohort != null) {
+//            acl = cohort.getAcl();
+//        }
 
-        List<CohortAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, cohortCollection, logger);
-        Cohort cohort = cohortConverter.convertToDataModelType(aggregate.first());
-
-        if (cohort != null) {
-            acl = cohort.getAcl();
-        }
-
-        return endQuery("get cohort Acl", startTime, acl);
+        return endQuery("get cohort Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAcl(id, member, cohortCollection);
+        aclDBAdaptor.removeAcl(id, member);
+//        CatalogMongoDBUtils.removeAcl(id, member, cohortCollection);
     }
 
     @Override
     public QueryResult<CohortAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, cohortCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, cohortCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
     }
 
     @Override
     public QueryResult<CohortAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, cohortCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, cohortCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, cohortCollection);
+    public QueryResult<CohortAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, cohortCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
     }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
+    }
+
 }

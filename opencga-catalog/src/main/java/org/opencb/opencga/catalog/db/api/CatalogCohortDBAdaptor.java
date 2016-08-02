@@ -5,7 +5,7 @@ import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Cohort;
-import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -128,16 +128,30 @@ public interface CatalogCohortDBAdaptor extends CatalogAnnotationSetDBAdaptor<Co
     QueryResult<AnnotationSet> deleteAnnotation(long cohortId, String annotationId) throws CatalogDBException;
 
     default QueryResult<CohortAclEntry> getCohortAcl(long cohortId, String member) throws CatalogDBException {
-        return getCohortAcl(cohortId, Arrays.asList(member));
+        return getAcl(cohortId, Arrays.asList(member));
     }
 
+    @Deprecated
     QueryResult<CohortAclEntry> getCohortAcl(long cohortId, List<String> members) throws CatalogDBException;
 
+    @Deprecated
     QueryResult<CohortAclEntry> setCohortAcl(long cohortId, CohortAclEntry acl, boolean override) throws CatalogDBException;
 
+    @Deprecated
     void unsetCohortAcl(long cohortId, List<String> members, List<String> permissions) throws CatalogDBException;
 
+    @Deprecated
     void unsetCohortAclsInStudy(long studyId, List<String> members) throws CatalogDBException;
 
     long getStudyIdByCohortId(long cohortId) throws CatalogDBException;
+
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
+
 }

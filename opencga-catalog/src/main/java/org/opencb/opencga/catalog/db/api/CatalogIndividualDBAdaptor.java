@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.db.AbstractCatalogDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
-import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 
 import java.util.Arrays;
 import java.util.List;
@@ -211,5 +211,13 @@ public interface CatalogIndividualDBAdaptor extends CatalogAnnotationSetDBAdapto
         }
     }
 
+    /**
+     * Remove all the Acls defined for the member in the resource.
+     *
+     * @param studyId study id where the Acls will be removed from.
+     * @param member member from whom the Acls will be removed.
+     * @throws CatalogDBException if any problem occurs during the removal.
+     */
+    void removeAclsFromStudy(long studyId, String member) throws CatalogDBException;
 
 }

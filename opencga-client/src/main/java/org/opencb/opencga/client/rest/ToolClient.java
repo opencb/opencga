@@ -3,7 +3,7 @@ package org.opencb.opencga.client.rest;
 
 import org.opencb.opencga.catalog.models.Tool;
 import org.opencb.opencga.client.config.ClientConfiguration;
-import org.opencb.opencga.catalog.models.acls.ToolAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.ToolAclEntry;
 
 
 /**

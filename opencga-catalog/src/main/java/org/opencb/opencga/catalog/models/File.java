@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
@@ -25,7 +26,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class File {
+public class File extends AbstractAcl<FileAclEntry> {
 
     private long id;
     private String name;
@@ -68,7 +69,7 @@ public class File {
     private long jobId;
     private List<RelatedFile> relatedFiles;
 
-    private List<FileAclEntry> acl;
+//    private List<FileAclEntry> acl;
     private FileIndex index;
 
     private Map<String, Object> stats;
@@ -460,10 +461,6 @@ public class File {
     public File setRelatedFiles(List<RelatedFile> relatedFiles) {
         this.relatedFiles = relatedFiles;
         return this;
-    }
-
-    public List<FileAclEntry> getAcl() {
-        return acl;
     }
 
     public File setAcl(List<FileAclEntry> acl) {

@@ -131,7 +131,7 @@ abstract class CatalogMongoAnnotationDBAdaptor extends CatalogMongoDBAdaptor {
 
         List<AnnotationSet> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
-            annotationSets.add(annotable.getAnnotationSets().get(0));
+            annotationSets.add((AnnotationSet) annotable.getAnnotationSets().get(0));
         }
 
         return endQuery("Get annotation set", startTime, annotationSets);
@@ -144,7 +144,7 @@ abstract class CatalogMongoAnnotationDBAdaptor extends CatalogMongoDBAdaptor {
 
         List<ObjectMap> annotationSets = new ArrayList<>(aggregate.getNumResults());
         for (Annotable annotable : aggregate.getResult()) {
-            annotationSets.add(annotable.getAnnotationSetAsMap().get(0));
+            annotationSets.add((ObjectMap) annotable.getAnnotationSetAsMap().get(0));
         }
 
         return endQuery("Get annotation set", startTime, annotationSets);

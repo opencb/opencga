@@ -25,7 +25,7 @@ import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +45,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
 
     private final MongoDBCollection fileCollection;
     private FileConverter fileConverter;
+    private CatalogMongoAclDBAdaptor<FileAclEntry> aclDBAdaptor;
 
     /***
      * CatalogMongoFileDBAdaptor constructor.
@@ -57,6 +58,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.fileCollection = fileCollection;
         this.fileConverter = new FileConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(fileCollection, fileConverter, logger);
     }
 
     /**
@@ -1009,46 +1011,53 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
     @Override
     public QueryResult<FileAclEntry> createAcl(long id, FileAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(id, acl, fileCollection, "FileAcl");
-        return endQuery("create file Acl", startTime, Arrays.asList(acl));
+//        CatalogMongoDBUtils.createAcl(id, acl, fileCollection, "FileAcl");
+        return endQuery("create file Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
     @Override
     public QueryResult<FileAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<FileAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection, logger);
+//        File file = fileConverter.convertToDataModelType(aggregate.first());
+//
+//        if (file != null) {
+//            acl = file.getAcl();
+//        }
 
-        List<FileAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, fileCollection, logger);
-        File file = fileConverter.convertToDataModelType(aggregate.first());
-
-        if (file != null) {
-            acl = file.getAcl();
-        }
-
-        return endQuery("get file Acl", startTime, acl);
+        return endQuery("get file Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAcl(id, member, fileCollection);
+//        CatalogMongoDBUtils.removeAcl(id, member, fileCollection);
+        aclDBAdaptor.removeAcl(id, member);
     }
 
     @Override
     public QueryResult<FileAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, fileCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, fileCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
     }
 
     @Override
     public QueryResult<FileAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, fileCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, fileCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, fileCollection);
+    public QueryResult<FileAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, fileCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
     }
 }

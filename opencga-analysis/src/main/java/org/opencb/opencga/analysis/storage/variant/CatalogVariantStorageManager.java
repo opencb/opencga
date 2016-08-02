@@ -115,7 +115,11 @@ public abstract class CatalogVariantStorageManager extends StorageManager<Varian
     @Override
     public VariantDBAdaptor getDBAdaptor(String dbName) throws StorageManagerException {
         if (dbName == null) {
-            dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
+            try {
+                dbName = getCatalogManager().getUserIdBySessionId(params.getString("sessionId"));
+            } catch (CatalogException e) {
+                e.printStackTrace();
+            }
         }
         return getStorageManager(params).getDBAdaptor(dbName);
     }

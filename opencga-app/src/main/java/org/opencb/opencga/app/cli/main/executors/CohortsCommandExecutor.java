@@ -28,12 +28,10 @@ import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecut
 import org.opencb.opencga.app.cli.main.options.CohortCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
-import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Cohort;
 import org.opencb.opencga.catalog.models.Sample;
-import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
-import org.opencb.opencga.client.rest.CohortClient;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
 import java.io.IOException;
 

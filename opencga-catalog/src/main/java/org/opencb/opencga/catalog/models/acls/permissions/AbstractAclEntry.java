@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.models.acls;
+package org.opencb.opencga.catalog.models.acls.permissions;
 
 import java.util.EnumSet;
 

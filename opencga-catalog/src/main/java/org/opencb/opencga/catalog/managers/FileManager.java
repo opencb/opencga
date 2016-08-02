@@ -22,9 +22,9 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.io.CatalogIOManagerFactory;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
-import org.opencb.opencga.catalog.models.acls.FileAclEntry;
-import org.opencb.opencga.catalog.models.acls.StudyAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.utils.BioformatDetector;
 import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -461,6 +461,109 @@ public class FileManager extends AbstractManager implements IFileManager {
             parentPath = parent.toString().endsWith("/") ? parent.toString() : parent.toString() + "/";
         }
         return read(fileDBAdaptor.getFileId(studyId, parentPath), options, sessionId);
+    }
+
+    @Override
+    public QueryResult<FileTree> getFileTree(String fileIdStr, Query query, QueryOptions queryOptions, int maxDepth, String sessionId)
+            throws CatalogException {
+        long startTime = System.currentTimeMillis();
+
+        queryOptions = ParamUtils.defaultObject(queryOptions, QueryOptions::new);
+        query = ParamUtils.defaultObject(query, Query::new);
+
+        if (queryOptions.containsKey(QueryOptions.INCLUDE)) {
+            // Add type to the queryOptions
+            List<String> asStringListOld = queryOptions.getAsStringList(QueryOptions.INCLUDE);
+            List<String> newList = new ArrayList<>(asStringListOld.size());
+            for (String include : asStringListOld) {
+                newList.add(include);
+            }
+            newList.add(CatalogFileDBAdaptor.QueryParams.TYPE.key());
+            queryOptions.put(QueryOptions.INCLUDE, newList);
+        } else {
+            queryOptions.put(QueryOptions.INCLUDE, CatalogFileDBAdaptor.QueryParams.TYPE.key());
+        }
+
+        // FIXME use userManager instead of userDBAdaptor
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        // Check 1. No comma-separated values are valid, only one single File or Directory can be deleted.
+        Long fileId = getFileId(userId, fileIdStr);
+        fileDBAdaptor.checkFileId(fileId);
+        long studyId = fileDBAdaptor.getStudyIdByFileId(fileId);
+        query.put(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        // Check if we can obtain the file from the dbAdaptor properly.
+        QueryOptions qOptions = new QueryOptions()
+                .append(QueryOptions.INCLUDE, Arrays.asList(CatalogFileDBAdaptor.QueryParams.PATH.key(),
+                        CatalogFileDBAdaptor.QueryParams.ID.key(), CatalogFileDBAdaptor.QueryParams.TYPE.key()));
+        QueryResult<File> fileQueryResult = fileDBAdaptor.getFile(fileId, qOptions);
+        if (fileQueryResult == null || fileQueryResult.getNumResults() != 1) {
+            throw new CatalogException("An error occurred with the database.");
+        }
+
+        // Check if the id does not correspond to a directory
+        if (!fileQueryResult.first().getType().equals(File.Type.DIRECTORY)) {
+            throw new CatalogException("The file introduced is not a directory.");
+        }
+
+        // Call recursive method
+        FileTree fileTree = getFileTree(fileQueryResult.first(), query, queryOptions, maxDepth, userId);
+
+        int dbTime = (int) (System.currentTimeMillis() - startTime);
+        int numResults = countFilesInFileTree(fileTree);
+
+        return new QueryResult<>("File tree", dbTime, numResults, numResults, "", "", Arrays.asList(fileTree));
+    }
+
+    private FileTree getFileTree(File folder, Query query, QueryOptions queryOptions, int maxDepth, String userId)
+            throws CatalogDBException {
+
+        if (maxDepth == 0) {
+            return null;
+        }
+
+        try {
+            authorizationManager.checkFilePermission(folder.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+        } catch (CatalogException e) {
+            return null;
+        }
+
+        // Update the new path to be looked for
+        query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), folder.getPath());
+
+        FileTree fileTree = new FileTree(folder);
+        List<FileTree> children = new ArrayList<>();
+
+        // Obtain the files and directories inside the directory
+        QueryResult<File> fileQueryResult = fileDBAdaptor.get(query, queryOptions);
+
+        for (File fileAux : fileQueryResult.getResult()) {
+            if (fileAux.getType().equals(File.Type.DIRECTORY)) {
+                FileTree subTree = getFileTree(fileAux, query, queryOptions, maxDepth - 1, userId);
+                if (subTree != null) {
+                    children.add(subTree);
+                }
+            } else {
+                try {
+                    authorizationManager.checkFilePermission(fileAux.getId(), userId, FileAclEntry.FilePermissions.VIEW);
+                    children.add(new FileTree(fileAux));
+                } catch (CatalogException e) {
+                    continue;
+                }
+            }
+        }
+        fileTree.setChildren(children);
+
+        return fileTree;
+    }
+
+    private int countFilesInFileTree(FileTree fileTree) {
+        int count = 1;
+        for (FileTree tree : fileTree.getChildren()) {
+            count += countFilesInFileTree(tree);
+        }
+        return count;
     }
 
     @Override

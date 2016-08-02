@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.*;
@@ -24,7 +24,7 @@ import java.util.*;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Sample extends Annotable {
+public class Sample extends Annotable<SampleAclEntry> {
 
     private long id;
     private String name;
@@ -35,7 +35,7 @@ public class Sample extends Annotable {
     private String description;
     private List<OntologyTerm> ontologyTerms;
 
-    private List<SampleAclEntry> acl;
+//    private List<SampleAclEntry> acl;
 //    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -167,10 +167,6 @@ public class Sample extends Annotable {
     public Sample setOntologyTerms(List<OntologyTerm> ontologyTerms) {
         this.ontologyTerms = ontologyTerms;
         return this;
-    }
-
-    public List<SampleAclEntry> getAcl() {
-        return acl;
     }
 
     public Sample setAcl(List<SampleAclEntry> acl) {
