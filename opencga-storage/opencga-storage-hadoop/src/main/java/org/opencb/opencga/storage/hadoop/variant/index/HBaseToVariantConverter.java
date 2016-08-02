@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import com.google.common.collect.BiMap;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.client.Result;
-import org.opencb.biodata.models.feature.Genotype;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.avro.*;
@@ -185,13 +184,12 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 }
             }
             // Load complex genotypes
-            for (Entry<Integer, VariantProto.Genotype> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
+            for (Entry<Integer, String> entry : row.getComplexVariant().getSampleToGenotype().entrySet()) {
                 Integer samplePosition = getSamplePosition(returnedSamplesPosition, mapSampleIds, entry.getKey());
                 if (samplePosition == null) {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
-                VariantProto.Genotype xgt = entry.getValue();
-                String returnedGenotype = new Genotype(xgt).toGenotypeString();
+                String returnedGenotype = entry.getValue();
                 samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, StringUtils.EMPTY);
             }
             // Fill gaps (with HOM_REF)
