@@ -236,9 +236,9 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 .collect(Collectors.toSet());
     }
 
-    private Set<Integer> generateRegion(Integer start, Integer end) {
+    protected Set<Integer> generateRegion(Integer start, Integer end) {
         if (end < start) {
-            throw new IllegalStateException(String.format("End position (%s) is < than Start (%s)!!!", start, end));
+            end = start;
         }
         int len = end - start;
         Integer[] array = new Integer[len + 1];
