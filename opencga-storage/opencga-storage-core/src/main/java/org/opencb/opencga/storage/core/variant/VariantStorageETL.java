@@ -40,6 +40,7 @@ import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotatorExcept
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.core.variant.io.json.VariantJsonWriter;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatisticsManager;
+import org.opencb.opencga.storage.core.variant.transform.MalformedVariantHandler;
 import org.opencb.opencga.storage.core.variant.transform.VariantAvroTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantJsonTransformTask;
 import org.opencb.opencga.storage.core.variant.transform.VariantTransformTask;
@@ -69,6 +70,8 @@ public abstract class VariantStorageETL implements StorageETL {
     protected final VariantDBAdaptor dbAdaptor;
     protected final VariantReaderUtils variantReaderUtils;
     protected final Logger logger;
+    protected final ObjectMap transformStats = new ObjectMap();
+
 
     public VariantStorageETL(StorageConfiguration configuration, String storageEngineId, Logger logger, VariantDBAdaptor dbAdaptor,
                              VariantReaderUtils variantReaderUtils) {
@@ -100,6 +103,11 @@ public abstract class VariantStorageETL implements StorageETL {
     @Override
     public URI extract(URI input, URI ouput) {
         return input;
+    }
+
+    @Override
+    public ObjectMap getTransformStats() {
+        return transformStats;
     }
 
     @Override
@@ -229,10 +237,17 @@ public abstract class VariantStorageETL implements StorageETL {
         // TODO Create a utility to determine which extensions are variants files
         final VariantVcfFactory factory = createVariantVcfFactory(source, fileName);
 
-        BiConsumer<String, RuntimeException> malformatHandler = null; // TODO Create handler
+        Path outputMalformedVariants = output.resolve(fileName + "." + VariantReaderUtils.MALFORMED_FILE + ".txt");
+        Path outputVariantsFile = output.resolve(fileName + "." + VariantReaderUtils.VARIANTS_FILE + "." + format + extension);
+        Path outputMetaFile = output.resolve(fileName + "." + VariantReaderUtils.METADATA_FILE + "." + format + extension);
 
-        Path outputVariantsFile = output.resolve(fileName + ".variants." + format + extension);
-        Path outputMetaFile = output.resolve(fileName + ".file." + format + extension);
+        // Close at the end!
+        final MalformedVariantHandler malformedHandler;
+        try {
+            malformedHandler = new MalformedVariantHandler(outputMalformedVariants);
+        } catch (IOException e) {
+            throw new StorageManagerException(e.getMessage(), e);
+        }
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
@@ -300,14 +315,14 @@ public abstract class VariantStorageETL implements StorageETL {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, finalOutputMetaFile,
                         statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError);
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc)
-                        .setFailOnError(failOnError);
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -353,13 +368,13 @@ public abstract class VariantStorageETL implements StorageETL {
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
                         finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks)
-                        .setFailOnError(failOnError);
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
                 taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc)
-                        .setFailOnError(failOnError);
+                        .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
             logger.info("Generating output file {}", outputVariantsFile);
@@ -388,7 +403,7 @@ public abstract class VariantStorageETL implements StorageETL {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
             Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
-                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformatHandler);
+                    includeSrc, parser, generateReferenceBlocks, batchSize, extension, compression, malformedHandler);
             start = times.getKey();
             end = times.getValue();
         } else {
@@ -396,6 +411,12 @@ public abstract class VariantStorageETL implements StorageETL {
         }
         logger.info("end - start = " + (end - start) / 1000.0 + "s");
         logger.info("Variants transformed!");
+
+        // Close the malformed variant handler
+        malformedHandler.close();
+        if (malformedHandler.getMalformedLines() > 0) {
+            getTransformStats().put("malformed lines", malformedHandler.getMalformedLines());
+        }
 
         return outputUri.resolve(outputVariantsFile.getFileName().toString());
     }

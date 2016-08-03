@@ -109,6 +109,21 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
         VariantStorageManagerTestUtils.rootDir = rootDir;
     }
 
+    public URI newOutputUri() throws IOException {
+        StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
+        // stackTrace[0] = "Thread.currentThread"
+        // stackTrace[1] = "newOutputUri"
+        // stackTrace[2] =  caller method
+        String testName = stackTrace[2].getMethodName();
+        int c = 0;
+        URI outputUri = VariantStorageManagerTestUtils.outputUri.resolve("test_" + testName + "/");
+        while (Paths.get(outputUri).toFile().exists()) {
+            outputUri = VariantStorageManagerTestUtils.outputUri.resolve("test_" + testName + " (" + c++ + ")/");
+        }
+        Files.createDirectory(Paths.get(outputUri));
+        return outputUri;
+    }
+
 //    private static File tempFile = null;
 //    protected static Path getTmpRootDir() throws IOException {
 //        if (tempFile == null) {
