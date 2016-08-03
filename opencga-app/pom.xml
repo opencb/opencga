@@ -302,7 +302,7 @@
 
     <profiles>
         <profile>
-            <id>STORAGE-MONGODB</id>
+            <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -318,9 +318,11 @@
             </properties>
         </profile>
         <profile>
-            <id>STORAGE-HBASE</id>
+            <id>storage-hadoop</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>storage-hadoop</name>
+                </property>
             </activation>
             <dependencies>
                 <dependency>

@@ -260,7 +260,7 @@
 
     <profiles>
         <profile>
-            <id>SERVER-STORAGE-MONGODB</id>
+            <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -276,14 +276,16 @@
             </properties>
         </profile>
         <profile>
-            <id>SERVER-STORAGE-HBASE</id>
+            <id>storage-hadoop</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>storage-hadoop</name>
+                </property>
             </activation>
             <dependencies>
                 <dependency>
                     <groupId>org.opencb.opencga</groupId>
-                    <artifactId>opencga-storage-hbase</artifactId>
+                    <artifactId>opencga-storage-hadoop</artifactId>
                     <version>${opencga.version}</version>
                 </dependency>
             </dependencies>
