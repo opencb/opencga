@@ -25,6 +25,13 @@ import java.util.zip.GZIPInputStream;
  */
 public class VariantReaderUtils {
 
+    public static final String MALFORMED_FILE = "malformed";
+    public static final String VARIANTS_FILE = "variants";
+    public static final String METADATA_FILE = "file";
+    public static final String METADATA_FORMAT = "json";
+    public static final String METADATA_FILE_FORMAT_GZ = METADATA_FILE + "." + METADATA_FORMAT + ".gz";
+    public static final String METADATA_FILE_FORMAT = METADATA_FILE + "." + METADATA_FORMAT;
+
     /**
      * Get a variant data reader depending on the type of the input file.
      *
@@ -50,7 +57,7 @@ public class VariantReaderUtils {
         VariantJsonReader variantJsonReader;
         if (input.toString().endsWith(".json") || input.toString().endsWith(".json.gz")
                 || input.toString().endsWith(".json.snappy") || input.toString().endsWith(".json.snz")) {
-            String sourceFile = input.toAbsolutePath().toString().replace("variants.json", "file.json");
+            String sourceFile = input.toAbsolutePath().toString().replace(VARIANTS_FILE + ".json", METADATA_FILE_FORMAT);
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {
             throw new StorageManagerException("Variants input file format not supported for file: " + input);
@@ -61,7 +68,7 @@ public class VariantReaderUtils {
     protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageManagerException {
         VariantAvroReader variantAvroReader;
         if (input.toString().matches(".*avro(\\..*)?$")) {
-            String sourceFile = input.toAbsolutePath().toString().replace("variants.avro", "file.json");
+            String sourceFile = input.toAbsolutePath().toString().replace(VARIANTS_FILE + ".avro", METADATA_FILE_FORMAT);
             variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), source);
         } else {
             throw new StorageManagerException("Variants input file format not supported for file: " + input);
@@ -70,7 +77,9 @@ public class VariantReaderUtils {
     }
 
     public static String getMetaFromInputFile(String input) {
-        return input.replace("variants.", "file.").replace("file.avro", "file.json").replace("file.proto", "file.json");
+        return input.replace(VARIANTS_FILE + ".", METADATA_FILE + ".")
+                .replace(METADATA_FILE + ".avro", METADATA_FILE_FORMAT)
+                .replace(METADATA_FILE + ".proto", METADATA_FILE_FORMAT);
     }
 
     /**
@@ -112,8 +121,8 @@ public class VariantReaderUtils {
         }
 
         // If it's a sourceFile
-        if (input.toString().endsWith("file.json.gz") || input.toString().endsWith("file.json")) {
-            boolean gzip = input.toString().endsWith("file.json.gz");
+        if (input.toString().endsWith(METADATA_FILE_FORMAT_GZ) || input.toString().endsWith(METADATA_FILE_FORMAT)) {
+            boolean gzip = input.toString().endsWith(METADATA_FILE_FORMAT_GZ);
             try (InputStream inputStream = gzip
                     ? new GZIPInputStream(new FileInputStream(input.toFile()))
                     : new FileInputStream(input.toFile())) {

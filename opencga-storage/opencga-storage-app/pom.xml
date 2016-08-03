@@ -182,7 +182,7 @@
 
     <profiles>
         <profile>
-            <id>STORAGE-MONGODB1</id>
+            <id>storage-mongodb</id>
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
@@ -208,9 +208,11 @@
         </profile>
 
         <profile>
-            <id>STORAGE-HADOOP</id>
+            <id>storage-hadoop</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>storage-hadoop</name>
+                </property>
             </activation>
 
             <dependencies>
