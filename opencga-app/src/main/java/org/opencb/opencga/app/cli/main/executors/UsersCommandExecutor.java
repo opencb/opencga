@@ -19,6 +19,7 @@ package org.opencb.opencga.app.cli.main.executors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
@@ -58,19 +59,20 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 //        openCGAClient = new OpenCGAClient(clientConfiguration);
 
         String subCommandString = getParsedSubCommand(usersCommandOptions.getjCommander());
-        if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
-            checkSessionValid();
-        }
+//        if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
+//            checkSessionValid();
+//        }
 
         switch (subCommandString) {
             case "create":
                 create();
                 break;
             case "info":
-                info();
+                reloadConfig(usersCommandOptions.infoCommandOptions.commonOptions);
+                createOutput(info());
                 break;
             case "projects":
-                projects();
+                createOutput(projects());
                 break;
             case "login":
                 login();
@@ -138,16 +140,14 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
         }
     }
 
-    private void info() throws CatalogException, IOException {
+    private QueryResponse<User> info() throws CatalogException, IOException {
         logger.debug("User info");
-        QueryResponse<User> user = openCGAClient.getUserClient().get(null);
-        System.out.println("user = " + user);
+        return openCGAClient.getUserClient().get(new QueryOptions());
     }
 
-    private void projects() throws CatalogException, IOException {
+    private QueryResponse<Project> projects() throws CatalogException, IOException {
         logger.debug("List all projects and studies of user");
-        QueryResponse<Project> projects = openCGAClient.getUserClient().getProjects(null);
-        System.out.println("projects = " + projects);
+        return openCGAClient.getUserClient().getProjects(new QueryOptions());
     }
 
     private void login() throws CatalogException, IOException {
