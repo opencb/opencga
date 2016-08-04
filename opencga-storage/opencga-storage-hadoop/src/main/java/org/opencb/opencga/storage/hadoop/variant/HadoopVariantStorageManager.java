@@ -329,7 +329,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             Configuration configuration = getHadoopConfiguration(storageEngine.getVariant().getOptions());
             configuration = VariantHadoopDBAdaptor.getHbaseConfiguration(configuration, credentials);
 
-            return new VariantHadoopDBAdaptor(credentials, storageEngine, configuration);
+            return new VariantHadoopDBAdaptor(credentials, this.configuration, configuration);
         } catch (IOException e) {
             throw new StorageManagerException("Problems creating DB Adapter", e);
         }

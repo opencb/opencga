@@ -5,6 +5,7 @@ import org.apache.commons.lang3.math.NumberUtils;
 import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.annotation.ConsequenceTypeMappings;
+import org.opencb.cellbase.client.rest.CellBaseClient;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -40,6 +41,7 @@ public class VariantSqlQueryParser {
     private final String variantTable;
     private final Logger logger = LoggerFactory.getLogger(VariantSqlQueryParser.class);
     private final VariantDBAdaptorUtils utils;
+    private final CellBaseClient cellBaseClient;
 
     private static final Map<String, String> SQL_OPERATOR;
 
@@ -51,10 +53,12 @@ public class VariantSqlQueryParser {
     }
 
 
-    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantDBAdaptorUtils utils) {
+    public VariantSqlQueryParser(GenomeHelper genomeHelper, String variantTable, VariantDBAdaptorUtils utils,
+                                 CellBaseClient cellBaseClient) {
         this.genomeHelper = genomeHelper;
         this.variantTable = variantTable;
         this.utils = utils;
+        this.cellBaseClient = cellBaseClient;
     }
 
     public String parse(Query query, QueryOptions options) {
@@ -579,9 +583,37 @@ public class VariantSqlQueryParser {
 
         unsupportedFilter(query, ANNOT_HPO);
 
-        unsupportedFilter(query, ANNOT_GO);
+        if (isValidParam(query, ANNOT_GO)) {
+            String value = query.getString(ANNOT_GO.key());
+            if (checkOperator(value) == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParams.ANNOT_GO, value, "Unimplemented AND operator");
+            }
+            List<String> goValues = splitValue(value, QueryOperation.OR);
+            Set<String> genesByGo = utils.getGenesByGo(goValues);
+            if (genesByGo.isEmpty()) {
+                // If any gene was found, the query will return no results.
+                // FIXME: Find another way of returning empty results
+                filters.add(buildFilter(VariantColumn.CHROMOSOME, "=", "_SKIP"));
+            } else {
+                addQueryFilter(new Query(ANNOT_GO.key(), genesByGo), ANNOT_GO, VariantColumn.GENES, filters);
+            }
 
-        unsupportedFilter(query, ANNOT_EXPRESSION);
+        }
+        if (isValidParam(query, ANNOT_EXPRESSION)) {
+            String value = query.getString(ANNOT_EXPRESSION.key());
+            if (checkOperator(value) == QueryOperation.AND) {
+                throw VariantQueryException.malformedParam(VariantQueryParams.ANNOT_EXPRESSION, value, "Unimplemented AND operator");
+            }
+            List<String> expressionValues = splitValue(value, QueryOperation.OR);
+            Set<String> genesByExpression = utils.getGenesByExpression(expressionValues);
+            if (genesByExpression.isEmpty()) {
+                // If any gene was found, the query will return no results.
+                // FIXME: Find another way of returning empty results
+                filters.add(buildFilter(VariantColumn.CHROMOSOME, "=", "_SKIP"));
+            } else {
+                addQueryFilter(new Query(ANNOT_EXPRESSION.key(), genesByExpression), ANNOT_EXPRESSION, VariantColumn.GENES, filters);
+            }
+        }
 
         addQueryFilter(query, ANNOT_PROTEIN_KEYWORDS, VariantColumn.PROTEIN_KEYWORDS, filters);
 
@@ -655,8 +687,8 @@ public class VariantSqlQueryParser {
     }
 
     private void addQueryFilter(Query query, VariantQueryParams param, Column column, List<String> filters,
-                                Function<String, Object> parser) {
-        addQueryFilter(query, param, (a, s) -> column, null, parser, null, filters);
+                                Function<String, Object> valueParser) {
+        addQueryFilter(query, param, (a, s) -> column, null, valueParser, null, filters);
     }
 
     private void addQueryFilter(Query query, VariantQueryParams param, BiFunction<String[], String, Column> columnParser,
@@ -701,12 +733,12 @@ public class VariantSqlQueryParser {
                                 Function<String[], String> extraFilters, List<String> filters, int arrayIdx) {
         if (isValidParam(query, param)) {
             List<String> subFilters = new LinkedList<>();
-            QueryOperation operation = checkOperator(query.getString(param.key()));
-            if (operation == null) {
-                operation = QueryOperation.AND;
+            QueryOperation logicOperation = checkOperator(query.getString(param.key()));
+            if (logicOperation == null) {
+                logicOperation = QueryOperation.AND;
             }
 
-            for (String rawValue : query.getAsStringList(param.key(), operation.separator())) {
+            for (String rawValue : query.getAsStringList(param.key(), logicOperation.separator())) {
                 String[] keyOpValue = splitOperator(rawValue);
                 Column column = columnParser.apply(keyOpValue, rawValue);
                 if (!column.getPDataType().isArrayType() && arrayIdx >= 0) {
@@ -734,7 +766,7 @@ public class VariantSqlQueryParser {
 
                 subFilters.add(buildFilter(column, op, keyOpValue[2], rawValue, valueParser, negated, extra, arrayIdx));
             }
-            filters.add(appendFilters(subFilters, operation.toString()));
+            filters.add(appendFilters(subFilters, logicOperation.toString()));
 //            filters.add(subFilters.stream().collect(Collectors.joining(" ) " + operation.name() + " ( ", " ( ", " ) ")));
         }
     }
