@@ -11,6 +11,7 @@ import org.apache.hadoop.hbase.mapreduce.TableMapper;
  */
 public class VariantTableDriver extends AbstractVariantTableDriver {
 
+    public static final String JOB_OPERATION_NAME = "Load";
 
     public VariantTableDriver() { /* nothing */ }
 
@@ -26,7 +27,7 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
 
     @Override
     protected String getJobOperationName() {
-        return "Load";
+        return JOB_OPERATION_NAME;
     }
 
     public static void main(String[] args) throws Exception {

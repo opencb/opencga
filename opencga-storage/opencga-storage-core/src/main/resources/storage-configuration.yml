@@ -122,7 +122,7 @@ storageEngines:
       opencga.archive.table.compression: "snappy"
       opencga.variant.table.compression: "snappy"
       opencga.storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE}"
-      opencga.storage.hadoop.hbase.archive.table.prefix: "opencga_study_"
+      opencga.storage.hadoop.hbase.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX}"
       #Hadoop options
       fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:

@@ -101,7 +101,7 @@ public class VariantHbaseTransformTask implements ParallelTaskRunner.Task<Varian
             if (data.size() > 0) {
                 String chr = data.get(0).getChromosome();
                 if (storedChr.add(chr)) {
-                    logger.info(String.format("Flush for %s: %s", chr, StringUtils.join(lookupOrder, ',')));
+                    logger.debug("Flush for {}: {}", chr, lookupOrder);
                     lookup.clear(); // clear for each Chromosome
                     lookup.addAll(lookupOrder);
                 }

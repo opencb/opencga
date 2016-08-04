@@ -18,16 +18,16 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -39,6 +39,7 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.util.*;
 
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.*;
 
 /**
@@ -125,6 +126,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         options.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
         variantStorageManager.index(inputFiles, outputUri, true, true, true);
 
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
         printVariantsFromArchiveTable(studyConfiguration);
 
         for (Variant variant : dbAdaptor) {
@@ -132,6 +134,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
         checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
+        assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
     }
 
     @Test

@@ -32,6 +32,9 @@ import java.net.URI;
  *  - pre-load: transformed data can be validated or converted to physical schema in this step
  *  - load: in this step a DBWriter from getDBWriter (see below) is used to load data in the storage engine
  *  - post-load: data can be cleaned and some database validations can be performed
+ *
+ * Instances of this class may not be thread-safe or stateless
+ *
  */
 public interface StorageETL extends AutoCloseable {
 
