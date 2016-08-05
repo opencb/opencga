@@ -13,30 +13,25 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
-<link rel="import" href="../../../bower_components/polymer/polymer.html">
-
 <link rel="import" href="opencga-files-info-file.html">
 <link rel="import" href="opencga-files-info-samples.html">
 <link rel="import" href="opencga-files-info-jobs.html">
 <link rel="import" href="opencga-files-info-stats.html">
 
-<link rel="import" href="../opencga-shared-styles.html">
-
 <dom-module id="opencga-files-view">
     <template>
-        <style is="custom-style" include="opencga-shared-styles"></style>
+        <style is="custom-style" include="jso-styles"></style>
 
         <div style="padding: 10px;">
 
-            <div class="row" style="height: 530px">
-                <table id="filetable" data-search="true" data-show-columns="true" data-pagination="true" data-height="520"
-                       data-page-list="[10, 25, 50]" data-show-export="true" data-striped="true">
+            <div style="height: 530px">
+                <table id="filetable" data-search="true" data-show-columns="true" data-pagination="true"
+                       data-page-list="[10, 25, 50]" data-show-export="true" data-striped="true" style="cursor: pointer;">
                 </table>
             </div>
 
             <template is="dom-if" if="{{existsSelectedFile(_file)}}">
-                <div class="row" style="height: 530px">
+                <div style="height: 530px; position: absolute; margin-top: 45px;">
                     <ul id="myTabs" class="nav nav-tabs" role="tablist">
                         <li role="presentation" class="active"><a href="#fileViewInfo" role="tab" data-toggle="tab">File Info</a></li>
                         <li role="presentation"><a href="#samplesViewInfo" role="tab" data-toggle="tab">Samples</a></li>
@@ -145,8 +140,16 @@
                             return $.extend({}, _this.filters, auxParams);
                         },
                         responseHandler: function(response) {
+                            if (!_this.hasOwnProperty("numTotalResults")) {
+                                _this.numTotalResults = 0;
+                            }
+                            if (_this.numTotalResults !== response.response[0].numTotalResults
+                                    && response.response[0].numTotalResults > response.queryOptions.limit) {
+                                _this.numTotalResults = response.response[0].numTotalResults;
+                            }
+
                             return {
-                                total: response.response[0].numTotalResults,
+                                total: _this.numTotalResults,
                                 rows: response.response[0].result
                             }
                         },

@@ -20,22 +20,30 @@
 
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-projects.html">
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-project.html">
-<link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-study.html">
 <link rel="import" href="../lib/jsorolla/src/lib/opencga/catalog/opencga-login.html">
 
 <link rel="import" href="welcome.html">
+<link rel="import" href="opencga-dashboard.html">
+<link rel="import" href="opencga-study-browser.html">
 
 <dom-module id="opencga-catalog">
     <template>
         <style is="custom-style" include="jso-styles"></style>
         <style>
+            :root {
+                --default-primary-color: black;
+                --text-primary-color: white;
+            }
+
             .center {
                 margin: auto;
                 text-align: justify;
-                width: 60%;
+                max-width: 95%;
                 font-size: 18px;
                 color: #797979;
             }
+
+
         </style>
 
         <div>
@@ -169,9 +177,9 @@
 
 
             <!--Breadcrumb-->
-            <template is="dom-if" if="{{_isBreadcrumbVisible}}">
-                <ol id="breadcrumb" class="breadcrumb" style="margin-bottom: 1px;padding-left: 40px"></ol>
-            </template>
+            <!--<template is="dom-if" if="{{_isBreadcrumbVisible}}">-->
+            <ol hidden$="{{!_isBreadcrumbVisible}}" id="breadcrumb" class="breadcrumb" style="margin-bottom: 1px;padding-left: 40px"></ol>
+            <!--</template>-->
 
 
             <!-- This is where main application is rendered -->
@@ -179,19 +187,22 @@
                 <div class="collapse content" id="home">
                     <welcome-web></welcome-web>
                 </div>
+                <div class="collapse content" id="dashboard">
+                    <opencga-dashboard opencga-client="{{opencgaClient}}" projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-dashboard>
+                </div>
             </div>
 
 
-            <div class="">
+            <div class="center">
                 <!--BreadCrumb reference-->
                 <div class="collapse content" id="projectList">
                     <opencga-projects projects="{{projects}}" on-project="updateProject" on-study="updateStudy"></opencga-projects>
                 </div>
                 <div class="collapse content" id="projectInfo">
-                    <opencga-project project="{{selectedProject}}" on-study="updateStudy"></opencga-project>
+                    <opencga-project opencga-client="{{opencgaClient}}" project="{{selectedProject}}" on-study="updateStudy"></opencga-project>
                 </div>
                 <div class="collapse content" id="studyInfo">
-                    <opencga-study study="{{study}}" opencga-client="{{opencgaClient}}"></opencga-study>
+                    <opencga-study-browser study="{{study}}" opencga-client="{{opencgaClient}}"></opencga-study-browser>
                 </div>
             </div>
         </div>
@@ -203,7 +214,7 @@
                     <div class="modal-dialog" role="document">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                                <button type="button" class="close"  on-click="showHome" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                                 <h4 class="modal-title" id="myModalLogin">Login</h4>
                             </div>
                             <div class="modal-body">
@@ -289,7 +300,7 @@
 
                 this.init();
 
-                var sid = Cookies.get(this.config.opencga.cookies.sessionId);
+                let sid = Cookies.get(this.config.opencga.cookies.sessionId);
                 if (typeof sid !== "undefined" && sid != "") {
                     this.userId = Cookies.get(this.config.opencga.cookies.userName);
                     this.sessionId = sid;
@@ -303,8 +314,8 @@
                 this.renderBreadcrumb();
             },
             init: function() {
-                this.opencgaClientConfig = new OpenCGAClientConfig(this.config.opencga.host,
-                        this.config.opencga.version, this.config.opencga.cookies.sessionId, this.config.opencga.cookies.userName);
+                this.opencgaClientConfig = new OpenCGAClientConfig(this.config.opencga.host, this.config.opencga.version,
+                        this.config.opencga.cookies.sessionId, this.config.opencga.cookies.userName);
                 this.opencgaClient = new OpenCGAClient(this.opencgaClientConfig);
 
                 if (typeof this.config.opencga.user !== "undefined" && this.config.opencga.user != ""
@@ -317,7 +328,6 @@
                 } else {
                     this.project = "";
                     this.study = {};
-                    this.samples = [];
                 }
 
                 // go to home page
@@ -327,12 +337,15 @@
 
                 this._checkBreadcrumbVisible();
             },
+            showHome: function() {
+                window.location.hash = "home";
+            },
             afterLogin: function(e) {
                 this.userId = e.detail.userId;
                 // hide login window and return to home
                 $('#ModalLogin').modal('hide');
-                $('.content').hide();
-                $('#home').show();
+//                $('.content').hide();
+//                $('#home').show();
                 this._logged = true;
                 this.getProjects();
 //                window.location.hash = "home";
@@ -356,7 +369,7 @@
                     $(e.srcElement.attributes.href.value).show(); // get the href and use it find which div to show
                     this.tool = e.srcElement.attributes.href.value;
                 } else {
-                    this.tool = "home";
+                    this.tool = "#home";
                     $("#home").show(); // get the href and use it find which div to show
                 }
 
@@ -369,14 +382,17 @@
                             _this.projects = response.response[0].result;
 
                             // select project and study
-                            _this.project = _this.projects[0].alias;
-                            _this.study = _this.projects[0].studies[0];
-                            _this.selectedProject = _this.projects[0];
+//                            _this.project = _this.projects[0].alias;
+//                            _this.study = _this.projects[0].studies[0];
+//                            _this.selectedProject = _this.projects[0];
 
                             _this._checkBreadcrumbVisible();
+
+                            window.location.hash = "dashboard";
                         })
                         .catch(function (response) {
                             _this.logout();
+                            window.location.hash = "home";
                         });
             },
             renderHashFragments: function() {
@@ -392,17 +408,20 @@
             hashFragmentListener: function(ctx) {
                 var arr = window.location.hash.split('/');
                 let [hashTool, hashProject, hashStudy] = window.location.hash.split('/');
-
                 // Stopping the recursive call
                 if (hashTool != this.tool || hashProject != this.project || hashStudy != this.study.alias) {
+                    let window = hashTool;
+
                     if (arr.length > 1) {
                         ctx.project = hashProject;
+                        window = "#projectInfo";
                         if (arr.length > 2) {
                             for (let i = 0; i < ctx.projects.length; i++) {
                                 if (ctx.projects[i].name == ctx.project || ctx.projects[i].alias == ctx.project) {
                                     for (let j = 0; j < ctx.projects[i].studies.length; j++) {
                                         if (ctx.projects[i].studies[j].name == arr[2] || ctx.projects[i].studies[j].alias == arr[2]) {
                                             ctx.study = ctx.projects[i].studies[j];
+                                            window = "#studyInfo";
                                             break;
                                         }
                                     }
@@ -413,8 +432,10 @@
 
                     this.tool = hashTool;
 
+                    this.renderHashFragments();
+                    this.renderBreadcrumb();
                     $('.content').hide();
-                    $(arr[0]).show();
+                    $(window).show();
                 }
             },
             setProjectStudy: function(e) {
@@ -431,34 +452,25 @@
                 }
             },
             updateProject: function(e) {
-                for (let i = 0; i < this.projects.length; i++) {
-                    if (this.projects[i].name == e.detail.project) { // getting the selected project from projects array
-                        this.selectedProject = this.projects[i];
-                    }
-                }
-                $('.content').hide();
-                $('#projectInfo').show();
+                this.selectedProject = e.detail.project;
+                window.location.hash = "dashboard/" + this.selectedProject.alias;
             },
             updateStudy: function(e) {
-                for (let i = 0; i < this.selectedProject.studies.length; i++) {
-                    if (this.selectedProject.studies[i].name == e.detail.studyName || this.selectedProject.studies[i].id == e.detail.studyId) {
-                        this.study = this.selectedProject.studies[i];
-                    }
-                }
-                $('.content').hide();
-                $('#studyInfo').show();
+                this.selectedProject = e.detail.project;
+                window.location.hash = "dashboard/" + this.selectedProject.alias + "/" + e.detail.study.alias;
             },
             projectStudyChanged: function() {
-                this.renderHashFragments();
-                this.renderBreadcrumb();
+//                console.log("Project study changed");
+//                this.renderHashFragments();
+//                this.renderBreadcrumb();
             },
             renderBreadcrumb: function() {
+                console.log("Render changed");
                 var breadcrumbElement = Polymer.dom(this.root).querySelector("#breadcrumb");
 
-                if (breadcrumbElement != null) {
+                if (breadcrumbElement != null && this.config !== undefined) {
                     // we empty everything
                     Polymer.dom(breadcrumbElement).innerHTML = "";
-
                     // we add the 'Projects' link
                     let projects = this._createBreadcrumbElement(this.config.breadcrumb.title, false);
                     Polymer.dom(breadcrumbElement).appendChild(projects);
@@ -490,13 +502,21 @@
                         $('.content').hide();
                         switch (e.target.innerHTML) {
                             case _this.config.breadcrumb.title:
-                                $('#projectList').show();
+                                _this.project = "";
+                                _this.selectedProject = {};
+                                _this.study = {};
+                                window.location.hash = "dashboard";
+//                                $('#dashboard').show();
                                 break;
                             case _this.project:
-                                $('#projectInfo').show();
+                                _this.study = {};
+                                debugger
+                                window.location.hash = "dashboard/" + _this.project;
+//                                $('#projectInfo').show();
                                 break;
                             case _this.study.alias:
-                                $('#studyInfo').show();
+//                                TODO: Add more things when files, samples... are starting to be shown
+//                                $('#studyInfo').show();
                                 break;
                         }
                     });

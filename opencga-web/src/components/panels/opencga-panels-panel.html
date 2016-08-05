@@ -13,25 +13,38 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+<link rel="import" href="opencga-panels-filter.html">
+<link rel="import" href="opencga-panels-view.html">
 
-<link rel="import" href="../../../bower_components/polymer/polymer.html">
-
-<link rel="import" href="../opencga-shared-styles.html">
-
-<dom-module id="opencga-files-info-jobs">
+<dom-module id="opencga-panels-panel">
     <template>
-        <style is="custom-style" include="opencga-shared-styles"></style>
+        <style is="custom-style" include="jso-styles"></style>
+
+        <div class="panel" style="padding: 10px;">
+            <div class="col-md-2">
+                <opencga-panels-filter></opencga-panels-filter>
+            </div>
+
+            <div class="col-md-10">
+                <opencga-panels-view opencga-client="{{opencgaClient}}"></opencga-panels-view>
+            </div>
+        </div>
 
     </template>
     <script>
         Polymer({
-            is: 'opencga-files-info-jobs',
-
+            is: 'opencga-panels-panel',
             properties: {
                 opencgaClient: {
                     type: Object
                 },
-                file: {
+                studyId: {
+                    type: Number
+                },
+                panels: {
+                    type: Array
+                },
+                filters: {
                     type: Object
                 }
             }

@@ -112,7 +112,7 @@ var application = {
         {"name": "FAQ",  "url": "", "icon": ""}
     ],
     breadcrumb: {
-        title: "Projects",
+        title: "Dashboard",
         visibility: "private"
     }
 };

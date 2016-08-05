@@ -13,30 +13,29 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
+<link rel="import" href="opencga-files-filter.html">
+<link rel="import" href="opencga-files-view.html">
 
-<link rel="import" href="../../../bower_components/polymer/polymer.html">
-
-<link rel="import" href="opencga-samples-filter.html">
-<link rel="import" href="opencga-samples-view.html">
-
-<dom-module id="opencga-samples-panel">
+<dom-module id="opencga-files-panel">
     <template>
-        <style is="custom-style" include="opencga-shared-styles"></style>
+        <style is="custom-style" include="jso-styles"></style>
 
-        <div class="panel" style="padding:15px;">
+        <div class="panel" style="padding: 10px;">
             <div class="col-md-2">
-                <opencga-samples-filter samples="{{samples}}" opencga-client="{{opencgaClient}}" study-id="{{studyId}}" filters="{{filters}}"></opencga-samples-filter>
+                <opencga-files-filter opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{files}}" filters="{{filters}}">
+                </opencga-files-filter>
             </div>
 
             <div class="col-md-10">
-                <opencga-samples-view samples="{{samples}}" opencga-client="{{opencgaClient}}" study-id="{{studyId}}" filters="{{filters}}"></opencga-samples-view>
+                <opencga-files-view opencga-client="{{opencgaClient}}" study-id="{{studyId}}" files="{{files}}" filters="{{filters}}">
+                </opencga-files-view>
             </div>
         </div>
 
     </template>
     <script>
         Polymer({
-            is: 'opencga-samples-panel',
+            is: 'opencga-files-panel',
             properties: {
                 opencgaClient: {
                     type: Object
@@ -44,14 +43,13 @@
                 studyId: {
                     type: Number
                 },
-                samples: {
+                files: {
                     type: Array
                 },
                 filters: {
                     type: Object
                 }
             }
-
         });
     </script>
 </dom-module>
