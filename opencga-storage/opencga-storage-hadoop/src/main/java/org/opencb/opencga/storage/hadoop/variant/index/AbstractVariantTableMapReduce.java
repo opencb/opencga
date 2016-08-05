@@ -291,7 +291,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             sampleIds.addAll(sids);
         }
 
-        getLog().info("Processing slice {}", sliceKey);
+        getLog().debug("Processing slice {}", sliceKey);
 
 
         VariantMapReduceContext ctx = new VariantMapReduceContext(currRowKey, context, key, value, sliceKey, fileIds,

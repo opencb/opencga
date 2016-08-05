@@ -95,14 +95,14 @@ public class VariantLocalConflictResolver {
         target.sort(varPositionOrder);
         int min = query.getStart();
         int max = query.getEnd();
+        if (max < min) {
+            max = min; // Insertion
+        }
         int minTarget = min(target);
         int maxTarget = max(target);
-
-        if (max < minTarget || min > maxTarget) {
-            throw new IllegalStateException(String.format("Region is outside of targets: %s %s, %s %s", min, max,
-                    minTarget, maxTarget));
+        if (maxTarget < minTarget) {
+            maxTarget = minTarget; // Insertion
         }
-
         // find missing pieces
         List<Pair<Integer, Integer>> holes = new ArrayList<>();
         for (Variant v : target) {
@@ -112,6 +112,12 @@ public class VariantLocalConflictResolver {
             if (max < v.getStart()) { // Region ends before or at start of this target
                 holes.add(new ImmutablePair<>(min, max));
                 break; // finish
+            } else if (min > v.getEnd()) {
+                // No overlap
+                min = v.getEnd() + 1;
+            } else if (min >= v.getStart() && max <= v.getEnd()) {
+                // Full overlap
+                min = v.getEnd() + 1; // Reset min to current target end +1
             } else if (min < v.getStart() && max >= v.getStart()) {
                 // Query overlaps with target start
                 holes.add(new ImmutablePair<>(min, v.getStart() - 1));
@@ -129,9 +135,7 @@ public class VariantLocalConflictResolver {
     }
 
     public static boolean hasOverlap(List<Variant> target, Variant query) {
-        return target.stream().filter(
-                v -> v.getEnd() >= query.getStart() && v.getStart() <= query.getEnd()
-        ).findAny().isPresent();
+        return target.stream().filter(v -> v.overlapWith(query, true)).findAny().isPresent();
     }
 
     public static int min(List<Variant> target) {
