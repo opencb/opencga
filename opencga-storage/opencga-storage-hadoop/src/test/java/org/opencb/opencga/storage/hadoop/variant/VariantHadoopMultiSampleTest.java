@@ -422,8 +422,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
 
 
-        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
-
         printVariantsFromArchiveTable(studyConfiguration);
 
         for (Variant variant : dbAdaptor) {
@@ -431,6 +429,8 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
 
         System.out.println(studyConfiguration);
+
+        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
 
     }
 
@@ -470,12 +470,13 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             assertTrue(studyConfiguration.getIndexedFiles().contains(fileId));
         }
 
-        checkArchiveTableTimeStamp(dbAdaptor);
-        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
-
         for (Variant variant : dbAdaptor) {
             System.out.println(variant);
         }
+
+        checkArchiveTableTimeStamp(dbAdaptor);
+        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
+
     }
 
     public void checkLoadedVariants(Set<String> expectedVariants, VariantHadoopDBAdaptor dbAdaptor, HashSet<String> platinumSkipVariants)

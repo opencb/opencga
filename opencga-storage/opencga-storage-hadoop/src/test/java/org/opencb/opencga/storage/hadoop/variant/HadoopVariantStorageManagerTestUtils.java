@@ -163,14 +163,17 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         return storageConfiguration;
     }
 
-    @Override
-    default void clearDB(String tableName) throws Exception {
-        TableName tname = TableName.valueOf(tableName);
+    default void clearHBase() throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
-            if (admin.tableExists(tname)) {
-                utility.get().deleteTable(tableName);
+            for (TableName tableName : admin.listTableNames()) {
+                utility.get().deleteTableIfAny(tableName);
             }
         }
+    }
+
+    @Override
+    default void clearDB(String tableName) throws Exception {
+        utility.get().deleteTableIfAny(TableName.valueOf(tableName));
     }
 
     class TestMRExecutor implements MRExecutor {

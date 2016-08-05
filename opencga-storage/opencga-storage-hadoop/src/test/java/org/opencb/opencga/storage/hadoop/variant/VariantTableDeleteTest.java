@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExternalResource;
 import org.opencb.biodata.models.variant.Variant;
@@ -22,8 +22,8 @@ import static org.junit.Assert.*;
  */
 public class VariantTableDeleteTest extends VariantStorageManagerTestUtils implements HadoopVariantStorageManagerTestUtils {
 
-    @ClassRule
-    public static ExternalResource externalResource = new HadoopExternalResource();
+    @Rule
+    public ExternalResource externalResource = new HadoopExternalResource();
 
     private VariantSource loadFile(String resource, StudyConfiguration studyConfiguration, Map<? extends String, ?> map) throws Exception {
         return VariantHbaseTestUtils.loadFile(getVariantStorageManager(), DB_NAME, outputUri, resource, studyConfiguration, map);
