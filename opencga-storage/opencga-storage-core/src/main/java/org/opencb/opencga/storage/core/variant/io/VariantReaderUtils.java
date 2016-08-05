@@ -117,7 +117,7 @@ public class VariantReaderUtils {
      */
     public static VariantSource readVariantSource(Path input, VariantSource source) throws StorageManagerException {
         if (source == null) {
-            source = new VariantSource("", "", "", "");
+            source = new VariantSource(input.getFileName().toString(), "", "", "");
         }
 
         // If it's a sourceFile

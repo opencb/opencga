@@ -76,7 +76,7 @@ public class HadoopDirectVariantStoreETLTest implements HadoopVariantStorageMana
     }
 
     /**
-     * 
+     *
      */
     public HadoopDirectVariantStoreETLTest() {
         // TODO Auto-generated constructor stub

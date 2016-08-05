@@ -15,6 +15,8 @@ import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.config.CellBaseConfiguration;
+import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.config.StorageEngineConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -65,22 +67,28 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final java.sql.Connection phoenixCon;
     private final VariantSqlQueryParser queryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
+    private final CellBaseClient cellBaseClient;
 
-    public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageEngineConfiguration configuration,
+    public VariantHadoopDBAdaptor(HBaseCredentials credentials, StorageConfiguration configuration,
                                   Configuration conf) throws IOException {
         this(null, credentials, configuration, getHbaseConfiguration(conf, credentials));
     }
 
-    public VariantHadoopDBAdaptor(Connection connection, HBaseCredentials credentials, StorageEngineConfiguration configuration,
+    public VariantHadoopDBAdaptor(Connection connection, HBaseCredentials credentials, StorageConfiguration configuration,
                                   Configuration conf) throws IOException {
         this.credentials = credentials;
         this.configuration = conf;
         this.genomeHelper = new GenomeHelper(this.configuration, connection);
         this.variantTable = credentials.getTable();
+        StorageEngineConfiguration storageEngine = configuration.getStorageEngine(HadoopVariantStorageManager.STORAGE_ENGINE_ID);
         this.studyConfigurationManager.set(
-                new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, configuration.getVariant().getOptions()));
+                new HBaseStudyConfigurationManager(genomeHelper, credentials.getTable(), conf, storageEngine.getVariant().getOptions()));
         this.variantSourceDBAdaptor = new HadoopVariantSourceDBAdaptor(this.genomeHelper);
-        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this));
+
+        CellBaseConfiguration cellbaseConfiguration = configuration.getCellbase();
+        cellBaseClient = new CellBaseClient(cellbaseConfiguration.toClientConfiguration());
+
+        this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this), cellBaseClient);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
         try {
@@ -146,7 +154,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
 
     @Override
     public CellBaseClient getCellBaseClient() {
-        throw new UnsupportedOperationException();
+        return cellBaseClient;
     }
 
     @Override

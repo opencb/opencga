@@ -18,16 +18,16 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.StorageETLResult;
-import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageETLException;
+import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.FileStudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManagerTestUtils;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.io.VariantVcfExporter;
 import org.opencb.opencga.storage.hadoop.utils.HBaseManager;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.index.HBaseToVariantConverter;
 import org.opencb.opencga.storage.hadoop.variant.index.VariantTableMapper;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
@@ -39,6 +39,7 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.util.*;
 
+import static org.hamcrest.CoreMatchers.hasItems;
 import static org.junit.Assert.*;
 
 /**
@@ -120,7 +121,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
-
+        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
 
         for (StorageETLResult storageETLResult : index) {
             System.out.println(storageETLResult);
@@ -135,6 +136,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         }
 //        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
+        assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
     }
 
     @Test
@@ -144,9 +146,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
-//        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-//        options.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, false);
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false);
         options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
@@ -164,10 +164,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             List<StorageETLResult> results = variantStorageManager.index(Collections.singletonList(getResourceUri(fileName)), outputUri, true, true, false);
             protoFiles.add(results.get(0).getTransformResult());
 
-//            int fileId = studyConfiguration.getFileIds().size() + 1;
-//            studyConfiguration.getFileIds().put(fileName, -1);
-//            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
-//            studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Collections.singleton(fileId)));
         }
 
        // dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);

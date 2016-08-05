@@ -37,10 +37,9 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
 
     @Test
     public void dropFileTest() throws Exception {
-        HadoopVariantStorageManager sm = getVariantStorageManager();
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         System.out.println("studyConfiguration = " + studyConfiguration);
-        String studyName = Integer.toString(studyConfiguration.getStudyId());
+        String studyName = studyConfiguration.getStudyName();
 
         loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
         Map<String, Variant> variants = buildVariantsIdx();
@@ -74,6 +73,30 @@ public class VariantTableDeleteTest extends VariantStorageManagerTestUtils imple
 
         System.out.println("studyConfiguration = " + studyConfiguration);
         System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
+    }
+
+    @Test
+    public void dropSingleFileTest() throws Exception {
+        StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
+        System.out.println("studyConfiguration = " + studyConfiguration);
+        String studyName = studyConfiguration.getStudyName();
+
+        loadFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+        Map<String, Variant> variants = buildVariantsIdx();
+
+        assertFalse(variants.containsKey("1:10014:A:G"));
+        assertTrue(variants.containsKey("1:10013:T:C"));
+        assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
+
+        // delete
+        removeFile("s1.genome.vcf", studyConfiguration, Collections.emptyMap());
+
+        System.out.println("studyConfiguration = " + studyConfiguration);
+        System.out.println("studyConfiguration.getAttributes().toJson() = " + studyConfiguration.getAttributes().toJson());
+
+        variants = buildVariantsIdx();
+        assertEquals(0, variants.size());
+        assertEquals(0, studyConfiguration.getIndexedFiles().size());
     }
 
     private Map<String, Variant> buildVariantsIdx() throws Exception {

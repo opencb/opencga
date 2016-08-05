@@ -12,9 +12,8 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager.Options;
 import org.opencb.opencga.storage.core.variant.io.VariantReaderUtils;
 import org.opencb.opencga.storage.hadoop.auth.HBaseCredentials;
-import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
-import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 import org.opencb.opencga.storage.hadoop.variant.adaptors.HadoopVariantSourceDBAdaptor;
+import org.opencb.opencga.storage.hadoop.variant.adaptors.VariantHadoopDBAdaptor;
 import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveHelper;
 import org.opencb.opencga.storage.hadoop.variant.archive.VariantHbasePutTask;
 import org.opencb.opencga.storage.hadoop.variant.executors.MRExecutor;
@@ -28,10 +27,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
-import java.util.List;
 import java.util.zip.GZIPInputStream;
-
-import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.*;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -64,33 +60,10 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
      * Read from VCF file, group by slice and insert into HBase table.
      *
      * @param inputUri {@link URI}
+     * @throws StorageManagerException if the load fails
      */
-    @Override
-    public URI load(URI inputUri) throws IOException, StorageManagerException {
+    protected void loadArch(URI inputUri) throws StorageManagerException {
         Path input = Paths.get(inputUri.getPath());
-        int studyId = getStudyId();
-
-        ArchiveHelper.setChunkSize(
-                conf, conf.getInt(
-                        ArchiveDriver.CONFIG_ARCHIVE_CHUNK_SIZE, ArchiveDriver
-                                .DEFAULT_CHUNK_SIZE));
-        ArchiveHelper.setStudyId(conf, studyId);
-
-        boolean loadArch = options.getBoolean(HADOOP_LOAD_ARCHIVE);
-        boolean loadVar = options.getBoolean(HADOOP_LOAD_VARIANT);
-
-        if (loadArch) {
-            loadArch(input);
-        }
-
-        if (loadVar) {
-            List<Integer> pendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
-            merge(studyId, pendingFiles);
-        }
-        return inputUri;
-    }
-
-    private void loadArch(Path input) throws StorageManagerException, IOException {
         String table = archiveTableCredentials.getTable();
         String fileName = input.getFileName().toString();
         Path sourcePath = input.getParent().resolve(fileName.replace(".variants.proto.gz", ".file.json.gz"));

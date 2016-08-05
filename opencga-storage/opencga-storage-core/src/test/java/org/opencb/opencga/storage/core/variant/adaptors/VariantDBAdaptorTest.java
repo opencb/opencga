@@ -51,6 +51,7 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
+import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.hasGenes;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly.
@@ -495,14 +496,23 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         // CEBPA -> GO:0000050
 
         int totalResults = 0;
+        Collection<String> genes;
+        Query query;
+        QueryResult<Variant> result;
 
-        Query query = new Query(ANNOT_GO.key(), "GO:0006508");
-        QueryResult<Variant> result = dbAdaptor.get(query, null);
+        query = new Query(ANNOT_GO.key(), "GO:XXXXXXX");
+        result = dbAdaptor.get(query, null);
+        assertEquals(0, result.getNumResults());
+
+        query = new Query(ANNOT_GO.key(), "GO:0006508");
+        result = dbAdaptor.get(query, null);
         System.out.println("numResults: " + result.getNumResults());
         for (Variant variant : result.getResult()) {
             System.out.println(variant);
         }
         assertNotEquals(0, result.getNumResults());
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         totalResults = result.getNumResults();
 
         query = new Query(ANNOT_GO.key(), "GO:0000050");
@@ -511,6 +521,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         for (Variant variant : result.getResult()) {
             System.out.println(variant);
         }
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         assertNotEquals(0, result.getNumResults());
         totalResults += result.getNumResults();
 
@@ -520,6 +532,8 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         for (Variant variant : result.getResult()) {
             System.out.println(variant);
         }
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByGo(query.getAsStringList(ANNOT_GO.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
         assertNotEquals(0, result.getNumResults());
         assertEquals(result.getNumResults(), totalResults);
     }
@@ -527,6 +541,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testExpressionQuery() {
+        Collection<String> genes;
         Query query = new Query(ANNOT_EXPRESSION.key(), "non_existing_tissue");
         QueryResult<Variant> result = dbAdaptor.get(query, null);
         assertEquals(0, result.getNumResults());
@@ -537,24 +552,32 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         System.out.println("result.getNumResults() = " + result.getNumResults());
         assertNotEquals(0, result.getNumResults());
         assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
 
         query = new Query(ANNOT_EXPRESSION.key(), "brain");
         result = dbAdaptor.get(query, null);
         System.out.println("result.getNumResults() = " + result.getNumResults());
         assertNotEquals(0, result.getNumResults());
         assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
 
         query = new Query(ANNOT_EXPRESSION.key(), "tongue");
         result = dbAdaptor.get(query, null);
         System.out.println("result.getNumResults() = " + result.getNumResults());
         assertNotEquals(0, result.getNumResults());
         assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
 
         query = new Query(ANNOT_EXPRESSION.key(), "pancreas");
         result = dbAdaptor.get(query, null);
         System.out.println("result.getNumResults() = " + result.getNumResults());
         assertNotEquals(0, result.getNumResults());
         assertNotEquals(allVariants.getNumResults(), result.getNumResults());
+        genes = dbAdaptor.getDBAdaptorUtils().getGenesByExpression(query.getAsStringList(ANNOT_EXPRESSION.key()));
+        assertThat(result, everyResult(hasAnnotation(hasAnyGeneOf(genes))));
 
     }
 

@@ -29,6 +29,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETL;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
+import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.runner.StringDataReader;
 import org.opencb.opencga.storage.core.runner.StringDataWriter;
@@ -239,7 +240,7 @@ public abstract class VariantStorageETL implements StorageETL {
 
         Path outputMalformedVariants = output.resolve(fileName + "." + VariantReaderUtils.MALFORMED_FILE + ".txt");
         Path outputVariantsFile = output.resolve(fileName + "." + VariantReaderUtils.VARIANTS_FILE + "." + format + extension);
-        Path outputMetaFile = output.resolve(fileName + "." + VariantReaderUtils.METADATA_FILE + "." + format + extension);
+        Path outputMetaFile = output.resolve(fileName + "." + VariantReaderUtils.METADATA_FILE_FORMAT_GZ);
 
         // Close at the end!
         final MalformedVariantHandler malformedHandler;
@@ -590,7 +591,11 @@ public abstract class VariantStorageETL implements StorageETL {
     }
 
     protected StudyConfiguration checkOrCreateStudyConfiguration() throws StorageManagerException {
-        StudyConfiguration studyConfiguration = getStudyConfiguration(options);
+        return checkOrCreateStudyConfiguration(false);
+    }
+
+    protected StudyConfiguration checkOrCreateStudyConfiguration(boolean forceFetch) throws StorageManagerException {
+        StudyConfiguration studyConfiguration = getStudyConfiguration(forceFetch);
         if (studyConfiguration == null) {
             logger.info("Creating a new StudyConfiguration");
             int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
@@ -727,10 +732,6 @@ public abstract class VariantStorageETL implements StorageETL {
         }
     }
 
-    protected int getStudyId() {
-        return options.getInt(Options.STUDY_ID.key());
-    }
-
     @Override
     public URI postLoad(URI input, URI output) throws StorageManagerException {
 //        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
@@ -836,7 +837,7 @@ public abstract class VariantStorageETL implements StorageETL {
         return input;
     }
 
-    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) {
+    public void securePostLoad(List<Integer> fileIds, StudyConfiguration studyConfiguration) throws StorageManagerException {
         studyConfiguration.getIndexedFiles().addAll(fileIds);
     }
 
@@ -995,6 +996,58 @@ public abstract class VariantStorageETL implements StorageETL {
         if (studyId < 0) {
             throw new StorageManagerException("Invalid studyId : " + studyId);
         }
+    }
+
+    public Thread newShutdownHook(String jobOperationName, List<Integer> files) {
+        return new Thread(() -> {
+            try {
+                logger.error("Shutdown hook!");
+                setStatus(BatchFileOperation.Status.ERROR, jobOperationName, files);
+            } catch (StorageManagerException e) {
+                e.printStackTrace();
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    public void setStatus(BatchFileOperation.Status status, String operationName, List<Integer> files) throws StorageManagerException {
+        int studyId = getStudyId();
+        long lock = dbAdaptor.getStudyConfigurationManager().lockStudy(studyId);
+        try {
+            StudyConfiguration studyConfiguration = getStudyConfiguration(true);
+            secureSetStatus(studyConfiguration, status, operationName, files);
+            dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
+        } finally {
+            dbAdaptor.getStudyConfigurationManager().unLockStudy(studyId, lock);
+        }
+    }
+
+    public BatchFileOperation.Status secureSetStatus(StudyConfiguration studyConfiguration, BatchFileOperation.Status status,
+                                                        String operationName, List<Integer> files)
+            throws StorageManagerException {
+        List<BatchFileOperation> batches = studyConfiguration.getBatches();
+        BatchFileOperation operation = null;
+        for (int i = batches.size() - 1; i >= 0; i--) {
+            operation = batches.get(i);
+            if (operation.getOperationName().equals(operationName) && operation.getFileIds().equals(files)) {
+                break;
+            }
+            operation = null;
+        }
+        if (operation == null) {
+            throw new IllegalStateException("Batch operation " + operationName + " for files " + files + " not found!");
+        }
+        BatchFileOperation.Status previousStatus = operation.currentStatus();
+        operation.addStatus(Calendar.getInstance().getTime(), status);
+        return previousStatus;
+    }
+
+    public VariantDBAdaptor getDBAdaptor() {
+        return dbAdaptor;
+    }
+
+    protected int getStudyId() {
+        return options.getInt(Options.STUDY_ID.key());
     }
 
     public ObjectMap getOptions() {
