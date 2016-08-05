@@ -257,7 +257,6 @@ public abstract class VariantStorageETL implements StorageETL {
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
                 outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
-                outputMetaFile = output.resolve(fileName + ".file.json" + extension);
             }
 
             //Ped Reader
@@ -311,18 +310,16 @@ public abstract class VariantStorageETL implements StorageETL {
                 logger.info("Using HTSJDK to read variants.");
                 FullVcfCodec codec = new FullVcfCodec();
                 final VariantSource finalSource = source;
-                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, finalOutputMetaFile,
+                taskSupplier = () -> new VariantAvroTransformTask(header.getKey(), header.getValue(), finalSource, outputMetaFile,
                         statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
                 logger.info("Using Biodata to read variants.");
                 final VariantSource finalSource = source;
-                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc)
+                taskSupplier = () -> new VariantAvroTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 
@@ -359,7 +356,6 @@ public abstract class VariantStorageETL implements StorageETL {
             StringDataWriter dataWriter = new StringDataWriter(outputVariantsFile, true);
 
             final VariantSource finalSource = source;
-            final Path finalOutputFileJsonFile = outputMetaFile;
             ParallelTaskRunner<String, String> ptr;
 
             Supplier<VariantTransformTask<String>> taskSupplier;
@@ -368,13 +364,12 @@ public abstract class VariantStorageETL implements StorageETL {
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
                 taskSupplier = () -> new VariantJsonTransformTask(header.getKey(), header.getValue(), finalSource,
-                        finalOutputFileJsonFile, statsCalculator, includeSrc, generateReferenceBlocks)
+                        outputMetaFile, statsCalculator, includeSrc, generateReferenceBlocks)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             } else {
                 logger.info("Using Biodata to read variants.");
-                final Path finalOutputMetaFile = output.resolve(fileName + ".file.json" + extension);   //TODO: Write META in avro too
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(source);
-                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, finalOutputMetaFile, statsCalculator, includeSrc)
+                taskSupplier = () -> new VariantJsonTransformTask(factory, finalSource, outputMetaFile, statsCalculator, includeSrc)
                         .setFailOnError(failOnError).addMalformedErrorHandler(malformedHandler);
             }
 

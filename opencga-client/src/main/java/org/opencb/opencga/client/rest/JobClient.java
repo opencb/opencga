@@ -21,7 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.models.acls.JobAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
 import java.io.IOException;

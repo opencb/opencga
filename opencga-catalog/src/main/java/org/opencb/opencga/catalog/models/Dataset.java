@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +26,7 @@ import java.util.Map;
 /**
  * Created by imedina on 24/11/14.
  */
-public class Dataset {
+public class Dataset extends AbstractAcl<DatasetAclEntry> {
 
     private long id;
     private String name;
@@ -33,7 +34,7 @@ public class Dataset {
     private String description;
 
     private List<Long> files;
-    private List<DatasetAclEntry> acl;
+//    private List<DatasetAclEntry> acl;
     private Status status;
 
     private Map<String, Object> attributes;
@@ -143,10 +144,6 @@ public class Dataset {
     public Dataset setAttributes(Map<String, Object> attributes) {
         this.attributes = attributes;
         return this;
-    }
-
-    public List<DatasetAclEntry> getAcl() {
-        return acl;
     }
 
     public Dataset setAcl(List<DatasetAclEntry> acl) {

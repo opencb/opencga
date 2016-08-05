@@ -70,15 +70,12 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     @Override
-    public String getUserId(String sessionId) {
-        // TODO: Review the commented code
-//        if (sessionId.length() == 40) {
-//            return "admin";
+    public String getUserId(String sessionId) throws CatalogException {
+        return authenticationManager.getUserId(sessionId);
+//        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
+//            return "anonymous";
 //        }
-        if (sessionId == null || sessionId.isEmpty() || sessionId.equalsIgnoreCase("anonymous")) {
-            return "anonymous";
-        }
-        return userDBAdaptor.getUserIdBySessionId(sessionId);
+//        return userDBAdaptor.getUserIdBySessionId(sessionId);
     }
 
     @Override

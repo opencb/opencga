@@ -20,7 +20,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
 import org.opencb.opencga.catalog.models.Group;
 import org.opencb.opencga.catalog.models.Status;
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -37,12 +37,14 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
 
     private final MongoDBCollection panelCollection;
     private PanelConverter panelConverter;
+    private CatalogMongoAclDBAdaptor<DiseasePanelAclEntry> aclDBAdaptor;
 
     public CatalogMongoPanelDBAdaptor(MongoDBCollection panelCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoJobDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.panelCollection = panelCollection;
         this.panelConverter = new PanelConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(panelCollection, panelConverter, logger);
     }
 
     @Override
@@ -434,46 +436,54 @@ public class CatalogMongoPanelDBAdaptor extends CatalogMongoDBAdaptor implements
     @Override
     public QueryResult<DiseasePanelAclEntry> createAcl(long id, DiseasePanelAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(id, acl, panelCollection, "DiseasePanelAcl");
-        return endQuery("create panel Acl", startTime, Arrays.asList(acl));
+//        CatalogMongoDBUtils.createAcl(id, acl, panelCollection, "DiseasePanelAcl");
+        return endQuery("create panel Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
     @Override
     public QueryResult<DiseasePanelAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<DiseasePanelAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, panelCollection, logger);
+//        DiseasePanel panel = panelConverter.convertToDataModelType(aggregate.first());
+//
+//        if (panel != null) {
+//            acl = panel.getAcl();
+//        }
 
-        List<DiseasePanelAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, panelCollection, logger);
-        DiseasePanel panel = panelConverter.convertToDataModelType(aggregate.first());
-
-        if (panel != null) {
-            acl = panel.getAcl();
-        }
-
-        return endQuery("get panel Acl", startTime, acl);
+        return endQuery("get panel Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAcl(id, member, panelCollection);
+//        CatalogMongoDBUtils.removeAcl(id, member, panelCollection);
+        aclDBAdaptor.removeAcl(id, member);
     }
 
     @Override
     public QueryResult<DiseasePanelAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, panelCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, panelCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
     }
 
     @Override
     public QueryResult<DiseasePanelAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, panelCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, panelCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, panelCollection);
+    public QueryResult<DiseasePanelAclEntry> removeAclsFromMember(long id, String member, List<String> permissions)
+            throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, panelCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
     }
 }

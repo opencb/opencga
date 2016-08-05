@@ -20,15 +20,13 @@ package org.opencb.opencga.app.cli.main.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogPanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
-import org.opencb.opencga.catalog.models.acls.DiseasePanelAclEntry;
-import org.opencb.opencga.client.rest.PanelClient;
+import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 
 import java.io.IOException;
 

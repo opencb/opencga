@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.Tool;
-import org.opencb.opencga.catalog.models.acls.JobAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 
 import java.net.URI;
 import java.util.ArrayList;

@@ -108,31 +108,33 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
-        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
-
-        List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
-
-        studyConfiguration.getFileIds().put("s1.genome.vcf", 1);
-        studyConfiguration.getFileIds().put("s2.genome.vcf", 2);
-        studyConfiguration.getSampleIds().put("s1", 1);
-        studyConfiguration.getSampleIds().put("s2", 2);
-        studyConfiguration.getSamplesInFiles().put(1, new LinkedHashSet<>(Collections.singleton(1)));
-        studyConfiguration.getSamplesInFiles().put(2, new LinkedHashSet<>(Collections.singleton(2)));
-        dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
-
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+        options.put(HadoopVariantStorageManager.HADOOP_LOAD_DIRECT, true);
+        options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
         options.put(VariantStorageManager.Options.DB_NAME.key(), DB_NAME);
         options.put(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId());
         options.put(VariantStorageManager.Options.STUDY_NAME.key(), studyConfiguration.getStudyName());
-        variantStorageManager.index(inputFiles, outputUri, true, true, true);
+
+        List<URI> inputFiles = Arrays.asList(getResourceUri("s1.genome.vcf"), getResourceUri("s2.genome.vcf"));
+        List<StorageETLResult> index = variantStorageManager.index(inputFiles, outputUri, true, true, true);
+
+
+        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
 
         studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-        printVariantsFromArchiveTable(studyConfiguration);
+
+        for (StorageETLResult storageETLResult : index) {
+            System.out.println(storageETLResult);
+        }
+
+        try(PrintStream out = new PrintStream(new FileOutputStream(outputUri.resolve("s1-2.merged.archive.json").getPath()))){
+            printVariantsFromArchiveTable(studyConfiguration, out);
+        }
 
         for (Variant variant : dbAdaptor) {
             System.out.println("variant = " + variant);
         }
-        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
+//        checkLoadedFilesS1S2(studyConfiguration, dbAdaptor);
 
         assertThat(studyConfiguration.getIndexedFiles(), hasItems(1, 2));
     }
@@ -144,9 +146,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         StudyConfiguration studyConfiguration = VariantStorageManagerTestUtils.newStudyConfiguration();
         HadoopVariantStorageManager variantStorageManager = getVariantStorageManager();
-//        VariantHadoopDBAdaptor dbAdaptor = variantStorageManager.getDBAdaptor(DB_NAME);
         ObjectMap options = variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
-//        options.put(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration);
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_ARCHIVE, false);
         options.put(HadoopVariantStorageManager.HADOOP_LOAD_VARIANT, false);
         options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "proto");
@@ -164,10 +164,6 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             List<StorageETLResult> results = variantStorageManager.index(Collections.singletonList(getResourceUri(fileName)), outputUri, true, true, false);
             protoFiles.add(results.get(0).getTransformResult());
 
-//            int fileId = studyConfiguration.getFileIds().size() + 1;
-//            studyConfiguration.getFileIds().put(fileName, -1);
-//            studyConfiguration.getSampleIds().put("NA" + fileId, fileId);
-//            studyConfiguration.getSamplesInFiles().put(fileId, new LinkedHashSet<>(Collections.singleton(fileId)));
         }
 
        // dbAdaptor.getStudyConfigurationManager().updateStudyConfiguration(studyConfiguration, null);
@@ -181,32 +177,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
 
         List<StorageETLResult> index2 = variantStorageManager.index(protoFiles, outputUri, false, false, true);
 
-//        printVariantsFromArchiveTable(studyConfiguration);
-
         System.out.println(index2);
-
-//        checkLoadedVariants(expectedVariants, dbAdaptor, PLATINUM_SKIP_VARIANTS);
-
-
-//        for (Variant variant : dbAdaptor) {
-//            System.out.println("variant = " + variant);
-//        }
-//
-//
-//        studyConfiguration = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first();
-//        studyConfiguration.getHeaders().clear();
-//        System.out.println("HBaseStudyConfiguration = " + ((HBaseStudyConfigurationManager) dbAdaptor.getStudyConfigurationManager()).toHBaseStudyConfiguration(studyConfiguration));
-//
-//        ArchiveFileMetadataManager fileMetadataManager = dbAdaptor.getArchiveFileMetadataManager(HadoopVariantStorageManager.getTableName(studyConfiguration.getStudyId()), null);
-//        Set<Integer> loadedFiles = fileMetadataManager.getLoadedFiles();
-//        System.out.println("loadedFiles = " + loadedFiles);
-//        for (int fileId = 12877; fileId <= 12893; fileId++) {
-//            assertTrue(loadedFiles.contains(fileId));
-//        }
-//        for (Integer loadedFile : loadedFiles) {
-//            VcfMeta vcfMeta = fileMetadataManager.getVcfMeta(loadedFile, null).first();
-//            assertNotNull(vcfMeta);
-//        }
 
     }
 

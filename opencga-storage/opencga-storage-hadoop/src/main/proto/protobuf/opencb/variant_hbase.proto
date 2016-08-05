@@ -13,9 +13,10 @@ import "protobuf/opencb/variant.proto";
 /**
 ** Mapping a ComplexGenotype to an individual (sample index)
 **/
+
 message ComplexVariant {
     repeated AlternateCoordinate secondaryAlternates = 1;
-    map<int32, Genotype> sampleToGenotype = 2;
+    map<int32,string> sampleToGenotype = 2;
 }
 
 message ComplexFilter {

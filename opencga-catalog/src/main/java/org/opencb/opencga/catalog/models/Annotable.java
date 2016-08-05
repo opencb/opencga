@@ -1,6 +1,8 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -9,7 +11,7 @@ import java.util.List;
 /**
  * Created by pfurio on 07/07/16.
  */
-public abstract class Annotable {
+public abstract class Annotable<T extends AbstractAclEntry> extends AbstractAcl<T> {
 
     protected List<AnnotationSet> annotationSets;
 

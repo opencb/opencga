@@ -37,7 +37,7 @@ import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.AbstractAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.AbstractAclEntry;
 import org.slf4j.Logger;
 
 import java.io.IOException;

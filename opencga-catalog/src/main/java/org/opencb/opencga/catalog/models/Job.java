@@ -16,16 +16,20 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.JobAclEntry;
+import org.opencb.opencga.catalog.models.acls.AbstractAcl;
+import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Job {
+public class Job extends AbstractAcl<JobAclEntry> {
 
     /* Attributes known keys */
     public static final String TYPE = "type";
@@ -89,7 +93,7 @@ public class Job {
     private List<Long> input;    // input files to this job
     private List<Long> output;   // output files of this job
     private List<String> tags;
-    private List<JobAclEntry> acl;
+//    private List<JobAclEntry> acl;
 
     private Map<String, String> params;
     private Map<String, Object> attributes;
@@ -503,10 +507,6 @@ public class Job {
     public Job setTags(List<String> tags) {
         this.tags = tags;
         return this;
-    }
-
-    public List<JobAclEntry> getAcl() {
-        return acl;
     }
 
     public Job setAcl(List<JobAclEntry> acl) {

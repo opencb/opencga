@@ -6,6 +6,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 
@@ -68,12 +69,61 @@ public class VariantLocalConflictResolverTest {
     }
 
     @Test
+    public void resolveSameVariantWithSecAlt() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("2:10048155:TCTTTTTTTT:AC", "PASS"),QUAL,"220"), "1/2");
+        Variant b = addGT(addAttribute(getVariantFilter("2:10048155:TCTTTTTTTT:-", "PASS"),QUAL,"220"), "2/1");
+        a.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",b.getStart(),b.getEnd(),b.getReference(),b.getAlternate(),VariantType.INDEL));
+        b.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",a.getStart(),a.getEnd(),a.getReference(),a.getAlternate(),VariantType.INDEL));
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        assertEquals(1,resolved.size());
+    }
+
+    @Test
+    public void resolveSameVariantWithSecAltInsertion() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("2:10048155:-:AT", "PASS"),QUAL,"220"), "1/2");
+        Variant b = addGT(addAttribute(getVariantFilter("2:10048155:ATATATATATAT:-", "PASS"),QUAL,"220"), "2/1");
+        a.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",b.getStart(),b.getEnd(),b.getReference(),b.getAlternate(),VariantType.INDEL));
+        b.getStudies().get(0).getSecondaryAlternates().add(new AlternateCoordinate("2",a.getStart(),a.getEnd(),a.getReference(),a.getAlternate(),VariantType.INDEL));
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        System.out.println("a.toString() = " + a.toString());
+        System.out.println("b.getStudies().get(0).getSecondaryAlternates().get(0).toString() = " + b.getStudies().get(0).getSecondaryAlternates().get(0).toString());
+        assertEquals(1,resolved.size());
+    }
+
+    @Test
+    public void resolveRefOverlap() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("2:10048155-10048156:", "PASS"),QUAL,"220"), "0/0");
+        Variant b = addGT(addAttribute(getVariantFilter("2:10048155:AAA:-", "PASS"),QUAL,"220"), "0/1");
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        System.out.println("a.toString() = " + a.toJson());
+        System.out.println("b.toString() = " + b.toJson());
+        System.out.println("c.toString() = " + resolved.get(0).toJson());
+        assertEquals(1,resolved.size());
+    }
+
+    @Test
+    public void resolveConflictInserions() throws Exception {
+        Variant a = addGT(addAttribute(getVariantFilter("1:10048155:-:AT", "PASS"),QUAL,"220"), "0/1");
+        Variant b = addGT(addAttribute(getVariantFilter("1:10048155:-:ATT", "PASS"),QUAL,"220"), "0/1");
+        Variant c = addGT(addAttribute(getVariantFilter("1:10048155:-:ATTT", "PASS"),QUAL,"220"), "0/1");
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
+        assertEquals(1,resolved.size());
+    }
+
+    @Test
     public void resolvePass() throws Exception {
         Variant a = addAttribute(getVariantFilter("1:5731287:C:-", "PASS"),QUAL,"731");
         Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "SiteConflict"),QUAL,"390");
         List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         assertEquals(1,resolved.size());
         assertEquals(a, resolved.get(0));
+    }
+
+    @Test
+    public void resolveStrangeSet() throws Exception {
+        Variant b = addAttribute(getVariantFilter("1:5731287:C:G", "SiteConflict"),QUAL,"390");
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(b));
+        assertEquals(1,resolved.size());
     }
 
     @Test
@@ -85,19 +135,26 @@ public class VariantLocalConflictResolverTest {
         assertEquals(b, resolved.get(0));
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void getMissingRegionsBeforeOutside() throws Exception {
         Variant a = getVariant("1:1000:A:T");
         Variant b = getVariant("1:1002:A:T");
-        Variant indel = getVariant("1:999:A:T");
-        VariantLocalConflictResolver.getMissingRegions(Arrays.asList(new Variant[]{a, b}), indel);
+        Variant indel = getVariant("1:999:-:T");
+        List<Pair<Integer, Integer>> missingRegions = VariantLocalConflictResolver.getMissingRegions(Arrays.asList
+                (new Variant[]{a, b}), indel);
+        System.out.println("missingRegions = " + missingRegions);
+        assertEquals(missingRegions.size(), 1);
     }
-    @Test(expected = IllegalStateException.class)
+
+    @Test
     public void getMissingRegionsAfterOutside() throws Exception {
         Variant a = getVariant("1:1000:A:T");
         Variant b = getVariant("1:1002:A:T");
         Variant indel = getVariant("1:1003:A:T");
-        VariantLocalConflictResolver.getMissingRegions(Arrays.asList(new Variant[]{a, b}), indel);
+        List<Pair<Integer, Integer>> missingRegions = VariantLocalConflictResolver.getMissingRegions(Arrays.asList
+                (new Variant[]{a, b}), indel);
+        System.out.println("missingRegions = " + missingRegions);
+        assertEquals(missingRegions.size(), 1);
     }
     @Test
     public void getMissingRegionsIndel() throws Exception {

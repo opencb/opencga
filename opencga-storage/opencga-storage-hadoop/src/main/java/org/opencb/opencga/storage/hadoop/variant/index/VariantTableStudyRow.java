@@ -31,6 +31,7 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.opencb.biodata.tools.variant.merge.VariantMerger.GT_KEY;
@@ -65,7 +66,7 @@ public class VariantTableStudyRow {
     private String ref;
     private String alt;
     private Map<String, Set<Integer>> callMap = new HashMap<>();
-    private Map<Integer, VariantProto.Genotype> sampleToGenotype = new HashMap<>();
+    private Map<Integer, String> sampleToGenotype = new HashMap<>();
     private Map<String, Set<Integer>> filterToSamples = new HashMap<>();
     private List<AlternateCoordinate> secAlternate = new ArrayList<>();
 
@@ -103,10 +104,9 @@ public class VariantTableStudyRow {
         callMap.put(NOCALL, new HashSet<>(proto.getNocallList()));
         callMap.put(OTHER, new HashSet<>(proto.getOtherList()));
         for (Map.Entry<String, SampleList> entry : proto.getOtherGt().entrySet()) {
-            Genotype gt = new Genotype(entry.getKey());
-            VariantProto.Genotype gtProto = gt.toProtobuf();
+            String gt = entry.getKey();
             for (Integer sid : entry.getValue().getSampleIdsList()) {
-                sampleToGenotype.put(sid, gtProto);
+                sampleToGenotype.put(sid, gt);
             }
         }
         this.filterToSamples = proto.getFilterNonPass().entrySet().stream()
@@ -147,7 +147,7 @@ public class VariantTableStudyRow {
     }
 
     public void setComplexVariant(ComplexVariant complexVariant) {
-        Map<Integer, VariantProto.Genotype> map = complexVariant.getSampleToGenotype();
+        Map<Integer, String> map = complexVariant.getSampleToGenotype();
         if (map != null && map.size() > 0) {
             this.sampleToGenotype.putAll(map);
         }
@@ -303,12 +303,14 @@ public class VariantTableStudyRow {
         Set<Integer> foundIds = this.sampleToGenotype.entrySet().stream().filter(e -> newSampleIds.contains(e.getKey()))
                 .map(e -> e.getKey()).collect(Collectors.toSet());
         /***** Secondary Alt list *****/
-        // newRow.secAlternate // not needed to filter down //TODO check if a
-        // new alternate is referenced
+        // newRow.secAlternate // not needed to filter down //TODO check if new alternate is referenced
+        // Function to extract index list of all alleles
+        Function<Map.Entry<Integer, String>, Set<Integer>> function = (e) -> Genotype.parse(e.getValue()).stream()
+                .flatMap(g -> g.toProtobuf().getAllelesIdxList().stream()).collect(Collectors.toSet());
         Set<Integer> oldIdx = this.sampleToGenotype.entrySet().stream().filter(e -> !newSampleIds.contains(e.getKey()))
-                .map(e -> e.getValue().getAllelesIdxList()).flatMap(l -> l.stream()).collect(Collectors.toSet());
+                .map(function).flatMap(l -> l.stream()).collect(Collectors.toSet());
         Set<Integer> newIdx = this.sampleToGenotype.entrySet().stream().filter(e -> newSampleIds.contains(e.getKey()))
-                .map(e -> e.getValue().getAllelesIdxList()).flatMap(l -> l.stream()).collect(Collectors.toSet());
+                .map(function).flatMap(l -> l.stream()).collect(Collectors.toSet());
         newIdx.removeAll(oldIdx);
         if (newIdx.size() > 0 || foundIds.size() > 0) {
             doPut = true;
@@ -419,9 +421,8 @@ public class VariantTableStudyRow {
 
     public VariantTableStudyRowProto toProto() {
         Map<String, List<Integer>> otherGt = new HashMap<>();
-        for (Entry<Integer, VariantProto.Genotype> entry : sampleToGenotype.entrySet()) {
-            String gt = entry.getValue().getAllelesIdxList().stream().map(Object::toString)
-                    .collect(Collectors.joining(entry.getValue().getPhased() ? "|" : "/"));
+        for (Entry<Integer, String> entry : sampleToGenotype.entrySet()) {
+            String gt = entry.getValue();
             List<Integer> samples = otherGt.get(gt);
             if (samples == null) {
                 samples = new LinkedList<>();
@@ -650,67 +651,82 @@ public class VariantTableStudyRow {
 //            String passStr = se.getFiles().get(0).getAttributes().getOrDefault(VariantMerger.VCF_FILTER, "0");
 //            setPassCount(Integer.valueOf(passStr));
 //        }
-        Set<String> sampleSet = se.getSamplesName();
-        // Create Secondary index
-        List<VariantProto.AlternateCoordinate> arr = Collections.emptyList();
-        if (null != se.getSecondaryAlternates() && se.getSecondaryAlternates().size() > 0) {
-            arr = new ArrayList<>(se.getSecondaryAlternates().size());
-            for (org.opencb.biodata.models.variant.avro.AlternateCoordinate altCoord : se.getSecondaryAlternates()) {
-                VariantProto.AlternateCoordinate.Builder ac = AlternateCoordinate.newBuilder();
-                ac.setChromosome(Objects.firstNonNull(altCoord.getChromosome(), ""))
-                    .setStart(Objects.firstNonNull(altCoord.getStart(), 0))
-                    .setEnd(Objects.firstNonNull(altCoord.getEnd(), 0))
-                    .setReference(Objects.firstNonNull(altCoord.getReference(), ""))
-                    .setAlternate(Objects.firstNonNull(altCoord.getAlternate(), ""));
-                VariantType vt = VariantType.valueOf(altCoord.getType().name());
-                ac.setType(vt);
-                arr.add(ac.build());
-            }
-            secAlternate = arr;
-        }
+        try {
+            Set<String> sampleSet = se.getSamplesName();
+            // Create Secondary index
+            List<VariantProto.AlternateCoordinate> arr = Collections.emptyList();
+            if (null != se.getSecondaryAlternates() && se.getSecondaryAlternates().size() > 0) {
+                arr = new ArrayList<>(se.getSecondaryAlternates().size());
+                for (org.opencb.biodata.models.variant.avro.AlternateCoordinate altCoord : se.getSecondaryAlternates()) {
 
-        for (String sample : sampleSet) {
-            Integer sid = sampleIds.get(sample);
-            // Work out Genotype
-            String gtStr = se.getSampleData(sample, GT_KEY);
-            Genotype gt = new Genotype(gtStr);
-            int[] alleleIdx = gt.getAllelesIdx();
-            if (Arrays.equals(alleleIdx, homRef)) {
-                addCallCount(1);
-                if (!homref.add(sid)) {
-                    throw new IllegalStateException("Sample already exists as hom_ref " + sample);
+                    VariantProto.AlternateCoordinate.Builder ac = AlternateCoordinate.newBuilder();
+                    ac.setChromosome(Objects.firstNonNull(altCoord.getChromosome(), ""))
+                            .setStart(Objects.firstNonNull(altCoord.getStart(), 0))
+                            .setEnd(Objects.firstNonNull(altCoord.getEnd(), 0))
+                            .setReference(Objects.firstNonNull(altCoord.getReference(), ""))
+                            .setAlternate(Objects.firstNonNull(altCoord.getAlternate(), ""));
+                    VariantType vt = VariantType.valueOf(altCoord.getType().name());
+                    ac.setType(vt);
+                    arr.add(ac.build());
                 }
-            } else if (Arrays.equals(alleleIdx, hetRef) || Arrays.equals(alleleIdx, hetRefOther)) {
-                addSampleId(HET_REF, sid);
-                addCallCount(1);
-            } else if (Arrays.equals(alleleIdx, homVar)) {
-                addSampleId(HOM_VAR, sid);
-                addCallCount(1);
-            } else if (Arrays.equals(alleleIdx, nocall) || Arrays.equals(alleleIdx, nocallBoth)) {
-                addSampleId(NOCALL, sid);
-            } else {
-                addSampleId(OTHER, sid);
-                addCallCount(1);
-                sampleToGenotype.put(sid, gt.toProtobuf());
+                secAlternate = arr;
             }
-            // Work out PASS / CALL count
-            // Samples from Archive table have PASS/etc set. From Analysis table, the flag is empty (already counted)
-            String filterString = se.getSampleData(sample, VariantMerger.VCF_FILTER);
-            if (StringUtils.equals("PASS", filterString)) {
-                addPassCount(1);
-            } else { // Must count missing filter values!
-                if (StringUtils.isBlank(filterString) || StringUtils.equals("-", filterString)) {
-                    filterString = "."; // Blank and '-' filters are saved together as missing
+
+            for (String sample : sampleSet) {
+                Integer sid = sampleIds.get(sample);
+                // Work out Genotype
+                String gtStr = se.getSampleData(sample, GT_KEY);
+                List<Genotype> gtLst = Genotype.parse(gtStr);
+                if (gtLst.isEmpty()) {
+                    // No GT found for this individual
+                    throw new IllegalStateException("No GT found for " + sample + ": "  + variant.toJson());
+                } else if (gtLst.size() == 1) {
+                    Genotype gt = gtLst.get(0);
+                    int[] alleleIdx = gt.getAllelesIdx();
+                    if (Arrays.equals(alleleIdx, homRef)) {
+                        addCallCount(1);
+                        if (!homref.add(sid)) {
+                            throw new IllegalStateException("Sample already exists as hom_ref " + sample);
+                        }
+                    } else if (Arrays.equals(alleleIdx, hetRef) || Arrays.equals(alleleIdx, hetRefOther)) {
+                        addSampleId(HET_REF, sid);
+                        addCallCount(1);
+                    } else if (Arrays.equals(alleleIdx, homVar)) {
+                        addSampleId(HOM_VAR, sid);
+                        addCallCount(1);
+                    } else if (Arrays.equals(alleleIdx, nocall) || Arrays.equals(alleleIdx, nocallBoth)) {
+                        addSampleId(NOCALL, sid);
+                    } else {
+                        addSampleId(OTHER, sid);
+                        addCallCount(1);
+                        sampleToGenotype.put(sid, gtStr);
+                    }
+                } else {
+                    addSampleId(OTHER, sid);
+                    addCallCount(1);
+                    sampleToGenotype.put(sid, gtStr);
                 }
-                Set<Integer> set = filterToSamples.get(filterString);
-                if (set == null) {
-                    set = new HashSet<Integer>();
-                    filterToSamples.put(filterString, set);
+                // Work out PASS / CALL count
+                // Samples from Archive table have PASS/etc set. From Analysis table, the flag is empty (already counted)
+                String filterString = se.getSampleData(sample, VariantMerger.VCF_FILTER);
+                if (StringUtils.equals("PASS", filterString)) {
+                    addPassCount(1);
+                } else { // Must count missing filter values!
+                    if (StringUtils.isBlank(filterString) || StringUtils.equals("-", filterString)) {
+                        filterString = "."; // Blank and '-' filters are saved together as missing
+                    }
+                    Set<Integer> set = filterToSamples.get(filterString);
+                    if (set == null) {
+                        set = new HashSet<Integer>();
+                        filterToSamples.put(filterString, set);
+                    }
+                    set.add(sid);
                 }
-                set.add(sid);
             }
+            addHomeRefCount(homref.size());
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Problems with " + variant.toJson(), e);
         }
-        addHomeRefCount(homref.size());
     }
 
     @Override

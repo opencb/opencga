@@ -17,7 +17,7 @@
 package org.opencb.opencga.catalog.models;
 
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.acls.CohortAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.CohortAclEntry;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,7 +28,7 @@ import java.util.Map;
  *         <p>
  *         Set of samples grouped according to criteria
  */
-public class Cohort extends Annotable {
+public class Cohort extends Annotable<CohortAclEntry> {
 
     private long id;
     private String name;
@@ -40,7 +40,7 @@ public class Cohort extends Annotable {
     private List<Long> samples;
     private Family family;
 
-    private List<CohortAclEntry> acl;
+//    private List<CohortAclEntry> acl;
 //    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> stats;
@@ -232,10 +232,6 @@ public class Cohort extends Annotable {
     public Cohort setFamily(Family family) {
         this.family = family;
         return this;
-    }
-
-    public List<CohortAclEntry> getAcl() {
-        return acl;
     }
 
     public Cohort setAcl(List<CohortAclEntry> acl) {

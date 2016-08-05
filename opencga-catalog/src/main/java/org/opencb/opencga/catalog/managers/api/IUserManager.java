@@ -19,8 +19,9 @@ public interface IUserManager extends ResourceManager<String, User> {
      *
      * @param sessionId SessionId
      * @return UserId owner of the sessionId. Empty string if SessionId does not match.
+     * @throws CatalogException when the session id does not correspond to any user or the token has expired.
      */
-    String getUserId(String sessionId);
+    String getUserId(String sessionId) throws CatalogException;
 
     /**
      * Create a new user.

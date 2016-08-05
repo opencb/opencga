@@ -16,7 +16,7 @@
 
 package org.opencb.opencga.catalog.models;
 
-import org.opencb.opencga.catalog.models.acls.IndividualAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.IndividualAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.util.Collections;
@@ -28,7 +28,7 @@ import static java.lang.Math.toIntExact;
 /**
  * Created by jacobo on 11/09/14.
  */
-public class Individual extends Annotable {
+public class Individual extends Annotable<IndividualAclEntry> {
 
     private long id;
     private String name;
@@ -46,7 +46,7 @@ public class Individual extends Annotable {
     private AffectationStatus affectationStatus;
     private List<OntologyTerm> ontologyTerms;
 
-    private List<IndividualAclEntry> acl;
+//    private List<IndividualAclEntry> acl;
 //    private List<AnnotationSet> annotationSets;
 
     private Map<String, Object> attributes;
@@ -486,10 +486,6 @@ public class Individual extends Annotable {
     public Individual setOntologyTerms(List<OntologyTerm> ontologyTerms) {
         this.ontologyTerms = ontologyTerms;
         return this;
-    }
-
-    public List<IndividualAclEntry> getAcl() {
-        return acl;
     }
 
     public Individual setAcl(List<IndividualAclEntry> acl) {

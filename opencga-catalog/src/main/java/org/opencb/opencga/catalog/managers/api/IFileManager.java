@@ -1,16 +1,14 @@
 package org.opencb.opencga.catalog.managers.api;
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.Query;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.FileTree;
 import org.opencb.opencga.catalog.models.Study;
-import org.opencb.opencga.catalog.models.acls.DatasetAclEntry;
-import org.opencb.opencga.catalog.models.acls.FileAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -100,6 +98,9 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     QueryResult<File> link(URI uriOrigin, String pathDestiny, long studyId, ObjectMap params, String sessionId)
             throws CatalogException, IOException;
+
+    QueryResult<FileTree> getFileTree(String fileIdStr, Query query, QueryOptions queryOptions, int maxDepth, String sessionId)
+            throws CatalogException;
 
     @Deprecated
     QueryResult<File> unlink(long fileId, String sessionId) throws CatalogException;

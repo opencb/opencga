@@ -34,7 +34,7 @@ import org.opencb.opencga.catalog.db.mongodb.converters.GenericConverter;
 import org.opencb.opencga.catalog.db.mongodb.converters.SampleConverter;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.catalog.models.acls.SampleAclEntry;
+import org.opencb.opencga.catalog.models.acls.permissions.SampleAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.LoggerFactory;
 
@@ -53,12 +53,14 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
 
     private final MongoDBCollection sampleCollection;
     private SampleConverter sampleConverter;
+    private CatalogMongoAclDBAdaptor<SampleAclEntry> aclDBAdaptor;
 
     public CatalogMongoSampleDBAdaptor(MongoDBCollection sampleCollection, CatalogMongoDBAdaptorFactory dbAdaptorFactory) {
         super(LoggerFactory.getLogger(CatalogMongoSampleDBAdaptor.class));
         this.dbAdaptorFactory = dbAdaptorFactory;
         this.sampleCollection = sampleCollection;
         this.sampleConverter = new SampleConverter();
+        this.aclDBAdaptor = new CatalogMongoAclDBAdaptor<>(sampleCollection, sampleConverter, logger);
     }
 
     @Override
@@ -967,46 +969,53 @@ public class CatalogMongoSampleDBAdaptor extends CatalogMongoAnnotationDBAdaptor
     @Override
     public QueryResult<SampleAclEntry> createAcl(long id, SampleAclEntry acl) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.createAcl(id, acl, sampleCollection, "SampleAcl");
-        return endQuery("create sample Acl", startTime, Arrays.asList(acl));
+//        CatalogMongoDBUtils.createAcl(id, acl, sampleCollection, "SampleAcl");
+        return endQuery("create sample Acl", startTime, Arrays.asList(aclDBAdaptor.createAcl(id, acl)));
     }
 
     @Override
     public QueryResult<SampleAclEntry> getAcl(long id, List<String> members) throws CatalogDBException {
         long startTime = startQuery();
+//
+//        List<SampleAclEntry> acl = null;
+//        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection, logger);
+//        Sample sample = sampleConverter.convertToDataModelType(aggregate.first());
+//
+//        if (sample != null) {
+//            acl = sample.getAcl();
+//        }
 
-        List<SampleAclEntry> acl = null;
-        QueryResult<Document> aggregate = CatalogMongoDBUtils.getAcl(id, members, sampleCollection, logger);
-        Sample sample = sampleConverter.convertToDataModelType(aggregate.first());
-
-        if (sample != null) {
-            acl = sample.getAcl();
-        }
-
-        return endQuery("get sample Acl", startTime, acl);
+        return endQuery("get sample Acl", startTime, aclDBAdaptor.getAcl(id, members));
     }
 
     @Override
     public void removeAcl(long id, String member) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAcl(id, member, sampleCollection);
+//        CatalogMongoDBUtils.removeAcl(id, member, sampleCollection);
+        aclDBAdaptor.removeAcl(id, member);
     }
 
     @Override
     public QueryResult<SampleAclEntry> setAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, sampleCollection);
-        return endQuery("Set Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.setAclsToMember(id, member, permissions, sampleCollection);
+        return endQuery("Set Acls to member", startTime, Arrays.asList(aclDBAdaptor.setAclsToMember(id, member, permissions)));
     }
 
     @Override
     public QueryResult<SampleAclEntry> addAclsToMember(long id, String member, List<String> permissions) throws CatalogDBException {
         long startTime = startQuery();
-        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, sampleCollection);
-        return endQuery("Add Acls to member", startTime, getAcl(id, Arrays.asList(member)));
+//        CatalogMongoDBUtils.addAclsToMember(id, member, permissions, sampleCollection);
+        return endQuery("Add Acls to member", startTime, Arrays.asList(aclDBAdaptor.addAclsToMember(id, member, permissions)));
     }
 
     @Override
-    public void removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
-        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, sampleCollection);
+    public QueryResult<SampleAclEntry> removeAclsFromMember(long id, String member, List<String> permissions) throws CatalogDBException {
+//        CatalogMongoDBUtils.removeAclsFromMember(id, member, permissions, sampleCollection);
+        long startTime = startQuery();
+        return endQuery("Remove Acls from member", startTime, Arrays.asList(aclDBAdaptor.removeAclsFromMember(id, member, permissions)));
+    }
+
+    public void removeAclsFromStudy(long studyId, String member) throws CatalogDBException {
+        aclDBAdaptor.removeAclsFromStudy(studyId, member);
     }
 }
