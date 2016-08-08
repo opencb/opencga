@@ -8,6 +8,8 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.log4j.Level;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -46,6 +48,10 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         @Override
         public void before() throws Throwable {
             if (utility.get() == null) {
+
+                //Disable HBase logging
+                org.apache.log4j.Logger.getLogger(FSNamesystem.class.getName() + ".audit").setLevel(Level.WARN);
+
                 utility.set(new HBaseTestingUtility());
                 utility.get().startMiniCluster(1);
                 configuration.set(utility.get().getConfiguration());
@@ -163,14 +169,17 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         return storageConfiguration;
     }
 
-    @Override
-    default void clearDB(String tableName) throws Exception {
-        TableName tname = TableName.valueOf(tableName);
+    default void clearHBase() throws Exception {
         try (Connection con = ConnectionFactory.createConnection(configuration.get()); Admin admin = con.getAdmin()) {
-            if (admin.tableExists(tname)) {
-                utility.get().deleteTable(tableName);
+            for (TableName tableName : admin.listTableNames()) {
+                utility.get().deleteTableIfAny(tableName);
             }
         }
+    }
+
+    @Override
+    default void clearDB(String tableName) throws Exception {
+        utility.get().deleteTableIfAny(TableName.valueOf(tableName));
     }
 
     class TestMRExecutor implements MRExecutor {

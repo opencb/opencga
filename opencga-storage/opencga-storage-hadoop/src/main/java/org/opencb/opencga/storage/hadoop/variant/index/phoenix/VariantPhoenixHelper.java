@@ -84,6 +84,7 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+        TYPE("TYPE", PVarchar.INSTANCE),
 
         SO(ANNOTATION_PREFIX + "SO", PIntegerArray.INSTANCE),
         GENES(ANNOTATION_PREFIX + "GENES", PVarcharArray.INSTANCE),
@@ -92,6 +93,7 @@ public class VariantPhoenixHelper {
         TRANSCRIPTION_FLAGS(ANNOTATION_PREFIX + "FLAGS", PVarcharArray.INSTANCE),
         GENE_TRAITS_NAME(ANNOTATION_PREFIX + "GT_NAME", PVarcharArray.INSTANCE),
         GENE_TRAITS_ID(ANNOTATION_PREFIX + "GT_ID", PVarcharArray.INSTANCE),
+        HPO(ANNOTATION_PREFIX + "HPO", PVarcharArray.INSTANCE),
         PROTEIN_KEYWORDS(ANNOTATION_PREFIX + "PROT_KW", PVarcharArray.INSTANCE),
         DRUG(ANNOTATION_PREFIX + "DRUG", PVarcharArray.INSTANCE),
         XREFS(ANNOTATION_PREFIX + "XREFS", PVarcharArray.INSTANCE),

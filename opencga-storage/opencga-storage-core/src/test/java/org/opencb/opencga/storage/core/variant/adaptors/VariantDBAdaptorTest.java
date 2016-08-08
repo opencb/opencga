@@ -19,6 +19,7 @@ package org.opencb.opencga.storage.core.variant.adaptors;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import htsjdk.variant.variantcontext.VariantContext;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.*;
 import org.opencb.biodata.models.core.Region;
@@ -51,7 +52,6 @@ import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.*;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.*;
-import static org.opencb.opencga.storage.core.variant.adaptors.VariantMatchers.hasGenes;
 
 /**
  * Tests that all the VariantDBAdaptor filters and methods work correctly.
@@ -147,6 +147,40 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     public void testGetAllVariants() {
         long numResults = dbAdaptor.count(null).first();
         assertEquals(NUM_VARIANTS, numResults);
+    }
+
+    @Test
+    public void testGetVariantsByType() {
+        Set<Variant> snv = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.SNV), new QueryOptions()).getResult());
+        System.out.println("SNV = " + snv.size());
+        snv.forEach(variant -> assertThat(EnumSet.of(VariantType.SNV, VariantType.SNP), hasItem(variant.getType())));
+
+        Set<Variant> not_snv = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), "!" + VariantType.SNV), new QueryOptions()).getResult());
+        System.out.println("!SNV = " + not_snv.size());
+        not_snv.forEach(variant -> assertFalse(EnumSet.of(VariantType.SNV, VariantType.SNP).contains(variant.getType())));
+
+        Set<Variant> snv_snp = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.SNV + "," + VariantContext.Type.SNP), new QueryOptions()).getResult());
+        System.out.println("SNV_SNP = " + snv_snp.size());
+        assertEquals(snv_snp, snv);
+
+        Set<Variant> snp = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.SNP), new QueryOptions()).getResult());
+        snp.forEach(variant -> assertEquals(VariantType.SNP, variant.getType()));
+        snp.forEach(variant -> assertThat(snv, hasItem(variant)));
+        System.out.println("SNP = " + snp.size());
+
+        Set<Variant> indels = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.INDEL), new QueryOptions()).getResult());
+        indels.forEach(variant -> assertEquals(VariantType.INDEL, variant.getType()));
+        System.out.println("INDEL = " + indels.size());
+
+        Set<Variant> indels_snp = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.INDEL + "," + VariantType.SNP), new QueryOptions()).getResult());
+        indels_snp.forEach(variant -> assertThat(EnumSet.of(VariantType.INDEL, VariantType.SNP), hasItem(variant.getType())));
+        indels_snp.forEach(variant -> assertTrue(indels.contains(variant) || snp.contains(variant)));
+        System.out.println("INDEL_SNP = " + indels_snp.size());
+
+        Set<Variant> indels_snv = new HashSet<>(dbAdaptor.get(new Query(VariantDBAdaptor.VariantQueryParams.TYPE.key(), VariantType.INDEL + "," + VariantType.SNV), new QueryOptions()).getResult());
+        indels_snv.forEach(variant -> assertThat(EnumSet.of(VariantType.INDEL, VariantType.SNP, VariantType.SNV), hasItem(variant.getType())));
+        indels_snv.forEach(variant -> assertTrue(indels.contains(variant) || snv.contains(variant)));
+        System.out.println("INDEL_SNV = " + indels_snv.size());
     }
 
     @Test
@@ -1239,8 +1273,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
-    public void testIncludeExclude() {
-
+    public void testIncludeAll() {
         for (Variant variant : allVariants.getResult()) {
             assertThat(variant.getStudies(), not(is(Collections.emptyList())));
             assertThat(variant.getStudies().get(0).getStats(), not(is(Collections.emptyList())));
@@ -1248,12 +1281,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertThat(variant.getStudies().get(0).getSamplesData(), not(is(Collections.emptyList())));
             assertNotNull(variant.getAnnotation());
         }
+    }
+
+    @Test
+    public void testExcludeChromosome() {
 
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "chromosome"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertNotNull(variant.getChromosome());
         }
+    }
+
+    @Test
+    public void testExcludeStudies() {
 
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1261,6 +1302,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertThat(variant.getStudies(), is(Collections.emptyList()));
         }
 
+    }
+
+    @Test
+    public void testExcludeStats() {
         for (String exclude : Arrays.asList("studies.stats", "stats")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1269,6 +1314,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+    }
+
+    @Test
+    public void testExcludeFiles() {
         for (String exclude : Arrays.asList("studies.files", "files")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1277,6 +1326,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+    }
+
+    @Test
+    public void testExcludeSamples() {
         for (String exclude : Arrays.asList("studies.samplesData", "samplesData", "samples")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1285,12 +1338,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+    }
+
+    @Test
+    public void testExcludeAnnotation() {
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
-            assertNull(variant.getAnnotation());
+            assertThat(variant.getAnnotation(), anyOf(is((VariantAnnotation) null), is(new VariantAnnotation())));
         }
 
+    }
+
+    @Test
+    public void testInclude() {
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {

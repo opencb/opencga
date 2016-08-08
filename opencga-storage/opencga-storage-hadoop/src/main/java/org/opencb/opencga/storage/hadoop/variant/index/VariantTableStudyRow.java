@@ -61,25 +61,28 @@ public class VariantTableStudyRow {
     private Integer homRefCount = 0;
     private Integer passCount = 0;
     private Integer callCount = 0;
-    private String chromosome;
-    private int pos;
-    private String ref;
-    private String alt;
+    private final String chromosome;
+    private final int pos;
+    private final String ref;
+    private final String alt;
+    private final org.opencb.biodata.models.variant.avro.VariantType type;
     private Map<String, Set<Integer>> callMap = new HashMap<>();
     private Map<Integer, String> sampleToGenotype = new HashMap<>();
     private Map<String, Set<Integer>> filterToSamples = new HashMap<>();
     private List<AlternateCoordinate> secAlternate = new ArrayList<>();
 
-    public VariantTableStudyRow(Integer studyId, String chr, int pos, String ref, String alt) {
+    public VariantTableStudyRow(Integer studyId, String chr, int pos, String ref, String alt,
+                                org.opencb.biodata.models.variant.avro.VariantType type) {
         this.studyId = studyId;
         this.chromosome = chr;
         this.pos = pos;
         this.ref = ref;
         this.alt = alt;
+        this.type = type;
     }
 
     public VariantTableStudyRow(VariantTableStudyRow row) {
-        this(row.studyId, row.chromosome, row.pos, row.ref, row.alt);
+        this(row.studyId, row.chromosome, row.pos, row.ref, row.alt, row.type);
         this.homRefCount = row.homRefCount;
         this.callCount = row.callCount;
         this.passCount = row.passCount;
@@ -95,6 +98,7 @@ public class VariantTableStudyRow {
         this.pos = proto.getStart();
         this.ref = proto.getReference();
         this.alt = proto.getAlternate();
+        this.type = toAvro(proto.getType());
         this.callCount = proto.getCallCount();
         this.passCount = proto.getPassCount();
         this.homRefCount = proto.getHomRefCount();
@@ -120,7 +124,7 @@ public class VariantTableStudyRow {
      * @param variant Variant to extrac the region from
      */
     public VariantTableStudyRow(Integer studyId, Variant variant) {
-        this(studyId, variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate());
+        this(studyId, variant.getChromosome(), variant.getStart(), variant.getReference(), variant.getAlternate(), variant.getType());
     }
 
     public int getPos() {
@@ -251,32 +255,12 @@ public class VariantTableStudyRow {
         return alt;
     }
 
-    public VariantTableStudyRow setAlt(String alt) {
-        this.alt = alt;
-        return this;
-    }
-
     public String getRef() {
         return ref;
     }
 
-    public VariantTableStudyRow setRef(String ref) {
-        this.ref = ref;
-        return this;
-    }
-
-    public VariantTableStudyRow setPos(int pos) {
-        this.pos = pos;
-        return this;
-    }
-
     public String getChromosome() {
         return chromosome;
-    }
-
-    public VariantTableStudyRow setChromosome(String chromosome) {
-        this.chromosome = chromosome;
-        return this;
     }
 
     public VariantTableStudyRow setStudyId(Integer studyId) {
@@ -380,6 +364,7 @@ public class VariantTableStudyRow {
         byte[] cf = helper.getColumnFamily();
         Integer sid = helper.getStudyId();
         Put put = new Put(generateRowKey, ts);
+        put.addColumn(cf, VariantPhoenixHelper.VariantColumn.TYPE.bytes(), Bytes.toBytes(this.type.toString()));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, CALL_CNT)), Bytes.toBytes(this.callCount));
@@ -434,6 +419,7 @@ public class VariantTableStudyRow {
                 .setStart(pos)
                 .setReference(ref)
                 .setAlternate(alt)
+                .setType(toProto(type))
                 .setCallCount(callCount)
                 .setPassCount(passCount)
                 .setHomRefCount(homRefCount)
@@ -445,6 +431,14 @@ public class VariantTableStudyRow {
                 .putAllOtherGt(toSampleListMap(otherGt))
                 .putAllFilterNonPass(toSampleListMap(this.filterToSamples))
                 .build();
+    }
+
+    public VariantType toProto(org.opencb.biodata.models.variant.avro.VariantType type) {
+        return VariantType.valueOf(type.toString());
+    }
+
+    public org.opencb.biodata.models.variant.avro.VariantType toAvro(VariantType type) {
+        return org.opencb.biodata.models.variant.avro.VariantType.valueOf(type.toString());
     }
 
     private Map<String, SampleList> toSampleListMap(Map<String, ? extends Collection<Integer>> map) {
@@ -665,7 +659,7 @@ public class VariantTableStudyRow {
                             .setEnd(Objects.firstNonNull(altCoord.getEnd(), 0))
                             .setReference(Objects.firstNonNull(altCoord.getReference(), ""))
                             .setAlternate(Objects.firstNonNull(altCoord.getAlternate(), ""));
-                    VariantType vt = VariantType.valueOf(altCoord.getType().name());
+                    VariantType vt = toProto(altCoord.getType());
                     ac.setType(vt);
                     arr.add(ac.build());
                 }

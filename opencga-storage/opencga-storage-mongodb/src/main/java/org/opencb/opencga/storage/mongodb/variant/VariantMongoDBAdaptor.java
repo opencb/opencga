@@ -1349,7 +1349,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
                 options.remove(QueryOptions.SORT);
             }
         }
-
+        Set<String> returnedFields = utils.getReturnedFields(options);
         List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
         if (!includeList.isEmpty()) { //Include some
             for (String s : includeList) {
@@ -1744,13 +1744,8 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             samplesConverter.setReturnedUnknownGenotype(query.getString(VariantQueryParams.UNKNOWN_GENOTYPE.key()));
         }
 
-        if (!Collections.disjoint(options.getAsStringList(QueryOptions.EXCLUDE),
-                DocumentToVariantConverter.EXCLUDE_STUDIES_SAMPLES_DATA_FIELD)) {
-            samplesConverter.setReturnedSamples(Collections.singletonList("none"));
-        } else if (query.containsKey(VariantQueryParams.RETURNED_SAMPLES.key())) {
-            //Remove the studyName, if any
-            samplesConverter.setReturnedSamples(utils.getReturnedSamples(query));
-        }
+        samplesConverter.setReturnedSamples(utils.getReturnedSamples(query, options));
+
         DocumentToStudyVariantEntryConverter studyEntryConverter;
         Collection<Integer> returnedFiles;
         if (!Collections.disjoint(options.getAsStringList(QueryOptions.EXCLUDE),
