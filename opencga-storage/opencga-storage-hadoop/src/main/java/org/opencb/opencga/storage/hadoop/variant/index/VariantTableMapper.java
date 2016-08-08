@@ -83,6 +83,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         // Archive: unpack Archive data (selection only
         List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
+        completeAlternateCoordinates(archiveVar);
         ctx.context.getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ARCHIVE").increment(archiveVar.size());
 
         endTime("3 Unpack and convert input ARCHIVE variants");
@@ -146,6 +147,24 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         updateArchiveTable(ctx.key, ctx.context, rows);
         endTime("11 Update INPUT table");
+    }
+
+    private void completeAlternateCoordinates(List<Variant> variants) {
+        for (Variant variant : variants) {
+            for (StudyEntry study : variant.getStudies()) {
+                List<AlternateCoordinate> alternates = study.getSecondaryAlternates();
+                if (alternates != null) {
+                    for (AlternateCoordinate alt : alternates) {
+                        alt.setChromosome(alt.getChromosome() == null ? variant.getChromosome() : alt.getChromosome());
+                        alt.setStart(alt.getStart() == null ? variant.getStart() : alt.getStart());
+                        alt.setEnd(alt.getEnd() == null ? variant.getEnd() : alt.getEnd());
+                        alt.setReference(alt.getReference() == null ? variant.getReference() : alt.getReference());
+                        alt.setAlternate(alt.getAlternate() == null ? variant.getAlternate() : alt.getAlternate());
+
+                    }
+                }
+            }
+        }
     }
 
     private Set<Variant> getNewVariantsAsTemplates(VariantMapReduceContext ctx, List<Variant> analysisVar,
@@ -242,7 +261,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     private Collection<Variant> buildOverlappingNonRedundantSet(Variant var, List<Variant> archiveVar) {
         List<Variant> overlap =
-                archiveVar.stream().filter(v -> var.overlapWith(var, true)).collect(Collectors.toList());
+                archiveVar.stream().filter(v -> var.overlapWith(v, true)).collect(Collectors.toList());
         Set<String> origCalls = new HashSet<>();
         List<Variant> uniqueList = new ArrayList<>();
         for (Variant variant : overlap) {
