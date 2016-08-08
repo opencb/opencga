@@ -51,6 +51,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private static boolean failOnWrongVariants = false; //FIXME
     private boolean studyNameAsStudyId = false;
     private boolean mutableSamplesPosition = true;
+    private boolean failOnEmptyVariants = false;
 
     public HBaseToVariantConverter(VariantTableHelper variantTableHelper) throws IOException {
         this(variantTableHelper, new HBaseStudyConfigurationManager(variantTableHelper.getOutputTableAsString(),
@@ -76,6 +77,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
 
     public HBaseToVariantConverter setMutableSamplesPosition(boolean mutableSamplesPosition) {
         this.mutableSamplesPosition = mutableSamplesPosition;
+        return this;
+    }
+
+    public HBaseToVariantConverter setFailOnEmptyVariants(boolean failOnEmptyVariants) {
+        this.failOnEmptyVariants = failOnEmptyVariants;
         return this;
     }
 
@@ -115,11 +121,11 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         if (annotation == null) {
             annotation = new VariantAnnotation();
         }
-        if (rows.isEmpty()) {
+        if (failOnEmptyVariants && rows.isEmpty()) {
             throw new IllegalStateException("No Row columns supplied for row " + variant);
         }
         for (VariantTableStudyRow row : rows) {
-            Map<String, String> attributesMap = new HashMap<String, String>();
+            Map<String, String> attributesMap = new HashMap<>();
             Integer studyId = row.getStudyId();
             QueryResult<StudyConfiguration> queryResult = scm.getStudyConfiguration(studyId, scmOptions);
             if (queryResult.getResult().isEmpty()) {
@@ -280,7 +286,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         } else {
             variant.setId(variant.toString());
         }
-        if (variant.getStudiesMap().isEmpty()) {
+        if (failOnEmptyVariants && variant.getStudies().isEmpty()) {
             throw new IllegalStateException("No Studies registered for variant!!! " + variant);
         }
         return variant;

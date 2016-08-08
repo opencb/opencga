@@ -1273,8 +1273,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
     }
 
     @Test
-    public void testIncludeExclude() {
-
+    public void testIncludeAll() {
         for (Variant variant : allVariants.getResult()) {
             assertThat(variant.getStudies(), not(is(Collections.emptyList())));
             assertThat(variant.getStudies().get(0).getStats(), not(is(Collections.emptyList())));
@@ -1282,12 +1281,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertThat(variant.getStudies().get(0).getSamplesData(), not(is(Collections.emptyList())));
             assertNotNull(variant.getAnnotation());
         }
+    }
+
+    @Test
+    public void testExcludeChromosome() {
 
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "chromosome"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
             assertNotNull(variant.getChromosome());
         }
+    }
+
+    @Test
+    public void testExcludeStudies() {
 
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1295,6 +1302,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             assertThat(variant.getStudies(), is(Collections.emptyList()));
         }
 
+    }
+
+    @Test
+    public void testExcludeStats() {
         for (String exclude : Arrays.asList("studies.stats", "stats")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1303,6 +1314,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+    }
+
+    @Test
+    public void testExcludeFiles() {
         for (String exclude : Arrays.asList("studies.files", "files")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1311,6 +1326,10 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+    }
+
+    @Test
+    public void testExcludeSamples() {
         for (String exclude : Arrays.asList("studies.samplesData", "samplesData", "samples")) {
             queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, exclude));
             assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
@@ -1319,12 +1338,20 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
             }
         }
 
+    }
+
+    @Test
+    public void testExcludeAnnotation() {
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.EXCLUDE, "annotation"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {
-            assertNull(variant.getAnnotation());
+            assertThat(variant.getAnnotation(), anyOf(is((VariantAnnotation) null), is(new VariantAnnotation())));
         }
 
+    }
+
+    @Test
+    public void testInclude() {
         queryResult = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.INCLUDE, "studies"));
         assertEquals(allVariants.getResult().size(), queryResult.getResult().size());
         for (Variant variant : queryResult.getResult()) {

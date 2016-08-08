@@ -28,6 +28,27 @@ public class VariantDBAdaptorUtils {
     public static final String OR = ",";
     public static final String AND = ";";
     public static final String IS = ":";
+    public static final Map<String, String> PROJECT_FIELD_ALIAS;
+
+    public static final String SAMPLES_FIELD = "samples";
+    public static final String STUDIES_FIELD = "studies";
+    public static final String STATS_FIELD = "stats";
+    public static final String ANNOTATION_FIELD = "annotation";
+
+    static {
+        Map<String, String> map =  new HashMap<>();
+        map.put("studies.samplesData", SAMPLES_FIELD);
+        map.put("samplesData", SAMPLES_FIELD);
+        map.put(SAMPLES_FIELD, SAMPLES_FIELD);
+        map.put("sourceEntries", STUDIES_FIELD);
+        map.put("studies.cohortStats", STATS_FIELD);
+        map.put("studies.stats", STATS_FIELD);
+        map.put("sourceEntries.stats", STATS_FIELD);
+        map.put(STATS_FIELD, STATS_FIELD);
+        map.put(STUDIES_FIELD, STUDIES_FIELD);
+        map.put(ANNOTATION_FIELD, ANNOTATION_FIELD);
+        PROJECT_FIELD_ALIAS = Collections.unmodifiableMap(map);
+    }
 
     private VariantDBAdaptor adaptor;
 
@@ -185,6 +206,48 @@ public class VariantDBAdaptorUtils {
             }
         }
         return sampleId;
+    }
+
+    public Set<String> getReturnedFields(QueryOptions options) {
+        Set<String> returnedFields;
+
+        List<String> includeList = options.getAsStringList(QueryOptions.INCLUDE);
+        if (includeList != null && !includeList.isEmpty()) {
+//            System.out.println("includeList = " + includeList);
+            returnedFields = new HashSet<>();
+            for (String include : includeList) {
+                returnedFields.add(PROJECT_FIELD_ALIAS.get(include));
+            }
+            if (returnedFields.contains(STUDIES_FIELD)) {
+                returnedFields.add(SAMPLES_FIELD);
+                returnedFields.add(STATS_FIELD);
+            } else if (returnedFields.contains(SAMPLES_FIELD) || returnedFields.contains(STATS_FIELD)) {
+                returnedFields.add(STUDIES_FIELD);
+            }
+
+        } else {
+            List<String> excludeList = options.getAsStringList(QueryOptions.EXCLUDE);
+            if (excludeList != null && !excludeList.isEmpty()) {
+//                System.out.println("excludeList = " + excludeList);
+                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+                for (String exclude : excludeList) {
+                    returnedFields.remove(PROJECT_FIELD_ALIAS.get(exclude));
+                }
+            } else {
+                returnedFields = new HashSet<>(PROJECT_FIELD_ALIAS.values());
+            }
+        }
+//        System.out.println("returnedFields = " + returnedFields);
+        return returnedFields;
+    }
+
+    public List<String> getReturnedSamples(Query query, QueryOptions options) {
+        if (!getReturnedFields(options).contains(SAMPLES_FIELD)) {
+            return Collections.singletonList("none");
+        } else {
+            //Remove the studyName, if any
+            return getReturnedSamples(query);
+        }
     }
 
     public List<String> getReturnedSamples(Query query) {

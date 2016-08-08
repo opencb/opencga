@@ -123,6 +123,9 @@ public class VariantSqlQueryParser {
         if (options.getBoolean(COUNT)) {
             return sb.append(" COUNT(*) ");
         } else {
+
+            Set<String> returnedFields = utils.getReturnedFields(options);
+
             List<Integer> studyIds = utils.getStudyIds(options.getAsList(RETURNED_STUDIES.key()), options);
             if (studyIds == null || studyIds.isEmpty()) {
                 studyIds = utils.getStudyIds(options);
@@ -134,18 +137,32 @@ public class VariantSqlQueryParser {
                     .append(VariantColumn.ALTERNATE).append(',')
                     .append(VariantColumn.TYPE);
 
-            for (Integer studyId : studyIds) {
-                for (String studyColumn : STUDY_COLUMNS) {
-                    sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
-                }
-                StudyConfiguration studyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyId, null).first();
-                for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
-                    Column statsColumn = getStatsColumn(studyId, cohortId);
-                    sb.append(",\"").append(statsColumn.column()).append('"');
+            if (returnedFields.contains(STUDIES_FIELD)) {
+                for (Integer studyId : studyIds) {
+                    List<String> studyColumns = STUDY_COLUMNS;
+//                    if (returnedFields.contains(SAMPLES_FIELD)) {
+//                        studyColumns = STUDY_COLUMNS;
+//                    } else {
+//                        // If samples are not required, do not fetch all the fields
+//                        studyColumns = Collections.singletonList(HOM_REF);
+//                    }
+                    for (String studyColumn : studyColumns) {
+                        sb.append(",\"").append(buildColumnKey(studyId, studyColumn)).append('"');
+                    }
+                    if (returnedFields.contains(STATS_FIELD)) {
+                        StudyConfiguration studyConfiguration = utils.getStudyConfigurationManager()
+                                .getStudyConfiguration(studyId, null).first();
+                        for (Integer cohortId : studyConfiguration.getCalculatedStats()) {
+                            Column statsColumn = getStatsColumn(studyId, cohortId);
+                            sb.append(",\"").append(statsColumn.column()).append('"');
+                        }
+                    }
                 }
             }
 
-            sb.append(',').append(VariantColumn.FULL_ANNOTATION);
+            if (returnedFields.contains(ANNOTATION_FIELD)) {
+                sb.append(',').append(VariantColumn.FULL_ANNOTATION);
+            }
 
             return sb;
         }
