@@ -591,7 +591,7 @@ public class VariantSqlQueryParser {
 
         addQueryFilter(query, ANNOT_GENE_TRAITS_NAME, VariantColumn.GENE_TRAITS_NAME, filters);
 
-        unsupportedFilter(query, ANNOT_HPO);
+        addQueryFilter(query, ANNOT_HPO, VariantColumn.HPO, filters);
 
         if (isValidParam(query, ANNOT_GO)) {
             String value = query.getString(ANNOT_GO.key());
