@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
  */
 public class VariantDBAdaptorUtils {
 
-    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=|!?=?~|==?)([^=<>~!]+.*)$");
+    public static final Pattern OPERATION_PATTERN = Pattern.compile("^([^=<>~!]*)(<=?|>=?|!=?|!?=?~|==?)([^=<>~!]+.*)$");
 
     public static final String OR = ",";
     public static final String AND = ";";

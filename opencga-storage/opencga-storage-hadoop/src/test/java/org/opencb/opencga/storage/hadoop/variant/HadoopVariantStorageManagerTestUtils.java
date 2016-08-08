@@ -8,6 +8,8 @@ import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
+import org.apache.hadoop.hdfs.server.namenode.FSNamesystem;
+import org.apache.log4j.Level;
 import org.apache.tools.ant.types.Commandline;
 import org.junit.Assert;
 import org.junit.rules.ExternalResource;
@@ -46,6 +48,10 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
         @Override
         public void before() throws Throwable {
             if (utility.get() == null) {
+
+                //Disable HBase logging
+                org.apache.log4j.Logger.getLogger(FSNamesystem.class.getName() + ".audit").setLevel(Level.WARN);
+
                 utility.set(new HBaseTestingUtility());
                 utility.get().startMiniCluster(1);
                 configuration.set(utility.get().getConfiguration());

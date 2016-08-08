@@ -93,6 +93,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.REFERENCE.column()),
                 resultSet.getString(VariantPhoenixHelper.VariantColumn.ALTERNATE.column())
         );
+        variant.setType(VariantType.valueOf(resultSet.getString(VariantPhoenixHelper.VariantColumn.TYPE.column())));
         try {
             Map<Integer, Map<Integer, VariantStats>> stats = statsConverter.convert(resultSet);
             VariantAnnotation annotation = annotationConverter.convert(resultSet);
@@ -158,7 +159,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             int homRefCount = studyConfiguration.getSampleIds().size();
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
-                homRefCount -= row.getGenotypes().size();
+                homRefCount -= row.getSampleIds(genotype).size();
                 if (genotype.equals(VariantTableStudyRow.OTHER)) {
                     continue; // skip OTHER -> see Complex type
                 }

@@ -84,6 +84,7 @@ public class VariantPhoenixHelper {
         POSITION("POSITION", PUnsignedInt.INSTANCE),
         REFERENCE("REFERENCE", PVarchar.INSTANCE),
         ALTERNATE("ALTERNATE", PVarchar.INSTANCE),
+        TYPE("TYPE", PVarchar.INSTANCE),
 
         SO(ANNOTATION_PREFIX + "SO", PIntegerArray.INSTANCE),
         GENES(ANNOTATION_PREFIX + "GENES", PVarcharArray.INSTANCE),
