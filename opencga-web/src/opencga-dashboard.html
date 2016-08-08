@@ -33,33 +33,73 @@
         <div class="row center">
             <!--LEFT-->
             <div class="col-md-2">
-                <opencga-widget title="Notifications">
-                    Notification 1</br>
-                    Notification 2
-                </opencga-widget>
-                <opencga-widget title="Query filters">
-                    Filter 1</br>
-                    Filter 2
-                </opencga-widget>
+                <div  style="margin: 10px;">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Notifications</div>
+                        <div class="panel-body">
+                            Notification 1</br>
+                            Notification 2
+                        </div>
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Query filters</div>
+                        <div class="panel-body">
+                            Filter 1</br>
+                            Filter 2
+                        </div>
+                    </div>
+                </div>
+                <!--<opencga-widget title="Notifications">-->
+                    <!--Notification 1</br>-->
+                    <!--Notification 2-->
+                <!--</opencga-widget>-->
+                <!--<opencga-widget title="Query filters">-->
+                    <!--Filter 1</br>-->
+                    <!--Filter 2-->
+                <!--</opencga-widget>-->
             </div>
 
             <!--CENTER-->
             <div class="col-md-8">
-                <opencga-widget title="Projects">
-                    <opencga-projects projects="{{projects}}" hide-text on-project="updateProject" on-study="updateStudy"></opencga-projects>
-                </opencga-widget>
+                <div  style="margin: 10px;">
+                    <div class="panel panel-primary">
+                        <div class="panel-heading">Projects</div>
+                        <div class="panel-body">
+                            <opencga-projects projects="{{projects}}" hide-text on-project="updateProject" on-study="updateStudy"></opencga-projects>
+                        </div>
+                    </div>
+                </div>
+                <!--<opencga-widget title="Projects">-->
+                    <!--<opencga-projects projects="{{projects}}" hide-text on-project="updateProject" on-study="updateStudy"></opencga-projects>-->
+                <!--</opencga-widget>-->
             </div>
 
             <!--RIGHT-->
             <div class="col-md-2">
-                <opencga-widget title="Running jobs">
-                    Job 1</br>
-                    Job 2
-                </opencga-widget>
-                <opencga-widget title="Finished jobs">
-                    Job 3</br>
-                    Job 4
-                </opencga-widget>
+                <div  style="margin: 10px;">
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Running jobs</div>
+                        <div class="panel-body">
+                            Job 1</br>
+                            Job 2
+                        </div>
+                    </div>
+                    <div class="panel panel-default">
+                        <div class="panel-heading">Finished jobs</div>
+                        <div class="panel-body">
+                            Job 3</br>
+                            Job 4
+                        </div>
+                    </div>
+                </div>
+                <!--<opencga-widget title="Running jobs">-->
+                    <!--Job 1</br>-->
+                    <!--Job 2-->
+                <!--</opencga-widget>-->
+                <!--<opencga-widget title="Finished jobs">-->
+                    <!--Job 3</br>-->
+                    <!--Job 4-->
+                <!--</opencga-widget>-->
             </div>
         </div>
 
