@@ -29,6 +29,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 /**
  * Created on 20/11/15.
@@ -161,8 +162,15 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             attributesMap.put("CR", String.valueOf(callrate));
             attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
 
+            Set<Integer> loadedSamples = new HashSet<>();
+            LinkedHashSet<Integer> indexedFiles = studyConfiguration.getIndexedFiles();
+            for (Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration
+                    .getSamplesInFiles().entrySet()) {
+                loadedSamples.addAll(indexedFiles.stream().filter(indexedFile -> entry.getValue().contains
+                        (indexedFile)).map(indexedFile -> entry.getKey()).collect(Collectors.toList()));
+            }
 
-            int homRefCount = studyConfiguration.getSampleIds().size();
+            int homRefCount = loadedSamples.size();
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
                 homRefCount -= row.getSampleIds(genotype).size();
@@ -214,7 +222,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
 
             // Set pass field
-            int passCount = studyConfiguration.getSampleIds().size();
+            int passCount = loadedSamples.size();
             for (Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
                 String filterString = entry.getKey();
                 passCount -= entry.getValue().getSampleIdsCount();
