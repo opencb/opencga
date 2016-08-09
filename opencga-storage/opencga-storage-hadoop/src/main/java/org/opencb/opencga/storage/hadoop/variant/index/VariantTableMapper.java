@@ -122,6 +122,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
             List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.sliceKey, ctx.fileIds);
             endTime("8 Load archive slice from hbase");
             if (!archiveOther.isEmpty()) {
+                completeAlternateCoordinates(archiveOther);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE").increment(archiveOther.size());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "OTHER_VARIANTS_FROM_ARCHIVE_NUM_QUERIES").increment(1);
                 for (Variant var : analysisNew) {
