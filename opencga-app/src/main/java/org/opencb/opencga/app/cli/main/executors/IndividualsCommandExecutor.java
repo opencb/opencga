@@ -58,64 +58,65 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
 
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "search":
-                search();
+                createOutput(search());
                 break;
             case "update":
-                update();
+                createOutput(update());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "group-by":
-                groupBy();
+                createOutput(groupBy());
                 break;
             case "acl":
-                aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
+                createOutput(aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient()));
                 break;
             case "acl-create":
-                aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions, openCGAClient.getIndividualClient());
+                createOutput(aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "acl-member-delete":
-                aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "acl-member-info":
-                aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "acl-member-update":
-                aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "annotation-sets-create":
-                annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "annotation-sets-all-info":
-                annotationCommandExecutor.getAllAnnotationSets(individualsCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(annotationCommandExecutor.getAllAnnotationSets(individualsCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "annotation-sets-search":
-                annotationCommandExecutor.searchAnnotationSets(individualsCommandOptions.annotationSearchCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(annotationCommandExecutor.searchAnnotationSets(individualsCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "annotation-sets-delete":
-                annotationCommandExecutor.deleteAnnotationSet(individualsCommandOptions.annotationDeleteCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(annotationCommandExecutor.deleteAnnotationSet(individualsCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "annotation-sets-info":
-                annotationCommandExecutor.getAnnotationSet(individualsCommandOptions.annotationInfoCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(annotationCommandExecutor.getAnnotationSet(individualsCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             case "annotation-sets-update":
-                annotationCommandExecutor.updateAnnotationSet(individualsCommandOptions.annotationUpdateCommandOptions,
-                        openCGAClient.getIndividualClient());
+                createOutput(annotationCommandExecutor.updateAnnotationSet(individualsCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getIndividualClient()));
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -124,7 +125,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<Individual> create() throws CatalogException, IOException {
         logger.debug("Creating individual");
         ObjectMap objectMap = new ObjectMap();
 
@@ -141,13 +142,11 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.SEX.key(), individualsCommandOptions.createCommandOptions.sex);
         }
 
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
-                .create(individualsCommandOptions.createCommandOptions.studyId, individualsCommandOptions.createCommandOptions.name,
-                        objectMap);
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
+        return openCGAClient.getIndividualClient().create(individualsCommandOptions.createCommandOptions.studyId,
+                individualsCommandOptions.createCommandOptions.name, objectMap);
     }
 
-    private void info() throws CatalogException, IOException {
+    private QueryResponse<Individual> info() throws CatalogException, IOException {
         logger.debug("Getting individual information");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -158,12 +157,10 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.commonOptions.exclude);
         }
 
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
-                .get(individualsCommandOptions.infoCommandOptions.id, queryOptions);
-        System.out.println(individuals.toString());
+        return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
-    private void search() throws CatalogException, IOException {
+    private QueryResponse<Individual> search() throws CatalogException, IOException {
         logger.debug("Searching individuals");
 
         Query query = new Query();
@@ -219,12 +216,11 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.commonOptions.limit);
         }
 
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient().search(query, queryOptions);
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
+        return openCGAClient.getIndividualClient().search(query, queryOptions);
     }
 
 
-    private void update() throws CatalogException, IOException {
+    private QueryResponse<Individual> update() throws CatalogException, IOException {
         logger.debug("Updating individual information");
 
         ObjectMap objectMap = new ObjectMap();
@@ -251,20 +247,16 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogIndividualDBAdaptor.QueryParams.ETHNICITY.key(), individualsCommandOptions.updateCommandOptions.ethnicity);
         }
 
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
-                .update(individualsCommandOptions.updateCommandOptions.id, objectMap);
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
+        return openCGAClient.getIndividualClient().update(individualsCommandOptions.updateCommandOptions.id, objectMap);
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<Individual> delete() throws CatalogException, IOException {
         logger.debug("Deleting individual information");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient()
-                .delete(individualsCommandOptions.deleteCommandOptions.id, objectMap);
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
+        return openCGAClient.getIndividualClient().delete(individualsCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private void groupBy() throws CatalogException, IOException {
+    private QueryResponse<Individual> groupBy() throws CatalogException, IOException {
         logger.debug("Group by individuals");
 
         ObjectMap objectMap = new ObjectMap();
@@ -310,9 +302,8 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     individualsCommandOptions.groupByCommandOptions.annotationSetName);
         }
 
-        QueryResponse<Individual> individuals = openCGAClient.getIndividualClient().groupBy(
+        return openCGAClient.getIndividualClient().groupBy(
                 individualsCommandOptions.groupByCommandOptions.studyId, individualsCommandOptions.groupByCommandOptions.by, objectMap);
-        individuals.first().getResult().stream().forEach(individual -> System.out.println(individual.toString()));
     }
 
 }

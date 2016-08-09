@@ -51,22 +51,22 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "update":
-                update();
+                createOutput(update());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "studies":
-                studies();
+                createOutput(studies());
                 break;
             case "help":
-                help();
+                createOutput(help());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -75,26 +75,23 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<Project> create() throws CatalogException, IOException {
         logger.debug("Creating a new project");
         ObjectMap o = new ObjectMap();
         o.append(CatalogProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.createCommandOptions.description);
         if (projectsCommandOptions.createCommandOptions.organization != null) {
             o.append("organization", projectsCommandOptions.createCommandOptions.organization);
         }
-        openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
+        return openCGAClient.getProjectClient().create(projectsCommandOptions.createCommandOptions.name,
                 projectsCommandOptions.createCommandOptions.alias, o);
-
-        System.out.println("Created");
     }
 
-    private void info() throws CatalogException, IOException {
+    private QueryResponse<Project> info() throws CatalogException, IOException {
         logger.debug("Geting the project info");
-        QueryResponse<Project> info = openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.id, null);
-        System.out.println("Project: " + info);
+        return openCGAClient.getProjectClient().get(projectsCommandOptions.infoCommandOptions.id, null);
     }
 
-    private void update() throws CatalogException, IOException {
+    private QueryResponse<Project> update() throws CatalogException, IOException {
         logger.debug("Updating project");
 
         ObjectMap objectMap = new ObjectMap();
@@ -116,19 +113,16 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
         }
 
-        QueryResponse<Project> project = openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.id, objectMap);
-        System.out.println("Project: " + project);
-
+        return openCGAClient.getProjectClient().update(projectsCommandOptions.updateCommandOptions.id, objectMap);
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<Project> delete() throws CatalogException, IOException {
         logger.debug("Deleting project ");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<Project> study = openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.id, objectMap);
-        System.out.println("Study: " + study);
+        return openCGAClient.getProjectClient().delete(projectsCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private void studies() throws CatalogException, IOException {
+    private QueryResponse<Study> studies() throws CatalogException, IOException {
         logger.debug("Getting all studies the from a project ");
         QueryOptions queryOptions = new QueryOptions();
 
@@ -145,14 +139,13 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.skip)) {
             queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.commonOptions.skip);
         }
-        QueryResponse<Study> study = openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
-        System.out.println("Study: " + study);
-
+        return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
     }
 
-    private void help() throws CatalogException, IOException {
+    private QueryResponse help() throws CatalogException, IOException {
 
         System.out.println("PENDING");
+        return null;
 
     }
 

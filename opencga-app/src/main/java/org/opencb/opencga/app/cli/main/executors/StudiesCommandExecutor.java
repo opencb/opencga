@@ -65,73 +65,77 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing studies command line: {}", subCommandString);
         switch (subCommandString) {
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "update":
-                update();
+                createOutput(update());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "summary":
-                summary();
+                createOutput(summary());
                 break;
             case "help":
-                help();
+                createOutput(help());
                 break;
             case "search":
-                search();
+                createOutput(search());
                 break;
             case "scan-files":
-                scanFiles();
+                createOutput(scanFiles());
                 break;
             case "files":
-                files();
+                createOutput(files());
                 break;
             case "alignments":
-                alignments();
+                createOutput(alignments());
                 break;
             case "samples":
-                samples();
+                createOutput(samples());
                 break;
             case "jobs":
-                jobs();
+                createOutput(jobs());
                 break;
             case "variants":
-                variants();
+                createOutput(variants());
                 break;
             case "acl":
-                aclCommandExecutor.acls(studiesCommandOptions.aclsCommandOptions, openCGAClient.getStudyClient());
+                createOutput(aclCommandExecutor.acls(studiesCommandOptions.aclsCommandOptions, openCGAClient.getStudyClient()));
                 break;
             case "acl-create":
-                aclCommandExecutor.aclsCreateTemplate(studiesCommandOptions.aclsCreateCommandOptions, openCGAClient.getStudyClient());
+                createOutput(aclCommandExecutor.aclsCreateTemplate(studiesCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getStudyClient()));
                 break;
             case "acl-member-delete":
-                aclCommandExecutor.aclMemberDelete(studiesCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getStudyClient());
+                createOutput(aclCommandExecutor.aclMemberDelete(studiesCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getStudyClient()));
                 break;
             case "acl-member-info":
-                aclCommandExecutor.aclMemberInfo(studiesCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getStudyClient());
+                createOutput(aclCommandExecutor.aclMemberInfo(studiesCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getStudyClient()));
                 break;
             case "acl-member-update":
-                aclCommandExecutor.aclMemberUpdate(studiesCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getStudyClient());
+                createOutput(aclCommandExecutor.aclMemberUpdate(studiesCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getStudyClient()));
                 break;
             case "groups":
-                groups();
+                createOutput(groups());
                 break;
             case "groups-create":
-                groupsCreate();
+                createOutput(groupsCreate());
                 break;
             case "groups-delete":
-                groupsDelete();
+                createOutput(groupsDelete());
                 break;
             case "groups-info":
-                groupsInfo();
+                createOutput(groupsInfo());
                 break;
             case "groups-update":
-                groupsUpdate();
+                createOutput(groupsUpdate());
                 break;
 
             default:
@@ -143,7 +147,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     /**********************************************  Administration Commands  ***********************************************/
 
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<Study> create() throws CatalogException, IOException {
 
         logger.debug("Creating a new study");
         String alias = studiesCommandOptions.createCommandOptions.alias;
@@ -161,22 +165,20 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 o.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper study type", type);
-                return;
+                return null;
             }
         }
 
-        openCGAClient.getStudyClient().create(projectId, name, alias, o);
-        System.out.println("Done.");
+        return openCGAClient.getStudyClient().create(projectId, name, alias, o);
     }
 
-    private void info() throws CatalogException, IOException {
+    private QueryResponse<Study> info() throws CatalogException, IOException {
 
         logger.debug("Getting the study info");
-        QueryResponse<Study> info = openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id, null);
-        System.out.println("Study: " + info);
+        return openCGAClient.getStudyClient().get(studiesCommandOptions.infoCommandOptions.id, null);
     }
 
-    private void update() throws CatalogException, IOException {
+    private QueryResponse<Study> update() throws CatalogException, IOException {
 
         logger.debug("Updating the study");
 
@@ -195,32 +197,26 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), studiesCommandOptions.updateCommandOptions.status);
         }
 
-        QueryResponse<Study> study = openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, objectMap);
-        System.out.println("Study: " + study);
+        return openCGAClient.getStudyClient().update(studiesCommandOptions.updateCommandOptions.id, objectMap);
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<Study> delete() throws CatalogException, IOException {
 
         logger.debug("Deleting a study");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<Study> study = openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.id, objectMap);
-        System.out.println("Study: " + study);
-
+        return openCGAClient.getStudyClient().delete(studiesCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
     /************************************************  Summary and help Commands  ***********************************************/
 
-    private void summary() throws CatalogException, IOException {
+    private QueryResponse<StudySummary> summary() throws CatalogException, IOException {
 
         logger.debug("Doing summary with the general stats of a study");
         QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<StudySummary> studySummaryQueryResponse =
-                openCGAClient.getStudyClient().getSummary(studiesCommandOptions.deleteCommandOptions.id, queryOptions);
-        System.out.println("StudySummary: " + studySummaryQueryResponse);
-
+        return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.deleteCommandOptions.id, queryOptions);
     }
 
-    private void help() throws CatalogException, IOException {
+    private QueryResponse<Study> help() throws CatalogException, IOException {
 
         logger.debug("Helping");
         /*QueryOptions queryOptions = new QueryOptions();
@@ -228,12 +224,12 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 openCGAClient.getStudyClient().help(queryOptions);
         System.out.println("Help: " + study);*/
         System.out.println("PENDING");
-
+        return null;
     }
 
     /************************************************  Search Commands  ***********************************************/
 
-    private void search() throws CatalogException, IOException {
+    private QueryResponse<Study> search() throws CatalogException, IOException {
 
         logger.debug("Searching study");
 
@@ -274,7 +270,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                 query.append(CatalogStudyDBAdaptor.QueryParams.TYPE.key(), Study.Type.valueOf(type));
             } catch (IllegalArgumentException e) {
                 logger.error("{} not recognized as a proper study type", type);
-                return;
+                return null;
             }
         }
 
@@ -306,18 +302,16 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 //            query.put(CatalogStudyDBAdaptor.QueryParams.GROUP_USER_IDS.key(), groupsUsers);
 //        }
 
-        QueryResponse<Study> studies = openCGAClient.getStudyClient().search(query, null);
-        System.out.println("Studies: " + studies);
+        return openCGAClient.getStudyClient().search(query, null);
     }
 
-    private void scanFiles() throws CatalogException, IOException {
+    private QueryResponse scanFiles() throws CatalogException, IOException {
 
         logger.debug("Scan the study folder to find changes\n");
-        QueryResponse scan = openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
-        System.out.println("Scan Files: " + scan);
+        return openCGAClient.getStudyClient().scanFiles(studiesCommandOptions.scanFilesCommandOptions.id, null);
     }
 
-    private void files() throws CatalogException, IOException {
+    private QueryResponse<File> files() throws CatalogException, IOException {
 
         logger.debug("Listing files of a study");
 
@@ -332,11 +326,10 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), studiesCommandOptions.filesCommandOptions.size);
         }
 
-        QueryResponse<File> files = openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.id, queryOptions);
-        files.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
+        return openCGAClient.getStudyClient().getFiles(studiesCommandOptions.filesCommandOptions.id, queryOptions);
     }
 
-    private void jobs() throws CatalogException, IOException {
+    private QueryResponse<Job> jobs() throws CatalogException, IOException {
 
         logger.debug("Listing jobs of a study");
 
@@ -383,15 +376,14 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
 
-        QueryResponse<Job> jobs = openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.id, queryOptions);
-        jobs.first().getResult().stream().forEach(file -> System.out.println(jobs.toString()));
+        return openCGAClient.getStudyClient().getJobs(studiesCommandOptions.jobsCommandOptions.id, queryOptions);
     }
 
-    private void alignments() throws CatalogException, IOException {
+    private QueryResponse alignments() throws CatalogException, IOException {
 
         //TODO
         logger.debug("Listing alignments of a study");
-
+        return null;
       /*PENDING
 
         QueryOptions queryOptions = new QueryOptions();
@@ -426,7 +418,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         System.out.println(alignments.toString());*/
     }
 
-    private void samples() throws CatalogException, IOException {
+    private QueryResponse<Sample> samples() throws CatalogException, IOException {
 
         logger.debug("Listing samples of a study");
 
@@ -454,12 +446,10 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.commonOptions.skip);
         }
         queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
-        QueryResponse<Sample> samples =
-                openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
-        System.out.println(samples.toString());
+        return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
     }
 
-    private void variants() throws CatalogException, IOException {
+    private QueryResponse<Variant> variants() throws CatalogException, IOException {
 
         //TODO
         logger.debug("Listing variants of a study. Building");
@@ -669,53 +659,41 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         }
         queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
 
-        QueryResponse<Variant> samples =
-                openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
-        System.out.println(samples.toString());
+        return openCGAClient.getStudyClient().getVariants(studiesCommandOptions.variantsCommandOptions.id, queryOptions);
     }
 
     /************************************************* Groups commands *********************************************************/
-    private void groups() throws CatalogException,IOException {
-
+    private QueryResponse<ObjectMap> groups() throws CatalogException,IOException {
         logger.debug("Creating groups");
         QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.id,
-                queryOptions);
-
-        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
+        return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.id, queryOptions);
     }
-    private void groupsCreate() throws CatalogException,IOException {
+    private QueryResponse<ObjectMap> groupsCreate() throws CatalogException,IOException {
 
         logger.debug("Creating groups");
         QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.id,
+        return openCGAClient.getStudyClient().createGroup(studiesCommandOptions.groupsCreateCommandOptions.id,
                 studiesCommandOptions.groupsCreateCommandOptions.groupId, studiesCommandOptions.groupsCreateCommandOptions.users,
                 queryOptions);
-
-        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
     }
 
-    private void groupsDelete() throws CatalogException,IOException {
+    private QueryResponse<ObjectMap> groupsDelete() throws CatalogException,IOException {
 
         logger.debug("Deleting groups");
         QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().deleteGroup(studiesCommandOptions.groupsDeleteCommandOptions.id,
+        return openCGAClient.getStudyClient().deleteGroup(studiesCommandOptions.groupsDeleteCommandOptions.id,
                 studiesCommandOptions.groupsDeleteCommandOptions.groupId, studiesCommandOptions.groupsDeleteCommandOptions.users,
                 queryOptions);
-
-        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
     }
 
-    private void groupsInfo() throws CatalogException,IOException {
+    private QueryResponse<ObjectMap> groupsInfo() throws CatalogException,IOException {
 
         logger.debug("Info groups");
         QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().infoGroup(studiesCommandOptions.groupsInfoCommandOptions.id,
+        return openCGAClient.getStudyClient().infoGroup(studiesCommandOptions.groupsInfoCommandOptions.id,
                 studiesCommandOptions.groupsInfoCommandOptions.groupId, queryOptions);
-
-        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
     }
-    private void groupsUpdate() throws CatalogException,IOException {
+    private QueryResponse<ObjectMap> groupsUpdate() throws CatalogException,IOException {
 
         logger.debug("Updating groups");
 
@@ -736,12 +714,8 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
                     studiesCommandOptions.groupsUpdateCommandOptions.removeUsers);
         }
 
-        QueryResponse<ObjectMap> groups = openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.id,
+        return openCGAClient.getStudyClient().updateGroup(studiesCommandOptions.groupsUpdateCommandOptions.id,
                 studiesCommandOptions.groupsUpdateCommandOptions.groupId, queryOptions);
-
-        groups.first().getResult().stream().forEach(group -> System.out.println(group.toString()));
     }
-
-
 
 }

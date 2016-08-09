@@ -20,6 +20,7 @@ package org.opencb.opencga.app.cli.main.executors;
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
@@ -52,25 +53,28 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(panelsCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "acl":
-                aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
+                createOutput(aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient()));
                 break;
             case "acl-create":
-                aclCommandExecutor.aclsCreate(panelsCommandOptions.aclsCreateCommandOptions, openCGAClient.getPanelClient());
+                createOutput(aclCommandExecutor.aclsCreate(panelsCommandOptions.aclsCreateCommandOptions, openCGAClient.getPanelClient()));
                 break;
             case "acl-member-delete":
-                aclCommandExecutor.aclMemberDelete(panelsCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getPanelClient());
+                createOutput(aclCommandExecutor.aclMemberDelete(panelsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getPanelClient()));
                 break;
             case "acl-member-info":
-                aclCommandExecutor.aclMemberInfo(panelsCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getPanelClient());
+                createOutput(aclCommandExecutor.aclMemberInfo(panelsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getPanelClient()));
                 break;
             case "acl-member-update":
-                aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getPanelClient());
+                createOutput(aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getPanelClient()));
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -80,7 +84,7 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
     }
 
     /**********************************************  Administration Commands  ***********************************************/
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<DiseasePanel> create() throws CatalogException, IOException {
         logger.debug("Creating a new panel");
         String name = panelsCommandOptions.createCommandOptions.name;
         String disease = panelsCommandOptions.createCommandOptions.disease;
@@ -99,13 +103,10 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
             o.append(CatalogPanelDBAdaptor.QueryParams.VARIANTS.key(), panelsCommandOptions.createCommandOptions.variants);
         }
 
-
-        openCGAClient.getPanelClient().create(panelsCommandOptions.createCommandOptions.studyId, name, disease, o);
-
-        System.out.println("Done.");
+        return openCGAClient.getPanelClient().create(panelsCommandOptions.createCommandOptions.studyId, name, disease, o);
     }
 
-    private void info() throws CatalogException, IOException  {
+    private QueryResponse<DiseasePanel> info() throws CatalogException, IOException  {
         logger.debug("Getting panel information");
         QueryOptions o = new QueryOptions();
         if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.commonOptions.include)) {
@@ -114,6 +115,6 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.commonOptions.exclude)) {
             o.append(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.commonOptions.exclude);
         }
-        openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
+        return openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
     }
 }

@@ -15,52 +15,46 @@ import java.io.IOException;
  */
 public class AclCommandExecutor<T,U> {
 
-    public void acls(AclCommandOptions.AclsCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
+    public QueryResponse<U> acls(AclCommandOptions.AclsCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
             throws CatalogException,IOException {
-        QueryResponse<U> acls = client.getAcls(aclCommandOptions.id);
-        System.out.println(acls.toString());
+        return client.getAcls(aclCommandOptions.id);
     }
 
-    public void aclsCreate(AclCommandOptions.AclsCreateCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
+    public QueryResponse<U> aclsCreate(AclCommandOptions.AclsCreateCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
             throws CatalogException,IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("permissions", aclCommandOptions.permissions);
 
-        QueryResponse<U> acl = client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
-        System.out.println(acl.toString());
+        return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
     }
 
-    public void aclsCreateTemplate(AclCommandOptions.AclsCreateCommandOptionsTemplate aclCommandOptions, StudyClient client)
-            throws CatalogException, IOException {
+    public QueryResponse<StudyAclEntry> aclsCreateTemplate(AclCommandOptions.AclsCreateCommandOptionsTemplate aclCommandOptions,
+                                                           StudyClient client) throws CatalogException, IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull("permissions", aclCommandOptions.permissions);
         objectMap.putIfNotNull("templateId", aclCommandOptions.templateId);
 
-        QueryResponse<StudyAclEntry> acl = client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
-        System.out.println(acl.toString());
+        return client.createAcl(aclCommandOptions.id, aclCommandOptions.members, objectMap);
     }
 
-    public void aclMemberDelete(AclCommandOptions.AclsMemberDeleteCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
-            throws CatalogException,IOException {
-        QueryResponse<U> acl = client.deleteAcl(aclCommandOptions.id, aclCommandOptions.memberId);
-        System.out.println(acl.toString());
+    public QueryResponse<U> aclMemberDelete(AclCommandOptions.AclsMemberDeleteCommandOptions aclCommandOptions,
+                                            AbstractParentClient<T,U> client) throws CatalogException,IOException {
+        return client.deleteAcl(aclCommandOptions.id, aclCommandOptions.memberId);
     }
 
-    public void aclMemberInfo(AclCommandOptions.AclsMemberInfoCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
-            throws CatalogException,IOException {
-        QueryResponse<U> acl = client.getAcl(aclCommandOptions.id, aclCommandOptions.memberId);
-        System.out.println(acl.toString());
+    public QueryResponse<U> aclMemberInfo(AclCommandOptions.AclsMemberInfoCommandOptions aclCommandOptions,
+                                          AbstractParentClient<T,U> client) throws CatalogException,IOException {
+        return client.getAcl(aclCommandOptions.id, aclCommandOptions.memberId);
     }
 
-    public void aclMemberUpdate(AclCommandOptions.AclsMemberUpdateCommandOptions aclCommandOptions, AbstractParentClient<T,U> client)
-            throws CatalogException,IOException {
+    public QueryResponse<U> aclMemberUpdate(AclCommandOptions.AclsMemberUpdateCommandOptions aclCommandOptions,
+                                            AbstractParentClient<T,U> client) throws CatalogException,IOException {
         ObjectMap objectMap = new ObjectMap();
         objectMap.putIfNotNull(StudyClient.AclParams.ADD_PERMISSIONS.key(), aclCommandOptions.addPermissions);
         objectMap.putIfNotNull(StudyClient.AclParams.REMOVE_PERMISSIONS.key(), aclCommandOptions.removePermissions);
         objectMap.putIfNotNull(StudyClient.AclParams.SET_PERMISSIONS.key(), aclCommandOptions.setPermissions);
 
-        QueryResponse<U> acl = client.updateAcl(aclCommandOptions.id, aclCommandOptions.memberId, objectMap);
-        System.out.println(acl.toString());
+        return client.updateAcl(aclCommandOptions.id, aclCommandOptions.memberId, objectMap);
     }
 
 }

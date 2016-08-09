@@ -55,25 +55,25 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(variableCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "search":
-                search();
+                createOutput(search());
                 break;
             case "update":
-                update();
+                createOutput(update());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "field-delete":
-                fieldDelete();
+                createOutput(fieldDelete());
                 break;
             case "field-rename":
-                fieldRename();
+                createOutput(fieldRename());
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -82,7 +82,7 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<VariableSet> create() throws CatalogException, IOException {
         logger.debug("Creating variable");
 
         QueryOptions queryOptions = new QueryOptions();
@@ -96,16 +96,16 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(variableCommandOptions.createCommandOptions.description)) {
             queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), variableCommandOptions.createCommandOptions.description);
         }
-        QueryResponse<VariableSet> tools = openCGAClient.getVariableClient().create(variableCommandOptions.createCommandOptions.studyId,
+        return openCGAClient.getVariableClient().create(variableCommandOptions.createCommandOptions.studyId,
                 variableCommandOptions.createCommandOptions.name,  queryOptions);
-        tools.first().getResult().stream().forEach(tool -> System.out.println(tool.toString()));
     }
 
-    private void info() throws CatalogException {
+    private QueryResponse info() throws CatalogException {
         logger.debug("Getting variable information");
+        return null;
     }
 
-    private void search() throws CatalogException, IOException {
+    private QueryResponse<VariableSet> search() throws CatalogException, IOException {
         logger.debug("Searching variable");
         Query query = new Query();
         query.put(CatalogSampleDBAdaptor.QueryParams.STUDY_ID.key(),variableCommandOptions.searchCommandOptions.studyId);
@@ -141,11 +141,10 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
 
         queryOptions.put("count", variableCommandOptions.searchCommandOptions.count);
 
-        QueryResponse<VariableSet> samples = openCGAClient.getVariableClient().search(query, queryOptions);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+        return openCGAClient.getVariableClient().search(query, queryOptions);
     }
 
-    private void update() throws CatalogException, IOException {
+    private QueryResponse<VariableSet> update() throws CatalogException, IOException {
         logger.debug("Updating variable");
         ObjectMap objectMap = new ObjectMap();
         if (StringUtils.isNotEmpty(variableCommandOptions.updateCommandOptions.name)) {
@@ -154,33 +153,29 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(variableCommandOptions.updateCommandOptions.description)) {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), variableCommandOptions.updateCommandOptions.description);
         }
-        QueryResponse<VariableSet> samples = openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id, objectMap);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+        return openCGAClient.getVariableClient().update(variableCommandOptions.updateCommandOptions.id, objectMap);
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<VariableSet> delete() throws CatalogException, IOException {
         logger.debug("Deleting variable");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<VariableSet> variables = openCGAClient.getVariableClient().delete(variableCommandOptions.deleteCommandOptions.id, objectMap);
-        System.out.println(variables.toString());
+        return openCGAClient.getVariableClient().delete(variableCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private void fieldDelete() throws CatalogException, IOException {
+    private QueryResponse<VariableSet> fieldDelete() throws CatalogException, IOException {
         logger.debug("Deleting the variable field");
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<VariableSet> samples = openCGAClient.getVariableClient().fieldDelete(variableCommandOptions.fieldDeleteCommandOptions.id,
+        return openCGAClient.getVariableClient().fieldDelete(variableCommandOptions.fieldDeleteCommandOptions.id,
                 variableCommandOptions.fieldDeleteCommandOptions.name, objectMap);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
-    private void fieldRename() throws CatalogException, IOException {
+    private QueryResponse<VariableSet> fieldRename() throws CatalogException, IOException {
         logger.debug("Rename the variable field");
 
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<VariableSet> variables = openCGAClient.getVariableClient().fieldRename(
+        return openCGAClient.getVariableClient().fieldRename(
                 variableCommandOptions.fieldRenameCommandOptions.id, variableCommandOptions.fieldRenameCommandOptions.oldName,
                 variableCommandOptions.fieldRenameCommandOptions.newName, objectMap);
-        System.out.println(variables.toString());
     }
 
 
