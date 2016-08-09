@@ -284,6 +284,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         String studyName = studyConfiguration.getStudyName();
 
         // TODO: Add more asserts
+        // TODO: Update with last changes!
         /*                      s1  s2
         1	10013	T	C   0/1 0/0
         1	10014	A	T   0/1 0/2
@@ -296,7 +297,7 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
         1   13000   T   G   0/0 0/1
         */
 
-        assertEquals(9, variants.size());
+        assertEquals(16, variants.size());
         assertTrue(variants.containsKey("1:10013:T:C"));
         assertEquals("0/1", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s1", "GT"));
         assertEquals("0/0", variants.get("1:10013:T:C").getStudy(studyName).getSampleData("s2", "GT"));

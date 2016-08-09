@@ -29,7 +29,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 
 /**
  * Created on 20/11/15.
@@ -133,6 +132,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 throw new IllegalStateException("No study found for study ID: " + studyId);
             }
             StudyConfiguration studyConfiguration = queryResult.first();
+            int indexedSamplesSize = StudyConfiguration.getIndexedSamples(studyConfiguration).size();
 
 //            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
@@ -162,13 +162,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             attributesMap.put("CR", String.valueOf(callrate));
             attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
 
-            Set<Integer> loadedSamples = new HashSet<>();
-            LinkedHashSet<Integer> indexedFiles = studyConfiguration.getIndexedFiles();
-            for (Entry<Integer, LinkedHashSet<Integer>> entry : studyConfiguration
-                    .getSamplesInFiles().entrySet()) {
-                loadedSamples.addAll(indexedFiles.stream().filter(indexedFile -> entry.getValue().contains
-                        (indexedFile)).map(indexedFile -> entry.getKey()).collect(Collectors.toList()));
-            }
+            BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
 
             int homRefCount = loadedSamples.size();
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
