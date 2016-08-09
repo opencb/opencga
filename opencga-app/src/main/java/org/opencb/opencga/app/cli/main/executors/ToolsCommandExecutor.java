@@ -84,11 +84,11 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.execution)) {
             queryOptions.put("execution", toolsCommandOptions.infoCommandOptions.execution);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.infoCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.infoCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.infoCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.infoCommandOptions.exclude);
         }
         return openCGAClient.getToolClient().get(toolsCommandOptions.infoCommandOptions.id, queryOptions);
     }
@@ -106,17 +106,17 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put("alias", toolsCommandOptions.searchCommandOptions.alias);
         }
 
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.searchCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, toolsCommandOptions.searchCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, toolsCommandOptions.searchCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, toolsCommandOptions.searchCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(toolsCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, toolsCommandOptions.searchCommandOptions.skip);
         }
         queryOptions.put("count", toolsCommandOptions.searchCommandOptions.count);
         return openCGAClient.getToolClient().get(toolsCommandOptions.searchCommandOptions.id, queryOptions);

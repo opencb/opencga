@@ -82,8 +82,8 @@ public class FileCommandOptions {
 
     public class BaseFileCommand {
 
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "File id", required = true, arity = 1)
         public String id;
@@ -128,9 +128,6 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
     public class CreateFolderCommandOptions extends BaseFileCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
         public String path = "";
 
@@ -144,24 +141,22 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
     public class InfoCommandOptions extends BaseFileCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
     }
 
 
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")
     class DownloadCommandOptions extends BaseFileCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
 
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
     public class GrepCommandOptions extends BaseFileCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
         public String pattern;
@@ -177,8 +172,19 @@ public class FileCommandOptions {
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
 
         @Parameter(names = {"--id"}, description = "Comma separated list of ids", arity = 1)
         public String id;
@@ -209,9 +215,17 @@ public class FileCommandOptions {
     @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
     public class ListCommandOptions extends BaseFileCommand {
 
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
 
         @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
         public int level = 1;
@@ -226,9 +240,6 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
     public class IndexCommandOptions extends BaseFileCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
     //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
     //    public List<String> dashDashParameters;
@@ -255,9 +266,18 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
     public class AlignmentCommandOptions extends BaseFileCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
     }
 
     @Deprecated
@@ -291,17 +311,13 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
     class UpdateCommandOptions extends BaseFileCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
 
     @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external" +
             " file")
     class RelinkCommandOptions extends BaseFileCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
         public String inputFile;
@@ -313,9 +329,6 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
     public class DeleteCommandOptions extends BaseFileCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--delete-external"}, description = "Boolean indicating whether to delete external files from disk as well"
                 + " (only applicable for linked files/folders)", required = false, arity = 0)
@@ -330,15 +343,13 @@ public class FileCommandOptions {
 
     @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
     public class RefreshCommandOptions extends BaseFileCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
 
     @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
     public class UnlinkCommandOptions extends BaseFileCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
 

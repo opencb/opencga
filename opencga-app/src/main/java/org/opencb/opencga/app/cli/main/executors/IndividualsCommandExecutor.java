@@ -150,11 +150,11 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting individual information");
 
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(individualsCommandOptions.infoCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.infoCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, individualsCommandOptions.infoCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(individualsCommandOptions.infoCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.infoCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, individualsCommandOptions.infoCommandOptions.exclude);
         }
 
         return openCGAClient.getIndividualClient().get(individualsCommandOptions.infoCommandOptions.id, queryOptions);
@@ -208,12 +208,12 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
                     individualsCommandOptions.searchCommandOptions.annotationSetName);
         }
 
-        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, individualsCommandOptions.searchCommandOptions.skip);
         }
 
-        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(individualsCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, individualsCommandOptions.searchCommandOptions.limit);
         }
 
         return openCGAClient.getIndividualClient().search(query, queryOptions);

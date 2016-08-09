@@ -160,11 +160,11 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Sample> info() throws CatalogException, IOException  {
         logger.debug("Getting samples information");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.exclude);
         }
 
         return openCGAClient.getSampleClient().get(samplesCommandOptions.infoCommandOptions.id, queryOptions);
@@ -203,17 +203,17 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.annotation)) {
             query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.skip);
         }
 
         queryOptions.put("count", samplesCommandOptions.searchCommandOptions.count);

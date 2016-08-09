@@ -109,11 +109,11 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<DiseasePanel> info() throws CatalogException, IOException  {
         logger.debug("Getting panel information");
         QueryOptions o = new QueryOptions();
-        if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.commonOptions.include)) {
-            o.append(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.include)) {
+            o.append(QueryOptions.INCLUDE, panelsCommandOptions.infoCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.commonOptions.exclude)) {
-            o.append(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(panelsCommandOptions.infoCommandOptions.exclude)) {
+            o.append(QueryOptions.EXCLUDE, panelsCommandOptions.infoCommandOptions.exclude);
         }
         return openCGAClient.getPanelClient().get(panelsCommandOptions.createCommandOptions.studyId, o);
     }

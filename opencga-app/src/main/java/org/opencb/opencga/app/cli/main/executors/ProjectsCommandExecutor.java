@@ -126,18 +126,18 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Getting all studies the from a project ");
         QueryOptions queryOptions = new QueryOptions();
 
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, projectsCommandOptions.studiesCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE,projectsCommandOptions.studiesCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
         }
 
-        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
         }
         return openCGAClient.getProjectClient().getStudies(projectsCommandOptions.studiesCommandOptions.id, queryOptions);
     }

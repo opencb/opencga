@@ -392,9 +392,8 @@ public class OpencgaCliOptionsParser {
 
     }
 
+    @Deprecated
     public static class OpencgaIncludeExcludeCommonCommandOptions extends OpencgaCommonCommandOptions {
-
-
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -411,7 +410,9 @@ public class OpencgaCliOptionsParser {
 
     }
 
+    @Deprecated
     public static class OpencgaQueryOptionsCommonCommandOptions extends OpencgaIncludeExcludeCommonCommandOptions {
+
         @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
         public String skip;
 

@@ -360,18 +360,18 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), studiesCommandOptions.jobsCommandOptions.outputFiles);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.jobsCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.jobsCommandOptions.exclude);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.jobsCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.jobsCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.jobsCommandOptions.skip);
         }
 
         queryOptions.put("count", studiesCommandOptions.jobsCommandOptions.count);
@@ -433,17 +433,17 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);
         }
 
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.samplesCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.samplesCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.skip);
         }
         queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
         return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
@@ -645,17 +645,17 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(CatalogVariantDBAdaptor.VariantQueryParams.MERGE.key(),
                     studiesCommandOptions.variantsCommandOptions.merge);
         }*/
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.variantsCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.variantsCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, studiesCommandOptions.variantsCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, studiesCommandOptions.variantsCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(studiesCommandOptions.variantsCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.variantsCommandOptions.skip);
         }
         queryOptions.put("count", studiesCommandOptions.variantsCommandOptions.count);
 

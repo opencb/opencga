@@ -71,8 +71,8 @@ public class IndividualCommandOptions {
 
     public class BaseIndividualsCommand {
 
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Individual id", required = true, arity = 1)
         public String id;
@@ -107,17 +107,28 @@ public class IndividualCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
     public class InfoCommandOptions extends BaseIndividualsCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     public class SearchCommandOptions {
 
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
 
         @Parameter(names = {"--ids"}, description = "Comma separated list of individual ids", arity = 1)
         public String id;
@@ -165,9 +176,6 @@ public class IndividualCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
     public class UpdateCommandOptions extends BaseIndividualsCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
 
@@ -190,8 +198,7 @@ public class IndividualCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
     public class DeleteCommandOptions extends BaseIndividualsCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
 

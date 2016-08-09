@@ -126,17 +126,17 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
                     variableCommandOptions.searchCommandOptions.attributes);
         }
 
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, variableCommandOptions.searchCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, variableCommandOptions.searchCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, variableCommandOptions.searchCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, variableCommandOptions.searchCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(variableCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, variableCommandOptions.searchCommandOptions.skip);
         }
 
         queryOptions.put("count", variableCommandOptions.searchCommandOptions.count);

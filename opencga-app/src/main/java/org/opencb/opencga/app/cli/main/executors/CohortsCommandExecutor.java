@@ -156,17 +156,17 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
     private QueryResponse<Sample> samples() throws CatalogException, IOException {
         logger.debug("Listing samples belonging to a cohort");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, cohortsCommandOptions.samplesCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.samplesCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, cohortsCommandOptions.samplesCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.samplesCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, cohortsCommandOptions.samplesCommandOptions.skip);
         }
         queryOptions.put("count", cohortsCommandOptions.samplesCommandOptions.count);
 
