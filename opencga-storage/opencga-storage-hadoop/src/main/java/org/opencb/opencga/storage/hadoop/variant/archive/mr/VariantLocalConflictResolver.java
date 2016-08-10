@@ -141,7 +141,7 @@ public class VariantLocalConflictResolver {
 
     public static boolean hasAnyOverlapInclSecAlt(Variant a, Variant b) {
         // Check Direct overlap
-        if (hasOverlap(a,b)) {
+        if (hasOverlap(a, b)) {
             return true;
         }
         // Check AltCoords as well
