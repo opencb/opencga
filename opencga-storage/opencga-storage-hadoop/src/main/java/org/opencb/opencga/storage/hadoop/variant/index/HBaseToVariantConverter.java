@@ -133,7 +133,6 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
             StudyConfiguration studyConfiguration = queryResult.first();
 
-//            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
             if (mutableSamplesPosition) {
                 returnedSamplesPosition = new LinkedHashMap<>(returnedSamplesPosition);
@@ -161,8 +160,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             attributesMap.put("CR", String.valueOf(callrate));
             attributesMap.put("OPR", String.valueOf(opr)); // OVERALL pass rate
 
+            BiMap<String, Integer> loadedSamples = StudyConfiguration.getIndexedSamples(studyConfiguration);
 
-            int homRefCount = studyConfiguration.getSampleIds().size();
+            int homRefCount = loadedSamples.size();
             BiMap<Integer, String> mapSampleIds = studyConfiguration.getSampleIds().inverse();
             for (String genotype : row.getGenotypes()) {
                 homRefCount -= row.getSampleIds(genotype).size();
@@ -214,7 +214,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             }
 
             // Set pass field
-            int passCount = studyConfiguration.getSampleIds().size();
+            int passCount = loadedSamples.size();
             for (Entry<String, SampleList> entry : row.getComplexFilter().getFilterNonPass().entrySet()) {
                 String filterString = entry.getKey();
                 passCount -= entry.getValue().getSampleIdsCount();
