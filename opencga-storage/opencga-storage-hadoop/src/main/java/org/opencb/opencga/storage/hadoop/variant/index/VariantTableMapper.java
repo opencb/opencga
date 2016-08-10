@@ -103,7 +103,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         // TODO switched off at the moment down to removed variant calls from gVCF files (malformated variants)
 //        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, analysisVar);
 
-        endTime("5 Check consistency");
+        endTime("5 Check consistency -- skipped");
 
         /* ******** Update Analysis Variants ************** */
         Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget);

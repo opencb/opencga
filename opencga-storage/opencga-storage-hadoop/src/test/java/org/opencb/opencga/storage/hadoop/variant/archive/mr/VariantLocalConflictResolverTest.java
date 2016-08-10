@@ -1,18 +1,19 @@
 package org.opencb.opencga.storage.hadoop.variant.archive.mr;
 
+import htsjdk.variant.vcf.VCFConstants;
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.avro.AlternateCoordinate;
 import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.opencb.biodata.models.variant.VariantVcfFactory.FILTER;
@@ -93,11 +94,12 @@ public class VariantLocalConflictResolverTest {
     @Test
     public void resolveRefOverlap() throws Exception {
         Variant a = addGT(addAttribute(getVariantFilter("2:10048155-10048156:", "PASS"),QUAL,"220"), "0/0");
+        a.setType(VariantType.NO_VARIATION);
         Variant b = addGT(addAttribute(getVariantFilter("2:10048155:AAA:-", "PASS"),QUAL,"220"), "0/1");
-        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
         System.out.println("a.toString() = " + a.toJson());
         System.out.println("b.toString() = " + b.toJson());
-        System.out.println("c.toString() = " + resolved.get(0).toJson());
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b));
+        resolved.forEach(res -> System.out.println("res.toJson() = " + res.toJson()));
         assertEquals(1,resolved.size());
     }
 
@@ -108,6 +110,50 @@ public class VariantLocalConflictResolverTest {
         Variant c = addGT(addAttribute(getVariantFilter("1:10048155:-:ATTT", "PASS"),QUAL,"220"), "0/1");
         List<Variant> resolved = new VariantLocalConflictResolver().resolve(Arrays.asList(a, b, c));
         assertEquals(1,resolved.size());
+    }
+
+    @Test
+    public void resolveConflictIndelCase1() throws Exception {
+        Variant v1 = new Variant("1:328:CTT:C");
+        StudyEntry se = new StudyEntry("1");
+        se.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
+        v1.setStudies(Collections.singletonList(se));
+        se.setFormat(Arrays.asList(VCFConstants.GENOTYPE_KEY, VCFConstants.GENOTYPE_FILTER_KEY));
+        se.setSamplesPosition(asMap("S1",0));
+        se.setSamplesData(Collections.singletonList(Arrays.asList("1/2","LowGQXHetDel")));
+        se.getSecondaryAlternates().add(new AlternateCoordinate(null,null,331,"CTT", "CTTTC", VariantType.INDEL));
+        addAttribute(v1, FILTER, "LowGQXHetDel");
+
+
+        Variant v2 = new Variant("1:331:T:TCT");
+        se = new StudyEntry("1");
+        se.setFiles(Collections.singletonList(new FileEntry("1", "", new HashMap<>())));
+        v2.setStudies(Collections.singletonList(se));
+        se.setSamplesPosition(asMap("S1",0));
+        se.setFormat(Arrays.asList(VCFConstants.GENOTYPE_KEY, VCFConstants.GENOTYPE_FILTER_KEY));
+        se.setSamplesData(Collections.singletonList(Arrays.asList("0/1","PASS")));
+        addAttribute(v2, FILTER, "PASS");
+
+        System.out.println("v1.toJson() = " + v1.toJson());
+        System.out.println("v2.toJson() = " + v2.toJson());
+        System.out.println();
+        List<Variant> variants = new VariantNormalizer().normalize(Arrays.asList(v1, v2), false);
+        variants.forEach(norm -> System.out.println("norm.toJson() = " + norm.toJson()));
+        System.out.println();
+        List<Variant> resolved = new VariantLocalConflictResolver().resolve(variants);
+        resolved.forEach(res -> System.out.println("res.toJson() = " + res.toJson()));
+
+        List<Variant> resVar = resolved.stream().filter(v -> !v.getType().equals(VariantType.NO_VARIATION)).collect
+                (Collectors
+                .toList());
+
+        assertEquals(1,resVar.size());
+    }
+
+    private Map<String,Integer> asMap(String s1, int i) {
+        Map<String, Integer> map = new HashMap<>();
+        map.put(s1,i);
+        return map;
     }
 
     @Test
@@ -149,12 +195,17 @@ public class VariantLocalConflictResolverTest {
     @Test
     public void getMissingRegionsAfterOutside() throws Exception {
         Variant a = getVariant("1:1000:A:T");
+        a.setType(VariantType.NO_VARIATION);
         Variant b = getVariant("1:1002:A:T");
-        Variant indel = getVariant("1:1003:A:T");
+        b.setType(VariantType.NO_VARIATION);
+        Variant snp = getVariant("1:1003:A:T");
+        System.out.println("a = " + a.toJson());
+        System.out.println("b = " + b.toJson());
+        System.out.println("snp = " + snp.toJson());
         List<Pair<Integer, Integer>> missingRegions = VariantLocalConflictResolver.getMissingRegions(Arrays.asList
-                (new Variant[]{a, b}), indel);
+                (new Variant[]{a, b}), snp);
         System.out.println("missingRegions = " + missingRegions);
-        assertEquals(missingRegions.size(), 1);
+        assertEquals(1, missingRegions.size());
     }
     @Test
     public void getMissingRegionsIndel() throws Exception {
@@ -197,10 +248,10 @@ public class VariantLocalConflictResolverTest {
         Variant qb = new Variant("1:1001:A:T");
         Variant qc = new Variant("1:1001:AT:-");
 
-        assertFalse(VariantLocalConflictResolver.hasOverlap(Arrays.asList(var), qa));
-        assertTrue(VariantLocalConflictResolver.hasOverlap(Arrays.asList(var), regA));
-        assertFalse(VariantLocalConflictResolver.hasOverlap(Arrays.asList(var), qb));
-        assertTrue(VariantLocalConflictResolver.hasOverlap(Arrays.asList(var), qc));
+        assertFalse(VariantLocalConflictResolver.hasAnyOverlapInclSecAlt(Arrays.asList(var), qa));
+        assertTrue(VariantLocalConflictResolver.hasAnyOverlapInclSecAlt(Arrays.asList(var), regA));
+        assertFalse(VariantLocalConflictResolver.hasAnyOverlapInclSecAlt(Arrays.asList(var), qb));
+        assertTrue(VariantLocalConflictResolver.hasAnyOverlapInclSecAlt(Arrays.asList(var), qc));
     }
 
     @Test
