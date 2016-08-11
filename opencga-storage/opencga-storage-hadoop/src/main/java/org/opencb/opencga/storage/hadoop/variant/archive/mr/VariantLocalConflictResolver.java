@@ -191,7 +191,12 @@ public class VariantLocalConflictResolver {
         Integer end  = ObjectUtils.firstNonNull(altA.getEnd(), a.getEnd());
         String ref  = ObjectUtils.firstNonNull(altA.getReference(), a.getReference());
         String alt  = ObjectUtils.firstNonNull(altA.getAlternate(), a.getAlternate());
-        return new Variant(chr, start, end, ref, alt);
+        try {
+            return new Variant(chr, start, end, ref, alt);
+        } catch (IllegalArgumentException e) {
+            String msg = altA + "\n" + a.toJson() + "\n";
+            throw new IllegalStateException(msg, e);
+        }
     }
 
     public static int min(List<Variant> target) {
@@ -423,5 +428,6 @@ public class VariantLocalConflictResolver {
             oLst.add(o);
         }
         se.setSamplesData(oLst);
+        se.setSecondaryAlternates(new ArrayList<>());
     }
 }
