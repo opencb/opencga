@@ -286,7 +286,14 @@ public class OpenCGAWSServer {
                 queryOptions.add(param, entry.getValue().get(0));
             }
 
+            // Exceptions
+            if (param.equals("status")) {
+                query.put("status.name", entry.getValue().get(0));
+                query.remove("status");
+                queryOptions.remove("status");
+            }
         }
+        logger.debug("parseQueryParams: Query {}, queryOptions {}", query.safeToString(), queryOptions.safeToString());
     }
 
     private void parseParams() throws VersionException {

@@ -152,31 +152,27 @@ public abstract class VariantStorageManager extends StorageManager<VariantDBAdap
      */
     public final StudyConfigurationManager getStudyConfigurationManager(ObjectMap options) throws StorageManagerException {
         StudyConfigurationManager studyConfigurationManager = null;
+        String studyConfigurationManagerClassName = null;
+        if (options.containsKey(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key())) {
+            studyConfigurationManagerClassName = options.getString(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key());
+        } else {
+            if (configuration.getStudyMetadataManager() != null && !configuration.getStudyMetadataManager().isEmpty()) {
+                studyConfigurationManagerClassName = configuration.getStudyMetadataManager();
+            }
+        }
+
+        if (studyConfigurationManagerClassName != null && !studyConfigurationManagerClassName.isEmpty()) {
+            try {
+                studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, options);
+            } catch (ReflectiveOperationException e) {
+                e.printStackTrace();
+                logger.error("Error creating a StudyConfigurationManager. Creating default StudyConfigurationManager", e);
+                throw new RuntimeException(e);
+            }
+        }
+        // This method can be override in children methods
         if (studyConfigurationManager == null) {
-
-            // We read the StudyMetadataManager from the passed 'options', if not exists then we read configuration file
-            String studyConfigurationManagerClassName = null;
-            if (options.containsKey(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key())) {
-                studyConfigurationManagerClassName = options.getString(Options.STUDY_CONFIGURATION_MANAGER_CLASS_NAME.key());
-            } else {
-                if (configuration.getStudyMetadataManager() != null && !configuration.getStudyMetadataManager().isEmpty()) {
-                    studyConfigurationManagerClassName = configuration.getStudyMetadataManager();
-                }
-            }
-
-            if (studyConfigurationManagerClassName != null && !studyConfigurationManagerClassName.isEmpty()) {
-                try {
-                    studyConfigurationManager = StudyConfigurationManager.build(studyConfigurationManagerClassName, options);
-                } catch (ReflectiveOperationException e) {
-                    e.printStackTrace();
-                    logger.error("Error creating a StudyConfigurationManager. Creating default StudyConfigurationManager", e);
-                    throw new RuntimeException(e);
-                }
-            }
-            // This method can be override in children methods
-            if (studyConfigurationManager == null) {
-                studyConfigurationManager = buildStudyConfigurationManager(options);
-            }
+            studyConfigurationManager = buildStudyConfigurationManager(options);
         }
         return studyConfigurationManager;
     }

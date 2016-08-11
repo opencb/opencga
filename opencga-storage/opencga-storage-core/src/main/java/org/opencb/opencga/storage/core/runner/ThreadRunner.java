@@ -326,6 +326,7 @@ public class ThreadRunner {
     abstract class Node<I, O, EXECUTOR> {
         protected final List<EXECUTOR> tasks;
         protected final String name;
+        protected final Object nodeSyncObject = new Object();
         private final BlockingQueue<EXECUTOR> taskQueue;
         private List<Node<O, ?, ?>> nodes;
         private int pendingJobs;
@@ -355,7 +356,7 @@ public class ThreadRunner {
 
             if (batch == POISON_PILL) {
                 lastBatch = true;
-                synchronized (name) {
+                synchronized (nodeSyncObject) {
                     pendingJobs--;
                 }
 //                System.out.println(name + " - lastBatch");
@@ -393,7 +394,7 @@ public class ThreadRunner {
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    synchronized (name) {
+                    synchronized (nodeSyncObject) {
                         pendingJobs--;
                     }
 //                    System.out.println(name + " - pendingJobs " + pendingJobs);

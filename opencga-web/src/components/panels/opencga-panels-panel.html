@@ -13,42 +13,41 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-<dom-module id="opencga-files-info-samples">
+<link rel="import" href="opencga-panels-filter.html">
+<link rel="import" href="opencga-panels-view.html">
+
+<dom-module id="opencga-panels-panel">
     <template>
         <style is="custom-style" include="jso-styles"></style>
+
+        <div class="panel" style="padding: 10px;">
+            <div class="col-md-2">
+                <opencga-panels-filter></opencga-panels-filter>
+            </div>
+
+            <div class="col-md-10">
+                <opencga-panels-view opencga-client="{{opencgaClient}}"></opencga-panels-view>
+            </div>
+        </div>
 
     </template>
     <script>
         Polymer({
-            is: 'opencga-files-info-samples',
-
+            is: 'opencga-panels-panel',
             properties: {
                 opencgaClient: {
                     type: Object
                 },
-                sampleIds: {
-                    type: Array,
-                    observer: '_querySamples'
+                studyId: {
+                    type: Number
                 },
-                _samples: {
+                panels: {
                     type: Array
+                },
+                filters: {
+                    type: Object
                 }
-            },
-
-            _querySamples: function() {
-//                this._samples = [];
-//                debugger
-//                Promise.all(this.sampleIds.map(this.opencgaClient.samples().info.bind(this)))
-//                        .then(function(responses) {
-//                            this._samples = responses;
-//                            console.log(this._samples);
-//                        }.bind(this));
-            },
-
-            _getSampleInfo: function(sampleId) {
-                return this.opencgaClient.samples().info(sampleId);
             }
-
         });
     </script>
 </dom-module>

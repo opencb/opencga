@@ -63,73 +63,76 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
         switch (subCommandString) {
             case "copy":
-                copy();
+                createOutput(copy());
                 break;
             case "create-folder":
-                createFolder();
+                createOutput(createFolder());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "download":
-                download();
+                createOutput(download());
                 break;
             case "grep":
-                grep();
+                createOutput(grep());
                 break;
             case "search":
-                search();
+                createOutput(search());
                 break;
             case "list":
-                list();
+                createOutput(list());
                 break;
             case "index":
-                index();
+                createOutput(index());
                 break;
-            case "alignament":
-                alignament();
+            case "alignment":
+                createOutput(alignment());
                 break;
             case "fetch":
-                fetch();
+                createOutput(fetch());
                 break;
             case "update":
-                update();
+                createOutput(update());
                 break;
             case "upload":
-                upload();
+                createOutput(upload());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "link":
-                link();
+                createOutput(link());
                 break;
             case "relink":
-                relink();
+                createOutput(relink());
                 break;
             case "unlink":
-                unlink();
+                createOutput(unlink());
                 break;
             case "refresh":
-                refresh();
+                createOutput(refresh());
                 break;
             case "group-by":
-                groupBy();
+                createOutput(groupBy());
                 break;
             case "acl":
-                aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
+                createOutput(aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient()));
                 break;
             case "acl-create":
-                aclCommandExecutor.aclsCreate(filesCommandOptions.aclsCreateCommandOptions, openCGAClient.getFileClient());
+                createOutput(aclCommandExecutor.aclsCreate(filesCommandOptions.aclsCreateCommandOptions, openCGAClient.getFileClient()));
                 break;
             case "acl-member-delete":
-                aclCommandExecutor.aclMemberDelete(filesCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getFileClient());
+                createOutput(aclCommandExecutor.aclMemberDelete(filesCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getFileClient()));
                 break;
             case "acl-member-info":
-                aclCommandExecutor.aclMemberInfo(filesCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getFileClient());
+                createOutput(aclCommandExecutor.aclMemberInfo(filesCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getFileClient()));
                 break;
             case "acl-member-update":
-                aclCommandExecutor.aclMemberUpdate(filesCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getFileClient());
+                createOutput(aclCommandExecutor.aclMemberUpdate(filesCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getFileClient()));
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -138,19 +141,24 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void copy() throws CatalogException, IOException, URISyntaxException, StorageManagerException {
+    private QueryResponse<File> copy() throws CatalogException {
         logger.debug("Creating a new file");
         //openCGAClient.getFileClient(). /******************* Falta el create en FileClient.java ?? **//
 //        OptionsParser.FileCommands.CreateCommand c = optionsParser.getFileCommands().createCommand;
         FileCommandOptions.CopyCommandOptions copyCommandOptions = filesCommandOptions.copyCommandOptions;
         long studyId = catalogManager.getStudyId(copyCommandOptions.studyId);
         Path inputFile = Paths.get(copyCommandOptions.inputFile);
-        URI sourceUri = new URI(null, copyCommandOptions.inputFile, null);
+        URI sourceUri;
+        try {
+            sourceUri = new URI(null, copyCommandOptions.inputFile, null);
+        } catch (URISyntaxException e) {
+            throw new CatalogException("Input file is not a proper URI");
+        }
         if (sourceUri.getScheme() == null || sourceUri.getScheme().isEmpty()) {
             sourceUri = inputFile.toUri();
         }
         if (!catalogManager.getCatalogIOManagerFactory().get(sourceUri).exists(sourceUri)) {
-            throw new IOException("File " + sourceUri + " does not exist");
+            throw new CatalogException("File " + sourceUri + " does not exist");
         }
 
         QueryResult<File> file = catalogManager.createFile(studyId, copyCommandOptions.format, copyCommandOptions.bioformat,
@@ -159,79 +167,94 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         new CatalogFileUtils(catalogManager).upload(sourceUri, file.first(), null, sessionId, false, false,
                 copyCommandOptions.move, copyCommandOptions.calculateChecksum);
         FileMetadataReader.get(catalogManager).setMetadataInformation(file.first(), null, new QueryOptions(), sessionId, false);
+        return new QueryResponse<>(new QueryOptions(), Arrays.asList(file));
     }
 
-    private void createFolder() throws CatalogException {
+    private QueryResponse createFolder() throws CatalogException {
         logger.debug("Creating a new folder");
         ObjectMap o = new ObjectMap();
        // QueryResponse<File> create = openCGAClient.getFileClient().createFolder(filesCommandOptions.infoCommandOptions.id,
           //      filesCommandOptions.infoCommandOptions.path,o);
-        System.out.println("Created.");
-        //TODO
-
+        System.out.println("PENDING!!.");
+        return null;
     }
 
 
-    private void info() throws CatalogException, IOException {
+    private QueryResponse<File> info() throws CatalogException, IOException {
         logger.debug("Getting file information");
-        QueryResponse<File> info = openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id, null);
-        System.out.println("Files = " + info);
+        return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id, null);
     }
 
-    private void download() throws CatalogException {
+    private QueryResponse download() throws CatalogException {
         logger.debug("Downloading file");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void grep() throws CatalogException {
+    private QueryResponse grep() throws CatalogException {
         logger.debug("Grep command: File content");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void search() throws CatalogException {
+    private QueryResponse search() throws CatalogException {
         logger.debug("Searching files");
+        System.out.println("PENDING!!.");
+        return null;
         //QueryResponse<File> listfiles = openCGAClient.getFileClient().search(querry, queryoptions);
         //TODO
     }
 
-    private void list() throws CatalogException, IOException {
+    private QueryResponse<File> list() throws CatalogException, IOException {
         logger.debug("Listing files in folder");
-        QueryResponse<File> listfiles = openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id, null);
-        System.out.println("List files = " + listfiles);
-
+        return openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id, null);
     }
 
-    private void index() throws CatalogException {
+    private QueryResponse index() throws CatalogException {
         logger.debug("Indexing file in the selected StorageEngine");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void alignament() throws CatalogException {
+    private QueryResponse alignment() throws CatalogException {
         logger.debug("Fetch alignments from a BAM file");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void fetch() throws CatalogException {
+    private QueryResponse fetch() throws CatalogException {
         logger.debug("File Fetch");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void share() throws CatalogException {
+    private QueryResponse share() throws CatalogException {
         logger.debug("Sharing a file");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void unshare() throws CatalogException {
+    private QueryResponse unshare() throws CatalogException {
         logger.debug("Unsharing a file");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void update() throws CatalogException {
+    private QueryResponse update() throws CatalogException {
         logger.debug("updating file");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void upload() throws CatalogException, IOException {
+    private QueryResponse<File> upload() throws CatalogException, IOException {
         logger.debug("uploading file");
 
         ObjectMap objectMap = new ObjectMap()
@@ -251,33 +274,21 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.append("fileName", filesCommandOptions.uploadCommandOptions.fileName);
         }
 
-        QueryResponse<File> upload = openCGAClient.getFileClient().upload(filesCommandOptions.uploadCommandOptions.studyId,
+        return openCGAClient.getFileClient().upload(filesCommandOptions.uploadCommandOptions.studyId,
                 filesCommandOptions.uploadCommandOptions.inputFile, objectMap);
-
-        if (!upload.getError().isEmpty()) {
-            logger.error(upload.getError());
-        } else {
-            upload.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
-        }
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<File> delete() throws CatalogException, IOException {
         logger.debug("Deleting file");
 
         ObjectMap objectMap = new ObjectMap()
                 .append("deleteExternal", filesCommandOptions.deleteCommandOptions.deleteExternal)
                 .append("skipTrash", filesCommandOptions.deleteCommandOptions.skipTrash);
 
-        QueryResponse<File> delete = openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.id, objectMap);
-
-        if (!delete.getError().isEmpty()) {
-            logger.error(delete.getError());
-        } else {
-            delete.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
-        }
+        return openCGAClient.getFileClient().delete(filesCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private void link() throws CatalogException, IOException, URISyntaxException {
+    private QueryResponse<File> link() throws CatalogException, IOException, URISyntaxException {
         logger.debug("Linking the file or folder into catalog.");
 
         URI uri = UriUtils.createUri(filesCommandOptions.linkCommandOptions.input);
@@ -295,26 +306,22 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         }
         if (!catalogManager.existsCatalogDB()) {
             logger.error("The database could not be found. Are you running this from the server?");
-            return;
+            return null;
         }
         QueryResult<File> linkQueryResult = catalogManager.link(uri, filesCommandOptions.linkCommandOptions.path,
                 filesCommandOptions.linkCommandOptions.studyId, objectMap, sessionId);
 
-        QueryResponse<File> link = new QueryResponse<>(new QueryOptions(), Arrays.asList(linkQueryResult));
-
-        if (!link.getError().isEmpty()) {
-            logger.error(link.getError());
-        } else {
-            link.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
-        }
+        return new QueryResponse<>(new QueryOptions(), Arrays.asList(linkQueryResult));
     }
 
-    private void relink() throws CatalogException {
+    private QueryResponse relink() throws CatalogException {
         logger.debug("Change file location. Provided file must be either STAGED or an external file");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
     }
 
-    private void unlink() throws CatalogException, IOException {
+    private QueryResponse<File> unlink() throws CatalogException, IOException {
         logger.debug("Unlink an external file from catalog");
 
         // LOCAL EXECUTION
@@ -333,23 +340,20 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
 //
 //        QueryResponse<File> unlink = new QueryResponse<>(new QueryOptions(), Arrays.asList(unlinkQueryResult));
 
-        QueryResponse<File> unlink = openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
-
-        if (!unlink.getError().isEmpty()) {
-            logger.error(unlink.getError());
-        } else {
-            unlink.first().getResult().stream().forEach(file -> System.out.println(file.toString()));
-        }
-
+        return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
     }
 
-    private void refresh() throws CatalogException {
+    private QueryResponse refresh() throws CatalogException {
         logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
+        System.out.println("PENDING!!.");
+        return null;
     }
 
 
-    private void groupBy() throws CatalogException {
+    private QueryResponse groupBy() throws CatalogException {
         logger.debug("Grouping files by several fields");
+        System.out.println("PENDING!!.");
+        return null;
         //TODO
 
     }

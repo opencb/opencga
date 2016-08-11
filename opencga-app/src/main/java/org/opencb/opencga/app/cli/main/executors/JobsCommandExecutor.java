@@ -55,37 +55,40 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         switch (subCommandString) {
 
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "search":
-                search();
+                createOutput(search());
                 break;
             case "visit":
-                visit();
+                createOutput(visit());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "group-by":
-                groupBy();
+                createOutput(groupBy());
                 break;
             case "acl":
-                aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
+                createOutput(aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient()));
                 break;
             case "acl-create":
-                aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient());
+                createOutput(aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient()));
                 break;
             case "acl-member-delete":
-                aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getJobClient());
+                createOutput(aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getJobClient()));
                 break;
             case "acl-member-info":
-                aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getJobClient());
+                createOutput(aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getJobClient()));
                 break;
             case "acl-member-update":
-                aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getJobClient());
+                createOutput(aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getJobClient()));
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -94,7 +97,7 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
 
     }
 
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<Job> create() throws CatalogException, IOException {
         logger.debug("Creating a new job");
 
         String studyId = jobsCommandOptions.createCommandOptions.studyId;
@@ -107,19 +110,15 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         o.append(CatalogJobDBAdaptor.QueryParams.EXECUTION.key(),execution);
         o.append(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(),description);
 
-        openCGAClient.getJobClient().create(studyId, name, toolId, o);
-        logger.debug("Done");
-
+        return openCGAClient.getJobClient().create(studyId, name, toolId, o);
     }
 
-    private void info() throws CatalogException, IOException {
+    private QueryResponse<Job> info() throws CatalogException, IOException {
         logger.debug("Getting job information");
-        QueryResponse<Job> info =
-                openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.id, null);
-        System.out.println("Cohorts = " + info);
+        return openCGAClient.getJobClient().get(jobsCommandOptions.infoCommandOptions.id, null);
     }
 
-    private void search() throws CatalogException, IOException {
+    private QueryResponse<Job> search() throws CatalogException, IOException {
         logger.debug("Searching job");
 
         String studyId = jobsCommandOptions.searchCommandOptions.studyId;
@@ -129,10 +128,10 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         String date = jobsCommandOptions.searchCommandOptions.date;
         String input = jobsCommandOptions.searchCommandOptions.inputFiles;
         String output = jobsCommandOptions.searchCommandOptions.outputFiles;
-        String include = jobsCommandOptions.searchCommandOptions.commonOptions.include;
-        String exclude = jobsCommandOptions.searchCommandOptions.commonOptions.exclude;
-        String limit = jobsCommandOptions.searchCommandOptions.commonOptions.limit;
-        String skip = jobsCommandOptions.searchCommandOptions.commonOptions.skip;
+        String include = jobsCommandOptions.searchCommandOptions.include;
+        String exclude = jobsCommandOptions.searchCommandOptions.exclude;
+        String limit = jobsCommandOptions.searchCommandOptions.limit;
+        String skip = jobsCommandOptions.searchCommandOptions.skip;
         Query query = new Query();
         QueryOptions queryOptions = new QueryOptions();
 
@@ -170,30 +169,25 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.SKIP, skip);
         }
 
-        QueryResponse<Job> jobs = openCGAClient.getJobClient().search(query, queryOptions);
-        System.out.println("Jobs: " + jobs);
-
-
+        return openCGAClient.getJobClient().search(query, queryOptions);
     }
 
-    private void visit() throws CatalogException, IOException {
+    private QueryResponse<Job> visit() throws CatalogException, IOException {
         logger.debug("Visiting a job");
         QueryOptions queryOptions = new QueryOptions();
-        QueryResponse<Job> jobs = openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.id, queryOptions);
-        System.out.println("Jobs: " + jobs);
+        return openCGAClient.getJobClient().visit(jobsCommandOptions.visitCommandOptions.id, queryOptions);
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<Job> delete() throws CatalogException, IOException {
         logger.debug("Deleting job");
         QueryOptions queryOptions = new QueryOptions();
 
         queryOptions.put("deleteFiles", jobsCommandOptions.deleteCommandOptions.deleteFiles);
-        QueryResponse<Job> jobs = openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.id, queryOptions);
-        System.out.println("Jobs: " + jobs);
+        return openCGAClient.getJobClient().delete(jobsCommandOptions.deleteCommandOptions.id, queryOptions);
     }
 
 
-    private void groupBy() throws CatalogException, IOException {
+    private QueryResponse<Job> groupBy() throws CatalogException, IOException {
         logger.debug("Group by job");
 
         ObjectMap objectMap = new ObjectMap();
@@ -221,9 +215,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(jobsCommandOptions.groupByCommandOptions.attributes)) {
             objectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), jobsCommandOptions.groupByCommandOptions.attributes);
         }
-        QueryResponse<Job> jobs = openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.studyId,
+        return openCGAClient.getJobClient().groupBy(jobsCommandOptions.groupByCommandOptions.studyId,
                 jobsCommandOptions.groupByCommandOptions.by,objectMap);
-        jobs.first().getResult().stream().forEach(job -> System.out.println(job.toString()));
     }
 
 }

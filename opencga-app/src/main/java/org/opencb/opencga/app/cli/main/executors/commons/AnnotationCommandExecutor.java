@@ -13,48 +13,45 @@ import java.io.IOException;
  */
 public class AnnotationCommandExecutor<T,U> {
 
-    public void createAnnotationSet(AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions,
-                                    AnnotationClient<T,U> client) throws IOException {
-        QueryResponse<AnnotationSet> annotationSet = client.createAnnotationSet(createCommandOptions.id, createCommandOptions.variableSetId,
+    public QueryResponse<AnnotationSet> createAnnotationSet(
+            AnnotationCommandOptions.AnnotationSetsCreateCommandOptions createCommandOptions, AnnotationClient<T,U> client)
+            throws IOException {
+        return client.createAnnotationSet(createCommandOptions.id, createCommandOptions.variableSetId,
                 createCommandOptions.annotationSetName, createCommandOptions.annotations);
-        System.out.println(annotationSet.toString());
     }
 
-    public void getAllAnnotationSets(AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions infoCommandOptions,
-                                     AnnotationClient<T,U> client) throws IOException {
-        QueryResponse<AnnotationSet> annotationSet = client.getAllAnnotationSets(infoCommandOptions.id, null);
-        System.out.println(annotationSet.toString());
+    public QueryResponse<AnnotationSet> getAllAnnotationSets(
+            AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions infoCommandOptions, AnnotationClient<T,U> client)
+            throws IOException {
+        return client.getAllAnnotationSets(infoCommandOptions.id, null);
     }
 
-    public void getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
+    public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
                                      AnnotationClient<T,U> client) throws IOException {
-        QueryResponse<AnnotationSet> annotationSet = client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName,
-                null);
-        System.out.println(annotationSet.toString());
+        return client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName, null);
     }
 
-    public void searchAnnotationSets(AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions,
-                                     AnnotationClient<T,U> client) throws IOException {
+    public QueryResponse<AnnotationSet> searchAnnotationSets(
+            AnnotationCommandOptions.AnnotationSetsSearchCommandOptions searchCommandOptions, AnnotationClient<T,U> client)
+            throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("variableSetId", searchCommandOptions.variableSetId);
         params.putIfNotNull("annotation", searchCommandOptions.annotation);
-        QueryResponse<AnnotationSet> annotationSet = client.searchAnnotationSets(searchCommandOptions.id, params);
-        System.out.println(annotationSet.toString());
+        return client.searchAnnotationSets(searchCommandOptions.id, params);
     }
 
-    public void deleteAnnotationSet(AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions,
-                                     AnnotationClient<T,U> client) throws IOException {
+    public QueryResponse<AnnotationSet> deleteAnnotationSet(
+            AnnotationCommandOptions.AnnotationSetsDeleteCommandOptions deleteCommandOptions, AnnotationClient<T,U> client)
+            throws IOException {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("annotations", deleteCommandOptions.annotations);
-        QueryResponse<AnnotationSet> annotationSet = client.deleteAnnotationSet(deleteCommandOptions.id,
-                deleteCommandOptions.annotationSetName, params);
-        System.out.println(annotationSet.toString());
+        return client.deleteAnnotationSet(deleteCommandOptions.id, deleteCommandOptions.annotationSetName, params);
     }
 
-    public void updateAnnotationSet(AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions,
-                                     AnnotationClient<T,U> client) throws IOException {
-        QueryResponse<AnnotationSet> annotationSet = client.updateAnnotationSet(updateCommandOptions.id,
+    public QueryResponse<AnnotationSet> updateAnnotationSet(
+            AnnotationCommandOptions.AnnotationSetsUpdateCommandOptions updateCommandOptions, AnnotationClient<T,U> client)
+            throws IOException {
+        return client.updateAnnotationSet(updateCommandOptions.id,
                 updateCommandOptions.annotationSetName, updateCommandOptions.annotations);
-        System.out.println(annotationSet.toString());
     }
 }

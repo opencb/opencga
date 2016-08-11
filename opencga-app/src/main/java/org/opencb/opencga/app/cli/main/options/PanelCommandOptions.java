@@ -46,8 +46,8 @@ public class PanelCommandOptions {
 
     class BasePanelsCommand {
 
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Panel id", required = true, arity = 1)
         public String id;
@@ -84,9 +84,12 @@ public class PanelCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get cohort information")
     public class InfoCommandOptions extends BasePanelsCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
     }
 
 }

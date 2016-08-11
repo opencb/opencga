@@ -17,7 +17,10 @@
 package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.JCommander;
+import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.CommandExecutor;
+import org.opencb.opencga.app.cli.main.io.IWriter;
+import org.opencb.opencga.app.cli.main.io.JsonWriter;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.client.config.ClientConfiguration;
@@ -39,6 +42,7 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
     protected OpenCGAClient openCGAClient;
     protected CatalogManager catalogManager;
     protected ClientConfiguration clientConfiguration;
+    protected IWriter writer;
 
     public OpencgaCommandExecutor(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
         this(options, false);
@@ -54,8 +58,15 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
         init(skipDuration);
     }
 
+    public void reloadConfig(OpencgaCliOptionsParser.OpencgaCommonCommandOptions options) {
+        init(options.logLevel, options.verbose, options.conf);
+        init(false);
+    }
+
     private void init(boolean skipDuration) {
         try {
+            this.writer = new JsonWriter();
+
             loadClientConfiguration();
             loadCatalogConfiguration();
 
@@ -119,6 +130,12 @@ public abstract class OpencgaCommandExecutor extends CommandExecutor {
             logger.debug("Loading configuration from JAR file");
             this.clientConfiguration = ClientConfiguration
                     .load(ClientConfiguration.class.getClassLoader().getResourceAsStream("client-configuration.yml"));
+        }
+    }
+
+    public void createOutput(QueryResponse queryResponse) {
+        if (queryResponse != null) {
+            writer.print(queryResponse, true);
         }
     }
 

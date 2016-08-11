@@ -45,6 +45,7 @@ public class SimpleThreadRunner {
     private final DataReader reader;
     private final List<DataWriter> writers;
     private final List<Task> tasks;
+    private final Object syncObject = new Object();
     protected Logger logger = LoggerFactory.getLogger(SimpleThreadRunner.class);
 
     public SimpleThreadRunner(DataReader reader, List<Task> tasks, DataWriter writer, int batchSize, int capacity, Integer numTasks) {
@@ -195,7 +196,7 @@ public class SimpleThreadRunner {
                     e.printStackTrace();
                 }
             }
-            synchronized (numTasks) {
+            synchronized (syncObject) {
                 this.timeBlockedAtSendWrite += timeBlockedAtSendWrite;
                 this.timeTaskApply += timeTaskApply;
                 finishedTasks++;

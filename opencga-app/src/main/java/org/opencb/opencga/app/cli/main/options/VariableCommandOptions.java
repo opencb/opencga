@@ -42,8 +42,8 @@ public class VariableCommandOptions {
 
     public class BaseVariableCommand {
 
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "VariableSet id", required = true, arity = 1)
         public String id;
@@ -75,17 +75,31 @@ public class VariableCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
     public class InfoCommandOptions extends BaseVariableCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     public class SearchCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
 
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
         public String studyId;
@@ -110,9 +124,6 @@ public class VariableCommandOptions {
     @Parameters(commandNames = {"update"}, commandDescription = "Update some user variableSet using GET method [PENDING]")
     public class UpdateCommandOptions extends BaseVariableCommand {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
         public String name;
 
@@ -122,15 +133,11 @@ public class VariableCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete an unused variable Set")
     public class DeleteCommandOptions extends BaseVariableCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
     @Parameters(commandNames = {"field-delete"}, commandDescription = "Delete one field from a variable set")
     public class FieldDeleteCommandOptions extends BaseVariableCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--name"}, description = "Name.", required = true, arity = 0)
         public String name;
@@ -138,9 +145,6 @@ public class VariableCommandOptions {
 
     @Parameters(commandNames = {"field-rename"}, commandDescription = "Rename the field id of a field in a variable set")
     public class FieldRenameCommandOptions extends BaseVariableCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--oldName"}, description = "Old Name.", required = true, arity = 0)
         public String oldName;

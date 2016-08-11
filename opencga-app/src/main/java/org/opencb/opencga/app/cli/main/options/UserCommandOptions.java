@@ -38,8 +38,8 @@ public class UserCommandOptions {
     }
 
     public class BaseUserCommand {
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "User id",  required = true, arity = 1)
         public String user;
@@ -48,9 +48,6 @@ public class UserCommandOptions {
 
     @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
     public class CreateCommandOptions extends BaseUserCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
         public String userName;
@@ -84,9 +81,11 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"info"}, commandDescription = "Get user's information")
     public class InfoCommandOptions extends BaseUserCommand {
 
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
 
         @Parameter(names = {"--last-activity"}, description = "If matches with the user's last activity, return " +
                 "an empty QueryResult", arity = 1, required = false)
@@ -97,9 +96,17 @@ public class UserCommandOptions {
     @Parameters(commandNames = {"projects"}, commandDescription = "List all projects and studies from a selected user")
     public class ProjectsCommandOptions extends BaseUserCommand {
 
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
 
 //        @ParametersDelegate
 //        public OpencgaCommonCommandOptions commonOptions = UserCommandOptions.this.commonCommandOptions;
