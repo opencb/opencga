@@ -146,6 +146,10 @@ public abstract class AbstractParentClient<T, A> {
     protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
                                            Map<String, Object> params, String method, Class<T> clazz) throws IOException {
 
+        if (params == null) {
+            params = new HashMap<>();
+        }
+
         // Remove null or empty params
         for (Map.Entry<String, Object> param : params.entrySet()) {
             Object value = param.getValue();
