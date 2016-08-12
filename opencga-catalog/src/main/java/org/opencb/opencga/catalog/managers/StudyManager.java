@@ -22,6 +22,8 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DiseasePanelAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
+import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidator;
 import org.opencb.opencga.catalog.utils.ParamUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -848,6 +850,38 @@ public class StudyManager extends AbstractManager implements IStudyManager {
         QueryResult<DiseasePanel> result = panelDBAdaptor.update(diseasePanelId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.panel, diseasePanelId, userId, parameters, null, null);
         return result;
+    }
+
+    @Override
+    public QueryResult<VariableSetSummary> getVariableSetSummary(long variableSetId, String sessionId) throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        long studyId = studyDBAdaptor.getStudyIdByVariableSetId(variableSetId);
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.VIEW_VARIABLE_SET);
+
+        QueryResult<VariableSet> variableSet = studyDBAdaptor.getVariableSet(variableSetId, new QueryOptions());
+        if (variableSet.getNumResults() == 0) {
+            logger.error("getVariableSetSummary: Could not find variable set id {}. {} results returned", variableSetId,
+                    variableSet.getNumResults());
+            throw new CatalogDBException("Variable set " + variableSetId + " not found.");
+        }
+
+        int dbTime = 0;
+
+        VariableSetSummary variableSetSummary = new VariableSetSummary(variableSetId, variableSet.first().getName());
+
+        QueryResult<VariableSummary> annotationSummary = sampleDBAdaptor.getAnnotationSummary(variableSetId);
+        dbTime += annotationSummary.getDbTime();
+        variableSetSummary.setSamples(annotationSummary.getResult());
+
+        annotationSummary = cohortDBAdaptor.getAnnotationSummary(variableSetId);
+        dbTime += annotationSummary.getDbTime();
+        variableSetSummary.setCohorts(annotationSummary.getResult());
+
+        annotationSummary = individualDBAdaptor.getAnnotationSummary(variableSetId);
+        dbTime += annotationSummary.getDbTime();
+        variableSetSummary.setIndividuals(annotationSummary.getResult());
+
+        return new QueryResult<>("Variable set summary", dbTime, 1, 1, "", "", Arrays.asList(variableSetSummary));
     }
 
     /*
