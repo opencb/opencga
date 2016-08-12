@@ -433,6 +433,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                     }
                     // DO NOT BREAK!. Resuming last loading, go to error case.
                 case ERROR:
+                    Collections.sort(batchFileOperation.getFileIds());
+                    Collections.sort(batchFileOperation.getFileIds());
                     if (batchFileOperation.getFileIds().equals(fileIds)) {
                         logger.info("Resuming Last batch loading due to error.");
                     } else {
