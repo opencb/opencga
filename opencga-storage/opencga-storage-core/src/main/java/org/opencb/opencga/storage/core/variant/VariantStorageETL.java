@@ -871,7 +871,7 @@ public abstract class VariantStorageETL implements StorageETL {
         return studyName + "_" + fileId;
     }
 
-    protected VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
+    public VariantSource readVariantSource(URI input, ObjectMap options) throws StorageManagerException {
         return variantReaderUtils.readVariantSource(input);
     }
 

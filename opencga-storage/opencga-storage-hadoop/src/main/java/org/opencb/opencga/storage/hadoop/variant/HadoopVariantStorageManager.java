@@ -145,7 +145,14 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
                         }
                     }
                     if (doLoad && !error) {
-                        indexedFiles.add(storageETL.getOptions().getInt(Options.FILE_ID.key()));
+                        // Read the VariantSource to get the original fileName (it may be different from the
+                        // nextUri.getFileName if this is the transformed file)
+                        String fileName = storageETL.readVariantSource(nextUri, null).getFileName();
+                        // Get latest study configuration from DB, might have been changed since
+                        StudyConfiguration studyConfiguration = storageETL.getStudyConfiguration();
+                        // Get file ID for the provided file name
+                        Integer fileId = studyConfiguration.getFileIds().get(fileName);
+                        indexedFiles.add(fileId);
                     }
                     return storageETLResult;
                 } finally {
@@ -164,7 +171,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
         try {
             while (!futures.isEmpty()) {
                 executorService.awaitTermination(1, TimeUnit.MINUTES);
-                // Check valuesƒ
+                // Check values
                 if (futures.peek().isDone() || futures.peek().isCancelled()) {
                     Future<StorageETLResult> first = futures.pop();
                     StorageETLResult result = first.get(1, TimeUnit.MINUTES);
@@ -185,12 +192,20 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
             }
 
             if (doLoad && doMerge) {
-
                 int batchMergeSize = getOptions().getInt(HADOOP_LOAD_VARIANT_BATCH_SIZE, 10);
+                // Overwrite default ID list with user provided IDs
+                List<Integer> pendingFiles = indexedFiles;
+                if (getOptions().containsKey(HADOOP_LOAD_VARIANT_PENDING_FILES)) {
+                    List<Integer> idList = getOptions().getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
+                    if (!idList.isEmpty()) {
+                        // only if the list is not empty
+                        pendingFiles = idList;
+                    }
+                }
 
                 List<Integer> filesToMerge = new ArrayList<>(batchMergeSize);
                 int i = 0;
-                for (Iterator<Integer> iterator = indexedFiles.iterator(); iterator.hasNext(); i++) {
+                for (Iterator<Integer> iterator = pendingFiles.iterator(); iterator.hasNext(); i++) {
                     Integer indexedFile = iterator.next();
                     filesToMerge.add(indexedFile);
                     if (filesToMerge.size() == batchMergeSize || !iterator.hasNext()) {

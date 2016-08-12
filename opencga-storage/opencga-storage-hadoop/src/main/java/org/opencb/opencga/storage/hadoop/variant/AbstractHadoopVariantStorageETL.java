@@ -375,9 +375,10 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             //If there are some given pending files, load only those files, not all pending files
             List<Integer> givenPendingFiles = options.getAsIntegerList(HADOOP_LOAD_VARIANT_PENDING_FILES);
             if (!givenPendingFiles.isEmpty()) {
+                logger.info("Given Pending file list: " + givenPendingFiles);
                 for (Integer pendingFile : givenPendingFiles) {
                     if (!pendingFiles.contains(pendingFile)) {
-                        throw new StorageManagerException("File " + fileId + " is not pending to be loaded in variant table");
+                        throw new StorageManagerException("File " + pendingFile + " is not pending to be loaded in variant table");
                     }
                 }
                 pendingFiles = givenPendingFiles;
