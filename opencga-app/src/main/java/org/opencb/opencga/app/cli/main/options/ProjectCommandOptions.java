@@ -38,8 +38,8 @@ public class ProjectCommandOptions {
 
     public class BaseProjectCommand {
 
-//        @ParametersDelegate
-//        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        @ParametersDelegate
+        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--id"}, description = "Project identifier", required = true, arity = 1)
         public String id;
@@ -66,23 +66,32 @@ public class ProjectCommandOptions {
 
     @Parameters(commandNames = {"info"}, commandDescription = "Get project information")
     public class InfoCommandOptions extends BaseProjectCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaIncludeExcludeCommonCommandOptions();
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
     }
 
     @Parameters(commandNames = {"studies"}, commandDescription = "Get all studies from a project")
     public class StudiesCommandOptions extends BaseProjectCommand {
-        @ParametersDelegate
-        public OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions commonOptions =
-                new OpencgaCliOptionsParser.OpencgaQueryOptionsCommonCommandOptions();
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Update a project")
     public class UpdateCommandOptions extends BaseProjectCommand {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"-n", "--name"}, description = "Project name", required = true, arity = 1)
         public String name;
@@ -102,8 +111,7 @@ public class ProjectCommandOptions {
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete a project")
     public class DeleteCommandOptions extends BaseProjectCommand {
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+
     }
 
     @Parameters(commandNames = {"help"}, commandDescription = "Help in project")

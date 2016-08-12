@@ -57,64 +57,68 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         String subCommandString = getParsedSubCommand(samplesCommandOptions.jCommander);
         switch (subCommandString) {
             case "create":
-                create();
+                createOutput(create());
                 break;
             case "load":
-                load();
+                createOutput(load());
                 break;
             case "info":
-                info();
+                createOutput(info());
                 break;
             case "search":
-                search();
+                createOutput(search());
                 break;
             case "update":
-                update();
+                createOutput(update());
                 break;
             case "delete":
-                delete();
+                createOutput(delete());
                 break;
             case "groupBy":
-                groupBy();
+                createOutput(groupBy());
                 break;
             case "acl":
-                aclCommandExecutor.acls(samplesCommandOptions.aclsCommandOptions, openCGAClient.getSampleClient());
+                createOutput(aclCommandExecutor.acls(samplesCommandOptions.aclsCommandOptions, openCGAClient.getSampleClient()));
                 break;
             case "acl-create":
-                aclCommandExecutor.aclsCreate(samplesCommandOptions.aclsCreateCommandOptions, openCGAClient.getSampleClient());
+                createOutput(aclCommandExecutor.aclsCreate(samplesCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "acl-member-delete":
-                aclCommandExecutor.aclMemberDelete(samplesCommandOptions.aclsMemberDeleteCommandOptions, openCGAClient.getSampleClient());
+                createOutput(aclCommandExecutor.aclMemberDelete(samplesCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "acl-member-info":
-                aclCommandExecutor.aclMemberInfo(samplesCommandOptions.aclsMemberInfoCommandOptions, openCGAClient.getSampleClient());
+                createOutput(aclCommandExecutor.aclMemberInfo(samplesCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "acl-member-update":
-                aclCommandExecutor.aclMemberUpdate(samplesCommandOptions.aclsMemberUpdateCommandOptions, openCGAClient.getSampleClient());
+                createOutput(aclCommandExecutor.aclMemberUpdate(samplesCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "annotation-sets-create":
-                annotationCommandExecutor.createAnnotationSet(samplesCommandOptions.annotationCreateCommandOptions,
-                        openCGAClient.getSampleClient());
+                createOutput(annotationCommandExecutor.createAnnotationSet(samplesCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "annotation-sets-all-info":
-                annotationCommandExecutor.getAllAnnotationSets(samplesCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getSampleClient());
+                createOutput(annotationCommandExecutor.getAllAnnotationSets(samplesCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "annotation-sets-search":
-                annotationCommandExecutor.searchAnnotationSets(samplesCommandOptions.annotationSearchCommandOptions,
-                        openCGAClient.getSampleClient());
+                createOutput(annotationCommandExecutor.searchAnnotationSets(samplesCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "annotation-sets-delete":
-                annotationCommandExecutor.deleteAnnotationSet(samplesCommandOptions.annotationDeleteCommandOptions,
-                        openCGAClient.getSampleClient());
+                createOutput(annotationCommandExecutor.deleteAnnotationSet(samplesCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "annotation-sets-info":
-                annotationCommandExecutor.getAnnotationSet(samplesCommandOptions.annotationInfoCommandOptions,
-                        openCGAClient.getSampleClient());
+                createOutput(annotationCommandExecutor.getAnnotationSet(samplesCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             case "annotation-sets-update":
-                annotationCommandExecutor.updateAnnotationSet(samplesCommandOptions.annotationUpdateCommandOptions,
-                        openCGAClient.getSampleClient());
+                createOutput(annotationCommandExecutor.updateAnnotationSet(samplesCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getSampleClient()));
                 break;
             default:
                 logger.error("Subcommand not valid");
@@ -123,7 +127,7 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
 
     }
     /********************************************  Administration commands  ***********************************************/
-    private void create() throws CatalogException, IOException {
+    private QueryResponse<Sample> create() throws CatalogException, IOException {
         logger.debug("Creating sample");
         ObjectMap objectMap = new ObjectMap();
         if (StringUtils.isNotEmpty(samplesCommandOptions.createCommandOptions.description)) {
@@ -134,13 +138,11 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.SOURCE.key(), samplesCommandOptions.createCommandOptions.source);
         }
 
-        QueryResponse<Sample> sample = openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.studyId,
+        return openCGAClient.getSampleClient().create(samplesCommandOptions.createCommandOptions.studyId,
                 samplesCommandOptions.createCommandOptions.name, objectMap);
-
-        System.out.println(sample.toString());
     }
 
-    private void load() throws CatalogException, IOException {
+    private QueryResponse<Sample> load() throws CatalogException, IOException {
         logger.debug("Loading samples from a pedigree file");
 
         ObjectMap objectMap = new ObjectMap();
@@ -152,27 +154,23 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.VARIABLE_SET_ID.key(), samplesCommandOptions.loadCommandOptions.variableSetId);
         }
 
-        QueryResponse<Sample> sample = openCGAClient.getSampleClient()
-                .loadFromPed(samplesCommandOptions.loadCommandOptions.studyId, objectMap);
-
-        System.out.println(sample.toString());
+        return openCGAClient.getSampleClient().loadFromPed(samplesCommandOptions.loadCommandOptions.studyId, objectMap);
     }
 
-    private void info() throws CatalogException, IOException  {
+    private QueryResponse<Sample> info() throws CatalogException, IOException  {
         logger.debug("Getting samples information");
         QueryOptions queryOptions = new QueryOptions();
-        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.infoCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.infoCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.infoCommandOptions.exclude);
         }
 
-        QueryResponse<Sample> samples = openCGAClient.getSampleClient().get(samplesCommandOptions.infoCommandOptions.id, queryOptions);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+        return openCGAClient.getSampleClient().get(samplesCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
-    private void search() throws CatalogException, IOException  {
+    private QueryResponse<Sample> search() throws CatalogException, IOException  {
         logger.debug("Searching samples");
 
         Query query = new Query();
@@ -205,26 +203,25 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.annotation)) {
             query.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), samplesCommandOptions.searchCommandOptions.annotation);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.include)) {
-            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.include);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, samplesCommandOptions.searchCommandOptions.include);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.exclude)) {
-            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.commonOptions.exclude);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, samplesCommandOptions.searchCommandOptions.exclude);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.limit)) {
-            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.commonOptions.limit);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, samplesCommandOptions.searchCommandOptions.limit);
         }
-        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.commonOptions.skip)) {
-            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.commonOptions.skip);
+        if (StringUtils.isNotEmpty(samplesCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, samplesCommandOptions.searchCommandOptions.skip);
         }
 
         queryOptions.put("count", samplesCommandOptions.searchCommandOptions.count);
 
-        QueryResponse<Sample> samples = openCGAClient.getSampleClient().search(query, queryOptions);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+        return openCGAClient.getSampleClient().search(query, queryOptions);
     }
 
-    private void update() throws CatalogException, IOException {
+    private QueryResponse<Sample> update() throws CatalogException, IOException {
         logger.debug("Updating samples");
 
         ObjectMap objectMap = new ObjectMap();
@@ -242,19 +239,17 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.INDIVIDUAL_ID.key(), samplesCommandOptions.updateCommandOptions.individualId);
         }
 
-        QueryResponse<Sample> samples = openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.id, objectMap);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
+        return openCGAClient.getSampleClient().update(samplesCommandOptions.updateCommandOptions.id, objectMap);
     }
 
-    private void delete() throws CatalogException, IOException {
+    private QueryResponse<Sample> delete() throws CatalogException, IOException {
         logger.debug("Deleting the select sample");
 
         ObjectMap objectMap = new ObjectMap();
-        QueryResponse<Sample> samples = openCGAClient.getSampleClient().delete(samplesCommandOptions.deleteCommandOptions.id, objectMap);
-        System.out.println(samples.toString());
+        return openCGAClient.getSampleClient().delete(samplesCommandOptions.deleteCommandOptions.id, objectMap);
     }
 
-    private void groupBy() throws CatalogException, IOException {
+    private QueryResponse<Sample> groupBy() throws CatalogException, IOException {
         logger.debug("Group By samples");
 
         ObjectMap objectMap = new ObjectMap();
@@ -282,9 +277,8 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
             objectMap.put(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(),
                     samplesCommandOptions.groupByCommandOptions.annotation);
         }
-        QueryResponse<Sample> samples = openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.studyId,
+        return openCGAClient.getSampleClient().groupBy(samplesCommandOptions.groupByCommandOptions.studyId,
                 samplesCommandOptions.groupByCommandOptions.by,objectMap);
-        samples.first().getResult().stream().forEach(sample -> System.out.println(sample.toString()));
     }
 
 }

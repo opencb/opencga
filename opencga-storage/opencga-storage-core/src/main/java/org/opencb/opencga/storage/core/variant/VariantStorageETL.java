@@ -2,6 +2,7 @@ package org.opencb.opencga.storage.core.variant;
 
 import htsjdk.tribble.readers.LineIterator;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFHeaderVersion;
 import org.apache.commons.lang3.NotImplementedException;
 import org.apache.commons.lang3.StringUtils;
@@ -61,6 +62,7 @@ import java.util.zip.GZIPInputStream;
  */
 public abstract class VariantStorageETL implements StorageETL {
 
+    private static final String HTSJDK_PARSER = "htsjdk";
     protected final StorageConfiguration configuration;
     protected final String storageEngineId;
     protected final ObjectMap options;
@@ -102,8 +104,6 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI preTransform(URI input) throws StorageManagerException, IOException, FileFormatException {
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
         String fileName = Paths.get(input.getPath()).getFileName().toString();
         int fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         int studyId = options.getInt(Options.STUDY_ID.key(), Options.STUDY_ID.defaultValue());
@@ -154,12 +154,11 @@ public abstract class VariantStorageETL implements StorageETL {
         String fileName = input.getFileName().toString();
         VariantStudy.StudyType type = options.get(Options.STUDY_TYPE.key(), VariantStudy.StudyType.class,
                 Options.STUDY_TYPE.defaultValue());
-        VariantSource source = new VariantSource(
+        return new VariantSource(
                 fileName,
                 fileId.toString(),
                 Integer.toString(studyConfiguration.getStudyId()),
                 studyConfiguration.getStudyName(), type, aggregation);
-        return source;
     }
 
 
@@ -190,7 +189,6 @@ public abstract class VariantStorageETL implements StorageETL {
         // input: VcfReader
         // output: JsonWriter
 
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
 
         Path input = Paths.get(inputUri.getPath());
         Path pedigree = pedigreeUri == null ? null : Paths.get(pedigreeUri.getPath());
@@ -201,7 +199,7 @@ public abstract class VariantStorageETL implements StorageETL {
 //        boolean includeSrc = options.getBoolean(Options.INCLUDE_SRC.key(), Options.INCLUDE_SRC.defaultValue());
         boolean includeSrc = false;
         String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
-        String parser = options.getString("transform.parser", "htsjdk");
+        String parser = options.getString("transform.parser", HTSJDK_PARSER);
 
         VariantSource source = buildVariantSource(input, options);
         String fileName = source.getFileName();
@@ -214,9 +212,9 @@ public abstract class VariantStorageETL implements StorageETL {
         int numTasks = options.getInt(Options.TRANSFORM_THREADS.key(), Options.TRANSFORM_THREADS.defaultValue());
         int capacity = options.getInt("blockingQueueCapacity", numTasks * 2);
 
-        if (compression.equalsIgnoreCase("gzip") || compression.equalsIgnoreCase("gz")) {
+        if ("gzip".equalsIgnoreCase(compression) || "gz".equalsIgnoreCase(compression)) {
             extension = ".gz";
-        } else if (compression.equalsIgnoreCase("snappy") || compression.equalsIgnoreCase("snz")) {
+        } else if ("snappy".equalsIgnoreCase(compression) || "snz".equalsIgnoreCase(compression)) {
             extension = ".snappy";
         } else if (!compression.isEmpty()) {
             throw new IllegalArgumentException("Unknown compression method " + compression);
@@ -231,8 +229,8 @@ public abstract class VariantStorageETL implements StorageETL {
 
         logger.info("Transforming variants using {} into {} ...", parser, format);
         long start, end;
-        if (numTasks == 1 && format.equals("json")) { //Run transformation with a SingleThread runner. The legacy way
-            if (!extension.equals(".gz")) { //FIXME: Add compatibility with snappy compression
+        if (numTasks == 1 && "json".equals(format)) { //Run transformation with a SingleThread runner. The legacy way
+            if (!".gz".equals(extension)) { //FIXME: Add compatibility with snappy compression
                 logger.warn("Force using gzip compression");
                 extension = ".gz";
                 outputVariantsFile = output.resolve(fileName + ".variants.json" + extension);
@@ -250,8 +248,6 @@ public abstract class VariantStorageETL implements StorageETL {
 
             //Writers
             VariantJsonWriter jsonWriter = new VariantJsonWriter(source, output);
-//            jsonWriter.includeSrc(includeSrc);
-//            jsonWriter.includeSamples(includeSamples);
             jsonWriter.includeStats(includeStats);
 
             List<VariantWriter> writers = Collections.<VariantWriter>singletonList(jsonWriter);
@@ -269,7 +265,7 @@ public abstract class VariantStorageETL implements StorageETL {
             }
             end = System.currentTimeMillis();
 
-        } else if (format.equals("avro")) {
+        } else if ("avro".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
 
@@ -286,7 +282,7 @@ public abstract class VariantStorageETL implements StorageETL {
             }
             Supplier<ParallelTaskRunner.Task<String, ByteBuffer>> taskSupplier;
 
-            if (parser.equalsIgnoreCase("htsjdk")) {
+            if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 FullVcfCodec codec = new FullVcfCodec();
                 final VariantSource finalSource = source;
@@ -321,11 +317,10 @@ public abstract class VariantStorageETL implements StorageETL {
             try {
                 ptr.run();
             } catch (ExecutionException e) {
-                e.printStackTrace();
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
-        } else if (format.equals("json")) {
+        } else if ("json".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
 
@@ -340,7 +335,7 @@ public abstract class VariantStorageETL implements StorageETL {
             ParallelTaskRunner<String, String> ptr;
 
             Supplier<ParallelTaskRunner.Task<String, String>> taskSupplier;
-            if (parser.equalsIgnoreCase("htsjdk")) {
+            if (parser.equalsIgnoreCase(HTSJDK_PARSER)) {
                 logger.info("Using HTSJDK to read variants.");
                 Pair<VCFHeader, VCFHeaderVersion> header = readHtsHeader(input);
                 VariantGlobalStatsCalculator statsCalculator = new VariantGlobalStatsCalculator(finalSource);
@@ -371,11 +366,10 @@ public abstract class VariantStorageETL implements StorageETL {
             try {
                 ptr.run();
             } catch (ExecutionException e) {
-                e.printStackTrace();
                 throw new StorageManagerException("Error while executing TransformVariants in ParallelTaskRunner", e);
             }
             end = System.currentTimeMillis();
-        } else if (format.equals("proto")) {
+        } else if ("proto".equals(format)) {
             //Read VariantSource
             source = VariantStorageManager.readVariantSource(input, source);
             Pair<Long, Long> times =  processProto(input, fileName, output, source, outputVariantsFile, outputMetaFile,
@@ -414,8 +408,6 @@ public abstract class VariantStorageETL implements StorageETL {
 
     @Override
     public URI postTransform(URI input) throws IOException, FileFormatException {
-//        ObjectMap options = configuration.getStorageEngine(storageEngineId).getVariant().getOptions();
-
         // Delete isolated storage configuration
         if (options.getBoolean(Options.ISOLATE_FILE_FROM_STUDY_CONFIGURATION.key())) {
             options.remove(Options.STUDY_CONFIGURATION.key());
@@ -480,17 +472,15 @@ public abstract class VariantStorageETL implements StorageETL {
             fileId = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
         } else {
             int fileIdFromParams = options.getInt(Options.FILE_ID.key(), Options.FILE_ID.defaultValue());
-            if (fileIdFromParams >= 0) {
-                if (fileIdFromParams != fileId) {
-                    if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
-                        throw new StorageManagerException("Wrong fileId! Unable to load using fileId: "
-                                + fileIdFromParams + ". "
-                                + "The input file has fileId: " + fileId
-                                + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
-                    } else {
-                        //Override the fileId
-                        fileId = fileIdFromParams;
-                    }
+            if (fileIdFromParams >= 0 && fileIdFromParams != fileId) {
+                if (!options.getBoolean(Options.OVERRIDE_FILE_ID.key(), Options.OVERRIDE_FILE_ID.defaultValue())) {
+                    throw new StorageManagerException("Wrong fileId! Unable to load using fileId: "
+                            + fileIdFromParams + ". "
+                            + "The input file has fileId: " + fileId
+                            + ". Use " + Options.OVERRIDE_FILE_ID.key() + " to ignore original fileId.");
+                } else {
+                    //Override the fileId
+                    fileId = fileIdFromParams;
                 }
             }
         }
@@ -532,31 +522,35 @@ public abstract class VariantStorageETL implements StorageETL {
                 List<String> extraFieldsType = new ArrayList<>(extraFields.size());
                 for (String extraField : extraFields) {
                     List<Map<String, Object>> formats = (List) source.getHeader().getMeta().get("FORMAT");
-                    String type = "String";
+                    VCFHeaderLineType type = VCFHeaderLineType.String;
                     for (Map<String, Object> format : formats) {
                         if (format.get("ID").toString().equals(extraField)) {
                             if ("1".equals(format.get("Number"))) {
-                                type = Objects.toString(format.get("Type"));
+                                try {
+                                    type = VCFHeaderLineType.valueOf(Objects.toString(format.get("Type")));
+                                } catch (IllegalArgumentException ignore) {
+                                    type = VCFHeaderLineType.String;
+                                }
                             } else {
                                 //Fields with arity != 1 are loaded as String
-                                type = "String";
+                                type = VCFHeaderLineType.String;
                             }
                             break;
                         }
                     }
                     switch (type) {
-                        case "String":
-                        case "Float":
-                        case "Integer":
+                        case String:
+                        case Float:
+                        case Integer:
                             break;
-                        case "Character":
+                        case Character:
                         default:
-                            type = "String";
+                            type = VCFHeaderLineType.String;
                             break;
 
                     }
-                    extraFieldsType.add(type);
-                    System.err.println(extraField + " : " + type);
+                    extraFieldsType.add(type.toString());
+                    logger.debug(extraField + " : " + type);
                 }
                 studyConfiguration.getAttributes().put(Options.EXTRA_GENOTYPE_FIELDS_TYPE.key(), extraFieldsType);
             }

@@ -14,7 +14,105 @@
  * limitations under the License.
  */
 
-var OPENCGA_HOST = "squalet.hpc.cam.ac.uk:8080/opencga";
-var OPENCGA_VERSION = "v1";
-var OPENCGA_COOKIE_SESSION_ID = "opencga_sId";
-var OPENCGA_COOKIE_USER_NAME = "opencga_userId";
+var opencga = {
+    host: "squalet.hpc.cam.ac.uk:8080/opencga",
+    // host: "bioinfodev.hpc.cam.ac.uk/hgva",
+    version: "v1",
+    cookies: {
+        userName: "opencga_userId",
+        sessionId: "opencga_sId"
+    }
+};
+
+var application = {
+    title: "Catalog",
+    version: "v0.8.0",
+    logo: "images/opencb-logo.png",
+    menu: [
+        {
+            id: "browser",
+            title: "Variant Browser",
+            visibility: "none"
+        },
+        {
+            id: "prioritization",
+            title: "Prioritization",
+            visibility: "none"
+        },
+        {
+            id: "diagnose",
+            title: "Diagnose",
+            visibility: "none",
+            submenu: [
+                {
+                    id: "diagnose:sample",
+                    title: "Sample",
+                    visibility: "public"
+                },
+                {
+                    id: "diagnose:family",
+                    title: "Family",
+                    visibility: "public"
+                }]
+        },
+        {
+            id: "beacon",
+            title: "Beacon",
+            visibility: "none"
+        },
+        {
+            id: "analysis",
+            title: "Analysis",
+            visibility: "none",
+            submenu: [
+                {
+                    id: "ibs",
+                    title: "IBS",
+                    visibility: "public"
+                },
+                {
+                    id: "burden",
+                    title: "Burden Test",
+                    visibility: "public"
+                }]
+        },
+        {
+            id: "tools",
+            title: "Tools",
+            visibility: "none",
+            submenu: [
+                {
+                    id: "genomeBrowser",
+                    title: "Genome Browser",
+                    visibility: "public"
+                },
+                {
+                    separator: true,
+                    visibility: "public"
+                },
+                {
+                    id: "exporter",
+                    title: "Exporter",
+                    visibility: "public"
+                }
+            ]
+        }
+    ],
+    search: {
+        placeholder: "eg. BRCA2",
+        visibility: "none"
+    },
+    settings: {
+        visibility: "public"
+    },
+    about: [
+        {"name": "Documentation",  "url": "https://github.com/opencb/opencga/wiki/OpenCGA-Catalog", "icon": "fa fa-book"},
+        {"name": "Source code", "url": "https://github.com/opencb/opencga", "icon": "fa fa-github"},
+        {"name": "Contact",  "url": "", "icon": "fa fa-envelope"},
+        {"name": "FAQ",  "url": "", "icon": ""}
+    ],
+    breadcrumb: {
+        title: "Dashboard",
+        visibility: "private"
+    }
+};
