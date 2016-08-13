@@ -9,6 +9,7 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
 import org.opencb.opencga.catalog.models.summaries.StudySummary;
+import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 
 import javax.annotation.Nullable;
 import java.net.URI;
@@ -296,4 +297,5 @@ public interface IStudyManager extends ResourceManager<Long, Study> {
 
     QueryResult<DiseasePanel> updateDiseasePanel(String panelStr, ObjectMap parameters, String sessionId) throws CatalogException;
 
+    QueryResult<VariableSetSummary> getVariableSetSummary(long variableSetId, String sessionId) throws CatalogException;
 }
