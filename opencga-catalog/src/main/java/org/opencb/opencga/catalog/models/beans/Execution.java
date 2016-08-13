@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.beans;
 
 import java.util.List;
 
@@ -47,18 +47,19 @@ public class Execution {
 
     @Override
     public String toString() {
-        return "Execution{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", executable='" + executable + '\'' +
-                ", outputParam='" + outputParam + '\'' +
-                ", testCmd='" + testCmd + '\'' +
-                ", result='" + result + '\'' +
-                ", inputParams=" + inputParams +
-                ", inputParamsFromTxt=" + inputParamsFromTxt +
-                ", validParams=" + validParams +
-                ", configAttr=" + configAttr +
-                '}';
+        final StringBuilder sb = new StringBuilder("Execution{");
+        sb.append("id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", executable='").append(executable).append('\'');
+        sb.append(", outputParam='").append(outputParam).append('\'');
+        sb.append(", testCmd='").append(testCmd).append('\'');
+        sb.append(", result='").append(result).append('\'');
+        sb.append(", inputParams=").append(inputParams);
+        sb.append(", inputParamsFromTxt=").append(inputParamsFromTxt);
+        sb.append(", validParams=").append(validParams);
+        sb.append(", configAttr=").append(configAttr);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getId() {

@@ -3,7 +3,7 @@ package org.opencb.opencga.analysis;
 import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
-import org.opencb.opencga.analysis.beans.Execution;
+import org.opencb.opencga.catalog.models.beans.Execution;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;

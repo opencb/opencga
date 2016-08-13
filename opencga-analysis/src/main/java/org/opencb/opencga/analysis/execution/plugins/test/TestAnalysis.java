@@ -2,9 +2,9 @@ package org.opencb.opencga.analysis.execution.plugins.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.catalog.models.beans.Analysis;
+import org.opencb.opencga.catalog.models.beans.Execution;
+import org.opencb.opencga.catalog.models.beans.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 
 import java.util.Arrays;

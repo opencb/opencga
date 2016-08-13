@@ -14,34 +14,36 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.beans;
 
-public class ConfigAttr {
-    private String name, value;
 
-    public ConfigAttr() {
+public class ExampleOption {
+    private String paramName, value;
+
+    public ExampleOption() {
 
     }
 
-    public ConfigAttr(String name, String value) {
-        this.name = name;
+    public ExampleOption(String executionId, String value) {
+        this.paramName = executionId;
         this.value = value;
     }
 
     @Override
     public String toString() {
-        return "ConfigAttr{" +
-                "name='" + name + '\'' +
-                ", value='" + value + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("ExampleOption{");
+        sb.append("paramName='").append(paramName).append('\'');
+        sb.append(", value='").append(value).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
-    public String getName() {
-        return name;
+    public String getParamName() {
+        return paramName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setParamName(String paramName) {
+        this.paramName = paramName;
     }
 
     public String getValue() {

@@ -14,29 +14,27 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.beans;
 
-public class Option {
-    private String name, description;
-    private boolean required;
+public class ConfigAttr {
+    private String name, value;
 
-    public Option() {
+    public ConfigAttr() {
 
     }
 
-    public Option(String name, String description, boolean required) {
+    public ConfigAttr(String name, String value) {
         this.name = name;
-        this.description = description;
-        this.required = required;
+        this.value = value;
     }
 
     @Override
     public String toString() {
-        return "Option{" +
-                "name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", required=" + required +
-                '}';
+        final StringBuilder sb = new StringBuilder("ConfigAttr{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", value='").append(value).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getName() {
@@ -47,19 +45,11 @@ public class Option {
         this.name = name;
     }
 
-    public boolean isRequired() {
-        return required;
+    public String getValue() {
+        return value;
     }
 
-    public void setRequired(boolean required) {
-        this.required = required;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setValue(String value) {
+        this.value = value;
     }
 }

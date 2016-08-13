@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.beans;
 
 import java.util.List;
 
@@ -34,11 +34,12 @@ public class Example {
 
     @Override
     public String toString() {
-        return "Example{" +
-                "name='" + name + '\'' +
-                ", executionId='" + executionId + '\'' +
-                ", options=" + options +
-                '}';
+        final StringBuilder sb = new StringBuilder("Example{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", executionId='").append(executionId).append('\'');
+        sb.append(", options=").append(options);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getName() {

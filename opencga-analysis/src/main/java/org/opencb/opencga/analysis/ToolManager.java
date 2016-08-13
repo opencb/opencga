@@ -17,9 +17,9 @@
 package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.catalog.models.beans.Analysis;
+import org.opencb.opencga.catalog.models.beans.Execution;
+import org.opencb.opencga.catalog.models.beans.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
 import org.opencb.opencga.core.common.Config;

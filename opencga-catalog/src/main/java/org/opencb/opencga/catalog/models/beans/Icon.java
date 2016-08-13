@@ -14,41 +14,42 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.beans;
 
-public class InputParam {
-    private String name, dataType;
+public class Icon {
+    private String size, data;
 
-    public InputParam() {
+    public Icon() {
 
     }
 
-    public InputParam(String name, String dataType) {
-        this.name = name;
-        this.dataType = dataType;
+    public Icon(String size, String data) {
+        this.size = size;
+        this.data = data;
     }
 
     @Override
     public String toString() {
-        return "InputParam{" +
-                "name='" + name + '\'' +
-                ", dataType='" + dataType + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Icon{");
+        sb.append("size='").append(size).append('\'');
+        sb.append(", data='").append(data).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
-    public String getName() {
-        return name;
+    public String getSize() {
+        return size;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setSize(String size) {
+        this.size = size;
     }
 
-    public String getDataType() {
-        return dataType;
+    public String getData() {
+        return data;
     }
 
-    public void setDataType(String dataType) {
-        this.dataType = dataType;
+    public void setData(String data) {
+        this.data = data;
     }
 }

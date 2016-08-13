@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.execution.plugins;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.beans.Analysis;
+import org.opencb.opencga.catalog.models.beans.Analysis;
 import org.opencb.opencga.analysis.execution.plugins.test.TestAnalysis;
 import org.slf4j.LoggerFactory;
 

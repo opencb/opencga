@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.beans;
 
 import java.util.List;
 
@@ -50,20 +50,21 @@ public class Analysis {
 
     @Override
     public String toString() {
-        return "Analysis{" +
-                "author=" + author +
-                ", version='" + version + '\'' +
-                ", id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", website='" + website + '\'' +
-                ", publication='" + publication + '\'' +
-                ", icon=" + icon +
-                ", globalParams=" + globalParams +
-                ", executions=" + executions +
-                ", examples=" + examples +
-                ", acl=" + acl +
-                '}';
+        final StringBuilder sb = new StringBuilder("Analysis{");
+        sb.append("author=").append(author);
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", website='").append(website).append('\'');
+        sb.append(", publication='").append(publication).append('\'');
+        sb.append(", icon=").append(icon);
+        sb.append(", globalParams=").append(globalParams);
+        sb.append(", executions=").append(executions);
+        sb.append(", examples=").append(examples);
+        sb.append(", acl=").append(acl);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Author getAuthor() {
