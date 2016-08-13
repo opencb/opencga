@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
 import java.util.List;
 
 public class Execution {
+
     private String id, name, executable, outputParam, testCmd, result;
     private List<InputParam> inputParams;
     private List<InputParam> inputParamsFromTxt;

@@ -2,9 +2,9 @@ package org.opencb.opencga.analysis.execution.plugins.test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.catalog.models.beans.Analysis;
-import org.opencb.opencga.catalog.models.beans.Execution;
-import org.opencb.opencga.catalog.models.beans.Option;
+import org.opencb.opencga.catalog.models.tool.Manifest;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 
 import java.util.Arrays;
@@ -22,7 +22,7 @@ public class TestAnalysis extends OpenCGAAnalysis {
     public static final String PARAM_1 = "param1";
     public static final String ERROR = "error";
     public static final String PLUGIN_ID = "test_plugin";
-    private final Analysis manifest;
+    private final Manifest manifest;
 
     public TestAnalysis() {
         List<Option> validParams = Arrays.asList(
@@ -33,7 +33,7 @@ public class TestAnalysis extends OpenCGAAnalysis {
         List<Execution> executions = Collections.singletonList(
                 new Execution("default", "default", "", Collections.emptyList(), Collections.emptyList(), OUTDIR, validParams, Collections.emptyList(), null, null)
         );
-        manifest = new Analysis(null, "0.1.0", PLUGIN_ID, "Test plugin", "", "", "", null, Collections.emptyList(), executions, null, null);
+        manifest = new Manifest(null, "0.1.0", PLUGIN_ID, "Test plugin", "", "", "", null, Collections.emptyList(), executions, null, null);
         try {
             System.out.println(new ObjectMapper().writer().writeValueAsString(manifest));
         } catch (JsonProcessingException e) {
@@ -42,7 +42,7 @@ public class TestAnalysis extends OpenCGAAnalysis {
     }
 
     @Override
-    public Analysis getManifest() {
+    public Manifest getManifest() {
         return manifest;
     }
 

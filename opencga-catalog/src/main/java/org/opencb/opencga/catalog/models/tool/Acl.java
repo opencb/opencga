@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
+@Deprecated
 public class Acl {
+
     private String userId;
     private boolean read, write, execute;
 

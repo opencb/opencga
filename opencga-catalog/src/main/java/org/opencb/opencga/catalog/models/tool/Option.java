@@ -14,30 +14,29 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-import java.util.List;
+public class Option {
 
-public class Example {
-    private String name, executionId;
-    private List<ExampleOption> options;
+    private String name, description;
+    private boolean required;
 
-    public Example() {
+    public Option() {
 
     }
 
-    public Example(String name, String executionId, List<ExampleOption> options) {
+    public Option(String name, String description, boolean required) {
         this.name = name;
-        this.executionId = executionId;
-        this.options = options;
+        this.description = description;
+        this.required = required;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Example{");
+        final StringBuilder sb = new StringBuilder("Option{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", executionId='").append(executionId).append('\'');
-        sb.append(", options=").append(options);
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", required=").append(required);
         sb.append('}');
         return sb.toString();
     }
@@ -50,19 +49,19 @@ public class Example {
         this.name = name;
     }
 
-    public String getExecutionId() {
-        return executionId;
+    public boolean isRequired() {
+        return required;
     }
 
-    public void setExecutionId(String executionId) {
-        this.executionId = executionId;
+    public void setRequired(boolean required) {
+        this.required = required;
     }
 
-    public List<ExampleOption> geOptions() {
-        return options;
+    public String getDescription() {
+        return description;
     }
 
-    public void setOptions(List<ExampleOption> options) {
-        this.options = options;
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

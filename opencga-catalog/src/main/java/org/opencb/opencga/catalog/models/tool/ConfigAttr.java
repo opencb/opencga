@@ -14,42 +14,44 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-public class Icon {
-    private String size, data;
+public class ConfigAttr {
 
-    public Icon() {
+    private String name;
+    private String value;
+
+    public ConfigAttr() {
 
     }
 
-    public Icon(String size, String data) {
-        this.size = size;
-        this.data = data;
+    public ConfigAttr(String name, String value) {
+        this.name = name;
+        this.value = value;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("Icon{");
-        sb.append("size='").append(size).append('\'');
-        sb.append(", data='").append(data).append('\'');
+        final StringBuilder sb = new StringBuilder("ConfigAttr{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", value='").append(value).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getSize() {
-        return size;
+    public String getName() {
+        return name;
     }
 
-    public void setSize(String size) {
-        this.size = size;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getData() {
-        return data;
+    public String getValue() {
+        return value;
     }
 
-    public void setData(String data) {
-        this.data = data;
+    public void setValue(String value) {
+        this.value = value;
     }
 }

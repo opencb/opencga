@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
 import java.util.List;
 
-public class Analysis {
+public class Manifest {
+
     private Author author;
     private String version, id, name, description, website, publication;
     private Icon icon;
     private List<Option> globalParams;
     private List<Execution> executions;
     private List<Example> examples;
+    @Deprecated
     private List<Acl> acl;
 
-    public Analysis() {
+    public Manifest() {
 
     }
 
-    public Analysis(Author author, String version, String id, String name, String description,
+    public Manifest(Author author, String version, String id, String name, String description,
                     String website, String publication, Icon icon, List<Option> globalParams,
                     List<Execution> executions, List<Example> examples, List<Acl> acl) {
         this.author = author;

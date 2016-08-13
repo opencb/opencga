@@ -14,25 +14,26 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-public class ConfigAttr {
-    private String name, value;
+public class InputParam {
 
-    public ConfigAttr() {
+    private String name, dataType;
+
+    public InputParam() {
 
     }
 
-    public ConfigAttr(String name, String value) {
+    public InputParam(String name, String dataType) {
         this.name = name;
-        this.value = value;
+        this.dataType = dataType;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ConfigAttr{");
+        final StringBuilder sb = new StringBuilder("InputParam{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", value='").append(value).append('\'');
+        sb.append(", dataType='").append(dataType).append('\'');
         sb.append('}');
         return sb.toString();
     }
@@ -45,11 +46,11 @@ public class ConfigAttr {
         this.name = name;
     }
 
-    public String getValue() {
-        return value;
+    public String getDataType() {
+        return dataType;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
     }
 }

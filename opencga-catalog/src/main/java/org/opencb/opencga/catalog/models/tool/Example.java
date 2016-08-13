@@ -14,25 +14,31 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-public class InputParam {
-    private String name, dataType;
+import java.util.List;
 
-    public InputParam() {
+public class Example {
+
+    private String name, executionId;
+    private List<ExampleOption> options;
+
+    public Example() {
 
     }
 
-    public InputParam(String name, String dataType) {
+    public Example(String name, String executionId, List<ExampleOption> options) {
         this.name = name;
-        this.dataType = dataType;
+        this.executionId = executionId;
+        this.options = options;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("InputParam{");
+        final StringBuilder sb = new StringBuilder("Example{");
         sb.append("name='").append(name).append('\'');
-        sb.append(", dataType='").append(dataType).append('\'');
+        sb.append(", executionId='").append(executionId).append('\'');
+        sb.append(", options=").append(options);
         sb.append('}');
         return sb.toString();
     }
@@ -45,11 +51,19 @@ public class InputParam {
         this.name = name;
     }
 
-    public String getDataType() {
-        return dataType;
+    public String getExecutionId() {
+        return executionId;
     }
 
-    public void setDataType(String dataType) {
-        this.dataType = dataType;
+    public void setExecutionId(String executionId) {
+        this.executionId = executionId;
+    }
+
+    public List<ExampleOption> geOptions() {
+        return options;
+    }
+
+    public void setOptions(List<ExampleOption> options) {
+        this.options = options;
     }
 }

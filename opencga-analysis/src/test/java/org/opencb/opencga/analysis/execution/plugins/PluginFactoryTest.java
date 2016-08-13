@@ -2,7 +2,7 @@ package org.opencb.opencga.analysis.execution.plugins;
 
 import org.junit.Test;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.catalog.models.beans.Analysis;
+import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.analysis.execution.plugins.test.TestAnalysis;
 import org.slf4j.LoggerFactory;
 
@@ -28,7 +28,7 @@ public class PluginFactoryTest {
         }
 
         @Override
-        public Analysis getManifest() {
+        public Manifest getManifest() {
             try {
                 return loadManifest(getIdentifier());
             } catch (IOException e) {

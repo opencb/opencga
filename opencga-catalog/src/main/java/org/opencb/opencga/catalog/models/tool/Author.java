@@ -14,43 +14,44 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.catalog.models.beans;
+package org.opencb.opencga.catalog.models.tool;
 
+public class Author {
 
-public class ExampleOption {
-    private String paramName, value;
+    private String name;
+    private String email;
 
-    public ExampleOption() {
+    public Author() {
 
     }
 
-    public ExampleOption(String executionId, String value) {
-        this.paramName = executionId;
-        this.value = value;
+    public Author(String name, String email) {
+        this.name = name;
+        this.email = email;
     }
 
     @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("ExampleOption{");
-        sb.append("paramName='").append(paramName).append('\'');
-        sb.append(", value='").append(value).append('\'');
+        final StringBuilder sb = new StringBuilder("Author{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", email='").append(email).append('\'');
         sb.append('}');
         return sb.toString();
     }
 
-    public String getParamName() {
-        return paramName;
+    public String getName() {
+        return name;
     }
 
-    public void setParamName(String paramName) {
-        this.paramName = paramName;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public String getValue() {
-        return value;
+    public String getEmail() {
+        return email;
     }
 
-    public void setValue(String value) {
-        this.value = value;
+    public void setEmail(String email) {
+        this.email = email;
     }
 }
