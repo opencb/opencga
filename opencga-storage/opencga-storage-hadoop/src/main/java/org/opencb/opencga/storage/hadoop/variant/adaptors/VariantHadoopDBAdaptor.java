@@ -5,6 +5,7 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.filter.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.core.Region;
@@ -42,9 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -64,7 +63,7 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     private final AtomicReference<StudyConfigurationManager> studyConfigurationManager = new AtomicReference<>(null);
     private final Configuration configuration;
     private final GenomeHelper genomeHelper;
-    private final java.sql.Connection phoenixCon;
+    private final AtomicReference<java.sql.Connection> phoenixCon = new AtomicReference<>();
     private final VariantSqlQueryParser queryParser;
     private final HadoopVariantSourceDBAdaptor variantSourceDBAdaptor;
     private final CellBaseClient cellBaseClient;
@@ -91,15 +90,21 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
         this.queryParser = new VariantSqlQueryParser(genomeHelper, this.variantTable, new VariantDBAdaptorUtils(this), cellBaseClient);
 
         phoenixHelper = new VariantPhoenixHelper(genomeHelper);
-        try {
-            phoenixCon = phoenixHelper.newJdbcConnection(conf);
-        } catch (SQLException | ClassNotFoundException e) {
-            throw new IOException(e);
-        }
     }
 
     public java.sql.Connection getJdbcConnection() {
-        return phoenixCon;
+        if (phoenixCon.get() == null) {
+            try {
+                java.sql.Connection connection = phoenixHelper.newJdbcConnection(this.configuration);
+                if (!phoenixCon.compareAndSet(null, connection)) {
+                    connection.close(); // already set in the mean time
+                }
+                logger.info("Opened Phoenix Connection " + connection);
+            } catch (SQLException | ClassNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+        return phoenixCon.get();
     }
 
     public GenomeHelper getGenomeHelper() {
@@ -165,6 +170,15 @@ public class VariantHadoopDBAdaptor implements VariantDBAdaptor {
     @Override
     public void close() throws IOException {
         this.genomeHelper.close();
+        java.sql.Connection connection = this.phoenixCon.getAndSet(null);
+        if (connection != null) {
+            try {
+                logger.info("Close Phoenix Connection " + connection);
+                connection.close();
+            } catch (SQLException e) {
+                throw new IOException(e);
+            }
+        }
     }
 
     public static Logger getLog() {
