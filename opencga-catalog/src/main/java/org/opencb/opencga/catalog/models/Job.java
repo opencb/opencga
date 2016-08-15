@@ -84,6 +84,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
     private long endTime;
     private String outputError;
     private String execution;
+    private String executable;
     private String commandLine;
     private long visits;
     private JobStatus status;
@@ -105,6 +106,13 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public Job() {
     }
 
+    public Job(String name, String userId, String executable, List<Long> input, List<Long> output, long outDirId,
+               Map<String, String> params) {
+        this(-1, name, userId, -1, executable, TimeUtils.getTime(), "", -1, -1, "", "", "", 0, new JobStatus(JobStatus.PREPARED), -1,
+                outDirId, null, input, output, Collections.emptyList(), Collections.emptyList(), params, new HashMap<>(),
+                new HashMap<>(), "", "");
+    }
+
     public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,
                URI tmpOutDirUri, List<Long> input) {
         this(-1, name, userId, -1, toolName, TimeUtils.getTime(), description, System.currentTimeMillis(), -1, "", null, commandLine,
@@ -113,14 +121,14 @@ public class Job extends AbstractAcl<JobAclEntry> {
     }
 
     @Deprecated
-    public Job(long id, String name, String userId, String toolName, String creationDate, String description, long startTime, long endTime,
-               String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId, URI tmpOutDirUri,
-               List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
+    public Job(long id, String name, String userId, String executable, String creationDate, String description, long startTime,
+               long endTime, String outputError, String commandLine, long visits, JobStatus jobStatus, long diskUsage, long outDirId,
+               URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, Map<String, Object> attributes,
                Map<String, Object> resourceManagerAttributes) {
         this.id = id;
         this.name = name;
         this.userId = userId;
-        this.toolName = toolName;
+        this.executable = executable;
         this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
@@ -154,7 +162,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         errorDescription = null;
     }
 
-    public Job(long id, String name, String userId, long toolId, String toolName, String creationDate, String description, long startTime,
+    public Job(long id, String name, String userId, long toolId, String executable, String creationDate, String description, long startTime,
                long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
                long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
                Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error) {
@@ -162,7 +170,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.name = name;
         this.userId = userId;
         this.toolId = toolId;
-        this.toolName = toolName;
+        this.executable = executable;
         this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
@@ -195,7 +203,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.errorDescription = null;
     }
 
-    public Job(long id, String name, String userId, long toolId, String toolName, String creationDate, String description, long startTime,
+    public Job(long id, String name, String userId, long toolId, String executable, String creationDate, String description, long startTime,
                long endTime, String outputError, String execution, String commandLine, long visits, JobStatus status, long diskUsage,
                long outDirId, URI tmpOutDirUri, List<Long> input, List<Long> output, List<String> tags, List<JobAclEntry> acl,
                Map<String, String> params, Map<String, Object> attributes, Map<String, Object> resourceManagerAttributes, String error,
@@ -204,7 +212,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         this.name = name;
         this.userId = userId;
         this.toolId = toolId;
-        this.toolName = toolName;
+        this.executable = executable;
         this.creationDate = creationDate;
         this.description = description;
         this.startTime = startTime;
@@ -295,7 +303,6 @@ public class Job extends AbstractAcl<JobAclEntry> {
         COHORT_STATS
     }
 
-
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("Job{");
@@ -310,6 +317,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
         sb.append(", endTime=").append(endTime);
         sb.append(", outputError='").append(outputError).append('\'');
         sb.append(", execution='").append(execution).append('\'');
+        sb.append(", executable='").append(executable).append('\'');
         sb.append(", commandLine='").append(commandLine).append('\'');
         sb.append(", visits=").append(visits);
         sb.append(", status=").append(status);
@@ -319,7 +327,6 @@ public class Job extends AbstractAcl<JobAclEntry> {
         sb.append(", input=").append(input);
         sb.append(", output=").append(output);
         sb.append(", tags=").append(tags);
-        sb.append(", acl=").append(acl);
         sb.append(", params=").append(params);
         sb.append(", attributes=").append(attributes);
         sb.append(", resourceManagerAttributes=").append(resourceManagerAttributes);
@@ -365,12 +372,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
         return this;
     }
 
-    public String getToolName() {
-        return toolName;
+    public String getExecutable() {
+        return executable;
     }
 
-    public Job setToolName(String toolName) {
-        this.toolName = toolName;
+    public Job setExecutable(String executable) {
+        this.executable = executable;
         return this;
     }
 
@@ -556,6 +563,15 @@ public class Job extends AbstractAcl<JobAclEntry> {
 
     public Job setErrorDescription(String errorDescription) {
         this.errorDescription = errorDescription;
+        return this;
+    }
+
+    public String getToolName() {
+        return toolName;
+    }
+
+    public Job setToolName(String toolName) {
+        this.toolName = toolName;
         return this;
     }
 

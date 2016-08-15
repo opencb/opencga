@@ -54,6 +54,7 @@ public class CatalogAuthenticationManager implements AuthenticationManager {
             return true;
         } else {
             if (throwException) {
+                System.out.println("userId " + userId + " password: " + password + " encrypted: " + cypherPassword);
                 throw new CatalogException("Bad user or password");
             } else {
                 return false;

@@ -1,9 +1,10 @@
-package org.opencb.opencga.app.cli.main.options;
+package org.opencb.opencga.app.cli.main.options.catalog;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.Parameters;
 import com.beust.jcommander.ParametersDelegate;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonCommandOptions;
 import org.opencb.opencga.app.cli.main.options.commons.AclCommandOptions;
@@ -239,28 +240,77 @@ public class FileCommandOptions {
 
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
-    public class IndexCommandOptions extends BaseFileCommand {
+    public class IndexCommandOptions {
 
-    //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
-    //    public List<String> dashDashParameters;
+        @ParametersDelegate
+        public OpencgaCliOptionsParser.OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
-        public String outdir = "";
+        @Parameter(names = {"--id"}, description = "Comma separated list of file ids (files or directories)", required = true, arity = 1)
+        public String fileIds;
 
-    //     @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
-    //    public boolean enqueue;
+        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = false, arity = 1)
+        public String studyId;
 
-    //    @Parameter(names = "--transform", description = "Run only the transform phase")
-    //    public boolean transform = false;
+        @Parameter(names = {"--transform"}, description = "If present it only runs the transform stage, no load is executed")
+        public boolean transform = false;
 
-    //    @Parameter(names = "--load", description = "Run only the load phase")
-    //    public boolean load = false;
+        @Parameter(names = {"--load"}, description = "If present only the load stage is executed, transformation is skipped")
+        public boolean load = false;
 
-        @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
-        public boolean calculateStats;
+        @Parameter(names = {"--outdir"}, description = "Directory where transformed index files will be stored", required = false, arity = 1)
+        public String outdirId = null;
 
-        @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
-        public boolean annotate;
+        @Parameter(names = {"--exclude-genotypes"}, description = "Index excluding the genotype information")
+        public boolean excludeGenotype = false;
+
+        @Parameter(names = {"--include-extra-fields"}, description = "Index including other genotype fields [CSV]")
+        public String extraFields = "";
+
+        @Parameter(names = {"--aggregated"}, description = "Select the type of aggregated VCF file: none, basic, EVS or ExAC", arity = 1)
+        public String aggregated = "NONE";
+
+//        @Parameter(names = {"--aggregation-mapping-file"}, description = "File containing population names mapping in an aggregated VCF " +
+//                "file")
+//        public String aggregationMappingFile = null;
+//
+//        @Parameter(names = {"--gvcf"}, description = "The input file is in gvcf format")
+//        public boolean gvcf;
+//
+//        @Parameter(names = {"--bgzip"}, description = "[PENDING] The input file is in bgzip format")
+//        public boolean bgzip;
+
+        @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
+        public boolean calculateStats = false;
+
+        @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
+        public boolean annotate = false;
+//
+//        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
+//        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;
+
+        @Parameter(names = {"--overwrite-annotations"}, description = "Overwrite annotations already present in variants")
+        public boolean overwriteAnnotations;
+//
+//    //     @Parameter(description = " -- {opencga-storage internal parameter. Use your head}") //Wil contain args after "--"
+//    //    public List<String> dashDashParameters;
+//
+//        @Parameter(names = {"-o", "--outdir-id"}, description = "Directory ID where to create the file", required = false, arity = 1)
+//        public String outdir = "";
+//
+//    //     @Parameter(names = {"--enqueue"}, description = "Enqueue the job to be launched by the execution manager", arity = 0)
+//    //    public boolean enqueue;
+//
+//    //    @Parameter(names = "--transform", description = "Run only the transform phase")
+//    //    public boolean transform = false;
+//
+//    //    @Parameter(names = "--load", description = "Run only the load phase")
+//    //    public boolean load = false;
+//
+//        @Parameter(names = "--calculate-stats", description = "Calculate stats for cohort ALL", arity = 0)
+//        public boolean calculateStats;
+//
+//        @Parameter(names = "--annotate", description = "Annotate new variants", arity = 0)
+//        public boolean annotate;
     }
 
 

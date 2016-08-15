@@ -32,6 +32,7 @@ public abstract class AbstractManager {
     protected final AuthorizationManager authorizationManager;
     protected final AuditManager auditManager;
     protected final CatalogIOManagerFactory catalogIOManagerFactory;
+    protected final CatalogManager catalogManager;
 
     protected CatalogConfiguration catalogConfiguration;
     @Deprecated
@@ -49,6 +50,7 @@ public abstract class AbstractManager {
     protected final CatalogJobDBAdaptor jobDBAdaptor;
     protected final CatalogPanelDBAdaptor panelDBAdaptor;
 
+    @Deprecated
     public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
                            AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory
                                    ioManagerFactory, CatalogConfiguration catalogConfiguration) {
@@ -67,6 +69,30 @@ public abstract class AbstractManager {
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
+        this.catalogManager = null;
+
+        projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
+    }
+
+    public AbstractManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                           AuditManager auditManager, CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                           CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        this.authorizationManager = authorizationManager;
+        this.authenticationManager = authenticationManager;
+        this.auditManager = auditManager;
+        this.catalogConfiguration = catalogConfiguration;
+        this.userDBAdaptor = catalogDBAdaptorFactory.getCatalogUserDBAdaptor();
+        this.studyDBAdaptor = catalogDBAdaptorFactory.getCatalogStudyDBAdaptor();
+        this.fileDBAdaptor = catalogDBAdaptorFactory.getCatalogFileDBAdaptor();
+        this.individualDBAdaptor = catalogDBAdaptorFactory.getCatalogIndividualDBAdaptor();
+        this.sampleDBAdaptor = catalogDBAdaptorFactory.getCatalogSampleDBAdaptor();
+        this.jobDBAdaptor = catalogDBAdaptorFactory.getCatalogJobDBAdaptor();
+        this.cohortDBAdaptor = catalogDBAdaptorFactory.getCatalogCohortDBAdaptor();
+        this.datasetDBAdaptor = catalogDBAdaptorFactory.getCatalogDatasetDBAdaptor();
+        this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
+        this.catalogIOManagerFactory = ioManagerFactory;
+        this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
+        this.catalogManager = catalogManager;
 
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
@@ -90,6 +116,7 @@ public abstract class AbstractManager {
         this.panelDBAdaptor = catalogDBAdaptorFactory.getCatalogPanelDBAdaptor();
         this.catalogIOManagerFactory = ioManagerFactory;
         this.catalogDBAdaptorFactory = catalogDBAdaptorFactory;
+        this.catalogManager = null;
         projectDBAdaptor = catalogDBAdaptorFactory.getCatalogProjectDbAdaptor();
     }
 

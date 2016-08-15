@@ -69,7 +69,7 @@ public interface CatalogFileDBAdaptor extends CatalogAclDBAdaptor<File, FileAclE
 //        ACL_EXECUTE("acls.execute", BOOLEAN, ""),
 //        ACL_DELETE("acls.delete", BOOLEAN, ""),
 
-        //INDEX("index", TEXT, ""),
+        INDEX("index", TEXT_ARRAY, ""),
         INDEX_USER_ID("index.userId", TEXT, ""),
         INDEX_CREATION_DATE("index.creationDate", TEXT, ""),
         INDEX_STATUS_NAME("index.status.name", TEXT, ""),

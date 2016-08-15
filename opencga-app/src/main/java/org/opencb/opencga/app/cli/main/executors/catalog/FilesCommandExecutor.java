@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -23,16 +23,16 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.FileCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.FileCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.core.common.UriUtils;
-import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 
 import java.io.IOException;
 import java.net.URI;
@@ -212,11 +212,24 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id, null);
     }
 
-    private QueryResponse index() throws CatalogException {
-        logger.debug("Indexing file in the selected StorageEngine");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
+    private QueryResponse<Job> index() throws CatalogException, IOException {
+        logger.debug("Indexing variant(s)");
+
+        String fileIds = filesCommandOptions.indexCommandOptions.fileIds;
+
+        ObjectMap o = new ObjectMap();
+        o.putIfNotNull("studyId", filesCommandOptions.indexCommandOptions.studyId);
+        o.putIfNotNull("outDir", filesCommandOptions.indexCommandOptions.outdirId);
+        o.putIfNotNull("transform", filesCommandOptions.indexCommandOptions.transform);
+        o.putIfNotNull("load", filesCommandOptions.indexCommandOptions.load);
+        o.putIfNotNull("excludeGenotypes", filesCommandOptions.indexCommandOptions.excludeGenotype);
+        o.putIfNotNull("includeExtraFields", filesCommandOptions.indexCommandOptions.extraFields);
+        o.putIfNotNull("aggregated", filesCommandOptions.indexCommandOptions.aggregated);
+        o.putIfNotNull("calculateStats", filesCommandOptions.indexCommandOptions.calculateStats);
+        o.putIfNotNull("annotate", filesCommandOptions.indexCommandOptions.annotate);
+        o.putIfNotNull("overwrite", filesCommandOptions.indexCommandOptions.overwriteAnnotations);
+
+        return openCGAClient.getFileClient().index(fileIds, o);
     }
 
     private QueryResponse alignment() throws CatalogException {

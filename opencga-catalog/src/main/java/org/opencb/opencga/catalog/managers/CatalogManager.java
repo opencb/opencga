@@ -189,13 +189,13 @@ public class CatalogManager implements AutoCloseable {
         sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
         userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         studyManager = new StudyManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         projectManager = new ProjectManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
-        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        jobManager = new JobManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, this.catalogConfiguration);
         sampleManager = new SampleManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
@@ -1921,5 +1921,9 @@ public class CatalogManager implements AutoCloseable {
 
     public ICohortManager getCohortManager() {
         return cohortManager;
+    }
+
+    public CatalogConfiguration getCatalogConfiguration() {
+        return catalogConfiguration;
     }
 }

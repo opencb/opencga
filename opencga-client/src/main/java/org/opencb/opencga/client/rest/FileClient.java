@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
@@ -47,8 +48,8 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return execute(FILES_URL, "create-folder", params, GET, File.class);
     }
 
-    public QueryResponse<File> index(String fileId, ObjectMap params) throws CatalogException, IOException {
-        return execute(FILES_URL, fileId, "index", params, GET, File.class);
+    public QueryResponse<Job> index(String fileId, ObjectMap params) throws CatalogException, IOException {
+        return execute(FILES_URL, fileId, "index", params, GET, Job.class);
     }
 
 //    public QueryResponse<File> link(String studyId, String uri, String studyPath, ObjectMap params) throws CatalogException, IOException {
