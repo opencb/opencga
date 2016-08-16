@@ -205,7 +205,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected Scan createScan(VariantTableHelper gh, String[] fileArr) {
         Scan scan = new Scan();
-        scan.setCaching(100);        // 1 is the default in Scan, which will be bad for MapReduce jobs
+//        scan.setCaching(10);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
         // specify return columns (file IDs)
         for (String fileIdStr : fileArr) {

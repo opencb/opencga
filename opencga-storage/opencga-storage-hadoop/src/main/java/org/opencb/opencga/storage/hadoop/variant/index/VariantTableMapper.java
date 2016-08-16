@@ -5,9 +5,7 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.*;
-import org.apache.hadoop.hbase.filter.ColumnPrefixFilter;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -103,7 +101,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         // TODO switched off at the moment down to removed variant calls from gVCF files (malformated variants)
 //        checkArchiveConsistency(ctx.context, ctx.startPos, ctx.nextStartPos, archiveVar, analysisVar);
 
-        endTime("5 Check consistency");
+        endTime("5 Check consistency -- skipped");
 
         /* ******** Update Analysis Variants ************** */
         Set<Variant> analysisNew = getNewVariantsAsTemplates(ctx, analysisVar, archiveTarget);
@@ -362,68 +360,9 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         return new HashSet<Integer>(Arrays.asList(array));
     }
 
-
     protected Stream<Variant> filterForVariant(Stream<Variant> variants, VariantType ... types) {
         Set<VariantType> whileList = new HashSet<>(Arrays.asList(types));
         return variants.filter(v -> whileList.contains(v.getType()));
-    }
-
-    /**
-     * Fetch already loaded variants in the Variant Table.
-     * @param context {@link Context}
-     * @param chr Chromosome
-     * @param start Start (inclusive) position
-     * @param end End (exclusive) position
-     * @return L
-     * @throws IOException If any IO issue occurs
-     * @deprecated Do not read from VariantTable anymore! Use {@link #parseCurrentVariantsRegion} instead
-     */
-    @Deprecated
-    protected List<Variant> loadCurrentVariantsRegion(Context context, String chr, Long start, Long end)
-            throws IOException {
-        String colPrefix = getHelper().getStudyId() + "_";
-        byte[] startKey = getHelper().generateVariantPositionPrefix(chr, start);
-        byte[] endKey = getHelper().generateVariantPositionPrefix(chr, end);
-        List<Variant> analysisVariants = new ArrayList<Variant>();
-//        boolean foundScan = false; // FIXME clean up
-        try (Table table = getDbConnection().getTable(TableName.valueOf(getHelper().getOutputTable()));) {
-            context.getCounter(COUNTER_GROUP_NAME, "VCF_TABLE_SCAN-query").increment(1);
-            if (getLog().isDebugEnabled()) {
-                getLog().debug(String.format("Scan chr %s from %s to %s with column prefix %s", chr, start, end, colPrefix));
-            }
-
-            Scan scan = new Scan(startKey, endKey);
-            scan.setFilter(new ColumnPrefixFilter(Bytes.toBytes(colPrefix))); // Limit to current study
-            ResultScanner rs = table.getScanner(scan);
-            for (Result r : rs) {
-//                foundScan = true;
-                Variant var = this.getHbaseToVariantConverter().convert(r);
-                if (var.getStudiesMap().isEmpty()) {
-                    throw new IllegalStateException("No Studies registered for variant!!! " + var);
-                }
-                analysisVariants.add(var);
-                if (!r.containsColumn(this.getHelper().getColumnFamily(), Bytes.toBytes(colPrefix + "0/0"))) {
-                    throw new IllegalStateException("Hom-ref column not found for prefix: " + var);
-                }
-            }
-        }
-//        if (!foundScan) {
-//            throw new IllegalStateException(String.format("No result returned after scan using prefix %s", colPrefix));
-//        }
-//        if (analysisVariants.isEmpty()) {
-//            throw new IllegalStateException(String.format("No Variants found using prefix %s", colPrefix));
-//        }
-//        Set<String> maplst = analysisVariants.stream().flatMap(v -> v.getStudiesMap().keySet().stream()).collect(Collectors.toSet());
-//        if (maplst.isEmpty()) {
-//            throw new IllegalStateException("No study data loaded at all for " + colPrefix + "; ");
-//        }
-//        List<Variant> noStudy = analysisVariants.stream().filter(v -> v.getStudy(Integer.toString(getHelper().getStudyId())) == null)
-//                .collect(Collectors.toList());
-//        if (!noStudy.isEmpty()) {
-//            throw new IllegalStateException("Loaded variants with no Study id!!! using prefix  " + colPrefix + "; " + noStudy.size() + ";"
-//                    + Strings.join(maplst, ","));
-//        }
-        return analysisVariants;
     }
 
 }

@@ -132,9 +132,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 throw new IllegalStateException("No study found for study ID: " + studyId);
             }
             StudyConfiguration studyConfiguration = queryResult.first();
-            int indexedSamplesSize = StudyConfiguration.getIndexedSamples(studyConfiguration).size();
 
-//            LinkedHashMap<String, Integer> returnedSamplesPosition = new LinkedHashMap<>(getReturnedSamplesPosition(studyConfiguration));
             LinkedHashMap<String, Integer> returnedSamplesPosition = getReturnedSamplesPosition(studyConfiguration);
             if (mutableSamplesPosition) {
                 returnedSamplesPosition = new LinkedHashMap<>(returnedSamplesPosition);
