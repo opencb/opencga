@@ -228,9 +228,9 @@ public class VariantDBAdaptorUtils {
         boolean containsAnd = value.contains(AND);
         if (containsAnd && containsOr) {
             throw new VariantQueryException("Can't merge in the same query filter, AND and OR operators");
-        } else if (containsAnd && !containsOr) {
+        } else if (containsAnd) {   // && !containsOr  -> true
             return QueryOperation.AND;
-        } else if (containsOr && !containsAnd) {
+        } else if (containsOr) {    // && !containsAnd  -> true
             return QueryOperation.OR;
         } else {    // !containsOr && !containsAnd
             return null;

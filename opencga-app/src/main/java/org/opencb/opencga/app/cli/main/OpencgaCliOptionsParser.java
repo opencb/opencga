@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.utils.CommandLineUtils;
 import org.opencb.opencga.app.cli.GeneralCliOptions;
 import org.opencb.opencga.app.cli.admin.AdminCliOptionsParser;
-import org.opencb.opencga.app.cli.main.options.*;
+import org.opencb.opencga.app.cli.main.options.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 import java.util.Arrays;
@@ -53,6 +53,7 @@ public class OpencgaCliOptionsParser {
     private CohortCommandOptions cohortCommandOptions;
     private PanelCommandOptions panelCommandOptions;
     private ToolCommandOptions toolCommandOptions;
+
 
 //    public final CommandShareResource commandShareResource;
 

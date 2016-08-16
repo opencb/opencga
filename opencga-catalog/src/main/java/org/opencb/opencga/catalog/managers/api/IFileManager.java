@@ -257,4 +257,15 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     DataInputStream head(long fileId, int lines, QueryOptions options, String sessionId) throws CatalogException;
 
+    /**
+     * Index variants or alignments.
+     *
+     * @param fileIdStr Comma separated list of file ids (directories or files)
+     * @param type Type of the file(s) to be indexed (VCF or BAM)
+     * @param params Object map containing the extra parameters for the indexation.
+     * @param sessionId session id of the user asking for the index.
+     * @return .
+     * @throws CatalogException when the files or folders are not in catalog or the study does not match between them.
+     * */
+    QueryResult index(String fileIdStr, String type, Map<String, String> params, String sessionId) throws CatalogException;
 }
