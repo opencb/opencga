@@ -62,86 +62,89 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
     public void execute() throws Exception {
 
         String subCommandString = getParsedSubCommand(studiesCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         logger.debug("Executing studies command line: {}", subCommandString);
         switch (subCommandString) {
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "summary":
-                createOutput(summary());
+                queryResponse = summary();
                 break;
             case "help":
-                createOutput(help());
+                queryResponse = help();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "scan-files":
-                createOutput(scanFiles());
+                queryResponse = scanFiles();
                 break;
             case "files":
-                createOutput(files());
+                queryResponse = files();
                 break;
             case "alignments":
-                createOutput(alignments());
+                queryResponse = alignments();
                 break;
             case "samples":
-                createOutput(samples());
+                queryResponse = samples();
                 break;
             case "jobs":
-                createOutput(jobs());
+                queryResponse = jobs();
                 break;
             case "variants":
-                createOutput(variants());
+                queryResponse = variants();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(studiesCommandOptions.aclsCommandOptions, openCGAClient.getStudyClient()));
+                queryResponse = aclCommandExecutor.acls(studiesCommandOptions.aclsCommandOptions, openCGAClient.getStudyClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreateTemplate(studiesCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getStudyClient()));
+                queryResponse = aclCommandExecutor.aclsCreateTemplate(studiesCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getStudyClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(studiesCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getStudyClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(studiesCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getStudyClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(studiesCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getStudyClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(studiesCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getStudyClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(studiesCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getStudyClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(studiesCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getStudyClient());
                 break;
             case "groups":
-                createOutput(groups());
+                queryResponse = groups();
                 break;
             case "groups-create":
-                createOutput(groupsCreate());
+                queryResponse = groupsCreate();
                 break;
             case "groups-delete":
-                createOutput(groupsDelete());
+                queryResponse = groupsDelete();
                 break;
             case "groups-info":
-                createOutput(groupsInfo());
+                queryResponse = groupsInfo();
                 break;
             case "groups-update":
-                createOutput(groupsUpdate());
+                queryResponse = groupsUpdate();
                 break;
 
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

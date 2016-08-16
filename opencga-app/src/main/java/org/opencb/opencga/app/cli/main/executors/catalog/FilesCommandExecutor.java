@@ -61,84 +61,86 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing files command line");
 
         String subCommandString = getParsedSubCommand(filesCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "copy":
-                createOutput(copy());
+                queryResponse = copy();
                 break;
             case "create-folder":
-                createOutput(createFolder());
+                queryResponse = createFolder();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "download":
-                createOutput(download());
+                queryResponse = download();
                 break;
             case "grep":
-                createOutput(grep());
+                queryResponse = grep();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "list":
-                createOutput(list());
+                queryResponse = list();
                 break;
             case "index":
-                createOutput(index());
+                queryResponse = index();
                 break;
             case "alignment":
-                createOutput(alignment());
+                queryResponse = alignment();
                 break;
             case "fetch":
-                createOutput(fetch());
+                queryResponse = fetch();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "upload":
-                createOutput(upload());
+                queryResponse = upload();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "link":
-                createOutput(link());
+                queryResponse = link();
                 break;
             case "relink":
-                createOutput(relink());
+                queryResponse = relink();
                 break;
             case "unlink":
-                createOutput(unlink());
+                queryResponse = unlink();
                 break;
             case "refresh":
-                createOutput(refresh());
+                queryResponse = refresh();
                 break;
             case "group-by":
-                createOutput(groupBy());
+                queryResponse = groupBy();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient()));
+                queryResponse = aclCommandExecutor.acls(filesCommandOptions.aclsCommandOptions, openCGAClient.getFileClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreate(filesCommandOptions.aclsCreateCommandOptions, openCGAClient.getFileClient()));
+                queryResponse = aclCommandExecutor.aclsCreate(filesCommandOptions.aclsCreateCommandOptions, openCGAClient.getFileClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(filesCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getFileClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(filesCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getFileClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(filesCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getFileClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(filesCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getFileClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(filesCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getFileClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(filesCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getFileClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
 
+        createOutput(queryResponse);
     }
 
     private QueryResponse<File> copy() throws CatalogException {
