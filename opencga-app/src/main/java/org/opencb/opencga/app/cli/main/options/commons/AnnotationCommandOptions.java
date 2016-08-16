@@ -39,7 +39,7 @@ public class AnnotationCommandOptions {
         @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotations"}, description = "Json string containing the annotations", required = true, arity = 1)
+        @Parameter(names = {"--annotations"}, description = "Json file containing the annotations", required = true, arity = 1)
         public String annotations;
     }
 
@@ -67,7 +67,7 @@ public class AnnotationCommandOptions {
     @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Remove an entire annotation set or just some annotations")
     public class AnnotationSetsDeleteCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
         @Parameter(names = {"--annotations"}, description = "Comma separated list of annotations to be removed. If any, only the "
@@ -78,7 +78,7 @@ public class AnnotationCommandOptions {
     @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Retrieve a concrete annotation set")
     public class AnnotationSetsInfoCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
 //        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
@@ -88,10 +88,11 @@ public class AnnotationCommandOptions {
     @Parameters(commandNames = {"annotation-sets-update"}, commandDescription = "Update the value of some annotations")
     public class AnnotationSetsUpdateCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
-        @Parameter(names = {"--annotations"}, description = "Json string containing the annotations to update", required = true, arity = 1)
+        @Parameter(names = {"--annotations"}, description = "Json file containing the annotations to be updated", required = true,
+                arity = 1)
         public String annotations;
     }
 

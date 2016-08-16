@@ -10,7 +10,7 @@ import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser.OpencgaCommonComm
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"variables"}, commandDescription = "Variables commands")
+@Parameters(commandNames = {"variables"}, commandDescription = "Variable set commands")
 public class VariableCommandOptions {
 
 
@@ -20,6 +20,7 @@ public class VariableCommandOptions {
 
     public UpdateCommandOptions updateCommandOptions;
     public DeleteCommandOptions deleteCommandOptions;
+    public FieldAddCommandOptions fieldAddCommandOptions;
     public FieldDeleteCommandOptions fieldDeleteCommandOptions;
     public FieldRenameCommandOptions fieldRenameCommandOptions;
 
@@ -35,6 +36,7 @@ public class VariableCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.deleteCommandOptions = new DeleteCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
+        this.fieldAddCommandOptions = new FieldAddCommandOptions();
         this.fieldDeleteCommandOptions = new FieldDeleteCommandOptions();
         this.fieldRenameCommandOptions = new FieldRenameCommandOptions();
 
@@ -50,7 +52,7 @@ public class VariableCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create sample.")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a variable set.")
     public class CreateCommandOptions {
 
         @ParametersDelegate
@@ -62,18 +64,18 @@ public class VariableCommandOptions {
         @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"--unique"}, description = "Unique", required = false, arity = 0)
+        @Parameter(names = {"--unique"}, description = "Unique", arity = 0)
         public boolean unique;
 
-        @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
+        @Parameter(names = {"--description"}, description = "Description of the variable set", arity = 1)
         public String description;
 
-        @Parameter(names = {"--body"}, description = "Variables", required = true)
-        public String body;
+        @Parameter(names = {"--json"}, description = "Json file containing the variables to be added to the variable set.", required = true)
+        public String jsonFile;
     }
 
 
-    @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
+    @Parameters(commandNames = {"info"}, commandDescription = "Get variable set information")
     public class InfoCommandOptions extends BaseVariableCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -83,7 +85,7 @@ public class VariableCommandOptions {
         public String exclude;
     }
 
-    @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
+    @Parameters(commandNames = {"search"}, commandDescription = "Search for variable sets")
     public class SearchCommandOptions {
 
         @ParametersDelegate
@@ -104,7 +106,7 @@ public class VariableCommandOptions {
         @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of variableSetIds", required = false, arity = 1)
+        @Parameter(names = {"--id"}, description = "Comma separated list of variableSetIds", required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
@@ -121,18 +123,30 @@ public class VariableCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update some user variableSet using GET method [PENDING]")
+    @Parameters(commandNames = {"update"}, commandDescription = "Update variableSet information [PENDING]")
     public class UpdateCommandOptions extends BaseVariableCommand {
 
-        @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name", required = false, arity = 1)
         public String name;
 
         @Parameter(names = {"--description"}, description = "Description", required = false, arity = 1)
         public String description;
+
+        @Parameter(names = {"--json"}, description = "Json file containing the variables to be updated.", required = false)
+        public String jsonFile;
+
     }
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete an unused variable Set")
     public class DeleteCommandOptions extends BaseVariableCommand {
+
+    }
+
+    @Parameters(commandNames = {"field-add"}, commandDescription = "Add variables to a variable set")
+    public class FieldAddCommandOptions extends BaseVariableCommand {
+
+        @Parameter(names = {"--json"}, description = "Json file containing the variables to be added.", required = true)
+        public String jsonFile;
 
     }
 
