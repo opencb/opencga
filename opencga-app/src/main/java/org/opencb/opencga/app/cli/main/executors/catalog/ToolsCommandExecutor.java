@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.ToolCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.ToolCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Tool;
 
@@ -46,26 +46,29 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing tools command line");
 
         String subCommandString = getParsedSubCommand(toolsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "help":
-                createOutput(help());
+                queryResponse = help();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

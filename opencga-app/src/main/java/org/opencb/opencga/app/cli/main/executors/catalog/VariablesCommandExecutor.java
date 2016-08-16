@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
@@ -22,13 +22,11 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.opencga.analysis.storage.variant.CatalogVariantDBAdaptor;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.VariableCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.VariableCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
 
 import java.io.IOException;
@@ -53,32 +51,35 @@ public class VariablesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing variables command line");
 
         String subCommandString = getParsedSubCommand(variableCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "field-delete":
-                createOutput(fieldDelete());
+                queryResponse = fieldDelete();
                 break;
             case "field-rename":
-                createOutput(fieldRename());
+                queryResponse = fieldRename();
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

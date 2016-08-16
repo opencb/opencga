@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.PanelCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.PanelCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogPanelDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DiseasePanel;
@@ -51,35 +51,39 @@ public class PanelsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing panels command line");
 
         String subCommandString = getParsedSubCommand(panelsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient()));
+                queryResponse = aclCommandExecutor.acls(panelsCommandOptions.aclsCommandOptions, openCGAClient.getPanelClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreate(panelsCommandOptions.aclsCreateCommandOptions, openCGAClient.getPanelClient()));
+                queryResponse = aclCommandExecutor.aclsCreate(panelsCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getPanelClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(panelsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getPanelClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(panelsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getPanelClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(panelsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getPanelClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(panelsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getPanelClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getPanelClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(panelsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getPanelClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

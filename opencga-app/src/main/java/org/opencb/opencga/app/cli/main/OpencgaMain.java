@@ -18,7 +18,7 @@ package org.opencb.opencga.app.cli.main;
 
 import com.beust.jcommander.ParameterException;
 import org.opencb.opencga.app.cli.CommandExecutor;
-import org.opencb.opencga.app.cli.main.executors.*;
+import org.opencb.opencga.app.cli.main.executors.catalog.*;
 import org.opencb.opencga.core.common.GitRepositoryState;
 
 /**

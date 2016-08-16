@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
@@ -24,7 +24,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.JobCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.JobCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Job;
@@ -52,49 +52,50 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing jobs command line");
 
         String subCommandString = getParsedSubCommand(jobsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
-
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "visit":
-                createOutput(visit());
+                queryResponse = visit();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "group-by":
-                createOutput(groupBy());
+                queryResponse = groupBy();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient()));
+                queryResponse = aclCommandExecutor.acls(jobsCommandOptions.aclsCommandOptions, openCGAClient.getJobClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient()));
+                queryResponse = aclCommandExecutor.aclsCreate(jobsCommandOptions.aclsCreateCommandOptions, openCGAClient.getJobClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getJobClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(jobsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getJobClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getJobClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(jobsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getJobClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getJobClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(jobsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getJobClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
 
+        createOutput(queryResponse);
     }
 
     private QueryResponse<Job> create() throws CatalogException, IOException {

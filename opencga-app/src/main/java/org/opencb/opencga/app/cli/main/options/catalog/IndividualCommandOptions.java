@@ -1,4 +1,4 @@
-package org.opencb.opencga.app.cli.main.options;
+package org.opencb.opencga.app.cli.main.options.catalog;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
@@ -12,11 +12,10 @@ import org.opencb.opencga.app.cli.main.options.commons.AnnotationCommandOptions;
 /**
  * Created by sgallego on 6/14/16.
  */
-@Parameters(commandNames = {"samples"}, commandDescription = "Samples commands")
-public class SampleCommandOptions {
+@Parameters(commandNames = {"individuals"}, commandDescription = "Individuals commands")
+public class IndividualCommandOptions {
 
     public CreateCommandOptions createCommandOptions;
-    public LoadCommandOptions loadCommandOptions;
     public InfoCommandOptions infoCommandOptions;
     public SearchCommandOptions searchCommandOptions;
     public UpdateCommandOptions updateCommandOptions;
@@ -42,12 +41,12 @@ public class SampleCommandOptions {
     private AclCommandOptions aclCommandOptions;
     private AnnotationCommandOptions annotationCommandOptions;
 
-    public SampleCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+    public IndividualCommandOptions(OpencgaCommonCommandOptions commonCommandOptions, JCommander jCommander) {
+
         this.commonCommandOptions = commonCommandOptions;
         this.jCommander = jCommander;
 
         this.createCommandOptions = new CreateCommandOptions();
-        this.loadCommandOptions = new LoadCommandOptions();
         this.infoCommandOptions = new InfoCommandOptions();
         this.searchCommandOptions = new SearchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
@@ -62,7 +61,7 @@ public class SampleCommandOptions {
         this.annotationInfoCommandOptions = this.annotationCommandOptions.getInfoCommandOptions();
         this.annotationUpdateCommandOptions = this.annotationCommandOptions.getUpdateCommandOptions();
 
-        aclCommandOptions = new AclCommandOptions(commonCommandOptions);
+        this.aclCommandOptions = new AclCommandOptions(commonCommandOptions);
         this.aclsCommandOptions = aclCommandOptions.getAclsCommandOptions();
         this.aclsCreateCommandOptions = aclCommandOptions.getAclsCreateCommandOptions();
         this.aclsMemberDeleteCommandOptions = aclCommandOptions.getAclsMemberDeleteCommandOptions();
@@ -70,66 +69,54 @@ public class SampleCommandOptions {
         this.aclsMemberUpdateCommandOptions = aclCommandOptions.getAclsMemberUpdateCommandOptions();
     }
 
-    public class BaseSampleCommand {
+    public class BaseIndividualsCommand {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--id"}, description = "Sample id", required = true, arity = 1)
+        @Parameter(names = {"--id"}, description = "Individual id", required = true, arity = 1)
         public String id;
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create a sample")
+
+    @Parameters(commandNames = {"create"}, commandDescription = "Create sample.")
     public class CreateCommandOptions {
 
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "StudyId", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--name"}, description = "Sample name", required = true, arity = 1)
+        @Parameter(names = {"-n", "--name"}, description = "Name", required = true, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source", required = false, arity = 1)
-        public String source;
+        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
+        public String family = "";
 
-        @Parameter(names = {"--description"}, description = "Sample description", required = false, arity = 1)
-        public String description;
+        @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
+        public String fatherId;
+
+        @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
+        public String motherId;
+
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
     }
 
-    @Parameters(commandNames = {"load"}, commandDescription = "Load samples from a pedigree file")
-    public class LoadCommandOptions {
 
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
-
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--file-id"}, description = "File id already loaded in OpenCGA", required = true, arity = 1)
-        public String fileId;
-
-        @Parameter(names = {"--variable-set-id"}, description = "VariableSetId that represents the pedigree file", arity = 1)
-        public String variableSetId;
-    }
-
-    @Parameters(commandNames = {"info"}, commandDescription = "Get samples information")
-    public class InfoCommandOptions extends BaseSampleCommand {
+    @Parameters(commandNames = {"info"}, commandDescription = "Get individual information")
+    public class InfoCommandOptions extends BaseIndividualsCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
 
         @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
-
     }
 
-    @Parameters(commandNames = {"search"}, commandDescription = "Search samples")
+    @Parameters(commandNames = {"search"}, commandDescription = "Search for individuals")
     public class SearchCommandOptions {
-
-        @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -143,63 +130,74 @@ public class SampleCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
-        @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
-        public String studyId;
-
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of individual ids", arity = 1)
         public String id;
 
-        @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
+        public String studyId;
+
+        @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 1)
-        public String source;
+        @Parameter(names = {"--father-id"}, description = "fatherId", required = false, arity = 1)
+        public String fatherId;
 
-        @Parameter(names = {"--indivual-id"}, description = "Indivudual id.", required = false, arity = 1)
-        public String individualId;
+        @Parameter(names = {"--mother-id"}, description = "motherId", required = false, arity = 1)
+        public String motherId;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 1)
-        public String annotationSetName;
+        @Parameter(names = {"--family"}, description = "family", required = false, arity = 1)
+        public String family;
 
-        @Parameter(names = {"--variable-set-id"}, description = "Variable set id.", required = false, arity = 1)
+        @Parameter(names = {"--sex"}, description = "Sex", required = false, arity = 1)
+        public String sex;
+
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
+
+        @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
+        public String species;
+
+        @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
+        public String population;
+
+        @Parameter(names = {"--variable-set-id"}, description = "variableSetId", required = false, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotation"}, description = "Annotation.", required = false, arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = true, arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--annotation"}, description = "annotation", required = false, arity = 1)
         public String annotation;
 
         @Parameter(names = {"--count"}, description = "Total number of results.", required = false, arity = 0)
         public boolean count;
-
-    /*    @Parameter(names = {"--variable-set-id"}, description = "VariableSetId", required = false, arity = 1)
-        String variableSetId;
-
-        @Parameter(names = {"--name"}, description = "Sample names (CSV)", required = false, arity = 1)
-        String sampleNames;
-
-        @Parameter(names = {"-id", "--sample-id"}, description = "Sample ids (CSV)", required = false, arity = 1)
-        String sampleIds;
-
-        @Parameter(names = {"-a", "--annotation"},
-                description = "SampleAnnotations values. <variableName>:<annotationValue>(,<annotationValue>)*",
-                required = false, arity = 1, splitter = SemiColonParameterSplitter.class)
-        List<String> annotation;*/
     }
 
+    @Parameters(commandNames = {"update"}, commandDescription = "Update individual information")
+    public class UpdateCommandOptions extends BaseIndividualsCommand {
 
-    @Parameters(commandNames = {"update"}, commandDescription = "Update cohort")
-    public class UpdateCommandOptions extends BaseSampleCommand {
-
-        @Parameter(names = {"--name"}, description = "Cohort set name.", required = false, arity = 1)
+        @Parameter(names = {"--name"}, description = "name", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source", required = true, arity = 1)
-        public String source;
+        @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
+        public String fatherId;
 
-        @Parameter(names = {"--description"}, description = "Description", required = true, arity = 0)
-        public String description;
+        @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
+        public String motherId;
 
-        @Parameter(names = {"--individual-id"}, description = "Indivudual id", required = true, arity = 0)
-        public String individualId;
+        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
+        public String family;
+
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
+
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
+
+    }
+
+    @Parameters(commandNames = {"delete"}, commandDescription = "Delete individual information")
+    public class DeleteCommandOptions extends BaseIndividualsCommand {
 
     }
 
@@ -208,38 +206,51 @@ public class SampleCommandOptions {
     public class GroupByCommandOptions {
 
         @ParametersDelegate
-        public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
+        OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--by"}, description = "Comma separated list of fields by which to group by.", required = true, arity = 1)
+        @Parameter(names = {"--by"},
+                description = "Comma separated list of fields by which to group by.",
+                required = true, arity = 1)
         public String by;
 
         @Parameter(names = {"--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.", required = false, arity = 1)
+        @Parameter(names = {"--ids"}, description = "Comma separated list of ids.",
+                required = false, arity = 1)
         public String id;
 
         @Parameter(names = {"--name"}, description = "Comma separated list of names.", required = false, arity = 0)
         public String name;
 
-        @Parameter(names = {"--source"}, description = "Source.", required = false, arity = 0)
-        public String source;
+        @Parameter(names = {"--father-id"}, description = "FatherId", required = false, arity = 1)
+        public String fatherId;
 
-        @Parameter(names = {"--individual-id"}, description = "Individual id.", required = false, arity = 0)
-        public String individualId;
+        @Parameter(names = {"--mother-id"}, description = "MotherId", required = false, arity = 1)
+        public String motherId;
 
-        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
-        public String annotationSetName;
+        @Parameter(names = {"--family"}, description = "Family", required = false, arity = 1)
+        public String family;
+
+        @Parameter(names = {"--sex"}, description = "Sex", required = false)
+        public String sex;
+
+        @Parameter(names = {"--ethnicity"}, description = "Ethnic group", required = false, arity = 1)
+        public String ethnicity;
+
+        @Parameter(names = {"--species"}, description = "species", required = false, arity = 1)
+        public String species;
+
+        @Parameter(names = {"--population"}, description = "population", required = false, arity = 1)
+        public String population;
 
         @Parameter(names = {"--variable-set-id"}, description = "Variable set ids", required = false, arity = 1)
         public String variableSetId;
 
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name.", required = false, arity = 0)
+        public String annotationSetName;
+
         @Parameter(names = {"--annotation"}, description = "Annotation", required = false, arity = 1)
         public String annotation;
-    }
-
-    @Parameters(commandNames = {"delete"}, commandDescription = "Deletes the selected sample")
-    public class DeleteCommandOptions extends BaseSampleCommand {
-
     }
 }

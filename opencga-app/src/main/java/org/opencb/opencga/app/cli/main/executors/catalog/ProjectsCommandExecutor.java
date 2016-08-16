@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
@@ -22,7 +22,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.ProjectCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.ProjectCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogProjectDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Project;
@@ -49,29 +49,32 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing variant command line");
 
         String subCommandString = getParsedSubCommand(projectsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "studies":
-                createOutput(studies());
+                queryResponse = studies();
                 break;
             case "help":
-                createOutput(help());
+                queryResponse = help();
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
@@ -23,14 +23,12 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCliOptionsParser;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.UserCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.UserCommandOptions;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
-import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.User;
 
 import java.io.IOException;
-import java.util.Collections;
 
 /**
  * Created by imedina on 02/03/15.
@@ -62,17 +60,16 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
 //        if (!subCommandString.equals("login") && !subCommandString.equals("logout")) {
 //            checkSessionValid();
 //        }
-
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
                 create();
                 break;
             case "info":
-                reloadConfig(usersCommandOptions.infoCommandOptions.commonOptions);
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "projects":
-                createOutput(projects());
+                queryResponse = projects();
                 break;
             case "login":
                 login();
@@ -84,6 +81,8 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

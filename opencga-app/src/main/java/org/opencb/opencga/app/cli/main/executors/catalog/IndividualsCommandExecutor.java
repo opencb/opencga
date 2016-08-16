@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.app.cli.main.executors;
+package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
 import org.apache.commons.lang3.StringUtils;
@@ -25,7 +25,7 @@ import org.opencb.commons.datastore.core.QueryResponse;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AnnotationCommandExecutor;
-import org.opencb.opencga.app.cli.main.options.IndividualCommandOptions;
+import org.opencb.opencga.app.cli.main.options.catalog.IndividualCommandOptions;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Individual;
@@ -55,74 +55,75 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing jobs command line");
 
         String subCommandString = getParsedSubCommand(individualsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
-
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "group-by":
-                createOutput(groupBy());
+                queryResponse = groupBy();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient()));
+                queryResponse = aclCommandExecutor.acls(individualsCommandOptions.aclsCommandOptions, openCGAClient.getIndividualClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = aclCommandExecutor.aclsCreate(individualsCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(individualsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(individualsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(individualsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-create":
-                createOutput(annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = annotationCommandExecutor.createAnnotationSet(individualsCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-all-info":
-                createOutput(annotationCommandExecutor.getAllAnnotationSets(individualsCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = annotationCommandExecutor.getAllAnnotationSets(individualsCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-search":
-                createOutput(annotationCommandExecutor.searchAnnotationSets(individualsCommandOptions.annotationSearchCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = annotationCommandExecutor.searchAnnotationSets(individualsCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-delete":
-                createOutput(annotationCommandExecutor.deleteAnnotationSet(individualsCommandOptions.annotationDeleteCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = annotationCommandExecutor.deleteAnnotationSet(individualsCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-info":
-                createOutput(annotationCommandExecutor.getAnnotationSet(individualsCommandOptions.annotationInfoCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = annotationCommandExecutor.getAnnotationSet(individualsCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             case "annotation-sets-update":
-                createOutput(annotationCommandExecutor.updateAnnotationSet(individualsCommandOptions.annotationUpdateCommandOptions,
-                        openCGAClient.getIndividualClient()));
+                queryResponse = annotationCommandExecutor.updateAnnotationSet(individualsCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getIndividualClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
 
+        createOutput(queryResponse);
     }
 
     private QueryResponse<Individual> create() throws CatalogException, IOException {
