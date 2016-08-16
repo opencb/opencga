@@ -14,24 +14,26 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.tool;
 
 import java.util.List;
 
-public class Analysis {
+public class Manifest {
+
     private Author author;
     private String version, id, name, description, website, publication;
     private Icon icon;
     private List<Option> globalParams;
     private List<Execution> executions;
     private List<Example> examples;
+    @Deprecated
     private List<Acl> acl;
 
-    public Analysis() {
+    public Manifest() {
 
     }
 
-    public Analysis(Author author, String version, String id, String name, String description,
+    public Manifest(Author author, String version, String id, String name, String description,
                     String website, String publication, Icon icon, List<Option> globalParams,
                     List<Execution> executions, List<Example> examples, List<Acl> acl) {
         this.author = author;
@@ -50,20 +52,21 @@ public class Analysis {
 
     @Override
     public String toString() {
-        return "Analysis{" +
-                "author=" + author +
-                ", version='" + version + '\'' +
-                ", id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", website='" + website + '\'' +
-                ", publication='" + publication + '\'' +
-                ", icon=" + icon +
-                ", globalParams=" + globalParams +
-                ", executions=" + executions +
-                ", examples=" + examples +
-                ", acl=" + acl +
-                '}';
+        final StringBuilder sb = new StringBuilder("Analysis{");
+        sb.append("author=").append(author);
+        sb.append(", version='").append(version).append('\'');
+        sb.append(", id='").append(id).append('\'');
+        sb.append(", name='").append(name).append('\'');
+        sb.append(", description='").append(description).append('\'');
+        sb.append(", website='").append(website).append('\'');
+        sb.append(", publication='").append(publication).append('\'');
+        sb.append(", icon=").append(icon);
+        sb.append(", globalParams=").append(globalParams);
+        sb.append(", executions=").append(executions);
+        sb.append(", examples=").append(examples);
+        sb.append(", acl=").append(acl);
+        sb.append('}');
+        return sb.toString();
     }
 
     public Author getAuthor() {

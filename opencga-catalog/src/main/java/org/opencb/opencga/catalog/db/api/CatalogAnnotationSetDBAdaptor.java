@@ -5,6 +5,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Variable;
+import org.opencb.opencga.catalog.models.summaries.VariableSummary;
 
 import javax.annotation.Nullable;
 
@@ -94,4 +95,13 @@ public interface CatalogAnnotationSetDBAdaptor<T, U> extends CatalogAclDBAdaptor
      * @throws CatalogDBException when there is an error in the database.
      */
     QueryResult<Long> removeAnnotationField(long variableSetId, String annotationName) throws CatalogDBException;
+
+    /**
+     * Makes a groupBy to obtain the different values that every annotation has and the total number of each.
+     *
+     * @param variableSetId variable set id for which the group by will be done.
+     * @return a list of Feature count with every different value.
+     * @throws CatalogDBException when there is an error in the database.
+     */
+    QueryResult<VariableSummary> getAnnotationSummary(long variableSetId) throws CatalogDBException;
 }

@@ -21,6 +21,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.models.Variable;
 import org.opencb.opencga.catalog.models.VariableSet;
+import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.core.exception.VersionException;
 
 import javax.servlet.http.HttpServletRequest;
@@ -76,6 +77,19 @@ public class VariableSetWSServer extends OpenCGAWSServer {
     public Response variableSetInfo(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
         try {
             QueryResult<VariableSet> queryResult = catalogManager.getVariableSet(variableSetId, queryOptions, sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{variableSetId}/summary")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @ApiOperation(value = "Get VariableSet summary", position = 2, response = VariableSetSummary.class)
+    public Response variableSetSummary(@ApiParam(value = "variableSetId", required = true) @PathParam("variableSetId") long variableSetId) {
+        try {
+            QueryResult<VariableSetSummary> queryResult = catalogManager.getStudyManager().getVariableSetSummary(variableSetId, sessionId);
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

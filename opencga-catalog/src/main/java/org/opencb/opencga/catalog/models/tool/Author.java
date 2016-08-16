@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-public class InputParam {
-    private String name, dataType;
+public class Author {
 
-    public InputParam() {
+    private String name;
+    private String email;
+
+    public Author() {
 
     }
 
-    public InputParam(String name, String dataType) {
+    public Author(String name, String email) {
         this.name = name;
-        this.dataType = dataType;
+        this.email = email;
     }
 
     @Override
     public String toString() {
-        return "InputParam{" +
-                "name='" + name + '\'' +
-                ", dataType='" + dataType + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Author{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", email='").append(email).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getName() {
@@ -44,11 +47,11 @@ public class InputParam {
         this.name = name;
     }
 
-    public String getDataType() {
-        return dataType;
+    public String getEmail() {
+        return email;
     }
 
-    public void setDataType(String dataType) {
-        this.dataType = dataType;
+    public void setEmail(String email) {
+        this.email = email;
     }
 }

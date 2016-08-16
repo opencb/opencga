@@ -35,8 +35,8 @@ import org.opencb.biodata.tools.variant.stats.VariantAggregatedStatsCalculator;
 import org.opencb.commons.utils.FileUtils;
 import org.opencb.opencga.analysis.ToolManager;
 import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.InputParam;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.InputParam;
 import org.opencb.opencga.analysis.JobFactory;
 import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
@@ -1064,7 +1064,7 @@ public class OpenCGAMainOld {
                         if (toolId < 0) {
                             toolManager = new ToolManager(c.id, null);    //LEGACY MODE, AVOID USING
                             toolName = c.id;
-                            System.out.println(createOutput(c.cOpt, toolManager.getAnalysis(), null));
+                            System.out.println(createOutput(c.cOpt, toolManager.getManifest(), null));
                         } else {
                             Tool tool = catalogManager.getTool(toolId, sessionId).getResult().get(0);
                             toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), null);
