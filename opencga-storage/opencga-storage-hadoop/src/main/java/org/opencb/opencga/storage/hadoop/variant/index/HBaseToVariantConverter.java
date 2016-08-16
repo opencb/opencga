@@ -43,7 +43,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
     private final GenomeHelper genomeHelper;
     private final QueryOptions scmOptions = new QueryOptions(StudyConfigurationManager.READ_ONLY, true)
             .append(StudyConfigurationManager.CACHED, true);
-    private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPosition = new HashMap<>();
+    private final Map<Integer, LinkedHashMap<String, Integer>> returnedSamplesPositionMap = new HashMap<>();
     private final Logger logger = LoggerFactory.getLogger(HBaseToVariantConverter.class);
 
     private List<String> returnedSamples = Collections.emptyList();
@@ -205,6 +205,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                     continue;   //Sample may not be required. Ignore this sample.
                 }
                 String returnedGenotype = entry.getValue();
+                // TODO: Check if contains ',' ?
                 samplesDataArray[samplePosition] = Arrays.asList(returnedGenotype, VariantMerger.PASS_VALUE);
             }
 
@@ -233,11 +234,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
             if (passCount != row.getPassCount()) {
                 String message = String.format("Error parsing variant %s. Pass count %s does not match filter fill count: %s",
                         row.toString(), row.getPassCount(), passCount);
-                if (failOnWrongVariants) {
-                    throw new RuntimeException(message);
-                } else {
-                    logger.warn(message);
-                }
+                wrongVariant(message);
             }
 
             // Check homRef count
@@ -248,12 +245,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                 for (String studyColumn : VariantTableStudyRow.GENOTYPE_COLUMNS) {
                     message += "'" + studyColumn + "':" + row.getSampleIds(studyColumn) + " , ";
                 }
-
-                if (failOnWrongVariants) {
-                    throw new RuntimeException(message);
-                } else {
-                    logger.warn(message);
-                }
+                wrongVariant(message);
             }
 
             List<List<String>> samplesData = Arrays.asList(samplesDataArray);
@@ -294,6 +286,14 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
         return variant;
     }
 
+    private void wrongVariant(String message) {
+        if (failOnWrongVariants) {
+            throw new IllegalStateException(message);
+        } else {
+            logger.warn(message);
+        }
+    }
+
     private Integer getSamplePosition(LinkedHashMap<String, Integer> returnedSamplesPosition, BiMap<Integer, String> mapSampleIds,
                                       Integer sampleId) {
         String sampleName = mapSampleIds.get(sampleId);
@@ -308,7 +308,7 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
      * @return Sorted linked hash map
      */
     private LinkedHashMap<String, Integer> getReturnedSamplesPosition(StudyConfiguration studyConfiguration) {
-        if (!returnedSamplesPosition.containsKey(studyConfiguration.getStudyId())) {
+        if (!returnedSamplesPositionMap.containsKey(studyConfiguration.getStudyId())) {
             LinkedHashMap<String, Integer> samplesPosition;
             if (returnedSamples.isEmpty()) {
                 BiMap<Integer, String> unorderedSamplesPosition =
@@ -327,9 +327,9 @@ public class HBaseToVariantConverter implements Converter<Result, Variant> {
                     }
                 }
             }
-            returnedSamplesPosition.put(studyConfiguration.getStudyId(), samplesPosition);
+            returnedSamplesPositionMap.put(studyConfiguration.getStudyId(), samplesPosition);
         }
-        return returnedSamplesPosition.get(studyConfiguration.getStudyId());
+        return returnedSamplesPositionMap.get(studyConfiguration.getStudyId());
     }
 
 

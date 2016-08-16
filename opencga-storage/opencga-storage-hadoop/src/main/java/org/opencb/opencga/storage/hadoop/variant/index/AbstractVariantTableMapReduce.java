@@ -5,10 +5,7 @@ import com.google.protobuf.InvalidProtocolBufferException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hbase.HConstants;
-import org.apache.hadoop.hbase.client.Connection;
-import org.apache.hadoop.hbase.client.ConnectionFactory;
-import org.apache.hadoop.hbase.client.Put;
-import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
 import org.apache.hadoop.hbase.util.Bytes;
@@ -35,7 +32,7 @@ import java.util.stream.Collectors;
  *
  * @author Matthias Haimel mh719+git@cam.ac.uk
  */
-public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Put> {
+public abstract class AbstractVariantTableMapReduce extends TableMapper<ImmutableBytesWritable, Mutation> {
     public static final String COUNTER_GROUP_NAME = "OPENCGA.HBASE";
     private Logger LOG = LoggerFactory.getLogger(this.getClass());
 

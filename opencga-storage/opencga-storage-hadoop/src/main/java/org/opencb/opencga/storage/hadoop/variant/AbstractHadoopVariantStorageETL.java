@@ -87,7 +87,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
         logger.info("PreTransform: " + input);
 //        ObjectMap options = configuration.getStorageEngine(STORAGE_ENGINE_ID).getVariant().getOptions();
         if (!options.containsKey(VariantStorageManager.Options.TRANSFORM_FORMAT.key())) {
-            options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(), "avro");
+            options.put(VariantStorageManager.Options.TRANSFORM_FORMAT.key(),
+                    VariantStorageManager.Options.TRANSFORM_FORMAT.defaultValue());
         }
         String transVal = options.getString(VariantStorageManager.Options.TRANSFORM_FORMAT.key());
         switch (transVal){

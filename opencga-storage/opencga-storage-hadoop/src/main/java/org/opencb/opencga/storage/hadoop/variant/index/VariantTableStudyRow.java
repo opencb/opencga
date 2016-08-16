@@ -25,6 +25,7 @@ import org.opencb.opencga.storage.hadoop.variant.models.protobuf.*;
 import org.opencb.opencga.storage.hadoop.variant.models.protobuf.ComplexFilter.Builder;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.sql.Array;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -93,7 +94,6 @@ public class VariantTableStudyRow {
 
     public VariantTableStudyRow(VariantTableStudyRowProto proto, String chromosome, Integer studyId) {
         this.studyId = studyId;
-//        this.chromosome = proto.getChromosome();
         this.chromosome = chromosome;
         this.pos = proto.getStart();
         this.ref = proto.getReference();
@@ -156,7 +156,7 @@ public class VariantTableStudyRow {
             this.sampleToGenotype.putAll(map);
         }
         List<AlternateCoordinate> secAlt = complexVariant.getSecondaryAlternatesList();
-        if (secAlt != null && secAlt.size() > 0) {
+        if (secAlt != null && !secAlt.isEmpty()) {
             this.secAlternate.addAll(secAlt);
         }
     }
@@ -186,7 +186,7 @@ public class VariantTableStudyRow {
      * @param sampleIds Sample numeric codes
      * @throws IllegalStateException in case the sample already exists in the collection
      */
-    public void addSampleId(String gt, Collection<Integer> sampleIds) throws IllegalStateException {
+    public void addSampleId(String gt, Collection<Integer> sampleIds) {
         Set<Integer> set = this.callMap.get(gt);
         if (null == set) {
             set = new HashSet<>();
@@ -200,7 +200,7 @@ public class VariantTableStudyRow {
      * @param sampleId Sample numeric codes
      * @throws IllegalStateException in case the sample already exists in the collection
      */
-    public void addSampleId(String gt, Integer sampleId) throws IllegalStateException {
+    public void addSampleId(String gt, Integer sampleId) {
         Set<Integer> set = this.callMap.get(gt);
         if (null == set) {
             set = new HashSet<>();
@@ -296,7 +296,7 @@ public class VariantTableStudyRow {
         Set<Integer> newIdx = this.sampleToGenotype.entrySet().stream().filter(e -> newSampleIds.contains(e.getKey()))
                 .map(function).flatMap(l -> l.stream()).collect(Collectors.toSet());
         newIdx.removeAll(oldIdx);
-        if (newIdx.size() > 0 || foundIds.size() > 0) {
+        if (!newIdx.isEmpty() || !foundIds.isEmpty()) {
             doPut = true;
             put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, COMPLEX)), this.getComplexVariant().toByteArray());
             newHomRef.removeAll(foundIds);
@@ -310,8 +310,8 @@ public class VariantTableStudyRow {
         }
         /**** PASS CNT ***/
         Set<Integer> newPassIds = new HashSet<>(newSampleIds);
-        this.filterToSamples.values().forEach(l -> newPassIds.removeAll(l));
-        if (newPassIds.size() > 0) {
+        this.filterToSamples.values().forEach(newPassIds::removeAll);
+        if (!newPassIds.isEmpty()) {
             doPut = true;
             put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
         }
@@ -333,7 +333,7 @@ public class VariantTableStudyRow {
                 }
             }
         }
-        if (newHomRef.size() > 0) {
+        if (!newHomRef.isEmpty()) {
             doPut = true;
             put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
         }
@@ -368,7 +368,7 @@ public class VariantTableStudyRow {
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, CALL_CNT)), Bytes.toBytes(this.callCount));
-        if (this.secAlternate.size() > 0 || this.sampleToGenotype.size() > 0) { //add complex genotype column if required
+        if (!this.secAlternate.isEmpty() || this.sampleToGenotype.size() > 0) { //add complex genotype column if required
             put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, COMPLEX)), this.getComplexVariant().toByteArray());
         }
         if (!this.filterToSamples.isEmpty()) {
@@ -452,7 +452,7 @@ public class VariantTableStudyRow {
         NavigableMap<byte[], byte[]> familyMap = result.getFamilyMap(helper.getColumnFamily());
         Set<Integer> studyIds = familyMap.entrySet().stream()
                 .filter(entry -> entry.getValue() != null && entry.getValue().length > 0)
-                .map(entry -> extractStudyId(Bytes.toString(entry.getKey()), true))
+                .map(entry -> extractStudyId(Bytes.toString(entry.getKey()), false))
                 .filter(integer -> integer != null)
                 .collect(Collectors.toSet());
 
@@ -500,7 +500,7 @@ public class VariantTableStudyRow {
                         ComplexVariant complexVariant = ComplexVariant.parseFrom(entry.getValue());
                         setComplexVariant(complexVariant);
                     } catch (InvalidProtocolBufferException e) {
-                        throw new RuntimeException(e);
+                        throw new UncheckedIOException(e);
                     }
                     break;
                 case FILTER_OTHER:
@@ -508,11 +508,11 @@ public class VariantTableStudyRow {
                         ComplexFilter complexFilter = ComplexFilter.parseFrom(entry.getValue());
                         setComplexFilter(complexFilter);
                     } catch (InvalidProtocolBufferException e) {
-                        throw new RuntimeException(e);
+                        throw new UncheckedIOException(e);
                     }
                     break;
                 default:
-                    PhoenixArray phoenixArray = ((PhoenixArray) PUnsignedIntArray.INSTANCE.toObject(entry.getValue()));
+                    PhoenixArray phoenixArray = (PhoenixArray) PUnsignedIntArray.INSTANCE.toObject(entry.getValue());
                     try {
                         HashSet<Integer> value = new HashSet<>();
                         if (phoenixArray.getArray() != null) {
@@ -524,7 +524,7 @@ public class VariantTableStudyRow {
                         callMap.put(gt, value);
                     } catch (SQLException e) {
                         //Impossible
-                        throw new RuntimeException(e);
+                        throw new IllegalStateException(e);
                     }
                     break;
                 }
@@ -537,9 +537,11 @@ public class VariantTableStudyRow {
         for (int i = 0; i < metaData.getColumnCount(); i++) {
             String columnName = metaData.getColumnName(i + 1);
             if (columnName != null && !columnName.isEmpty()) {
-                Integer studyId = extractStudyId(columnName, false);
-                if (studyId != null) {
-                    studyIds.add(studyId);
+                if (resultSet.getBytes(columnName) != null) {
+                    Integer studyId = extractStudyId(columnName, false);
+                    if (studyId != null) {
+                        studyIds.add(studyId);
+                    }
                 }
             }
         }
@@ -568,7 +570,7 @@ public class VariantTableStudyRow {
                 ComplexVariant complexVariant = ComplexVariant.parseFrom(xArr);
                 setComplexVariant(complexVariant);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         }
         byte[] fArr = resultSet.getBytes(buildColumnKey(studyId, FILTER_OTHER));
@@ -577,7 +579,7 @@ public class VariantTableStudyRow {
                 ComplexFilter complexFilter = ComplexFilter.parseFrom(fArr);
                 setComplexFilter(complexFilter);
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                throw new UncheckedIOException(e);
             }
         }
         for (String gt : new String[] { HET_REF, HOM_VAR, OTHER, NOCALL }) {
@@ -634,7 +636,7 @@ public class VariantTableStudyRow {
         int[] nocall = new Genotype(".").getAllelesIdx();
         int[] nocallBoth = new Genotype("./.").getAllelesIdx();
 
-        Set<Integer> homref = new HashSet<Integer>();
+        Set<Integer> homref = new HashSet<>();
         StudyEntry se = variant.getStudy(studyId.toString());
         if (null == se) {
             throw new IllegalStateException("Study Entry of variant is null: " + variant);
@@ -711,7 +713,7 @@ public class VariantTableStudyRow {
                     }
                     Set<Integer> set = filterToSamples.get(filterString);
                     if (set == null) {
-                        set = new HashSet<Integer>();
+                        set = new HashSet<>();
                         filterToSamples.put(filterString, set);
                     }
                     set.add(sid);

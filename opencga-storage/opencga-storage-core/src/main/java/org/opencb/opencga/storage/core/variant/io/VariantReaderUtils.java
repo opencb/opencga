@@ -42,36 +42,39 @@ public class VariantReaderUtils {
      */
     public static VariantReader getVariantReader(Path input, VariantSource source) throws StorageManagerException {
         String fileName = input.getFileName().toString();
-        if (fileName.contains("json")) {
+        if (isJson(fileName)) {
             return getVariantJsonReader(input, source);
-        } else if (fileName.contains("avro")) {
+        } else if (isAvro(fileName)) {
             return getVariantAvroReader(input, source);
-        } else if (fileName.endsWith("vcf") || fileName.endsWith("vcf.gz")) {
+        } else if (isVcf(fileName)) {
             return new VariantVcfReader(source, input.toAbsolutePath().toString());
         } else {
-            throw new StorageManagerException("Variants input file format not supported for file: " + input);
+            throw variantInputNotSupported(input);
         }
+    }
+
+    public static StorageManagerException variantInputNotSupported(Path input) {
+        return new StorageManagerException("Variants input file format not supported for file: " + input);
     }
 
     protected static VariantJsonReader getVariantJsonReader(Path input, VariantSource source) throws StorageManagerException {
         VariantJsonReader variantJsonReader;
-        if (input.toString().endsWith(".json") || input.toString().endsWith(".json.gz")
-                || input.toString().endsWith(".json.snappy") || input.toString().endsWith(".json.snz")) {
-            String sourceFile = input.toAbsolutePath().toString().replace(VARIANTS_FILE + ".json", METADATA_FILE_FORMAT);
+        if (isJson(input.toString())) {
+            String sourceFile = getMetaFromInputFile(input.toAbsolutePath().toString());
             variantJsonReader = new VariantJsonReader(source, input.toAbsolutePath().toString(), sourceFile);
         } else {
-            throw new StorageManagerException("Variants input file format not supported for file: " + input);
+            throw variantInputNotSupported(input);
         }
         return variantJsonReader;
     }
 
     protected static VariantAvroReader getVariantAvroReader(Path input, VariantSource source) throws StorageManagerException {
         VariantAvroReader variantAvroReader;
-        if (input.toString().matches(".*avro(\\..*)?$")) {
-            String sourceFile = input.toAbsolutePath().toString().replace(VARIANTS_FILE + ".avro", METADATA_FILE_FORMAT);
+        if (isAvro(input.toString())) {
+            String sourceFile = getMetaFromInputFile(input.toAbsolutePath().toString());
             variantAvroReader = new VariantAvroReader(input.toAbsolutePath().toFile(), new File(sourceFile), source);
         } else {
-            throw new StorageManagerException("Variants input file format not supported for file: " + input);
+            throw variantInputNotSupported(input);
         }
         return variantAvroReader;
     }
@@ -141,5 +144,31 @@ public class VariantReaderUtils {
 
         return source;
     }
+
+    public static boolean isAvro(String fileName) {
+        return hasFormat(fileName, "avro");
+    }
+
+    public static boolean isProto(String fileName) {
+        return hasFormat(fileName, "proto");
+    }
+
+    public static boolean isJson(String fileName) {
+        return hasFormat(fileName, "json");
+    }
+
+    public static boolean isVcf(String fileName) {
+        return hasFormat(fileName, "vcf");
+    }
+
+    public static boolean hasFormat(String fileName, String format) {
+        if (fileName.endsWith("." + format)) {
+            return true;
+        } else if (fileName.contains(".")) {
+            return fileName.substring(0, fileName.lastIndexOf('.')).endsWith("." + format);
+        }
+        return false;
+    }
+
 
 }

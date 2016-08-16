@@ -153,13 +153,11 @@ public class VariantHbaseTestUtils {
         }
     }
 
-    public static void removeFile(HadoopVariantStorageManager variantStorageManager, String dbName, URI outputUri, int fileId,
-            StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
+    public static void removeFile(HadoopVariantStorageManager variantStorageManager, String dbName, int fileId,
+                                  StudyConfiguration studyConfiguration, Map<? extends String, ?> otherParams) throws Exception {
         ObjectMap params = new ObjectMap(VariantStorageManager.Options.STUDY_CONFIGURATION.key(), studyConfiguration)
                 .append(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId())
-                .append(VariantStorageManager.Options.DB_NAME.key(), dbName).append(VariantStorageManager.Options.ANNOTATE.key(), false)
-                .append(VariantAnnotationManager.SPECIES, "hsapiens").append(VariantAnnotationManager.ASSEMBLY, "GRc37")
-                .append(HadoopVariantStorageManager.HADOOP_DELETE_FILE, true);
+                .append(VariantStorageManager.Options.DB_NAME.key(), dbName);
         if (otherParams != null) {
             params.putAll(otherParams);
         }
@@ -167,7 +165,12 @@ public class VariantHbaseTestUtils {
         variantStorageManager.getConfiguration().getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions()
                 .putAll(params);
         variantStorageManager.dropFile(studyConfiguration.getStudyName(), fileId);
-        studyConfiguration.copy(variantStorageManager.getDBAdaptor().getStudyConfigurationManager().getStudyConfiguration(studyConfiguration.getStudyId(), null).first());
+        studyConfiguration.copy(
+                variantStorageManager
+                        .getDBAdaptor()
+                        .getStudyConfigurationManager()
+                        .getStudyConfiguration(studyConfiguration.getStudyId(), null)
+                        .first());
 //        return variantStorageManager.readVariantSource(etlResult.getTransformResult(), new ObjectMap());
     }
 

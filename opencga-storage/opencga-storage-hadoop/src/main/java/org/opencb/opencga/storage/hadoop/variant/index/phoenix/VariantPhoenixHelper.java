@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.*;
 
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.ANNOT_CONSERVATION;
@@ -209,7 +210,9 @@ public class VariantPhoenixHelper {
 
     private void execute(Connection con, String sql) throws SQLException {
         logger.debug(sql);
-        con.createStatement().execute(sql);
+        try (Statement statement = con.createStatement()) {
+            statement.execute(sql);
+        }
     }
 
     public String buildCreateView(String tableName) {
@@ -290,6 +293,10 @@ public class VariantPhoenixHelper {
 
     public static Column getStatsColumn(int studyId, int cohortId) {
         return Column.build(STATS_PREFIX + studyId + "_" + cohortId + STATS_PROTOBUF_SUFIX, PVarbinary.INSTANCE);
+    }
+
+    public static Column getStudyColumn(int studyId) {
+        return Column.build(VariantTableStudyRow.buildColumnKey(studyId, VariantTableStudyRow.HOM_REF), PUnsignedInt.INSTANCE);
     }
 
     public static Column getMafColumn(int studyId, int cohortId) {

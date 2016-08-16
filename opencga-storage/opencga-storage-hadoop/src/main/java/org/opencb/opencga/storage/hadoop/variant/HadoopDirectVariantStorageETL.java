@@ -1,6 +1,6 @@
 package org.opencb.opencga.storage.hadoop.variant;
 
-import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.hadoop.conf.Configuration;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
@@ -66,12 +66,10 @@ public class HadoopDirectVariantStorageETL extends AbstractHadoopVariantStorageE
         Path input = Paths.get(inputUri.getPath());
         String table = archiveTableCredentials.getTable();
         String fileName = input.getFileName().toString();
-        Path sourcePath = input.getParent().resolve(fileName.replace(".variants.proto.gz", ".file.json.gz"));
-        boolean includeSrc = false;
+        Path sourcePath = input.getParent().resolve(VariantReaderUtils.getMetaFromInputFile(fileName));
 
-        String format = options.getString(Options.TRANSFORM_FORMAT.key(), Options.TRANSFORM_FORMAT.defaultValue());
-        if (!StringUtils.equalsIgnoreCase(format, "proto")) {
-            throw new org.apache.commons.lang3.NotImplementedException("Direct loading only available for PROTO files");
+        if (!VariantReaderUtils.isProto(fileName)) {
+            throw new NotImplementedException("Direct loading only available for PROTO files.");
         }
 
         StudyConfiguration studyConfiguration = getStudyConfiguration(options);

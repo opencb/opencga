@@ -83,6 +83,6 @@ public class VariantDBAdaptorUtilsTest extends GenericTest {
 
     private void test(String key, String operator, String value) {
         assertArrayEquals("Split " + key + operator + value, new String[]{key, operator, value}, VariantDBAdaptorUtils.splitOperator(key + operator + value));
-
     }
+
 }

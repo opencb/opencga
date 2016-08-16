@@ -382,11 +382,20 @@ public class VariantSqlQueryParser {
             }
         } else {
             List<Integer> studyIds = utils.getStudyConfigurationManager().getStudyIds(options);
-            if (studyIds != null && studyIds.size() == 1) {
+            if (studyIds.size() == 1) {
                 defaultStudyConfiguration = utils.getStudyConfigurationManager().getStudyConfiguration(studyIds.get(0), options).first();
             } else {
                 defaultStudyConfiguration = null;
             }
+            StringBuilder sb = new StringBuilder();
+            for (Iterator<Integer> iterator = studyIds.iterator(); iterator.hasNext();) {
+                Integer studyId = iterator.next();
+                sb.append('"').append(buildColumnKey(studyId, HOM_REF)).append("\" IS NOT NULL");
+                if (iterator.hasNext()) {
+                    sb.append(" OR ");
+                }
+            }
+            filters.add(sb.toString());
         }
 
         unsupportedFilter(query, FILES);
