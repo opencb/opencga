@@ -17,6 +17,7 @@ import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
 import org.opencb.biodata.models.variant.*;
 import org.opencb.biodata.models.variant.avro.VariantAvro;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.biodata.tools.variant.tasks.VariantRunner;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -530,7 +531,7 @@ public abstract class VariantStorageETL implements StorageETL {
         fileId = checkNewFile(studyConfiguration, fileId, fileName);
         options.put(Options.FILE_ID.key(), fileId);
         studyConfiguration.getFileIds().put(source.getFileName(), fileId);
-        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get("variantFileHeader").toString());
+        studyConfiguration.getHeaders().put(fileId, source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
 
         checkAndUpdateStudyConfiguration(studyConfiguration, fileId, source, options);
 

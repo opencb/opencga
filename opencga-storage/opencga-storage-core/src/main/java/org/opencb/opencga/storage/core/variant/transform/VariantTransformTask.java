@@ -3,12 +3,10 @@ package org.opencb.opencga.storage.core.variant.transform;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFCodec;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderVersion;
-
 import org.apache.avro.generic.GenericRecord;
 import org.opencb.biodata.formats.variant.vcf4.FullVcfCodec;
 import org.opencb.biodata.models.variant.*;
@@ -24,7 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
 
@@ -145,7 +145,15 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
             this.biodataConvertTime.addAndGet(System.currentTimeMillis() - curr);
 
             curr = System.currentTimeMillis();
-            List<Variant> normalizedVariants = normalizer.apply(variants);
+            List<Variant> normalizedVariants = new ArrayList<>((int) (variants.size() * 1.1));
+            for (Variant variant : variants) {
+                try {
+                    normalizedVariants.addAll(normalizer.normalize(Collections.singletonList(variant), true));
+                } catch (Exception e) {
+                    logger.error("Error parsing variant " + variant);
+                    throw new IllegalStateException(e);
+                }
+            }
             this.normTime.addAndGet(System.currentTimeMillis() - curr);
 
             variantStatsTask.apply(normalizedVariants);
@@ -182,9 +190,9 @@ public abstract class VariantTransformTask<T> implements ParallelTaskRunner.Task
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }
-        logger.info("\nTime txt2hts: " + this.htsConvertTime.get()
-                + "\nTime hts2biodata: " + this.biodataConvertTime.get()
-                + "\nTime normalization: " + this.normTime.get());
+        logger.debug("Time txt2hts: " + this.htsConvertTime.get());
+        logger.debug("Time hts2biodata: " + this.biodataConvertTime.get());
+        logger.debug("Time normalization: " + this.normTime.get());
     }
 
     public boolean isIncludeSrc() {

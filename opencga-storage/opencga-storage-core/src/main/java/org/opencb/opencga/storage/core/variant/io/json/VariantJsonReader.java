@@ -26,6 +26,7 @@ import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.xerial.snappy.SnappyInputStream;
 
 import java.io.FileInputStream;
@@ -204,7 +205,7 @@ public class VariantJsonReader implements VariantReader {
 
     @Override
     public String getHeader() {
-        return source.getMetadata().get("variantFileHeader").toString();
+        return source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
     }
 
 }

@@ -20,6 +20,7 @@ import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -221,7 +222,7 @@ public class VariantFetcher {
         return regions;
     }
 
-    protected Long getMainStudyId(Query query) throws CatalogException {
+    public Long getMainStudyId(Query query) throws CatalogException {
         Long id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.STUDIES.key());
         if (id == null) {
             id = getMainStudyId(query, VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES.key());
@@ -316,6 +317,10 @@ public class VariantFetcher {
         }
 
         return query;
+    }
+
+    public VariantSourceDBAdaptor getSourceDBAdaptor(int studyId, String sessionId) throws CatalogException, StorageManagerException {
+        return getVariantDBAdaptor(studyId, sessionId).getVariantSourceDBAdaptor();
     }
 
 }

@@ -321,10 +321,8 @@ public class GenomeHelper implements AutoCloseable {
      * @return String chromosome name
      */
     public String standardChromosome(String chrom) {
-        if (chrom.length() > 2) {
-            if (chrom.substring(0, 2).equals("chr")) {
-                chrom = chrom.substring(2);
-            }
+        if (chrom.startsWith("chr")) {
+            return chrom.substring(2);
         } // TODO MT, X, Y, ...
         return chrom;
     }

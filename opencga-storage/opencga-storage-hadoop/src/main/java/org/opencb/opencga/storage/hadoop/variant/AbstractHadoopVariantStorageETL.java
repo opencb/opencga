@@ -16,6 +16,7 @@ import org.opencb.biodata.models.variant.VariantNormalizer;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
 import org.opencb.biodata.models.variant.protobuf.VcfSliceProtos;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.VariantVcfHtsjdkReader;
 import org.opencb.biodata.tools.variant.stats.VariantGlobalStatsCalculator;
 import org.opencb.commons.datastore.core.ObjectMap;
@@ -184,7 +185,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
             end = System.currentTimeMillis();
 
-            source.getMetadata().put("variantFileHeader", dataReader.getHeader());
+            source.getMetadata().put(VariantFileUtils.VARIANT_FILE_HEADER, dataReader.getHeader());
             statsCalculator.post();
             transformTask.post();
             dataReader.post();
@@ -340,7 +341,8 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
                 if (!studyConfiguration.getFileIds().inverse().containsKey(readFileId)) {
                     checkNewFile(studyConfiguration, readFileId, readSource.getFileName());
                     studyConfiguration.getFileIds().put(readSource.getFileName(), readFileId);
-                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata().get("variantFileHeader").toString());
+                    studyConfiguration.getHeaders().put(readFileId, readSource.getMetadata()
+                            .get(VariantFileUtils.VARIANT_FILE_HEADER).toString());
                     checkAndUpdateStudyConfiguration(studyConfiguration, readFileId, readSource, options);
                     missingFilesDetected = true;
                 }

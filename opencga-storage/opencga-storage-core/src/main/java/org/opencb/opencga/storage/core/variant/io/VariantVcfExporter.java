@@ -12,15 +12,19 @@ import org.apache.commons.lang3.StringUtils;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfDataWriter;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.*;
 import org.opencb.biodata.models.variant.stats.VariantStats;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.converter.VariantFileMetadataToVCFHeaderConverter;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
 import org.opencb.commons.io.DataWriter;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBIterator;
+import org.opencb.opencga.storage.core.variant.adaptors.VariantSourceDBAdaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,6 +54,7 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     private static final String ALL_ANNOTATIONS = "allele|gene|ensemblGene|ensemblTranscript|biotype|consequenceType|phastCons|phylop"
             + "|populationFrequency|cDnaPosition|cdsPosition|proteinPosition|sift|polyphen|clinvar|cosmic|gwas|drugInteraction";
     private final StudyConfiguration studyConfiguration;
+    private final VariantSourceDBAdaptor sourceDBAdaptor;
     private final OutputStream outputStream;
     private final QueryOptions queryOptions;
 
@@ -58,9 +63,10 @@ public class VariantVcfExporter implements DataWriter<Variant> {
     private List<String> annotations;
     private int failedVariants;
 
-    public VariantVcfExporter(StudyConfiguration studyConfiguration, OutputStream outputStream,
+    public VariantVcfExporter(StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor, OutputStream outputStream,
                               QueryOptions queryOptions) {
         this.studyConfiguration = studyConfiguration;
+        this.sourceDBAdaptor = sourceDBAdaptor;
         this.outputStream = outputStream;
 
         this.queryOptions = queryOptions;
@@ -77,7 +83,6 @@ public class VariantVcfExporter implements DataWriter<Variant> {
 
     /**
      * Uses a reader and a writer to dump a vcf.
-     * TODO jmmut: variantDBReader cannot get the header
      * TODO jmmut: use studyConfiguration to know the order of
      *
      * @param adaptor The query adaptor to execute the query
@@ -123,10 +128,10 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         writer.close();
     }
 
-    public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, OutputStream outputStream,
-                                QueryOptions queryOptions) throws Exception {
+    public static int htsExport(VariantDBIterator iterator, StudyConfiguration studyConfiguration, VariantSourceDBAdaptor sourceDBAdaptor,
+                                OutputStream outputStream, QueryOptions queryOptions) {
 
-        VariantVcfExporter exporter = new VariantVcfExporter(studyConfiguration, outputStream, queryOptions);
+        VariantVcfExporter exporter = new VariantVcfExporter(studyConfiguration, sourceDBAdaptor, outputStream, queryOptions);
 
         exporter.open();
         exporter.pre();
@@ -256,11 +261,21 @@ public class VariantVcfExporter implements DataWriter<Variant> {
         if (options != null) {
             returnedSamples = options.getAsStringList(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key());
         }
-        if (headers.size() < 1) {
-            throw new IllegalStateException("file headers not available for study " + studyConfiguration.getStudyName()
-                    + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
+        String fileHeader;
+        if (headers.isEmpty()) {
+            Iterator<VariantSource> iterator = sourceDBAdaptor.iterator(
+                    new Query(VariantStorageManager.Options.STUDY_ID.key(), studyConfiguration.getStudyId()),
+                    new QueryOptions());
+            if (iterator.hasNext()) {
+                VariantSource source = iterator.next();
+                fileHeader = source.getMetadata().get(VariantFileUtils.VARIANT_FILE_HEADER).toString();
+            } else {
+                throw new IllegalStateException("file headers not available for study " + studyConfiguration.getStudyName()
+                        + ". note: check files: " + studyConfiguration.getFileIds().values().toString());
+            }
+        } else {
+            fileHeader = headers.iterator().next();
         }
-        String fileHeader = headers.iterator().next();
 
         int lastLineIndex = fileHeader.lastIndexOf("#CHROM");
         if (lastLineIndex >= 0) {
@@ -272,7 +287,6 @@ public class VariantVcfExporter implements DataWriter<Variant> {
                     returnedSamples.add(samplesPosition.get(i));
                 }
             } else {
-                System.out.println(returnedSamples);
                 List<String> newReturnedSamples = new ArrayList<>(returnedSamples.size());
                 for (String returnedSample : returnedSamples) {
                     if (returnedSample.isEmpty()) {

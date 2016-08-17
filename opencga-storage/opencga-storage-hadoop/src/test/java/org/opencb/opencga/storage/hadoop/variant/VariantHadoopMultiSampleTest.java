@@ -13,6 +13,7 @@ import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.avro.VariantAnnotation;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.models.variant.protobuf.VcfMeta;
+import org.opencb.biodata.tools.variant.VariantFileUtils;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
@@ -233,10 +234,11 @@ public class VariantHadoopMultiSampleTest extends VariantStorageManagerTestUtils
             assertNotNull(vcfMeta);
         }
 
+        URI outputUri = newOutputUri();
         FileStudyConfigurationManager.write(studyConfiguration, new File(outputUri.resolve("study_configuration.json").getPath()).toPath());
-        studyConfiguration.setHeaders(Collections.singletonMap(0, dbAdaptor.getArchiveHelper(studyConfiguration.getStudyId(), 0).getMeta().getVariantSource().getMetadata().get("variantFileHeader").toString()));
         try (FileOutputStream out = new FileOutputStream(outputUri.resolve("platinum.merged.vcf").getPath())) {
-            VariantVcfExporter.htsExport(dbAdaptor.iterator(), studyConfiguration, out, new QueryOptions());
+            VariantVcfExporter.htsExport(dbAdaptor.iterator(), studyConfiguration, dbAdaptor.getVariantSourceDBAdaptor(),
+                    out, new QueryOptions());
         }
     }
 
