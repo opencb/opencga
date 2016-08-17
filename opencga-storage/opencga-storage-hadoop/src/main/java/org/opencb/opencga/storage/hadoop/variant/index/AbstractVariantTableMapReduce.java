@@ -223,6 +223,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     @Override
     protected void setup(Context context) throws IOException,
             InterruptedException {
+        Thread.currentThread().setName(context.getTaskAttemptID().toString());
         getLog().debug("Setup configuration");
 
         // Open DB connection
@@ -259,7 +260,6 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     @Override
     protected void map(ImmutableBytesWritable key, Result value, Context context) throws IOException, InterruptedException {
-        Thread.currentThread().setName(context.getTaskAttemptID().toString());
         getLog().info("Start mapping key: " + Bytes.toString(key.get()));
         startTime();
         if (value.isEmpty()) {
