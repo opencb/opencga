@@ -5,7 +5,6 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.CellUtil;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;

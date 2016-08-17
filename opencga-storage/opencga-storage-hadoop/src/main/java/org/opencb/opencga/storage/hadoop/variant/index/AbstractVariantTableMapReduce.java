@@ -316,8 +316,8 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     abstract void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException;
 
     protected static class VariantMapReduceContext {
-        public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds, Set<Integer> sampleIds, String chr, long startPos,
-                                       long nextStartPos) {
+        public VariantMapReduceContext(byte[] currRowKey, Context context, Result value, Set<Integer> fileIds,
+                                       Set<Integer> sampleIds, String chr, long startPos, long nextStartPos) {
             this.currRowKey = currRowKey;
             this.context = context;
             this.value = value;
