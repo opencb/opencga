@@ -46,26 +46,29 @@ public class ToolsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing tools command line");
 
         String subCommandString = getParsedSubCommand(toolsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "help":
-                createOutput(help());
+                queryResponse = help();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

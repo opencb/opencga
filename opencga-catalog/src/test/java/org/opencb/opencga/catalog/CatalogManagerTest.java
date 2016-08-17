@@ -36,6 +36,8 @@ import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.FileManager;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.models.summaries.FeatureCount;
+import org.opencb.opencga.catalog.models.summaries.VariableSetSummary;
 import org.opencb.opencga.catalog.utils.CatalogAnnotationsValidatorTest;
 import org.opencb.opencga.catalog.managers.CatalogFileUtils;
 import org.opencb.opencga.core.common.TimeUtils;
@@ -2011,6 +2013,51 @@ public class CatalogManagerTest extends GenericTest {
         thrown.expect(CatalogException.class); //Can not delete required fields
         catalogManager.updateSampleAnnotation(s_1, annotationSet.getName(),
                 new ObjectMap("NAME", null), sessionIdUser);
+
+    }
+
+    @Test
+    public void getVariableSetSummary() throws CatalogException {
+
+        long studyId = catalogManager.getStudyId("user@1000G:phase1", sessionIdUser);
+        Study study = catalogManager.getStudy(studyId, sessionIdUser).first();
+
+        long variableSetId = study.getVariableSets().get(0).getId();
+
+        QueryResult<VariableSetSummary> variableSetSummary = catalogManager.getStudyManager()
+                .getVariableSetSummary(variableSetId, sessionIdUser);
+
+        assertEquals(1, variableSetSummary.getNumResults());
+        VariableSetSummary summary = variableSetSummary.first();
+
+        assertEquals(5, summary.getSamples().size());
+
+        // PHEN
+        int i;
+        for (i = 0; i < summary.getSamples().size(); i++) {
+            if ("PHEN".equals(summary.getSamples().get(i).getName())) {
+                break;
+            }
+        }
+        List<FeatureCount> annotations = summary.getSamples().get(i).getAnnotations();
+        assertEquals("PHEN", summary.getSamples().get(i).getName());
+        assertEquals(2, annotations.size());
+
+        for (i = 0; i < annotations.size(); i++) {
+            if ("CONTROL".equals(annotations.get(i).getName())) {
+                break;
+            }
+        }
+        assertEquals("CONTROL", annotations.get(i).getName());
+        assertEquals(5, annotations.get(i).getCount());
+
+        for (i = 0; i < annotations.size(); i++) {
+            if ("CASE".equals(annotations.get(i).getName())) {
+                break;
+            }
+        }
+        assertEquals("CASE", annotations.get(i).getName());
+        assertEquals(3, annotations.get(i).getCount());
 
     }
 

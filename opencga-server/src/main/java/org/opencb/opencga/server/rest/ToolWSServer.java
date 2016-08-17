@@ -66,7 +66,7 @@ public class ToolWSServer extends OpenCGAWSServer {
                 QueryResult<Tool> toolResult = catalogManager.getTool(catalogManager.getToolId(id), sessionId);
                 Tool tool = toolResult.getResult().get(0);
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), execution);
-                tool.setManifest(toolManager.getAnalysis());
+                tool.setManifest(toolManager.getManifest());
                 tool.setResult(toolManager.getResult());
                 results.add(toolResult);
             }
@@ -95,7 +95,7 @@ public class ToolWSServer extends OpenCGAWSServer {
             QueryResult<Tool> toolResult = catalogManager.getAllTools(query, qOptions, sessionId);
             for (Tool tool : toolResult.getResult()) {
                 ToolManager toolManager = new ToolManager(Paths.get(tool.getPath()).getParent(), tool.getName(), "");
-                tool.setManifest(toolManager.getAnalysis());
+                tool.setManifest(toolManager.getManifest());
                 tool.setResult(toolManager.getResult());
             }
             return createOkResponse(toolResult);

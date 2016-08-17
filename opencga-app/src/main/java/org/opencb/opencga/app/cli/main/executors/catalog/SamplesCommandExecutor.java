@@ -55,75 +55,78 @@ public class SamplesCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing samples command line");
 
         String subCommandString = getParsedSubCommand(samplesCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "load":
-                createOutput(load());
+                queryResponse = load();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "search":
-                createOutput(search());
+                queryResponse = search();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "groupBy":
-                createOutput(groupBy());
+                queryResponse = groupBy();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(samplesCommandOptions.aclsCommandOptions, openCGAClient.getSampleClient()));
+                queryResponse = aclCommandExecutor.acls(samplesCommandOptions.aclsCommandOptions, openCGAClient.getSampleClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreate(samplesCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = aclCommandExecutor.aclsCreate(samplesCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(samplesCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(samplesCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(samplesCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(samplesCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(samplesCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(samplesCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "annotation-sets-create":
-                createOutput(annotationCommandExecutor.createAnnotationSet(samplesCommandOptions.annotationCreateCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = annotationCommandExecutor.createAnnotationSet(samplesCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "annotation-sets-all-info":
-                createOutput(annotationCommandExecutor.getAllAnnotationSets(samplesCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = annotationCommandExecutor.getAllAnnotationSets(samplesCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "annotation-sets-search":
-                createOutput(annotationCommandExecutor.searchAnnotationSets(samplesCommandOptions.annotationSearchCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = annotationCommandExecutor.searchAnnotationSets(samplesCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "annotation-sets-delete":
-                createOutput(annotationCommandExecutor.deleteAnnotationSet(samplesCommandOptions.annotationDeleteCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = annotationCommandExecutor.deleteAnnotationSet(samplesCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "annotation-sets-info":
-                createOutput(annotationCommandExecutor.getAnnotationSet(samplesCommandOptions.annotationInfoCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = annotationCommandExecutor.getAnnotationSet(samplesCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             case "annotation-sets-update":
-                createOutput(annotationCommandExecutor.updateAnnotationSet(samplesCommandOptions.annotationUpdateCommandOptions,
-                        openCGAClient.getSampleClient()));
+                queryResponse = annotationCommandExecutor.updateAnnotationSet(samplesCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getSampleClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
     /********************************************  Administration commands  ***********************************************/

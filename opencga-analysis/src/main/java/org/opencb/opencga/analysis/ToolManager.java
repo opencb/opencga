@@ -17,9 +17,9 @@
 package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.opencb.opencga.analysis.beans.Analysis;
-import org.opencb.opencga.analysis.beans.Execution;
-import org.opencb.opencga.analysis.beans.Option;
+import org.opencb.opencga.catalog.models.tool.Manifest;
+import org.opencb.opencga.catalog.models.tool.Execution;
+import org.opencb.opencga.catalog.models.tool.Option;
 import org.opencb.opencga.analysis.execution.plugins.OpenCGAAnalysis;
 import org.opencb.opencga.analysis.execution.plugins.PluginFactory;
 import org.opencb.opencga.core.common.Config;
@@ -45,7 +45,7 @@ public class ToolManager {
     protected Path manifestFile;
     protected Path resultsFile;
     protected String sessionId;
-    protected Analysis analysis;
+    protected Manifest manifest;
     protected Execution execution;
     protected boolean plugin;
 
@@ -99,13 +99,13 @@ public class ToolManager {
             if (plugin == null) {
                 throw new IllegalArgumentException("Plugin  '" + analysisName + "' does not exist");
             }
-            analysis = plugin.getManifest();
+            manifest = plugin.getManifest();
             execution = getExecution();
             this.plugin = true;
         } else {
             manifestFile = analysisPath.resolve(Paths.get("manifest.json"));
             resultsFile = analysisPath.resolve(Paths.get("results.js"));
-            analysis = getAnalysis();
+            manifest = getManifest();
             execution = getExecution();
         }
     }
@@ -152,7 +152,7 @@ public class ToolManager {
 
         // Check required params
         List<Option> validParams = new LinkedList<>(execution.getValidParams());
-        validParams.addAll(analysis.getGlobalParams());
+        validParams.addAll(manifest.getGlobalParams());
         validParams.add(new Option(execution.getOutputParam(), "Outdir", false));
         if (checkRequiredParams(params, validParams)) {
             params = new HashMap<>(removeUnknownParams(params, validParams));
@@ -200,20 +200,20 @@ public class ToolManager {
         return plugin;
     }
 
-    public Analysis getAnalysis() throws IOException, AnalysisExecutionException {
-        if (analysis == null) {
-            analysis = jsonObjectMapper.readValue(manifestFile.toFile(), Analysis.class);
+    public Manifest getManifest() throws IOException, AnalysisExecutionException {
+        if (manifest == null) {
+            manifest = jsonObjectMapper.readValue(manifestFile.toFile(), Manifest.class);
 //            analysis = gson.fromJson(IOUtils.toString(manifestFile.toFile()), Analysis.class);
         }
-        return analysis;
+        return manifest;
     }
 
     public Execution getExecution() {
         if (execution == null) {
             if (executionName == null || executionName.isEmpty()) {
-                execution = analysis.getExecutions().get(0);
+                execution = manifest.getExecutions().get(0);
             } else {
-                for (Execution exe : analysis.getExecutions()) {
+                for (Execution exe : manifest.getExecutions()) {
                     if (exe.getId().equalsIgnoreCase(executionName)) {
                         execution = exe;
                         break;
@@ -240,15 +240,15 @@ public class ToolManager {
         if (executionName != null)
             execName = "." + executionName;
         StringBuilder sb = new StringBuilder();
-        sb.append("Analysis: " + analysis.getName() + "\n");
-        sb.append("Description: " + analysis.getDescription() + "\n");
-        sb.append("Version: " + analysis.getVersion() + "\n\n");
-        sb.append("Author: " + analysis.getAuthor().getName() + "\n");
-        sb.append("Email: " + analysis.getAuthor().getEmail() + "\n");
-        if (!analysis.getWebsite().equals(""))
-            sb.append("Website: " + analysis.getWebsite() + "\n");
-        if (!analysis.getPublication().equals(""))
-            sb.append("Publication: " + analysis.getPublication() + "\n");
+        sb.append("Analysis: " + manifest.getName() + "\n");
+        sb.append("Description: " + manifest.getDescription() + "\n");
+        sb.append("Version: " + manifest.getVersion() + "\n\n");
+        sb.append("Author: " + manifest.getAuthor().getName() + "\n");
+        sb.append("Email: " + manifest.getAuthor().getEmail() + "\n");
+        if (!manifest.getWebsite().equals(""))
+            sb.append("Website: " + manifest.getWebsite() + "\n");
+        if (!manifest.getPublication().equals(""))
+            sb.append("Publication: " + manifest.getPublication() + "\n");
         sb.append("\nUsage: \n");
         sb.append(baseUrl + "analysis/" + analysisName + execName + "/{action}?{params}\n\n");
         sb.append("\twhere: \n");
@@ -267,7 +267,7 @@ public class ToolManager {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("Valid params for " + analysis.getName() + ":\n\n");
+        sb.append("Valid params for " + manifest.getName() + ":\n\n");
         for (Option param : execution.getValidParams()) {
             String required = "";
             if (param.isRequired())

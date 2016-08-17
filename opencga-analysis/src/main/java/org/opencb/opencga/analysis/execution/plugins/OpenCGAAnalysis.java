@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlFactory;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.opencga.analysis.beans.Analysis;
+import org.opencb.opencga.catalog.models.tool.Manifest;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -37,7 +37,7 @@ public abstract class OpenCGAAnalysis {
     private StorageManagerFactory storageManagerFactory;
     private long studyId;
 
-    public Analysis getManifest() {
+    public Manifest getManifest() {
         try {
             return loadManifest(getIdentifier());
         } catch (IOException ignore) {
@@ -46,7 +46,7 @@ public abstract class OpenCGAAnalysis {
         }
     }
 
-    public static Analysis loadManifest(String identifier) throws IOException {
+    public static Manifest loadManifest(String identifier) throws IOException {
         final String file;
         JsonFactory factory;
         if (OpenCGAAnalysis.class.getResource("/" + identifier + "/manifest.yml") != null) {
@@ -62,7 +62,7 @@ public abstract class OpenCGAAnalysis {
             return null;
         }
         try (InputStream stream = OpenCGAAnalysis.class.getResourceAsStream(file)) {
-            return new ObjectMapper(factory).readValue(stream, Analysis.class);
+            return new ObjectMapper(factory).readValue(stream, Manifest.class);
         }
     }
 

@@ -57,75 +57,78 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing cohorts command line");
 
         String subCommandString = getParsedSubCommand(cohortsCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "create":
-                createOutput(create());
+                queryResponse = create();
                 break;
             case "info":
-                createOutput(info());
+                queryResponse = info();
                 break;
             case "samples":
-                createOutput(samples());
+                queryResponse = samples();
                 break;
             case "update":
-                createOutput(update());
+                queryResponse = update();
                 break;
             case "delete":
-                createOutput(delete());
+                queryResponse = delete();
                 break;
             case "stats":
-                createOutput(stats());
+                queryResponse = stats();
                 break;
             case "group-by":
-                createOutput(groupBy());
+                queryResponse = groupBy();
                 break;
             case "acl":
-                createOutput(aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient()));
+                queryResponse = aclCommandExecutor.acls(cohortsCommandOptions.aclsCommandOptions, openCGAClient.getCohortClient());
                 break;
             case "acl-create":
-                createOutput(aclCommandExecutor.aclsCreate(cohortsCommandOptions.aclsCreateCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = aclCommandExecutor.aclsCreate(cohortsCommandOptions.aclsCreateCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "acl-member-delete":
-                createOutput(aclCommandExecutor.aclMemberDelete(cohortsCommandOptions.aclsMemberDeleteCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = aclCommandExecutor.aclMemberDelete(cohortsCommandOptions.aclsMemberDeleteCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "acl-member-info":
-                createOutput(aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = aclCommandExecutor.aclMemberInfo(cohortsCommandOptions.aclsMemberInfoCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "acl-member-update":
-                createOutput(aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = aclCommandExecutor.aclMemberUpdate(cohortsCommandOptions.aclsMemberUpdateCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "annotation-sets-create":
-                createOutput(annotationCommandExecutor.createAnnotationSet(cohortsCommandOptions.annotationCreateCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = annotationCommandExecutor.createAnnotationSet(cohortsCommandOptions.annotationCreateCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "annotation-sets-all-info":
-                createOutput(annotationCommandExecutor.getAllAnnotationSets(cohortsCommandOptions.annotationAllInfoCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = annotationCommandExecutor.getAllAnnotationSets(cohortsCommandOptions.annotationAllInfoCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "annotation-sets-search":
-                createOutput(annotationCommandExecutor.searchAnnotationSets(cohortsCommandOptions.annotationSearchCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = annotationCommandExecutor.searchAnnotationSets(cohortsCommandOptions.annotationSearchCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "annotation-sets-delete":
-                createOutput(annotationCommandExecutor.deleteAnnotationSet(cohortsCommandOptions.annotationDeleteCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = annotationCommandExecutor.deleteAnnotationSet(cohortsCommandOptions.annotationDeleteCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "annotation-sets-info":
-                createOutput(annotationCommandExecutor.getAnnotationSet(cohortsCommandOptions.annotationInfoCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = annotationCommandExecutor.getAnnotationSet(cohortsCommandOptions.annotationInfoCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             case "annotation-sets-update":
-                createOutput(annotationCommandExecutor.updateAnnotationSet(cohortsCommandOptions.annotationUpdateCommandOptions,
-                        openCGAClient.getCohortClient()));
+                queryResponse = annotationCommandExecutor.updateAnnotationSet(cohortsCommandOptions.annotationUpdateCommandOptions,
+                        openCGAClient.getCohortClient());
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 

@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.tool;
 
 public class Icon {
+
     private String size, data;
 
     public Icon() {
@@ -30,9 +31,11 @@ public class Icon {
 
     @Override
     public String toString() {
-        return "Icon{" +
-                "size='" + size + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("Icon{");
+        sb.append("size='").append(size).append('\'');
+        sb.append(", data='").append(data).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getSize() {

@@ -14,26 +14,29 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-public class Author {
-    private String name, email;
+public class ConfigAttr {
 
-    public Author() {
+    private String name;
+    private String value;
+
+    public ConfigAttr() {
 
     }
 
-    public Author(String name, String email) {
+    public ConfigAttr(String name, String value) {
         this.name = name;
-        this.email = email;
+        this.value = value;
     }
 
     @Override
     public String toString() {
-        return "Author{" +
-                "name='" + name + '\'' +
-                ", email='" + email + '\'' +
-                '}';
+        final StringBuilder sb = new StringBuilder("ConfigAttr{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", value='").append(value).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getName() {
@@ -44,11 +47,11 @@ public class Author {
         this.name = name;
     }
 
-    public String getEmail() {
-        return email;
+    public String getValue() {
+        return value;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setValue(String value) {
+        this.value = value;
     }
 }

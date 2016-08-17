@@ -26,14 +26,17 @@ public class VariantCommandExecutor extends OpencgaCommandExecutor {
         logger.debug("Executing variant command line");
 
         String subCommandString = getParsedSubCommand(variantCommandOptions.jCommander);
+        QueryResponse queryResponse = null;
         switch (subCommandString) {
             case "index":
-                createOutput(index());
+                queryResponse = index();
                 break;
             default:
                 logger.error("Subcommand not valid");
                 break;
         }
+
+        createOutput(queryResponse);
 
     }
 
