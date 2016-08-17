@@ -205,11 +205,12 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected Scan createScan(VariantTableHelper gh, String[] fileArr) {
         Scan scan = new Scan();
-//        scan.setCaching(10);        // 1 is the default in Scan, 200 caused timeout issues.
+        scan.setCaching(50);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
         // specify return columns (file IDs)
         for (String fileIdStr : fileArr) {
             int id = Integer.parseInt(fileIdStr);
+            getLog().info("Add file to scan filter: " + fileIdStr);
             scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
         }
         scan.addColumn(gh.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
