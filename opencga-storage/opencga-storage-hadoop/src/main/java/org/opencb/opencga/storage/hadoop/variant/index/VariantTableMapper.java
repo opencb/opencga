@@ -58,16 +58,15 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
     @Override
     protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-
+        List<Cell> list = ctx.getValue().getColumnCells(getHelper().getColumnFamily(), GenomeHelper
+                .VARIANT_COLUMN_B);
         Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
         if (latestCell != null) {
+            getLog().info("Column _V: found " + list.size() + " versions.");
             if (latestCell.getTimestamp() == timestamp) {
-
-                List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.getValue(), ctx.getChromosome());
-
+                List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.value, ctx.getChromosome());
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(variants.size());
-
                 updateOutputTable(ctx.context, variants);
                 endTime("X Unpack, convert and write ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
                 return;
@@ -117,7 +116,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
 
         // with all other gVCF files of same region
         if (!analysisNew.isEmpty()) {
-            List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.sliceKey, ctx.fileIds);
+            List<Variant> archiveOther = loadFromArchive(ctx.context, ctx.getCurrRowKey(), ctx.fileIds);
             endTime("8 Load archive slice from hbase");
             if (!archiveOther.isEmpty()) {
                 completeAlternateCoordinates(archiveOther);
@@ -144,7 +143,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
         endTime("10 Update OUTPUT table");
 
-        updateArchiveTable(ctx.key, ctx.context, rows);
+        updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
         endTime("11 Update INPUT table");
     }
 
@@ -281,14 +280,14 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
     }
 
     /**
-     * Load all variants for all files (except in currFileIds) listed in the study configuration for the specified sliceKey.
+     * Load all variants for all files (except in currFileIds) listed in the study configuration for the specified rowKey.
      * @param context Context
-     * @param sliceKey Slice to extract data for
+     * @param rowKey Slice to extract data for
      * @param currFileIds File ids to ignore
      * @return Variants all variants for the slice
      * @throws IOException
      */
-    private List<Variant> loadFromArchive(Context context, String sliceKey, Set<Integer> currFileIds) throws IOException {
+    private List<Variant> loadFromArchive(Context context, byte[] rowKey, Set<Integer> currFileIds) throws IOException {
         // Extract File IDs to search through
         LinkedHashSet<Integer> indexedFiles = getStudyConfiguration().getIndexedFiles();
         Set<String> archiveFileIds = indexedFiles.stream().filter(k -> !currFileIds.contains(k)).map(s -> s.toString())
@@ -302,7 +301,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         if (getLog().isDebugEnabled()) {
             getLog().debug("Add files to search in archive: " + StringUtils.join(archiveFileIds, ','));
         }
-        Get get = new Get(Bytes.toBytes(sliceKey));
+        Get get = new Get(rowKey);
         byte[] cf = getHelper().getColumnFamily();
         archiveFileIds.forEach(e -> get.addColumn(cf, Bytes.toBytes(e)));
         Result res = getHelper().getHBaseManager().act(getDbConnection(), getHelper().getIntputTable(), table -> {

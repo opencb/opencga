@@ -205,11 +205,20 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected Scan createScan(VariantTableHelper gh, String[] fileArr) {
         Scan scan = new Scan();
-//        scan.setCaching(10);        // 1 is the default in Scan, 200 caused timeout issues.
+        int caching = getConf().getInt("hadoop.load.variant.scan.caching", 50);
+        getLog().info("Scan set Caching to " + caching);
+        scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
+        // https://hbase.apache.org/book.html#perf.hbase.client.seek
+        int lookAhead = getConf().getInt("hadoop.load.variant.scan.lookahead", -1);
+        if (lookAhead > 0) {
+            getLog().info("Scan set LOOKAHEAD to " + lookAhead);
+            scan.setAttribute(Scan.HINT_LOOKAHEAD, Bytes.toBytes(lookAhead));
+        }
         // specify return columns (file IDs)
         for (String fileIdStr : fileArr) {
             int id = Integer.parseInt(fileIdStr);
+            getLog().info("Add file to scan filter: " + fileIdStr);
             scan.addColumn(gh.getColumnFamily(), Bytes.toBytes(ArchiveHelper.getColumnName(id)));
         }
         scan.addColumn(gh.getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);

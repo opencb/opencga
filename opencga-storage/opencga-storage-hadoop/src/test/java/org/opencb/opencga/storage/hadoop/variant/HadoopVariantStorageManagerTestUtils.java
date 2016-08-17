@@ -253,7 +253,7 @@ public interface HadoopVariantStorageManagerTestUtils /*extends VariantStorageMa
 
         @Override
         protected void doMap(VariantMapReduceContext ctx) throws IOException, InterruptedException {
-            if (ctx.getSliceKey().equals(sliceToFail)) {
+            if (Bytes.toString(ctx.getCurrRowKey()).equals(sliceToFail)) {
                 if (!hadFail.getAndSet(true)) {
                     System.out.println("DO FAIL!!");
                     ctx.getContext().getCounter(COUNTER_GROUP_NAME, "TEST.FAIL").increment(1);

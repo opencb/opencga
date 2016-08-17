@@ -78,7 +78,7 @@ public class VariantTableDeletionMapReduce extends AbstractVariantTableMapReduce
         List<VariantTableStudyRow> rows = new ArrayList<>();
         deleteFromAnalysisTable(ctx.context, removeLst);
         updateOutputTable(ctx.context, updateLst, rows, null);
-        updateArchiveTable(ctx.key, ctx.context, rows);
+        updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
         deleteFromArchiveTable(ctx.context, ctx.currRowKey, ctx.fileIds);
     }
 
