@@ -28,6 +28,7 @@ import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.monitor.daemons.ExecutionDaemon;
 import org.opencb.opencga.catalog.monitor.daemons.FileDaemon;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,9 +47,11 @@ public class MonitorService {
     private int port;
 
     private ExecutionDaemon executionDaemon;
+    private IndexDaemon indexDaemon;
     private FileDaemon fileDaemon;
 
     private Thread executionThread;
+    private Thread indexThread;
     private Thread fileThread;
 
     private boolean exit;
@@ -74,10 +77,12 @@ public class MonitorService {
 
             executionDaemon = new ExecutionDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId,
                     catalogManager, appHome);
+            indexDaemon = new IndexDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager);
             fileDaemon = new FileDaemon(catalogConfiguration.getMonitor().getFileDaemonInterval(),
                     catalogConfiguration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
 
             executionThread = new Thread(executionDaemon);
+            indexThread = new Thread(indexDaemon);
             fileThread = new Thread(fileDaemon);
 
             this.port = catalogConfiguration.getMonitor().getPort();
@@ -90,6 +95,7 @@ public class MonitorService {
 
         // Launching the two daemons in two different threads
         executionThread.start();
+        indexThread.start();
 //        fileThread.start();
 
         // Preparing the REST server configuration
