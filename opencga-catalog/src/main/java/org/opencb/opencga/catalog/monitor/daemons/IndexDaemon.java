@@ -80,8 +80,7 @@ public class IndexDaemon extends MonitorParentDaemon {
         int numRunningJobs = 0;
 
         try {
-            catalogIOManager = catalogManager.getCatalogIOManagerFactory().get(catalogManager.getCatalogConfiguration()
-                    .getTempJobsDir());
+            catalogIOManager = catalogManager.getCatalogIOManagerFactory().get("file");
         } catch (CatalogIOException e) {
             exit = true;
             e.printStackTrace();
