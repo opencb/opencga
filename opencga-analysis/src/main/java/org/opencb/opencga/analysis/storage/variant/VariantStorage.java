@@ -23,7 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
 import org.opencb.opencga.catalog.managers.CatalogManager;

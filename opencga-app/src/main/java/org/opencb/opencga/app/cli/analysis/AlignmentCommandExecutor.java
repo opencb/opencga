@@ -27,8 +27,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.DataStore;
@@ -226,7 +226,8 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
             throw e;
         } finally {
             // 4) Save indexation result.
-            new AnalysisOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
+            // TODO: Uncomment this line
+//            new ExecutionOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
         }
     }
 

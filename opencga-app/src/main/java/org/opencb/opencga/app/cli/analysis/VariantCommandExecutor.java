@@ -32,8 +32,8 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.analysis.AnalysisOutputRecorder;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -70,7 +70,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
@@ -466,7 +465,8 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             throw e;
         } finally {
             // 4) Save indexation result.
-            new AnalysisOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
+            // TODO: Uncomment this line
+//            new ExecutionOutputRecorder(catalogManager, sessionId).saveStorageResult(job, storageETLResult);
         }
     }
 

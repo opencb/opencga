@@ -123,8 +123,6 @@ public class ExecutionDaemon extends MonitorParentDaemon {
         try {
             logger.info("Running job {}" + job.getName());
 
-
-
             catalogManager.getJobManager().update(
                     job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING),
                     new QueryOptions(), sessionId);
