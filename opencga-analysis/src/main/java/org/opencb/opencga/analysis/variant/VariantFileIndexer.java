@@ -143,6 +143,10 @@ public class VariantFileIndexer {
                 dataStore = project.first().getDataStores().get(inputFile.getBioformat());
             } else {
                 // we need to load the default datastore
+                dataStore = new DataStore(
+                        StorageManagerFactory.get().getDefaultStorageManagerName(),
+                        "opencga_" + userId + "_" + project.first().getAlias()
+                );
             }
         }
 
