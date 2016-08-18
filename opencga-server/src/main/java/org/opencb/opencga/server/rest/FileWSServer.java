@@ -608,7 +608,7 @@ public class FileWSServer extends OpenCGAWSServer {
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
 
-        Map<String, String> params = new LinkedMap();
+        Map<String, String> params = new LinkedHashMap<>();
         params.put("studyId", studyId);
         params.put("outdir", outDirStr);
         params.put("transform", Boolean.toString(transform));

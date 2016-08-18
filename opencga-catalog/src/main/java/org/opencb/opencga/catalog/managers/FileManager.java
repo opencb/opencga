@@ -1992,7 +1992,6 @@ public class FileManager extends AbstractManager implements IFileManager {
             } else if (studyId != studyIdByFileId) {
                 throw new CatalogException("Cannot index files coming from different studies.");
             }
-
         }
 
         Long outDirId = getFileId(userId, params.get("outdir"));

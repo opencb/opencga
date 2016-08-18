@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.analysis.variant;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -51,6 +52,7 @@ public class VariantFileIndexer {
     private final CatalogManager catalogManager;
     private final IFileManager fileManager;
 
+    private ObjectMapper objectMapper = new ObjectMapper();
     protected Logger logger;
 
     public static final String TRANSFORM = "transform";
@@ -82,6 +84,8 @@ public class VariantFileIndexer {
 
         Path outdir = Paths.get(outdirString);
         FileUtils.checkDirectory(outdir, true);
+        objectMapper.writer()
+                .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
         if (options == null) {
             options = new QueryOptions();
@@ -115,7 +119,8 @@ public class VariantFileIndexer {
         } else {
             if (inputFile.getType() == File.Type.DIRECTORY) {
                 Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + inputFile.getPath() + "*");
-                query.append(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
+                query.append(CatalogFileDBAdaptor.QueryParams.FORMAT.key(),
+                        Arrays.asList(File.Format.VCF, File.Format.GVCF, File.Format.AVRO));
                 QueryResult<File> fileQueryResult = fileManager.readAll(studyIdByInputFileId, query, options, sessionId);
                 inputFiles.addAll(fileQueryResult.getResult());
             } else {

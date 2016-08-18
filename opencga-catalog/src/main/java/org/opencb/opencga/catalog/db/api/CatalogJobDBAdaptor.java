@@ -148,6 +148,7 @@ public interface CatalogJobDBAdaptor extends CatalogAclDBAdaptor<Job, JobAclEntr
         NAME("name", TEXT_ARRAY, ""),
         USER_ID("userId", TEXT_ARRAY, ""),
         TOOL_NAME("toolName", TEXT_ARRAY, ""),
+        TYPE("type", TEXT_ARRAY, ""),
         CREATION_DATE("creationDate", TEXT_ARRAY, ""),
         DESCRIPTION("description", TEXT_ARRAY, ""),
         START_TIME("startTime", INTEGER_ARRAY, ""),
