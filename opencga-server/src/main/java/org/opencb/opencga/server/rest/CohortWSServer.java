@@ -354,7 +354,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     public Response searchAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                            @ApiParam(value = "variableSetId", required = true) @QueryParam("variableSetId") long variableSetId,
                                            @ApiParam(value = "annotation", required = false) @QueryParam("annotation") String annotation,
-                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                           @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getCohortManager().searchAnnotationSetAsMap(cohortStr, variableSetId, annotation, sessionId));
@@ -370,7 +370,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @Path("/{cohortId}/annotationSets/info")
     @ApiOperation(value = "Return all the annotation sets of the cohort [NOT TESTED]", position = 12)
     public Response infoAnnotationSetGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
-                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                         @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getCohortManager().getAllAnnotationSetsAsMap(cohortStr, sessionId));
@@ -441,7 +441,7 @@ public class CohortWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "Return the annotation set [NOT TESTED]", position = 16)
     public Response infoAnnotationGET(@ApiParam(value = "cohortId", required = true) @PathParam("cohortId") String cohortStr,
                                       @ApiParam(value = "annotationSetName", required = true) @PathParam("annotationSetName") String annotationSetName,
-                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("as-map") boolean asMap) {
+                                      @ApiParam(value = "Indicates whether to show the annotations as key-value", required = false, defaultValue = "true") @QueryParam("asMap") boolean asMap) {
         try {
             if (asMap) {
                 return createOkResponse(catalogManager.getCohortManager().getAnnotationSetAsMap(cohortStr, annotationSetName, sessionId));

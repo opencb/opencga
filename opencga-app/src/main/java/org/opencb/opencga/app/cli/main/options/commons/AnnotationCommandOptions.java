@@ -31,12 +31,12 @@ public class AnnotationCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"annotation-sets-create"}, commandDescription = "Annotate the resource")
+    @Parameters(commandNames = {"annotation-sets-create"}, commandDescription = "Create a new annotation set")
     public class AnnotationSetsCreateCommandOptions extends BaseCommandOptions {
-        @Parameter(names = {"--variableSetId"}, description = "Variable set id", required = true, arity = 1)
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id", required = true, arity = 1)
         public String variableSetId;
 
-        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
         @Parameter(names = {"--annotations"}, description = "Json file containing the annotations", required = true, arity = 1)
@@ -45,29 +45,27 @@ public class AnnotationCommandOptions {
 
     @Parameters(commandNames = {"annotation-sets-all-info"}, commandDescription = "Retrieve all the annotation sets from the resource")
     public class AnnotationSetsAllInfoCommandOptions extends BaseCommandOptions {
-//        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs",
-//                required = false, arity = 0)
-//        public boolean asMap = false;
+        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
+        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-search"}, commandDescription = "Search annotation sets from the resource")
     public class AnnotationSetsSearchCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--variableSetId"}, description = "Variable set id", arity = 1)
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id", arity = 1)
         public String variableSetId;
 
         @Parameter(names = {"--annotation"}, description = "Annotation",  arity = 1)
         public String annotation;
 
-//        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs",
-//                required = false, arity = 0)
-//        public boolean asMap = false;
+        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
+        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-delete"}, commandDescription = "Remove an entire annotation set or just some annotations")
     public class AnnotationSetsDeleteCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
         @Parameter(names = {"--annotations"}, description = "Comma separated list of annotations to be removed. If any, only the "
@@ -75,20 +73,20 @@ public class AnnotationCommandOptions {
         public String annotations;
     }
 
-    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Retrieve a concrete annotation set")
+    @Parameters(commandNames = {"annotation-sets-info"}, commandDescription = "Retrieve one annotation set")
     public class AnnotationSetsInfoCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
-//        @Parameter(names = {"--as-map"}, description = "As-map, default:true", required = false, arity = 0)
-//        public boolean asMap = true;
+        @Parameter(names = {"--as-map"}, description = "Boolean indicating whether to show the annotations as key-value pairs", arity = 0)
+        public boolean asMap;
     }
 
     @Parameters(commandNames = {"annotation-sets-update"}, commandDescription = "Update the value of some annotations")
     public class AnnotationSetsUpdateCommandOptions extends BaseCommandOptions {
 
-        @Parameter(names = {"--annotationSetName"}, description = "Annotation set name", required = true, arity = 1)
+        @Parameter(names = {"--annotation-set-name"}, description = "Annotation set name", required = true, arity = 1)
         public String annotationSetName;
 
         @Parameter(names = {"--annotations"}, description = "Json file containing the annotations to be updated", required = true,

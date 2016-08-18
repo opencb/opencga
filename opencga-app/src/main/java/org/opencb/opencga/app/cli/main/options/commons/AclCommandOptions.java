@@ -38,7 +38,7 @@ public class AclCommandOptions {
         this.commonCommandOptions = commonCommandOptions;
     }
 
-    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource [PENDING]")
+    @Parameters(commandNames = {"acl"}, commandDescription = "Return the acl of the resource")
     public class AclsCommandOptions {
 
         @ParametersDelegate
@@ -48,7 +48,7 @@ public class AclCommandOptions {
         public String id;
     }
 
-    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups [PENDING]")
+    @Parameters(commandNames = {"acl-create"}, commandDescription = "Define a set of permissions for a list of users or groups")
     public class AclsCreateCommandOptions extends AclsCommandOptions {
         @Parameter(names = {"--members"},
                 description = "Comma separated list of members. Accepts: '{userId}', '@{groupId}' or '*'", required = true, arity = 1)
@@ -63,8 +63,7 @@ public class AclCommandOptions {
         public String templateId;
     }
 
-    @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group "
-            + "[PENDING]")
+    @Parameters(commandNames = {"acl-member-delete"}, commandDescription = "Delete all the permissions granted for the user or group")
     public class AclsMemberDeleteCommandOptions extends AclsCommandOptions {
 
         @Parameter(names = {"--member-id"}, description = "Member id ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
@@ -72,7 +71,7 @@ public class AclCommandOptions {
     }
 
     @Parameters(commandNames = {"acl-member-info"},
-            commandDescription = "Return the set of permissions granted for the user or group [PENDING]")
+            commandDescription = "Return the set of permissions granted for the user or group")
     public class AclsMemberInfoCommandOptions extends AclsCommandOptions {
 
         @Parameter(names = {"--member-id"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)
@@ -80,7 +79,7 @@ public class AclCommandOptions {
     }
 
     @Parameters(commandNames = {"acl-member-update"},
-            commandDescription = "Update the set of permissions granted for the user or group [PENDING]")
+            commandDescription = "Update the set of permissions granted for the user or group")
     public class AclsMemberUpdateCommandOptions extends AclsCommandOptions {
 
         @Parameter(names = {"--member-id"}, description = "Member id  ('{userId}', '@{groupId}' or '*')", required = true, arity = 1)

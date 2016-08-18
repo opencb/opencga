@@ -45,7 +45,7 @@ public class UserCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"create"}, commandDescription = "Create new user for OpenCGA-Catalog")
+    @Parameters(commandNames = {"create"}, commandDescription = "Create a new user")
     public class CreateCommandOptions extends BaseUserCommand {
 
         @Parameter(names = {"--user-name"}, description = "User name", required = true, arity = 1)
@@ -121,10 +121,10 @@ public class UserCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"login"}, commandDescription = "Login as user and return its sessionId")
+    @Parameters(commandNames = {"login"}, commandDescription = "Login as a user")
     public class LoginCommandOptions {
 
-        @Parameter(names = {"-u", "--user"}, description = "UserId", required = false, arity = 1)
+        @Parameter(names = {"-u", "--user"}, description = "UserId", required = true, arity = 1)
         public String user;
 
         @Parameter(names = {"-p", "--password"}, description = "Password", arity = 1, required = false, password = true)
@@ -139,7 +139,7 @@ public class UserCommandOptions {
 
     @Parameters(commandNames = {"logout"}, commandDescription = "End user session")
     public class LogoutCommandOptions {
-        @Parameter(names = {"--session-id", "-S"}, description = "SessionId", required = false, arity = 1)
+        @Parameter(names = {"--session-id", "-S"}, description = "SessionId", required = false, arity = 1, hidden = true)
         public String sessionId;
     }
 
