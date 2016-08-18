@@ -431,7 +431,7 @@ public class CatalogMongoFileDBAdaptor extends CatalogMongoDBAdaptor implements 
         filterMapParams(parameters, fileParameters, acceptedMapParams);
         // Fixme: Attributes and stats can be also parsed to numeric or boolean
 
-        String[] acceptedObjectParams = {"index"};
+        String[] acceptedObjectParams = {QueryParams.INDEX.key()};
         filterObjectParams(parameters, fileParameters, acceptedObjectParams);
 
         if (!fileParameters.isEmpty()) {

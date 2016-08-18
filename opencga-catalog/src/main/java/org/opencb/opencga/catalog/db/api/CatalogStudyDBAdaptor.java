@@ -227,6 +227,8 @@ public interface CatalogStudyDBAdaptor extends CatalogAclDBAdaptor<Study, StudyA
 
     long getStudyIdByVariableSetId(long variableSetId) throws CatalogDBException;
 
+    QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException;
+
 
     enum QueryParams implements QueryParam {
         ID("id", INTEGER_ARRAY, ""),

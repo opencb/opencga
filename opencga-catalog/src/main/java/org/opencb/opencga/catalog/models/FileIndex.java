@@ -180,6 +180,14 @@ public class FileIndex {
         return this;
     }
 
+    public FileIndex setStatus(String status) {
+        if (IndexStatus.isValid(status)) {
+            this.status.setName(status);
+            this.status.setCurrentDate();
+        }
+        return this;
+    }
+
     public long getJobId() {
         return jobId;
     }

@@ -14,6 +14,7 @@ import org.opencb.opencga.catalog.config.CatalogConfiguration;
 import org.opencb.opencga.catalog.db.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogDatasetDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogStudyDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogAuthorizationException;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -265,6 +266,24 @@ public class FileManager extends AbstractManager implements IFileManager {
         ParamUtils.checkObj(file, "File");
 //        return file.getUri() != null;
         return file.isExternal();
+    }
+
+    @Override
+    public void updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException {
+        String userId = catalogManager.getUserManager().getUserId(sessionId);
+        authorizationManager.checkFilePermission(file.getId(), userId, FileAclEntry.FilePermissions.UPDATE);
+
+        FileIndex index = file.getIndex();
+        if (index != null) {
+            if (!FileIndex.IndexStatus.isValid(newStatus)) {
+                throw new CatalogException("The status " + newStatus + " is not a valid status.");
+            }
+            index.setStatus(newStatus);
+        } else {
+            index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
+        }
+        ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX.key(), index);
+        fileDBAdaptor.update(file.getId(), params);
     }
 
     public boolean isRootFolder(File file) throws CatalogException {
@@ -594,6 +613,53 @@ public class FileManager extends AbstractManager implements IFileManager {
         queryResult.setNumResults(queryResult.getResult().size());
 
         return queryResult;
+    }
+
+    @Override
+    public QueryResult<File> readAll(String path, boolean recursive, Query query, QueryOptions options, String sessionId)
+            throws CatalogException {
+        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+
+        // Prepare the path directory
+        if (!path.startsWith("/")) {
+            path = "/" + path;
+        }
+        if (!path.endsWith("/")) {
+            path = path + "/";
+        }
+
+        if (recursive) {
+            query.put(CatalogFileDBAdaptor.QueryParams.PATH.key(), "~^" + path + "*");
+        } else {
+            query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), path);
+        }
+
+        List<Long> studyIds;
+        if (query.containsKey(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key())) {
+            studyIds = Arrays.asList(query.getLong(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key()));
+        } else {
+            studyIds = studyDBAdaptor.getStudiesFromUser(userId,
+                    new QueryOptions(QueryOptions.INCLUDE, CatalogStudyDBAdaptor.QueryParams.ID.key()))
+                    .getResult()
+                    .stream()
+                    .map(Study::getId)
+                    .collect(Collectors.toList());
+        }
+
+        QueryResult<File> fileQueryResult = new QueryResult<>("Search files by directory");
+        for (Long studyId : studyIds) {
+            query.put(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+            QueryResult<File> tmpQueryResult = fileDBAdaptor.get(query, options);
+            authorizationManager.filterFiles(userId, studyId, tmpQueryResult.getResult());
+            if (tmpQueryResult.getResult().size() > 0) {
+                fileQueryResult.getResult().addAll(tmpQueryResult.getResult());
+                fileQueryResult.setDbTime(fileQueryResult.getDbTime() + tmpQueryResult.getDbTime());
+            }
+        }
+        fileQueryResult.setNumResults(fileQueryResult.getResult().size());
+        fileQueryResult.setNumTotalResults(fileQueryResult.getResult().size());
+
+        return fileQueryResult;
     }
 
     @Override
@@ -1989,9 +2055,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             params.put("file-id", fileIds);
             params.put("outdir", Long.toString(outDirId));
             List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
-            jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh", params, fileIdList,
-                    outputList, outDirId, userId);
-
+            jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh variant index", params,
+                    fileIdList, outputList, outDirId, userId);
         } else if (type.equals("BAM")) {
             logger.debug("Index bam files to do");
             jobQueryResult = new QueryResult<>();
