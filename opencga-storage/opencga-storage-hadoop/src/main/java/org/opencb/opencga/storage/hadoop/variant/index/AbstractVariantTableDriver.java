@@ -43,8 +43,10 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
     public static final String CONFIG_VARIANT_FILE_IDS          = "opencga.variant.input.file_ids";
     public static final String CONFIG_VARIANT_TABLE_NAME        = "opencga.variant.table.name";
     public static final String CONFIG_VARIANT_TABLE_COMPRESSION = "opencga.variant.table.compression";
-
     public static final String TIMESTAMP                        = "opencga.variant.table.timestamp";
+
+    public static final String HBASE_KEYVALUE_SIZE_MAX = "hadoop.load.variant.hbase.client.keyvalue.maxsize";
+    public static final String HBASE_SCAN_CACHING = "hadoop.load.variant.scan.caching";
 
     private VariantTableHelper variantTablehelper;
 
@@ -65,8 +67,11 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     @Override
     public int run(String[] args) throws Exception {
+        setConf(HBaseConfiguration.addHbaseResources(getConf()));
         Configuration conf = getConf();
-        HBaseConfiguration.addHbaseResources(conf);
+        int maxKeyValueSize = conf.getInt(HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
+        conf.setInt("hbase.client.keyvalue.maxsize", maxKeyValueSize); // always overwrite server default (usually 1MB)
+
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
         String[] fileArr = argFileArray();
@@ -205,7 +210,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     protected Scan createScan(VariantTableHelper gh, String[] fileArr) {
         Scan scan = new Scan();
-        int caching = getConf().getInt("hadoop.load.variant.scan.caching", 50);
+        int caching = getConf().getInt(HBASE_SCAN_CACHING, 50);
         getLog().info("Scan set Caching to " + caching);
         scan.setCaching(caching);        // 1 is the default in Scan, 200 caused timeout issues.
         scan.setCacheBlocks(false);  // don't set to true for MR jobs
