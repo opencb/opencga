@@ -26,6 +26,7 @@ import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.acls.permissions.DatasetAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.catalog.models.acls.permissions.StudyAclEntry;
+import org.opencb.opencga.catalog.monitor.daemons.IndexDaemon;
 import org.opencb.opencga.catalog.utils.BioformatDetector;
 import org.opencb.opencga.catalog.utils.FormatDetector;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -2059,8 +2060,10 @@ public class FileManager extends AbstractManager implements IFileManager {
             params.put("file-id", fileIds);
             params.put("outdir", Long.toString(outDirId));
             List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
+            Map<String, Object> attributes = new HashMap<>();
+            attributes.put(IndexDaemon.INDEX_TYPE, IndexDaemon.VARIANT_TYPE);
             jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh",
-                    Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId);
+                    Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId, attributes);
             jobQueryResult.first().setToolName("variantIndex");
         } else if (type.equals("BAM")) {
             logger.debug("Index bam files to do");
