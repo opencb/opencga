@@ -21,10 +21,7 @@ import org.opencb.opencga.catalog.models.acls.permissions.JobAclEntry;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Created by jacobo on 11/09/14.
@@ -109,11 +106,10 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public Job() {
     }
 
-    public Job(String name, String userId, String executable, List<Long> input, List<Long> output, long outDirId,
+    public Job(String name, String userId, String executable, Type type, List<Long> input, List<Long> output, long outDirId,
                Map<String, String> params) {
-        this(-1, name, userId, -1, executable, TimeUtils.getTime(), "", -1, -1, "", "", "", 0, new JobStatus(JobStatus.PREPARED), -1,
-                outDirId, null, input, output, Collections.emptyList(), Collections.emptyList(), params, new HashMap<>(),
-                new HashMap<>(), "", "");
+        this(-1, name, userId, -1, "", type, TimeUtils.getTime(), "", -1, -1, "", "", executable, "", 0, new JobStatus(JobStatus.PREPARED),
+                -1, outDirId, null, input, output, new ArrayList<>(), params, new HashMap<>(), new HashMap<>(), "", "");
     }
 
     public Job(String name, String userId, String toolName, String description, String commandLine, long outDirId,

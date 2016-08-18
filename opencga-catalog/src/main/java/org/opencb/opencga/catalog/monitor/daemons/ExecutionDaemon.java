@@ -46,9 +46,15 @@ public class ExecutionDaemon extends MonitorParentDaemon {
     public void run() {
 
         IJobManager jobManager = catalogManager.getJobManager();
-        Query runningJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-        Query queuedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
-        Query preparedJobsQuery = new Query(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED);
+        Query runningJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+        Query queuedJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
+        Query preparedJobsQuery = new Query()
+                .append(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.PREPARED)
+                .append(CatalogJobDBAdaptor.QueryParams.TYPE.key(), "!=" + Job.Type.INDEX);
         QueryOptions queryOptions = new QueryOptions();
 
         while (!exit) {

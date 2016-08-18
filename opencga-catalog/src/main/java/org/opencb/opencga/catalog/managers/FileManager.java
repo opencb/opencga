@@ -2059,8 +2059,8 @@ public class FileManager extends AbstractManager implements IFileManager {
             params.put("file-id", fileIds);
             params.put("outdir", Long.toString(outDirId));
             List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
-            jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh variant index", params,
-                    fileIdList, outputList, outDirId, userId);
+            jobQueryResult = catalogManager.getJobManager().queue(studyId, "VariantIndex", "opencga-analysis.sh",
+                    Job.Type.INDEX, params, fileIdList, outputList, outDirId, userId);
             jobQueryResult.first().setToolName("variantIndex");
         } else if (type.equals("BAM")) {
             logger.debug("Index bam files to do");
