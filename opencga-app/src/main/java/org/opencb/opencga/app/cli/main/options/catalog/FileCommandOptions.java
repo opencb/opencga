@@ -365,8 +365,7 @@ public class FileCommandOptions {
     }
 
 
-    @Parameters(commandNames = {"relink"}, commandDescription = "Change file location. Provided file must be either STAGED or an external" +
-            " file")
+    @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
     class RelinkCommandOptions extends BaseFileCommand {
 
         @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)

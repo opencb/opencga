@@ -21,7 +21,6 @@ public class AnnotationCommandExecutor<T,U> {
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectMap obj = mapper.readValue(new File(createCommandOptions.annotations), ObjectMap.class);
-
         return client.createAnnotationSet(createCommandOptions.id, createCommandOptions.variableSetId,
                 createCommandOptions.annotationSetName, obj);
     }
@@ -29,12 +28,18 @@ public class AnnotationCommandExecutor<T,U> {
     public QueryResponse<AnnotationSet> getAllAnnotationSets(
             AnnotationCommandOptions.AnnotationSetsAllInfoCommandOptions infoCommandOptions, AnnotationClient<T,U> client)
             throws IOException {
-        return client.getAllAnnotationSets(infoCommandOptions.id, null);
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("asMap", infoCommandOptions.asMap);
+        return client.getAllAnnotationSets(infoCommandOptions.id, params);
     }
 
     public QueryResponse<AnnotationSet> getAnnotationSet(AnnotationCommandOptions.AnnotationSetsInfoCommandOptions infoCommandOptions,
                                      AnnotationClient<T,U> client) throws IOException {
-        return client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName, null);
+
+        ObjectMap params = new ObjectMap();
+        params.putIfNotNull("asMap", infoCommandOptions.asMap);
+        return client.getAnnotationSet(infoCommandOptions.id, infoCommandOptions.annotationSetName, params);
     }
 
     public QueryResponse<AnnotationSet> searchAnnotationSets(
@@ -43,6 +48,7 @@ public class AnnotationCommandExecutor<T,U> {
         ObjectMap params = new ObjectMap();
         params.putIfNotNull("variableSetId", searchCommandOptions.variableSetId);
         params.putIfNotNull("annotation", searchCommandOptions.annotation);
+        params.putIfNotNull("asMap", searchCommandOptions.asMap);
         return client.searchAnnotationSets(searchCommandOptions.id, params);
     }
 

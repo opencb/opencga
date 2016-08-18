@@ -157,7 +157,8 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
     }*/
 
     public QueryResponse<Study> update(String studyId, ObjectMap params) throws CatalogException, IOException {
-        return execute(STUDY_URL, studyId, "update", params, GET, Study.class);
+        ObjectMap body = new ObjectMap("body", params);
+        return execute(STUDY_URL, studyId, "update", body, POST, Study.class);
     }
 
     public QueryResponse<Study> delete(String studyId, ObjectMap params) throws CatalogException, IOException {
