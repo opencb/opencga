@@ -1013,6 +1013,29 @@ public class CatalogMongoStudyDBAdaptor extends CatalogMongoDBAdaptor implements
         }
     }
 
+    @Override
+    public QueryResult<Study> getStudiesFromUser(String userId, QueryOptions queryOptions) throws CatalogDBException {
+        QueryResult<Study> result = new QueryResult<>("Get studies from user");
+
+        QueryResult<Project> allProjects = dbAdaptorFactory.getCatalogProjectDbAdaptor().getAllProjects(userId, QueryOptions.empty());
+        if (allProjects.getNumResults() == 0) {
+            return result;
+        }
+
+        for (Project project : allProjects.getResult()) {
+            QueryResult<Study> allStudiesInProject = getAllStudiesInProject(project.getId(), queryOptions);
+            if (allStudiesInProject.getNumResults() > 0) {
+                result.getResult().addAll(allStudiesInProject.getResult());
+                result.setDbTime(result.getDbTime() + allStudiesInProject.getDbTime());
+            }
+        }
+
+        result.setNumTotalResults(result.getResult().size());
+        result.setNumResults(result.getResult().size());
+
+        return result;
+    }
+
 
     /*
     * Helper methods

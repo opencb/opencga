@@ -16,7 +16,6 @@
 
 package org.opencb.opencga.analysis.variant;
 
-import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
@@ -28,7 +27,6 @@ import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IFileManager;
 import org.opencb.opencga.catalog.models.*;
-import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
 import org.opencb.opencga.storage.core.StorageManagerFactory;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
@@ -164,7 +162,6 @@ public class VariantFileIndexer {
 
         List<StorageETLResult> storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
 
-        Query query;
         File file;
         for (int i = 0; i < storageETLResults.size(); i++) {
 
@@ -174,25 +171,24 @@ public class VariantFileIndexer {
             if (transform && !load) {
                 // Check transform errors
                 if (storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() != null) {
-//                    updateIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED, sessionId);
+                    fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED, sessionId);
                 }
 
             } else {
                 if (!transform && load) {
                     if (storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() != null) {
-                        // Update index status to READY?
+                        fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.READY, sessionId);
 
                         // Update default cohort with new indexed samples
-
                     }
                 } else {
                     if (storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() != null) {
                         if (storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() != null) {
-                            // Update index status to READY?
+                            fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.READY, sessionId);
 
                             // Update default cohort with new indexed samples
                         } else {
-                            // Update index status to transformed?
+                            fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED, sessionId);
                         }
 
                     }
@@ -201,20 +197,6 @@ public class VariantFileIndexer {
             }
         }
 
-    }
-
-    private void updateIndexStatus(File file, String newStatus, String userId, String sessionId) throws CatalogException {
-        // Update index status to transformed
-        FileIndex index = file.getIndex();
-        if (index != null) {
-            index.getStatus().setName(newStatus);
-            index.getStatus().setCurrentDate();
-        } else {
-            index = new FileIndex(userId, TimeUtils.getTime(), new FileIndex.IndexStatus(newStatus), -1, new ObjectMap());
-        }
-
-        ObjectMap params = new ObjectMap(CatalogFileDBAdaptor.QueryParams.INDEX.key(), index);
-        fileManager.update(file.getId(), params, QueryOptions.empty(), sessionId);
     }
 
     private List<File> filterTransformFiles(List<File> fileList) throws CatalogException {
@@ -299,42 +281,63 @@ public class VariantFileIndexer {
      * @param sessionId session id of the user that should have permissions for the file being looked for.
      * @return the obtained file or null otherwise.
      */
-    private File search(long studyId, File sourceFile, String sourceExtension, String destinyExtension, String sessionId) {
-        // TODO: Use relatedFiles to look for the files
-
+    private File search(long studyId, File sourceFile, String sourceExtension, String destinyExtension, String sessionId)
+            throws CatalogException {
         // Look for the destiny file in the same folder where the source file is located
         Path sourcePath = Paths.get(sourceFile.getPath());
 
         Path parent = sourcePath.getParent();
         String destinyFileName = sourcePath.getFileName().toString().replace(sourceExtension, destinyExtension);
+
+        // TODO: Use relatedFiles to look for the files
+        Query query = new Query()
+                .append(CatalogFileDBAdaptor.QueryParams.NAME.key(), destinyFileName)
+                .append(CatalogFileDBAdaptor.QueryParams.STUDY_ID.key(), studyId);
+
+        QueryResult<File> fileQueryResult = fileManager.readAll(parent.toString(), true, query, QueryOptions.empty(), sessionId);
+        if (fileQueryResult.getNumResults() == 1) {
+            return fileQueryResult.first();
+        }
+
+        // Look for the file in the same path
         String destinyPath = parent.resolve(destinyFileName).toString();
 
-        Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
-        QueryResult<File> fileQueryResult;
-        try {
-            fileQueryResult = fileManager.readAll(studyId, query, QueryOptions.empty(), sessionId);
-            if (fileQueryResult.getNumResults() == 1) {
-                return fileQueryResult.first();
+        for (File file : fileQueryResult.getResult()) {
+            if (destinyPath.equals(file.getPath())) {
+                return file;
             }
-        } catch (CatalogException e) {
-            logger.error("An error occurred while searching for the {} pair. {}", destinyExtension.replace(".", ""), e.getMessage());
-            return null;
         }
 
-        // Look for the destiny file anywhere in the study
-        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), destinyFileName);
-        try {
-            fileQueryResult = fileManager.readAll(studyId, query, QueryOptions.empty(), sessionId);
-            if (fileQueryResult.getNumResults() == 1) {
-                return fileQueryResult.first();
-            }
-        } catch (CatalogException e) {
-            logger.error("An error occurred while searching for the {} pair. {}", destinyExtension.replace(".", ""), e.getMessage());
-            return null;
-        }
-
-        logger.warn("{} {} files could be found under the name {}. None of them will be used.", fileQueryResult.getNumResults(),
-                destinyExtension.replace(".", ""), destinyFileName);
+        logger.error("{} files have been found as possible pairs of {} with id {}", fileQueryResult.getNumResults(), sourceFile.getName(),
+                sourceFile.getId());
         return null;
+//
+//        Query query = new Query(CatalogFileDBAdaptor.QueryParams.PATH.key(), destinyPath);
+//        QueryResult<File> fileQueryResult;
+//        try {
+//            fileQueryResult = fileManager.readAll(studyId, query, QueryOptions.empty(), sessionId);
+//            if (fileQueryResult.getNumResults() == 1) {
+//                return fileQueryResult.first();
+//            }
+//        } catch (CatalogException e) {
+//            logger.error("An error occurred while searching for the {} pair. {}", destinyExtension.replace(".", ""), e.getMessage());
+//            return null;
+//        }
+//
+//        // Look for the destiny file anywhere in the study
+//        query = new Query(CatalogFileDBAdaptor.QueryParams.NAME.key(), destinyFileName);
+//        try {
+//            fileQueryResult = fileManager.readAll(studyId, query, QueryOptions.empty(), sessionId);
+//            if (fileQueryResult.getNumResults() == 1) {
+//                return fileQueryResult.first();
+//            }
+//        } catch (CatalogException e) {
+//            logger.error("An error occurred while searching for the {} pair. {}", destinyExtension.replace(".", ""), e.getMessage());
+//            return null;
+//        }
+//
+//        logger.warn("{} {} files could be found under the name {}. None of them will be used.", fileQueryResult.getNumResults(),
+//                destinyExtension.replace(".", ""), destinyFileName);
+//        return null;
     }
 }

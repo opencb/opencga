@@ -4,7 +4,8 @@ import org.apache.tools.ant.types.Commandline;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.models.tool.Execution;
-import org.opencb.opencga.analysis.execution.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;
@@ -154,7 +155,11 @@ public class JobFactory {
                 //Execute job in local
 //                LocalExecutorManager executorManager = new LocalExecutorManager(catalogManager, sessionId);
 //                jobQueryResult = executorManager.run(job);
-                ExecutorManager.execute(catalogManager, job, sessionId, "LOCAL");
+                try {
+                    ExecutorManager.execute(catalogManager, job, sessionId, "LOCAL");
+                } catch (ExecutionException e) {
+                    throw new AnalysisExecutionException(e.getCause());
+                }
                 jobQueryResult = catalogManager.getJob(job.getId(), null, sessionId);
 
             } else {

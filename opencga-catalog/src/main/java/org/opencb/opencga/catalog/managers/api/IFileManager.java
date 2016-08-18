@@ -1,6 +1,9 @@
 package org.opencb.opencga.catalog.managers.api;
 
-import org.opencb.commons.datastore.core.*;
+import org.opencb.commons.datastore.core.ObjectMap;
+import org.opencb.commons.datastore.core.Query;
+import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.Dataset;
@@ -35,6 +38,8 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     @Deprecated
     URI getFileUri(URI studyUri, String relativeFilePath) throws CatalogException;
+
+
 
     /*-------------*/
     /* ID METHODS  */
@@ -75,6 +80,9 @@ public interface IFileManager extends ResourceManager<Long, File> {
 
     boolean isExternal(File file) throws CatalogException;
 
+    void updateFileIndexStatus(File file, String newStatus, String sessionId) throws CatalogException;
+
+
     /*--------------*/
     /* CRUD METHODS */
     /*--------------*/
@@ -87,6 +95,20 @@ public interface IFileManager extends ResourceManager<Long, File> {
                                    QueryOptions options, String sessionId) throws CatalogException;
 
     QueryResult<File> readAll(long studyId, Query query, QueryOptions options, String sessionId) throws CatalogException;
+
+    /**
+     * Look for files inside the path.
+     *
+     * @param path Directory where the files are to be found.
+     * @param recursive Boolean indicating whether to look inside the folder recursively.
+     * @param query Query object.
+     * @param options Query options object.
+     * @param sessionId session id of the user doing the query.
+     * @return A queryResult object containing the files found.
+     * @throws CatalogException catalogException.
+     */
+    QueryResult<File> readAll(String path, boolean recursive, Query query, QueryOptions options, String sessionId)
+            throws CatalogException;
 
     QueryResult<File> getParent(long fileId, QueryOptions options, String sessionId) throws CatalogException;
 

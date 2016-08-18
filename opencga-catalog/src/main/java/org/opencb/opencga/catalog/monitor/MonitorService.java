@@ -40,6 +40,7 @@ public class MonitorService {
 
     private CatalogConfiguration catalogConfiguration;
     private CatalogManager catalogManager;
+    private String appHome;
 
     private static Server server;
     private int port;
@@ -55,8 +56,9 @@ public class MonitorService {
     protected static Logger logger;
 
 
-    public MonitorService(String password, CatalogConfiguration catalogConfiguration) throws IOException {
+    public MonitorService(String password, CatalogConfiguration catalogConfiguration, String appHome) throws IOException {
         this.catalogConfiguration = catalogConfiguration;
+        this.appHome = appHome;
 
         init(password);
     }
@@ -71,7 +73,7 @@ public class MonitorService {
             String sessionId = login.first().getString("sessionId");
 
             executionDaemon = new ExecutionDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId,
-                    catalogManager);
+                    catalogManager, appHome);
             fileDaemon = new FileDaemon(catalogConfiguration.getMonitor().getFileDaemonInterval(),
                     catalogConfiguration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
 
