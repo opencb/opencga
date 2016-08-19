@@ -119,7 +119,8 @@ public class VariantTableStudyRow {
     }
 
     /**
-     * Calls {@link #VariantTableStudyRow(Integer, String, int, String, String)} using the Variant information.
+     * Calls {@link #VariantTableStudyRow(Integer, String, int, String, String,
+     * org.opencb.biodata.models.variant.avro.VariantType)} using the Variant information.
      * @param studyId Study id
      * @param variant Variant to extrac the region from
      */
@@ -272,7 +273,6 @@ public class VariantTableStudyRow {
      * Fills only changed columns of a PUT object. If no column changed, returns NULL
      * @param helper VariantTableHelper
      * @param newSampleIds Sample IDs which are loaded were not in the original variant
-     * @param ts            Timestamp used to create the new PUT objects
      * @return NULL if no changes, else PUT object with changed columns
      */
     public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds) {

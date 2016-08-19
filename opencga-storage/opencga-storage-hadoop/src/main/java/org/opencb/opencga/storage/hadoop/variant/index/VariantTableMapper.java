@@ -67,21 +67,6 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         List<Cell> list = ctx.getValue().getColumnCells(getHelper().getColumnFamily(), GenomeHelper
                 .VARIANT_COLUMN_B);
         Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
-        if (null != list) {
-            if (null != latestCell) {
-                byte[] bytes = CellUtil.cloneValue(latestCell);
-                VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(bytes);
-                List<VariantTableStudyRowProto> lst = new ArrayList<>(variantTableStudyRowsProto.getRowsList());
-                Collections.shuffle(lst);
-                VariantTableStudyRowsProto build = VariantTableStudyRowsProto.newBuilder(variantTableStudyRowsProto)
-                        .setTimestamp(latestCell.getTimestamp()).build();
-                byte[] byteArray = build.toByteArray();
-                Put put = new Put(CellUtil.cloneRow(latestCell));
-                put.addColumn(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B, byteArray);
-                ctx.getContext().write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
-            }
-            return;
-        }
         if (latestCell != null) {
             getLog().info("Column _V: found " + list.size() + " versions.");
             byte[] data = CellUtil.cloneValue(latestCell);
