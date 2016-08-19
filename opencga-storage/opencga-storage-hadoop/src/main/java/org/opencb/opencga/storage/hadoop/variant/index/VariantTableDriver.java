@@ -58,7 +58,6 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
         }
         driver.setConf(conf);
         int exitCode = ToolRunner.run(driver, args);
-        exitCode = -1; // just for this commit to patch protobuf
         return exitCode;
     }
 
