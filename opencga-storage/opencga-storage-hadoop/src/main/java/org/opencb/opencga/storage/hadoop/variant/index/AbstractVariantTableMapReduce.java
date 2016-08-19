@@ -194,7 +194,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
                 put = row.createPut(getHelper());
             }
             if (put != null) {
-                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+//                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
         }
@@ -206,7 +206,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             Put put = variant.createPut(getHelper());
 
             if (put != null) {
-                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
+//                context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
                 context.getCounter(COUNTER_GROUP_NAME, "VARIANT_TABLE_ROW-put").increment(1);
             }
         }
