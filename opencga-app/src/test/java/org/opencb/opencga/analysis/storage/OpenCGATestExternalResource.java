@@ -193,7 +193,7 @@ public class OpenCGATestExternalResource extends ExternalResource {
         protected final Logger logger = LoggerFactory.getLogger(StorageLocalExecutorManager.class);
 
         @Override
-        public QueryResult<Job> run(Job job) throws CatalogException, ExecutionException {
+        public QueryResult<Job> run(Job job) throws CatalogException, ExecutionException, IOException {
 
             String[] args = Commandline.translateCommandline(job.getCommandLine());
             int exitValue;

@@ -17,6 +17,9 @@
 package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.LocalExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.SgeExecutorManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +30,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected int interval;
     protected CatalogManager catalogManager;
+    protected ExecutorManager executorManager;
 
     protected boolean exit = false;
 
@@ -38,8 +42,15 @@ public abstract class MonitorParentDaemon implements Runnable {
         this.interval = interval;
         this.catalogManager = catalogManager;
         this.sessionId = sessionId;
-
         logger = LoggerFactory.getLogger(this.getClass());
+
+        if (catalogManager.getCatalogConfiguration().getExecution().getMode().equalsIgnoreCase("local")) {
+            this.executorManager = new LocalExecutorManager(catalogManager, sessionId);
+            logger.info("Jobs will be launched locally");
+        } else {
+            this.executorManager = new SgeExecutorManager(catalogManager, sessionId);
+            logger.info("Jobs will be launched to SGE");
+        }
     }
 
     public boolean isExit() {

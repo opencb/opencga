@@ -596,29 +596,31 @@ public class FileWSServer extends OpenCGAWSServer {
     @GET
     @Path("/{fileId}/index")
     @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
-                          @ApiParam("Study id") @DefaultValue("-1") @QueryParam("studyId") String studyId,
-                          @ApiParam("Output directory id") @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") Boolean transform,
-                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") Boolean load,
-                          @ApiParam("Boolean indicating to exclude the genotype information") @DefaultValue("false") @QueryParam("excludeGenotypes") Boolean excludeGenotypes,
-                          @ApiParam("Comma separated list of fields to be include in the index") @DefaultValue("") @QueryParam("includeExtraFields") String includeExtraFields,
+    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") String fileIdStr,
+                          @ApiParam("Study id") @QueryParam("studyId") String studyId,
+                          @ApiParam("Output directory id") @QueryParam("outDir") String outDirStr,
+                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") boolean transform,
+                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") boolean load,
+                          @ApiParam("Boolean indicating to exclude the genotype information") @DefaultValue("false") @QueryParam("excludeGenotypes") boolean excludeGenotypes,
+                          @ApiParam("Comma separated list of fields to be include in the index") @QueryParam("includeExtraFields") String includeExtraFields,
                           @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
                           @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
                           @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
                           @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
 
         Map<String, String> params = new LinkedHashMap<>();
-        params.put("studyId", studyId);
-        params.put("outdir", outDirStr);
-        params.put("transform", Boolean.toString(transform));
-        params.put("load", Boolean.toString(load));
-        params.put("exclude-genotypes", Boolean.toString(excludeGenotypes));
-        params.put("include-extra-fields", includeExtraFields);
-        params.put("aggregated", aggregated);
-        params.put("calculate-stats", Boolean.toString(calculateStats));
-        params.put("annotate", Boolean.toString(annotate));
-        params.put("overwrite-annotations", Boolean.toString(overwriteAnnotations));
+        addParamIfNotNull(params, "studyId", studyId);
+        addParamIfNotNull(params, "outdir", outDirStr);
+        addParamIfTrue(params, "transform", transform);
+        addParamIfTrue(params, "load", load);
+        addParamIfTrue(params, "exclude-genotypes", excludeGenotypes);
+        addParamIfNotNull(params, "include-extra-fields", includeExtraFields);
+        addParamIfNotNull(params, "aggregated", aggregated);
+        addParamIfTrue(params, "calculate-stats", calculateStats);
+        addParamIfTrue(params, "annotate", annotate);
+        addParamIfTrue(params, "overwrite-annotations", overwriteAnnotations);
+
+        logger.info("ObjectMap: {}", params);
 
         try {
             QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, "VCF", params, sessionId);
@@ -644,6 +646,18 @@ public class FileWSServer extends OpenCGAWSServer {
 //        } catch (Exception e) {
 //            return createErrorResponse(e);
 //        }
+    }
+
+    private void addParamIfNotNull(Map<String, String> params, String key, String value) {
+        if (key != null && value != null) {
+            params.put(key, value);
+        }
+    }
+
+    private void addParamIfTrue(Map<String, String> params, String key, boolean value) {
+        if (key != null && value) {
+            params.put(key, Boolean.toString(value));
+        }
     }
 
     @GET

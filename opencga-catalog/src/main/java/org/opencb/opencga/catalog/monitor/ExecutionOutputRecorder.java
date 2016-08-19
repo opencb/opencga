@@ -19,6 +19,7 @@ package org.opencb.opencga.catalog.monitor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
@@ -30,8 +31,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.monitor.executors.ExecutorManager.TMP_OUT_DIR;
 
 /*
  * Created by jacobo on 4/11/14.
@@ -46,6 +51,8 @@ public class ExecutionOutputRecorder {
 
     private static Logger logger = LoggerFactory.getLogger(ExecutionOutputRecorder.class);
     private final CatalogManager catalogManager;
+    private CatalogIOManager ioManager;
+    private Path tmpOutDirPath;
     private final String sessionId;
     private final boolean calculateChecksum = false;    //TODO: Read from config file
     private final FileScanner.FileScannerPolicy fileScannerPolicy = FileScanner.FileScannerPolicy.DELETE; //TODO: Read from config file
@@ -56,12 +63,17 @@ public class ExecutionOutputRecorder {
         this.sessionId = sessionId;
     }
 
+    @Deprecated
     public void recordJobOutputAndPostProcess(Job job, boolean jobFailed) throws CatalogException {
+
+    }
+
+    public void recordJobOutputAndPostProcess(Job job) throws CatalogException, IOException {
         /** Modifies the job to set the output and endTime. **/
-
+        this.tmpOutDirPath = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
+        this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirPath.toUri());
+        postProcessJob(job);
         recordJobOutput(job);
-
-        postProcessJob(job, jobFailed);
     }
 
     /**
@@ -71,17 +83,16 @@ public class ExecutionOutputRecorder {
      * @throws CatalogException catalogException.
      */
     public void recordJobOutput(Job job) throws CatalogException {
-
+        logger.info("RECORD JOB: ");
         try {
-            /** Scans the output directory from a job or index to find all files. **/
-            URI tmpOutDirUri = job.getTmpOutDirUri();
+            URI tmpOutDirUri = tmpOutDirPath.toUri();
+            /* Scans the output directory from a job or index to find all files. **/
             logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
             File outDir = catalogManager.getFile(job.getOutDirId(), new QueryOptions("path", true), sessionId).getResult().get(0);
 
             FileScanner fileScanner = new FileScanner(catalogManager);
             List<File> files = fileScanner.scan(outDir, tmpOutDirUri, fileScannerPolicy, calculateChecksum, true, job.getId(), sessionId);
             List<Long> fileIds = files.stream().map(File::getId).collect(Collectors.toList());
-            CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirUri);
             if (!ioManager.exists(tmpOutDirUri)) {
                 logger.warn("Output folder doesn't exist");
                 return;
@@ -93,13 +104,12 @@ public class ExecutionOutputRecorder {
                 logger.error("Error processing job output. Temporal job out dir is not empty. " + uriList);
             }
 
-
             ObjectMap parameters = new ObjectMap();
-            parameters.put("output", fileIds);
-            parameters.put("endTime", System.currentTimeMillis());
-            catalogManager.modifyJob(job.getId(), parameters, sessionId);
+            parameters.put(CatalogJobDBAdaptor.QueryParams.OUTPUT.key(), fileIds);
+            parameters.put(CatalogJobDBAdaptor.QueryParams.END_TIME.key(), System.currentTimeMillis());
+            catalogManager.modifyJob(job.getId(), parameters, this.sessionId);
             job.setOutput(fileIds);
-            job.setEndTime(parameters.getLong("endTime"));
+            job.setEndTime(parameters.getLong(CatalogJobDBAdaptor.QueryParams.END_TIME.key()));
 
             //TODO: "input" files could be modified by the tool. Have to be scanned, calculate the new Checksum and
         } catch (IOException e) {
@@ -108,6 +118,30 @@ public class ExecutionOutputRecorder {
         }
     }
 
+    public void postProcessJob(Job job) throws CatalogException, IOException {
+        Path path = Paths.get(this.tmpOutDirPath.toString(), "job.status");
+        logger.info("POST PROCESS: {}", path.toUri());
+        Job.JobStatus jobStatus = objectMapper.reader(Job.JobStatus.class).readValue(path.toFile());
+        if (jobStatus != null) {
+            if (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.DONE)) {
+                jobStatus.setName(Job.JobStatus.READY);
+            } else if (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.ERROR)) {
+                jobStatus.setName(Job.JobStatus.ERROR);
+            } else {
+                logger.error("This block should never be executed. Accepted status in job.status file are DONE and ERROR");
+                jobStatus.setName(Job.JobStatus.ERROR);
+            }
+            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+            catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), sessionId);
+            // Delete job.status file
+            ioManager.deleteFile(path.toUri());
+        } else {
+            logger.error("This code should never be executed.");
+            throw new CatalogException("Job status = null");
+        }
+    }
+
+    @Deprecated
     public void postProcessJob(Job job, boolean jobFailed) throws CatalogException {
 //        String type = job.getAttributes().containsKey(Job.TYPE) ?
 //                job.getAttributes().get(Job.TYPE).toString() : Job.Type.ANALYSIS.toString();

@@ -1,22 +1,25 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
 import org.apache.commons.lang3.StringUtils;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.commons.exec.Command;
+import org.opencb.commons.exec.RunnableProcess;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.core.exec.Command;
-import org.opencb.opencga.core.exec.RunnableProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 
 /*
@@ -36,18 +39,17 @@ public class LocalExecutorManager implements ExecutorManager {
     }
 
     @Override
-    public QueryResult<Job> run(Job job) throws CatalogException, ExecutionException {
+    public QueryResult<Job> run(Job job) throws CatalogException, ExecutionException, IOException {
 
         String status = job.getStatus().getName();
         switch (status) {
             case Job.JobStatus.QUEUED:
             case Job.JobStatus.PREPARED:
                 // change to RUNNING
-                catalogManager.modifyJob(job.getId(), new ObjectMap("status.name", Job.JobStatus.RUNNING), sessionId);
+                catalogManager.modifyJob(job.getId(),
+                        new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING), sessionId);
                 break;
             case Job.JobStatus.RUNNING:
-                //nothing
-                break;
             default:
                 throw new ExecutionException("Unable to execute job in status " + status);
         }
@@ -71,27 +73,32 @@ public class LocalExecutorManager implements ExecutorManager {
      * @return          Modified job.
      * @throws CatalogException catalogException.
      * @throws ExecutionException executionException.
+     * @throws IOException ioExeption.
      */
-    protected QueryResult<Job> runThreadLocal(Job job) throws CatalogException, ExecutionException {
-
+    protected QueryResult<Job> runThreadLocal(Job job) throws CatalogException, ExecutionException, IOException {
+        logger.info("Ready to run {}", job.getCommandLine());
         Command com = new Command(job.getCommandLine());
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
-        URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
+        URI tmpOutDir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR)).toUri();
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDir);
+        URI sout = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".out.txt");
         com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
-        URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
+        URI serr = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".err.txt");
         com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
 
         final long jobId = job.getId();
 
         Thread hook = new Thread(() -> {
-            try {
-                logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
-                com.setStatus(RunnableProcess.Status.KILLED);
-                com.setExitValue(-2);
-                postExecuteCommand(job, com, Job.ERRNO_ABORTED);
-            } catch (CatalogException e) {
-                e.printStackTrace();
-            }
+//            try {
+            logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+            com.setStatus(RunnableProcess.Status.KILLED);
+            com.setExitValue(-2);
+            closeOutputStreams(com);
+//                postExecuteCommand(job, com, Job.ERRNO_ABORTED);
+//            } catch (CatalogException e) {
+//                e.printStackTrace();
+//            } catch (IOException e) {
+//                e.printStackTrace();
+//            }
         });
 
         logger.info("==========================================");
@@ -109,7 +116,9 @@ public class LocalExecutorManager implements ExecutorManager {
         logger.info("Finished job {}({})", job.getName(), job.getId());
         logger.info("==========================================");
 
-        return postExecuteCommand(job, com, null);
+        closeOutputStreams(com);
+        return catalogManager.getJobManager().read(job.getId(), QueryOptions.empty(), sessionId);
+//        return postExecuteCommand(job, com, null);
     }
 
 //    /**
@@ -167,9 +176,10 @@ public class LocalExecutorManager implements ExecutorManager {
      * @param errnoFinishError errnoFinishError.
      * @return queryResult.
      * @throws CatalogException catalogException.
+     * @throws IOException ioExeption.
      */
-    protected QueryResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError)
-            throws CatalogException {
+    @Deprecated
+    protected QueryResult<Job> postExecuteCommand(Job job, Command com, String errnoFinishError) throws CatalogException, IOException {
         closeOutputStreams(com);
         return postExecuteLocal(job, com.getExitValue(), com, errnoFinishError);
     }
@@ -185,9 +195,11 @@ public class LocalExecutorManager implements ExecutorManager {
      *                      even if the exitValue is 0.
      * @return              QueryResult with the modifier Job.
      * @throws CatalogException catalogException.
+     * @throws IOException ioExeption.
      */
+    @Deprecated
     protected QueryResult<Job> postExecuteLocal(Job job, int exitValue, Object executionInfo, String error)
-            throws CatalogException {
+            throws CatalogException, IOException {
 
         /** Change status to DONE  - Add the execution information to the job entry **/
 //                new JobManager().jobFinish(jobQueryResult.first(), com.getExitValue(), com);
@@ -195,25 +207,33 @@ public class LocalExecutorManager implements ExecutorManager {
         if (executionInfo != null) {
             parameters.put("resourceManagerAttributes", new ObjectMap("executionInfo", executionInfo));
         }
-        parameters.put("status.name", Job.JobStatus.DONE);
+//        parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.DONE);
         catalogManager.modifyJob(job.getId(), parameters, sessionId);
 
-        /** Record output **/
-        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
-        outputRecorder.recordJobOutputAndPostProcess(job, exitValue != 0);
+//        /** Record output **/
+//        ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
+//        outputRecorder.recordJobOutputAndPostProcess(job, exitValue != 0);
 
+        ObjectMapper objectMapper = new ObjectMapper();
+        Path outdir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
+        Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve("job.status").toFile());
         /** Change status to READY or ERROR **/
         if (exitValue == 0 && StringUtils.isEmpty(error)) {
-            catalogManager.modifyJob(job.getId(), new ObjectMap("status.name", Job.JobStatus.READY), sessionId);
+            objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE,
+                    "Job finished."));
+//            catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
+//                    sessionId);
         } else {
             if (error == null) {
                 error = Job.ERRNO_FINISH_ERROR;
             }
             parameters = new ObjectMap();
-            parameters.put("status.name", Job.JobStatus.ERROR);
-            parameters.put("error", error);
-            parameters.put("errorDescription", Job.ERROR_DESCRIPTIONS.get(error));
+//            parameters.put(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.ERROR);
+            parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR.key(), error);
+            parameters.put(CatalogJobDBAdaptor.QueryParams.ERROR_DESCRIPTION.key(), Job.ERROR_DESCRIPTIONS.get(error));
             catalogManager.modifyJob(job.getId(), parameters, sessionId);
+            objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
+                    "Job finished with error."));
         }
 
         return catalogManager.getJob(job.getId(), new QueryOptions(), sessionId);

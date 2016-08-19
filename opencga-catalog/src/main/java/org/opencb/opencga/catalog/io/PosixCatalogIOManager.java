@@ -585,6 +585,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     @Override
     public DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException {
         Path path = Paths.get(fileUri);
+        logger.info("URI: {}", fileUri);
         if (overwrite || !Files.exists(path)) {
             try {
                 return new DataOutputStream(new FileOutputStream(path.toFile()));

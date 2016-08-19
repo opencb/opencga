@@ -187,7 +187,7 @@ public class CatalogManager implements AutoCloseable {
         authenticationManager = new CatalogAuthenticationManager(catalogDBAdaptorFactory, catalogConfiguration);
         authorizationManager = new CatalogAuthorizationManager(catalogDBAdaptorFactory, auditManager);
         sessionManager = new DefaultSessionManager(catalogDBAdaptorFactory);
-        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory,
+        userManager = new UserManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
         fileManager = new FileManager(authorizationManager, authenticationManager, auditManager, this, catalogDBAdaptorFactory,
                 catalogIOManagerFactory, catalogConfiguration);
@@ -1925,5 +1925,9 @@ public class CatalogManager implements AutoCloseable {
 
     public CatalogConfiguration getCatalogConfiguration() {
         return catalogConfiguration;
+    }
+
+    public SessionManager getSessionManager() {
+        return sessionManager;
     }
 }

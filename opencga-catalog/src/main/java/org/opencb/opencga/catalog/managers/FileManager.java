@@ -2059,6 +2059,7 @@ public class FileManager extends AbstractManager implements IFileManager {
             String fileIds = StringUtils.join(fileIdList, ",");
             params.put("file-id", fileIds);
             params.put("outdir", Long.toString(outDirId));
+            params.put("sid", sessionId);
             List<Long> outputList = outDirId > 0 ? Arrays.asList(outDirId) : Collections.emptyList();
             Map<String, Object> attributes = new HashMap<>();
             attributes.put(IndexDaemon.INDEX_TYPE, IndexDaemon.VARIANT_TYPE);

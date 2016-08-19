@@ -280,10 +280,10 @@ public class FileCommandOptions {
 //        public boolean bgzip;
 
         @Parameter(names = {"--calculate-stats"}, description = "Calculate indexed variants statistics after the load step")
-        public boolean calculateStats = false;
+        public boolean calculateStats;
 
         @Parameter(names = {"--annotate"}, description = "Annotate indexed variants after the load step")
-        public boolean annotate = false;
+        public boolean annotate;
 //
 //        @Parameter(names = {"--annotator"}, description = "Annotation source {cellbase_rest, cellbase_db_adaptor}")
 //        public org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager.AnnotationSource annotator = null;

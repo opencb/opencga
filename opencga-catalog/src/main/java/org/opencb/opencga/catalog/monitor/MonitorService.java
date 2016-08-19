@@ -77,7 +77,8 @@ public class MonitorService {
 
             executionDaemon = new ExecutionDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId,
                     catalogManager, appHome);
-            indexDaemon = new IndexDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager);
+            indexDaemon = new IndexDaemon(catalogConfiguration.getMonitor().getExecutionDaemonInterval(), sessionId, catalogManager,
+                    appHome);
             fileDaemon = new FileDaemon(catalogConfiguration.getMonitor().getFileDaemonInterval(),
                     catalogConfiguration.getMonitor().getDaysToRemove(), sessionId, catalogManager);
 

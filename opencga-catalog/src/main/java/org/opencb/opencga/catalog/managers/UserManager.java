@@ -55,9 +55,10 @@ public class UserManager extends AbstractManager implements IUserManager {
     }
 
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
-                       AuditManager auditManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
-                       CatalogConfiguration catalogConfiguration) {
-        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
+                       AuditManager auditManager, CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                       CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
 
 //        creationUserPolicy = catalogConfiguration.getPolicies().getUserCreation();
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
@@ -340,6 +341,12 @@ public class UserManager extends AbstractManager implements IUserManager {
         return userDBAdaptor.login(userId, (password.length() != 40)
                 ? CatalogAuthenticationManager.cypherPassword(password)
                 : password, session);
+    }
+
+    @Override
+    public QueryResult<ObjectMap> getNewUserSession(String sessionId, String userId) throws CatalogException {
+        authenticationManager.authenticate("admin", sessionId, true);
+        return catalogManager.getSessionManager().createToken(userId, "ADMIN");
     }
 
     @Override

@@ -158,6 +158,7 @@ public interface CatalogJobDBAdaptor extends CatalogAclDBAdaptor<Job, JobAclEntr
         //PARAMS,
         COMMAND_LINE("commandLine", TEXT_ARRAY, ""),
         VISITS("visits", INTEGER_ARRAY, ""),
+        STATUS("status", TEXT_ARRAY, ""),
         STATUS_NAME("status.name", TEXT, ""),
         STATUS_MSG("status.msg", TEXT, ""),
         STATUS_DATE("status.date", TEXT, ""),

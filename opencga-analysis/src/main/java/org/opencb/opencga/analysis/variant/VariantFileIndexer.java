@@ -87,6 +87,22 @@ public class VariantFileIndexer {
         objectMapper.writer()
                 .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.RUNNING, "Job has just started"));
 
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                try {
+                    // If the status has not been changed by the method and is still running, we assume that the execution failed.
+                    Job.JobStatus status = objectMapper.reader(Job.JobStatus.class).readValue(outdir.resolve("job.status").toFile());
+                    if (status.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)){
+                        objectMapper.writer().writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.ERROR,
+                                "Job finished with an error."));
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+
         if (options == null) {
             options = new QueryOptions();
         }
@@ -132,7 +148,7 @@ public class VariantFileIndexer {
 
 
         // We get the credentials of the Datastore to insert the variants
-        DataStore dataStore = null;
+        DataStore dataStore;
         if (study != null && study.getDataStores() != null && study.getDataStores().containsKey(inputFile.getBioformat())) {
             dataStore = study.getDataStores().get(inputFile.getBioformat());
         } else {
@@ -205,6 +221,9 @@ public class VariantFileIndexer {
                 }
             }
         }
+
+        objectMapper.writer()
+                .writeValue(outdir.resolve("job.status").toFile(), new Job.JobStatus(Job.JobStatus.DONE, "Job has just started"));
 
     }
 

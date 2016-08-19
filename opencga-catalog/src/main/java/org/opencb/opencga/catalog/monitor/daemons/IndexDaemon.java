@@ -19,7 +19,6 @@ package org.opencb.opencga.catalog.monitor.daemons;
 import org.codehaus.jackson.JsonProcessingException;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
-import org.codehaus.jackson.map.ObjectWriter;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -31,6 +30,8 @@ import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.managers.api.IJobManager;
 import org.opencb.opencga.catalog.models.Job;
+import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
+import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
 import org.opencb.opencga.core.common.TimeUtils;
 
 import java.io.IOException;
@@ -48,13 +49,14 @@ public class IndexDaemon extends MonitorParentDaemon {
     public static final String VARIANT_TYPE = "VARIANT";
 
     private CatalogIOManager catalogIOManager;
+    private String binHome;
 
     private ObjectMapper objectMapper;
     private ObjectReader objectReader;
-    private ObjectWriter objectWriter;
 
-    public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager) {
+    public IndexDaemon(int interval, String sessionId, CatalogManager catalogManager, String appHome) {
         super(interval, sessionId, catalogManager);
+        this.binHome = appHome + "/bin/";
     }
 
     @Override
@@ -75,7 +77,6 @@ public class IndexDaemon extends MonitorParentDaemon {
 
         objectMapper = new ObjectMapper();
         objectReader = objectMapper.reader(Job.JobStatus.class);
-        objectWriter = objectMapper.writer();
 
         int numRunningJobs = 0;
 
@@ -150,10 +151,18 @@ public class IndexDaemon extends MonitorParentDaemon {
         try {
             Path path = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId(), "job.status");
             Job.JobStatus jobStatus = objectReader.readValue(path.toFile());
-            if (jobStatus != null && jobStatus.getName().equalsIgnoreCase(Job.JobStatus.DONE)) {
+            if (jobStatus != null && (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.DONE)
+                    || jobStatus.getName().equalsIgnoreCase(Job.JobStatus.ERROR))) {
+                // Move output
+                String sessionId = (String) job.getAttributes().get("sessionId");
+//                boolean jobFailed = !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.DONE);
+                ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
+                outputRecorder.recordJobOutputAndPostProcess(job);
+
+                // Update status to READY
                 catalogManager.getJobManager().update(
                         job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.READY),
-                        new QueryOptions(), sessionId);
+                        new QueryOptions(), this.sessionId);
             }
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
@@ -179,10 +188,14 @@ public class IndexDaemon extends MonitorParentDaemon {
         }
     }
 
-    private void queuePreparedIndex(Job job) throws CatalogIOException {
+    private void queuePreparedIndex(Job job) throws CatalogException {
 
         Path path = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
         catalogIOManager.createDirectory(path.toUri());
+
+        String userId = job.getUserId();
+        String userSessionId = catalogManager.getUserManager().getNewUserSession(sessionId, userId).first().getString("sessionId");
+        job.getParams().put("sid", userSessionId);
 
 //        Map<String, Object> attributes = job.getAttributes();
 //        if (attributes == null) {
@@ -190,7 +203,7 @@ public class IndexDaemon extends MonitorParentDaemon {
 //        }
 //        attributes.put("OUTPUT", path.toString());
 
-        StringBuilder commandLine = new StringBuilder(job.getExecutable());
+        StringBuilder commandLine = new StringBuilder(binHome).append(job.getExecutable());
 
         if (job.getAttributes().get(INDEX_TYPE).toString().equalsIgnoreCase(VARIANT_TYPE)) {
             commandLine.append(" variant index");
@@ -202,22 +215,45 @@ public class IndexDaemon extends MonitorParentDaemon {
         job.getParams().put("outdir", path.toString());
         for (Map.Entry<String, String> param : job.getParams().entrySet()) {
             commandLine.append(" ")
-                    .append("--").append(param.getKey())
-                    .append(" ")
-                    .append(param.getValue());
-//                    .append(" ");
+                    .append("--").append(param.getKey());
+                    if (!param.getValue().equalsIgnoreCase("true")) {
+                        commandLine.append(" ").append(param.getValue());
+                    }
         }
 
-        logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
+//        logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
+        logger.info("Updating job info");
 
         try {
-            ObjectMap updateObjectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
-            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
+//            ObjectMap updateObjectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
+            ObjectMap updateObjectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
+            job.getAttributes().put(ExecutorManager.TMP_OUT_DIR, path.toString());
+            job.getAttributes().put("sessionId", userSessionId);
+            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
+
 //            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
 
-            catalogManager.getJobManager().update(job.getId(), updateObjectMap, new QueryOptions(), sessionId);
+            QueryResult<Job> update = catalogManager.getJobManager().update(job.getId(), updateObjectMap, new QueryOptions(), sessionId);
+            if (update.getNumResults() == 1) {
+//                executorManager.run(update.first());
+                Runnable runnable = () -> {
+                    try {
+                        executorManager.run(update.first());
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                };
+                Thread thread = new Thread(runnable);
+                thread.start();
+            } else {
+                logger.error("Could not update nor run job {}" + job.getId());
+            }
         } catch (CatalogException e) {
             logger.error("Could not update job {}. {}", job.getId(), e.getMessage());
+            e.printStackTrace();
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

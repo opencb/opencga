@@ -14,6 +14,7 @@ import org.opencb.opencga.core.common.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -158,6 +159,8 @@ public class JobFactory {
                 try {
                     ExecutorManager.execute(catalogManager, job, sessionId, "LOCAL");
                 } catch (ExecutionException e) {
+                    throw new AnalysisExecutionException(e.getCause());
+                } catch (IOException e) {
                     throw new AnalysisExecutionException(e.getCause());
                 }
                 jobQueryResult = catalogManager.getJob(job.getId(), null, sessionId);

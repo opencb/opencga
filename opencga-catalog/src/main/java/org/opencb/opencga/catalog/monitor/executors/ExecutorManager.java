@@ -23,6 +23,7 @@ public interface ExecutorManager {
     String OPENCGA_ANALYSIS_JOB_EXECUTOR = "OPENCGA.ANALYSIS.JOB.EXECUTOR";
     String EXECUTE = "execute";
     String SIMULATE = "simulate";
+    String TMP_OUT_DIR = "tmpOutDir";
 
     // Just for test purposes. Do not use in production!
     AtomicReference<BiFunction<CatalogManager, String, ExecutorManager>> LOCAL_EXECUTOR_FACTORY = new AtomicReference<>();
@@ -36,7 +37,7 @@ public interface ExecutorManager {
     }
 
     static QueryResult<Job> execute(CatalogManager catalogManager, Job job, String sessionId, String jobExecutor)
-            throws ExecutionException, CatalogException {
+            throws ExecutionException, CatalogException, IOException {
         LOGGER.debug("Execute, job: {}", job);
 
         final QueryResult<Job> result;
