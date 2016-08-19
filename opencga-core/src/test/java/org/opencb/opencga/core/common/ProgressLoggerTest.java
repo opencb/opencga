@@ -16,7 +16,8 @@ public class ProgressLoggerTest {
     public void test() {
         int totalCount = 21111;
         final AtomicInteger prints = new AtomicInteger(0);
-        ProgressLogger progressLogger = new ProgressLogger("Message", totalCount, 13) {
+        int numLinesLog = 13;
+        ProgressLogger progressLogger = new ProgressLogger("Message", totalCount, numLinesLog) {
             @Override
             protected void print(String m) {
                 super.print(m);
@@ -29,7 +30,7 @@ public class ProgressLoggerTest {
             progressLogger.increment(increment);
         }
 
-        Assert.assertEquals(10, prints.get());
+        Assert.assertEquals(numLinesLog, prints.get());
     }
 
 }
