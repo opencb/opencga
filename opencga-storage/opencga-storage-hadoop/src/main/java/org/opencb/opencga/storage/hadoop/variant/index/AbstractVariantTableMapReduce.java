@@ -155,13 +155,19 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             byte[] protoData = CellUtil.cloneValue(latestCell);
             if (protoData != null && protoData.length > 0) {
                 VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(protoData);
-                List<VariantTableStudyRow> tableStudyRows = variantTableStudyRowsProto.getRowsList().stream()
-                        .map(v -> new VariantTableStudyRow(v, chr, getStudyConfiguration().getStudyId()))
-                        .collect(Collectors.toList());
+                List<VariantTableStudyRow> tableStudyRows = parseVariantStudyRowsFromArchive(chr,
+                        variantTableStudyRowsProto);
                 return tableStudyRows;
             }
         }
         return Collections.emptyList();
+    }
+
+    protected List<VariantTableStudyRow> parseVariantStudyRowsFromArchive(String chr, VariantTableStudyRowsProto
+            variantTableStudyRowsProto) {
+        return variantTableStudyRowsProto.getRowsList().stream()
+                            .map(v -> new VariantTableStudyRow(v, chr, getStudyConfiguration().getStudyId()))
+                            .collect(Collectors.toList());
     }
 
     /**
@@ -183,9 +189,9 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
             rows.add(row);
             Put put = null;
             if (null != newSampleIds) {
-                put = row.createSpecificPut(getHelper(), newSampleIds, timestamp);
+                put = row.createSpecificPut(getHelper(), newSampleIds);
             } else {
-                put = row.createPut(getHelper(), timestamp);
+                put = row.createPut(getHelper());
             }
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
@@ -197,7 +203,7 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
     protected void updateOutputTable(Context context, Collection<VariantTableStudyRow> variants) throws IOException, InterruptedException {
 
         for (VariantTableStudyRow variant : variants) {
-            Put put = variant.createPut(getHelper(), timestamp);
+            Put put = variant.createPut(getHelper());
 
             if (put != null) {
                 context.write(new ImmutableBytesWritable(getHelper().getOutputTable()), put);
@@ -209,8 +215,8 @@ public abstract class AbstractVariantTableMapReduce extends TableMapper<Immutabl
 
     protected void updateArchiveTable(byte[] rowKey, Context context, List<VariantTableStudyRow> tableStudyRows)
             throws IOException, InterruptedException {
-        Put put = new Put(rowKey, timestamp);
-        byte[] value = VariantTableStudyRow.toProto(tableStudyRows).toByteArray();
+        Put put = new Put(rowKey);
+        byte[] value = VariantTableStudyRow.toProto(tableStudyRows, timestamp).toByteArray();
         put.addColumn(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B, value);
         context.write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
         context.getCounter(COUNTER_GROUP_NAME, "ARCHIVE_TABLE_ROW_PUT").increment(1);

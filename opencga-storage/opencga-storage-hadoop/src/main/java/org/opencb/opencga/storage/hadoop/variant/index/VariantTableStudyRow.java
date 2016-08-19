@@ -275,12 +275,12 @@ public class VariantTableStudyRow {
      * @param ts            Timestamp used to create the new PUT objects
      * @return NULL if no changes, else PUT object with changed columns
      */
-    public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds, long ts) {
+    public Put createSpecificPut(VariantTableHelper helper, Set<Integer> newSampleIds) {
         boolean doPut = false;
         byte[] generateRowKey = generateRowKey(helper);
         byte[] cf = helper.getColumnFamily();
         Integer sid = helper.getStudyId();
-        Put put = new Put(generateRowKey, ts);
+        Put put = new Put(generateRowKey);
         Set<Integer> newHomRef = new HashSet<>(newSampleIds);
 
         /***** Complex GT *****/
@@ -354,7 +354,7 @@ public class VariantTableStudyRow {
         return null;
     }
 
-    public Put createPut(VariantTableHelper helper, long ts) {
+    public Put createPut(VariantTableHelper helper) {
         byte[] generateRowKey = generateRowKey(helper);
         if (this.callMap.containsKey(HOM_REF)) {
             throw new IllegalStateException(
@@ -363,7 +363,7 @@ public class VariantTableStudyRow {
         }
         byte[] cf = helper.getColumnFamily();
         Integer sid = helper.getStudyId();
-        Put put = new Put(generateRowKey, ts);
+        Put put = new Put(generateRowKey);
         put.addColumn(cf, VariantPhoenixHelper.VariantColumn.TYPE.bytes(), Bytes.toBytes(this.type.toString()));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, HOM_REF)), Bytes.toBytes(this.homRefCount));
         put.addColumn(cf, Bytes.toBytes(buildColumnKey(sid, PASS_CNT)), Bytes.toBytes(this.passCount));
@@ -398,9 +398,10 @@ public class VariantTableStudyRow {
         return delete;
     }
 
-    public static VariantTableStudyRowsProto toProto(List<VariantTableStudyRow> rows) {
+    public static VariantTableStudyRowsProto toProto(List<VariantTableStudyRow> rows, long timeStamp) {
         return VariantTableStudyRowsProto.newBuilder()
                 .addAllRows(rows.stream().map(VariantTableStudyRow::toProto).collect(Collectors.toList()))
+                .setTimestamp(timeStamp)
                 .build();
     }
 

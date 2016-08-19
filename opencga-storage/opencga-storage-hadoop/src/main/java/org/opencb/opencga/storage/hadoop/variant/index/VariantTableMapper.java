@@ -5,7 +5,11 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.hbase.Cell;
-import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.CellUtil;
+import org.apache.hadoop.hbase.client.Get;
+import org.apache.hadoop.hbase.client.Put;
+import org.apache.hadoop.hbase.client.Result;
+import org.apache.hadoop.hbase.io.ImmutableBytesWritable;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
@@ -14,6 +18,8 @@ import org.opencb.biodata.models.variant.avro.FileEntry;
 import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.biodata.tools.variant.merge.VariantMerger;
 import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowProto;
+import org.opencb.opencga.storage.hadoop.variant.models.protobuf.VariantTableStudyRowsProto;
 
 import java.io.IOException;
 import java.util.*;
@@ -61,10 +67,27 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         List<Cell> list = ctx.getValue().getColumnCells(getHelper().getColumnFamily(), GenomeHelper
                 .VARIANT_COLUMN_B);
         Cell latestCell = ctx.value.getColumnLatestCell(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B);
+        if (null != list) {
+            if (null != latestCell) {
+                byte[] bytes = CellUtil.cloneValue(latestCell);
+                VariantTableStudyRowsProto variantTableStudyRowsProto = VariantTableStudyRowsProto.parseFrom(bytes);
+                List<VariantTableStudyRowProto> lst = new ArrayList<>(variantTableStudyRowsProto.getRowsList());
+                Collections.shuffle(lst);
+                VariantTableStudyRowsProto build = VariantTableStudyRowsProto.newBuilder(variantTableStudyRowsProto)
+                        .setTimestamp(latestCell.getTimestamp()).build();
+                byte[] byteArray = build.toByteArray();
+                Put put = new Put(CellUtil.cloneRow(latestCell));
+                put.addColumn(getHelper().getColumnFamily(), GenomeHelper.VARIANT_COLUMN_B, byteArray);
+                ctx.getContext().write(new ImmutableBytesWritable(getHelper().getIntputTable()), put);
+            }
+            return;
+        }
         if (latestCell != null) {
             getLog().info("Column _V: found " + list.size() + " versions.");
-            if (latestCell.getTimestamp() == timestamp) {
-                List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.value, ctx.getChromosome());
+            byte[] data = CellUtil.cloneValue(latestCell);
+            VariantTableStudyRowsProto proto = VariantTableStudyRowsProto.parseFrom(data);
+            if (proto.getTimestamp() == timestamp) {
+                List<VariantTableStudyRow> variants = parseVariantStudyRowsFromArchive(ctx.getChromosome(), proto);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_SLICE").increment(1);
                 ctx.context.getCounter(COUNTER_GROUP_NAME, "ALREADY_LOADED_ROWS").increment(variants.size());
                 updateOutputTable(ctx.context, variants);
@@ -72,11 +95,9 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
                 return;
             }
         }
-
         List<Variant> analysisVar = parseCurrentVariantsRegion(ctx.getValue(), ctx.getChromosome());
         ctx.getContext().getCounter(COUNTER_GROUP_NAME, "VARIANTS_FROM_ANALYSIS").increment(analysisVar.size());
         endTime("2 Unpack and convert input ANALYSIS variants (" + GenomeHelper.VARIANT_COLUMN + ")");
-
 
         // Archive: unpack Archive data (selection only
         List<Variant> archiveVar = getResultConverter().convert(ctx.value, ctx.startPos, ctx.nextStartPos, true);
@@ -141,6 +162,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         List<VariantTableStudyRow> rows = new ArrayList<>(analysisNew.size() + analysisVar.size());
         updateOutputTable(ctx.context, analysisNew, rows, null);
         updateOutputTable(ctx.context, analysisVar, rows, ctx.sampleIds);
+        endTime("10 Update OUTPUT table");
         endTime("10 Update OUTPUT table");
 
         updateArchiveTable(ctx.getCurrRowKey(), ctx.context, rows);
@@ -292,6 +314,7 @@ public class VariantTableMapper extends AbstractVariantTableMapReduce {
         LinkedHashSet<Integer> indexedFiles = getStudyConfiguration().getIndexedFiles();
         Set<String> archiveFileIds = indexedFiles.stream().filter(k -> !currFileIds.contains(k)).map(s -> s.toString())
                 .collect(Collectors.toSet());
+        archiveFileIds.clear();
         if (archiveFileIds.isEmpty()) {
             if (getLog().isDebugEnabled()) {
                 getLog().debug("No files found to search for in archive table");

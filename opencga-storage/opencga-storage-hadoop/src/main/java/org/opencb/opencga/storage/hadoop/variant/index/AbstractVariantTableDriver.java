@@ -3,7 +3,6 @@ package org.opencb.opencga.storage.hadoop.variant.index;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
-import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
@@ -67,10 +66,10 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
     @Override
     public int run(String[] args) throws Exception {
-        setConf(HBaseConfiguration.addHbaseResources(getConf()));
         Configuration conf = getConf();
         int maxKeyValueSize = conf.getInt(HBASE_KEYVALUE_SIZE_MAX, 10485760); // 10MB
-        conf.setInt("hbase.client.keyvalue.maxsize", maxKeyValueSize); // always overwrite server default (usually 1MB)
+        getLog().info("HBASE: set " + TableConfiguration.MAX_KEYVALUE_SIZE_KEY + " to " + maxKeyValueSize);
+        conf.setInt(TableConfiguration.MAX_KEYVALUE_SIZE_KEY, maxKeyValueSize); // always overwrite server default (usually 1MB)
 
         String inTable = conf.get(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, StringUtils.EMPTY);
         String outTable = conf.get(CONFIG_VARIANT_TABLE_NAME, StringUtils.EMPTY);
@@ -119,6 +118,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
 
         /* -------------------------------*/
         // JOB setup
+        setConf(conf);
         Job job = createJob(outTable, fileArr);
 
         // QUERY design
@@ -128,12 +128,13 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         boolean addDependencyJar = conf.getBoolean(GenomeHelper.CONFIG_HBASE_ADD_DEPENDENCY_JARS, true);
         initMapReduceJob(inTable, outTable, job, scan, addDependencyJar);
 
+        getStudyConfigurationManager().close();
+
         boolean succeed = executeJob(job);
         if (!succeed) {
             getLog().error("error with job!");
         }
 
-        getStudyConfigurationManager().close();
 
         return succeed ? 0 : 1;
     }

@@ -4,7 +4,11 @@
 package org.opencb.opencga.storage.hadoop.variant.index;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hbase.HBaseConfiguration;
 import org.apache.hadoop.hbase.mapreduce.TableMapper;
+import org.apache.hadoop.util.ToolRunner;
+import org.opencb.opencga.storage.hadoop.variant.GenomeHelper;
+import org.opencb.opencga.storage.hadoop.variant.archive.ArchiveDriver;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -17,6 +21,19 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
 
     public VariantTableDriver(Configuration conf) {
         super(conf);
+    }
+
+    @Override
+    public int run(String[] args) throws Exception {
+        int fixedSizeArgs = 5;
+        getConf().set(ArchiveDriver.CONFIG_ARCHIVE_TABLE_NAME, args[1]);
+        getConf().set(CONFIG_VARIANT_TABLE_NAME, args[2]);
+        getConf().set(GenomeHelper.CONFIG_STUDY_ID, args[3]);
+        getConf().setStrings(CONFIG_VARIANT_FILE_IDS, args[4].split(","));
+        for (int i = fixedSizeArgs; i < args.length; i = i + 2) {
+            getConf().set(args[i], args[i + 1]);
+        }
+        return super.run(args);
     }
 
     @SuppressWarnings ("rawtypes")
@@ -37,17 +54,11 @@ public class VariantTableDriver extends AbstractVariantTableDriver {
     public static int privateMain(String[] args, Configuration conf, VariantTableDriver driver) throws Exception {
         // info https://code.google.com/p/temapred/wiki/HbaseWithJava
         if (conf == null) {
-            conf = new Configuration();
+            conf = HBaseConfiguration.create();
         }
         driver.setConf(conf);
-        String[] toolArgs = configure(args, driver);
-        if (null == toolArgs) {
-            return -1;
-        }
-
-        /* Alternative to using tool runner */
-//      int exitCode = ToolRunner.run(conf,new GenomeVariantDriver(), args);
-        int exitCode = driver.run(toolArgs);
+        int exitCode = ToolRunner.run(driver, args);
+        exitCode = -1; // just for this commit to patch protobuf
         return exitCode;
     }
 

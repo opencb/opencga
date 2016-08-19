@@ -54,4 +54,5 @@ message VariantTableStudyRowProto {
 
 message VariantTableStudyRowsProto  {
     repeated VariantTableStudyRowProto rows = 1;
+    int64 timestamp = 2;
 }
