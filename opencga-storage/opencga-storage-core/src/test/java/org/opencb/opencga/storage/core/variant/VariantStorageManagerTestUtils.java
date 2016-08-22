@@ -110,11 +110,15 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
     }
 
     public URI newOutputUri() throws IOException {
+        return newOutputUri(1);
+    }
+
+    public URI newOutputUri(int extraCalls) throws IOException {
         StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
         // stackTrace[0] = "Thread.currentThread"
         // stackTrace[1] = "newOutputUri"
         // stackTrace[2] =  caller method
-        String testName = stackTrace[2].getMethodName();
+        String testName = stackTrace[2 + extraCalls].getMethodName();
         int c = 0;
         URI outputUri = VariantStorageManagerTestUtils.outputUri.resolve("test_" + testName + "/");
         while (Paths.get(outputUri).toFile().exists()) {

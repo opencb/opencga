@@ -469,6 +469,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
 
         List<BatchFileOperation> batches = studyConfiguration.getBatches();
         BatchFileOperation batchFileOperation;
+        boolean newOperation = false;
         if (!batches.isEmpty()) {
             batchFileOperation = batches.get(batches.size() - 1);
             BatchFileOperation.Status currentStatus = batchFileOperation.currentStatus();
@@ -476,6 +477,7 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             switch (currentStatus) {
                 case READY:
                     batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, batchFileOperation.getTimestamp() + 1);
+                    newOperation = true;
                     break;
                 case DONE:
                 case RUNNING:
@@ -499,9 +501,12 @@ public abstract class AbstractHadoopVariantStorageETL extends VariantStorageETL 
             }
         } else {
             batchFileOperation = new BatchFileOperation(jobOperationName, fileIds, 1);
+            newOperation = true;
         }
         batchFileOperation.addStatus(Calendar.getInstance().getTime(), BatchFileOperation.Status.RUNNING);
-        batches.add(batchFileOperation);
+        if (newOperation) {
+            batches.add(batchFileOperation);
+        }
         return batchFileOperation;
     }
 
