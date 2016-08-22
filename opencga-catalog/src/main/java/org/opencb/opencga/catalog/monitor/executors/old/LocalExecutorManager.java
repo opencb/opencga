@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.monitor.executors;
+package org.opencb.opencga.catalog.monitor.executors.old;
 
 import org.apache.commons.lang3.StringUtils;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -41,18 +41,18 @@ public class LocalExecutorManager implements ExecutorManager {
     @Override
     public QueryResult<Job> run(Job job) throws CatalogException, ExecutionException, IOException {
 
-        String status = job.getStatus().getName();
-        switch (status) {
-            case Job.JobStatus.QUEUED:
-            case Job.JobStatus.PREPARED:
-                // change to RUNNING
-                catalogManager.modifyJob(job.getId(),
-                        new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING), sessionId);
-                break;
-            case Job.JobStatus.RUNNING:
-            default:
-                throw new ExecutionException("Unable to execute job in status " + status);
-        }
+//        String status = job.getStatus().getName();
+//        switch (status) {
+//            case Job.JobStatus.QUEUED:
+//            case Job.JobStatus.PREPARED:
+//                // change to RUNNING
+//                catalogManager.modifyJob(job.getId(),
+//                        new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING), sessionId);
+//                break;
+//            case Job.JobStatus.RUNNING:
+//            default:
+//                throw new ExecutionException("Unable to execute job in status " + status);
+//        }
 
 //        if (isPlugin(job)) {
 //            return runPlugin(job);
@@ -78,12 +78,22 @@ public class LocalExecutorManager implements ExecutorManager {
     protected QueryResult<Job> runThreadLocal(Job job) throws CatalogException, ExecutionException, IOException {
         logger.info("Ready to run {}", job.getCommandLine());
         Command com = new Command(job.getCommandLine());
-        URI tmpOutDir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR)).toUri();
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDir);
-        URI sout = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".out.txt");
-        com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
-        URI serr = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".err.txt");
-        com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
+
+//        URI tmpOutDir = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR)).toUri();
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get("file");
+//        URI sout = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".out.txt");
+//        com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
+//        URI serr = tmpOutDir.resolve(job.getName() + "." + job.getId() + ".err.txt");
+//        com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
+
+        if (job.getResourceManagerAttributes().containsKey("STDOUT")) {
+            URI sout = Paths.get((String) job.getResourceManagerAttributes().get("STDOUT")).toUri();
+            com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
+        }
+        if (job.getResourceManagerAttributes().containsKey("STDERR")) {
+            URI serr = Paths.get((String) job.getResourceManagerAttributes().get("STDERR")).toUri();
+            com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
+        }
 
         final long jobId = job.getId();
 

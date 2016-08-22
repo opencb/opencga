@@ -86,7 +86,8 @@ public class CatalogStudyConfigurationFactory {
         return getStudyConfiguration(studyId, null, options, sessionId);
     }
 
-    public StudyConfiguration getStudyConfiguration(long studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options, String sessionId) throws CatalogException {
+    public StudyConfiguration getStudyConfiguration(long studyId, StudyConfigurationManager studyConfigurationManager, QueryOptions options,
+                                                    String sessionId) throws CatalogException {
         Study study = catalogManager.getStudy(studyId, STUDY_QUERY_OPTIONS, sessionId).first();
         StudyConfiguration studyConfiguration = null;
         QueryOptions qOpts = new QueryOptions(options);

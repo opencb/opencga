@@ -38,7 +38,7 @@ import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.models.tool.InputParam;
 import org.opencb.opencga.analysis.JobFactory;
-import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
 import org.opencb.opencga.catalog.utils.FileScanner;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;

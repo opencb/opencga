@@ -5,7 +5,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.utils.StringUtils;
 import org.opencb.opencga.catalog.models.tool.Execution;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.File;

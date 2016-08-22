@@ -1,4 +1,4 @@
-package org.opencb.opencga.catalog.monitor.executors;
+package org.opencb.opencga.catalog.monitor.executors.old;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;

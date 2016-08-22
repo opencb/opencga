@@ -36,7 +36,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.opencb.opencga.catalog.monitor.executors.ExecutorManager.TMP_OUT_DIR;
+import static org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager.TMP_OUT_DIR;
 
 /*
  * Created by jacobo on 4/11/14.
@@ -76,6 +76,14 @@ public class ExecutionOutputRecorder {
         recordJobOutput(job);
     }
 
+    public void recordJobOutputAndPostProcess(Job job, Job.JobStatus jobStatus) throws CatalogException, IOException {
+        /** Modifies the job to set the output and endTime. **/
+        this.tmpOutDirPath = Paths.get((String) job.getAttributes().get(TMP_OUT_DIR));
+        this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutDirPath.toUri());
+        updateJobStatus(job, jobStatus);
+        recordJobOutput(job);
+    }
+
     /**
      * Scans the temporal output folder for the job and adds all the output files to catalog.
      *
@@ -85,6 +93,11 @@ public class ExecutionOutputRecorder {
     public void recordJobOutput(Job job) throws CatalogException {
         logger.info("RECORD JOB: ");
         try {
+            // Delete job.status file
+            Path path = Paths.get(this.tmpOutDirPath.toString(), "job.status");
+            logger.info("Deleting job.status file: {}", path.toUri());
+            ioManager.deleteFile(path.toUri());
+
             URI tmpOutDirUri = tmpOutDirPath.toUri();
             /* Scans the output directory from a job or index to find all files. **/
             logger.debug("Scan the temporal output directory ({}) from a job to find all generated files.", tmpOutDirUri);
@@ -118,6 +131,26 @@ public class ExecutionOutputRecorder {
         }
     }
 
+    public void updateJobStatus(Job job, Job.JobStatus jobStatus) throws CatalogException, IOException {
+        if (jobStatus != null) {
+            if (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.DONE)) {
+                jobStatus.setName(Job.JobStatus.READY);
+            } else if (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.ERROR)) {
+                jobStatus.setName(Job.JobStatus.ERROR);
+            } else {
+                logger.error("This block should never be executed. Accepted status in job.status file are DONE and ERROR");
+                jobStatus.setName(Job.JobStatus.ERROR);
+            }
+            ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
+            catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), sessionId);
+        } else {
+            logger.error("This code should never be executed.");
+            throw new CatalogException("Job status = null");
+        }
+    }
+
+
+    @Deprecated
     public void postProcessJob(Job job) throws CatalogException, IOException {
         Path path = Paths.get(this.tmpOutDirPath.toString(), "job.status");
         logger.info("POST PROCESS: {}", path.toUri());

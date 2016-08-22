@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.opencb.commons.datastore.mongodb.MongoDataStoreManager;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.storage.app.StorageMain;

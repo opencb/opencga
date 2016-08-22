@@ -32,8 +32,7 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
-import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
@@ -321,8 +320,12 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
             StorageManagerException, InstantiationException, IllegalAccessException {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put(VariantFileIndexer.LOAD, variantCommandOptions.indexVariantCommandOptions.load);
+        queryOptions.put(VariantFileIndexer.TRANSFORM, variantCommandOptions.indexVariantCommandOptions.transform);
+
         VariantFileIndexer variantFileIndexer = new VariantFileIndexer(catalogConfiguration);
-        variantFileIndexer.index(cliOptions.fileId, cliOptions.outdirId, sessionId, QueryOptions.empty());
+        variantFileIndexer.index(cliOptions.fileId, cliOptions.outdirId, sessionId, queryOptions);
 
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
 //
