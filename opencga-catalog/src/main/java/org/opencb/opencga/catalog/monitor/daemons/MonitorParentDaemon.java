@@ -18,7 +18,7 @@ package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.monitor.executors.ExecutorManager;
-import org.opencb.opencga.catalog.monitor.executors.ParentExecutor;
+import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ public abstract class MonitorParentDaemon implements Runnable {
 
     protected int interval;
     protected CatalogManager catalogManager;
-    protected ParentExecutor executorManager;
+    protected AbstractExecutor executorManager;
 
     protected boolean exit = false;
 

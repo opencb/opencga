@@ -27,6 +27,7 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -159,7 +160,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
         initAlignmentStorageManager(dataStore);
 
 
@@ -257,7 +258,7 @@ public class AlignmentCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.ALIGNMENT, sessionId);
         initAlignmentStorageManager(dataStore);
 
         AlignmentDBAdaptor dbAdaptor = alignmentStorageManager.getDBAdaptor(dataStore.getDbName());

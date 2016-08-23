@@ -24,8 +24,8 @@ import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.utils.FileScanner;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
@@ -415,7 +415,7 @@ public class StudyWSServer extends OpenCGAWSServer {
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
             DataStore dataStore;
             try {
-                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
+                dataStore = AbstractFileIndexer.getDataStore(catalogManager, Integer.parseInt(studyIdStr), File.Bioformat.VARIANT, sessionId);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);

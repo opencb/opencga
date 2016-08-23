@@ -32,16 +32,17 @@ import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.ParallelTaskRunner;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
-import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.analysis.storage.variant.VariantStorage;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.analysis.variant.VariantFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogCohortDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
+import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.core.common.ProgressLogger;
 import org.opencb.opencga.core.common.TimeUtils;
 import org.opencb.opencga.storage.core.StorageETLResult;
@@ -73,6 +74,8 @@ import java.util.stream.Collectors;
 
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.isNotEmpty;
+import static org.opencb.opencga.analysis.variant.VariantFileIndexer.LOAD;
+import static org.opencb.opencga.analysis.variant.VariantFileIndexer.TRANSFORM;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES;
 import static org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor.VariantQueryParams.RETURNED_STUDIES;
 
@@ -321,10 +324,39 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
         AnalysisCliOptionsParser.IndexVariantCommandOptions cliOptions = variantCommandOptions.indexVariantCommandOptions;
 
         QueryOptions queryOptions = new QueryOptions();
-        queryOptions.put(VariantFileIndexer.LOAD, variantCommandOptions.indexVariantCommandOptions.load);
-        queryOptions.put(VariantFileIndexer.TRANSFORM, variantCommandOptions.indexVariantCommandOptions.transform);
+        queryOptions.put(LOAD, variantCommandOptions.indexVariantCommandOptions.load);
+        queryOptions.put(TRANSFORM, variantCommandOptions.indexVariantCommandOptions.transform);
 
-        VariantFileIndexer variantFileIndexer = new VariantFileIndexer(catalogConfiguration);
+        queryOptions.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
+        queryOptions.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
+        queryOptions.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
+        queryOptions.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
+
+        queryOptions.put(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate);
+        if (cliOptions.annotator != null) {
+            queryOptions.put(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
+        }
+        queryOptions.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
+        /*
+        *         // 2) Read and validate cli args. Configure options
+        ObjectMap options = storageConfiguration.getStorageEngine(variantStorageManager.getStorageEngineId()).getVariant().getOptions();
+        options.put(VariantStorageManager.Options.DB_NAME.key(), dataStore.getDbName());
+        options.put(VariantStorageManager.Options.STUDY_ID.key(), studyId);
+        // Use the INDEXED_FILE_ID instead of the given fileID. It may be the transformed file.
+        options.put(VariantStorageManager.Options.FILE_ID.key(), job.getAttributes().get(Job.INDEXED_FILE_ID));
+        options.put(VariantStorageManager.Options.CALCULATE_STATS.key(), cliOptions.calculateStats);
+        options.put(VariantStorageManager.Options.EXTRA_GENOTYPE_FIELDS.key(), cliOptions.extraFields);
+        options.put(VariantStorageManager.Options.EXCLUDE_GENOTYPES.key(), cliOptions.excludeGenotype);
+        options.put(VariantStorageManager.Options.AGGREGATED_TYPE.key(), cliOptions.aggregated);
+
+        options.put(VariantStorageManager.Options.ANNOTATE.key(), cliOptions.annotate);
+        if (cliOptions.annotator != null) {
+            options.put(VariantAnnotationManager.ANNOTATION_SOURCE, cliOptions.annotator);
+        }
+        options.put(VariantAnnotationManager.OVERWRITE_ANNOTATIONS, cliOptions.overwriteAnnotations);
+        * */
+
+        VariantFileIndexer variantFileIndexer = new VariantFileIndexer(catalogConfiguration, storageConfiguration);
         variantFileIndexer.index(cliOptions.fileId, cliOptions.outdirId, sessionId, queryOptions);
 
 //        long inputFileId = catalogManager.getFileId(cliOptions.fileId);
@@ -399,7 +431,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
 
         // 2) Read and validate cli args. Configure options
@@ -548,7 +580,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
 
 
@@ -734,7 +766,7 @@ public class VariantCommandExecutor extends AnalysisStorageCommandExecutor {
          * Getting VariantStorageManager
          * We need to find out the Storage Engine Id to be used from Catalog
          */
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
         initVariantStorageManager(dataStore);
 
         /*

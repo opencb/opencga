@@ -3,7 +3,6 @@ package org.opencb.opencga.catalog.monitor.executors;
 import org.opencb.commons.exec.Command;
 import org.opencb.commons.exec.RunnableProcess;
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
@@ -13,7 +12,7 @@ import java.io.IOException;
 /**
  * Created by pfurio on 22/08/16.
  */
-public class LocalExecutor extends ParentExecutor {
+public class LocalExecutor extends AbstractExecutor {
 
     public LocalExecutor() {
         logger = LoggerFactory.getLogger(LocalExecutor.class);
@@ -60,7 +59,7 @@ public class LocalExecutor extends ParentExecutor {
     }
 
     @Override
-    public String status(Job job) throws ExecutionException {
+    public String status(Job job) {
         return null;
     }
 

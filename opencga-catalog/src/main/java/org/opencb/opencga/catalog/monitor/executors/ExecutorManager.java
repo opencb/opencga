@@ -8,7 +8,7 @@ import org.opencb.opencga.catalog.config.CatalogConfiguration;
 public class ExecutorManager {
 
     // TODO: Change for a map
-    private ParentExecutor executor;
+    private AbstractExecutor executor;
 
     public ExecutorManager(CatalogConfiguration catalogConfiguration) {
         if (catalogConfiguration != null) {
@@ -26,7 +26,7 @@ public class ExecutorManager {
         }
     }
 
-    public ParentExecutor getExecutor() {
+    public AbstractExecutor getExecutor() {
         return this.executor;
     }
 

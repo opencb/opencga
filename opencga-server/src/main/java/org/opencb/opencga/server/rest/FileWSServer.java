@@ -17,17 +17,15 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
-import org.apache.commons.collections.map.LinkedMap;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
-import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.*;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.utils.FileMetadataReader;
-import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.variant.VariantFetcher;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
@@ -41,7 +39,6 @@ import org.opencb.opencga.core.exception.VersionException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
-import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -742,7 +739,7 @@ public class FileWSServer extends OpenCGAWSServer {
             ObjectMap indexAttributes = new ObjectMap(file.getIndex().getAttributes());
             DataStore dataStore = null;
             try {
-                dataStore = AnalysisFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(file.getId()), file.getBioformat(), sessionId);
+                dataStore = AbstractFileIndexer.getDataStore(catalogManager, catalogManager.getStudyIdByFileId(file.getId()), file.getBioformat(), sessionId);
             } catch (CatalogException e) {
                 e.printStackTrace();
                 return createErrorResponse(e);

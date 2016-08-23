@@ -23,6 +23,7 @@ import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
 import org.opencb.opencga.analysis.AnalysisExecutionException;
 import org.opencb.opencga.analysis.JobFactory;
+import org.opencb.opencga.analysis.variant.AbstractFileIndexer;
 import org.opencb.opencga.catalog.monitor.executors.old.ExecutorManager;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.analysis.storage.CatalogStudyConfigurationFactory;
@@ -185,7 +186,7 @@ public class VariantStorage {
         /** create command line **/
         String opencgaAnalysisBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME).toString();
 
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaAnalysisBinPath)
@@ -312,7 +313,7 @@ public class VariantStorage {
 
         /** create command line **/
         String opencgaAnalysisBinPath = Paths.get(Config.getOpenCGAHome(), "bin", AnalysisFileIndexer.OPENCGA_ANALYSIS_BIN_NAME).toString();
-        DataStore dataStore = AnalysisFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
+        DataStore dataStore = AbstractFileIndexer.getDataStore(catalogManager, studyId, File.Bioformat.VARIANT, sessionId);
 
         StringBuilder sb = new StringBuilder()
                 .append(opencgaAnalysisBinPath)

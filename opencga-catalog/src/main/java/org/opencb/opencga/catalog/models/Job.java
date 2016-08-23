@@ -42,11 +42,12 @@ public class Job extends AbstractAcl<JobAclEntry> {
     public static final String ERRNO_ABORTED = "ERRNO_ABORTED";
 
     static {
-        ERROR_DESCRIPTIONS = new HashMap<>();
-        ERROR_DESCRIPTIONS.put(ERRNO_NONE, null);
-        ERROR_DESCRIPTIONS.put(ERRNO_NO_QUEUE, "Unable to queue job");
-        ERROR_DESCRIPTIONS.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
-        ERROR_DESCRIPTIONS.put(ERRNO_ABORTED, "Job aborted");
+        HashMap<String, String> map = new HashMap<>();
+        map.put(ERRNO_NONE, null);
+        map.put(ERRNO_NO_QUEUE, "Unable to queue job");
+        map.put(ERRNO_FINISH_ERROR, "Job finished with exit value != 0");
+        map.put(ERRNO_ABORTED, "Job aborted");
+        ERROR_DESCRIPTIONS = Collections.unmodifiableMap(map);
     }
 
     private long id;

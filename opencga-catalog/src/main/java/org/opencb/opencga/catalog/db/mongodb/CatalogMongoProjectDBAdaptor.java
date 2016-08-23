@@ -459,7 +459,17 @@ public class CatalogMongoProjectDBAdaptor extends CatalogMongoDBAdaptor implemen
             List<String> includeList = new ArrayList<>();
             List<String> optionsAsStringList = options.getAsStringList(QueryOptions.INCLUDE);
             includeList.addAll(optionsAsStringList.stream().collect(Collectors.toList()));
+            if (!includeList.contains(QueryParams.ID.key())) {
+                includeList.add(QueryParams.ID.key());
+            }
 
+            // Check if they start with projects.
+            for (int i = 0; i < includeList.size(); i++) {
+                if (!includeList.get(i).startsWith("projects.")) {
+                    String param = "projects." + includeList.get(i);
+                    includeList.set(i, param);
+                }
+            }
             if (includeList.size() > 0) {
                 aggregates.add(Aggregates.project(Projections.include(includeList)));
             }

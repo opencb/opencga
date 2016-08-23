@@ -1,25 +1,24 @@
 package org.opencb.opencga.catalog.monitor.executors;
 
 import org.opencb.opencga.catalog.models.Job;
-import org.opencb.opencga.catalog.monitor.exceptions.ExecutionException;
 import org.slf4j.Logger;
 
 /**
  * Created by pfurio on 22/08/16.
  */
-public abstract class ParentExecutor {
+public abstract class AbstractExecutor {
 
-    public static final String TIMEOUT = "TIMEOUT";
-    public static final String STDOUT = "STDOUT";
-    public static final String STDERR = "STDERR";
-    public static final String NUM_THREADS = "NUM_THREADS";
-    public static final String MAX_MEM = "MAX_MEM";
+    public static final String TIMEOUT = "timeout";
+    public static final String STDOUT = "stdout";
+    public static final String STDERR = "stderr";
+    public static final String NUM_THREADS = "num_threads";
+    public static final String MAX_MEM = "max_mem";
 
     protected Logger logger;
 
     public abstract void execute(Job job) throws Exception;
 
-    public abstract String status(Job job) throws ExecutionException;
+    public abstract String status(Job job);
 
     public abstract boolean stop(Job job) throws Exception;
 
