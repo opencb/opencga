@@ -123,6 +123,9 @@ storageEngines:
       opencga.variant.table.compression: "snappy"
       opencga.storage.hadoop.hbase.namespace: "${OPENCGA.STORAGE.HADOOP.HBASE.NAMESPACE}"
       opencga.storage.hadoop.hbase.archive.table.prefix: "${OPENCGA.STORAGE.HADOOP.HBASE.ARCHIVE.TABLE.PREFIX}"
+      # Increase the ScannerTimeoutPeriod from 60000 (1min) to 300000 (5min) to avoid ScannerTimeoutExceptions
+      # See opencb/opencga#352 for more info.
+      opencga.storage.hadoop.mapreduce.scanner.timeout: 300000
       #Hadoop options
       fs.defaultFS: "${OPENCGA.STORAGE.HADOOP.HDFS.DEFAULT_FS}"
     database:

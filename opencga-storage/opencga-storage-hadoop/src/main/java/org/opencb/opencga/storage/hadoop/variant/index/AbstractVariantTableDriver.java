@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HConstants;
 import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.mapreduce.MultiTableOutputFormat;
@@ -32,6 +33,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.storage.hadoop.variant.HadoopVariantStorageManager.OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT;
 
 /**
  * @author Matthias Haimel mh719+git@cam.ac.uk
@@ -205,6 +208,13 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
                 + " on VariantTable '" + outTable + "'");
         job.getConfiguration().set("mapreduce.job.user.classpath.first", "true");
         job.setJarByClass(getMapperClass());    // class that contains mapper
+
+        // Increase the ScannerTimeoutPeriod to avoid ScannerTimeoutExceptions
+        // See opencb/opencga#352 for more info.
+        int scannerTimeout = getConf().getInt(OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT,
+                getConf().getInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, HConstants.DEFAULT_HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD));
+        job.getConfiguration().setInt(HConstants.HBASE_CLIENT_SCANNER_TIMEOUT_PERIOD, scannerTimeout);
+
         return job;
     }
 

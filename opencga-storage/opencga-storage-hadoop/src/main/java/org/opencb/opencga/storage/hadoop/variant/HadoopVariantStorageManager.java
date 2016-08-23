@@ -57,6 +57,7 @@ public class HadoopVariantStorageManager extends VariantStorageManager {
     public static final String OPENCGA_STORAGE_HADOOP_INTERMEDIATE_HDFS_DIRECTORY = "opencga.storage.hadoop.intermediate.hdfs.directory";
     public static final String OPENCGA_STORAGE_HADOOP_HBASE_NAMESPACE = "opencga.storage.hadoop.hbase.namespace";
     public static final String OPENCGA_STORAGE_HADOOP_HBASE_ARCHIVE_TABLE_PREFIX = "opencga.storage.hadoop.hbase.archive.table.prefix";
+    public static final String OPENCGA_STORAGE_HADOOP_MAPREDUCE_SCANNER_TIMEOUT = "opencga.storage.hadoop.mapreduce.scanner.timeout";
 
     public static final String HADOOP_LOAD_ARCHIVE_BATCH_SIZE = "hadoop.load.archive.batch.size";
     public static final String HADOOP_LOAD_VARIANT_BATCH_SIZE = "hadoop.load.variant.batch.size";
