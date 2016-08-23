@@ -52,7 +52,7 @@ public class IndividualsCommandExecutor extends OpencgaCommandExecutor {
 
     @Override
     public void execute() throws Exception {
-        logger.debug("Executing jobs command line");
+        logger.debug("Executing individuals command line");
 
         String subCommandString = getParsedSubCommand(individualsCommandOptions.jCommander);
         QueryResponse queryResponse = null;

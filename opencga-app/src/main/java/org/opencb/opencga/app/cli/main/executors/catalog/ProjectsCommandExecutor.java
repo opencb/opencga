@@ -102,7 +102,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.name)) {
             objectMap.put(CatalogProjectDBAdaptor.QueryParams.NAME.key(), projectsCommandOptions.updateCommandOptions.name);
         }
-
         if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.description)) {
             objectMap.put(CatalogProjectDBAdaptor.QueryParams.DESCRIPTION.key(), projectsCommandOptions.updateCommandOptions.description);
         }
@@ -138,7 +137,6 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.limit)) {
             queryOptions.put(QueryOptions.LIMIT, projectsCommandOptions.studiesCommandOptions.limit);
         }
-
         if (StringUtils.isNotEmpty(projectsCommandOptions.studiesCommandOptions.skip)) {
             queryOptions.put(QueryOptions.SKIP, projectsCommandOptions.studiesCommandOptions.skip);
         }

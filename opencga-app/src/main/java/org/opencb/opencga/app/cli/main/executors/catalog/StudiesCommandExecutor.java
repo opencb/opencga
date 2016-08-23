@@ -208,7 +208,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
         logger.debug("Doing summary with the general stats of a study");
         QueryOptions queryOptions = new QueryOptions();
-        return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.deleteCommandOptions.id, queryOptions);
+        return openCGAClient.getStudyClient().getSummary(studiesCommandOptions.summaryCommandOptions.id, queryOptions);
     }
 
     private QueryResponse<Study> help() throws CatalogException, IOException {
@@ -427,7 +427,6 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.description)) {
             queryOptions.put(CatalogSampleDBAdaptor.QueryParams.DESCRIPTION.key(), studiesCommandOptions.samplesCommandOptions.description);
         }
-
         if (StringUtils.isNotEmpty(studiesCommandOptions.samplesCommandOptions.include)) {
             queryOptions.put(QueryOptions.INCLUDE, studiesCommandOptions.samplesCommandOptions.include);
         }
@@ -441,6 +440,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
             queryOptions.put(QueryOptions.SKIP, studiesCommandOptions.samplesCommandOptions.skip);
         }
         queryOptions.put("count", studiesCommandOptions.samplesCommandOptions.count);
+
         return openCGAClient.getStudyClient().getSamples(studiesCommandOptions.samplesCommandOptions.id, queryOptions);
     }
 
@@ -659,7 +659,7 @@ public class StudiesCommandExecutor extends OpencgaCommandExecutor {
 
     /************************************************* Groups commands *********************************************************/
     private QueryResponse<ObjectMap> groups() throws CatalogException,IOException {
-        logger.debug("Creating groups");
+        logger.debug("Groups");
         QueryOptions queryOptions = new QueryOptions();
         return openCGAClient.getStudyClient().groups(studiesCommandOptions.groupsCommandOptions.id, queryOptions);
     }

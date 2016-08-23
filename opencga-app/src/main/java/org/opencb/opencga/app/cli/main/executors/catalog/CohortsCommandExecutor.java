@@ -143,9 +143,9 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
         String variable = cohortsCommandOptions.createCommandOptions.variable;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),description);
+        o.append(CatalogCohortDBAdaptor.QueryParams.TYPE.key(),cohortsCommandOptions.createCommandOptions.type);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_SET_ID.key(),variableSetId);
-        o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),sampleIds);
+        o.append(CatalogCohortDBAdaptor.QueryParams.DESCRIPTION.key(),description);
         o.append(CatalogCohortDBAdaptor.QueryParams.SAMPLES.key(),sampleIds);
         o.append(CatalogCohortDBAdaptor.QueryParams.VARIABLE_NAME.key(),variable);
         return openCGAClient.getCohortClient().create(studyId, cohortName, o);
@@ -153,7 +153,14 @@ public class CohortsCommandExecutor extends OpencgaCommandExecutor {
 
     private QueryResponse<Cohort> info() throws CatalogException, IOException {
         logger.debug("Getting cohort information");
-        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.id, null);
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.infoCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, cohortsCommandOptions.infoCommandOptions.include);
+        }
+        if (StringUtils.isNotEmpty(cohortsCommandOptions.infoCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, cohortsCommandOptions.infoCommandOptions.exclude);
+        }
+        return openCGAClient.getCohortClient().get(cohortsCommandOptions.infoCommandOptions.id, queryOptions);
     }
 
     private QueryResponse<Sample> samples() throws CatalogException, IOException {

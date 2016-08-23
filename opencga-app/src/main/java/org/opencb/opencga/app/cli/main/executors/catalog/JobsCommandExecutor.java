@@ -108,8 +108,8 @@ public class JobsCommandExecutor extends OpencgaCommandExecutor {
         String description = jobsCommandOptions.createCommandOptions.description;
 
         ObjectMap o = new ObjectMap();
-        o.append(CatalogJobDBAdaptor.QueryParams.EXECUTION.key(),execution);
-        o.append(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(),description);
+        o.append(CatalogJobDBAdaptor.QueryParams.EXECUTION.key(), execution);
+        o.append(CatalogJobDBAdaptor.QueryParams.DESCRIPTION.key(), description);
 
         return openCGAClient.getJobClient().create(studyId, name, toolId, o);
     }

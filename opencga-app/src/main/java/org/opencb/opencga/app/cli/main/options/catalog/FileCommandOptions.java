@@ -440,19 +440,19 @@ public class FileCommandOptions {
         @Parameter(names = {"-i","--input"}, description = "Input file", required = true, arity = 1)
         public String inputFile;
 
-        @Parameter(names = {"--fileFormat"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true, arity = 1)
+        @Parameter(names = {"--file-format"}, description = "Format of the file (VCF, BCF, GVCF, SAM, BAM, BAI...UNKNOWN)", required = true, arity = 1)
         public String fileFormat;
 
-        @Parameter(names = {"--bioFormat"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = true, arity = 1)
+        @Parameter(names = {"--bio-format"}, description = "Bioformat of the file (VARIANT, ALIGNMENT, SEQUENCE, PEDIGREE...NONE)", required = true, arity = 1)
         public String bioFormat;
 
-        @Parameter(names = {"--catalogPath"}, description = "Path within catalog where the file will be located (Default: root folder)", required = false, arity = 1)
+        @Parameter(names = {"--catalog-path"}, description = "Path within catalog where the file will be located (Default: root folder)", required = false, arity = 1)
         public String catalogPath;
 
         @Parameter(names = {"--description"}, description = "Description of the file", required = false, arity = 1)
         public String description;
 
-        @Parameter(names = {"--fileName"}, description = "Name of the file by which it will be stored in catalog", required = false, arity = 1)
+        @Parameter(names = {"--file-name"}, description = "Name of the file by which it will be stored in catalog", required = false, arity = 1)
         public String fileName;
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)

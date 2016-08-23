@@ -110,7 +110,7 @@ public class StudyCommandOptions {
         @Parameter(names = {"-t", "--type"}, description = "Type of study, ej.CASE_CONTROL,CASE_SET,...", arity = 1)
         public String type;
 
-        @Parameter(names = {"-d", "--description"}, description = "Organization", arity = 1)
+        @Parameter(names = {"-d", "--description"}, description = "Description", arity = 1)
         public String description;
     }
 

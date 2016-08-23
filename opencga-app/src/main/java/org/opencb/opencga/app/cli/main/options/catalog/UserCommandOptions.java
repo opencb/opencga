@@ -60,7 +60,7 @@ public class UserCommandOptions {
         @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
 
-        @Parameter(names = {"--user-DiskQuota"}, description = "User disk quota", required = false, arity = 1)
+        @Parameter(names = {"--user-disk-quota"}, description = "User disk quota", required = false, arity = 1)
         public Long userDiskQuota;
 
         @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)

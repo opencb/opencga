@@ -74,7 +74,7 @@ public class ToolCommandOptions {
         @Parameter(names = {"--ids"}, description = "Comma separated list of ids", required = false, arity = 1)
         public String id;
 
-        @Parameter(names = {"--userId"}, description = "UserId", required = false, arity = 1)
+        @Parameter(names = {"--user-id"}, description = "UserId", required = false, arity = 1)
         public String userId;
 
         @Parameter(names = {"--alias"}, description = "alias", required = false, arity = 1)

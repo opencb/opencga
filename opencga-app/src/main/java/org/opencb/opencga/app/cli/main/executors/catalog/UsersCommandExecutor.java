@@ -53,7 +53,7 @@ public class UsersCommandExecutor extends OpencgaCommandExecutor {
     @Override
     public void execute() throws Exception {
 
-        logger.debug("Executing variant command line");
+        logger.debug("Executing users command line");
 //        openCGAClient = new OpenCGAClient(clientConfiguration);
 
         String subCommandString = getParsedSubCommand(usersCommandOptions.getjCommander());
