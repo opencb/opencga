@@ -108,9 +108,9 @@ public class ProjectsCommandExecutor extends OpencgaCommandExecutor {
         if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.organization)) {
             objectMap.put(CatalogProjectDBAdaptor.QueryParams.ORGANIZATION.key(), projectsCommandOptions.updateCommandOptions.organization);
         }
-        if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.status)) {
-            objectMap.put(CatalogProjectDBAdaptor.QueryParams.STATUS_NAME.key(), projectsCommandOptions.updateCommandOptions.status);
-        }
+        //if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.status)) {
+        //    objectMap.put(CatalogProjectDBAdaptor.QueryParams.STATUS_NAME.key(), projectsCommandOptions.updateCommandOptions.status);
+        //}
         if (StringUtils.isNotEmpty(projectsCommandOptions.updateCommandOptions.attributes)) {
             objectMap.put(CatalogProjectDBAdaptor.QueryParams.ATTRIBUTES.key(), projectsCommandOptions.updateCommandOptions.attributes);
         }

@@ -78,7 +78,8 @@ public class OpencgaCliOptionsParser {
         userSubCommands.addCommand("projects", usersCommandOptions.projectsCommandOptions);
         userSubCommands.addCommand("login", usersCommandOptions.loginCommandOptions);
         userSubCommands.addCommand("logout", usersCommandOptions.logoutCommandOptions);
-        // TODO: "password" -> Allow to change and reset the password
+        userSubCommands.addCommand("reset-password", usersCommandOptions.resetPasswordCommandOptions);
+        // TODO: "password" -> Allow to change
 
         projectCommandOptions = new ProjectCommandOptions(this.commonCommandOptions, jCommander);
         jCommander.addCommand("projects", projectCommandOptions);

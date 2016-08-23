@@ -17,6 +17,7 @@ public class UserCommandOptions {
     public ProjectsCommandOptions projectsCommandOptions;
     public LoginCommandOptions loginCommandOptions;
     public LogoutCommandOptions logoutCommandOptions;
+    public ResetPasswordCommandOptions resetPasswordCommandOptions;
     public JCommander jCommander;
 
     public OpencgaCommonCommandOptions commonCommandOptions;
@@ -30,6 +31,7 @@ public class UserCommandOptions {
         this.projectsCommandOptions = new ProjectsCommandOptions();
         this.loginCommandOptions = new LoginCommandOptions();
         this.logoutCommandOptions = new LogoutCommandOptions();
+        this.resetPasswordCommandOptions = new ResetPasswordCommandOptions();
     }
 
     public JCommander getjCommander() {
@@ -60,9 +62,6 @@ public class UserCommandOptions {
         @Parameter(names = {"--user-organization"}, description = "User organization", required = false, arity = 1)
         public String userOrganization;
 
-        @Parameter(names = {"--user-disk-quota"}, description = "User disk quota", required = false, arity = 1)
-        public Long userDiskQuota;
-
         @Parameter(names = {"--project-name"}, description = "Project name. Default: Default", required = false, arity = 1)
         public String projectName;
 
@@ -86,9 +85,9 @@ public class UserCommandOptions {
         @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
         public String exclude;
 
-        @Parameter(names = {"--last-activity"}, description = "If matches with the user's last activity, return " +
+        @Parameter(names = {"--last-modified"}, description = "If matches with the user's last activity, return " +
                 "an empty QueryResult", arity = 1, required = false)
-        public String lastActivity;
+        public String lastModified;
     }
 
 
@@ -141,6 +140,11 @@ public class UserCommandOptions {
     public class LogoutCommandOptions {
         @Parameter(names = {"--session-id", "-S"}, description = "SessionId", required = false, arity = 1, hidden = true)
         public String sessionId;
+    }
+
+    @Parameters(commandNames = {"reset-password"}, commandDescription = "Reset password")
+    public class ResetPasswordCommandOptions extends BaseUserCommand {
+
     }
 
 
