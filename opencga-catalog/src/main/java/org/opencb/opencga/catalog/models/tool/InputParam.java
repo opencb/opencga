@@ -14,29 +14,28 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.tool;
 
-public class Option {
-    private String name, description;
-    private boolean required;
+public class InputParam {
 
-    public Option() {
+    private String name, dataType;
+
+    public InputParam() {
 
     }
 
-    public Option(String name, String description, boolean required) {
+    public InputParam(String name, String dataType) {
         this.name = name;
-        this.description = description;
-        this.required = required;
+        this.dataType = dataType;
     }
 
     @Override
     public String toString() {
-        return "Option{" +
-                "name='" + name + '\'' +
-                ", description='" + description + '\'' +
-                ", required=" + required +
-                '}';
+        final StringBuilder sb = new StringBuilder("InputParam{");
+        sb.append("name='").append(name).append('\'');
+        sb.append(", dataType='").append(dataType).append('\'');
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getName() {
@@ -47,19 +46,11 @@ public class Option {
         this.name = name;
     }
 
-    public boolean isRequired() {
-        return required;
+    public String getDataType() {
+        return dataType;
     }
 
-    public void setRequired(boolean required) {
-        this.required = required;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
+    public void setDataType(String dataType) {
+        this.dataType = dataType;
     }
 }

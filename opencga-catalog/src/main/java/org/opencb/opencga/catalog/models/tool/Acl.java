@@ -14,9 +14,11 @@
  * limitations under the License.
  */
 
-package org.opencb.opencga.analysis.beans;
+package org.opencb.opencga.catalog.models.tool;
 
+@Deprecated
 public class Acl {
+
     private String userId;
     private boolean read, write, execute;
 
@@ -32,12 +34,13 @@ public class Acl {
 
     @Override
     public String toString() {
-        return "Acl{" +
-                "userId='" + userId + '\'' +
-                ", read=" + read +
-                ", write=" + write +
-                ", execute=" + execute +
-                '}';
+        final StringBuilder sb = new StringBuilder("Acl{");
+        sb.append("userId='").append(userId).append('\'');
+        sb.append(", read=").append(read);
+        sb.append(", write=").append(write);
+        sb.append(", execute=").append(execute);
+        sb.append('}');
+        return sb.toString();
     }
 
     public String getUserId() {
