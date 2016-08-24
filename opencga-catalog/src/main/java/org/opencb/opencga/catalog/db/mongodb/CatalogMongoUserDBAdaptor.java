@@ -310,7 +310,11 @@ public class CatalogMongoUserDBAdaptor extends CatalogMongoDBAdaptor implements 
         QueryResult<Document> documentQueryResult = userCollection.find(bson, projection, null);
         User user = parseUser(documentQueryResult);
 
-        return endQuery("getSession", startTime, user.getSessions());
+        if (user != null) {
+            return endQuery("getSession", startTime, user.getSessions());
+        }
+
+        return endQuery("getSession", startTime, Arrays.asList());
     }
 
     @Override

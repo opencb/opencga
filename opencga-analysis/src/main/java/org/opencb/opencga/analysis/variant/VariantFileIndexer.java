@@ -194,30 +194,47 @@ public class VariantFileIndexer extends AbstractFileIndexer {
 
         List<StorageETLResult> storageETLResults = variantStorageManager.index(fileUris, outdir.toUri(), false, transform, load);
 
+        logger.debug("Writing storageETLResults to file {}", outdir.resolve("storageETLresults"));
+        objectMapper.writer().writeValue(outdir.resolve("storageETLresults").toFile(), storageETLResults);
+
         File file;
         for (int i = 0; i < storageETLResults.size(); i++) {
-
             file = filesToIndex.get(i);
             StorageETLResult storageETLResult = storageETLResults.get(i);
 
             if (transform && !load) {
                 // Check transform errors
-                if (storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() != null) {
+                if (storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() == null) {
+                    logger.debug("Updating file {} status to TRANSFORMED", file.getId());
                     fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED, sessionId);
+                } else {
+                    logger.warn("An error occured during the transformation");
+                    logger.debug("Updating file {} status to NONE", file.getId());
+                    fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.NONE, sessionId);
                 }
 
             } else {
                 if (!transform && load) {
-                    if (storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() != null) {
+                    if (storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() == null) {
+                        logger.debug("Updating file {} status to READY", file.getId());
                         fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.READY, sessionId);
+                        logger.debug("Updating cohort information");
                         updateDefaultCohorts(file, study, options, sessionId);
+                    } else {
+                        logger.warn("An error occured during the load");
+                        logger.debug("Updating file {} status to NONE", file.getId());
+                        fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.NONE, sessionId);
                     }
                 } else {
-                    if (storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() != null) {
-                        if (storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() != null) {
+                    if (storageETLResult.isTransformExecuted() && storageETLResult.getTransformError() == null) {
+                        if (storageETLResult.isLoadExecuted() && storageETLResult.getLoadError() == null) {
+                            logger.debug("Updating file {} status to READY", file.getId());
                             fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.READY, sessionId);
+                            logger.debug("Updating cohort information");
                             updateDefaultCohorts(file, study, options, sessionId);
                         } else {
+                            logger.warn("An error occured during the load");
+                            logger.debug("Updating file {} status to TRANSFORMED", file.getId());
                             fileManager.updateFileIndexStatus(file, FileIndex.IndexStatus.TRANSFORMED, sessionId);
                         }
                     }

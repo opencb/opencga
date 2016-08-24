@@ -6,6 +6,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.slf4j.LoggerFactory;
 
 import java.io.DataOutputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
@@ -20,47 +21,55 @@ public class LocalExecutor extends AbstractExecutor {
 
     @Override
     public void execute(Job job) throws Exception {
-        ExecutorConfig executorConfig = getExecutorConfig(job);
+        Runnable runnable = () -> {
+            try {
+                ExecutorConfig executorConfig = getExecutorConfig(job);
 
-        logger.info("Ready to run {}", job.getCommandLine());
-        Command com = new Command(job.getCommandLine());
+                logger.info("Ready to run {}", job.getCommandLine());
+                Command com = new Command(job.getCommandLine());
 
-        DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
-        com.setOutputOutputStream(dataOutputStream);
+                DataOutputStream dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStdout()));
+                com.setOutputOutputStream(dataOutputStream);
 
-        dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
-        com.setErrorOutputStream(dataOutputStream);
+                dataOutputStream = new DataOutputStream(new FileOutputStream(executorConfig.getStderr()));
+                com.setErrorOutputStream(dataOutputStream);
 
-        final long jobId = job.getId();
+                final long jobId = job.getId();
 
-        Thread hook = new Thread(() -> {
-            logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
-            com.setStatus(RunnableProcess.Status.KILLED);
-            com.setExitValue(-2);
-            closeOutputStreams(com);
-        });
+                Thread hook = new Thread(() -> {
+                    logger.info("Running ShutdownHook. Job {id: " + jobId + "} has being aborted.");
+                    com.setStatus(RunnableProcess.Status.KILLED);
+                    com.setExitValue(-2);
+                    closeOutputStreams(com);
+                });
 
-        logger.info("==========================================");
-        logger.info("Executing job {}({})", job.getName(), job.getId());
-        logger.debug("Executing commandLine {}", job.getCommandLine());
-        logger.info("==========================================");
-        System.err.println();
+                logger.info("==========================================");
+                logger.info("Executing job {}({})", job.getName(), job.getId());
+                logger.debug("Executing commandLine {}", job.getCommandLine());
+                logger.info("==========================================");
+                System.err.println();
 
-        Runtime.getRuntime().addShutdownHook(hook);
-        com.run();
-        Runtime.getRuntime().removeShutdownHook(hook);
+                Runtime.getRuntime().addShutdownHook(hook);
+                com.run();
+                Runtime.getRuntime().removeShutdownHook(hook);
 
-        System.err.println();
-        logger.info("==========================================");
-        logger.info("Finished job {}({})", job.getName(), job.getId());
-        logger.info("==========================================");
+                System.err.println();
+                logger.info("==========================================");
+                logger.info("Finished job {}({})", job.getName(), job.getId());
+                logger.info("==========================================");
 
-        closeOutputStreams(com);
+                closeOutputStreams(com);
+            } catch (FileNotFoundException e) {
+                logger.error("Could not create the output/error files");
+            }
+        };
+        Thread thread = new Thread(runnable);
+        thread.start();
     }
 
     @Override
-    public String status(Job job) {
-        return null;
+    protected String getStatus(Job job) {
+        return Job.JobStatus.UNKNOWN;
     }
 
     @Override

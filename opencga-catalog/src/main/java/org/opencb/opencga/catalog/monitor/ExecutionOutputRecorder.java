@@ -65,12 +65,12 @@ public class ExecutionOutputRecorder {
 
     }
 
-    public void recordJobOutputAndPostProcess(Job job, Job.JobStatus jobStatus) throws CatalogException, IOException {
+    public void recordJobOutputAndPostProcess(Job job, String status) throws CatalogException, IOException {
         /** Modifies the job to set the output and endTime. **/
         Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
         this.ioManager = catalogManager.getCatalogIOManagerFactory().get(tmpOutdirPath.toUri());
         recordJobOutput(job, tmpOutdirPath);
-        updateJobStatus(job, jobStatus);
+        updateJobStatus(job, new Job.JobStatus(status));
     }
 
     @Deprecated
@@ -166,11 +166,14 @@ public class ExecutionOutputRecorder {
         if (jobStatus != null) {
             if (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.DONE)) {
                 jobStatus.setName(Job.JobStatus.READY);
+                jobStatus.setMessage("The job has finished");
             } else if (jobStatus.getName().equalsIgnoreCase(Job.JobStatus.ERROR)) {
                 jobStatus.setName(Job.JobStatus.ERROR);
+                jobStatus.setMessage("The job finished with an error");
             } else {
                 logger.error("This block should never be executed. Accepted status in job.status file are DONE and ERROR");
                 jobStatus.setName(Job.JobStatus.ERROR);
+                jobStatus.setMessage("The finished with an unexpected error");
             }
             ObjectMap params = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             catalogManager.getJobManager().update(job.getId(), params, QueryOptions.empty(), sessionId);

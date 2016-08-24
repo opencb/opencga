@@ -18,6 +18,7 @@ package org.opencb.opencga.catalog.monitor.daemons;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectReader;
+import org.codehaus.jackson.type.TypeReference;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.Query;
 import org.opencb.commons.datastore.core.QueryOptions;
@@ -33,9 +34,11 @@ import org.opencb.opencga.catalog.monitor.ExecutionOutputRecorder;
 import org.opencb.opencga.catalog.monitor.executors.AbstractExecutor;
 import org.opencb.opencga.core.common.TimeUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -87,9 +90,7 @@ public class IndexDaemon extends MonitorParentDaemon {
             e.printStackTrace();
         }
 
-
         while (!exit) {
-
             try {
                 Thread.sleep(interval);
             } catch (InterruptedException e) {
@@ -152,8 +153,6 @@ public class IndexDaemon extends MonitorParentDaemon {
     }
 
     private void checkRunningJob(Job job) {
-        logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, Job.JobStatus.READY);
-
         Path tmpOutdirPath = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId());
         Job.JobStatus jobStatus;
 
@@ -161,34 +160,74 @@ public class IndexDaemon extends MonitorParentDaemon {
             ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, this.sessionId);
             jobStatus = new Job.JobStatus(Job.JobStatus.ERROR, "Temporal output directory not found");
             try {
+                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, jobStatus.getName());
                 outputRecorder.updateJobStatus(job, jobStatus);
             } catch (CatalogException e) {
                 logger.warn("Could not update job {} to status error", job.getId());
             }
         } else {
-            Path jobStatusFile = tmpOutdirPath.resolve("job.status");
-            if (jobStatusFile.toFile().exists()) {
+            String status = executorManager.status(tmpOutdirPath, job);
+            if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.RUNNING)) {
+                registerStorageETLResults(job, tmpOutdirPath);
+                logger.info("Updating job {} from {} to {}", job.getId(), Job.JobStatus.RUNNING, status);
+                String sessionId = (String) job.getResourceManagerAttributes().get("sessionId");
+                ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
                 try {
-                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
-                } catch (IOException e) {
-                    logger.warn("Could not read job status file.");
-                    return;
-                    // TODO: Add a maximum number of attempts....
+                    outputRecorder.recordJobOutputAndPostProcess(job, status);
+                } catch (CatalogException | IOException e) {
+                    logger.error(e.getMessage());
                 }
-                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
-                    String sessionId = (String) job.getResourceManagerAttributes().get("sessionId");
-                    ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
-                    try {
-                        outputRecorder.recordJobOutputAndPostProcess(job, jobStatus);
+            }
 
-                    } catch (CatalogException | IOException e) {
-                        logger.error(e.getMessage());
-                    }
+//            Path jobStatusFile = tmpOutdirPath.resolve("job.status");
+//            if (jobStatusFile.toFile().exists()) {
+//                try {
+//                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
+//                } catch (IOException e) {
+//                    logger.warn("Could not read job status file.");
+//                    return;
+//                    // TODO: Add a maximum number of attempts....
+//                }
+//                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.RUNNING)) {
+//                    String sessionId = (String) job.getResourceManagerAttributes().get("sessionId");
+//                    ExecutionOutputRecorder outputRecorder = new ExecutionOutputRecorder(catalogManager, sessionId);
+//                    try {
+//                        outputRecorder.recordJobOutputAndPostProcess(job, jobStatus);
+//
+//                    } catch (CatalogException | IOException e) {
+//                        logger.error(e.getMessage());
+//                    }
+//                }
+//            } else {
+//                // TODO: Call the executor status
+//                logger.debug("Call executor status not yet implemented.");
+////                    executorManager.status(job).equalsIgnoreCase()
+//            }
+        }
+    }
+
+    private void registerStorageETLResults(Job job, Path tmpOutdirPath) {
+        logger.debug("Updating storage ETL Results");
+        File fileResults = tmpOutdirPath.resolve("storageETLresults").toFile();
+        if (fileResults.exists()) {
+            Object storageETLresults;
+            ObjectMap params = new ObjectMap(job.getAttributes());
+            try {
+                ObjectReader etlReader = objectMapper.reader(new TypeReference<List<Map>>(){});
+                storageETLresults = etlReader.readValue(tmpOutdirPath.resolve("storageETLresults").toFile());
+                params = new ObjectMap("storageETLResult", storageETLresults);
+                ObjectMap attributes = new ObjectMap(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), params);
+                catalogManager.getJobManager().update(job.getId(), attributes, QueryOptions.empty(), sessionId);
+            } catch (IOException e) {
+                logger.error("Error reading the storageResults from {}", fileResults);
+            } catch (CatalogException e) {
+                logger.error("Could not update job {} with params {}", job.getId(), params.safeToString());
+            } finally {
+                try {
+                    catalogIOManager.deleteFile(fileResults.toURI());
+                } catch (CatalogIOException e) {
+                    logger.error("Could not delete storageResults file {}", fileResults);
                 }
-            } else {
-                // TODO: Call the executor status
-                logger.debug("Call executor status not yet implemented.");
-//                    executorManager.status(job).equalsIgnoreCase()
             }
         }
     }
@@ -205,34 +244,45 @@ public class IndexDaemon extends MonitorParentDaemon {
                 logger.error("Could not create the temporal output directory to run the job");
             }
         } else {
-            Path jobStatusFile = Paths.get(catalogManager.getCatalogConfiguration().getTempJobsDir(), "J_" + job.getId(), "job.status");
-            if (jobStatusFile.toFile().exists()) {
-                Job.JobStatus jobStatus = null;
+            String status = executorManager.status(tmpOutdirPath, job);
+            if (!status.equalsIgnoreCase(Job.JobStatus.UNKNOWN) && !status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
+                Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.RUNNING, "The job is running");
+                ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
                 try {
-                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
-                } catch (IOException e) {
-                    logger.warn("Could not read job status file.");
-                    // TODO: Add a maximum number of attempts....
-                }
-                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-                    try {
-                        catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
-                    } catch (CatalogException e) {
-                        logger.warn("Could not update job {} to status running", job.getId());
-                    }
-                }
-            } else {
-                String status = executorManager.status(job);
-                if (!status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
-                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
-                    try {
-                        catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
-                    } catch (CatalogException e) {
-                        logger.warn("Could not update job {} to status running", job.getId());
-                    }
+                    catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
+                } catch (CatalogException e) {
+                    logger.warn("Could not update job {} to status running", job.getId());
                 }
             }
+//
+//            Path jobStatusFile = tmpOutdirPath.resolve("job.status");
+//            if (jobStatusFile.toFile().exists()) {
+//                Job.JobStatus jobStatus = null;
+//                try {
+//                    jobStatus = objectReader.readValue(jobStatusFile.toFile());
+//                } catch (IOException e) {
+//                    logger.warn("Could not read job status file.");
+//                    // TODO: Add a maximum number of attempts....
+//                }
+//                if (jobStatus != null && !jobStatus.getName().equalsIgnoreCase(Job.JobStatus.QUEUED)) {
+//                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
+//                    try {
+//                        catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
+//                    } catch (CatalogException e) {
+//                        logger.warn("Could not update job {} to status running", job.getId());
+//                    }
+//                }
+//            } else {
+//                String status = executorManager.status(job);
+//                if (!status.equalsIgnoreCase(Job.JobStatus.QUEUED)) {
+//                    ObjectMap objectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.RUNNING);
+//                    try {
+//                        catalogManager.getJobManager().update(job.getId(), objectMap, QueryOptions.empty(), sessionId);
+//                    } catch (CatalogException e) {
+//                        logger.warn("Could not update job {} to status running", job.getId());
+//                    }
+//                }
+//            }
         }
     }
 
@@ -284,7 +334,9 @@ public class IndexDaemon extends MonitorParentDaemon {
         logger.info("Updating job CLI '{}' from '{}' to '{}'", commandLine.toString(), Job.JobStatus.PREPARED, Job.JobStatus.QUEUED);
 
         try {
-            ObjectMap updateObjectMap = new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED);
+            ObjectMap updateObjectMap = new ObjectMap();
+            Job.JobStatus jobStatus = new Job.JobStatus(Job.JobStatus.QUEUED, "The job is in the queue waiting to be executed");
+            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.STATUS.key(), jobStatus);
             updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.COMMAND_LINE.key(), commandLine.toString());
 
             updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), job.getAttributes());
@@ -292,24 +344,26 @@ public class IndexDaemon extends MonitorParentDaemon {
             job.getResourceManagerAttributes().put("sessionId", userSessionId);
             job.getResourceManagerAttributes().put(AbstractExecutor.STDOUT, stdout);
             job.getResourceManagerAttributes().put(AbstractExecutor.STDERR, stderr);
+            job.getResourceManagerAttributes().put(AbstractExecutor.OUTDIR, path.toString());
             updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.RESOURCE_MANAGER_ATTRIBUTES.key(), job.getResourceManagerAttributes());
 
 //            updateObjectMap.put(CatalogJobDBAdaptor.QueryParams.ATTRIBUTES.key(), attributes);
 
             QueryResult<Job> update = catalogManager.getJobManager().update(job.getId(), updateObjectMap, new QueryOptions(), sessionId);
             if (update.getNumResults() == 1) {
-                Runnable runnable = () -> {
-                    try {
-                        // TODO: Return job and modify job
-                        executorManager.execute(update.first());
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                };
-                Thread thread = new Thread(runnable);
-                thread.start();
+                executorManager.execute(update.first());
+//                Runnable runnable = () -> {
+//                    try {
+//                        // TODO: Return job and modify job
+//                        executorManager.execute(update.first());
+//                    } catch (InterruptedException e) {
+//                        e.printStackTrace();
+//                    } catch (Exception e) {
+//                        e.printStackTrace();
+//                    }
+//                };
+//                Thread thread = new Thread(runnable);
+//                thread.start();
             } else {
                 logger.error("Could not update nor run job {}" + job.getId());
             }

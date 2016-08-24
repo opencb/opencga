@@ -305,6 +305,14 @@ public class Job extends AbstractAcl<JobAclEntry> {
          * ERROR status means that the job finished with an error.
          */
         public static final String ERROR = "ERROR";
+        /**
+         * UNKNOWN status means that the job status could not be obtained.
+         */
+        public static final String UNKNOWN = "UNKNOWN";
+        /**
+         * TRANSFERRED status means that the job has just been transferred to the execution node.
+         */
+        public static final String TRANSFERRED = "TRANSFERRED";
 
         public JobStatus(String status, String message) {
             if (isValid(status)) {
@@ -327,7 +335,7 @@ public class Job extends AbstractAcl<JobAclEntry> {
                 return true;
             }
             if (status != null && (status.equals(PREPARED) || status.equals(QUEUED) || status.equals(RUNNING) || status.equals(DONE)
-                    || status.equals(ERROR))) {
+                    || status.equals(ERROR) || status.equals(UNKNOWN) || status.equals(TRANSFERRED))) {
                 return true;
             }
             return false;

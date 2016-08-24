@@ -7,17 +7,19 @@ public class ExecutorConfig {
 
     private String stdout;
     private String stderr;
+    private String outdir;
     private int timeout;   // seconds
     private int numThreads;
     private int maxMem;    // MB
 
     public ExecutorConfig() {
-        this("/tmp/stdout.txt", "/tmp/stderr.txt", 3600, 1, 1024);
+        this("/tmp/stdout.txt", "/tmp/stderr.txt", "/tmp/", 3600, 1, 1024);
     }
 
-    public ExecutorConfig(String stdout, String stderr, int timeout, int numThreads, int maxMem) {
+    public ExecutorConfig(String stdout, String stderr, String outdir, int timeout, int numThreads, int maxMem) {
         this.stdout = stdout;
         this.stderr = stderr;
+        this.outdir = outdir;
         this.timeout = timeout;
         this.numThreads = numThreads;
         this.maxMem = maxMem;
@@ -28,6 +30,7 @@ public class ExecutorConfig {
         final StringBuilder sb = new StringBuilder("ExecutorConfig{");
         sb.append("stdout='").append(stdout).append('\'');
         sb.append(", stderr='").append(stderr).append('\'');
+        sb.append(", outdir='").append(outdir).append('\'');
         sb.append(", timeout=").append(timeout);
         sb.append(", numThreads=").append(numThreads);
         sb.append(", maxMem=").append(maxMem);
@@ -77,6 +80,15 @@ public class ExecutorConfig {
 
     public ExecutorConfig setMaxMem(int maxMem) {
         this.maxMem = maxMem;
+        return this;
+    }
+
+    public String getOutdir() {
+        return outdir;
+    }
+
+    public ExecutorConfig setOutdir(String outdir) {
+        this.outdir = outdir;
         return this;
     }
 }

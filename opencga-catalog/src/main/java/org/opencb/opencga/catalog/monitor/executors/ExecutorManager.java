@@ -16,6 +16,7 @@ public class ExecutorManager {
                 this.executor = new LocalExecutor();
             } else if (catalogConfiguration.getExecution().getMode().equalsIgnoreCase("sge")) {
                 // init sge executor
+                this.executor = new SGEExecutor(catalogConfiguration);
                 System.out.println("SGE not ready");
             }
         }
