@@ -45,8 +45,7 @@ public abstract class StorageManager<DBADAPTOR> {
     }
 
     public StorageManager(String storageEngineId, StorageConfiguration configuration) {
-        this.storageEngineId = storageEngineId;
-        this.configuration = configuration;
+        setConfiguration(configuration, storageEngineId);
     }
 
     public void setConfiguration(StorageConfiguration configuration, String storageEngineId) {
