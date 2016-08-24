@@ -46,8 +46,8 @@ public class FileScanner {
     /**
      * Check tracking from all files from a study.
      *
-     * Set file status File.Status.MISSING if the file (fileUri) is unreachable
-     * Set file status to File.Status.READY if was File.Status.MISSING and file (fileUri) is reachable
+     * Set file status {@link File.FileStatus#MISSING} if the file (fileUri) is unreachable
+     * Set file status to {@link File.FileStatus#READY} if was {@link File.FileStatus#MISSING} and file (fileUri) is reachable
      *
      * @param study             The study to check
      * @param sessionId         User sessionId
@@ -94,8 +94,9 @@ public class FileScanner {
         for (File file : files) {
             scan.addAll(scan(file, catalogManager.getFileUri(file), FileScannerPolicy.REPLACE, calculateChecksum,
                     false, sessionId));
-            scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
         }
+        // TODO: Scan per file
+        scan.addAll(checkStudyFiles(study, calculateChecksum, sessionId));
 
         return scan;
     }

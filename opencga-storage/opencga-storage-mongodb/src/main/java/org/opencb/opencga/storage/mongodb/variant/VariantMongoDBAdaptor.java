@@ -57,6 +57,7 @@ import org.opencb.opencga.storage.core.variant.StudyConfigurationManager;
 import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.*;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptorUtils.*;
+import org.opencb.opencga.storage.core.variant.annotation.VariantAnnotationManager;
 import org.opencb.opencga.storage.core.variant.stats.VariantStatsWrapper;
 import org.opencb.opencga.storage.mongodb.utils.MongoCredentials;
 import org.opencb.opencga.storage.mongodb.variant.converters.*;
@@ -1381,7 +1382,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        if (options.containsKey(QueryOptions.SORT)) {
+        if (options.containsKey(QueryOptions.SORT) && !options.getString(QueryOptions.SORT).equals("_id")) {
             if (options.getBoolean(QueryOptions.SORT)) {
                 options.put(QueryOptions.SORT, "_id");
                 options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);
@@ -2562,6 +2563,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
         }
         rest.setHosts(hosts);
         clientConfiguration.setRest(rest);
+        clientConfiguration.setDefaultSpecies(this.configuration.getString(VariantAnnotationManager.SPECIES, "hsapiens"));
         return clientConfiguration;
     }
 

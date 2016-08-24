@@ -42,6 +42,7 @@ Stable releases are merged and tagged at **_master_** branch, you are encourage 
 * _java-common-libs_: https://github.com/opencb/java-common-libs (branch 'develop')
 * _biodata_: https://github.com/opencb/biodata (branch 'develop')
 * _cellbase_: https://github.com/opencb/cellbase (branch 'develop')
+* _hpg-bigdata_: https://github.com/opencb/hpg-bigdata (branch 'develop')
 
 ### Cloning
 OpenCGA is an open-source and free project, you can download default **_develop_** branch by executing:
