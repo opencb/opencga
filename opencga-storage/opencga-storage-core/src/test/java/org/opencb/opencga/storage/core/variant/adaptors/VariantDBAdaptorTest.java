@@ -129,7 +129,7 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
             assertEquals(dbAdaptor.count(new Query(ANNOTATION_EXISTS.key(), true)).first(), dbAdaptor.count(new Query()).first());
         }
-        allVariants = dbAdaptor.get(new Query(), new QueryOptions());
+        allVariants = dbAdaptor.get(new Query(), new QueryOptions(QueryOptions.SORT, true));
         options = new QueryOptions();
     }
 
@@ -909,26 +909,27 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
 
     @Test
     public void testGetAllVariants_returned_samples() {
-        QueryOptions options = new QueryOptions(QueryOptions.LIMIT, 0); //no limit;
 
-        Query query = new Query()
-                .append(STUDIES.key(), studyConfiguration.getStudyId());
 //        queryResult = dbAdaptor.get(query, options);
         List<Variant> variants = allVariants.getResult();
 
-        checkSamplesData("NA19600", variants, query, options);
-        checkSamplesData("NA19660", variants, query, options);
-        checkSamplesData("NA19661", variants, query, options);
-        checkSamplesData("NA19685", variants, query, options);
-        checkSamplesData("NA19600,NA19685", variants, query, options);
-        checkSamplesData("NA19685,NA19600", variants, query, options);
-        checkSamplesData("NA19660,NA19661,NA19600", variants, query, options);
-        checkSamplesData("", variants, query, options);
+        checkSamplesData("NA19600", variants);
+        checkSamplesData("NA19660", variants);
+        checkSamplesData("NA19661", variants);
+        checkSamplesData("NA19685", variants);
+        checkSamplesData("NA19600,NA19685", variants);
+        checkSamplesData("NA19685,NA19600", variants);
+        checkSamplesData("NA19660,NA19661,NA19600", variants);
+        checkSamplesData("", variants);
     }
 
-    public void checkSamplesData(String samples, List<Variant> allVariants, Query query, QueryOptions options) {
+    public void checkSamplesData(String samples, List<Variant> allVariants) {
+        Query query = new Query();
+        QueryOptions options = new QueryOptions(QueryOptions.SORT, true); //no limit;
+
+        System.out.println("options = " + options.toJson());
         query.put(RETURNED_SAMPLES.key(), samples);
-        queryResult = dbAdaptor.get(query, options);
+        QueryResult<Variant> queryResult = dbAdaptor.get(query, options);
         List<String> samplesName;
         if (samples.isEmpty()) {
             samplesName = Collections.emptyList();
@@ -939,11 +940,15 @@ public abstract class VariantDBAdaptorTest extends VariantStorageManagerTestUtil
         Iterator<Variant> it_1 = allVariants.iterator();
         Iterator<Variant> it_2 = queryResult.getResult().iterator();
 
+        assertEquals(allVariants.size(), queryResult.getResult().size());
+
         LinkedHashMap<String, Integer> samplesPosition1 = null;
         LinkedHashMap<String, Integer> samplesPosition2 = null;
         for (int i = 0; i < queryResult.getNumResults(); i++) {
             Variant variant1 = it_1.next();
             Variant variant2 = it_2.next();
+
+            assertEquals(variant1.toString(), variant2.toString());
 
             if (samplesPosition1 == null) {
                 samplesPosition1 = variant1.getStudy(studyConfiguration.getStudyName()).getSamplesPosition();
