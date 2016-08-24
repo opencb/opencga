@@ -50,6 +50,7 @@ public abstract class VariantStorageManagerTestUtils extends GenericTest impleme
             "22:16137301:AG:-",
             "22:16206615:C:A",
             "22:16206615:-:C",
+            "22:16285168:-:CAAAC", // <-- This won't be a conflict with the new var end.
             "22:16285169:T:G",
             "22:16464051:T:C",
             "22:16482314:C:T",
