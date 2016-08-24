@@ -146,13 +146,17 @@ public abstract class AbstractParentClient<T, A> {
     protected <T> QueryResponse<T> execute(String category1, String id1, String category2, String id2, String action,
                                            Map<String, Object> params, String method, Class<T> clazz) throws IOException {
 
-        // Remove null or empty params
-        for (Map.Entry<String, Object> param : params.entrySet()) {
-            Object value = param.getValue();
-            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
-                params.remove(param.getKey());
-            }
+        if (params == null) {
+            params = new HashMap<>();
         }
+
+//        // Remove null or empty params
+//        for (Map.Entry<String, Object> param : params.entrySet()) {
+//            Object value = param.getValue();
+//            if (value == null || (value instanceof String && ((String) value).isEmpty())) {
+//                params.remove(param.getKey());
+//            }
+//        }
 
         System.out.println("configuration = " + configuration);
         // Build the basic URL
@@ -179,10 +183,6 @@ public abstract class AbstractParentClient<T, A> {
 
         // Add the last URL part, the 'action'
         path = path.path(action);
-
-        if (params == null) {
-            params = new HashMap<>();
-        }
 
         int numRequiredFeatures = (int) params.getOrDefault(QueryOptions.LIMIT, Integer.MAX_VALUE);
         int limit = Math.min(numRequiredFeatures, BATCH_SIZE);

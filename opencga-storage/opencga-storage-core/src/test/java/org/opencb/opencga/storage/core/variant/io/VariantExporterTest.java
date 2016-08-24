@@ -200,18 +200,18 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             assertEquals("At variant " + originalVariant, originalVariant.getReference(), exportedVariant.getReference());
             assertEquals("At variant " + originalVariant, originalVariant.getStart(), exportedVariant.getStart());
             assertEquals("At variant " + originalVariant, originalVariant.getEnd(), exportedVariant.getEnd());
-            assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds());
+            assertWithConflicts(originalVariant, () -> assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds()));
             assertEquals("At variant " + originalVariant, originalVariant.getStudies().size(), exportedVariant.getStudies().size());
             assertEquals("At variant " + originalVariant, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f",
                     "s"));
             StudyEntry originalSourceEntry = originalVariant.getStudy("s");
             StudyEntry exportedSourceEntry = exportedVariant.getStudy("s");
             for (String sampleName : originalSourceEntry.getSamplesName()) {
-                assertEquals("For sample '" + sampleName + "', id "
-                        + studyConfiguration.getSampleIds().get(sampleName)
-                        + ", in " + originalVariant,
+                assertWithConflicts(exportedVariant, () -> assertEquals("For sample '" + sampleName + "', id "
+                                + studyConfiguration.getSampleIds().get(sampleName)
+                                + ", in " + originalVariant,
                         originalSourceEntry.getSampleData(sampleName, "GT"),
-                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
+                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0")));
             }
         }
         return originalVariants.size();

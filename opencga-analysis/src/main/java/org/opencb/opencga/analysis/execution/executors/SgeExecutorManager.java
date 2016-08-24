@@ -2,6 +2,7 @@ package org.opencb.opencga.analysis.execution.executors;
 
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryResult;
+import org.opencb.opencga.catalog.db.api.CatalogJobDBAdaptor;
 import org.opencb.opencga.catalog.managers.CatalogManager;
 import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.core.SgeManager;
@@ -31,7 +32,8 @@ public class SgeExecutorManager implements ExecutorManager {
         // TODO: Lock job before submit. Avoid double submission
         SgeManager.queueJob(job.getToolName(), job.getResourceManagerAttributes().get(Job.JOB_SCHEDULER_NAME).toString(),
                 -1, job.getTmpOutDirUri().getPath(), job.getCommandLine(), null, "job." + job.getId());
-        return catalogManager.modifyJob(job.getId(), new ObjectMap("status.name", Job.JobStatus.QUEUED), sessionId);
+        return catalogManager.modifyJob(job.getId(), new ObjectMap(CatalogJobDBAdaptor.QueryParams.STATUS_NAME.key(), Job.JobStatus.QUEUED),
+                sessionId);
     }
 
     @Override

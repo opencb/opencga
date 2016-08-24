@@ -17,10 +17,12 @@
 package org.opencb.opencga.server.rest;
 
 import io.swagger.annotations.*;
+import org.apache.commons.collections.map.LinkedMap;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.core.Region;
+import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
@@ -593,27 +595,55 @@ public class FileWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{fileId}/index")
-    @ApiOperation(value = "Index a file", position = 14, response = QueryResponse.class)
-    public Response index(@ApiParam("File id") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
+    @ApiOperation(value = "Index variant files", position = 14, response = QueryResponse.class)
+    public Response index(@ApiParam("Comma separated list of file ids (files or directories)") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
+                          @ApiParam("Study id") @DefaultValue("-1") @QueryParam("studyId") String studyId,
                           @ApiParam("Output directory id") @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate,
-                          @ApiParam("Calculate stats") @DefaultValue("true") @QueryParam("calculateStats") boolean calculateStats) {
-        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+                          @ApiParam("Boolean indicating that only the transform step will be run") @DefaultValue("false") @QueryParam("transform") Boolean transform,
+                          @ApiParam("Boolean indicating that only the load step will be run") @DefaultValue("false") @QueryParam("load") Boolean load,
+                          @ApiParam("Boolean indicating to exclude the genotype information") @DefaultValue("false") @QueryParam("excludeGenotypes") Boolean excludeGenotypes,
+                          @ApiParam("Comma separated list of fields to be include in the index") @DefaultValue("") @QueryParam("includeExtraFields") String includeExtraFields,
+                          @ApiParam("Type of aggregated VCF file: none, basic, EVS or ExAC") @DefaultValue("none") @QueryParam("aggregated") String aggregated,
+                          @ApiParam("Calculate indexed variants statistics after the load step") @DefaultValue("false") @QueryParam("calculateStats") boolean calculateStats,
+                          @ApiParam("Annotate indexed variants after the load step") @DefaultValue("false") @QueryParam("annotate") boolean annotate,
+                          @ApiParam("Overwrite annotations already present in variants") @DefaultValue("false") @QueryParam("overwrite") boolean overwriteAnnotations) {
+
+        Map<String, String> params = new LinkedMap();
+        params.put("studyId", studyId);
+        params.put("outdir", outDirStr);
+        params.put("transform", Boolean.toString(transform));
+        params.put("load", Boolean.toString(load));
+        params.put("exclude-genotypes", Boolean.toString(excludeGenotypes));
+        params.put("include-extra-fields", includeExtraFields);
+        params.put("aggregated", aggregated);
+        params.put("calculate-stats", Boolean.toString(calculateStats));
+        params.put("annotate", Boolean.toString(annotate));
+        params.put("overwrite-annotations", Boolean.toString(overwriteAnnotations));
 
         try {
-            long outDirId = catalogManager.getFileId(outDirStr, sessionId);
-            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
-            if(outDirId < 0) {
-                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
-            }
-            // TODO: Change it to query
-            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
-            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
-            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
+            QueryResult queryResult = catalogManager.getFileManager().index(fileIdStr, "VCF", params, sessionId);
             return createOkResponse(queryResult);
-        } catch (Exception e) {
+        } catch(Exception e) {
             return createErrorResponse(e);
         }
+
+
+//        AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
+//
+//        try {
+//            long outDirId = catalogManager.getFileId(outDirStr, sessionId);
+//            long fileId = catalogManager.getFileId(fileIdStr, sessionId);
+//            if(outDirId < 0) {
+//                outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
+//            }
+//            // TODO: Change it to query
+//            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
+//            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
+//            QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, new QueryOptions(queryOptions));
+//            return createOkResponse(queryResult);
+//        } catch (Exception e) {
+//            return createErrorResponse(e);
+//        }
     }
 
     @GET

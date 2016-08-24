@@ -47,6 +47,13 @@ public class JobManager extends AbstractManager implements IJobManager {
         super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogConfiguration);
     }
 
+    public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
+                      CatalogManager catalogManager, CatalogDBAdaptorFactory catalogDBAdaptorFactory,
+                      CatalogIOManagerFactory ioManagerFactory, CatalogConfiguration catalogConfiguration) {
+        super(authorizationManager, authenticationManager, auditManager, catalogManager, catalogDBAdaptorFactory, ioManagerFactory,
+                catalogConfiguration);
+    }
+
     @Deprecated
     public JobManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager, AuditManager auditManager,
                       CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
@@ -330,7 +337,7 @@ public class JobManager extends AbstractManager implements IJobManager {
     public QueryResult<Job> update(Long jobId, ObjectMap parameters, QueryOptions options, String sessionId) throws CatalogException {
         ParamUtils.checkParameter(sessionId, "sessionId");
         ParamUtils.checkObj(parameters, "parameters");
-        String userId = userDBAdaptor.getUserIdBySessionId(sessionId);
+        String userId = this.catalogManager.getUserManager().getUserId(sessionId);
         authorizationManager.checkJobPermission(jobId, userId, JobAclEntry.JobPermissions.UPDATE);
         QueryResult<Job> queryResult = jobDBAdaptor.update(jobId, parameters);
         auditManager.recordUpdate(AuditRecord.Resource.job, jobId, userId, parameters, null, null);
@@ -426,6 +433,15 @@ public class JobManager extends AbstractManager implements IJobManager {
         }
 
         return ParamUtils.defaultObject(queryResult, QueryResult::new);
+    }
+
+    @Override
+    public QueryResult<Job> queue(long studyId, String jobName, String executable, Map<String, String> params, List<Long> input,
+                                  List<Long> output, long outDirId, String userId) throws CatalogException {
+        authorizationManager.checkStudyPermission(studyId, userId, StudyAclEntry.StudyPermissions.CREATE_JOBS);
+
+        Job job = new Job(jobName, userId, executable, input, output, outDirId, params);
+        return jobDBAdaptor.createJob(studyId, job, new QueryOptions());
     }
 
     @Override

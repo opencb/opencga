@@ -199,38 +199,48 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
             // call to multiple groupBy if commas are present
             return groupBy(collection, query, Arrays.asList(groupByField.split(",")), idField, options);
         } else {
-            Bson match = Aggregates.match(query);
-            Bson project = Aggregates.project(Projections.include(groupByField, idField));
-            Bson group;
-            if (options.getBoolean("count", false)) {
-                group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
-            } else {
-                group = Aggregates.group("$" + groupByField, Accumulators.addToSet("features", "$" + idField));
-            }
-            return collection.aggregate(Arrays.asList(match, project, group), options);
+            return groupBy(collection, query, Arrays.asList(groupByField), idField, options);
+//            Bson match = Aggregates.match(query);
+//            List<Bson> projections = new ArrayList<>();
+//            addDateProjection(projections, Arrays.asList(groupByField));
+//            projections.add(Projections.include(groupByField, idField));
+//            Bson project = Aggregates.project(Projections.fields(projections));
+////            Bson project = Aggregates.project(Projections.include(groupByField, idField));
+//            Bson group;
+//            if (options.getBoolean("count", false)) {
+//                group = Aggregates.group("$" + groupByField, Accumulators.sum("count", 1));
+//            } else {
+//                group = Aggregates.group("$" + groupByField, Accumulators.addToSet("features", "$" + idField));
+//            }
+//            return collection.aggregate(Arrays.asList(match, project, group), options);
         }
     }
 
-    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField, QueryOptions
-            options) {
+    protected QueryResult groupBy(MongoDBCollection collection, Bson query, List<String> groupByField, String idField,
+                                  QueryOptions options) {
         if (groupByField == null || groupByField.isEmpty()) {
             return new QueryResult();
         }
 
-        if (groupByField.size() == 1) {
-            // if only one field then we call to simple groupBy
-            return groupBy(collection, query, groupByField.get(0), idField, options);
-        } else {
+        List<String> groupByFields = new ArrayList<>(groupByField);
+//        if (groupByField.size() == 1) {
+//            // if only one field then we call to simple groupBy
+//            return groupBy(collection, query, groupByField.get(0), idField, options);
+//        } else {
             Bson match = Aggregates.match(query);
 
             // add all group-by fields to the projection together with the aggregation field name
-            List<String> groupByFields = new ArrayList<>(groupByField);
-            groupByFields.add(idField);
-            Bson project = Aggregates.project(Projections.include(groupByFields));
+            List<String> includeGroupByFields = new ArrayList<>(groupByField);
+            includeGroupByFields.add(idField);
+            List<Bson> projections = new ArrayList<>();
+            addDateProjection(projections, includeGroupByFields, groupByFields);
+            projections.add(Projections.include(includeGroupByFields));
+            Bson project = Aggregates.project(Projections.fields(projections));
+//            Bson project = Aggregates.project(Projections.include(groupByFields));
 
             // _id document creation to have the multiple id
             Document id = new Document();
-            for (String s : groupByField) {
+            for (String s : groupByFields) {
                 id.append(s, "$" + s);
             }
             Bson group;
@@ -240,6 +250,48 @@ public class CatalogMongoDBAdaptor extends AbstractCatalogDBAdaptor {
                 group = Aggregates.group(id, Accumulators.addToSet("features", "$" + idField));
             }
             return collection.aggregate(Arrays.asList(match, project, group), options);
+//        }
+    }
+
+    /**
+     * Adds the corresponding date projections to the projections list (if any), removes the date fields from includeGroupByFields and
+     * add them to groupByFields if not there.
+     * Only for groupBy methods.
+     *
+     * @param projections List of Bson containing the projections to be done.
+     * @param includeGroupByFields List containing the fields to be included in the projection.
+     * @param groupByFields List containing the fields by which the group by will be done.
+     */
+    private void addDateProjection(List<Bson> projections, List<String> includeGroupByFields, List<String> groupByFields) {
+
+        Document dateProjection = new Document();
+        Document year = new Document("$substr", Arrays.asList("$creationDate", 0, 4));
+        Document month = new Document("$substr", Arrays.asList("$creationDate", 4, 2));
+        Document day = new Document("$substr", Arrays.asList("$creationDate", 6, 2));
+
+        if (includeGroupByFields.contains("day")) {
+            dateProjection.append("day", day).append("month", month).append("year", year);
+            projections.add(dateProjection);
+            includeGroupByFields.remove("day");
+            if (!includeGroupByFields.remove("month")) {
+                 groupByFields.add("month");
+            }
+            if (!includeGroupByFields.remove("year")) {
+                groupByFields.add("year");
+            }
+
+        } else if (includeGroupByFields.contains("month")) {
+            dateProjection.append("month", month).append("year", year);
+            projections.add(dateProjection);
+            includeGroupByFields.remove("month");
+            if (!includeGroupByFields.remove("year")) {
+                groupByFields.add("year");
+            }
+        } else if (includeGroupByFields.contains("year")) {
+            dateProjection.append("year", year);
+            projections.add(dateProjection);
+            includeGroupByFields.remove("year");
         }
+
     }
 }

@@ -1341,7 +1341,7 @@ public class VariantMongoDBAdaptor implements VariantDBAdaptor {
             options = new QueryOptions();
         }
 
-        if (options.containsKey(QueryOptions.SORT)) {
+        if (options.containsKey(QueryOptions.SORT) && !options.getString(QueryOptions.SORT).equals("_id")) {
             if (options.getBoolean(QueryOptions.SORT)) {
                 options.put(QueryOptions.SORT, "_id");
                 options.putIfAbsent(QueryOptions.ORDER, QueryOptions.ASCENDING);

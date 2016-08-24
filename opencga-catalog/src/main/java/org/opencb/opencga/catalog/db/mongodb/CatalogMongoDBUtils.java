@@ -555,7 +555,7 @@ class CatalogMongoDBUtils {
 
         Pattern annotationPattern = Pattern.compile("^([annotation.]?[a-zA-Z\\.]+)([\\^=<>~!\\^\\$]+.*)$");
 
-        List<String> valueList = query.getAsStringList(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key());
+        List<String> valueList = query.getAsStringList(CatalogSampleDBAdaptor.QueryParams.ANNOTATION.key(), ";");
         for (String annotation : valueList) {
             Matcher matcher = annotationPattern.matcher(annotation);
             String key;

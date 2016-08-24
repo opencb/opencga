@@ -600,7 +600,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             ptrMerge = new ParallelTaskRunner<>(reader, variantWriter, null,
                     new ParallelTaskRunner.Config(loadThreads, batchSize, capacity, false));
         } catch (RuntimeException e) {
-            e.printStackTrace();
             throw new StorageManagerException("Error while creating ParallelTaskRunner", e);
         }
 
@@ -613,7 +612,6 @@ public class MongoDBVariantStorageETL extends VariantStorageETL {
             }
             ptrMerge.run();
         } catch (ExecutionException e) {
-            e.printStackTrace();
             throw new StorageManagerException("Error while executing LoadVariants in ParallelTaskRunner", e);
         }
         return variantWriter.getResult();

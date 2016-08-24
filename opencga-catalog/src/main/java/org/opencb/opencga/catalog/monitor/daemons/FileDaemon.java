@@ -38,8 +38,8 @@ public class FileDaemon extends MonitorParentDaemon {
 
     private CatalogFileUtils catalogFileUtils;
 
-    public FileDaemon(int period, int deleteDelay, CatalogManager catalogManager) {
-        super(period, catalogManager);
+    public FileDaemon(int period, int deleteDelay, String sessionId, CatalogManager catalogManager) {
+        super(period, sessionId, catalogManager);
         this.deleteDelay = deleteDelay;
         this.deleteDelayMillis = (long) (deleteDelay * 24 * 60 * 60 * 1000);
 

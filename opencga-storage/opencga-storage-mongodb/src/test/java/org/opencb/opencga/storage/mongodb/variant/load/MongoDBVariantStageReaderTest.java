@@ -56,7 +56,10 @@ public class MongoDBVariantStageReaderTest implements MongoVariantStorageManager
 
     public void writeVariant(MongoDBVariantStageLoader loader, String variantStr) {
         Variant variant = new Variant(variantStr);
-        variant.addStudyEntry(new StudyEntry("1", "1"));
+        variant.setNames(Collections.emptyList());
+        StudyEntry studyEntry = new StudyEntry("1", "1");
+        studyEntry.setFormat(Collections.emptyList());
+        variant.addStudyEntry(studyEntry);
         variantMap.put(variant.getChromosome(), variant);
         loader.write(variant);
     }
