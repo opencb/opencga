@@ -118,10 +118,10 @@ public class StudyClient extends AbstractParentClient<Study, StudyAclEntry> {
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 
-    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, String users, QueryOptions options)
+    public QueryResponse<ObjectMap> deleteGroup(String studyId, String groupId, QueryOptions options)
             throws CatalogException, IOException {
         ObjectMap params = new ObjectMap(options);
-        params = addParamsToObjectMap(params, "groupId", groupId, "addUsers", users);
+        params = addParamsToObjectMap(params, "groupId", groupId);
         return execute(STUDY_URL, studyId, "groups", params, GET, ObjectMap.class);
     }
 

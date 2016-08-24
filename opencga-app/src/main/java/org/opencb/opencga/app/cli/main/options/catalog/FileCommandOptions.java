@@ -26,7 +26,9 @@ public class FileCommandOptions {
     public SearchCommandOptions searchCommandOptions;
     public ListCommandOptions listCommandOptions;
     public IndexCommandOptions indexCommandOptions;
+    public TreeViewCommandOptions treeViewCommandOptions;
     public AlignmentCommandOptions alignmentCommandOptions;
+    public ContentCommandOptions contentCommandOptions;
     public FetchCommandOptions fetchCommandOptions;
     //final VariantsCommand variantsCommand;
     public UpdateCommandOptions updateCommandOptions;
@@ -62,7 +64,9 @@ public class FileCommandOptions {
         this.searchCommandOptions = new SearchCommandOptions();
         this.listCommandOptions = new ListCommandOptions();
         this.indexCommandOptions = new IndexCommandOptions();
+        this.treeViewCommandOptions = new TreeViewCommandOptions();
         this.alignmentCommandOptions = new AlignmentCommandOptions();
+        this.contentCommandOptions = new ContentCommandOptions();
         this.fetchCommandOptions = new FetchCommandOptions();
         this.updateCommandOptions = new UpdateCommandOptions();
         this.relinkCommandOptions = new RelinkCommandOptions();
@@ -125,23 +129,26 @@ public class FileCommandOptions {
         public boolean calculateChecksum;
     }
 
-
     @Parameters(commandNames = {"create-folder"}, commandDescription = "Create Folder")
-    public class CreateFolderCommandOptions extends BaseFileCommand {
+    public class CreateFolderCommandOptions {
 
-        @Parameter(names = {"--path"}, description = "New folder path", required = true, arity = 1)
-        public String path = "";
-
-        @Parameter(names = {"-s", "--study-id"}, description = "studyId", required = true, arity = 1)
+        @Parameter(names = {"-s", "--study-id"}, description = "Study Id", required = true, arity = 1)
         public String studyId;
 
-        @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
-        public boolean parents = true;
+        @Parameter(names = {"--folder"}, description = "Path where the folder is to be created", required = true, arity = 1)
+        public String folder = "";
+
+        @Parameter(names = {"-P", "--parents"}, description = "Create the parent directories if they do not exist. Default: false",
+                required = false, arity = 0)
+        public boolean parents = false;
     }
 
-
     @Parameters(commandNames = {"info"}, commandDescription = "Get file information")
-    public class InfoCommandOptions extends BaseFileCommand {
+    public class InfoCommandOptions {
+
+        @Parameter(names = {"--file-ids"}, description = "Comma separated list of file ids", required = true, arity = 1)
+        public String fileIds;
+
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
 
@@ -149,24 +156,22 @@ public class FileCommandOptions {
         public String exclude;
     }
 
-
     @Parameters(commandNames = {"download"}, commandDescription = "Download file")
-    class DownloadCommandOptions extends BaseFileCommand {
+    public class DownloadCommandOptions extends BaseFileCommand {
 
     }
-
 
     @Parameters(commandNames = {"grep"}, commandDescription = "Get file information")
     public class GrepCommandOptions extends BaseFileCommand {
 
         @Parameter(names = {"--pattern"}, description = "Pattern", required = false, arity = 1)
-        public String pattern;
+        public String pattern = ".*";
 
-        @Parameter(names = {"--ignore-case"}, description = "ignoreCase", required = false, arity = 0)
+        @Parameter(names = {"--ignore-case"}, description = "Do a case insensitive search", required = false, arity = 0)
         public boolean ignoreCase;
 
-        @Parameter(names = {"-m", "--multi"}, description = "multi", required = false, arity = 0)
-        public boolean multi;
+        @Parameter(names = {"-m", "--multi"}, description = "Return multiple matches. Default = true", required = false, arity = 0)
+        public boolean multi = true;
     }
 
     @Parameters(commandNames = {"search"}, commandDescription = "Search files")
@@ -175,46 +180,60 @@ public class FileCommandOptions {
         @ParametersDelegate
         public OpencgaCommonCommandOptions commonOptions = commonCommandOptions;
 
-        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
-        public String include;
-
-        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
-        public String exclude;
-
-        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
-        public String skip;
-
-        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
-        public String limit;
-
         @Parameter(names = {"--id"}, description = "Comma separated list of ids", arity = 1)
         public String id;
 
         @Parameter(names = {"-s", "--study-id"}, description = "Study id", required = true, arity = 1)
         public String studyId;
-        //            @Parameter(names = {"--name"}, description = "Exact file name", required = false, arity = 1)
-//            public String name;
-//            @Parameter(names = {"--path"}, description = "Exact file path", required = false, arity = 1)
-//            public String path;
-        @Parameter(names = {"--name"}, description = "File name. Use regex pattern", required = false, arity = 1)
+
+        @Parameter(names = {"--name"}, description = "Comma separated list of file names", required = false, arity = 1)
         public String name;
 
-        @Parameter(names = {"--directory"}, description = "Directory path (study relative). Use regex pattern", required = false, arity = 1)
-        public String directory;
+        @Parameter(names = {"--path"}, description = "Comma separated list of paths", required = false, arity = 1)
+        public String path;
 
         @Parameter(names = {"--type"}, description = "File type. CSV", required = false, arity = 1)
-        public List<File.Type> types;
+        public List<File.Type> type;
 
         @Parameter(names = {"--bioformat"}, description = "File bioformat. CSV", required = false, arity = 1)
-        public List<File.Bioformat> bioformats;
+        public List<File.Bioformat> bioformat;
 
-        @Parameter(names = {"--status"}, description = "File status. CSV", required = false, arity = 1)
-        public List<String> status;
-    }
+        @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
+        public String format;
 
+        @Parameter(names = {"--status"}, description = "Status.", required = false, arity = 1)
+        public String status;
 
-    @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
-    public class ListCommandOptions extends BaseFileCommand {
+        @Parameter(names = {"--directory"}, description = "Directory under which we want to look for files or folders.", required = false,
+                arity = 1)
+        public String directory;
+
+        @Parameter(names = {"--owner-id"}, description = "Owner id.", required = false, arity = 1)
+        public String ownerId;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", required = false, arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--modification-date"}, description = "Modification date.", required = false, arity = 1)
+        public String modificationDate;
+
+        @Parameter(names = {"-d", "--description"}, description = "Description", required = false, arity = 1)
+        public String description;
+
+        @Parameter(names = {"--disk-usage"}, description = "diskUsage.", required = false, arity = 1)
+        public String diskUsage;
+
+        @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
+        public String sampleIds;
+
+        @Parameter(names = {"--job-id"}, description = "Job id", required = false, arity = 1)
+        public String jobId;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes", required = false, arity = 1)
+        public String attributes;
+
+        @Parameter(names = {"--nattributes"}, description = "numerical attributes", required = false, arity = 1)
+        public String nattributes;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -228,16 +247,31 @@ public class FileCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
-        @Parameter(names = {"--level"}, description = "Descend only level directories deep.", arity = 1)
-        public int level = 1;
-
-        @Parameter(names = {"-R", "--recursive"}, description = "List subdirectories recursively", arity = 0)
-        public boolean recursive;
-
-        @Parameter(names = {"-U", "--show-uris"}, description = "Show uris from linked files and folders", arity = 0)
-        public boolean uries;
+        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
+        public boolean count;
     }
 
+    @Parameters(commandNames = {"list"}, commandDescription = "List files in folder")
+    public class ListCommandOptions {
+
+        @Parameter(names = {"--folder-id"}, description = "Folder Id", arity = 1)
+        public String folderId;
+
+        @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Comma separated list of fields to be excluded from the response", arity = 1)
+        public String exclude;
+
+        @Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;
+
+        @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
+        public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
+        public boolean count;
+    }
 
     @Parameters(commandNames = {"index"}, commandDescription = "Index file in the selected StorageEngine")
     public class IndexCommandOptions {
@@ -313,7 +347,6 @@ public class FileCommandOptions {
 //        public boolean annotate;
     }
 
-
     @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments from a BAM file")
     public class AlignmentCommandOptions extends BaseFileCommand {
 
@@ -328,6 +361,18 @@ public class FileCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
+
+        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
+        public boolean count;
+    }
+
+    @Parameters(commandNames = {"content"}, commandDescription = "Show the content of a file (up to a limit)")
+    public class ContentCommandOptions extends BaseFileCommand{
+        @Parameter(names = {"--start"}, description = "Start", arity = 1)
+        public Integer start = -1;
+
+        @Parameter(names = {"--limit"}, description = "Limit", arity = 1)
+        public Integer limit = -1;
     }
 
     @Deprecated
@@ -340,11 +385,11 @@ public class FileCommandOptions {
         @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs", required = false, arity = 0)
         public boolean viewAsPairs;
 
-        @Parameter(names = {"--include-coverage"}, description = "Include_coverage", required = false, arity = 0)
-        public boolean includeCoverage;
+        @Parameter(names = {"--include-coverage"}, description = "Include_coverage. Default: true", required = false, arity = 0)
+        public boolean includeCoverage = true;
 
-        @Parameter(names = {"--process-differences"}, description = "Process_differences", required = false, arity = 0)
-        public boolean processDifferences;
+        @Parameter(names = {"--process-differences"}, description = "Process_differences Default: true", required = false, arity = 0)
+        public boolean processDifferences = true;
 
         @Parameter(names = {"--histogram"}, description = "Histogram", required = false, arity = 0)
         public boolean histogram;
@@ -360,21 +405,19 @@ public class FileCommandOptions {
     }
 
     @Parameters(commandNames = {"update"}, commandDescription = "Modify file")
-    class UpdateCommandOptions extends BaseFileCommand {
+    public class UpdateCommandOptions extends BaseFileCommand {
 
     }
 
-
     @Parameters(commandNames = {"relink"}, commandDescription = "Change location of linked or STAGED file.")
-    class RelinkCommandOptions extends BaseFileCommand {
+    public class RelinkCommandOptions extends BaseFileCommand {
 
-        @Parameter(names = {"-i", "--input"}, description = "File location", required = true, arity = 1)
-        public String inputFile;
+        @Parameter(names = {"--uri"}, description = "New URI", required = true, arity = 1)
+        public String uri;
 
         @Parameter(names = {"-ch", "--checksum"}, description = "Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum;
     }
-
 
     @Parameters(commandNames = {"delete"}, commandDescription = "Delete file")
     public class DeleteCommandOptions extends BaseFileCommand {
@@ -389,18 +432,39 @@ public class FileCommandOptions {
 
     }
 
+    @Parameters(commandNames = {"tree-view"}, commandDescription = "Obtain a tree view of the files and folders within a folder")
+    public class TreeViewCommandOptions {
+
+        @Parameter(names = {"--folder-id"}, description = "Folder id", required = true, arity = 1)
+        public String folderId;
+
+        @Parameter(names = {"--max-Depth"}, description = "Maximum depth to get files from. Default: 5", required = false, arity = 1)
+        public Integer maxDepth = 5;
+
+        @Parameter(names = {"--include"}, description = "Fields included in the response, whole JSON path must be provided",
+                required = false, arity = 0)
+        public String include;
+
+        @Parameter(names = {"--exclude"}, description = "Fields excluded in the response, whole JSON path must be provided", arity = 1)
+        public String exclude;
+
+        /*@Parameter(names = {"--skip"}, description = "Number of results to skip", arity = 1)
+        public String skip;*/
+
+        @Parameter(names = {"--limit"}, description = "[TO BE IMPLEMENTED] Number of results to be returned in the queries", arity = 1)
+        public String limit;
+
+    }
 
     @Parameters(commandNames = {"refresh"}, commandDescription = "Refresh metadata from the selected file or folder. Print updated files.")
     public class RefreshCommandOptions extends BaseFileCommand {
 
     }
 
-
     @Parameters(commandNames = {"unlink"}, commandDescription = "Unlink an external file from catalog")
     public class UnlinkCommandOptions extends BaseFileCommand {
 
     }
-
 
     @Parameters(commandNames = {"link"}, commandDescription = "Link an external file or folder into catalog.")
     public class LinkCommandOptions {
@@ -424,9 +488,7 @@ public class FileCommandOptions {
 
         @Parameter(names = {"-P", "--parents"}, description = "Create parent directories if needed", required = false)
         public boolean parents;
-
     }
-
 
     @Parameters(commandNames = {"upload"}, commandDescription = "Upload a physical local file to catalog.")
     public class UploadCommandOptions {
@@ -464,7 +526,6 @@ public class FileCommandOptions {
 
         @Parameter(names = {"-ch", "--checksum"}, description = "[PENDING] Calculate checksum", required = false, arity = 0)
         public boolean calculateChecksum;
-
     }
 
     @Parameters(commandNames = {"group-by"}, commandDescription = "GroupBy cohort")
@@ -491,6 +552,9 @@ public class FileCommandOptions {
         @Parameter(names = {"--type"}, description = "Comma separated Type values.", required = false, arity = 1)
         public String type;
 
+        @Parameter(names = {"--bioformat"}, description = "Comma separated Bioformat values.", required = false, arity = 1)
+        public String bioformat;
+
         @Parameter(names = {"--format"}, description = "Comma separated Format values.", required = false, arity = 1)
         public String format;
 
@@ -513,7 +577,7 @@ public class FileCommandOptions {
         public String description;
 
         @Parameter(names = {"--disk-usage"}, description = "diskUsage.", required = false, arity = 1)
-        public Integer diskUsage;
+        public String diskUsage;
 
         @Parameter(names = {"--sample-ids"}, description = "Sample ids", required = false, arity = 1)
         public String sampleIds;

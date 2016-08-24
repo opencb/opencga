@@ -353,7 +353,7 @@ public class StudyWSServer extends OpenCGAWSServer {
 
     @GET
     @Path("/{studyId}/alignments")
-    @ApiOperation(value = "Fetch alignments", position = 11, response = Alignment[].class)
+    @ApiOperation(value = "Fetch alignments. [PENDING]", position = 11, response = Alignment[].class)
     @ApiImplicitParams({
             @ApiImplicitParam(name = "include", value = "Fields included in the response, whole JSON path must be provided", example = "name,attributes", dataType = "string", paramType = "query"),
             @ApiImplicitParam(name = "exclude", value = "Fields excluded in the response, whole JSON path must be provided", example = "id,status", dataType = "string", paramType = "query"),

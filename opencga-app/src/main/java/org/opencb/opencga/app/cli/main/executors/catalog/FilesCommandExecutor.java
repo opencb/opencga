@@ -17,10 +17,8 @@
 package org.opencb.opencga.app.cli.main.executors.catalog;
 
 
-import org.opencb.commons.datastore.core.ObjectMap;
-import org.opencb.commons.datastore.core.QueryOptions;
-import org.opencb.commons.datastore.core.QueryResponse;
-import org.opencb.commons.datastore.core.QueryResult;
+import org.apache.commons.lang3.StringUtils;
+import org.opencb.commons.datastore.core.*;
 import org.opencb.opencga.app.cli.main.OpencgaCommandExecutor;
 import org.opencb.opencga.app.cli.main.executors.commons.AclCommandExecutor;
 import org.opencb.opencga.app.cli.main.options.catalog.FileCommandOptions;
@@ -84,11 +82,17 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
             case "list":
                 queryResponse = list();
                 break;
+            case "tree-view":
+                queryResponse = treeView();
+                break;
             case "index":
                 queryResponse = index();
                 break;
             case "alignment":
                 queryResponse = alignment();
+                break;
+            case "content":
+                queryResponse = content();
                 break;
             case "fetch":
                 queryResponse = fetch();
@@ -172,46 +176,146 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         return new QueryResponse<>(new QueryOptions(), Arrays.asList(file));
     }
 
-    private QueryResponse createFolder() throws CatalogException {
+    private QueryResponse createFolder() throws CatalogException, IOException {
         logger.debug("Creating a new folder");
         ObjectMap o = new ObjectMap();
-       // QueryResponse<File> create = openCGAClient.getFileClient().createFolder(filesCommandOptions.infoCommandOptions.id,
-          //      filesCommandOptions.infoCommandOptions.path,o);
-        System.out.println("PENDING!!.");
-        return null;
+        if (filesCommandOptions.createFolderCommandOptions.parents){
+            o.put("parents",filesCommandOptions.createFolderCommandOptions.parents);
+        }
+
+        return openCGAClient.getFileClient().createFolder(filesCommandOptions.createFolderCommandOptions.studyId,
+                filesCommandOptions.createFolderCommandOptions.folder, o);
     }
 
 
     private QueryResponse<File> info() throws CatalogException, IOException {
         logger.debug("Getting file information");
-        return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.id, null);
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(filesCommandOptions.infoCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.infoCommandOptions.include);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.infoCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.infoCommandOptions.exclude);
+        }
+        return openCGAClient.getFileClient().get(filesCommandOptions.infoCommandOptions.fileIds, queryOptions);
     }
 
-    private QueryResponse download() throws CatalogException {
+    private QueryResponse download() throws CatalogException, IOException {
         logger.debug("Downloading file");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
+        return openCGAClient.getFileClient().download(filesCommandOptions.downloadCommandOptions.id, new ObjectMap());
     }
 
-    private QueryResponse grep() throws CatalogException {
+    private QueryResponse grep() throws CatalogException, IOException {
         logger.debug("Grep command: File content");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put("ignoreCase", filesCommandOptions.grepCommandOptions.ignoreCase);
+        objectMap.put("multi", filesCommandOptions.grepCommandOptions.multi);
+        return openCGAClient.getFileClient().grep(filesCommandOptions.grepCommandOptions.id, filesCommandOptions.grepCommandOptions.pattern,
+                objectMap);
     }
 
-    private QueryResponse search() throws CatalogException {
+    private QueryResponse search() throws CatalogException, IOException {
         logger.debug("Searching files");
-        System.out.println("PENDING!!.");
-        return null;
-        //QueryResponse<File> listfiles = openCGAClient.getFileClient().search(querry, queryoptions);
-        //TODO
+        //FIXME check and put the correct format for type and bioformat. See StudiesCommandExecutor search
+        Query query = new Query();
+        QueryOptions queryOptions = new QueryOptions();
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.id)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.searchCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.name)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.searchCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.path)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.searchCommandOptions.path);
+        }
+
+        query.putIfNotNull(CatalogFileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.searchCommandOptions.type);
+        query.putIfNotNull(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.searchCommandOptions.bioformat);
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.format)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.searchCommandOptions.format);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.status)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.searchCommandOptions.status);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.directory)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.searchCommandOptions.directory);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.ownerId)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.searchCommandOptions.ownerId);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.creationDate)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.searchCommandOptions.creationDate);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.modificationDate)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
+                    filesCommandOptions.groupByCommandOptions.modificationDate);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.description)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.searchCommandOptions.description);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.diskUsage)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), filesCommandOptions.searchCommandOptions.diskUsage);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.sampleIds)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.sampleIds);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.jobId)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.searchCommandOptions.jobId);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.attributes)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.attributes);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.nattributes)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.searchCommandOptions.nattributes);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.sampleIds)) {
+            query.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.searchCommandOptions.sampleIds);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.searchCommandOptions.include);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.searchCommandOptions.exclude);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.searchCommandOptions.limit);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.searchCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.searchCommandOptions.skip);
+        }
+        queryOptions.put("count", filesCommandOptions.searchCommandOptions.count);
+        return openCGAClient.getFileClient().search(query,queryOptions);
     }
 
     private QueryResponse<File> list() throws CatalogException, IOException {
         logger.debug("Listing files in folder");
-        return openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.id, null);
+
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.listCommandOptions.include);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.listCommandOptions.exclude);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.listCommandOptions.limit);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.listCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.listCommandOptions.skip);
+        }
+        queryOptions.put("count", filesCommandOptions.listCommandOptions.count);
+
+        return openCGAClient.getFileClient().getFiles(filesCommandOptions.listCommandOptions.folderId, queryOptions);
     }
 
     private QueryResponse<Job> index() throws CatalogException, IOException {
@@ -234,39 +338,59 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().index(fileIds, o);
     }
 
-    private QueryResponse alignment() throws CatalogException {
+    private QueryResponse<File> treeView() throws CatalogException, IOException {
+        logger.debug("Obtain a tree view of the files and folders within a folder");
+
+        ObjectMap o = new ObjectMap();
+        o.putIfNotNull("maxDepth", filesCommandOptions.treeViewCommandOptions.maxDepth);
+        o.putIfNotNull("include", filesCommandOptions.treeViewCommandOptions.include);
+        o.putIfNotNull("exclude", filesCommandOptions.treeViewCommandOptions.exclude);
+        o.putIfNotNull("limit", filesCommandOptions.treeViewCommandOptions.limit);
+        return openCGAClient.getFileClient().treeView(filesCommandOptions.treeViewCommandOptions.folderId, o);
+    }
+
+    private QueryResponse alignment() throws CatalogException, IOException {
         logger.debug("Fetch alignments from a BAM file");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
+
+        QueryOptions queryOptions = new QueryOptions();
+        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.include)) {
+            queryOptions.put(QueryOptions.INCLUDE, filesCommandOptions.alignmentCommandOptions.include);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.exclude)) {
+            queryOptions.put(QueryOptions.EXCLUDE, filesCommandOptions.alignmentCommandOptions.exclude);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.limit)) {
+            queryOptions.put(QueryOptions.LIMIT, filesCommandOptions.alignmentCommandOptions.limit);
+        }
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.alignmentCommandOptions.skip)) {
+            queryOptions.put(QueryOptions.SKIP, filesCommandOptions.alignmentCommandOptions.skip);
+        }
+        if(filesCommandOptions.alignmentCommandOptions.count) {
+            queryOptions.put("count", filesCommandOptions.alignmentCommandOptions.count);
+        }
+        return openCGAClient.getFileClient().alignments(filesCommandOptions.alignmentCommandOptions.id, queryOptions);
     }
 
+    private QueryResponse content() throws CatalogException, IOException {
+        ObjectMap objectMap = new ObjectMap();
+        objectMap.put("start", filesCommandOptions.contentCommandOptions.start);
+        objectMap.put(QueryOptions.LIMIT, filesCommandOptions.contentCommandOptions.limit);
+        return openCGAClient.getFileClient().content(filesCommandOptions.contentCommandOptions.id, objectMap);
+    }
     private QueryResponse fetch() throws CatalogException {
-        logger.debug("File Fetch");
-        System.out.println("PENDING!!.");
+        logger.debug("File Fetch. [DEPRECATED]  Use .../files/{fileId}/[variants|alignments] or " +
+                ".../studies/{studyId}/[variants|alignments] instead");
         return null;
-        //TODO
     }
 
-    private QueryResponse share() throws CatalogException {
-        logger.debug("Sharing a file");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
-    }
 
-    private QueryResponse unshare() throws CatalogException {
-        logger.debug("Unsharing a file");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
-    }
-
-    private QueryResponse update() throws CatalogException {
+    private QueryResponse update() throws CatalogException, IOException {
         logger.debug("updating file");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
+        return openCGAClient.getFileClient().update(filesCommandOptions.updateCommandOptions.id, new ObjectMap());
+
     }
 
     private QueryResponse<File> upload() throws CatalogException, IOException {
@@ -329,11 +453,12 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         return new QueryResponse<>(new QueryOptions(), Arrays.asList(linkQueryResult));
     }
 
-    private QueryResponse relink() throws CatalogException {
-        logger.debug("Change file location. Provided file must be either STAGED or an external file");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
+    private QueryResponse relink() throws CatalogException, IOException {
+        logger.debug("Change file location. Provided file must be either STAGED or an external file. [DEPRECATED]");
+        QueryOptions queryOptions = new QueryOptions();
+        queryOptions.put("calculateChecksum", filesCommandOptions.relinkCommandOptions.calculateChecksum);
+        return  openCGAClient.getFileClient().relink(filesCommandOptions.relinkCommandOptions.id,
+                filesCommandOptions.relinkCommandOptions.uri, queryOptions);
     }
 
     private QueryResponse<File> unlink() throws CatalogException, IOException {
@@ -358,19 +483,72 @@ public class FilesCommandExecutor extends OpencgaCommandExecutor {
         return openCGAClient.getFileClient().unlink(filesCommandOptions.unlinkCommandOptions.id, new ObjectMap());
     }
 
-    private QueryResponse refresh() throws CatalogException {
+    private QueryResponse refresh() throws CatalogException, IOException {
         logger.debug("Refreshing metadata from the selected file or folder. Print updated files.");
-        System.out.println("PENDING!!.");
-        return null;
+        return openCGAClient.getFileClient().refresh(filesCommandOptions.refreshCommandOptions.id, new QueryOptions());
     }
 
 
-    private QueryResponse groupBy() throws CatalogException {
+    private QueryResponse groupBy() throws CatalogException, IOException {
         logger.debug("Grouping files by several fields");
-        System.out.println("PENDING!!.");
-        return null;
-        //TODO
 
+        QueryOptions queryOptions = new QueryOptions();
+
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.id)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.ID.key(), filesCommandOptions.groupByCommandOptions.id);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.name)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.NAME.key(), filesCommandOptions.groupByCommandOptions.name);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.path)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.PATH.key(), filesCommandOptions.groupByCommandOptions.path);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.type)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.TYPE.key(), filesCommandOptions.groupByCommandOptions.type);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.bioformat)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.BIOFORMAT.key(), filesCommandOptions.groupByCommandOptions.bioformat);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.format)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.FORMAT.key(), filesCommandOptions.groupByCommandOptions.format);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.status)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.STATUS.key(), filesCommandOptions.groupByCommandOptions.status);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.directory)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DIRECTORY.key(), filesCommandOptions.groupByCommandOptions.directory);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.ownerId)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.OWNER_ID.key(), filesCommandOptions.groupByCommandOptions.ownerId);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.creationDate)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.CREATION_DATE.key(), filesCommandOptions.groupByCommandOptions.creationDate);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.modificationDate)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.MODIFICATION_DATE.key(),
+                    filesCommandOptions.groupByCommandOptions.modificationDate);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.description)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DESCRIPTION.key(), filesCommandOptions.groupByCommandOptions.description);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.diskUsage)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.DISK_USAGE.key(), filesCommandOptions.groupByCommandOptions.diskUsage);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.sampleIds)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.SAMPLE_IDS.key(), filesCommandOptions.groupByCommandOptions.sampleIds);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.jobId)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.JOB_ID.key(), filesCommandOptions.groupByCommandOptions.jobId);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.attributes)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.ATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.attributes);
+        }
+        if (StringUtils.isNotEmpty(filesCommandOptions.groupByCommandOptions.nattributes)) {
+            queryOptions.put(CatalogFileDBAdaptor.QueryParams.NATTRIBUTES.key(), filesCommandOptions.groupByCommandOptions.nattributes);
+        }
+
+        return openCGAClient.getFileClient().groupBy(filesCommandOptions.groupByCommandOptions.studyId,
+                filesCommandOptions.groupByCommandOptions.fields, queryOptions);
     }
 
 

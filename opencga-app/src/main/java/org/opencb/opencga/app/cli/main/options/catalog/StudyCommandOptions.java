@@ -173,11 +173,9 @@ public class StudyCommandOptions {
         @Parameter(names = {"--battributes"}, description = "Boolean attributes.", arity = 0)
         public String battributes;
 
-//        @Parameter(names = {"--groups"}, description = "Groups.", arity = 1)
-//        public String groups;
-//
-//        @Parameter(names = {"--groups-users"}, description = "Groups users.", arity = 1)
-//        public String groupsUsers;
+        @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
+        public boolean count;
+
     }
 
     @Parameters(commandNames = {"scan-files"}, commandDescription = "Scans the study folder to find untracked or missing files")
@@ -188,6 +186,61 @@ public class StudyCommandOptions {
 
     @Parameters(commandNames = {"files"}, commandDescription = "Fetch files from a study")
     public class FilesCommandOptions extends BaseStudyCommand {
+
+        @Parameter(names = {"--file-id"}, description = "File id", arity = 1)
+        public String fileId;
+
+        @Parameter(names = {"--name"}, description = "Name", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--path"}, description = "Path", arity = 1)
+        public String path;
+
+        @Parameter(names = {"-t", "--file-type"}, description = "Comma separated Type values. For existing Types see files/help", arity = 1)
+        public String type = "FILE";
+
+        @Parameter(names = {"-b", "--bioformat"}, description = "Comma separated Bioformat values. For existing Bioformats see files/help",
+                arity = 1)
+        public String bioformat;
+
+        @Parameter(names = {"--format"}, description = "Comma separated Format values. For existing Formats see files/help", arity = 1)
+        public String format;
+
+        @Parameter(names = {"--status"}, description = "Status", arity = 1)
+        public String status;
+
+        @Parameter(names = {"--directory"}, description = "Directory", arity = 1)
+        public String directory;
+
+        @Parameter(names = {"--owner-id"}, description = "owner Id", arity = 1)
+        public String ownerId;
+
+        @Parameter(names = {"--creation-date"}, description = "Creation date.", arity = 1)
+        public String creationDate;
+
+        @Parameter(names = {"--modification-date"}, description = "Modification Date.", arity = 1)
+        public String modificationDate;
+
+        @Parameter(names = {"--description"}, description = "Description", arity = 1)
+        public String description;
+
+        @Parameter(names = {"--disk-usage"}, description = "DiskUsage", arity = 1)
+        public String diskUsage;
+
+        @Parameter(names = {"--sample-ids"}, description = "Comma separated sampleIds", arity = 1)
+        public String sampleIds;
+
+        @Parameter(names = {"--job-id"}, description = "Job Id", arity = 1)
+        public String jobId;
+
+        @Parameter(names = {"--attributes"}, description = "Attributes.", arity = 1)
+        public String attributes;
+
+        @Parameter(names = {"--nattributes"}, description = "Numerical attributes.", arity = 1)
+        public String nattributes;
+
+        @Parameter(names = {"-e", "--external"}, description = "Whether to fetch external linked files", arity = 0)
+        public boolean external;
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
@@ -201,17 +254,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
 
-        @Parameter(names = {"-t", "--file-type"}, description = "Filter type of files. eg: FILE, DIRECTORY", arity = 1)
-        public String type = "FILE";
-
-        @Parameter(names = {"-b", "--bioformat"}, description = "Filter by bioformat of files. eg: VARIANT, IDLIST", arity = 1)
-        public String bioformat;
-
-        @Parameter(names = {"-s", "--size"}, description = "Filter by size of files, eg. <100000", arity = 1)
-        public String size;
-
-        @Parameter(names = {"-e", "--external"}, description = "Whether to fetch external linked files", arity = 0)
-        public boolean external;
+        @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
+        public boolean count;
     }
 
 
@@ -250,7 +294,7 @@ public class StudyCommandOptions {
 
     }
 
-    @Parameters(commandNames = {"alignments"}, commandDescription = "Study alignments information [PENDING]")
+    @Parameters(commandNames = {"alignments"}, commandDescription = "Fetch alignments")
     public class AlignmentsCommandOptions extends BaseStudyCommand {
 
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
@@ -274,20 +318,23 @@ public class StudyCommandOptions {
         @Parameter(names = {"--region"}, description = "Region.", required = true, arity = 1)
         public String region;
 
-        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs.", arity = 0)
+        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs. Default = false", arity = 0)
         public boolean view_as_pairs;
 
-        @Parameter(names = {"--include-coverage"}, description = "Include_coverage.", arity = 0)
-        public boolean include_coverage;
+        @Parameter(names = {"--include-coverage"}, description = "Include_coverage. Default = true", arity = 0)
+        public boolean include_coverage = true;
 
-        @Parameter(names = {"--process-differences"}, description = "Process differences.", arity = 0)
-        public boolean process_differences;
+        @Parameter(names = {"--process-differences"}, description = "Process differences. Default = true", arity = 0)
+        public boolean process_differences = true;
 
-//        @Parameter(names = {"--view-as-pairs"}, description = "View_as_pairs.", arity = 0)
-//        public boolean histogram;
+        @Parameter(names = {"--histogram"}, description = "Histogram. Default = false", arity = 0)
+        public boolean histogram;
 
-        @Parameter(names = {"--interval"}, description = "Interval.", arity = 1)
-        public Integer interval;
+        @Parameter(names = {"--interval"}, description = "Interval. Default = 2000", arity = 1)
+        public Integer interval = 2000;
+
+        @Parameter(names = {"--count"}, description = "Total number of results. Default = false", arity = 0)
+        public boolean count;
     }
 
     @Parameters(commandNames = {"jobs"}, commandDescription = "Study jobs information")
@@ -308,8 +355,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--name"}, description = "Job name", arity = 1)
         public String name;
 
-        @Parameter(names = {"--tool-id"}, description = "Tool Id [PENDING]", arity = 1)
-        public String toolId;
+        @Parameter(names = {"--tool-name"}, description = "Tool name", arity = 1)
+        public String toolName;
 
         @Parameter(names = {"--status"}, description = "Job status", arity = 1)
         public String status;
@@ -317,8 +364,8 @@ public class StudyCommandOptions {
         @Parameter(names = {"--owner-id"}, description = "User that created the job", arity = 1)
         public String ownerId;
 
-        @Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
-        public String date;
+        /*@Parameter(names = {"--date"}, description = "Creation date of the job", arity = 1)
+        public String date;*/
 
         @Parameter(names = {"--input-files"}, description = "Comma separated list of input file ids", arity = 1)
         public String inputFiles;
@@ -334,6 +381,27 @@ public class StudyCommandOptions {
     @Parameters(commandNames = {"samples"}, commandDescription = "Study samples information")
     public class SamplesCommandOptions extends BaseStudyCommand {
 
+        @Parameter(names = {"--name"}, description = "Sample name", arity = 1)
+        public String name;
+
+        @Parameter(names = {"--source"}, description = "Source of the sample", arity = 1)
+        public String source;
+
+        /*@Parameter(names = {"--description"}, description = "Sample description", arity = 1)
+        public String description;*/
+
+        @Parameter(names = {"--individual-id"}, description = "Individual id", arity = 1)
+        public String individualId;
+
+        @Parameter(names = {"--annotation-set-name"}, description = "AnnotationSetName", arity = 1)
+        public String annotationSetName;
+
+        @Parameter(names = {"--variable-set-id"}, description = "Variable set id", arity = 1)
+        public String variableSetId;
+
+        @Parameter(names = {"--annotation"}, description = "Annotation", arity = 1)
+        public String annotation;
+
         @Parameter(names = {"--include"}, description = "Comma separated list of fields to be included in the response", arity = 1)
         public String include;
 
@@ -345,15 +413,6 @@ public class StudyCommandOptions {
 
         @Parameter(names = {"--limit"}, description = "Maximum number of results to be returned", arity = 1)
         public String limit;
-
-        @Parameter(names = {"--name"}, description = "Sample name", arity = 1)
-        public String name;
-
-        @Parameter(names = {"--source"}, description = "Source of the sample", arity = 1)
-        public String source;
-
-        @Parameter(names = {"--description"}, description = "Sample description", arity = 1)
-        public String description;
 
         @Parameter(names = {"--count"}, description = "Total number of results.", arity = 0)
         public boolean count;
@@ -481,6 +540,12 @@ public class StudyCommandOptions {
         @Parameter(names = {"--annot-hpo"}, description = "List of HPO terms. e.g. \"HP:0000545\"", arity = 1)
         public String hpo;
 
+        @Parameter(names = {"--annot-go"}, description = "List of GO (Genome Ontology) terms. e.g. \"GO:0002020\"", arity = 1)
+        public String go;
+
+        @Parameter(names = {"--annot-expression"}, description = "List of tissues of interest. e.g. \"tongue\"", arity = 1)
+        public String expression;
+
         @Parameter(names = {"--annot-protein-keywords"}, description = "List of protein variant annotation keywords",
                 arity = 1)
         public String proteinKeyword;
@@ -548,9 +613,6 @@ public class StudyCommandOptions {
         @Parameter(names = {"--group-id"}, description = "Group id", required = true, arity = 1)
         public String groupId;
 
-        @Parameter(names = {"--users"}, description = "Comma separated list of members that will form the group",
-                required = true, arity = 1)
-        public String users;
     }
 
     @Parameters(commandNames = {"groups-info"}, commandDescription = "Return the group")

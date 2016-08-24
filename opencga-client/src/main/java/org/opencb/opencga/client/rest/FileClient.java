@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.client.rest;
 
+import org.biojava.nbio.alignment.Alignments;
 import org.opencb.commons.datastore.core.ObjectMap;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResponse;
@@ -25,6 +26,7 @@ import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.models.acls.permissions.FileAclEntry;
 import org.opencb.opencga.client.config.ClientConfiguration;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.net.URI;
 
@@ -97,6 +99,10 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
         return execute(FILES_URL, fileId, "delete", params, GET, File.class);
     }
 
+    public QueryResponse<File> treeView(String folderId, ObjectMap params) throws CatalogException, IOException {
+        return execute(FILES_URL, folderId, "tree-view", params, GET, File.class);
+    }
+
     public QueryResponse<File> refresh(String fileId, QueryOptions options) throws CatalogException, IOException {
         return execute(FILES_URL, fileId, "refresh", options, GET, File.class);
     }
@@ -104,6 +110,13 @@ public class FileClient extends AbstractParentClient<File, FileAclEntry> {
     public QueryResponse<File> upload(String studyId, String filePath, ObjectMap params) throws CatalogException, IOException {
         params = addParamsToObjectMap(params, "studyId", studyId, "file", filePath);
         return execute(FILES_URL, "upload", params, POST, File.class);
+    }
+    public QueryResponse<File> groupBy(String studyId, String fields, ObjectMap params) throws CatalogException, IOException {
+        params = addParamsToObjectMap(params, "studyId", studyId, "fields", fields);
+        return execute(FILES_URL, "groupBy", params, GET, File.class);
+    }
+    public QueryResponse<Alignments> alignments(String fieldId, QueryOptions options) throws CatalogException, IOException {
+        return execute(FILES_URL, fieldId, "alignments", options, GET, Alignments.class);
     }
 
     /**
