@@ -16,6 +16,7 @@
 
 package org.opencb.opencga.storage.core.config;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,9 +34,9 @@ public class DatabaseCredentials {
     private String password;
 
     /**
-     * options parameter defines database-specific parameters
+     * options parameter defines database-specific parameters such as --authenticateDatabase of MongoDB
      */
-//    private Map<String, String> options;
+    private Map<String, String> options;
 
 
     public DatabaseCredentials() {
@@ -43,16 +44,14 @@ public class DatabaseCredentials {
     }
 
     public DatabaseCredentials(List<String> hosts, String user, String password) {
-        this.hosts = hosts;
-        this.user = user;
-        this.password = password;
+        this(hosts, user, password, new HashMap<>());
     }
 
     public DatabaseCredentials(List<String> hosts, String user, String password, Map<String, String> options) {
         this.hosts = hosts;
         this.user = user;
         this.password = password;
-//        this.options = options;
+        this.options = options;
     }
 
 
@@ -62,7 +61,7 @@ public class DatabaseCredentials {
                 "hosts=" + hosts +
                 ", user='" + user + '\'' +
                 ", password='" + password + '\'' +
-//                ", options=" + options +
+                ", options=" + options +
                 '}';
     }
 
@@ -91,12 +90,12 @@ public class DatabaseCredentials {
         this.password = password;
     }
 
-//    public Map<String, String> getOptions() {
-//        return options;
-//    }
-//
-//    public void setOptions(Map<String, String> options) {
-//        this.options = options;
-//    }
+    public Map<String, String> getOptions() {
+        return options;
+    }
+
+    public void setOptions(Map<String, String> options) {
+        this.options = options;
+    }
 
 }

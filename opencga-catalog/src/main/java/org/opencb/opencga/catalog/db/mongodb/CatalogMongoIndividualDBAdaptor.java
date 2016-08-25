@@ -11,11 +11,15 @@ import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.db.api.CatalogIndividualDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogSampleDBAdaptor;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
+import org.opencb.opencga.catalog.models.AnnotationSet;
 import org.opencb.opencga.catalog.models.Individual;
 import org.opencb.opencga.catalog.models.Sample;
+import org.opencb.opencga.catalog.models.Variable;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor.*;
 import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBUtils.*;
@@ -49,7 +53,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         if (!dbAdaptorFactory.getCatalogStudyDBAdaptor().studyExists(studyId)) {
             throw CatalogDBException.idNotFound("Study", studyId);
         }
-        if (!getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.name.toString(), individual.getName())).getResult().isEmpty()) {
+        if (!getAllIndividuals(new QueryOptions(IndividualFilterOption.name.toString(), individual.getName()).append(IndividualFilterOption.studyId.toString(), studyId)).getResult().isEmpty()) {
             throw CatalogDBException.alreadyExists("Individual", "name", individual.getName());
         }
         if (individual.getFatherId() > 0 && !individualExists(individual.getFatherId())) {
@@ -85,11 +89,22 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
     }
 
     @Override
-    public QueryResult<Individual> getAllIndividuals(int studyId, QueryOptions options) throws CatalogDBException {
+    public QueryResult<Individual> getAllIndividuals(QueryOptions options) throws CatalogDBException {
+        int variableSetId = options.getInt(CatalogSampleDBAdaptor.SampleFilterOption.variableSetId.toString());
+        Map<String, Variable> variableMap = null;
+        if (variableSetId > 0) {
+            variableMap = dbAdaptorFactory.getCatalogStudyDBAdaptor().getVariableSet(variableSetId, null).first()
+                    .getVariables().stream().collect(Collectors.toMap(Variable::getId, Function.identity()));
+        }
+        return getAllIndividuals(options, variableMap);
+    }
+
+
+    public QueryResult<Individual> getAllIndividuals(QueryOptions options, Map<String, Variable> variableMap) throws CatalogDBException {
         long startTime = startQuery();
 
         List<DBObject> mongoQueryList = new LinkedList<>();
-        options.put(IndividualFilterOption.studyId.toString(), studyId);
+        List<DBObject> annotationSetFilter = new LinkedList<>();
         for (Map.Entry<String, Object> entry : options.entrySet()) {
             String key = entry.getKey().split("\\.")[0];
             try {
@@ -104,6 +119,15 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
                     case studyId:
                         addCompQueryFilter(option, option.name(), options, _STUDY_ID, mongoQueryList);
                         break;
+                    case annotationSetId:
+                        addCompQueryFilter(option, option.name(), options, "id", annotationSetFilter);
+                        break;
+                    case variableSetId:
+                        addCompQueryFilter(option, option.name(), options, option.getKey(), annotationSetFilter);
+                        break;
+                    case annotation:
+                        addAnnotationQueryFilter(option.name(), options, annotationSetFilter, variableMap);
+                        break;
                     default:
                         String queryKey = entry.getKey().replaceFirst(option.name(), option.getKey());
                         addCompQueryFilter(option, entry.getKey(), options, queryKey, mongoQueryList);
@@ -113,7 +137,15 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
                 throw new CatalogDBException(e);
             }
         }
-        QueryResult<DBObject> result = individualCollection.find(new BasicDBObject("$and", mongoQueryList), filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
+
+        BasicDBObject mongoQuery = new BasicDBObject();
+        if (!mongoQueryList.isEmpty()) {
+            mongoQuery.put("$and", mongoQueryList);
+        }
+        if (!annotationSetFilter.isEmpty()) {
+            mongoQuery.put("annotationSets", new BasicDBObject("$elemMatch", new BasicDBObject("$and", annotationSetFilter)));
+        }
+        QueryResult<DBObject> result = individualCollection.find(mongoQuery, filterOptions(options, FILTER_ROUTE_INDIVIDUALS));
         List<Individual> individuals = parseObjects(result, Individual.class);
         return endQuery("getAllIndividuals", startTime, individuals);
     }
@@ -142,7 +174,9 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         //Check existing name
         if (individualParameters.containsKey("name")) {
             String name = individualParameters.get("name").toString();
-            if (!getAllIndividuals(getStudyIdByIndividualId(individualId), new QueryOptions(IndividualFilterOption.name.toString(), name)).getResult().isEmpty()) {
+            QueryOptions query = new QueryOptions(IndividualFilterOption.name.toString(), name)
+                    .append(IndividualFilterOption.studyId.toString(), getStudyIdByIndividualId(individualId));
+            if (!getAllIndividuals(query).getResult().isEmpty()) {
                 throw CatalogDBException.alreadyExists("Individual", "name", name);
             }
         }
@@ -151,7 +185,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         for (String individualIdParam : individualIdParams) {
             if (individualParameters.containsKey(individualIdParam)) {
                 Integer individualId1 = (Integer) individualParameters.get(individualIdParam);
-                if (!individualExists(individualId1)) {
+                if (individualId1 > 0 && !individualExists(individualId1)) {
                     throw CatalogDBException.idNotFound("Individual " + individualIdParam, individualId1);
                 }
             }
@@ -168,6 +202,77 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
         }
 
         return endQuery("Modify individual", startTime, getIndividual(individualId, parameters));
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> annotateIndividual(int individualId, AnnotationSet annotationSet, boolean overwrite)
+            throws CatalogDBException {
+        long startTime = startQuery();
+
+        QueryResult<Long> count = individualCollection.count(
+                new BasicDBObject("annotationSets.id", annotationSet.getId()).append(_ID, individualId));
+
+        if (overwrite) {
+            if (count.first() == 0) {
+                throw CatalogDBException.idNotFound("AnnotationSet", annotationSet.getId());
+            }
+        } else {
+            if (count.first() > 0) {
+                throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+            }
+        }
+
+        DBObject object = getDbObject(annotationSet, "AnnotationSet");
+
+        DBObject query = new BasicDBObject(_ID, individualId);
+        if (overwrite) {
+            query.put("annotationSets.id", annotationSet.getId());
+        } else {
+            query.put("annotationSets.id", new BasicDBObject("$ne", annotationSet.getId()));
+        }
+
+        DBObject update;
+        if (overwrite) {
+            update = new BasicDBObject("$set", new BasicDBObject("annotationSets.$", object));
+        } else {
+            update = new BasicDBObject("$push", new BasicDBObject("annotationSets", object));
+        }
+
+        QueryResult<WriteResult> queryResult = individualCollection.update(query, update, null);
+
+        if (queryResult.first().getN() != 1) {
+            throw CatalogDBException.alreadyExists("AnnotationSet", "id", annotationSet.getId());
+        }
+
+        return endQuery("", startTime, Collections.singletonList(annotationSet));
+    }
+
+    @Override
+    public QueryResult<AnnotationSet> deleteAnnotation(int individualId, String annotationId) throws CatalogDBException {
+
+        long startTime = startQuery();
+
+        Individual individual = getIndividual(individualId, new QueryOptions("include", "projects.studies.individuals.annotationSets")).first();
+        AnnotationSet annotationSet = null;
+        for (AnnotationSet as : individual.getAnnotationSets()) {
+            if (as.getId().equals(annotationId)) {
+                annotationSet = as;
+                break;
+            }
+        }
+
+        if (annotationSet == null) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        DBObject query = new BasicDBObject(_ID, individualId);
+        DBObject update = new BasicDBObject("$pull", new BasicDBObject("annotationSets", new BasicDBObject("id", annotationId)));
+        QueryResult<WriteResult> resultQueryResult = individualCollection.update(query, update, null);
+        if (resultQueryResult.first().getN() < 1) {
+            throw CatalogDBException.idNotFound("AnnotationSet", annotationId);
+        }
+
+        return endQuery("Delete annotation", startTime, Collections.singletonList(annotationSet));
     }
 
     @Override
@@ -189,7 +294,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
 
     public void checkInUse(int individualId) throws CatalogDBException {
         int studyId = getStudyIdByIndividualId(individualId);
-        QueryResult<Individual> individuals = getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.fatherId.toString(), individualId));
+        QueryResult<Individual> individuals = getAllIndividuals(new QueryOptions(IndividualFilterOption.fatherId.toString(), individualId).append(IndividualFilterOption.studyId.toString(), studyId));
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"fatherId\" of individual : [";
             for (Individual individual : individuals.getResult()) {
@@ -198,7 +303,7 @@ public class CatalogMongoIndividualDBAdaptor extends CatalogDBAdaptor implements
             msg += "]";
             throw new CatalogDBException(msg);
         }
-        individuals = getAllIndividuals(studyId, new QueryOptions(IndividualFilterOption.motherId.toString(), individualId));
+        individuals = getAllIndividuals(new QueryOptions(IndividualFilterOption.motherId.toString(), individualId).append(IndividualFilterOption.studyId.toString(), studyId));
         if (individuals.getNumResults() != 0) {
             String msg = "Can't delete Individual, still in use as \"motherId\" of individual : [";
             for (Individual individual : individuals.getResult()) {

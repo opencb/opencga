@@ -59,11 +59,10 @@ public class Annotation {
 
     @Override
     public int hashCode() {
-        int result = id.hashCode();
-        result = 31 * result + value.hashCode();
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (value != null ? value.hashCode() : 0);
         return result;
     }
-
 
     public String getId() {
         return id;

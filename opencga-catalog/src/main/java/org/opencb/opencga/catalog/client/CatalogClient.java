@@ -63,7 +63,7 @@ public interface CatalogClient {
                                          String creatorId, String creationDate, String description, String status,
                                          String cipher, String uriScheme, Map<String, Object> stats,
                                          Map<String, Object> attributes) throws CatalogException;
-        public QueryResult<Study> share(int studyId, Acl acl) throws CatalogException;
+        public QueryResult<Study> share(int studyId, AclEntry acl) throws CatalogException;
     }
     interface CatalogFileClient extends CatalogResourceClient <File>{
         public String  getUserId(int fileId) throws CatalogException;

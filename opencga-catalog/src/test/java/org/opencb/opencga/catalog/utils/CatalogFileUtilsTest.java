@@ -203,7 +203,8 @@ public class CatalogFileUtilsTest {
                 assertTrue(f.getUri() == null);
             }
         }
-        assertTrue(!Paths.get(catalogManager.getStudyUri(studyId).resolve(folder.getName())).toFile().exists());
+        URI folderUri = catalogManager.getStudyUri(studyId).resolve(folder.getName());
+        assertTrue("folderUri " + folderUri + " shouldn't exist", !Paths.get(folderUri).toFile().exists());
 
         //Delete folder. Should trash everything.
         catalogManager.deleteFolder(folder.getId(), userSessionId);
@@ -246,6 +247,34 @@ public class CatalogFileUtilsTest {
 //        sourceUri = createdFile.toURI();
 //        thrown.expect(CatalogException.class);
 //        catalogFileUtils.link(file, true, sourceUri, false, userSessionId);
+    }
+
+    @Test
+    public void linkFolderTest2() throws Exception {
+        Path directory = Paths.get("/tmp/linkFolderTest");
+        if (directory.toFile().exists()) {
+            IOUtils.deleteDirectory(directory);
+        }
+        Files.createDirectory(directory);
+        List<java.io.File> createdFiles = new LinkedList<>();
+
+        Files.createDirectory(directory.resolve("dir"));
+        createdFiles.add(CatalogManagerTest.createDebugFile(directory.resolve("dir").resolve("file2.txt").toString()));
+        URI sourceUri = directory.toUri();
+
+        File folder = catalogManager.createFile(studyId, File.Type.FOLDER, null, null,
+                "test", null, null, null, File.Status.STAGE, 0, -1, null, -1, null, null, true, null, userSessionId).first();
+        folder = catalogFileUtils.link(folder, true, sourceUri, true, false, userSessionId);
+        URI uri = catalogManager.getFileUri(folder);
+        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+
+        folder = catalogManager.createFolder(studyId, Paths.get("test/dir/folder"), true, null, userSessionId).first();
+        uri = catalogManager.getFileUri(folder);
+        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
+
+        folder = catalogManager.createFolder(studyId, Paths.get("test/folder"), true, null, userSessionId).first();
+        uri = catalogManager.getFileUri(folder);
+        assertTrue(catalogManager.getCatalogIOManagerFactory().get(uri).exists(uri));
     }
 
 

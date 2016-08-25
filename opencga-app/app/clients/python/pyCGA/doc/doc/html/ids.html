@@ -1,0 +1,299 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Id Considerations in OpenCGA &mdash; pyCGA 0.1.0 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="pyCGA 0.1.0 documentation" href="index.html"/>
+        <link rel="next" title="Web Services API" href="web_services.html"/>
+        <link rel="prev" title="Quick-start" href="quick_start.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="documentation.html" class="icon icon-home"> pyCGA
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#requirements">Requirements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="installation.html#install">Install</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick-start</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Id Considerations in OpenCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#ids-in-opencga">Ids in OpenCGA</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pycgaidconverter">pyCGAIdConverter</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#common-use-examples">Common use examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="web_services.html">Web Services API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="queries_from_python.html">How To Use API from python</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="pyCGA.html">PyCGA</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#pycgalogin">PyCGALogin</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#user-tools">User Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#file-tools">File Tools</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="pyCGA.html#use-case-example">Use case example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#sample-tools">Sample Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#individuals-tools">Individuals Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyCGA.html#variable-sets-tools">Variable Sets Tools</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pyVariantFetcher.html">pyCGAVariantFetcher</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#commandline-options">CommandLine Options</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pyVariantFetcher.html#examples">Examples</a></li>
+</ul>
+</li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="new_web_services.html">How to implement new web services parsers</a></li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="documentation.html">pyCGA</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="documentation.html">Docs</a> &raquo;</li>
+      
+    <li>Id Considerations in OpenCGA</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="how-to-use-ids">
+<span id="id-considerations-in-opencga"></span><h1>Id Considerations in OpenCGA<a class="headerlink" href="#how-to-use-ids" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="ids-in-opencga">
+<h2>Ids in OpenCGA<a class="headerlink" href="#ids-in-opencga" title="Permalink to this headline">¶</a></h2>
+<p>Before you make queries to OpenCGA using this API, you should understand how ID of samples and and individuals are
+stored in the database.</p>
+<dl class="docutils">
+<dt>Each individual has associated:</dt>
+<dd><ol class="first last arabic simple">
+<li>Unique id in the DB. This id was created by the application. It is an internal id and not used except if you know very well the internal structure of OpenCGA.</li>
+<li>Individual Name. This id was created by the administrator of the DB, usually it comes from a PED file.</li>
+</ol>
+</dd>
+<dt>Each sample has associated:</dt>
+<dd><ol class="first last arabic simple">
+<li>Unique id in the DB. This id was created by the application. It is an internal id and not used except if you know very well the internal structure of OpenCGA.</li>
+<li>Sample name. This name was created using the information in the VCF/BAM/PED file, this one will be the identifier that users should use to refer one sample.</li>
+<li>Individual id. This is the internal id for one individual, it is used to links one sample with one individual.</li>
+</ol>
+</dd>
+</dl>
+<p>As you can see there are several Ids which you may not necessarily know, this API provide you a tool to perform the conversions in a simple and easy way:</p>
+</div>
+<div class="section" id="pycgaidconverter">
+<h2>pyCGAIdConverter<a class="headerlink" href="#pycgaidconverter" title="Permalink to this headline">¶</a></h2>
+<p>The output is a 2 column table (tab separated) with the provided id in the first column and the requested id in the second one.</p>
+</div>
+<div class="section" id="commandline-options">
+<h2>CommandLine Options<a class="headerlink" href="#commandline-options" title="Permalink to this headline">¶</a></h2>
+<p>This program can be used to get the apropiate Sample/individualID from openCGA</p>
+<pre class="literal-block">
+usage: pyCGAIdConverter [-h] --studyID study Id [--inputIDType Input Id Type] [--outputIDType Output Id Type]
+                        [--IdBatch Id batch | --Id [Id [Id ...]]]
+</pre>
+<dl class="docutils">
+<dt>Options:</dt>
+<dd><table class="first last docutils option-list" frame="void" rules="none">
+<col class="option" />
+<col class="description" />
+<tbody valign="top">
+<tr><td class="option-group">
+<kbd><span class="option">--studyID</span></kbd></td>
+<td>Required. The id of the study, this can be query usgin pyCGA</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--inputIDType=CatalogSampleId</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Optional. This is the type of id you are providing. You can choose from: CatalogSampleId, CatalogIndividualId, SampleName, IndividualName</p>
+<p class="last">Possible choices: CatalogSampleId, CatalogIndividualId, SampleName, IndividualName</p>
+</td></tr>
+<tr><td class="option-group" colspan="2">
+<kbd><span class="option">--outputIDType=IndividualName</span></kbd></td>
+</tr>
+<tr><td>&nbsp;</td><td><p class="first">Optional. This is the type of id you are getting.  You can choose from: CatalogSampleId, CatalogIndividualId, SampleName, IndividualName</p>
+<p class="last">Possible choices: CatalogSampleId, CatalogIndividualId, SampleName, IndividualName</p>
+</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--IdBatch</span></kbd></td>
+<td>Optional. File with ids, one id per line in the first column.</td></tr>
+<tr><td class="option-group">
+<kbd><span class="option">--Id</span></kbd></td>
+<td>Optional. List of Ids space separated, e.g, &#8211;Id 31145 36457 346578</td></tr>
+</tbody>
+</table>
+</dd>
+</dl>
+</div>
+<div class="section" id="common-use-examples">
+<h2>Common use examples<a class="headerlink" href="#common-use-examples" title="Permalink to this headline">¶</a></h2>
+<p>Get the Individual Name using the Sample Name:</p>
+<div class="highlight-python"><div class="highlight"><pre>pyCGAIdConverter [sid] --host [hostname] --studyID [studyID] --inputIDType SampleName --outputIDType IndividualName --Id [sampleName]
+</pre></div>
+</div>
+<p>Get the Sample Name using the Individual Name:</p>
+<div class="highlight-python"><div class="highlight"><pre>pyCGAIdConverter [sid] --host [hostname] --studyID [studyID] --inputIDType IndividualName --outputIDType SampleName --Id [IndividualName]
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Please note that although a sample can only have one individual associated, one individual can have more than one
+sample, (i,e the last example can retrieve more than line per each given Id).</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="web_services.html" class="btn btn-neutral float-right" title="Web Services API" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="quick_start.html" class="btn btn-neutral" title="Quick-start" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015, Antonio Rueda, Mathew Parker, Razvan Sultana.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.1.0',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

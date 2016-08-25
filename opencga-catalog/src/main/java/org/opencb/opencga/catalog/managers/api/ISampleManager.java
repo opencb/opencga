@@ -29,30 +29,15 @@ public interface ISampleManager extends ResourceManager<Integer, Sample> {
 
     QueryResult<Sample> readAll(int studyId, QueryOptions query, QueryOptions options, String sessionId) throws CatalogException;
 
-    QueryResult<AnnotationSet> annotate(int sampleId, String id, int variableSetId, Map<String, Object> annotations,
+    QueryResult<AnnotationSet> annotate(int sampleId, String annotationSetId, int variableSetId, Map<String, Object> annotations,
                                         Map<String, Object> attributes, boolean checkAnnotationSet, String sessionId)
             throws CatalogException;
 
+    QueryResult<AnnotationSet> updateAnnotation(int sampleId, String annotationSetId, Map<String, Object> newAnnotations, String sessionId)
+            throws CatalogException;
+
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId, String sessionId)
-    throws CatalogException;
-
-    /*---------------------*/
-    /* VariableSet METHODS */
-    /*---------------------*/
-
-    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
-                                               Map<String, Object> attributes, List<Variable> variables, String sessionId)
             throws CatalogException;
-
-    QueryResult<VariableSet> createVariableSet(int studyId, String name, Boolean unique, String description,
-                                               Map<String, Object> attributes, Set<Variable> variables, String sessionId)
-            throws CatalogException;
-
-    QueryResult<VariableSet> readVariableSet(int variableSet, QueryOptions options, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> readAllVariableSets(int studyId, QueryOptions options, String sessionId) throws CatalogException;
-
-    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions, String sessionId) throws CatalogException;
 
     /*----------------*/
     /* Cohort METHODS */

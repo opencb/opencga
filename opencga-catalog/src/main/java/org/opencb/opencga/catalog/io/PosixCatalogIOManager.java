@@ -168,6 +168,8 @@ public class PosixCatalogIOManager extends CatalogIOManager {
         try {
             if (!Files.exists(Paths.get(newName))) {
                 Files.move(Paths.get(oldName), Paths.get(newName));
+            } else {
+                throw new CatalogIOException("Unable to rename. File \"" + newName + "\" already exists");
             }
         } catch (IOException e) {
             throw new CatalogIOException("Unable to rename file", e);
@@ -551,6 +553,20 @@ public class PosixCatalogIOManager extends CatalogIOManager {
     }
 
     @Override
+    public DataOutputStream createOutputStream(URI fileUri, boolean overwrite) throws CatalogIOException {
+        Path path = Paths.get(fileUri);
+        if (overwrite || !Files.exists(path)) {
+            try {
+                return new DataOutputStream(new FileOutputStream(path.toFile()));
+            } catch (IOException e) {
+                throw new CatalogIOException("Unable to create file", e);
+            }
+        } else {
+            throw new CatalogIOException("File already exists");
+        }
+    }
+
+    @Override
     public String calculateChecksum(URI file) throws CatalogIOException {
         String checksum;
         try {
@@ -577,6 +593,7 @@ public class PosixCatalogIOManager extends CatalogIOManager {
 
     @Override
     public List<URI> listFiles(URI directory) throws CatalogIOException {
+        checkUriExists(directory);
         class ListFiles extends SimpleFileVisitor<Path> {
             private List<String> filePaths = new LinkedList<>();
 

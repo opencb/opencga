@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga-storage</artifactId>
-        <version>0.6.0</version>
+        <version>0.7.0</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -38,10 +38,20 @@
         <dependency>
             <groupId>org.opencb.cellbase</groupId>
             <artifactId>cellbase-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.opencb.datastore</groupId>
             <artifactId>datastore-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.opencb.hpg-bigdata</groupId>
+            <artifactId>hpg-bigdata-core</artifactId>
         </dependency>
 
         <dependency>
@@ -80,11 +90,6 @@
                         <goals>
                             <goal>test-jar</goal>
                         </goals>
-                        <!--<configuration>-->
-                        <!--<includes>-->
-                        <!--<include>**/org/opencb/opencga/storage/core/*</include>-->
-                        <!--</includes>-->
-                        <!--</configuration>-->
                     </execution>
                 </executions>
             </plugin>

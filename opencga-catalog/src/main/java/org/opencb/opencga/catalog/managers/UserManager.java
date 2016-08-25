@@ -4,8 +4,9 @@ import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.CatalogManager;
+import org.opencb.opencga.catalog.audit.AuditManager;
+import org.opencb.opencga.catalog.audit.AuditRecord;
 import org.opencb.opencga.catalog.authentication.CatalogAuthenticationManager;
-import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.utils.ParamUtils;
@@ -41,9 +42,10 @@ public class UserManager extends AbstractManager implements IUserManager {
     protected static final Pattern emailPattern = Pattern.compile(EMAIL_PATTERN);
 
     public UserManager(AuthorizationManager authorizationManager, AuthenticationManager authenticationManager,
+                       AuditManager auditManager,
                        CatalogDBAdaptorFactory catalogDBAdaptorFactory, CatalogIOManagerFactory ioManagerFactory,
                        Properties catalogProperties) {
-        super(authorizationManager, authenticationManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
+        super(authorizationManager, authenticationManager, auditManager, catalogDBAdaptorFactory, ioManagerFactory, catalogProperties);
         creationUserPolicy = catalogProperties.getProperty(CatalogManager.CATALOG_MANAGER_POLICY_CREATION_USER, "always");
 //        sessionManager = new CatalogSessionManager(userDBAdaptor, authenticationManager);
     }
@@ -93,9 +95,10 @@ public class UserManager extends AbstractManager implements IUserManager {
 
         User user = new User(id, name, email, "", organization, User.Role.USER, "");
 
+        String userId;
         switch (creationUserPolicy) {
             case "onlyAdmin": {
-                String userId = getUserId(sessionId);
+                userId = getUserId(sessionId);
                 if (!userId.isEmpty() && authorizationManager.getUserRole(userId).equals(User.Role.ADMIN)) {
                     user.getAttributes().put("creatorUserId", userId);
                 } else {
@@ -105,7 +108,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             }
             case "anyLoggedUser": {
                 ParamUtils.checkParameter(sessionId, "sessionId");
-                String userId = getUserId(sessionId);
+                userId = getUserId(sessionId);
                 if (userId.isEmpty()) {
                     throw new CatalogException("CreateUser Fail. Required existing account");
                 }
@@ -114,6 +117,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             }
             case "always":
             default:
+                userId = id;
                 break;
         }
 
@@ -121,6 +125,7 @@ public class UserManager extends AbstractManager implements IUserManager {
         try {
             catalogIOManagerFactory.getDefault().createUser(user.getId());
             QueryResult<User> queryResult = userDBAdaptor.insertUser(user, options);
+            auditManager.recordCreation(AuditRecord.Resource.user, user.getId(), userId, queryResult.first(), null, null);
             authenticationManager.newPassword(user.getId(), password);
             return queryResult;
         } catch (CatalogIOException | CatalogDBException e) {
@@ -161,7 +166,7 @@ public class UserManager extends AbstractManager implements IUserManager {
     @Override
     public QueryResult<User> readAll(QueryOptions query, QueryOptions options, String sessionId)
             throws CatalogException {
-        return null;
+        throw new UnsupportedOperationException();
     }
 
     /**
@@ -190,7 +195,9 @@ public class UserManager extends AbstractManager implements IUserManager {
             checkEmail(parameters.getString("email"));
         }
         userDBAdaptor.updateUserLastActivity(userId);
-        return userDBAdaptor.modifyUser(userId, parameters);
+        QueryResult<User> queryResult = userDBAdaptor.modifyUser(userId, parameters);
+        auditManager.recordUpdate(AuditRecord.Resource.user, userId, userId, parameters, null, null);
+        return queryResult;
     }
 
     @Override
@@ -209,6 +216,7 @@ public class UserManager extends AbstractManager implements IUserManager {
             userDBAdaptor.deleteUser(userId);
         }
         user.setId("deleteUser");
+        auditManager.recordDeletion(AuditRecord.Resource.user, userId, userId, user, null, null);
         return user;
     }
 

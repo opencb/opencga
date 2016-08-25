@@ -15,10 +15,7 @@
  */
 package org.opencb.opencga.catalog.db.mongodb;
 
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-import com.fasterxml.jackson.databind.ObjectWriter;
+import com.fasterxml.jackson.databind.*;
 import com.mongodb.BasicDBObject;
 import com.mongodb.DBObject;
 import com.mongodb.util.JSON;
@@ -27,6 +24,7 @@ import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.datastore.mongodb.MongoDBCollection;
 import org.opencb.opencga.catalog.db.api.CatalogDBAdaptor;
+import org.opencb.opencga.catalog.db.api.CatalogDBAdaptorFactory;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
@@ -36,6 +34,8 @@ import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
+import static org.opencb.opencga.catalog.db.mongodb.CatalogMongoDBAdaptor._ID;
 
 /**
  * Created by imedina on 21/11/14.
@@ -57,6 +57,7 @@ class CatalogMongoDBUtils {
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         jsonObjectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         jsonObjectMapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY, true);
+        jsonObjectMapper.configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);
         jsonObjectWriter = jsonObjectMapper.writer();
         jsonReaderMap = new HashMap<>();
     }
@@ -78,14 +79,31 @@ class CatalogMongoDBUtils {
         return result.getResult().get(0).getInt(field);
     }
 
-    static void checkUserExist(String userId, boolean exists, MongoDBCollection UserMongoDBCollection) throws CatalogDBException {
+    static void checkUserExist(String userId, MongoDBCollection userCollection) throws CatalogDBException {
         if (userId == null) {
             throw new CatalogDBException("userId param is null");
         }
         if (userId.equals("")) {
             throw new CatalogDBException("userId is empty");
         }
+        if (userCollection.count(new BasicDBObject(_ID, userId)).first().equals(Long.valueOf(0))) {
+            throw CatalogDBException.idNotFound("User", userId);
+        }
 
+    }
+
+    public static void checkAclUserId(CatalogDBAdaptorFactory dbAdaptorFactory, String userId, int studyId) throws CatalogDBException {
+        if (userId.equals(AclEntry.USER_OTHERS_ID)) {
+
+        } else if (userId.startsWith("@")) {
+            String groupId = userId.substring(1);
+            QueryResult<Group> queryResult = dbAdaptorFactory.getCatalogStudyDBAdaptor().getGroup(studyId, null, groupId, null);
+            if (queryResult.getNumResults() == 0) {
+                throw CatalogDBException.idNotFound("Group", groupId);
+            }
+        } else {
+            dbAdaptorFactory.getCatalogUserDBAdaptor().checkUserExists(userId);
+        }
     }
 
 
@@ -155,7 +173,7 @@ class CatalogMongoDBUtils {
         }
     }
 
-    private static <T> ObjectReader getObjectReader(Class<T> tClass) {
+    public static <T> ObjectReader getObjectReader(Class<T> tClass) {
         if (!jsonReaderMap.containsKey(tClass)) {
             jsonReaderMap.put(tClass, jsonObjectMapper.reader(tClass));
         }
@@ -164,11 +182,13 @@ class CatalogMongoDBUtils {
 
     static DBObject getDbObject(Object object, String objectName) throws CatalogDBException {
         DBObject dbObject;
+        String jsonString = null;
         try {
-            dbObject = (DBObject) JSON.parse(jsonObjectWriter.writeValueAsString(object));
+            jsonString = jsonObjectWriter.writeValueAsString(object);
+            dbObject = (DBObject) JSON.parse(jsonString);
             dbObject = replaceDotsInKeys(dbObject);
         } catch (Exception e) {
-            throw new CatalogDBException("Error while writing to Json : " + objectName, e);
+            throw new CatalogDBException("Error while writing to Json : " + objectName + (jsonString == null? "" : (" -> " + jsonString)), e);
         }
         return dbObject;
     }
@@ -256,11 +276,18 @@ class CatalogMongoDBUtils {
             List<String> list = filteredOptions.getAsStringList(listName);
             List<String> filteredList = new LinkedList<>();
             int length = route.length();
-            if (list != null) {
+            if (list != null && !list.isEmpty()) {
                 for (String s : list) {
                     if (s.startsWith(route)) {
                         filteredList.add(s.substring(length));
                     }
+                }
+                if (listName.equals("include")) {
+                    filteredList.add("id");
+                    filteredList.add(_ID);
+                } else if (listName.equals("exclude")) {
+                    filteredList.remove("id");
+                    filteredList.remove(_ID);
                 }
                 filteredOptions.put(listName, filteredList);
             }
@@ -461,7 +488,7 @@ class CatalogMongoDBUtils {
     }
 
 
-    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, QueryOptions options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
+    static List<DBObject> addCompQueryFilter(CatalogDBAdaptor.FilterOption option, String optionKey, ObjectMap options, String queryKey, List<DBObject> andQuery) throws CatalogDBException {
         List<String> optionsList = options.getAsStringList(optionKey);
         if (queryKey == null) {
             queryKey = "";

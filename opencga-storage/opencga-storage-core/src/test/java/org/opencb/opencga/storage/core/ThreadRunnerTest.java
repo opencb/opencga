@@ -18,7 +18,7 @@ package org.opencb.opencga.storage.core;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.Test;
 import org.opencb.commons.io.DataReader;
 import org.opencb.commons.io.DataWriter;
@@ -66,12 +66,14 @@ public class ThreadRunnerTest extends GenericTest {
 //            } catch (InterruptedException e) {
 //                e.printStackTrace();
 //            }
+            Random random = new Random(System.currentTimeMillis());
             for (int i = 0; i < batchSize && num < max; i++) {
                 num++;
+
 //                batch.add( String.format("%7d %s", num, StringUtils.randomString(10)));
 //                batch.add( StringUtils.randomString(10) );
                 batch.add( String.format("{ \"id\": %d, \"string\": \"%s\", \"array\": [%d, %d, %d]}",
-                        num, StringUtils.randomString(10), RandomUtils.nextInt()%1024, RandomUtils.nextInt()%1024, RandomUtils.nextInt()%1024));
+                        num, StringUtils.randomString(10), random.nextInt()%1024, random.nextInt()%1024, random.nextInt()%1024));
             }
 //            System.out.println("batchSize " + batch.size());
             return batch;

@@ -6,6 +6,7 @@ import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.exceptions.CatalogDBException;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,6 +25,9 @@ public interface CatalogSampleDBAdaptor {
         name(Type.TEXT, ""),
         source(Type.TEXT, ""),
         individualId(Type.NUMERICAL, ""),
+
+        acl(Type.TEXT, ""),
+        bacl("acl", Type.BOOLEAN, ""),
 
         attributes(Type.TEXT, "Format: <key><operation><stringValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
         nattributes("attributes", Type.NUMERICAL, "Format: <key><operation><numericalValue> where <operation> is [<|<=|>|>=|==|!=|~|!~]"),
@@ -109,11 +113,19 @@ public interface CatalogSampleDBAdaptor {
 
     QueryResult<Sample> modifySample(int sampleId, QueryOptions parameters) throws CatalogDBException;
 
+    QueryResult<AclEntry> getSampleAcl(int sampleId, String userId) throws CatalogDBException;
+
+    QueryResult<Map<String, AclEntry>> getSampleAcl(int sampleId, List<String> userIds) throws CatalogDBException;
+
+    QueryResult<AclEntry> setSampleAcl(int sampleId, AclEntry acl) throws CatalogDBException;
+
+    QueryResult<AclEntry> unsetSampleAcl(int sampleId, String userId) throws CatalogDBException;
+
     QueryResult<Sample> deleteSample(int sampleId) throws CatalogDBException;
 
     int getStudyIdBySampleId(int sampleId) throws CatalogDBException;
 
-    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet) throws CatalogDBException;
+    QueryResult<AnnotationSet> annotateSample(int sampleId, AnnotationSet annotationSet, boolean overwrite) throws CatalogDBException;
 
     QueryResult<AnnotationSet> deleteAnnotation(int sampleId, String annotationId) throws CatalogDBException;
 
@@ -134,19 +146,5 @@ public interface CatalogSampleDBAdaptor {
 
     int getStudyIdByCohortId(int cohortId) throws CatalogDBException;
 
-    /**
-     * VariableSet Methods
-     * ***************************
-     */
-
-    QueryResult<VariableSet> createVariableSet(int studyId, VariableSet variableSet) throws CatalogDBException;
-
-    QueryResult<VariableSet> getVariableSet(int variableSetId, QueryOptions options) throws CatalogDBException;
-
-    QueryResult<VariableSet> getAllVariableSets(int studyId, QueryOptions queryOptions) throws CatalogDBException;
-
-    QueryResult<VariableSet> deleteVariableSet(int variableSetId, QueryOptions queryOptions) throws CatalogDBException;
-
-    int getStudyIdByVariableSetId(int variableSetId) throws CatalogDBException;
 
 }

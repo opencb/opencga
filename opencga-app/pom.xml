@@ -22,8 +22,8 @@
     <parent>
         <groupId>org.opencb.opencga</groupId>
         <artifactId>opencga</artifactId>
-        <version>0.6.0</version>
-        <relativePath>..</relativePath>
+        <version>0.7.0</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>opencga-app</artifactId>
@@ -31,9 +31,8 @@
     <packaging>jar</packaging>
 
     <properties>
-        <build.dir>${basedir}/build</build.dir>
-        <installation.dir>${OPENCGA.INSTALLATION.DIR}</installation.dir>
-        <app.name>opencga</app.name>
+        <build.dir>${project.basedir}/../build</build.dir>
+        <app.dir>${project.basedir}/app</app.dir>
     </properties>
 
     <dependencies>
@@ -49,6 +48,12 @@
             <groupId>org.opencb.opencga</groupId>
             <artifactId>opencga-storage-app</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.opencb.opencga</groupId>
+            <artifactId>opencga-server</artifactId>
+            <version>${opencga.version}</version>
+            <type>war</type>
+        </dependency>
 
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -60,7 +65,7 @@
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-simple</artifactId>
+            <artifactId>slf4j-log4j12</artifactId>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -89,7 +94,7 @@
         <dependency>
             <groupId>org.glassfish.jersey.containers</groupId>
             <artifactId>jersey-container-servlet-core</artifactId>
-            <version>2.13</version>
+            <version>${jersey.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -100,18 +105,12 @@
     <build>
         <finalName>opencga-app</finalName>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <!--<testSourceDirectory>src/test/java</testSourceDirectory>-->
 
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
-                <targetPath>${basedir}/build/conf</targetPath>
-            </resource>
-            <resource>
-                <directory>../opencga-storage/opencga-storage-app/build/conf</directory>
-                <filtering>true</filtering>
-                <targetPath>${basedir}/build/conf</targetPath>
+                <targetPath>${project.basedir}/target/conf</targetPath>
             </resource>
         </resources>
 
@@ -119,7 +118,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>appassembler-maven-plugin</artifactId>
-                <version>1.5</version>
+                <version>1.10</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -132,25 +131,18 @@
                     <repositoryName>libs</repositoryName>
                     <repositoryLayout>flat</repositoryLayout>
                     <useWildcardClassPath>true</useWildcardClassPath>
-                    <assembleDirectory>${build.dir}</assembleDirectory>
+                    <extraJvmArguments>-Xms256m -Xmx4096m</extraJvmArguments>
                     <programs>
                         <program>
                             <mainClass>org.opencb.opencga.app.cli.main.OpenCGAMain</mainClass>
-                            <name>${app.name}.sh</name>
+                            <name>opencga.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
                         </program>
                         <program>
-                            <mainClass>org.opencb.opencga.storage.app.StorageMain</mainClass>
-                            <name>${app.name}-storage.sh</name>
-                            <platforms>
-                                <platform>unix</platform>
-                            </platforms>
-                        </program>
-                        <program>
+                            <name>opencga-daemon.sh</name>
                             <mainClass>org.opencb.opencga.app.daemon.OpenCGADaemon</mainClass>
-                            <name>${app.name}-daemon.sh</name>
                             <platforms>
                                 <platform>unix</platform>
                             </platforms>
@@ -160,17 +152,17 @@
             </plugin>
             <plugin>
                 <artifactId>maven-antrun-plugin</artifactId>
-                <version>1.7</version>
+                <version>1.8</version>
                 <executions>
                     <execution>
                         <id>clean-libs</id>
                         <phase>clean</phase>
                         <configuration>
                             <target>
-                                <echo>Cleaning libs folder at ${build.dir}</echo>
+                                <echo>Preparing ${build.dir} folder</echo>
                                 <exec executable="rm">
                                     <arg value="-rf"/>
-                                    <arg value="${build.dir}/libs"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -183,32 +175,30 @@
                         <phase>install</phase>
                         <configuration>
                             <target>
-                                <echo>Deleting from ${installation.dir}</echo>
+                                <echo>Preparing ${build.dir} folder</echo>
                                 <exec executable="rm">
                                     <arg value="-rf"/>
-                                    <arg value="${installation.dir}/conf"/>
-                                    <arg value="${installation.dir}/bin"/>
-                                    <arg value="${installation.dir}/libs"/>
-                                    <arg value="${installation.dir}/tools"/>
+                                    <arg value="${build.dir}"/>
+                                </exec>
+                                <exec executable="mkdir">
+                                    <arg value="${build.dir}"/>
                                 </exec>
 
-                                <echo>Adding execution permission</echo>
-                                <exec executable="chmod">
-                                    <arg value="+x"/>
-                                    <arg value="${build.dir}/bin/${app.name}.sh"/>
-                                    <arg value="${build.dir}/bin/${app.name}-storage.sh"/>
-                                    <arg value="${build.dir}/bin/${app.name}-daemon.sh"/>
-                                </exec>
-
-                                <echo>Copying to ${installation.dir}</echo>
+                                <echo>Copying to ${build.dir}</echo>
                                 <exec executable="cp">
                                     <arg value="-r"/>
-                                    <arg value="${build.dir}/conf"/>
-                                    <arg value="${build.dir}/bin"/>
-                                    <arg value="${build.dir}/examples"/>
-                                    <arg value="${build.dir}/libs"/>
-                                    <arg value="${build.dir}/tools"/>
-                                    <arg value="${installation.dir}"/>
+                                    <arg value="${app.dir}/bin"/>
+                                    <arg value="${project.basedir}/target/appassembler/bin"/>
+                                    <arg value="${project.basedir}/target/appassembler/libs"/>
+                                    <arg value="${project.basedir}/target/conf"/>
+                                    <arg value="${app.dir}/examples"/>
+                                    <arg value="${app.dir}/tools"/>
+                                    <arg value="${project.basedir}/../opencga-storage/build/bin"/>
+                                    <arg value="${project.basedir}/../opencga-storage/build/conf"/>
+                                    <arg value="${project.basedir}/../opencga-server/target/opencga.war"/>
+                                    <arg value="${project.basedir}/../LICENSE"/>
+                                    <arg value="${project.basedir}/../README.md"/>
+                                    <arg value="${build.dir}"/>
                                 </exec>
                             </target>
                         </configuration>
@@ -218,35 +208,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--<plugin>-->
-            <!--<artifactId>maven-jar-plugin</artifactId>-->
-            <!--<configuration>-->
-            <!--<archive>-->
-            <!--<manifest>-->
-            <!--<mainClass>org.opencb.opencga.app.cli.storage.OpenCGAStorageMain</mainClass>-->
-            <!--<addClasspath>true</addClasspath>-->
-            <!--</manifest>-->
-            <!--</archive>-->
-            <!--<outputDirectory>${build.dir}/libs</outputDirectory>-->
-            <!--</configuration>-->
-            <!--</plugin>-->
-            <!--<plugin>-->
-            <!--<groupId>org.apache.maven.plugins</groupId>-->
-            <!--<artifactId>maven-dependency-plugin</artifactId>-->
-            <!--<version>2.8</version>-->
-            <!--<executions>-->
-            <!--<execution>-->
-            <!--<id>copy-dependencies</id>-->
-            <!--<phase>install</phase>-->
-            <!--<goals>-->
-            <!--<goal>copy-dependencies</goal>-->
-            <!--</goals>-->
-            <!--<configuration>-->
-            <!--<outputDirectory>${build.dir}/libs</outputDirectory>-->
-            <!--</configuration>-->
-            <!--</execution>-->
-            <!--</executions>-->
-            <!--</plugin>-->
         </plugins>
     </build>
 

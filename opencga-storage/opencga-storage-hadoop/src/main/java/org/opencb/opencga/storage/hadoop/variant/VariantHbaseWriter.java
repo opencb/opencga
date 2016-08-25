@@ -32,7 +32,7 @@ import org.apache.hadoop.hbase.io.compress.Compression;
 import org.apache.hadoop.hbase.util.Bytes;
 import org.opencb.biodata.formats.variant.vcf4.VcfUtils;
 import org.opencb.biodata.models.feature.Genotype;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
 import org.opencb.biodata.models.variant.effect.VariantEffect;
@@ -218,7 +218,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
                 String rowkey = buildRowkey(v);
 
                 // Create raw data for inserting in HBase
-                for (VariantSourceEntry archiveFile : v.getSourceEntries().values()) {
+                for (StudyEntry archiveFile : v.getStudies()) {
                     String prefix = source.getStudyId() + "_" + source.getFileId();
 
                     // Check that this variant IN THIS FILE was not stored yet
@@ -344,7 +344,7 @@ public class VariantHbaseWriter extends VariantDBWriter {
      * ProtocolBuffers objects construction
      */
     
-    private VariantProtos.VariantFileAttributes buildAttributesProto(Variant v, VariantSourceEntry file) {
+    private VariantProtos.VariantFileAttributes buildAttributesProto(Variant v, StudyEntry file) {
         VariantProtos.VariantFileAttributes.Builder builder = VariantProtos.VariantFileAttributes.newBuilder();
         
         for (Map.Entry<String, String> attr : file.getAttributes().entrySet()) {

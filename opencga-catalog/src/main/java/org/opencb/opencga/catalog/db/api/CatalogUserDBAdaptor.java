@@ -3,7 +3,7 @@ package org.opencb.opencga.catalog.db.api;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
-import org.opencb.opencga.catalog.models.Acl;
+import org.opencb.opencga.catalog.models.AclEntry;
 import org.opencb.opencga.catalog.models.Project;
 import org.opencb.opencga.catalog.models.Session;
 import org.opencb.opencga.catalog.models.User;
@@ -21,6 +21,8 @@ public interface CatalogUserDBAdaptor {
     boolean checkUserCredentials(String userId, String sessionId);
 
     boolean userExists(String userId);
+
+    void checkUserExists(String userId) throws CatalogDBException;
 
     QueryResult<User> createUser(String userId, String userName, String email, String password, String organization, QueryOptions options)
     throws CatalogDBException;
@@ -71,14 +73,14 @@ public interface CatalogUserDBAdaptor {
 
     QueryResult renameProjectAlias(int projectId, String newProjectName) throws CatalogDBException;
 
-    QueryResult modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
+    QueryResult<Project> modifyProject(int projectId, ObjectMap parameters) throws CatalogDBException;
 
     int getProjectId(String userId, String projectAlias) throws CatalogDBException;
 
     String getProjectOwnerId(int projectId) throws CatalogDBException;
 
-    QueryResult<Acl> getProjectAcl(int projectId, String userId) throws CatalogDBException;
+    QueryResult<AclEntry> getProjectAcl(int projectId, String userId) throws CatalogDBException;
 
-    QueryResult setProjectAcl(int projectId, Acl newAcl) throws CatalogDBException;
+    QueryResult setProjectAcl(int projectId, AclEntry newAcl) throws CatalogDBException;
 
 }

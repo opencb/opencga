@@ -21,7 +21,7 @@ import com.wordnik.swagger.annotations.ApiOperation;
 import com.wordnik.swagger.annotations.ApiParam;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.datastore.core.*;
 import org.opencb.opencga.analysis.storage.AnalysisFileIndexer;
 import org.opencb.opencga.catalog.db.api.CatalogFileDBAdaptor;
@@ -30,18 +30,18 @@ import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.analysis.files.FileMetadataReader;
 import org.opencb.opencga.analysis.files.FileScanner;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
-import org.opencb.opencga.catalog.models.DataStore;
+import org.opencb.opencga.catalog.models.*;
 import org.opencb.opencga.catalog.models.File;
-import org.opencb.opencga.catalog.models.Index;
-import org.opencb.opencga.catalog.models.Job;
 import org.opencb.opencga.catalog.utils.CatalogFileUtils;
 import org.opencb.opencga.core.common.Config;
 import org.opencb.opencga.core.common.IOUtils;
 import org.opencb.opencga.core.common.UriUtils;
 import org.opencb.opencga.core.exception.VersionException;
+import org.opencb.opencga.server.utils.VariantFetcher;
 import org.opencb.opencga.storage.core.StorageManagerException;
 import org.opencb.opencga.storage.core.alignment.AlignmentStorageManager;
 import org.opencb.opencga.storage.core.alignment.adaptors.AlignmentDBAdaptor;
+import org.opencb.opencga.storage.core.variant.VariantStorageManager;
 import org.opencb.opencga.storage.core.variant.adaptors.VariantDBAdaptor;
 
 import javax.servlet.http.HttpServletRequest;
@@ -131,10 +131,10 @@ public class FileWSServer extends OpenCGAWSServer {
     @Path("/create-folder")
     @ApiOperation(value = "Create folder", position = 2)
     public Response createFolder(@ApiParam(value = "studyId", required = true) @QueryParam("studyId") String studyIdStr,
-                                 @ApiParam(value = "folder", required = true) @QueryParam("folder") String folder) {
+                                 @ApiParam(value = "Path of the folder to be created", required = true) @QueryParam("folder") String folder,
+                                 @ApiParam(value = "parents", required = false) @QueryParam("parents") @DefaultValue("true") boolean parents) {
         try {
             java.nio.file.Path folderPath = Paths.get(folder);
-            boolean parents = true;
             int studyId = catalogManager.getStudyId(studyIdStr);
             QueryResult queryResult = catalogManager.createFolder(studyId, folderPath, parents, queryOptions, sessionId);
             return createOkResponse(queryResult);
@@ -272,10 +272,13 @@ public class FileWSServer extends OpenCGAWSServer {
                 }
                 IOUtils.deleteDirectory(folderPath);
                 try {
-                    QueryResult queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
+                    QueryResult<File> queryResult = catalogManager.createFile(studyId, File.Format.valueOf(fileFormat.toUpperCase()),
                             File.Bioformat.valueOf(bioFormat.toUpperCase()), relativeFilePath, completedFilePath.toUri(),
                             description, parents, sessionId
                     );
+                    File file = new FileMetadataReader(catalogManager).setMetadataInformation(queryResult.first(), null,
+                            queryOptions, sessionId, false);
+                    queryResult.setResult(Collections.singletonList(file));
                     return createOkResponse(queryResult);
                 } catch (Exception e) {
                     logger.error(e.toString());
@@ -498,7 +501,8 @@ public class FileWSServer extends OpenCGAWSServer {
     @ApiOperation(value = "File index", position = 14)
     public Response index(@ApiParam("fileId") @PathParam(value = "fileId") @DefaultValue("") String fileIdStr,
                           @ApiParam("Output directory id") @DefaultValue("-1") @QueryParam("outdir") String outDirStr,
-                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate) {
+                          @ApiParam("Annotate variants") @DefaultValue("true") @QueryParam("annotate") boolean annotate,
+                          @ApiParam("Calculate stats") @DefaultValue("true") @QueryParam("calculateStats") boolean calculateStats) {
         AnalysisFileIndexer analysisFileIndexer = new AnalysisFileIndexer(catalogManager);
 
         try {
@@ -507,12 +511,8 @@ public class FileWSServer extends OpenCGAWSServer {
             if(outDirId < 0) {
                 outDirId = catalogManager.getFileParent(fileId, null, sessionId).first().getId();
             }
-            if (!queryOptions.containsKey(AnalysisFileIndexer.PARAMETERS)) {
-                File a = catalogManager.getFile(fileId, sessionId).getResult().get(0);
-                if(a.getBioformat() == File.Bioformat.VARIANT){
-                    queryOptions.put(AnalysisFileIndexer.PARAMETERS, Arrays.asList("--calculate-stats", "--include-stats"));
-                }
-            }
+            queryOptions.add(VariantStorageManager.Options.CALCULATE_STATS.key(), calculateStats);
+            queryOptions.add(VariantStorageManager.Options.ANNOTATE.key(), annotate);
             QueryResult<Job> queryResult = analysisFileIndexer.index(fileId, outDirId, sessionId, queryOptions);
             return createOkResponse(queryResult);
         } catch (Exception e) {
@@ -707,10 +707,10 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "CSV list of samples to be returned") @QueryParam("returnedSamples") String returnedSamples,
                                 @ApiParam(value = "CSV list of files to be returned.") @QueryParam("returnedFiles") String returnedFiles,
                                 @ApiParam(value = "Variants in specific files") @QueryParam("files") String files,
-                                @ApiParam(value = "Minor Allele Frequency: [<|>|<=|>=]{number}") @QueryParam("maf") String maf,
-                                @ApiParam(value = "Minor Genotype Frequency: [<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
-                                @ApiParam(value = "Number of missing alleles: [<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
-                                @ApiParam(value = "Number of missing genotypes: [<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
+                                @ApiParam(value = "Minor Allele Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("maf") String maf,
+                                @ApiParam(value = "Minor Genotype Frequency: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("mgf") String mgf,
+                                @ApiParam(value = "Number of missing alleles: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingAlleles") String missingAlleles,
+                                @ApiParam(value = "Number of missing genotypes: [{study:}]{cohort}[<|>|<=|>=]{number}") @QueryParam("missingGenotypes") String missingGenotypes,
                                 @ApiParam(value = "Specify if the variant annotation must exists.") @QueryParam("annotationExists") boolean annotationExists,
                                 @ApiParam(value = "Samples with a specific genotype: {samp_1}:{gt_1}(,{gt_n})*(;{samp_n}:{gt_1}(,{gt_n})*)* e.g. HG0097:0/0;HG0098:0/1,1/1") @QueryParam("genotype") String genotype,
                                 @ApiParam(value = "Consequence type SO term list. e.g. SO:0000045,SO:0000046") @QueryParam("annot-ct") String annot_ct,
@@ -719,12 +719,15 @@ public class FileWSServer extends OpenCGAWSServer {
                                 @ApiParam(value = "Polyphen value: [<|>|<=|>=]{number}") @QueryParam("polyphen") String polyphen,
                                 @ApiParam(value = "Sift value: [<|>|<=|>=]{number}") @QueryParam("sift") String sift,
 //                                @ApiParam(value = "") @QueryParam("protein_substitution") String protein_substitution,
-                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number}") @QueryParam("conservation") String conservation,
+                                @ApiParam(value = "Conservation score: {conservation_score}[<|>|<=|>=]{number} e.g. phastCons>0.5,phylop<0.1") @QueryParam("conservation") String conservation,
+                                @ApiParam(value = "Population minor allele frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("annot-population-maf") String annotPopulationMaf,
                                 @ApiParam(value = "Alternate Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("alternate_frequency") String alternate_frequency,
                                 @ApiParam(value = "Reference Population Frequency: {study}:{population}[<|>|<=|>=]{number}") @QueryParam("reference_frequency") String reference_frequency,
                                 @ApiParam(value = "Returned genotype for unknown genotypes. Common values: [0/0, 0|0, ./.]") @QueryParam("unknownGenotype") String unknownGenotype,
-                                @ApiParam(value = "Limit the number of returned variants.") @QueryParam("limit") int limit,
+                                @ApiParam(value = "Limit the number of returned variants. Max value: " + VariantFetcher.LIMIT_MAX) @DefaultValue(""+VariantFetcher.LIMIT_DEFAULT) @QueryParam("limit") int limit,
                                 @ApiParam(value = "Skip some number of variants.") @QueryParam("skip") int skip,
+                                @ApiParam(value = "Returns the samples metadata group by studyId, instead of the variants", required = false) @QueryParam("samplesMetadata") boolean samplesMetadata,
+                                @ApiParam(value = "Sort the results", required = false) @QueryParam("sort") boolean sort,
                                 @ApiParam(value = "Group variants by: [ct, gene, ensemblGene]", required = false) @DefaultValue("") @QueryParam("groupBy") String groupBy,
                                 @ApiParam(value = "Count results", required = false) @QueryParam("count") boolean count,
                                 @ApiParam(value = "Calculate histogram. Requires one region.", required = false) @DefaultValue("false") @QueryParam("histogram") boolean histogram,
@@ -733,11 +736,11 @@ public class FileWSServer extends OpenCGAWSServer {
 
         List<QueryResult> results = new LinkedList<>();
         try {
-            VariantFetcher variantFetcher = new VariantFetcher(this);
+            VariantFetcher variantFetcher = new VariantFetcher(catalogManager, storageManagerFactory);
             String[] splitFileId = fileIdCsv.split(",");
             for (String fileId : splitFileId) {
                 QueryResult result;
-                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId);
+                result = variantFetcher.variantsFile(region, histogram, groupBy, interval, fileId, sessionId, queryOptions);
                 results.add(result);
             }
         } catch (Exception e) {
@@ -807,7 +810,7 @@ public class FileWSServer extends OpenCGAWSServer {
     }
 
     public static class UpdateFile {
-//        public String name;
+        public String name;
         public File.Format format;
         public File.Bioformat bioformat;
 //        public String path;
@@ -831,6 +834,30 @@ public class FileWSServer extends OpenCGAWSServer {
         try {
             int fileId = catalogManager.getFileId(fileIdStr);
             QueryResult queryResult = catalogManager.modifyFile(fileId, new ObjectMap(jsonObjectMapper.writeValueAsString(params)), sessionId);
+            return createOkResponse(queryResult);
+        } catch (Exception e) {
+            return createErrorResponse(e);
+        }
+    }
+
+    @GET
+    @Path("/{fileId}/share")
+    @ApiOperation(value = "Share file with other user", position = 16)
+    public Response share(@PathParam(value = "fileId") String fileIdStr,
+                          @ApiParam(value = "User you want to share the file with. Accepts: '{userId}', '@{groupId}' or '*'", required = true) @DefaultValue("") @QueryParam("userId") String userId,
+                          @ApiParam(value = "Remove the previous AclEntry", required = false) @DefaultValue("false") @QueryParam("unshare") boolean unshare,
+                          @ApiParam(value = "Read permission", required = false) @DefaultValue("false") @QueryParam("read") boolean read,
+                          @ApiParam(value = "Write permission", required = false) @DefaultValue("false") @QueryParam("write") boolean write,
+                          @ApiParam(value = "Delete permission", required = false) @DefaultValue("false") @QueryParam("delete") boolean delete
+                          /*@ApiParam(value = "Execute permission", required = false) @DefaultValue("false") @QueryParam("execute") boolean execute*/) {
+        try {
+            int fileId = catalogManager.getFileId(fileIdStr);
+            QueryResult queryResult;
+            if (unshare) {
+                queryResult = catalogManager.unshareFile(fileId, userId, sessionId);
+            } else {
+                queryResult = catalogManager.shareFile(fileId, new AclEntry(userId, read, write, false, delete), sessionId);
+            }
             return createOkResponse(queryResult);
         } catch (Exception e) {
             return createErrorResponse(e);

@@ -28,10 +28,10 @@ import org.opencb.biodata.formats.io.FileFormatException;
 import org.opencb.biodata.formats.variant.vcf4.VcfRecord;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawReader;
 import org.opencb.biodata.formats.variant.vcf4.io.VcfRawWriter;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
 import org.opencb.biodata.models.variant.stats.VariantStats;
 import org.opencb.commons.io.DataWriter;
 import org.opencb.commons.run.Runner;
@@ -771,6 +771,7 @@ public class OpenCGAStorageMain {
             }
         }
 
+
         /**
          * Create DBAdaptor
          */
@@ -831,7 +832,7 @@ public class OpenCGAStorageMain {
         JsonFactory factory = new JsonFactory();
         jsonObjectMapper = new ObjectMapper(factory);
 
-        jsonObjectMapper.addMixIn(VariantSourceEntry.class, VariantSourceEntryJsonMixin.class);
+        jsonObjectMapper.addMixIn(StudyEntry.class, VariantSourceEntryJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantSource.class, VariantSourceJsonMixin.class);
         jsonObjectMapper.addMixIn(VariantStats.class, VariantStatsJsonMixin.class);
 
@@ -874,7 +875,7 @@ public class OpenCGAStorageMain {
     private static void setLogLevel(String logLevel) {
 // This small hack allow to configure the appropriate Logger level from the command line, this is done
 // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
         logger = LoggerFactory.getLogger(OpenCGAStorageMain.class);
     }
 

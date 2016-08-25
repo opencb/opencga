@@ -19,10 +19,11 @@ package org.opencb.opencga.storage.core.variant.io;
 
 import org.junit.*;
 import org.opencb.biodata.formats.variant.vcf4.io.VariantVcfReader;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.biodata.models.variant.Variant;
 import org.opencb.biodata.models.variant.VariantSource;
-import org.opencb.biodata.models.variant.VariantSourceEntry;
+import org.opencb.biodata.models.variant.StudyEntry;
+import org.opencb.biodata.models.variant.avro.VariantType;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.Query;
 import org.opencb.datastore.core.QueryOptions;
@@ -103,7 +104,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
     @Test
     public void testVcfHtsExportSingleFile() throws Exception {
         Query query = new Query();
-        Set<Integer> returnedSamplesIds = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first().getSamplesInFiles().get(0);
+        LinkedHashSet<Integer> returnedSamplesIds = dbAdaptor.getStudyConfigurationManager().getStudyConfiguration(STUDY_NAME, null).first().getSamplesInFiles().get(0);
         List<String> returnedSamples = new LinkedList<>();
         Map<Integer, String> sampleIdMap = StudyConfiguration.inverseMap(studyConfiguration.getSampleIds());
         for (Integer sampleId : returnedSamplesIds) {
@@ -114,7 +115,8 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
                 .append(VariantDBAdaptor.VariantQueryParams.FILES.key(), 0)
                 .append(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples);
         Path outputVcf = getTmpRootDir().resolve("hts_sf_" + EXPORTED_FILE_NAME);
-        int failedVariants = VariantExporter.VcfHtsExport(dbAdaptor.iterator(query, null), studyConfiguration
+        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
+        int failedVariants = variantVcfExporter.export(dbAdaptor.iterator(query, null), studyConfiguration
                 , new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), new QueryOptions(VariantDBAdaptor.VariantQueryParams.RETURNED_SAMPLES.key(), returnedSamples));
 
         assertEquals(0, failedVariants);
@@ -128,7 +130,8 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         query.append(VariantDBAdaptor.VariantQueryParams.STUDIES.key(), STUDY_NAME);
 //                .append(VariantDBAdaptor.VariantQueryParams.REGION.key(), region);
         Path outputVcf = getTmpRootDir().resolve("hts_mf_" + EXPORTED_FILE_NAME);
-        int failedVariants = VariantExporter.VcfHtsExport(dbAdaptor.iterator(query, null), studyConfiguration,
+        VariantVcfExporter variantVcfExporter = new VariantVcfExporter();
+        int failedVariants = variantVcfExporter.export(dbAdaptor.iterator(query, null), studyConfiguration,
                 new GZIPOutputStream(new FileOutputStream(outputVcf.toFile())), null);
 
         assertEquals(0, failedVariants);
@@ -156,7 +159,7 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
         QueryOptions queryOptions = new QueryOptions();
         List<String> include = Arrays.asList("chromosome", "start", "end", "alternative", "reference", "ids", "sourceEntries");
         queryOptions.add("include", include);
-        VariantExporter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), new Query(), queryOptions);
+        VariantVcfExporter.vcfExport(dbAdaptor, studyConfiguration, new URI(EXPORTED_FILE_NAME), new Query(), queryOptions);
 
         // compare VCF_TEST_FILE_NAME and EXPORTED_FILE_NAME
     }
@@ -190,12 +193,14 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             assertEquals("At variant " + originalVariant, originalVariant.getStart(), exportedVariant.getStart());
             assertEquals("At variant " + originalVariant, originalVariant.getEnd(), exportedVariant.getEnd());
             assertEquals("At variant " + originalVariant, originalVariant.getIds(), exportedVariant.getIds());
-            assertEquals("At variant " + originalVariant, originalVariant.getSourceEntries().size(), exportedVariant.getSourceEntries().size());
+            assertEquals("At variant " + originalVariant, originalVariant.getStudies().size(), exportedVariant.getStudies().size());
             assertEquals("At variant " + originalVariant, originalVariant.getSampleNames("f", "s"), exportedVariant.getSampleNames("f", "s"));
-            VariantSourceEntry originalSourceEntry = originalVariant.getSourceEntry("f", "s");
-            VariantSourceEntry exportedSourceEntry = exportedVariant.getSourceEntry("f", "s");
-            for (String sampleName : originalSourceEntry.getSampleNames()) {
-                assertEquals("For sample '" + sampleName + "' " + originalVariant, originalSourceEntry.getSampleData(sampleName, "GT"), exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
+            StudyEntry originalSourceEntry = originalVariant.getStudy("s");
+            StudyEntry exportedSourceEntry = exportedVariant.getStudy("s");
+            for (String sampleName : originalSourceEntry.getSamplesName()) {
+                assertEquals("For sample '" + sampleName + "' " + originalVariant,
+                        originalSourceEntry.getSampleData(sampleName, "GT"),
+                        exportedSourceEntry.getSampleData(sampleName, "GT").replace("0/0", "0|0"));
             }
         }
         return originalVariants.size();
@@ -238,6 +243,9 @@ public abstract class VariantExporterTest extends VariantStorageManagerTestUtils
             read = variantVcfReader.read(variantsToRead);
             for (Variant variant : read) {
                 lines++;
+                if (variant.getType().equals(VariantType.SYMBOLIC) || variant.getAlternate().startsWith("<")) {
+                    continue;
+                }
                 if (variant.getStart() >= region.getStart() && variant.getEnd() <= region.getEnd()) {
                     start = Math.min(start, variant.getStart());
                     end = Math.max(end, variant.getEnd());

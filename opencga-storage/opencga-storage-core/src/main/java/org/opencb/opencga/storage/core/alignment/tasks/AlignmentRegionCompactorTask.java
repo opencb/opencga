@@ -16,13 +16,13 @@
 
 package org.opencb.opencga.storage.core.alignment.tasks;
 
-import org.opencb.biodata.formats.alignment.AlignmentHelper;
+import org.opencb.biodata.formats.alignment.AlignmentUtils;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.CellBaseSequenceDBAdaptor;
 import org.opencb.biodata.formats.sequence.fasta.dbadaptor.SequenceDBAdaptor;
 import org.opencb.biodata.models.alignment.Alignment;
 import org.opencb.biodata.models.alignment.AlignmentRegion;
 import org.opencb.biodata.models.alignment.exceptions.ShortReferenceSequenceException;
-import org.opencb.biodata.models.feature.Region;
+import org.opencb.biodata.models.core.Region;
 import org.opencb.commons.run.Task;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,7 +86,7 @@ public class AlignmentRegionCompactorTask extends Task<AlignmentRegion> {
             String sequence = adaptor.getSequence(region);
             for(Alignment alignment : alignmentRegion.getAlignments()){
                 try {
-                    AlignmentHelper.completeDifferencesFromReference(alignment, sequence, start);
+                    AlignmentUtils.completeDifferencesFromReference(alignment, sequence, start);
                 } catch (ShortReferenceSequenceException e) {
                     logger.warn("NOT ENOUGH REFERENCE SEQUENCE. " + alignment.getChromosome()+":"+alignment.getUnclippedStart() + "-" + alignment.getUnclippedEnd(), e);
                 }

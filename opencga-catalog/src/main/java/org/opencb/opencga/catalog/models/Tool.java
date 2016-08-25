@@ -31,7 +31,7 @@ public class Tool {
     private Object manifest;
     private Object result;
     private String path;
-    private List<Acl> acl;
+    private List<AclEntry> acl;
 
     public Tool() {
         this("", "", "", null, null, "");
@@ -40,7 +40,7 @@ public class Tool {
     public Tool(String alias, String name, String description, Object manifest, Object result, String path) {
         this(-1 , alias, name, description, manifest, result, path, new LinkedList());
     }
-    public Tool(int id, String alias, String name, String description, Object manifest, Object result, String path, List<Acl> acl) {
+    public Tool(int id, String alias, String name, String description, Object manifest, Object result, String path, List<AclEntry> acl) {
         this.id = id;
         this.alias = alias;
         this.name = name;
@@ -122,11 +122,11 @@ public class Tool {
     }
 
 
-    public List<Acl> getAcl() {
+    public List<AclEntry> getAcl() {
         return acl;
     }
 
-    public void setAcl(List<Acl> acl) {
+    public void setAcl(List<AclEntry> acl) {
         this.acl = acl;
     }
 

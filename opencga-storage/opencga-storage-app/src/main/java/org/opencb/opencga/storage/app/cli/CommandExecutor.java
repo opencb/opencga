@@ -16,7 +16,8 @@
 
 package org.opencb.opencga.storage.app.cli;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.log4j.*;
 import org.opencb.opencga.storage.core.config.StorageConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,6 +38,7 @@ import java.util.List;
 public abstract class CommandExecutor {
 
     protected String logLevel;
+    protected String logFile;
     protected boolean verbose;
     protected String configFile;
 
@@ -59,9 +63,13 @@ public abstract class CommandExecutor {
          */
         this.appHome = System.getProperty("app.home", System.getenv("OPENCGA_HOME"));
 
+        if (verbose) {
+            logLevel = "debug";
+        }
+
         if(logLevel != null && !logLevel.isEmpty()) {
             // We must call to this method
-            setLogLevel(logLevel);
+            configureDefaultLog(logLevel);
         }
     }
 
@@ -71,14 +79,28 @@ public abstract class CommandExecutor {
         return logLevel;
     }
 
-    public void setLogLevel(String logLevel) {
+    public void configureDefaultLog(String logLevel) {
         // This small hack allow to configure the appropriate Logger level from the command line, this is done
         // by setting the DEFAULT_LOG_LEVEL_KEY before the logger object is created.
-        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+//        System.setProperty(org.slf4j.impl.SimpleLogger.DEFAULT_LOG_LEVEL_KEY, logLevel);
+        org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+//        rootLogger.setLevel(Level.toLevel(logLevel));
+
+        ConsoleAppender stderr = (ConsoleAppender) rootLogger.getAppender("stderr");
+        stderr.setThreshold(Level.toLevel(logLevel));
+
         logger = LoggerFactory.getLogger(this.getClass().toString());
         this.logLevel = logLevel;
     }
 
+
+    public String getLogFile() {
+        return logFile;
+    }
+
+    public void setLogFile(String logFile) {
+        this.logFile = logFile;
+    }
 
     public boolean isVerbose() {
         return verbose;
@@ -107,12 +129,53 @@ public abstract class CommandExecutor {
      * @throws IOException
      */
     public void loadStorageConfiguration() throws IOException {
-        if(this.configFile != null) {
-            logger.debug("Loading configuration from '{}'", this.configFile);
+        String loadedConfigurationFile;
+        if (this.configFile != null) {
+            loadedConfigurationFile = this.configFile;
             this.configuration = StorageConfiguration.load(new FileInputStream(new File(this.configFile)));
-        }else {
-            this.configuration = StorageConfiguration.load();
+        } else {
+            // We load configuration file either from app home folder or from the JAR
+            Path path = Paths.get(appHome + "/conf/storage-configuration.yml");
+            if (appHome != null && Files.exists(path)) {
+                loadedConfigurationFile = appHome + "/conf/storage-configuration.yml";
+                this.configuration = StorageConfiguration
+                        .load(new FileInputStream(new File(appHome + "/conf/storage-configuration.yml")));
+            } else {
+                loadedConfigurationFile = StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml").toString();
+                this.configuration =  StorageConfiguration
+                        .load(StorageConfiguration.class.getClassLoader().getResourceAsStream("storage-configuration.yml"));
+            }
         }
+
+        // logLevel parameter has preference in CLI over configuration file
+        if (this.logLevel == null || this.logLevel.isEmpty()) {
+            this.logLevel = this.configuration.getLogLevel();
+            configureDefaultLog(this.configuration.getLogLevel());
+        } else {
+            if (!this.logLevel.equalsIgnoreCase(this.configuration.getLogLevel())) {
+                this.configuration.setLogLevel(this.logLevel);
+                configureDefaultLog(this.configuration.getLogLevel());
+            }
+        }
+
+        // logFile parameter has preference in CLI over configuration file, we first set the logFile passed
+        if (this.logFile != null && !this.logFile.isEmpty()) {
+            this.configuration.setLogFile(logFile);
+        }
+        // If user has set up a logFile we redirect logs to it
+        if (this.configuration.getLogFile() != null && !this.configuration.getLogFile().isEmpty()) {
+            org.apache.log4j.Logger rootLogger = LogManager.getRootLogger();
+
+            // If a log file is used then console log is removed
+            rootLogger.removeAppender("stderr");
+
+            // Creating a RollingFileAppender to output the log
+            RollingFileAppender rollingFileAppender = new RollingFileAppender(new PatternLayout("%d{yyyy-MM-dd HH:mm:ss} %-5p %c{1}:%L - %m%n"), this.configuration.getLogFile(), true);
+            rollingFileAppender.setThreshold(Level.toLevel(configuration.getLogLevel()));
+            rootLogger.addAppender(rollingFileAppender);
+        }
+
+        logger.debug("Loading configuration from '{}'", loadedConfigurationFile);
     }
 
     @Deprecated

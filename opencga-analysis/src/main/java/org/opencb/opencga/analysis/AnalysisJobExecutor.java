@@ -17,12 +17,12 @@
 package org.opencb.opencga.analysis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.tools.ant.types.Commandline;
 import org.opencb.datastore.core.ObjectMap;
 import org.opencb.datastore.core.QueryOptions;
 import org.opencb.datastore.core.QueryResult;
 import org.opencb.opencga.catalog.exceptions.CatalogException;
 import org.opencb.opencga.catalog.CatalogManager;
-import org.opencb.opencga.catalog.exceptions.CatalogIOException;
 import org.opencb.opencga.catalog.io.CatalogIOManager;
 import org.opencb.opencga.catalog.models.File;
 import org.opencb.opencga.catalog.models.Job;
@@ -38,10 +38,7 @@ import org.opencb.opencga.core.exec.RunnableProcess;
 import org.opencb.opencga.core.exec.SingleProcess;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import sun.misc.Signal;
-import sun.misc.SignalHandler;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -49,7 +46,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class AnalysisJobExecutor {
 
@@ -192,7 +189,7 @@ public class AnalysisJobExecutor {
         validParams.addAll(analysis.getGlobalParams());
         validParams.add(new Option(execution.getOutputParam(), "Outdir", false));
         if (checkRequiredParams(params, validParams)) {
-            params = new HashMap<String, List<String>>(removeUnknownParams(params, validParams));
+            params = new HashMap<>(removeUnknownParams(params, validParams));
         } else {
             throw new AnalysisExecutionException("ERROR: missing some required params.");
         }
@@ -244,13 +241,45 @@ public class AnalysisJobExecutor {
         String commandLine = createCommandLine(executable, params);
         System.out.println(commandLine);
 
+        Map<String, String> plainParams = params.entrySet().stream().collect(Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> entry.getValue().stream().collect(Collectors.joining(",")))
+        );
+
         return createJob(catalogManager, studyId, jobName, analysisName, description, outDir, inputFiles, sessionId,
-                randomString, temporalOutDirUri, commandLine, false, false, new HashMap<String, Object>(), new HashMap<String, Object>());
+                randomString, temporalOutDirUri, executionName, plainParams, commandLine, false, false, new HashMap<>(), new HashMap<>());
+    }
+
+    @Deprecated
+    public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
+                                             File outDir, List<Integer> inputFiles, final String sessionId,
+                                             String randomString, URI temporalOutDirUri, String commandLine,
+                                             boolean execute, boolean simulate, Map<String, Object> attributes,
+                                             Map<String, Object> resourceManagerAttributes)
+            throws AnalysisExecutionException, CatalogException {
+        String[] args = Commandline.translateCommandline(commandLine);
+        Map<String, String> params = new HashMap<>();
+        for (int i = 0; i < args.length; i++) {
+            if (args[i].startsWith("-")) {
+                String key = args[i].replaceAll("^--?", "");
+                String value;
+                if (args.length == i + 1 || args[i + 1].startsWith("-")) {
+                    value = "";
+                } else {
+                    value = args[i + 1];
+                    i++;
+                }
+                params.put(key, value);
+            }
+        }
+        return createJob(catalogManager, studyId, jobName, toolName, description, outDir, inputFiles, sessionId,
+                randomString, temporalOutDirUri, "", params, commandLine, execute, simulate, attributes, resourceManagerAttributes);
     }
 
     public static QueryResult<Job> createJob(final CatalogManager catalogManager, int studyId, String jobName, String toolName, String description,
                                              File outDir, List<Integer> inputFiles, final String sessionId,
-                                             String randomString, URI temporalOutDirUri, String commandLine,
+                                             String randomString, URI temporalOutDirUri,
+                                             String executor, Map<String, String> params, String commandLine,
                                              boolean execute, boolean simulate, Map<String, Object> attributes,
                                              Map<String, Object> resourceManagerAttributes)
             throws AnalysisExecutionException, CatalogException {
@@ -271,7 +300,7 @@ public class AnalysisJobExecutor {
         } else {
             if (execute) {
                 /** Create a RUNNING job in CatalogManager **/
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
+                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.RUNNING, System.currentTimeMillis(), 0, null, sessionId);
                 Job job = jobQueryResult.first();
 
@@ -280,7 +309,7 @@ public class AnalysisJobExecutor {
             } else {
                 /** Create a PREPARED job in CatalogManager **/
                 resourceManagerAttributes.put(Job.JOB_SCHEDULER_NAME, randomString);
-                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, commandLine, temporalOutDirUri,
+                jobQueryResult = catalogManager.createJob(studyId, jobName, toolName, description, executor, params, commandLine, temporalOutDirUri,
                         outDir.getId(), inputFiles, null, attributes, resourceManagerAttributes, Job.Status.PREPARED, 0, 0, null, sessionId);
             }
         }
@@ -290,6 +319,12 @@ public class AnalysisJobExecutor {
     private static QueryResult<Job> executeLocal(CatalogManager catalogManager, Job job, String sessionId) throws CatalogException {
 
         Command com = new Command(job.getCommandLine());
+        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
+        URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
+        com.setOutputOutputStream(ioManager.createOutputStream(sout, false));
+        URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
+        com.setErrorOutputStream(ioManager.createOutputStream(serr, false));
+
         final int jobId = job.getId();
         Thread hook = new Thread(() -> {
             try {
@@ -322,25 +357,24 @@ public class AnalysisJobExecutor {
 
     private static QueryResult<Job> postExecuteLocal(CatalogManager catalogManager, Job job, String sessionId, Command com)
             throws CatalogException {
-        /** Write output to file **/
-        CatalogIOManager ioManager = catalogManager.getCatalogIOManagerFactory().get(job.getTmpOutDirUri());
-        try {
-            URI sout = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".out.txt");
-            if (com.getOutput() != null) {
-                ioManager.createFile(sout, new ByteArrayInputStream(com.getOutput().getBytes()));
-                com.setOutput(null);
+        /** Close output streams **/
+        if (com.getOutputOutputStream() != null) {
+            try {
+                com.getOutputOutputStream().close();
+            } catch (IOException e) {
+                logger.warn("Error closing OutputStream", e);
             }
-        } catch (CatalogIOException e) {
-            e.printStackTrace();
+            com.setOutputOutputStream(null);
+            com.setOutput(null);
         }
-        try {
-            URI serr = job.getTmpOutDirUri().resolve(job.getName() + "." + job.getId() + ".err.txt");
-            if (com.getError() != null) {
-                ioManager.createFile(serr, new ByteArrayInputStream(com.getError().getBytes()));
-                com.setError(null);
+        if (com.getErrorOutputStream() != null) {
+            try {
+                com.getErrorOutputStream().close();
+            } catch (IOException e) {
+                logger.warn("Error closing OutputStream", e);
             }
-        } catch (CatalogIOException e) {
-            e.printStackTrace();
+            com.setErrorOutputStream(null);
+            com.setError(null);
         }
 
         /** Change status to DONE  - Add the execution information to the job entry **/
@@ -352,7 +386,7 @@ public class AnalysisJobExecutor {
 
         /** Record output **/
         AnalysisOutputRecorder outputRecorder = new AnalysisOutputRecorder(catalogManager, sessionId);
-        outputRecorder.recordJobOutput(job, com.getExitValue() != 0);
+        outputRecorder.recordJobOutputAndPostProcess(job, com.getExitValue() != 0);
 
         /** Change status to READY or ERROR **/
         if (com.getExitValue() == 0) {
