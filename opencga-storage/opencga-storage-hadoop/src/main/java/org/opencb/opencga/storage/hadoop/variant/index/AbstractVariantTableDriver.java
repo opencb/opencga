@@ -15,7 +15,6 @@ import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import org.opencb.commons.datastore.core.QueryOptions;
 import org.opencb.commons.datastore.core.QueryResult;
-import org.opencb.hpg.bigdata.tools.utils.HBaseUtils;
 import org.opencb.opencga.storage.core.exceptions.StorageManagerException;
 import org.opencb.opencga.storage.core.metadata.BatchFileOperation;
 import org.opencb.opencga.storage.core.metadata.StudyConfiguration;
@@ -107,7 +106,7 @@ public abstract class AbstractVariantTableDriver extends Configured implements T
         /* -------------------------------*/
         // Validate input CHECK
         HBaseManager hBaseManager = gh.getHBaseManager();
-        if (!hBaseManager.act(inTable, ((Table table, Admin admin) -> HBaseUtils.exist(table.getName(), admin)))) {
+        if (!hBaseManager.tableExists(inTable)) {
             throw new IllegalArgumentException(String.format("Input table %s does not exist!!!", inTable));
         }
 
